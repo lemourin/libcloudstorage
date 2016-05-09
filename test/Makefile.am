@@ -1,9 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
-AM_LDFLAGS = $(top_srcdir)/src/libcloudstorage.la
 AM_CXXFLAGS = -I$(top_srcdir)/src
 
-check_PROGRAMS = main
+bin_PROGRAMS = main
 main_SOURCES = main.cpp
 
-TESTS = main
+main_LDADD = \
+  ../src/libcloudstorage.la \
+  $(libjsoncpp_LIBS)
