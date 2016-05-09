@@ -9,6 +9,7 @@ AX_CXX_COMPILE_STDCXX_11
 
 PKG_CHECK_MODULES([libcurl], [libcurl])
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
+PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 
 AC_CONFIG_FILES([
   Makefile
