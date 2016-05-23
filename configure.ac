@@ -7,6 +7,8 @@ AC_PROG_CXX
 
 AX_CXX_COMPILE_STDCXX_11
 
+PKG_CHECK_MODULES([libcurl], [libcurl])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
