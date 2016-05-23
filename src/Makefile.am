@@ -10,14 +10,16 @@ lib_LTLIBRARIES = libcloudstorage.la
 libcloudstorage_la_SOURCES = \
 	Auth.cpp \
 	Item.cpp \
-	CloudProvider.cpp
+	CloudProvider.cpp \
+	HttpRequest.cpp
 
 noinst_HEADERS = \
 	Utility.h \
 	IAuth.h \
 	Auth.h \
 	Item.h \
-	CloudProvider.h
+	CloudProvider.h \
+	HttpRequest.h
 
 include_HEADERS = \
 	IItem.h \
