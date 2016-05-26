@@ -12,7 +12,8 @@ libcloudstorage_la_SOURCES = \
 	Item.cpp \
 	CloudProvider.cpp \
 	HttpRequest.cpp \
-	GoogleDrive.cpp
+	GoogleDrive.cpp \
+	OneDrive.cpp
 
 noinst_HEADERS = \
 	Utility.h \
@@ -21,7 +22,8 @@ noinst_HEADERS = \
 	Item.h \
 	CloudProvider.h \
 	HttpRequest.h \
-	GoogleDrive.h
+	GoogleDrive.h \
+	OneDrive.h
 
 include_HEADERS = \
 	IItem.h \
