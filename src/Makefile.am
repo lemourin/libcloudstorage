@@ -9,7 +9,8 @@ lib_LTLIBRARIES = libcloudstorage.la
 
 libcloudstorage_la_SOURCES =
 
-nobase_include_HEADERS =
+noinst_HEADERS = \
+	Utility.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
