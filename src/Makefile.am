@@ -8,12 +8,14 @@ AM_CXXFLAGS = \
 lib_LTLIBRARIES = libcloudstorage.la
 
 libcloudstorage_la_SOURCES = \
-	Auth.cpp
+	Auth.cpp \
+	Item.cpp
 
 noinst_HEADERS = \
 	Utility.h \
 	IAuth.h \
-	Auth.h
+	Auth.h \
+	Item.h
 
 include_HEADERS = \
 	IItem.h \
