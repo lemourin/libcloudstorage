@@ -10,7 +10,8 @@ lib_LTLIBRARIES = libcloudstorage.la
 libcloudstorage_la_SOURCES =
 
 noinst_HEADERS = \
-	Utility.h
+	Utility.h \
+	IAuth.h
 
 include_HEADERS = \
 	IItem.h \
