@@ -13,7 +13,8 @@ noinst_HEADERS = \
 	Utility.h
 
 include_HEADERS = \
-	IItem.h
+	IItem.h \
+	ICloudProvider.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
