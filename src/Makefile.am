@@ -12,6 +12,9 @@ libcloudstorage_la_SOURCES =
 noinst_HEADERS = \
 	Utility.h
 
+include_HEADERS = \
+	IItem.h
+
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
 	$(libjsoncpp_LIBS) \
