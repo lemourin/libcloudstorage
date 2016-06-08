@@ -46,14 +46,14 @@ class CloudProvider : public ICloudProvider {
   std::string authorizeLibraryUrl() const;
   IItem::Pointer rootDirectory() const;
 
-  template <typename ReturnType, typename... Args>
-  ReturnType execute(ReturnType (CloudProvider::*f)(Args...) const,
+  template <typename ReturnType, typename... FArgs, typename... Args>
+  ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...) const,
                      Args&&... args) const {
     try {
-      return (this->*f)(args...);
+      return (this->*f)(std::forward<Args>(args)...);
     } catch (const std::exception&) {
       auth()->set_access_token(auth()->refreshToken());
-      return (this->*f)(args...);
+      return (this->*f)(std::forward<Args>(args)...);
     }
   }
 
