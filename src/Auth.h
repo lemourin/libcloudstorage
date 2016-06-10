@@ -55,6 +55,8 @@ class Auth : public IAuth {
   std::string awaitAuthorizationCode(std::string code_parameter_name,
                                      std::string error_parameter_name) const;
 
+  Token::Pointer fromTokenString(const std::string&) const;
+
  private:
   std::string authorization_code_;
   std::string client_id_;

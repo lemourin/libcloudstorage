@@ -87,6 +87,8 @@ class IAuth {
   virtual Token::Pointer refreshToken() const = 0;
 
   virtual bool validateToken(Token&) const = 0;
+
+  virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 };
 
 }  // namespace cloudstorage

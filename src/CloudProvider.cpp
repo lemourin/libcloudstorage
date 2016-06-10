@@ -59,9 +59,7 @@ bool CloudProvider::initialize(const std::string& token,
   auth_callback_ =
       make_unique<cloudstorage::Callback>(std::move(callback), *this);
 
-  IAuth::Token::Pointer t = make_unique<IAuth::Token>();
-  t->refresh_token_ = token;
-  auth()->set_access_token(std::move(t));
+  auth()->set_access_token(auth()->fromTokenString(token));
   return auth()->authorize(auth_callback_.get());
 }
 
