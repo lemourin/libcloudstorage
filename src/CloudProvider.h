@@ -33,7 +33,7 @@ class CloudProvider : public ICloudProvider {
  public:
   CloudProvider(IAuth::Pointer);
 
-  bool initialize(IInitCallback::Pointer);
+  bool initialize(ICallback::Pointer);
   Json::Value dump() const;
 
   std::string access_token() const;

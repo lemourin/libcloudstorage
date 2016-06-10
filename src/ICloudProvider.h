@@ -36,17 +36,17 @@ class ICloudProvider {
  public:
   using Pointer = std::unique_ptr<ICloudProvider>;
 
-  class IInitCallback {
+  class ICallback {
    public:
-    using Pointer = std::unique_ptr<IInitCallback>;
+    using Pointer = std::unique_ptr<ICallback>;
 
-    virtual ~IInitCallback() = default;
+    virtual ~ICallback() = default;
     virtual void userConsentRequired(const ICloudProvider&) const = 0;
   };
 
   virtual ~ICloudProvider() = default;
 
-  virtual bool initialize(IInitCallback::Pointer) = 0;
+  virtual bool initialize(ICallback::Pointer) = 0;
   virtual Json::Value dump() const = 0;
 
   virtual std::string name() const = 0;

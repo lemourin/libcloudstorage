@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iostream>
 
-class InitCallback : public cloudstorage::ICloudProvider::IInitCallback {
+class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
   void userConsentRequired(const cloudstorage::ICloudProvider& provider) const {
     std::cout << "required consent at url: \n";
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
-  if (drive->initialize(std::unique_ptr<InitCallback>(new InitCallback))) {
+  if (drive->initialize(std::unique_ptr<Callback>(new Callback))) {
     std::fstream file(drive_file, std::fstream::out);
     file << drive->dump();
     file.close();

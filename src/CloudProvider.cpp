@@ -33,7 +33,7 @@ namespace cloudstorage {
 namespace {
 class InitCallback : public IAuth::IInitCallback {
  public:
-  InitCallback(ICloudProvider::IInitCallback::Pointer callback,
+  InitCallback(ICloudProvider::ICallback::Pointer callback,
                const ICloudProvider& provider)
       : callback_(std::move(callback)), provider_(provider) {}
 
@@ -42,14 +42,14 @@ class InitCallback : public IAuth::IInitCallback {
   }
 
  private:
-  ICloudProvider::IInitCallback::Pointer callback_;
+  ICloudProvider::ICallback::Pointer callback_;
   const ICloudProvider& provider_;
 };
 }  // namespace
 
 CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
-bool CloudProvider::initialize(IInitCallback::Pointer callback) {
+bool CloudProvider::initialize(ICallback::Pointer callback) {
   return auth()->authorize(
       make_unique<cloudstorage::InitCallback>(std::move(callback), *this));
 }
