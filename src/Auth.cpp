@@ -114,24 +114,6 @@ bool Auth::authorize(ICallback* callback) {
   return access_token() != nullptr;
 }
 
-void Auth::set_token_data(const Json::Value& json) {
-  Token::Pointer token = make_unique<Token>();
-  token->token_ = json["access_token"].asString();
-  token->refresh_token_ = json["refresh_token"].asString();
-  token->expires_in_ = json["expires_in"].asInt();
-  set_access_token(std::move(token));
-}
-
-Json::Value Auth::token_data() const {
-  if (!access_token()) return {};
-
-  Json::Value json;
-  json["access_token"] = access_token()->token_;
-  json["refresh_token"] = access_token()->refresh_token_;
-  json["expires_in"] = access_token()->expires_in_;
-  return json;
-}
-
 const std::string& Auth::authorization_code() const {
   return authorization_code_;
 }

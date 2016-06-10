@@ -35,9 +35,6 @@ class Auth : public IAuth {
 
   bool authorize(ICallback*);
 
-  void set_token_data(const Json::Value&);
-  Json::Value token_data() const;
-
   const std::string& authorization_code() const;
   void set_authorization_code(const std::string&);
 

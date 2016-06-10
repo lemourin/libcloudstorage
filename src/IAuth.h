@@ -24,7 +24,6 @@
 #ifndef IAUTH_H
 #define IAUTH_H
 
-#include <jsoncpp/json/forwards.h>
 #include <memory>
 #include <string>
 
@@ -58,9 +57,6 @@ class IAuth {
   virtual ~IAuth() = default;
 
   virtual bool authorize(ICallback*) = 0;
-
-  virtual void set_token_data(const Json::Value&) = 0;
-  virtual Json::Value token_data() const = 0;
 
   virtual const std::string& authorization_code() const = 0;
   virtual void set_authorization_code(const std::string&) = 0;
