@@ -50,9 +50,11 @@ class CloudProvider : public ICloudProvider {
   ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...) const,
                      Args&&... args) const {
     try {
+      if (!auth_->access_token()) auth_->authorize(auth_callback_.get());
       return (this->*f)(std::forward<Args>(args)...);
     } catch (const std::exception&) {
-      auth()->set_access_token(auth()->refreshToken());
+      if (!auth_->authorize(auth_callback_.get()))
+        throw std::logic_error("Authorization failed.");
       return (this->*f)(std::forward<Args>(args)...);
     }
   }
