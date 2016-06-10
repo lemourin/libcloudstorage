@@ -47,23 +47,4 @@ ICloudProvider::Pointer CloudStorage::provider(const std::string& name) const {
   return nullptr;
 }
 
-ICloudProvider::Pointer CloudStorage::providerFromJson(
-    const Json::Value& data) const {
-  ICloudProvider::Pointer p = provider(data["backend"].asString());
-  CloudProvider* cloudprovider = static_cast<CloudProvider*>(p.get());
-  if (!cloudprovider) return nullptr;
-  if (data.isMember("token"))
-    cloudprovider->auth()->set_token_data(data["token"]);
-  return p;
-}
-
-ICloudProvider::Pointer CloudStorage::providerFromFile(
-    const std::string& file) const {
-  std::fstream stream(file);
-  if (!stream.is_open()) return nullptr;
-  Json::Value data;
-  stream >> data;
-  return providerFromJson(data);
-}
-
 }  // namespace cloudstorage

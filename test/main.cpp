@@ -53,14 +53,11 @@ int main(int argc, char** argv) {
   std::string drive_file = drive_backend + ".json";
 
   cloudstorage::ICloudProvider::Pointer drive =
-      cloudstorage::CloudStorage().providerFromFile(drive_file);
+      cloudstorage::CloudStorage().provider(drive_backend);
 
   if (drive == nullptr) {
-    drive = cloudstorage::CloudStorage().provider(drive_backend);
-    if (drive == nullptr) {
-      std::cout << "Invalid drive backend.\n";
-      return 1;
-    }
+    std::cout << "Invalid drive backend.\n";
+    return 1;
   }
   if (drive->initialize(std::unique_ptr<Callback>(new Callback))) {
     std::fstream file(drive_file, std::fstream::out);

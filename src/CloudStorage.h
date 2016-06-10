@@ -32,8 +32,6 @@ class CloudStorage : public ICloudStorage {
  public:
   std::vector<ICloudProvider::Pointer> providers() const;
   ICloudProvider::Pointer provider(const std::string& name) const;
-  ICloudProvider::Pointer providerFromJson(const Json::Value& data) const;
-  ICloudProvider::Pointer providerFromFile(const std::string& file) const;
 };
 
 }  // namespace cloudstorage
