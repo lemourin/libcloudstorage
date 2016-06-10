@@ -39,10 +39,7 @@ class ICloudProvider {
    public:
     using Pointer = std::unique_ptr<ICallback>;
 
-    enum class Status {
-      WaitForAuthorizationCode,
-      None
-    };
+    enum class Status { WaitForAuthorizationCode, None };
 
     virtual ~ICallback() = default;
     virtual Status userConsentRequired(const ICloudProvider&) const = 0;
@@ -50,8 +47,10 @@ class ICloudProvider {
 
   virtual ~ICloudProvider() = default;
 
-  virtual void initialize(ICallback::Pointer) = 0;
+  virtual bool initialize(const std::string& token,
+                          ICallback::Pointer) = 0;
 
+  virtual std::string token() const = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
   virtual std::vector<IItem::Pointer> listDirectory(const IItem&) const = 0;

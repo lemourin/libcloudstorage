@@ -54,9 +54,14 @@ class Callback : public IAuth::ICallback {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
-bool CloudProvider::initialize(ICallback::Pointer callback) {
+bool CloudProvider::initialize(const std::string& token,
+                               ICallback::Pointer callback) {
   auth_callback_ =
       make_unique<cloudstorage::Callback>(std::move(callback), *this);
+
+  IAuth::Token::Pointer t = make_unique<IAuth::Token>();
+  t->refresh_token_ = token;
+  auth()->set_access_token(std::move(t));
   return auth()->authorize(auth_callback_.get());
 }
 
@@ -83,6 +88,10 @@ void CloudProvider::downloadFile(const IItem& item,
 
 std::string CloudProvider::authorizeLibraryUrl() const {
   return auth()->authorizeLibraryUrl();
+}
+
+std::string CloudProvider::token() const {
+  return auth()->access_token()->refresh_token_;
 }
 
 IItem::Pointer CloudProvider::rootDirectory() const {

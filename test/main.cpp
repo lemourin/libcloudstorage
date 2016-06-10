@@ -22,7 +22,6 @@
  *****************************************************************************/
 
 #include <CloudStorage.h>
-#include <jsoncpp/json/json.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -50,23 +49,28 @@ void traverse_drive(cloudstorage::ICloudProvider& drive,
 int main(int argc, char** argv) {
   std::string drive_backend = "google";
   if (argc >= 2) drive_backend = argv[1];
-  std::string drive_file = drive_backend + ".json";
 
   cloudstorage::ICloudProvider::Pointer drive =
       cloudstorage::CloudStorage().provider(drive_backend);
-
   if (drive == nullptr) {
     std::cout << "Invalid drive backend.\n";
     return 1;
   }
-  if (drive->initialize(std::unique_ptr<Callback>(new Callback))) {
-    std::fstream file(drive_file, std::fstream::out);
-    file << drive->dump();
-    file.close();
-    traverse_drive(*drive, drive->rootDirectory(), "/");
-  } else {
-    std::cout << "Failed to obtain access token.\n";
+  std::string drive_file = drive_backend + ".json";
+  std::string token;
+  {
+    std::fstream file(drive_file, std::fstream::in);
+    file >> token;
+  }
+  if (!drive->initialize(token, std::unique_ptr<Callback>(new Callback))) {
+    std::cout << "Failed to authorize.";
     return 1;
+  } else {
+    {
+      std::fstream file(drive_file, std::fstream::out);
+      file << drive->token();
+    }
+    traverse_drive(*drive, drive->rootDirectory(), "/");
   }
 
   return 0;

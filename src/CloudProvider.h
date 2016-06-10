@@ -33,7 +33,7 @@ class CloudProvider : public ICloudProvider {
  public:
   CloudProvider(IAuth::Pointer);
 
-  void initialize(ICallback::Pointer);
+  bool initialize(const std::string& token, ICallback::Pointer);
 
   std::string access_token() const;
   IAuth* auth() const;
@@ -43,6 +43,7 @@ class CloudProvider : public ICloudProvider {
   void downloadFile(const IItem&, std::ostream&) const final;
 
   std::string authorizeLibraryUrl() const;
+  std::string token() const;
   IItem::Pointer rootDirectory() const;
 
   template <typename ReturnType, typename... FArgs, typename... Args>
