@@ -50,8 +50,9 @@ class Callback : public IAuth::ICallback {
 CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
 bool CloudProvider::initialize(ICallback::Pointer callback) {
-  return auth()->authorize(
-      make_unique<cloudstorage::Callback>(std::move(callback), *this));
+  auth_callback_ =
+      make_unique<cloudstorage::Callback>(std::move(callback), *this);
+  return auth()->authorize(auth_callback_.get());
 }
 
 Json::Value CloudProvider::dump() const {

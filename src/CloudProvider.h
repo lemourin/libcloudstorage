@@ -66,6 +66,7 @@ class CloudProvider : public ICloudProvider {
 
  private:
   IAuth::Pointer auth_;
+  IAuth::ICallback::Pointer auth_callback_;
 };
 
 }  // namespace cloudstorage

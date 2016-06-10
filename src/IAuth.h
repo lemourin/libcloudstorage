@@ -52,7 +52,7 @@ class IAuth {
 
   virtual ~IAuth() = default;
 
-  virtual bool authorize(ICallback::Pointer) = 0;
+  virtual bool authorize(ICallback*) = 0;
 
   virtual void set_token_data(const Json::Value&) = 0;
   virtual Json::Value token_data() const = 0;
