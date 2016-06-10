@@ -103,7 +103,10 @@ bool Auth::authorize(ICallback* callback) {
     if (access_token() && (token = refreshToken())) {
       set_access_token(std::move(token));
     } else {
-      if (callback) callback->userConsentRequired(*this);
+      if (callback) {
+        if (callback->userConsentRequired(*this) == ICallback::Status::None)
+          return false;
+      }
       set_authorization_code(requestAuthorizationCode());
       set_access_token(requestAccessToken());
     }

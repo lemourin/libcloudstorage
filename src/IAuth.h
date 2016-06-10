@@ -46,8 +46,13 @@ class IAuth {
    public:
     using Pointer = std::unique_ptr<ICallback>;
 
+    enum class Status {
+      WaitForAuthorizationCode,
+      None
+    };
+
     virtual ~ICallback() = default;
-    virtual void userConsentRequired(const IAuth&) const = 0;
+    virtual Status userConsentRequired(const IAuth&) const = 0;
   };
 
   virtual ~IAuth() = default;

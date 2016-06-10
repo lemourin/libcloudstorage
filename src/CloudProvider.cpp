@@ -37,8 +37,13 @@ class Callback : public IAuth::ICallback {
            const ICloudProvider& provider)
       : callback_(std::move(callback)), provider_(provider) {}
 
-  void userConsentRequired(const IAuth&) const {
-    if (callback_) callback_->userConsentRequired(provider_);
+  Status userConsentRequired(const IAuth&) const {
+    if (callback_) {
+      if (callback_->userConsentRequired(provider_) ==
+          ICloudProvider::ICallback::Status::WaitForAuthorizationCode)
+        return Status::WaitForAuthorizationCode;
+    }
+    return Status::None;
   }
 
  private:
