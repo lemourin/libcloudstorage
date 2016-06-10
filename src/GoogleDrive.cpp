@@ -49,6 +49,8 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
     Json::Value response;
     std::stringstream stream(request.send());
     stream >> response;
+    if (!response.isMember("files"))
+      throw std::logic_error("Invalid response.");
     for (Json::Value v : response["files"]) {
       result.push_back(make_unique<Item>(
           v["name"].asString(), v["id"].asString(),
