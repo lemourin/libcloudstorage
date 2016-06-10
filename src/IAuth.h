@@ -42,17 +42,17 @@ class IAuth {
     int expires_in_;
   };
 
-  class IInitCallback {
+  class ICallback {
    public:
-    using Pointer = std::unique_ptr<IInitCallback>;
+    using Pointer = std::unique_ptr<ICallback>;
 
-    virtual ~IInitCallback() = default;
+    virtual ~ICallback() = default;
     virtual void userConsentRequired(const IAuth&) const = 0;
   };
 
   virtual ~IAuth() = default;
 
-  virtual bool authorize(IInitCallback::Pointer) = 0;
+  virtual bool authorize(ICallback::Pointer) = 0;
 
   virtual void set_token_data(const Json::Value&) = 0;
   virtual Json::Value token_data() const = 0;

@@ -33,7 +33,7 @@ class Auth : public IAuth {
  public:
   Auth();
 
-  bool authorize(IInitCallback::Pointer);
+  bool authorize(ICallback::Pointer);
 
   void set_token_data(const Json::Value&);
   Json::Value token_data() const;

@@ -31,10 +31,10 @@
 namespace cloudstorage {
 
 namespace {
-class InitCallback : public IAuth::IInitCallback {
+class Callback : public IAuth::ICallback {
  public:
-  InitCallback(ICloudProvider::ICallback::Pointer callback,
-               const ICloudProvider& provider)
+  Callback(ICloudProvider::ICallback::Pointer callback,
+           const ICloudProvider& provider)
       : callback_(std::move(callback)), provider_(provider) {}
 
   void userConsentRequired(const IAuth&) const {
@@ -51,7 +51,7 @@ CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
 bool CloudProvider::initialize(ICallback::Pointer callback) {
   return auth()->authorize(
-      make_unique<cloudstorage::InitCallback>(std::move(callback), *this));
+      make_unique<cloudstorage::Callback>(std::move(callback), *this));
 }
 
 Json::Value CloudProvider::dump() const {

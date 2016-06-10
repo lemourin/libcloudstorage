@@ -97,7 +97,7 @@ int httpRequestCallback(void* cls, MHD_Connection* connection,
 
 Auth::Auth() : redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT) {}
 
-bool Auth::authorize(IInitCallback::Pointer callback) {
+bool Auth::authorize(ICallback::Pointer callback) {
   if (!access_token() || !validateToken(*access_token())) {
     Token::Pointer token;
     if (access_token() && (token = refreshToken())) {
