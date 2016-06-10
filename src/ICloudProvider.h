@@ -24,7 +24,6 @@
 #ifndef ICLOUDPROVIDER_H
 #define ICLOUDPROVIDER_H
 
-#include <jsoncpp/json/forwards.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -46,8 +45,7 @@ class ICloudProvider {
 
   virtual ~ICloudProvider() = default;
 
-  virtual bool initialize(ICallback::Pointer) = 0;
-  virtual Json::Value dump() const = 0;
+  virtual void initialize(ICallback::Pointer) = 0;
 
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;

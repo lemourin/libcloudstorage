@@ -55,13 +55,6 @@ bool CloudProvider::initialize(ICallback::Pointer callback) {
   return auth()->authorize(auth_callback_.get());
 }
 
-Json::Value CloudProvider::dump() const {
-  Json::Value data;
-  data["backend"] = name();
-  data["token"] = auth()->token_data();
-  return data;
-}
-
 std::string CloudProvider::access_token() const {
   return auth()->access_token()->token_;
 }
