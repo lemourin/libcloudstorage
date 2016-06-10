@@ -31,7 +31,9 @@ namespace cloudstorage {
 class Dropbox : public CloudProvider {
  public:
   Dropbox();
+
   std::string name() const;
+  std::string token() const;
   IItem::Pointer rootDirectory() const;
   std::vector<IItem::Pointer> executeListDirectory(const IItem&) const;
   void executeUploadFile(const std::string& filename, std::istream&) const;
@@ -47,6 +49,7 @@ class Dropbox : public CloudProvider {
     Token::Pointer requestAccessToken() const;
     Token::Pointer refreshToken() const;
     bool validateToken(Token&) const;
+    Token::Pointer fromTokenString(const std::string&) const;
   };
 };
 

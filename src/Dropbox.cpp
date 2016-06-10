@@ -53,7 +53,11 @@ std::vector<IItem::Pointer> Dropbox::executeListDirectory(
       parameter["path"] = item.id();
     request.set_post_data(parameter.toStyledString());
     Json::Value response;
-    std::stringstream(request.send()) >> response;
+    if (!Json::Reader().parse(request.send(), response))
+      throw std::logic_error("This is not JSON!");
+
+    if (!response.isMember("entries"))
+      throw std::logic_error("Invalid response.");
     for (Json::Value v : response["entries"]) {
       result.push_back(make_unique<Item>(v["name"].asString(),
                                          v["path_display"].asString(),
@@ -68,6 +72,8 @@ std::vector<IItem::Pointer> Dropbox::executeListDirectory(
 }
 
 std::string Dropbox::name() const { return "dropbox"; }
+
+std::string Dropbox::token() const { return auth()->access_token()->token_; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
@@ -118,9 +124,8 @@ IAuth::Token::Pointer Dropbox::Auth::requestAccessToken() const {
 
 IAuth::Token::Pointer Dropbox::Auth::refreshToken() const {
   if (!access_token()) return nullptr;
-  Token::Pointer token = make_unique<Token>();
-  token->token_ = access_token()->token_;
-  token->expires_in_ = -1;
+  Token::Pointer token = make_unique<Token>(*access_token());
+  if (!validateToken(*token)) return nullptr;
   return token;
 }
 
@@ -128,11 +133,19 @@ bool Dropbox::Auth::validateToken(IAuth::Token& token) const {
   Dropbox dropbox;
   dropbox.auth()->set_access_token(make_unique<Token>(token));
   try {
-    dropbox.listDirectory(*dropbox.rootDirectory());
+    dropbox.executeListDirectory(*dropbox.rootDirectory());
   } catch (const std::exception&) {
     return false;
   }
   return true;
+}
+
+IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
+    const std::string& str) const {
+  Token::Pointer token = make_unique<Token>();
+  token->token_ = str;
+  token->expires_in_ = -1;
+  return token;
 }
 
 }  // namespace cloudstorage
