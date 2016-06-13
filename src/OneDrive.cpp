@@ -66,8 +66,15 @@ void OneDrive::executeUploadFile(const std::string&, std::istream&) const {
   // TODO
 }
 
-void OneDrive::executeDownloadFile(const IItem&, std::ostream&) const {
-  // TODO
+void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest request(
+      std::string("https://api.onedrive.com/v1.0/drive/items/") + item.id() +
+          "/content",
+      HttpRequest::Type::GET);
+  request.setHeaderParameter("Authorization",
+                             std::string("Bearer ") + access_token());
+  request.send(stream);
 }
 
 OneDrive::Auth::Auth() {
