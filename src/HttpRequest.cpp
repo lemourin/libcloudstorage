@@ -38,6 +38,7 @@ HttpRequest::HttpRequest(const std::string& url, Type t)
     : handle_(curl_easy_init(), CurlDeleter()), url_(url), type_(t) {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER, false);
+  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, true);
 }
 
 void HttpRequest::setParameter(const std::string& parameter,
