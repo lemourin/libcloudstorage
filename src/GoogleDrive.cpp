@@ -70,8 +70,14 @@ void GoogleDrive::executeUploadFile(const std::string&, std::istream&) const {
   // TODO
 }
 
-void GoogleDrive::executeDownloadFile(const IItem&, std::ostream&) const {
-  // TODO
+void GoogleDrive::executeDownloadFile(const IItem& f,
+                                      std::ostream& stream) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest request("https://www.googleapis.com/drive/v3/files/" + item.id(),
+                      HttpRequest::Type::GET);
+  request.setParameter("access_token", access_token());
+  request.setParameter("alt", "media");
+  request.send(stream);
 }
 
 GoogleDrive::Auth::Auth() {
