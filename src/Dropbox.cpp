@@ -83,8 +83,19 @@ void Dropbox::executeUploadFile(const std::string&, std::istream&) const {
   // TODO
 }
 
-void Dropbox::executeDownloadFile(const IItem&, std::ostream&) const {
-  // TODO
+void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest request("https://content.dropboxapi.com/2/files/download",
+                      HttpRequest::Type::POST);
+  request.setHeaderParameter("Authorization",
+                             std::string("Bearer ") + access_token());
+  request.setHeaderParameter("Content-Type", "");
+  Json::Value parameter;
+  parameter["path"] = item.id();
+  std::string str = Json::FastWriter().write(parameter);
+  str.pop_back();
+  request.setHeaderParameter("Dropbox-API-arg", str);
+  request.send(stream);
 }
 
 Dropbox::Auth::Auth() {
