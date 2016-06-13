@@ -22,13 +22,14 @@
  *****************************************************************************/
 
 #include "HttpRequest.h"
+#include <sstream>
 
 namespace cloudstorage {
 
 namespace {
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
-  std::string& request = *static_cast<std::string*>(userdata);
-  request += std::string(ptr, ptr + size * nmemb);
+  std::ostream* stream = static_cast<std::ostream*>(userdata);
+  *stream << std::string(ptr, ptr + size * nmemb);
   return size * nmemb;
 }
 }  // namespace
@@ -62,24 +63,30 @@ HttpRequest::Type HttpRequest::type() const { return type_; }
 void HttpRequest::set_type(HttpRequest::Type type) { type_ = type; }
 
 std::string HttpRequest::send() const {
-  std::string response;
+  std::stringstream stream;
+  if (!send(stream)) throw std::runtime_error("Failed to send request.");
+  return stream.str();
+}
+
+bool HttpRequest::send(std::ostream& response) const {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &response);
   curl_slist* header_list = headerParametersToList();
   curl_easy_setopt(handle_.get(), CURLOPT_HTTPHEADER, header_list);
+  bool success = true;
   if (type_ == Type::POST) {
     std::string post_data =
         post_data_.empty() ? parametersToString() : post_data_;
     curl_easy_setopt(handle_.get(), CURLOPT_URL, url_.c_str());
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDS, post_data.c_str());
-    curl_easy_perform(handle_.get());
+    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   } else if (type_ == Type::GET) {
     std::string parameters = parametersToString();
     std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
     curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
-    curl_easy_perform(handle_.get());
+    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   }
   curl_slist_free_all(header_list);
-  return response;
+  return success;
 }
 
 void HttpRequest::reset_parameters() {

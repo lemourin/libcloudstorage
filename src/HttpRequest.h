@@ -51,6 +51,8 @@ class HttpRequest {
   void set_type(Type);
 
   std::string send() const;
+  bool send(std::ostream& response) const;
+
   void reset_parameters();
 
  private:
