@@ -74,9 +74,10 @@ std::vector<IItem::Pointer> CloudProvider::listDirectory(
   return execute(&CloudProvider::executeListDirectory, item);
 }
 
-void CloudProvider::uploadFile(const std::string& filename,
+void CloudProvider::uploadFile(const IItem& directory,
+                               const std::string& filename,
                                std::istream& stream) const {
-  execute(&CloudProvider::executeUploadFile, filename, stream);
+  execute(&CloudProvider::executeUploadFile, directory, filename, stream);
 }
 
 void CloudProvider::downloadFile(const IItem& item,

@@ -34,7 +34,8 @@ class GoogleDrive : public CloudProvider {
   GoogleDrive();
   std::string name() const;
   std::vector<IItem::Pointer> executeListDirectory(const IItem&) const;
-  void executeUploadFile(const std::string& filename, std::istream&) const;
+  void executeUploadFile(const IItem& directory, const std::string& filename,
+                         std::istream&) const;
   void executeDownloadFile(const IItem&, std::ostream&) const;
 
  private:

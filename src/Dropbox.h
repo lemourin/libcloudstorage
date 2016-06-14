@@ -36,7 +36,8 @@ class Dropbox : public CloudProvider {
   std::string token() const;
   IItem::Pointer rootDirectory() const;
   std::vector<IItem::Pointer> executeListDirectory(const IItem&) const;
-  void executeUploadFile(const std::string& filename, std::istream&) const;
+  void executeUploadFile(const IItem&, const std::string& filename,
+                         std::istream&) const;
   void executeDownloadFile(const IItem&, std::ostream&) const;
 
  private:

@@ -62,7 +62,8 @@ std::vector<IItem::Pointer> OneDrive::executeListDirectory(
   return result;
 }
 
-void OneDrive::executeUploadFile(const std::string&, std::istream&) const {
+void OneDrive::executeUploadFile(const IItem&, const std::string&,
+                                 std::istream&) const {
   // TODO
 }
 

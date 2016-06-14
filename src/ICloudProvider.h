@@ -47,14 +47,14 @@ class ICloudProvider {
 
   virtual ~ICloudProvider() = default;
 
-  virtual bool initialize(const std::string& token,
-                          ICallback::Pointer) = 0;
+  virtual bool initialize(const std::string& token, ICallback::Pointer) = 0;
 
   virtual std::string token() const = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
   virtual std::vector<IItem::Pointer> listDirectory(const IItem&) const = 0;
-  virtual void uploadFile(const std::string& filename, std::istream&) const = 0;
+  virtual void uploadFile(const IItem& directory, const std::string& filename,
+                          std::istream&) const = 0;
   virtual void downloadFile(const IItem&, std::ostream&) const = 0;
   virtual IItem::Pointer rootDirectory() const = 0;
 };

@@ -66,7 +66,8 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
   return result;
 }
 
-void GoogleDrive::executeUploadFile(const std::string&, std::istream&) const {
+void GoogleDrive::executeUploadFile(const IItem&, const std::string&,
+                                    std::istream&) const {
   // TODO
 }
 

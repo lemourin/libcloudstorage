@@ -39,7 +39,8 @@ class CloudProvider : public ICloudProvider {
   IAuth* auth() const;
 
   std::vector<IItem::Pointer> listDirectory(const IItem&) const final;
-  void uploadFile(const std::string& filename, std::istream&) const final;
+  void uploadFile(const IItem& directory, const std::string& filename,
+                  std::istream&) const final;
   void downloadFile(const IItem&, std::ostream&) const final;
 
   std::string authorizeLibraryUrl() const;
@@ -62,7 +63,8 @@ class CloudProvider : public ICloudProvider {
  protected:
   virtual std::vector<IItem::Pointer> executeListDirectory(
       const IItem&) const = 0;
-  virtual void executeUploadFile(const std::string& filename,
+  virtual void executeUploadFile(const IItem& directory,
+                                 const std::string& filename,
                                  std::istream&) const = 0;
   virtual void executeDownloadFile(const IItem&, std::ostream&) const = 0;
 

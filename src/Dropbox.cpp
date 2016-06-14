@@ -79,7 +79,8 @@ IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
 }
 
-void Dropbox::executeUploadFile(const std::string&, std::istream&) const {
+void Dropbox::executeUploadFile(const IItem&, const std::string&,
+                                std::istream&) const {
   // TODO
 }
 
