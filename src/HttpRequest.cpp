@@ -79,6 +79,8 @@ bool HttpRequest::send(std::ostream& response) const {
         post_data_.empty() ? parametersToString() : post_data_;
     curl_easy_setopt(handle_.get(), CURLOPT_URL, url_.c_str());
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDS, post_data.c_str());
+    curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE_LARGE,
+                     post_data.length());
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   } else if (type_ == Type::GET) {
     std::string parameters = parametersToString();
