@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 #include "HttpRequest.h"
+#include <iostream>
 #include <sstream>
 
 namespace cloudstorage {
@@ -29,14 +30,22 @@ namespace cloudstorage {
 namespace {
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
   std::ostream* stream = static_cast<std::ostream*>(userdata);
-  *stream << std::string(ptr, ptr + size * nmemb);
+  stream->write(ptr, size * nmemb);
   return size * nmemb;
 }
+
+size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
+  std::istream* stream = static_cast<std::istream*>(userdata);
+  stream->read(buffer, size * nmemb);
+  return stream->gcount();
+}
+
 }  // namespace
 
 HttpRequest::HttpRequest(const std::string& url, Type t)
     : handle_(curl_easy_init(), CurlDeleter()), url_(url), type_(t) {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
+  curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER, false);
   curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, true);
 }
@@ -86,6 +95,14 @@ bool HttpRequest::send(std::ostream& response) const {
     std::string parameters = parametersToString();
     std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
     curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
+    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
+  } else if (type_ == Type::PUT) {
+    std::stringstream data(post_data());
+    curl_easy_setopt(handle_.get(), CURLOPT_PUT, true);
+    curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
+    curl_easy_setopt(handle_.get(), CURLOPT_URL, url_.c_str());
+    curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE_LARGE,
+                     post_data().length());
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   }
   curl_slist_free_all(header_list);
