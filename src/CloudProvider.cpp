@@ -24,6 +24,7 @@
 #include "CloudProvider.h"
 
 #include <jsoncpp/json/json.h>
+#include <sstream>
 
 #include "Item.h"
 #include "Utility.h"
@@ -95,6 +96,25 @@ std::string CloudProvider::token() const {
 
 IItem::Pointer CloudProvider::rootDirectory() const {
   return make_unique<Item>("/", "root", true);
+}
+
+IItem::Pointer CloudProvider::getItem(std::vector<IItem::Pointer>&& items,
+                                      const std::string& name) const {
+  for (IItem::Pointer& i : items)
+    if (i->filename() == name) return std::move(i);
+  return nullptr;
+}
+
+IItem::Pointer CloudProvider::getItem(const std::string& path) const {
+  if (path.empty() || path.front() != '/') return nullptr;
+  IItem::Pointer node = rootDirectory();
+  std::stringstream stream(path.substr(1));
+  std::string token;
+  while (std::getline(stream, token, '/')) {
+    if (!node || !node->is_directory()) return nullptr;
+    node = getItem(listDirectory(*node), token);
+  }
+  return node;
 }
 
 }  // namespace cloudstorage

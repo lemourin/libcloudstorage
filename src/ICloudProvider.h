@@ -56,6 +56,7 @@ class ICloudProvider {
   virtual void uploadFile(const IItem& directory, const std::string& filename,
                           std::istream&) const = 0;
   virtual void downloadFile(const IItem&, std::ostream&) const = 0;
+  virtual IItem::Pointer getItem(const std::string& absolute_path) const = 0;
   virtual IItem::Pointer rootDirectory() const = 0;
 };
 

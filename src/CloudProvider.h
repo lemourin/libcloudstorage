@@ -42,6 +42,7 @@ class CloudProvider : public ICloudProvider {
   void uploadFile(const IItem& directory, const std::string& filename,
                   std::istream&) const final;
   void downloadFile(const IItem&, std::ostream&) const final;
+  IItem::Pointer getItem(const std::string&) const final;
 
   std::string authorizeLibraryUrl() const;
   std::string token() const;
@@ -69,6 +70,9 @@ class CloudProvider : public ICloudProvider {
   virtual void executeDownloadFile(const IItem&, std::ostream&) const = 0;
 
  private:
+  IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,
+                         const std::string& filename) const;
+
   IAuth::Pointer auth_;
   IAuth::ICallback::Pointer auth_callback_;
 };
