@@ -62,9 +62,17 @@ std::vector<IItem::Pointer> OneDrive::executeListDirectory(
   return result;
 }
 
-void OneDrive::executeUploadFile(const IItem&, const std::string&,
-                                 std::istream&) const {
-  // TODO
+void OneDrive::executeUploadFile(const IItem& f, const std::string& filename,
+                                 std::istream& stream) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest request("https://api.onedrive.com/v1.0/drive/items/" + item.id() +
+                          ":/" + filename + ":/content",
+                      HttpRequest::Type::PUT);
+  request.setHeaderParameter("Authorization", "Bearer " + access_token());
+  Json::Value response;
+  std::stringstream(request.send(stream)) >> response;
+  if (response.isMember("error"))
+    throw std::logic_error("Failed to upload file.");
 }
 
 void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) const {
