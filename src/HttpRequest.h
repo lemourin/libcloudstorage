@@ -57,7 +57,7 @@ class HttpRequest {
 
  private:
   struct CurlDeleter {
-    bool operator()(CURL*) const;
+    void operator()(CURL*) const;
   };
 
   std::string parametersToString() const;

@@ -111,7 +111,7 @@ curl_slist* HttpRequest::headerParametersToList() const {
   return list;
 }
 
-bool HttpRequest::CurlDeleter::operator()(CURL* handle) const {
+void HttpRequest::CurlDeleter::operator()(CURL* handle) const {
   curl_easy_cleanup(handle);
 }
 
