@@ -135,7 +135,7 @@ void Auth::set_client_secret(const std::string& client_secret) {
 }
 
 std::string Auth::redirect_uri() const {
-  return std::string("http://localhost:") + std::to_string(redirect_uri_port());
+  return "http://localhost:" + std::to_string(redirect_uri_port());
 }
 
 uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }

@@ -96,8 +96,7 @@ void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://content.dropboxapi.com/2/files/download",
                       HttpRequest::Type::POST);
-  request.setHeaderParameter("Authorization",
-                             std::string("Bearer ") + access_token());
+  request.setHeaderParameter("Authorization", "Bearer " + access_token());
   request.setHeaderParameter("Content-Type", "");
   Json::Value parameter;
   parameter["path"] = item.id();

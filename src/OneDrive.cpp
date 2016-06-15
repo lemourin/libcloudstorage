@@ -40,8 +40,7 @@ std::vector<IItem::Pointer> OneDrive::executeListDirectory(
     const IItem& f) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request(
-      std::string("https://api.onedrive.com/v1.0/drive/items/") + item.id() +
-          "/children",
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
       HttpRequest::Type::GET);
   request.setParameter("access_token", access_token());
   request.setParameter("select", "name,folder,id");
@@ -78,11 +77,9 @@ void OneDrive::executeUploadFile(const IItem& f, const std::string& filename,
 void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request(
-      std::string("https://api.onedrive.com/v1.0/drive/items/") + item.id() +
-          "/content",
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",
       HttpRequest::Type::GET);
-  request.setHeaderParameter("Authorization",
-                             std::string("Bearer ") + access_token());
+  request.setHeaderParameter("Authorization", "Bearer " + access_token());
   request.send(stream);
 }
 

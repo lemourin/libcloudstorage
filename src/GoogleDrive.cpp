@@ -70,9 +70,9 @@ void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
                                     std::istream& stream) const {
   const Item& item = static_cast<const Item&>(f);
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
-  HttpRequest request(std::string("https://www.googleapis.com/upload/drive/v3/"
-                                  "files?uploadType=multipart"),
-                      HttpRequest::Type::POST);
+  HttpRequest request(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      HttpRequest::Type::POST);
   request.setHeaderParameter("Authorization", "Bearer " + access_token());
   request.setHeaderParameter("Content-Type",
                              "multipart/related; boundary=" + separator);
