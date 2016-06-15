@@ -106,14 +106,16 @@ std::string GoogleDrive::Auth::requestAuthorizationCode() const {
 IAuth::Token::Pointer GoogleDrive::Auth::requestAccessToken() const {
   HttpRequest request("https://accounts.google.com/o/oauth2/token",
                       HttpRequest::Type::POST);
-  request.setParameter("grant_type", "authorization_code");
-  request.setParameter("client_secret", client_secret());
-  request.setParameter("code", authorization_code());
-  request.setParameter("client_id", client_id());
-  request.setParameter("redirect_uri", redirect_uri());
+  std::stringstream arguments;
+  arguments << "grant_type=authorization_code&"
+            << "client_secret=" << client_secret() << "&"
+            << "code=" << authorization_code() << "&"
+            << "client_id=" << client_id() << "&"
+            << "redirect_uri=" << redirect_uri();
 
   Json::Value response;
-  std::stringstream(request.send()) >> response;
+  std::stringstream(request.send(static_cast<std::istream&>(arguments))) >>
+      response;
 
   if (response.isMember("access_token")) {
     Token::Pointer token = make_unique<Token>();
@@ -131,13 +133,16 @@ IAuth::Token::Pointer GoogleDrive::Auth::refreshToken() const {
 
   HttpRequest request("https://accounts.google.com/o/oauth2/token",
                       HttpRequest::Type::POST);
-  request.setParameter("refresh_token", access_token()->refresh_token_);
-  request.setParameter("client_id", client_id());
-  request.setParameter("client_secret", client_secret());
-  request.setParameter("grant_type", "refresh_token");
+  std::stringstream arguments;
+  arguments << "refresh_token=" << access_token()->refresh_token_ << "&"
+            << "client_id=" << client_id() << "&"
+            << "client_secret=" << client_secret() << "&"
+            << "redirect_uri=" << redirect_uri() << "&"
+            << "grant_type=refresh_token";
 
   Json::Value response;
-  std::stringstream(request.send()) >> response;
+  std::stringstream(request.send(static_cast<std::istream&>(arguments))) >>
+      response;
 
   if (response.isMember("access_token")) {
     Token::Pointer token = make_unique<Token>();

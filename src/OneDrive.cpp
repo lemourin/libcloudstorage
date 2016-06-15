@@ -102,14 +102,15 @@ std::string OneDrive::Auth::requestAuthorizationCode() const {
 IAuth::Token::Pointer OneDrive::Auth::requestAccessToken() const {
   HttpRequest request("https://login.live.com/oauth20_token.srf",
                       HttpRequest::Type::POST);
-  request.setParameter("client_id", client_id());
-  request.setParameter("client_secret", client_secret());
-  request.setParameter("redirect_uri", redirect_uri());
-  request.setParameter("code", authorization_code());
-  request.setParameter("grant_type", "authorization_code");
+  std::stringstream data;
+  data << "client_id=" << client_id() << "&"
+       << "client_secret=" << client_secret() << "&"
+       << "redirect_uri=" << redirect_uri() << "&"
+       << "code=" << authorization_code() << "&"
+       << "grant_type=authorization_code";
 
   Json::Value response;
-  std::stringstream(request.send()) >> response;
+  std::stringstream(request.send(static_cast<std::istream&>(data))) >> response;
 
   Token::Pointer token = make_unique<Token>();
   token->token_ = response["access_token"].asString();
@@ -123,12 +124,13 @@ IAuth::Token::Pointer OneDrive::Auth::refreshToken() const {
   if (!access_token()) return nullptr;
   HttpRequest request("https://login.live.com/oauth20_token.srf",
                       HttpRequest::Type::POST);
-  request.setParameter("client_id", client_id());
-  request.setParameter("client_secret", client_secret());
-  request.setParameter("refresh_token", access_token()->refresh_token_);
-  request.setParameter("grant_type", "refresh_token");
+  std::stringstream data;
+  data << "client_id=" << client_id() << "&"
+       << "client_secret=" << client_secret() << "&"
+       << "refresh_token=" << access_token()->refresh_token_ << "&"
+       << "grant_type=refresh_token";
   Json::Value response;
-  std::stringstream(request.send()) >> response;
+  std::stringstream(request.send(static_cast<std::istream&>(data))) >> response;
   if (response.isMember("access_token")) {
     Token::Pointer token = make_unique<Token>();
     token->token_ = response["access_token"].asString();

@@ -40,6 +40,13 @@ size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
   return stream->gcount();
 }
 
+std::ios::pos_type stream_length(std::istream& data) {
+  data.seekg(0, data.end);
+  std::ios::pos_type length = data.tellg();
+  data.seekg(0, data.beg);
+  return length;
+}
+
 }  // namespace
 
 HttpRequest::HttpRequest(const std::string& url, Type t)
@@ -64,45 +71,50 @@ const std::string& HttpRequest::url() const { return url_; }
 
 void HttpRequest::set_url(const std::string& url) { url_ = url; }
 
-const std::string& HttpRequest::post_data() const { return post_data_; }
-
-void HttpRequest::set_post_data(const std::string& data) { post_data_ = data; }
-
 HttpRequest::Type HttpRequest::type() const { return type_; }
 
 void HttpRequest::set_type(HttpRequest::Type type) { type_ = type; }
 
 std::string HttpRequest::send() const {
-  std::stringstream stream;
-  if (!send(stream)) throw std::runtime_error("Failed to send request.");
-  return stream.str();
+  std::stringstream data, response;
+  if (!send(data, response))
+    throw std::runtime_error("Failed to send request.");
+  return response.str();
+}
+
+std::string HttpRequest::send(std::istream& data) const {
+  std::stringstream response;
+  if (!send(data, response))
+    throw std::runtime_error("Failed to send request.");
+  return response.str();
 }
 
 bool HttpRequest::send(std::ostream& response) const {
+  std::stringstream data;
+  return send(data, response);
+}
+
+bool HttpRequest::send(std::istream& data, std::ostream& response) const {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &response);
   curl_slist* header_list = headerParametersToList();
   curl_easy_setopt(handle_.get(), CURLOPT_HTTPHEADER, header_list);
+  std::string parameters = parametersToString();
+  std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
+  curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
   bool success = true;
   if (type_ == Type::POST) {
-    std::string post_data =
-        post_data_.empty() ? parametersToString() : post_data_;
-    curl_easy_setopt(handle_.get(), CURLOPT_URL, url_.c_str());
-    curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDS, post_data.c_str());
+    curl_easy_setopt(handle_.get(), CURLOPT_POST, true);
+    curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE_LARGE,
-                     post_data.length());
+                     stream_length(data));
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   } else if (type_ == Type::GET) {
-    std::string parameters = parametersToString();
-    std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
-    curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   } else if (type_ == Type::PUT) {
-    std::stringstream data(post_data());
     curl_easy_setopt(handle_.get(), CURLOPT_PUT, true);
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
-    curl_easy_setopt(handle_.get(), CURLOPT_URL, url_.c_str());
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE_LARGE,
-                     post_data().length());
+                     stream_length(data));
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   }
   curl_slist_free_all(header_list);

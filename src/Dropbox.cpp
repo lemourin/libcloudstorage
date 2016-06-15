@@ -39,8 +39,7 @@ std::vector<IItem::Pointer> Dropbox::executeListDirectory(
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://api.dropboxapi.com/2/files/list_folder",
                       HttpRequest::Type::POST);
-  request.setHeaderParameter("Authorization",
-                             std::string("Bearer ") + access_token());
+  request.setHeaderParameter("Authorization", "Bearer " + access_token());
   request.setHeaderParameter("Content-Type", "application/json");
 
   std::vector<IItem::Pointer> result;
@@ -51,10 +50,11 @@ std::vector<IItem::Pointer> Dropbox::executeListDirectory(
       parameter["cursor"] = cursor;
     else
       parameter["path"] = item.id();
-    request.set_post_data(parameter.toStyledString());
+    std::istringstream data_stream(parameter.toStyledString());
     Json::Value response;
-    if (!Json::Reader().parse(request.send(), response))
+    if (!Json::Reader().parse(request.send(data_stream), response)) {
       throw std::logic_error("This is not JSON!");
+    }
 
     if (!response.isMember("entries"))
       throw std::logic_error("Invalid response.");

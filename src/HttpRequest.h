@@ -44,14 +44,13 @@ class HttpRequest {
   const std::string& url() const;
   void set_url(const std::string&);
 
-  const std::string& post_data() const;
-  void set_post_data(const std::string&);
-
   Type type() const;
   void set_type(Type);
 
   std::string send() const;
+  std::string send(std::istream& data) const;
   bool send(std::ostream& response) const;
+  bool send(std::istream& data, std::ostream& response) const;
 
   void reset_parameters();
 
@@ -65,7 +64,6 @@ class HttpRequest {
 
   std::unique_ptr<CURL, CurlDeleter> handle_;
   std::string url_;
-  std::string post_data_;
   std::unordered_map<std::string, std::string> parameters_;
   std::unordered_map<std::string, std::string> header_parameters_;
   Type type_;
