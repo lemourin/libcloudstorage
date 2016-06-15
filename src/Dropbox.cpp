@@ -79,9 +79,17 @@ IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
 }
 
-void Dropbox::executeUploadFile(const IItem&, const std::string&,
-                                std::istream&) const {
-  // TODO
+void Dropbox::executeUploadFile(const IItem& directory,
+                                const std::string& filename,
+                                std::istream& stream) const {
+  const Item& item = static_cast<const Item&>(directory);
+  HttpRequest request(
+      "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
+      HttpRequest::Type::PUT);
+  request.setHeaderParameter("Authorization", "Bearer " + access_token());
+  Json::Value response;
+  std::stringstream(request.send(stream)) >> response;
+  if (response.isMember("error")) throw std::logic_error("Failed to upload.");
 }
 
 void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) const {
