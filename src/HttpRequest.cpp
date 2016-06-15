@@ -121,7 +121,7 @@ bool HttpRequest::send(std::istream& data, std::ostream& response) const {
   return success;
 }
 
-void HttpRequest::reset_parameters() {
+void HttpRequest::resetParameters() {
   parameters_.clear();
   header_parameters_.clear();
 }

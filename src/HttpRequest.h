@@ -52,7 +52,7 @@ class HttpRequest {
   bool send(std::ostream& response) const;
   bool send(std::istream& data, std::ostream& response) const;
 
-  void reset_parameters();
+  void resetParameters();
 
  private:
   struct CurlDeleter {

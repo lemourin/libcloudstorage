@@ -55,7 +55,7 @@ std::vector<IItem::Pointer> OneDrive::executeListDirectory(
     }
 
     if (!response.isMember("@odata.nextLink")) break;
-    request.reset_parameters();
+    request.resetParameters();
     request.set_url(response["@odata.nextLink"].asString());
   }
   return result;
