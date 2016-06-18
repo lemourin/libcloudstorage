@@ -41,23 +41,14 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(const IItem& f) {
   std::stringstream data;
   HttpRequest::Pointer request =
       listDirectoryRequest(f, "", data, access_token());
-  while (true) {
-    Json::Value response;
+  std::string next_page;
+  do {
     std::stringstream stream(request->send());
-    stream >> response;
-    if (!response.isMember("files"))
-      throw std::logic_error("Invalid response.");
-    for (Json::Value v : response["files"]) {
-      result.push_back(make_unique<Item>(
-          v["name"].asString(), v["id"].asString(),
-          v["mimeType"].asString() == "application/vnd.google-apps.folder"));
-    }
-
-    if (!response.isMember("nextPageToken"))
-      break;
-    else
-      request->setParameter("pageToken", response["nextPageToken"].asString());
-  }
+    next_page = "";
+    for (auto& f : listDirectoryResponse(stream, next_page))
+      result.push_back(std::move(f));
+    request->setParameter("pageToken", next_page);
+  } while (!next_page.empty());
 
   return result;
 }
@@ -127,6 +118,22 @@ HttpRequest::Pointer GoogleDrive::downloadFileRequest(
   request->setParameter("access_token", access_token);
   request->setParameter("alt", "media");
   return request;
+}
+
+std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
+    std::istream& stream, std::string& next_page_token) const {
+  Json::Value response;
+  stream >> response;
+  std::vector<IItem::Pointer> result;
+  for (Json::Value v : response["files"]) {
+    result.push_back(make_unique<Item>(
+        v["name"].asString(), v["id"].asString(),
+        v["mimeType"].asString() == "application/vnd.google-apps.folder"));
+  }
+
+  if (response.isMember("nextPageToken"))
+    next_page_token = response["nextPageToken"].asString();
+  return result;
 }
 
 GoogleDrive::Auth::Auth() {

@@ -48,6 +48,10 @@ class GoogleDrive : public CloudProvider {
   HttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream,
       const std::string& access_token) const;
+
+  virtual std::vector<IItem::Pointer> listDirectoryResponse(
+      std::istream&, std::string& next_page_token) const;
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
