@@ -52,11 +52,11 @@ class ICloudProvider {
   virtual std::string token() const = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
-  virtual std::vector<IItem::Pointer> listDirectory(const IItem&) const = 0;
+  virtual std::vector<IItem::Pointer> listDirectory(const IItem&) = 0;
   virtual void uploadFile(const IItem& directory, const std::string& filename,
-                          std::istream&) const = 0;
-  virtual void downloadFile(const IItem&, std::ostream&) const = 0;
-  virtual IItem::Pointer getItem(const std::string& absolute_path) const = 0;
+                          std::istream&) = 0;
+  virtual void downloadFile(const IItem&, std::ostream&) = 0;
+  virtual IItem::Pointer getItem(const std::string& absolute_path) = 0;
   virtual IItem::Pointer rootDirectory() const = 0;
 };
 

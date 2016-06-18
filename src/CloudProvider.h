@@ -24,6 +24,7 @@
 #ifndef CLOUDPROVIDER_H
 #define CLOUDPROVIDER_H
 
+#include <mutex>
 #include "Auth.h"
 #include "ICloudProvider.h"
 
@@ -38,11 +39,11 @@ class CloudProvider : public ICloudProvider {
   std::string access_token() const;
   IAuth* auth() const;
 
-  std::vector<IItem::Pointer> listDirectory(const IItem&) const final;
+  std::vector<IItem::Pointer> listDirectory(const IItem&) final;
   void uploadFile(const IItem& directory, const std::string& filename,
-                  std::istream&) const final;
-  void downloadFile(const IItem&, std::ostream&) const final;
-  IItem::Pointer getItem(const std::string&) const final;
+                  std::istream&) final;
+  void downloadFile(const IItem&, std::ostream&) final;
+  IItem::Pointer getItem(const std::string&) final;
 
   std::string authorizeLibraryUrl() const;
   std::string token() const;
@@ -50,13 +51,19 @@ class CloudProvider : public ICloudProvider {
 
   template <typename ReturnType, typename... FArgs, typename... Args>
   ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...) const,
-                     Args&&... args) const {
+                     Args&&... args) {
     try {
-      if (!auth_->access_token()) auth_->authorize(auth_callback_.get());
+      {
+        std::lock_guard<std::mutex> lock(auth_mutex_);
+        if (!auth_->access_token()) auth_->authorize(auth_callback_.get());
+      }
       return (this->*f)(std::forward<Args>(args)...);
     } catch (const std::exception&) {
-      if (!auth_->authorize(auth_callback_.get()))
-        throw std::logic_error("Authorization failed.");
+      {
+        std::lock_guard<std::mutex> lock(auth_mutex_);
+        if (!auth_->authorize(auth_callback_.get()))
+          throw std::logic_error("Authorization failed.");
+      }
       return (this->*f)(std::forward<Args>(args)...);
     }
   }
@@ -75,6 +82,7 @@ class CloudProvider : public ICloudProvider {
 
   IAuth::Pointer auth_;
   IAuth::ICallback::Pointer auth_callback_;
+  std::mutex auth_mutex_;
 };
 
 }  // namespace cloudstorage

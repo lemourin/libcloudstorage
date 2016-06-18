@@ -60,6 +60,7 @@ bool CloudProvider::initialize(const std::string& token,
   auth_callback_ =
       make_unique<cloudstorage::Callback>(std::move(callback), *this);
 
+  std::lock_guard<std::mutex> lock(auth_mutex_);
   auth()->set_access_token(auth()->fromTokenString(token));
   return auth()->authorize(auth_callback_.get());
 }
@@ -70,19 +71,17 @@ std::string CloudProvider::access_token() const {
 
 IAuth* CloudProvider::auth() const { return auth_.get(); }
 
-std::vector<IItem::Pointer> CloudProvider::listDirectory(
-    const IItem& item) const {
+std::vector<IItem::Pointer> CloudProvider::listDirectory(const IItem& item) {
   return execute(&CloudProvider::executeListDirectory, item);
 }
 
 void CloudProvider::uploadFile(const IItem& directory,
                                const std::string& filename,
-                               std::istream& stream) const {
+                               std::istream& stream) {
   execute(&CloudProvider::executeUploadFile, directory, filename, stream);
 }
 
-void CloudProvider::downloadFile(const IItem& item,
-                                 std::ostream& stream) const {
+void CloudProvider::downloadFile(const IItem& item, std::ostream& stream) {
   execute(&CloudProvider::executeDownloadFile, item, stream);
 }
 
@@ -105,7 +104,7 @@ IItem::Pointer CloudProvider::getItem(std::vector<IItem::Pointer>&& items,
   return nullptr;
 }
 
-IItem::Pointer CloudProvider::getItem(const std::string& path) const {
+IItem::Pointer CloudProvider::getItem(const std::string& path) {
   if (path.empty() || path.front() != '/') return nullptr;
   IItem::Pointer node = rootDirectory();
   std::stringstream stream(path.substr(1));
