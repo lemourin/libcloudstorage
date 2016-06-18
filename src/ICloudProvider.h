@@ -27,7 +27,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "IItem.h"
+#include "Request.h"
 
 namespace cloudstorage {
 
@@ -58,6 +60,9 @@ class ICloudProvider {
   virtual void downloadFile(const IItem&, std::ostream&) = 0;
   virtual IItem::Pointer getItem(const std::string& absolute_path) = 0;
   virtual IItem::Pointer rootDirectory() const = 0;
+
+  virtual ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer, ListDirectoryRequest::ICallback::Pointer) = 0;
 };
 
 }  // namespace cloudstorage
