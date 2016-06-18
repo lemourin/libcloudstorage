@@ -49,7 +49,7 @@ class ICloudProvider {
 
   virtual bool initialize(const std::string& token, ICallback::Pointer) = 0;
 
-  virtual std::string token() const = 0;
+  virtual std::string token() = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
   virtual std::vector<IItem::Pointer> listDirectory(const IItem&) = 0;

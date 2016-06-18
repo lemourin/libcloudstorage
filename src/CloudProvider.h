@@ -25,7 +25,9 @@
 #define CLOUDPROVIDER_H
 
 #include <mutex>
+
 #include "Auth.h"
+#include "HttpRequest.h"
 #include "ICloudProvider.h"
 
 namespace cloudstorage {
@@ -36,7 +38,7 @@ class CloudProvider : public ICloudProvider {
 
   bool initialize(const std::string& token, ICallback::Pointer);
 
-  std::string access_token() const;
+  std::string access_token();
   IAuth* auth() const;
 
   std::vector<IItem::Pointer> listDirectory(const IItem&) final;
@@ -46,12 +48,11 @@ class CloudProvider : public ICloudProvider {
   IItem::Pointer getItem(const std::string&) final;
 
   std::string authorizeLibraryUrl() const;
-  std::string token() const;
+  std::string token();
   IItem::Pointer rootDirectory() const;
 
   template <typename ReturnType, typename... FArgs, typename... Args>
-  ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...) const,
-                     Args&&... args) {
+  ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...), Args&&... args) {
     try {
       {
         std::lock_guard<std::mutex> lock(auth_mutex_);
@@ -69,12 +70,11 @@ class CloudProvider : public ICloudProvider {
   }
 
  protected:
-  virtual std::vector<IItem::Pointer> executeListDirectory(
-      const IItem&) const = 0;
+  virtual std::vector<IItem::Pointer> executeListDirectory(const IItem&) = 0;
   virtual void executeUploadFile(const IItem& directory,
                                  const std::string& filename,
-                                 std::istream&) const = 0;
-  virtual void executeDownloadFile(const IItem&, std::ostream&) const = 0;
+                                 std::istream&) = 0;
+  virtual void executeDownloadFile(const IItem&, std::ostream&) = 0;
 
  private:
   IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,

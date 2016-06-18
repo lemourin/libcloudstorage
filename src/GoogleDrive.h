@@ -33,10 +33,10 @@ class GoogleDrive : public CloudProvider {
  public:
   GoogleDrive();
   std::string name() const;
-  std::vector<IItem::Pointer> executeListDirectory(const IItem&) const;
+  std::vector<IItem::Pointer> executeListDirectory(const IItem&);
   void executeUploadFile(const IItem& directory, const std::string& filename,
-                         std::istream&) const;
-  void executeDownloadFile(const IItem&, std::ostream&) const;
+                         std::istream&);
+  void executeDownloadFile(const IItem&, std::ostream&);
 
  private:
   class Auth : public cloudstorage::Auth {

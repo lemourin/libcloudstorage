@@ -37,7 +37,7 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 std::string GoogleDrive::name() const { return "google"; }
 
 std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
-    const IItem& f) const {
+    const IItem& f) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://www.googleapis.com/drive/v3/files",
                       HttpRequest::Type::GET);
@@ -67,7 +67,7 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
 }
 
 void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
-                                    std::istream& stream) const {
+                                    std::istream& stream) {
   const Item& item = static_cast<const Item&>(f);
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
   HttpRequest request(
@@ -98,7 +98,7 @@ void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
 }
 
 void GoogleDrive::executeDownloadFile(const IItem& f,
-                                      std::ostream& stream) const {
+                                      std::ostream& stream) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://www.googleapis.com/drive/v3/files/" + item.id(),
                       HttpRequest::Type::GET);

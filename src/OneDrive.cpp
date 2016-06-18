@@ -36,8 +36,7 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
-std::vector<IItem::Pointer> OneDrive::executeListDirectory(
-    const IItem& f) const {
+std::vector<IItem::Pointer> OneDrive::executeListDirectory(const IItem& f) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request(
       "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
@@ -62,7 +61,7 @@ std::vector<IItem::Pointer> OneDrive::executeListDirectory(
 }
 
 void OneDrive::executeUploadFile(const IItem& f, const std::string& filename,
-                                 std::istream& stream) const {
+                                 std::istream& stream) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://api.onedrive.com/v1.0/drive/items/" + item.id() +
                           ":/" + filename + ":/content",
@@ -74,7 +73,7 @@ void OneDrive::executeUploadFile(const IItem& f, const std::string& filename,
     throw std::logic_error("Failed to upload file.");
 }
 
-void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) const {
+void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request(
       "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",

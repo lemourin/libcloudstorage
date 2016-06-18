@@ -34,8 +34,7 @@ namespace cloudstorage {
 
 Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
 
-std::vector<IItem::Pointer> Dropbox::executeListDirectory(
-    const IItem& f) const {
+std::vector<IItem::Pointer> Dropbox::executeListDirectory(const IItem& f) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://api.dropboxapi.com/2/files/list_folder",
                       HttpRequest::Type::POST);
@@ -73,7 +72,7 @@ std::vector<IItem::Pointer> Dropbox::executeListDirectory(
 
 std::string Dropbox::name() const { return "dropbox"; }
 
-std::string Dropbox::token() const { return auth()->access_token()->token_; }
+std::string Dropbox::token() { return auth()->access_token()->token_; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
@@ -81,7 +80,7 @@ IItem::Pointer Dropbox::rootDirectory() const {
 
 void Dropbox::executeUploadFile(const IItem& directory,
                                 const std::string& filename,
-                                std::istream& stream) const {
+                                std::istream& stream) {
   const Item& item = static_cast<const Item&>(directory);
   HttpRequest request(
       "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
@@ -92,7 +91,7 @@ void Dropbox::executeUploadFile(const IItem& directory,
   if (response.isMember("error")) throw std::logic_error("Failed to upload.");
 }
 
-void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) const {
+void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest request("https://content.dropboxapi.com/2/files/download",
                       HttpRequest::Type::POST);
