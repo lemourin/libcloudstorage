@@ -36,18 +36,14 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
-std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
-    const IItem& f) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request("https://www.googleapis.com/drive/v3/files",
-                      HttpRequest::Type::GET);
-  request.setParameter("access_token", access_token());
-  request.setParameter("q", std::string("'") + item.id() + "'+in+parents");
-
+std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(const IItem& f) {
   std::vector<IItem::Pointer> result;
+  std::stringstream data;
+  HttpRequest::Pointer request =
+      listDirectoryRequest(f, "", data, access_token());
   while (true) {
     Json::Value response;
-    std::stringstream stream(request.send());
+    std::stringstream stream(request->send());
     stream >> response;
     if (!response.isMember("files"))
       throw std::logic_error("Invalid response.");
@@ -60,7 +56,7 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
     if (!response.isMember("nextPageToken"))
       break;
     else
-      request.setParameter("pageToken", response["nextPageToken"].asString());
+      request->setParameter("pageToken", response["nextPageToken"].asString());
   }
 
   return result;
@@ -68,43 +64,69 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(
 
 void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
                                     std::istream& stream) {
-  const Item& item = static_cast<const Item&>(f);
-  const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
-  HttpRequest request(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-      HttpRequest::Type::POST);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  request.setHeaderParameter("Content-Type",
-                             "multipart/related; boundary=" + separator);
-  Json::Value request_data;
-  request_data["name"] = filename;
-  request_data["parents"].append(item.id());
-  std::string json_data = Json::FastWriter().write(request_data);
-  json_data.pop_back();
   std::stringstream data_stream;
-  data_stream << "--" << separator << "\r\n"
-              << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-              << json_data << "\r\n"
-              << "--" << separator << "\r\n"
-              << "Content-Type: \r\n\r\n"
-              << stream.rdbuf() << "\r\n"
-              << "--" << separator << "--";
+  HttpRequest::Pointer request =
+      uploadFileRequest(f, filename, stream, data_stream, access_token());
   std::stringstream response_stream;
-  request.send(data_stream, response_stream);
+  request->send(data_stream, response_stream);
   Json::Value response;
   response_stream >> response;
   if (!response.isMember("id"))
     throw std::logic_error("Failed to upload file.");
 }
 
-void GoogleDrive::executeDownloadFile(const IItem& f,
-                                      std::ostream& stream) {
+void GoogleDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
+  std::stringstream data;
+  downloadFileRequest(f, data, access_token())->send(stream);
+}
+
+HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
+    const IItem& f, const std::string& page_token, std::ostream&,
+    const std::string& access_token) const {
   const Item& item = static_cast<const Item&>(f);
-  HttpRequest request("https://www.googleapis.com/drive/v3/files/" + item.id(),
-                      HttpRequest::Type::GET);
-  request.setParameter("access_token", access_token());
-  request.setParameter("alt", "media");
-  request.send(stream);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::GET);
+  request->setParameter("access_token", access_token);
+  request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
+  if (!page_token.empty()) request->setParameter("pageToken", page_token);
+  return request;
+}
+
+HttpRequest::Pointer GoogleDrive::uploadFileRequest(
+    const IItem& f, const std::string& filename, std::istream& stream,
+    std::ostream& input_stream, const std::string& access_token) const {
+  const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      HttpRequest::Type::POST);
+  request->setHeaderParameter("Authorization", "Bearer " + access_token);
+  request->setHeaderParameter("Content-Type",
+                              "multipart/related; boundary=" + separator);
+  Json::Value request_data;
+  request_data["name"] = filename;
+  request_data["parents"].append(item.id());
+  std::string json_data = Json::FastWriter().write(request_data);
+  json_data.pop_back();
+  input_stream << "--" << separator << "\r\n"
+               << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+               << json_data << "\r\n"
+               << "--" << separator << "\r\n"
+               << "Content-Type: \r\n\r\n"
+               << stream.rdbuf() << "\r\n"
+               << "--" << separator << "--";
+  return request;
+}
+
+HttpRequest::Pointer GoogleDrive::downloadFileRequest(
+    const IItem& f, std::ostream&, const std::string& access_token) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/drive/v3/files/" + item.id(),
+      HttpRequest::Type::GET);
+  request->setParameter("access_token", access_token);
+  request->setParameter("alt", "media");
+  return request;
 }
 
 GoogleDrive::Auth::Auth() {

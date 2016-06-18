@@ -39,6 +39,15 @@ class GoogleDrive : public CloudProvider {
   void executeDownloadFile(const IItem&, std::ostream&);
 
  private:
+  HttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token, std::ostream& input_stream,
+      const std::string& access_token) const;
+  virtual HttpRequest::Pointer uploadFileRequest(
+      const IItem& directory, const std::string& filename, std::istream& stream,
+      std::ostream& input_stream, const std::string& access_token) const;
+  HttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream,
+      const std::string& access_token) const;
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
