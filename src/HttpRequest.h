@@ -33,6 +33,7 @@ namespace cloudstorage {
 
 class HttpRequest {
  public:
+  using Pointer = std::unique_ptr<HttpRequest>;
   enum class Type { POST, GET, PUT };
 
   HttpRequest(const std::string& url, Type);
