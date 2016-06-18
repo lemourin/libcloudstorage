@@ -15,7 +15,8 @@ libcloudstorage_la_SOURCES = \
 	GoogleDrive.cpp \
 	OneDrive.cpp \
 	Dropbox.cpp \
-	CloudStorage.cpp
+	CloudStorage.cpp \
+	Request.cpp
 
 noinst_HEADERS = \
 	Utility.h \
@@ -32,7 +33,8 @@ include_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
-	CloudStorage.h
+	CloudStorage.h \
+	Request.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
