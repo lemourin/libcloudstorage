@@ -57,12 +57,13 @@ CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
 bool CloudProvider::initialize(const std::string& token,
                                ICallback::Pointer callback) {
-  auth_callback_ =
-      make_unique<cloudstorage::Callback>(std::move(callback), *this);
-
-  std::lock_guard<std::mutex> lock(auth_mutex_);
-  auth()->set_access_token(auth()->fromTokenString(token));
-  return auth()->authorize(auth_callback_.get());
+  {
+    std::lock_guard<std::mutex> lock(auth_mutex_);
+    auth_callback_ =
+        make_unique<cloudstorage::Callback>(std::move(callback), *this);
+    auth()->set_access_token(auth()->fromTokenString(token));
+  }
+  return authorize();
 }
 
 std::string CloudProvider::access_token() {
@@ -101,6 +102,30 @@ std::string CloudProvider::token() {
 
 IItem::Pointer CloudProvider::rootDirectory() const {
   return make_unique<Item>("/", "root", true);
+}
+
+ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
+    IItem::Pointer item, ListDirectoryRequest::ICallback::Pointer callback) {
+  return make_unique<ListDirectoryRequest>(this, std::move(item),
+                                           std::move(callback));
+}
+
+void CloudProvider::waitForAuthorized() {
+  std::mutex mutex;
+  std::unique_lock<std::mutex> lock(mutex);
+  authorized_.wait(lock, std::bind(&CloudProvider::isAuthorized, this));
+}
+
+bool CloudProvider::authorize() {
+  std::lock_guard<std::mutex> lock(auth_mutex_);
+  bool ret = auth_->authorize(auth_callback_.get());
+  if (ret) authorized_.notify_all();
+  return ret;
+}
+
+bool CloudProvider::isAuthorized() {
+  std::lock_guard<std::mutex> lock(auth_mutex_);
+  return auth()->access_token() != nullptr;
 }
 
 IItem::Pointer CloudProvider::getItem(std::vector<IItem::Pointer>&& items,

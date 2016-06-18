@@ -24,11 +24,15 @@
 #ifndef CLOUDPROVIDER_H
 #define CLOUDPROVIDER_H
 
+#include <future>
 #include <mutex>
+#include <sstream>
+#include <thread>
 
 #include "Auth.h"
 #include "HttpRequest.h"
 #include "ICloudProvider.h"
+#include "Request.h"
 
 namespace cloudstorage {
 
@@ -54,20 +58,16 @@ class CloudProvider : public ICloudProvider {
   template <typename ReturnType, typename... FArgs, typename... Args>
   ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...), Args&&... args) {
     try {
-      {
-        std::lock_guard<std::mutex> lock(auth_mutex_);
-        if (!auth_->access_token()) auth_->authorize(auth_callback_.get());
-      }
+      if (!isAuthorized()) authorize();
       return (this->*f)(std::forward<Args>(args)...);
-    } catch (const std::exception&) {
-      {
-        std::lock_guard<std::mutex> lock(auth_mutex_);
-        if (!auth_->authorize(auth_callback_.get()))
-          throw std::logic_error("Authorization failed.");
-      }
+    } catch (const AuthorizationException&) {
+      if (!authorize()) throw std::logic_error("Authorization failed.");
       return (this->*f)(std::forward<Args>(args)...);
     }
   }
+
+  ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer, ListDirectoryRequest::ICallback::Pointer);
 
   virtual HttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token, std::ostream& input_stream,
@@ -78,6 +78,13 @@ class CloudProvider : public ICloudProvider {
   virtual HttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream,
       const std::string& access_token) const {}
+
+  virtual std::vector<IItem::Pointer> listDirectoryResponse(
+      std::istream&, std::string& next_page_token) const {}
+
+  void waitForAuthorized();
+  bool isAuthorized();
+  bool authorize();
 
  protected:
   virtual std::vector<IItem::Pointer> executeListDirectory(const IItem&) = 0;
@@ -93,6 +100,7 @@ class CloudProvider : public ICloudProvider {
   IAuth::Pointer auth_;
   IAuth::ICallback::Pointer auth_callback_;
   std::mutex auth_mutex_;
+  std::condition_variable authorized_;
 };
 
 }  // namespace cloudstorage
