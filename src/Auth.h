@@ -29,6 +29,11 @@
 
 namespace cloudstorage {
 
+class AuthorizationException : public std::exception {
+ public:
+  const char* what() const noexcept { return "Authorization error."; }
+};
+
 class Auth : public IAuth {
  public:
   Auth();
