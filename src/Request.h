@@ -72,6 +72,24 @@ class ListDirectoryRequest : public Request {
   ICallback::Pointer callback_;
 };
 
+class GetItemRequest : public Request {
+ public:
+  using Pointer = std::unique_ptr<GetItemRequest>;
+
+  GetItemRequest(CloudProvider*, const std::string& path,
+                 std::function<void(IItem::Pointer)> callback);
+
+  IItem::Pointer result();
+
+ private:
+  IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,
+                         const std::string& name) const;
+
+  std::future<IItem::Pointer> result_;
+  std::string path_;
+  std::function<void(IItem::Pointer)> callback_;
+};
+
 }  // namespace cloudstorage
 
 #endif  // REQUEST_H

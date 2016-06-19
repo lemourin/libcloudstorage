@@ -110,6 +110,12 @@ ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
                                            std::move(callback));
 }
 
+GetItemRequest::Pointer CloudProvider::getItemAsync(
+    const std::string& absolute_path,
+    std::function<void(IItem::Pointer)> callback) {
+  return make_unique<GetItemRequest>(this, absolute_path, callback);
+}
+
 void CloudProvider::waitForAuthorized() {
   std::mutex mutex;
   std::unique_lock<std::mutex> lock(mutex);

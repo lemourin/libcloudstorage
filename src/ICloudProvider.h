@@ -63,6 +63,9 @@ class ICloudProvider {
 
   virtual ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, ListDirectoryRequest::ICallback::Pointer) = 0;
+  virtual GetItemRequest::Pointer getItemAsync(
+      const std::string& absolute_path,
+      std::function<void(IItem::Pointer)>) = 0;
 };
 
 }  // namespace cloudstorage

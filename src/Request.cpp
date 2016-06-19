@@ -73,4 +73,39 @@ std::vector<IItem::Pointer> ListDirectoryRequest::result() {
   return result_.get();
 }
 
+GetItemRequest::GetItemRequest(CloudProvider* p, const std::string& path,
+                               std::function<void(IItem::Pointer)> callback)
+    : Request(p), path_(path), callback_(callback) {
+  result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
+    if (path_.empty() || path_.front() != '/') return nullptr;
+    IItem::Pointer node = provider()->rootDirectory();
+    std::stringstream stream(path_.substr(1));
+    std::string token;
+    while (std::getline(stream, token, '/')) {
+      if (!node || !node->is_directory()) return nullptr;
+      node = getItem(
+          provider()->listDirectoryAsync(std::move(node), nullptr)->result(),
+          token);
+    }
+    if (callback_) {
+      callback_(std::move(node));
+      return nullptr;
+    } else {
+      return node;
+    }
+  });
+}
+
+IItem::Pointer GetItemRequest::result() {
+  if (!result_.valid()) throw std::logic_error("Future invalid.");
+  return result_.get();
+}
+
+IItem::Pointer GetItemRequest::getItem(std::vector<IItem::Pointer>&& items,
+                                       const std::string& name) const {
+  for (IItem::Pointer& i : items)
+    if (i->filename() == name) return std::move(i);
+  return nullptr;
+}
+
 }  // namespace cloudstorage
