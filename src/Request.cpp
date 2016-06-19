@@ -23,6 +23,8 @@
 
 #include "Request.h"
 
+#include <iostream>
+
 #include "CloudProvider.h"
 #include "Utility.h"
 
@@ -106,6 +108,40 @@ IItem::Pointer GetItemRequest::getItem(std::vector<IItem::Pointer>&& items,
   for (IItem::Pointer& i : items)
     if (i->filename() == name) return std::move(i);
   return nullptr;
+}
+
+DownloadFileRequest::DownloadFileRequest(CloudProvider* p, IItem::Pointer file,
+                                         ICallback::Pointer callback)
+    : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
+  function_ = std::async(std::launch::async, [this]() {
+    if (!download()) {
+      stream_wrapper_.callback_->reset();
+      if (!provider()->authorize()) throw AuthorizationException();
+      if (!download()) throw std::logic_error("Invalid download request.");
+    }
+    if (stream_wrapper_.callback_) stream_wrapper_.callback_->done();
+  });
+}
+
+void DownloadFileRequest::finish() { function_.get(); }
+
+bool DownloadFileRequest::download() {
+  provider()->waitForAuthorized();
+  std::stringstream stream;
+  HttpRequest::Pointer request = provider()->downloadFileRequest(
+      *file_, stream, provider()->access_token());
+  std::ostream response_stream(&stream_wrapper_);
+  return HttpRequest::isSuccess(request->send(stream, response_stream));
+}
+
+DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
+    DownloadFileRequest::ICallback::Pointer callback)
+    : callback_(std::move(callback)) {}
+
+std::streamsize DownloadFileRequest::DownloadStreamWrapper::xsputn(
+    const char_type* data, std::streamsize length) {
+  if (callback_) callback_->receivedData(data, length);
+  return length;
 }
 
 }  // namespace cloudstorage

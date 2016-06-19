@@ -70,6 +70,8 @@ class CloudProvider : public ICloudProvider {
       IItem::Pointer, ListDirectoryRequest::ICallback::Pointer);
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
                                        std::function<void(IItem::Pointer)>);
+  DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer, DownloadFileRequest::ICallback::Pointer);
 
   virtual HttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token, std::ostream& input_stream,

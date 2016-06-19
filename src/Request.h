@@ -90,6 +90,39 @@ class GetItemRequest : public Request {
   std::function<void(IItem::Pointer)> callback_;
 };
 
+class DownloadFileRequest : public Request {
+ public:
+  using Pointer = std::unique_ptr<DownloadFileRequest>;
+
+  class ICallback {
+   public:
+    using Pointer = std::unique_ptr<ICallback>;
+    virtual ~ICallback() = default;
+
+    virtual void reset() = 0;
+    virtual void receivedData(const char* data, uint length) = 0;
+    virtual void done() = 0;
+  };
+
+  DownloadFileRequest(CloudProvider*, IItem::Pointer file, ICallback::Pointer);
+  void finish();
+
+ private:
+  class DownloadStreamWrapper : public std::streambuf {
+   public:
+    DownloadStreamWrapper(DownloadFileRequest::ICallback::Pointer callback);
+    std::streamsize xsputn(const char_type* data, std::streamsize length);
+
+    DownloadFileRequest::ICallback::Pointer callback_;
+  };
+
+  bool download();
+
+  std::future<void> function_;
+  IItem::Pointer file_;
+  DownloadStreamWrapper stream_wrapper_;
+};
+
 }  // namespace cloudstorage
 
 #endif  // REQUEST_H

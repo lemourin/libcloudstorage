@@ -116,6 +116,12 @@ GetItemRequest::Pointer CloudProvider::getItemAsync(
   return make_unique<GetItemRequest>(this, absolute_path, callback);
 }
 
+DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
+    IItem::Pointer file, DownloadFileRequest::ICallback::Pointer callback) {
+  return make_unique<DownloadFileRequest>(this, std::move(file),
+                                          std::move(callback));
+}
+
 void CloudProvider::waitForAuthorized() {
   std::mutex mutex;
   std::unique_lock<std::mutex> lock(mutex);
