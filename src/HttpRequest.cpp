@@ -132,6 +132,10 @@ void HttpRequest::resetParameters() {
   header_parameters_.clear();
 }
 
+bool HttpRequest::isSuccess(int code) {
+  return (code / 100) == 2;
+}
+
 std::string HttpRequest::parametersToString() const {
   std::string result;
   for (std::pair<std::string, std::string> p : parameters_)

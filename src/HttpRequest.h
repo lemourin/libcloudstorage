@@ -55,6 +55,8 @@ class HttpRequest {
 
   void resetParameters();
 
+  static bool isSuccess(int code);
+
  private:
   struct CurlDeleter {
     void operator()(CURL*) const;
