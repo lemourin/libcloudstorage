@@ -50,8 +50,8 @@ class HttpRequest {
 
   std::string send() const;
   std::string send(std::istream& data) const;
-  bool send(std::ostream& response) const;
-  bool send(std::istream& data, std::ostream& response) const;
+  int send(std::ostream& response) const;
+  int send(std::istream& data, std::ostream& response) const;
 
   void resetParameters();
 

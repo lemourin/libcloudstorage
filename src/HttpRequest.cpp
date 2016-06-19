@@ -89,12 +89,12 @@ std::string HttpRequest::send(std::istream& data) const {
   return response.str();
 }
 
-bool HttpRequest::send(std::ostream& response) const {
+int HttpRequest::send(std::ostream& response) const {
   std::stringstream data;
   return send(data, response);
 }
 
-bool HttpRequest::send(std::istream& data, std::ostream& response) const {
+int HttpRequest::send(std::istream& data, std::ostream& response) const {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &response);
   curl_slist* header_list = headerParametersToList();
   curl_easy_setopt(handle_.get(), CURLOPT_HTTPHEADER, header_list);
@@ -117,8 +117,14 @@ bool HttpRequest::send(std::istream& data, std::ostream& response) const {
                      stream_length(data));
     if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
   }
+  int return_code = 0;
+  if (success) {
+    long http_code = 0;
+    curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
+    return_code = http_code;
+  }
   curl_slist_free_all(header_list);
-  return success;
+  return return_code;
 }
 
 void HttpRequest::resetParameters() {
