@@ -68,6 +68,9 @@ class ICloudProvider {
       std::function<void(IItem::Pointer)>) = 0;
   virtual DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer, DownloadFileRequest::ICallback::Pointer) = 0;
+  virtual UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string& filename,
+      UploadFileRequest::ICallback::Pointer) = 0;
 };
 
 }  // namespace cloudstorage

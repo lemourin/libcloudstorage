@@ -122,6 +122,13 @@ DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
                                           std::move(callback));
 }
 
+UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
+    IItem::Pointer directory, const std::string& filename,
+    UploadFileRequest::ICallback::Pointer callback) {
+  return make_unique<UploadFileRequest>(this, std::move(directory), filename,
+                                        std::move(callback));
+}
+
 void CloudProvider::waitForAuthorized() {
   std::mutex mutex;
   std::unique_lock<std::mutex> lock(mutex);

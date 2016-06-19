@@ -144,4 +144,45 @@ std::streamsize DownloadFileRequest::DownloadStreamWrapper::xsputn(
   return length;
 }
 
+UploadFileRequest::UploadFileRequest(
+    CloudProvider* p, IItem::Pointer directory, const std::string& filename,
+    UploadFileRequest::ICallback::Pointer callback)
+    : Request(p),
+      directory_(std::move(directory)),
+      filename_(filename),
+      stream_wrapper_(std::move(callback)) {
+  function_ = std::async(std::launch::async, [this]() {
+    if (!upload()) {
+      stream_wrapper_.callback_->reset();
+      if (!provider()->authorize()) throw AuthorizationException();
+      if (!upload()) throw std::logic_error("Invalid upload request.");
+    }
+    stream_wrapper_.callback_->done();
+  });
+}
+
+void UploadFileRequest::finish() { function_.wait(); }
+
+bool UploadFileRequest::upload() {
+  provider()->waitForAuthorized();
+  std::istream upload_data_stream(&stream_wrapper_);
+  std::stringstream request_data;
+  HttpRequest::Pointer request =
+      provider()->uploadFileRequest(*directory_, filename_, upload_data_stream,
+                                    request_data, provider()->access_token());
+  std::stringstream response;
+  return HttpRequest::isSuccess(request->send(request_data, response));
+}
+
+UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
+    UploadFileRequest::ICallback::Pointer callback)
+    : callback_(std::move(callback)) {}
+
+std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
+  uint size = callback_->putData(buffer_, BUFFER_SIZE);
+  if (gptr() == egptr()) setg(buffer_, buffer_, buffer_ + size);
+  return gptr() == egptr() ? std::char_traits<char>::eof()
+                           : std::char_traits<char>::to_int_type(*gptr());
+}
+
 }  // namespace cloudstorage

@@ -123,6 +123,46 @@ class DownloadFileRequest : public Request {
   DownloadStreamWrapper stream_wrapper_;
 };
 
+class UploadFileRequest : public Request {
+ public:
+  using Pointer = std::unique_ptr<UploadFileRequest>;
+
+  class ICallback {
+   public:
+    using Pointer = std::unique_ptr<ICallback>;
+    virtual ~ICallback() = default;
+
+    virtual void reset() = 0;
+    virtual uint putData(char* data, uint maxlength) = 0;
+    virtual void done() = 0;
+  };
+
+  UploadFileRequest(CloudProvider*, IItem::Pointer directory,
+                    const std::string& filename, ICallback::Pointer);
+
+  void finish();
+
+ private:
+  class UploadStreamWrapper : public std::streambuf {
+   public:
+    static constexpr uint BUFFER_SIZE = 1024;
+
+    UploadStreamWrapper(UploadFileRequest::ICallback::Pointer callback);
+
+    int_type underflow();
+
+    char buffer_[BUFFER_SIZE];
+    UploadFileRequest::ICallback::Pointer callback_;
+  };
+
+  bool upload();
+
+  std::future<void> function_;
+  IItem::Pointer directory_;
+  std::string filename_;
+  UploadStreamWrapper stream_wrapper_;
+};
+
 }  // namespace cloudstorage
 
 #endif  // REQUEST_H
