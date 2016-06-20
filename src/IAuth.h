@@ -51,7 +51,7 @@ class IAuth {
     };
 
     virtual ~ICallback() = default;
-    virtual Status userConsentRequired(const IAuth&) const = 0;
+    virtual Status userConsentRequired(const IAuth&) = 0;
   };
 
   virtual ~IAuth() = default;

@@ -29,7 +29,7 @@
 class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
   Status userConsentRequired(
-      const cloudstorage::ICloudProvider& provider) const {
+      const cloudstorage::ICloudProvider& provider) {
     std::cout << "required consent at url: \n";
     std::cout << provider.authorizeLibraryUrl() << "\n";
     return Status::WaitForAuthorizationCode;

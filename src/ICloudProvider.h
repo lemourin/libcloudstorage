@@ -44,7 +44,7 @@ class ICloudProvider {
     enum class Status { WaitForAuthorizationCode, None };
 
     virtual ~ICallback() = default;
-    virtual Status userConsentRequired(const ICloudProvider&) const = 0;
+    virtual Status userConsentRequired(const ICloudProvider&) = 0;
   };
 
   virtual ~ICloudProvider() = default;
