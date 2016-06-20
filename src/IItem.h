@@ -31,7 +31,7 @@ namespace cloudstorage {
 
 class IItem {
  public:
-  using Pointer = std::unique_ptr<IItem>;
+  using Pointer = std::shared_ptr<IItem>;
 
   virtual ~IItem() = default;
 

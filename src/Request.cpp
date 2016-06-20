@@ -57,10 +57,8 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         page_token = "";
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {
-          if (callback_)
-            callback_->receivedItem(std::move(t));
-          else
-            result.push_back(std::move(t));
+          if (callback_) callback_->receivedItem(t);
+          result.push_back(t);
         }
       } else {
         if (!provider()->authorize()) throw AuthorizationException();
@@ -91,12 +89,8 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
           provider()->listDirectoryAsync(std::move(node), nullptr)->result(),
           token);
     }
-    if (callback_) {
-      callback_(std::move(node));
-      return nullptr;
-    } else {
-      return node;
-    }
+    if (callback_) callback_(node);
+    return node;
   });
 }
 
