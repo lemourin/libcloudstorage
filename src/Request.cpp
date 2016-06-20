@@ -30,13 +30,14 @@
 
 namespace cloudstorage {
 
-Request::Request(CloudProvider* provider) : provider_(provider) {}
+Request::Request(std::shared_ptr<CloudProvider> provider)
+    : provider_(provider) {}
 
 void Request::cancel() {
   // TODO
 }
 
-ListDirectoryRequest::ListDirectoryRequest(CloudProvider* p,
+ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                            IItem::Pointer directory,
                                            ICallback::Pointer callback)
     : Request(p),
@@ -75,7 +76,8 @@ std::vector<IItem::Pointer> ListDirectoryRequest::result() {
   return result_.get();
 }
 
-GetItemRequest::GetItemRequest(CloudProvider* p, const std::string& path,
+GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
+                               const std::string& path,
                                std::function<void(IItem::Pointer)> callback)
     : Request(p), path_(path), callback_(callback) {
   result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
@@ -110,7 +112,8 @@ IItem::Pointer GetItemRequest::getItem(std::vector<IItem::Pointer>&& items,
   return nullptr;
 }
 
-DownloadFileRequest::DownloadFileRequest(CloudProvider* p, IItem::Pointer file,
+DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
+                                         IItem::Pointer file,
                                          ICallback::Pointer callback)
     : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
@@ -145,8 +148,8 @@ std::streamsize DownloadFileRequest::DownloadStreamWrapper::xsputn(
 }
 
 UploadFileRequest::UploadFileRequest(
-    CloudProvider* p, IItem::Pointer directory, const std::string& filename,
-    UploadFileRequest::ICallback::Pointer callback)
+    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
+    const std::string& filename, UploadFileRequest::ICallback::Pointer callback)
     : Request(p),
       directory_(std::move(directory)),
       filename_(filename),

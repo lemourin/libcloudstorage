@@ -33,17 +33,17 @@
 
 namespace cloudstorage {
 
+CloudStorage::CloudStorage()
+    : providers_({make_unique<GoogleDrive>(), make_unique<OneDrive>(),
+                  make_unique<Dropbox>()}) {}
+
 std::vector<ICloudProvider::Pointer> CloudStorage::providers() const {
-  std::vector<ICloudProvider::Pointer> result;
-  result.push_back(make_unique<GoogleDrive>());
-  result.push_back(make_unique<OneDrive>());
-  result.push_back(make_unique<Dropbox>());
-  return result;
+  return providers_;
 }
 
 ICloudProvider::Pointer CloudStorage::provider(const std::string& name) const {
-  for (ICloudProvider::Pointer& p : providers())
-    if (p->name() == name) return std::move(p);
+  for (ICloudProvider::Pointer p : providers_)
+    if (p->name() == name) return p;
   return nullptr;
 }
 

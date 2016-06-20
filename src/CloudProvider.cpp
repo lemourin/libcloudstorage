@@ -106,27 +106,28 @@ IItem::Pointer CloudProvider::rootDirectory() const {
 
 ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, ListDirectoryRequest::ICallback::Pointer callback) {
-  return make_unique<ListDirectoryRequest>(this, std::move(item),
+  return make_unique<ListDirectoryRequest>(shared_from_this(), std::move(item),
                                            std::move(callback));
 }
 
 GetItemRequest::Pointer CloudProvider::getItemAsync(
     const std::string& absolute_path,
     std::function<void(IItem::Pointer)> callback) {
-  return make_unique<GetItemRequest>(this, absolute_path, callback);
+  return make_unique<GetItemRequest>(shared_from_this(), absolute_path,
+                                     callback);
 }
 
 DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer file, DownloadFileRequest::ICallback::Pointer callback) {
-  return make_unique<DownloadFileRequest>(this, std::move(file),
+  return make_unique<DownloadFileRequest>(shared_from_this(), std::move(file),
                                           std::move(callback));
 }
 
 UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     UploadFileRequest::ICallback::Pointer callback) {
-  return make_unique<UploadFileRequest>(this, std::move(directory), filename,
-                                        std::move(callback));
+  return make_unique<UploadFileRequest>(
+      shared_from_this(), std::move(directory), filename, std::move(callback));
 }
 
 void CloudProvider::waitForAuthorized() {

@@ -35,7 +35,7 @@ namespace cloudstorage {
 
 class ICloudProvider {
  public:
-  using Pointer = std::unique_ptr<ICloudProvider>;
+  using Pointer = std::shared_ptr<ICloudProvider>;
 
   class ICallback {
    public:

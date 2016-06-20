@@ -30,8 +30,13 @@ namespace cloudstorage {
 
 class CloudStorage : public ICloudStorage {
  public:
+  CloudStorage();
+
   std::vector<ICloudProvider::Pointer> providers() const;
   ICloudProvider::Pointer provider(const std::string& name) const;
+
+ private:
+  std::vector<ICloudProvider::Pointer> providers_;
 };
 
 }  // namespace cloudstorage

@@ -36,15 +36,15 @@ class CloudProvider;
 
 class Request {
  public:
-  Request(CloudProvider*);
+  Request(std::shared_ptr<CloudProvider>);
 
   void cancel();
 
-  CloudProvider* provider() const { return provider_; }
+  std::shared_ptr<CloudProvider> provider() const { return provider_; }
   std::iostream& input_stream() { return input_stream_; }
 
  private:
-  CloudProvider* provider_;
+  std::shared_ptr<CloudProvider> provider_;
   std::stringstream input_stream_;
 };
 
@@ -61,7 +61,7 @@ class ListDirectoryRequest : public Request {
     virtual void receivedItem(IItem::Pointer item) = 0;
   };
 
-  ListDirectoryRequest(CloudProvider*, IItem::Pointer directory,
+  ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                        ICallback::Pointer);
 
   std::vector<IItem::Pointer> result();
@@ -76,7 +76,7 @@ class GetItemRequest : public Request {
  public:
   using Pointer = std::unique_ptr<GetItemRequest>;
 
-  GetItemRequest(CloudProvider*, const std::string& path,
+  GetItemRequest(std::shared_ptr<CloudProvider>, const std::string& path,
                  std::function<void(IItem::Pointer)> callback);
 
   IItem::Pointer result();
@@ -104,7 +104,8 @@ class DownloadFileRequest : public Request {
     virtual void done() = 0;
   };
 
-  DownloadFileRequest(CloudProvider*, IItem::Pointer file, ICallback::Pointer);
+  DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
+                      ICallback::Pointer);
   void finish();
 
  private:
@@ -137,7 +138,7 @@ class UploadFileRequest : public Request {
     virtual void done() = 0;
   };
 
-  UploadFileRequest(CloudProvider*, IItem::Pointer directory,
+  UploadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                     const std::string& filename, ICallback::Pointer);
 
   void finish();

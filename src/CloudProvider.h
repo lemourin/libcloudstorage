@@ -36,7 +36,8 @@
 
 namespace cloudstorage {
 
-class CloudProvider : public ICloudProvider {
+class CloudProvider : public ICloudProvider,
+                      public std::enable_shared_from_this<CloudProvider> {
  public:
   CloudProvider(IAuth::Pointer);
 
