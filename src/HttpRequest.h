@@ -34,6 +34,19 @@ namespace cloudstorage {
 class HttpRequest {
  public:
   using Pointer = std::unique_ptr<HttpRequest>;
+
+  class ICallback {
+   public:
+    using Pointer = std::unique_ptr<ICallback>;
+    virtual ~ICallback() = default;
+
+    virtual bool abort() = 0;
+    virtual void progressDownload(uint total, uint now) = 0;
+    virtual void progressUpload(uint total, uint now) = 0;
+    virtual void receivedHttpCode(int code) = 0;
+    virtual void receivedContentLength(int length) = 0;
+  };
+
   enum class Type { POST, GET, PUT };
 
   HttpRequest(const std::string& url, Type);
@@ -51,7 +64,9 @@ class HttpRequest {
   std::string send() const;
   std::string send(std::istream& data) const;
   int send(std::ostream& response) const;
-  int send(std::istream& data, std::ostream& response) const;
+  int send(std::istream& data, std::ostream& response,
+           std::ostream* error_stream = nullptr,
+           ICallback::Pointer = nullptr) const;
 
   void resetParameters();
 

@@ -28,9 +28,35 @@
 namespace cloudstorage {
 
 namespace {
+
+struct write_callback_data {
+  CURL* handle_;
+  std::ostream* stream_;
+  std::ostream* error_stream_;
+  std::shared_ptr<HttpRequest::ICallback> callback_;
+  bool first_call_;
+  bool success_;
+};
+
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
-  std::ostream* stream = static_cast<std::ostream*>(userdata);
-  stream->write(ptr, size * nmemb);
+  write_callback_data* data = static_cast<write_callback_data*>(userdata);
+  if (data->first_call_) {
+    data->first_call_ = false;
+    if (data->callback_) {
+      long http_code = 0;
+      curl_easy_getinfo(data->handle_, CURLINFO_RESPONSE_CODE, &http_code);
+      data->callback_->receivedHttpCode(http_code);
+      data->success_ = HttpRequest::isSuccess(http_code);
+      double content_length = 0;
+      curl_easy_getinfo(data->handle_, CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+                        &content_length);
+      data->callback_->receivedContentLength(content_length);
+    }
+  }
+  if (!data->error_stream_ || data->success_)
+    data->stream_->write(ptr, size * nmemb);
+  else
+    data->error_stream_->write(ptr, size * nmemb);
   return size * nmemb;
 }
 
@@ -38,6 +64,18 @@ size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
   std::istream* stream = static_cast<std::istream*>(userdata);
   stream->read(buffer, size * nmemb);
   return stream->gcount();
+}
+
+int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
+                      curl_off_t ultotal, curl_off_t ulnow) {
+  HttpRequest::ICallback* callback =
+      static_cast<HttpRequest::ICallback*>(clientp);
+  if (callback) {
+    if (ultotal != 0) callback->progressUpload(ultotal, ulnow);
+    if (dltotal != 0) callback->progressDownload(dltotal, dlnow);
+    if (callback->abort()) return 1;
+  }
+  return 0;
 }
 
 std::ios::pos_type stream_length(std::istream& data) {
@@ -55,6 +93,8 @@ HttpRequest::HttpRequest(const std::string& url, Type t)
   curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER, false);
   curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, true);
+  curl_easy_setopt(handle_.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
+  curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, false);
 }
 
 void HttpRequest::setParameter(const std::string& parameter,
@@ -94,13 +134,18 @@ int HttpRequest::send(std::ostream& response) const {
   return send(data, response);
 }
 
-int HttpRequest::send(std::istream& data, std::ostream& response) const {
-  curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &response);
+int HttpRequest::send(std::istream& data, std::ostream& response,
+                      std::ostream* error_stream, ICallback::Pointer p) const {
+  std::shared_ptr<ICallback> callback(std::move(p));
+  write_callback_data cb_data = {handle_.get(), &response, error_stream,
+                                 callback,      true,      false};
+  curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &cb_data);
   curl_slist* header_list = headerParametersToList();
   curl_easy_setopt(handle_.get(), CURLOPT_HTTPHEADER, header_list);
   std::string parameters = parametersToString();
   std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
   curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
+  curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
   bool success = true;
   if (type_ == Type::POST) {
     curl_easy_setopt(handle_.get(), CURLOPT_POST, true);
@@ -132,9 +177,7 @@ void HttpRequest::resetParameters() {
   header_parameters_.clear();
 }
 
-bool HttpRequest::isSuccess(int code) {
-  return (code / 100) == 2;
-}
+bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
 
 std::string HttpRequest::parametersToString() const {
   std::string result;
