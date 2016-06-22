@@ -33,19 +33,28 @@
 namespace cloudstorage {
 
 class CloudProvider;
+namespace {
+class HttpCallback;
+}  // namespace
 
 class Request {
  public:
   Request(std::shared_ptr<CloudProvider>);
+  virtual ~Request() = default;
 
-  void cancel();
+  virtual void finish() = 0;
+  virtual void cancel();
 
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   std::iostream& input_stream() { return input_stream_; }
 
+ protected:
+  std::unique_ptr<HttpCallback> httpCallback();
+
  private:
   std::shared_ptr<CloudProvider> provider_;
   std::stringstream input_stream_;
+  std::atomic_bool is_cancelled_;
 };
 
 class ListDirectoryRequest : public Request {
@@ -63,7 +72,9 @@ class ListDirectoryRequest : public Request {
 
   ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                        ICallback::Pointer);
+  ~ListDirectoryRequest();
 
+  void finish();
   std::vector<IItem::Pointer> result();
 
  private:
@@ -78,13 +89,18 @@ class GetItemRequest : public Request {
 
   GetItemRequest(std::shared_ptr<CloudProvider>, const std::string& path,
                  std::function<void(IItem::Pointer)> callback);
+  ~GetItemRequest();
 
+  void finish();
+  void cancel();
   IItem::Pointer result();
 
  private:
   IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,
                          const std::string& name) const;
 
+  std::mutex mutex_;
+  ListDirectoryRequest::Pointer current_request_;
   std::future<IItem::Pointer> result_;
   std::string path_;
   std::function<void(IItem::Pointer)> callback_;
@@ -106,6 +122,8 @@ class DownloadFileRequest : public Request {
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
                       ICallback::Pointer);
+  ~DownloadFileRequest();
+
   void finish();
 
  private:
@@ -117,7 +135,7 @@ class DownloadFileRequest : public Request {
     DownloadFileRequest::ICallback::Pointer callback_;
   };
 
-  bool download();
+  int download();
 
   std::future<void> function_;
   IItem::Pointer file_;
@@ -140,6 +158,7 @@ class UploadFileRequest : public Request {
 
   UploadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                     const std::string& filename, ICallback::Pointer);
+  ~UploadFileRequest();
 
   void finish();
 
@@ -156,7 +175,7 @@ class UploadFileRequest : public Request {
     UploadFileRequest::ICallback::Pointer callback_;
   };
 
-  bool upload();
+  int upload();
 
   std::future<void> function_;
   IItem::Pointer directory_;

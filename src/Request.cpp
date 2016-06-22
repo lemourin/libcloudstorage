@@ -23,18 +23,43 @@
 
 #include "Request.h"
 
-#include <iostream>
-
 #include "CloudProvider.h"
 #include "Utility.h"
 
 namespace cloudstorage {
 
+namespace {
+
+class HttpCallback : public HttpRequest::ICallback {
+ public:
+  HttpCallback(std::atomic_bool& is_cancelled) : is_cancelled_(is_cancelled) {}
+
+  bool abort() { return is_cancelled_; }
+
+  void progressDownload(uint, uint) {}
+
+  void progressUpload(uint, uint) {}
+
+  void receivedHttpCode(int) {}
+
+  void receivedContentLength(int) {}
+
+ private:
+  std::atomic_bool& is_cancelled_;
+};
+
+}  // namespace
+
 Request::Request(std::shared_ptr<CloudProvider> provider)
-    : provider_(provider) {}
+    : provider_(provider), is_cancelled_(false) {}
 
 void Request::cancel() {
-  // TODO
+  is_cancelled_ = true;
+  finish();
+}
+
+std::unique_ptr<HttpCallback> Request::httpCallback() {
+  return make_unique<HttpCallback>(is_cancelled_);
 }
 
 ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
@@ -53,20 +78,28 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       HttpRequest::Pointer r = provider()->listDirectoryRequest(
           *directory_, page_token, input_stream(), provider()->access_token());
       std::stringstream output_stream;
-      if (HttpRequest::isSuccess(r->send(input_stream(), output_stream))) {
+      int code =
+          r->send(input_stream(), output_stream, nullptr, httpCallback());
+      if (HttpRequest::isSuccess(code)) {
         page_token = "";
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {
           if (callback_) callback_->receivedItem(t);
           result.push_back(t);
         }
-      } else {
+      } else if (HttpRequest::isClientError(code)) {
         if (!provider()->authorize()) throw AuthorizationException();
         retry = true;
       }
     } while (!page_token.empty() || retry);
     return result;
   });
+}
+
+ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
+
+void ListDirectoryRequest::finish() {
+  if (result_.valid()) result_.wait();
 }
 
 std::vector<IItem::Pointer> ListDirectoryRequest::result() {
@@ -85,13 +118,28 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     std::string token;
     while (std::getline(stream, token, '/')) {
       if (!node || !node->is_directory()) return nullptr;
-      node = getItem(
-          provider()->listDirectoryAsync(std::move(node), nullptr)->result(),
-          token);
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        current_request_ =
+            provider()->listDirectoryAsync(std::move(node), nullptr);
+      }
+      node = getItem(current_request_->result(), token);
     }
     if (callback_) callback_(node);
     return node;
   });
+}
+
+GetItemRequest::~GetItemRequest() { cancel(); }
+
+void GetItemRequest::finish() {
+  if (result_.valid()) result_.wait();
+}
+
+void GetItemRequest::cancel() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (current_request_) current_request_->cancel();
+  finish();
 }
 
 IItem::Pointer GetItemRequest::result() {
@@ -111,24 +159,32 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          ICallback::Pointer callback)
     : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
-    if (!download()) {
-      stream_wrapper_.callback_->reset();
+    int code = download();
+    if (HttpRequest::isClientError(code)) {
+      if (stream_wrapper_.callback_) stream_wrapper_.callback_->reset();
       if (!provider()->authorize()) throw AuthorizationException();
-      if (!download()) throw std::logic_error("Invalid download request.");
+      code = download();
+      if (!HttpRequest::isSuccess(code))
+        throw std::logic_error("Invalid download request.");
     }
-    if (stream_wrapper_.callback_) stream_wrapper_.callback_->done();
+    if (HttpRequest::isSuccess(code) && stream_wrapper_.callback_)
+      stream_wrapper_.callback_->done();
   });
 }
 
-void DownloadFileRequest::finish() { function_.get(); }
+DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
-bool DownloadFileRequest::download() {
+void DownloadFileRequest::finish() {
+  if (function_.valid()) function_.get();
+}
+
+int DownloadFileRequest::download() {
   provider()->waitForAuthorized();
   std::stringstream stream;
   HttpRequest::Pointer request = provider()->downloadFileRequest(
       *file_, stream, provider()->access_token());
   std::ostream response_stream(&stream_wrapper_);
-  return HttpRequest::isSuccess(request->send(stream, response_stream));
+  return request->send(stream, response_stream, nullptr, httpCallback());
 }
 
 DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
@@ -149,18 +205,25 @@ UploadFileRequest::UploadFileRequest(
       filename_(filename),
       stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
-    if (!upload()) {
+    int code = upload();
+    if (HttpRequest::isClientError(code)) {
       stream_wrapper_.callback_->reset();
       if (!provider()->authorize()) throw AuthorizationException();
-      if (!upload()) throw std::logic_error("Invalid upload request.");
+      code = upload();
+      if (!HttpRequest::isSuccess(code))
+        throw std::logic_error("Invalid upload request.");
     }
-    stream_wrapper_.callback_->done();
+    if (HttpRequest::isSuccess(code)) stream_wrapper_.callback_->done();
   });
 }
 
-void UploadFileRequest::finish() { function_.wait(); }
+UploadFileRequest::~UploadFileRequest() { cancel(); }
 
-bool UploadFileRequest::upload() {
+void UploadFileRequest::finish() {
+  if (function_.valid()) function_.wait();
+}
+
+int UploadFileRequest::upload() {
   provider()->waitForAuthorized();
   std::istream upload_data_stream(&stream_wrapper_);
   std::stringstream request_data;
@@ -168,7 +231,7 @@ bool UploadFileRequest::upload() {
       provider()->uploadFileRequest(*directory_, filename_, upload_data_stream,
                                     request_data, provider()->access_token());
   std::stringstream response;
-  return HttpRequest::isSuccess(request->send(request_data, response));
+  return request->send(request_data, response, nullptr, httpCallback());
 }
 
 UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(

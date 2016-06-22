@@ -22,7 +22,6 @@
  *****************************************************************************/
 
 #include "HttpRequest.h"
-#include <iostream>
 #include <sstream>
 
 namespace cloudstorage {
@@ -178,6 +177,8 @@ void HttpRequest::resetParameters() {
 }
 
 bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
+
+bool HttpRequest::isClientError(int code) { return (code / 100) == 4; }
 
 std::string HttpRequest::parametersToString() const {
   std::string result;

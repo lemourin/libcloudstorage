@@ -71,6 +71,7 @@ class HttpRequest {
   void resetParameters();
 
   static bool isSuccess(int code);
+  static bool isClientError(int code);
 
  private:
   struct CurlDeleter {
