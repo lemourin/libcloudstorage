@@ -114,7 +114,8 @@ HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
 }
 
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request) const {
+    std::istream& stream, HttpRequest::Pointer& next_page_request,
+    std::ostream&) const {
   std::vector<IItem::Pointer> result;
   Json::Value response;
   stream >> response;

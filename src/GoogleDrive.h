@@ -48,7 +48,8 @@ class GoogleDrive : public CloudProvider {
                                            std::ostream& input_stream) const;
 
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, HttpRequest::Pointer& next_page_request) const;
+      std::istream&, HttpRequest::Pointer& next_page_request,
+      std::ostream&) const;
 
   class Auth : public cloudstorage::Auth {
    public:

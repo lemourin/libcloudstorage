@@ -86,7 +86,8 @@ class CloudProvider : public ICloudProvider,
       const IItem&, std::ostream& input_stream) const {}
 
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, HttpRequest::Pointer& next_page_request) const {}
+      std::istream& response, HttpRequest::Pointer& next_page_request,
+      std::ostream& next_page_request_input) const {}
 
   virtual void authorizeRequest(HttpRequest&);
 

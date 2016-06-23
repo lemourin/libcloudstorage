@@ -45,11 +45,10 @@ class Request {
   virtual void finish() = 0;
   virtual void cancel();
 
-  std::shared_ptr<CloudProvider> provider() const { return provider_; }
-  std::iostream& input_stream() { return input_stream_; }
-
  protected:
   std::unique_ptr<HttpCallback> httpCallback();
+  std::stringstream& input_stream() { return input_stream_; }
+  std::shared_ptr<CloudProvider> provider() const { return provider_; }
 
  private:
   std::shared_ptr<CloudProvider> provider_;

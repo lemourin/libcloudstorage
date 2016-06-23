@@ -50,7 +50,7 @@ class OneDrive : public CloudProvider {
                                            std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, HttpRequest::Pointer&) const;
+      std::istream&, HttpRequest::Pointer&, std::ostream&) const;
 
  private:
   class Auth : public cloudstorage::Auth {

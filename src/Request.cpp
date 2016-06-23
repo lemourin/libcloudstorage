@@ -75,16 +75,22 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         provider()->listDirectoryRequest(*directory_, input_stream());
     do {
       std::stringstream output_stream;
+      std::string backup_data = input_stream().str();
+      provider()->authorizeRequest(*r);
       int code =
           r->send(input_stream(), output_stream, nullptr, httpCallback());
       if (HttpRequest::isSuccess(code)) {
-        for (auto& t : provider()->listDirectoryResponse(output_stream, r)) {
+        for (auto& t : provider()->listDirectoryResponse(output_stream, r,
+                                                         input_stream())) {
           if (callback_) callback_->receivedItem(t);
           result.push_back(t);
         }
       } else if (HttpRequest::isClientError(code)) {
         if (!provider()->authorize()) throw AuthorizationException();
-        provider()->authorizeRequest(*r);
+        input_stream() = std::stringstream();
+        input_stream() << backup_data;
+      } else {
+        r = nullptr;
       }
     } while (r);
     return result;
@@ -154,6 +160,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          ICallback::Pointer callback)
     : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
+    provider()->waitForAuthorized();
     int code = download();
     if (HttpRequest::isClientError(code)) {
       if (stream_wrapper_.callback_) stream_wrapper_.callback_->reset();
@@ -177,7 +184,6 @@ int DownloadFileRequest::download() {
   std::stringstream stream;
   HttpRequest::Pointer request =
       provider()->downloadFileRequest(*file_, stream);
-  provider()->waitForAuthorized();
   provider()->authorizeRequest(*request);
   std::ostream response_stream(&stream_wrapper_);
   return request->send(stream, response_stream, nullptr, httpCallback());
@@ -201,6 +207,7 @@ UploadFileRequest::UploadFileRequest(
       filename_(filename),
       stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
+    provider()->waitForAuthorized();
     int code = upload();
     if (HttpRequest::isClientError(code)) {
       stream_wrapper_.callback_->reset();
@@ -224,7 +231,6 @@ int UploadFileRequest::upload() {
   std::stringstream request_data;
   HttpRequest::Pointer request = provider()->uploadFileRequest(
       *directory_, filename_, upload_data_stream, request_data);
-  provider()->waitForAuthorized();
   provider()->authorizeRequest(*request);
   std::stringstream response;
   return request->send(request_data, response, nullptr, httpCallback());

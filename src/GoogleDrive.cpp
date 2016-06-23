@@ -43,7 +43,8 @@ std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(const IItem& f) {
   authorizeRequest(*request);
   do {
     std::stringstream stream(request->send());
-    for (auto& f : listDirectoryResponse(stream, request))
+    std::stringstream input;
+    for (auto& f : listDirectoryResponse(stream, request, input))
       result.push_back(std::move(f));
   } while (request);
 
@@ -113,7 +114,8 @@ HttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& f,
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request) const {
+    std::istream& stream, HttpRequest::Pointer& next_page_request,
+    std::ostream&) const {
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
