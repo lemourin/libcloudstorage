@@ -106,7 +106,7 @@ class CloudProvider : public ICloudProvider,
                          const std::string& filename) const;
 
   IAuth::Pointer auth_;
-  IAuth::ICallback::Pointer auth_callback_;
+  ICloudProvider::ICallback::Pointer callback_;
   std::mutex auth_mutex_;
   std::condition_variable authorized_;
 };

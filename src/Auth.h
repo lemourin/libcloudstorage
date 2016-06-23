@@ -38,7 +38,7 @@ class Auth : public IAuth {
  public:
   Auth();
 
-  bool authorize(ICallback*);
+  bool authorize(const ICloudProvider& provider, ICloudProvider::ICallback*);
 
   const std::string& authorization_code() const;
   void set_authorization_code(const std::string&);

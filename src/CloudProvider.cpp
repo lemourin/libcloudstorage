@@ -31,36 +31,13 @@
 
 namespace cloudstorage {
 
-namespace {
-class Callback : public IAuth::ICallback {
- public:
-  Callback(ICloudProvider::ICallback::Pointer callback,
-           const ICloudProvider& provider)
-      : callback_(std::move(callback)), provider_(provider) {}
-
-  Status userConsentRequired(const IAuth&) {
-    if (callback_) {
-      if (callback_->userConsentRequired(provider_) ==
-          ICloudProvider::ICallback::Status::WaitForAuthorizationCode)
-        return Status::WaitForAuthorizationCode;
-    }
-    return Status::None;
-  }
-
- private:
-  ICloudProvider::ICallback::Pointer callback_;
-  const ICloudProvider& provider_;
-};
-}  // namespace
-
 CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
 bool CloudProvider::initialize(const std::string& token,
                                ICallback::Pointer callback) {
   {
     std::lock_guard<std::mutex> lock(auth_mutex_);
-    auth_callback_ =
-        make_unique<cloudstorage::Callback>(std::move(callback), *this);
+    callback_ = std::move(callback);
     auth()->set_access_token(auth()->fromTokenString(token));
   }
   return authorize();
@@ -138,7 +115,7 @@ void CloudProvider::waitForAuthorized() {
 
 bool CloudProvider::authorize() {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  bool ret = auth_->authorize(auth_callback_.get());
+  bool ret = auth_->authorize(*this, callback_.get());
   if (ret) authorized_.notify_all();
   return ret;
 }

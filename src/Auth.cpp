@@ -97,14 +97,15 @@ int httpRequestCallback(void* cls, MHD_Connection* connection,
 
 Auth::Auth() : redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT) {}
 
-bool Auth::authorize(ICallback* callback) {
+bool Auth::authorize(const ICloudProvider& provider,
+                     ICloudProvider::ICallback* callback) {
   if (!access_token() || !validateToken(*access_token())) {
     Token::Pointer token;
     if (access_token() && (token = refreshToken())) {
       set_access_token(std::move(token));
     } else if (callback) {
-      if (callback->userConsentRequired(*this) ==
-          ICallback::Status::WaitForAuthorizationCode) {
+      if (callback->userConsentRequired(provider) ==
+          ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
         set_authorization_code(requestAuthorizationCode());
         set_access_token(requestAccessToken());
       }

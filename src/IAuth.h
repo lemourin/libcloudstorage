@@ -27,6 +27,8 @@
 #include <memory>
 #include <string>
 
+#include "ICloudProvider.h"
+
 namespace cloudstorage {
 
 class IAuth {
@@ -41,22 +43,9 @@ class IAuth {
     int expires_in_;
   };
 
-  class ICallback {
-   public:
-    using Pointer = std::unique_ptr<ICallback>;
-
-    enum class Status {
-      WaitForAuthorizationCode,
-      None
-    };
-
-    virtual ~ICallback() = default;
-    virtual Status userConsentRequired(const IAuth&) = 0;
-  };
-
   virtual ~IAuth() = default;
 
-  virtual bool authorize(ICallback*) = 0;
+  virtual bool authorize(const ICloudProvider&, ICloudProvider::ICallback*) = 0;
 
   virtual const std::string& authorization_code() const = 0;
   virtual void set_authorization_code(const std::string&) = 0;
