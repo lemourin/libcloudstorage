@@ -40,6 +40,19 @@ class Dropbox : public CloudProvider {
                          std::istream&);
   void executeDownloadFile(const IItem&, std::ostream&);
 
+  HttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                            std::ostream& input_stream) const;
+  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
+                                         const std::string& filename,
+                                         std::istream& stream,
+                                         std::ostream& input_stream) const;
+  HttpRequest::Pointer downloadFileRequest(const IItem&,
+                                           std::ostream& input_stream) const;
+
+  std::vector<IItem::Pointer> listDirectoryResponse(
+      std::istream&, HttpRequest::Pointer& next_page_request,
+      std::ostream& next_page_request_input) const;
+
  private:
   class Auth : public cloudstorage::Auth {
    public:
