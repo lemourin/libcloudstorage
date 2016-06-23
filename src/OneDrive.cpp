@@ -82,6 +82,54 @@ void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
   request.send(stream);
 }
 
+HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
+                                                    std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
+      HttpRequest::Type::GET);
+  request->setParameter("select", "name,folder,id");
+  return request;
+}
+
+HttpRequest::Pointer OneDrive::uploadFileRequest(
+    const IItem& f, const std::string& filename, std::istream& stream,
+    std::ostream& input_stream) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request =
+      make_unique<HttpRequest>("https://api.onedrive.com/v1.0/drive/items/" +
+                                   item.id() + ":/" + filename + ":/content",
+                               HttpRequest::Type::PUT);
+  input_stream.rdbuf(stream.rdbuf());
+  return request;
+}
+
+HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
+                                                   std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",
+      HttpRequest::Type::GET);
+  return request;
+}
+
+std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
+    std::istream& stream, HttpRequest::Pointer& next_page_request) const {
+  std::vector<IItem::Pointer> result;
+  Json::Value response;
+  stream >> response;
+  for (Json::Value v : response["value"]) {
+    result.push_back(make_unique<Item>(v["name"].asString(), v["id"].asString(),
+                                       v.isMember("folder")));
+  }
+  if (response.isMember("@odata.nextLink")) {
+    next_page_request->resetParameters();
+    next_page_request->set_url(response["@odata.nextLink"].asString());
+  } else
+    next_page_request = nullptr;
+  return result;
+}
+
 OneDrive::Auth::Auth() {
   set_client_id("56a1d60f-ea71-40e9-a489-b87fba12a23e");
   set_client_secret("zJRAsd0o4E9c33q4OLc7OhY");
