@@ -39,16 +39,13 @@ std::string GoogleDrive::name() const { return "google"; }
 std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(const IItem& f) {
   std::vector<IItem::Pointer> result;
   std::stringstream data;
-  HttpRequest::Pointer request =
-      listDirectoryRequest(f, "", data, access_token());
-  std::string next_page;
+  HttpRequest::Pointer request = listDirectoryRequest(f, data);
+  authorizeRequest(*request);
   do {
     std::stringstream stream(request->send());
-    next_page = "";
-    for (auto& f : listDirectoryResponse(stream, next_page))
+    for (auto& f : listDirectoryResponse(stream, request))
       result.push_back(std::move(f));
-    request->setParameter("pageToken", next_page);
-  } while (!next_page.empty());
+  } while (request);
 
   return result;
 }
@@ -57,7 +54,7 @@ void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
                                     std::istream& stream) {
   std::stringstream data_stream;
   HttpRequest::Pointer request =
-      uploadFileRequest(f, filename, stream, data_stream, access_token());
+      uploadFileRequest(f, filename, stream, data_stream);
   std::stringstream response_stream;
   request->send(data_stream, response_stream);
   Json::Value response;
@@ -68,30 +65,26 @@ void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
 
 void GoogleDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
   std::stringstream data;
-  downloadFileRequest(f, data, access_token())->send(stream);
+  downloadFileRequest(f, data)->send(stream);
 }
 
-HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
-    const IItem& f, const std::string& page_token, std::ostream&,
-    const std::string& access_token) const {
+HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
+                                                       std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::GET);
-  request->setParameter("access_token", access_token);
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
-  if (!page_token.empty()) request->setParameter("pageToken", page_token);
   return request;
 }
 
 HttpRequest::Pointer GoogleDrive::uploadFileRequest(
     const IItem& f, const std::string& filename, std::istream& stream,
-    std::ostream& input_stream, const std::string& access_token) const {
+    std::ostream& input_stream) const {
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
       HttpRequest::Type::POST);
-  request->setHeaderParameter("Authorization", "Bearer " + access_token);
   request->setHeaderParameter("Content-Type",
                               "multipart/related; boundary=" + separator);
   Json::Value request_data;
@@ -109,19 +102,18 @@ HttpRequest::Pointer GoogleDrive::uploadFileRequest(
   return request;
 }
 
-HttpRequest::Pointer GoogleDrive::downloadFileRequest(
-    const IItem& f, std::ostream&, const std::string& access_token) const {
+HttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& f,
+                                                      std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files/" + item.id(),
       HttpRequest::Type::GET);
-  request->setParameter("access_token", access_token);
   request->setParameter("alt", "media");
   return request;
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    std::istream& stream, HttpRequest::Pointer& next_page_request) const {
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
@@ -132,7 +124,10 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   }
 
   if (response.isMember("nextPageToken"))
-    next_page_token = response["nextPageToken"].asString();
+    next_page_request->setParameter("pageToken",
+                                    response["nextPageToken"].asString());
+  else
+    next_page_request = nullptr;
   return result;
 }
 

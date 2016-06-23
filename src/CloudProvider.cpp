@@ -107,6 +107,10 @@ UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
       shared_from_this(), std::move(directory), filename, std::move(callback));
 }
 
+void CloudProvider::authorizeRequest(HttpRequest& r) {
+  r.setHeaderParameter("Authorization", "Bearer " + access_token());
+}
+
 void CloudProvider::waitForAuthorized() {
   std::mutex mutex;
   std::unique_lock<std::mutex> lock(mutex);

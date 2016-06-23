@@ -69,29 +69,24 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       directory_(std::move(directory)),
       callback_(std::move(callback)) {
   result_ = std::async(std::launch::async, [this]() {
+    provider()->waitForAuthorized();
     std::vector<IItem::Pointer> result;
-    std::string page_token;
-    bool retry;
+    HttpRequest::Pointer r =
+        provider()->listDirectoryRequest(*directory_, input_stream());
     do {
-      retry = false;
-      provider()->waitForAuthorized();
-      HttpRequest::Pointer r = provider()->listDirectoryRequest(
-          *directory_, page_token, input_stream(), provider()->access_token());
       std::stringstream output_stream;
       int code =
           r->send(input_stream(), output_stream, nullptr, httpCallback());
       if (HttpRequest::isSuccess(code)) {
-        page_token = "";
-        for (auto& t :
-             provider()->listDirectoryResponse(output_stream, page_token)) {
+        for (auto& t : provider()->listDirectoryResponse(output_stream, r)) {
           if (callback_) callback_->receivedItem(t);
           result.push_back(t);
         }
       } else if (HttpRequest::isClientError(code)) {
         if (!provider()->authorize()) throw AuthorizationException();
-        retry = true;
+        provider()->authorizeRequest(*r);
       }
-    } while (!page_token.empty() || retry);
+    } while (r);
     return result;
   });
 }
@@ -179,10 +174,11 @@ void DownloadFileRequest::finish() {
 }
 
 int DownloadFileRequest::download() {
-  provider()->waitForAuthorized();
   std::stringstream stream;
-  HttpRequest::Pointer request = provider()->downloadFileRequest(
-      *file_, stream, provider()->access_token());
+  HttpRequest::Pointer request =
+      provider()->downloadFileRequest(*file_, stream);
+  provider()->waitForAuthorized();
+  provider()->authorizeRequest(*request);
   std::ostream response_stream(&stream_wrapper_);
   return request->send(stream, response_stream, nullptr, httpCallback());
 }
@@ -224,12 +220,12 @@ void UploadFileRequest::finish() {
 }
 
 int UploadFileRequest::upload() {
-  provider()->waitForAuthorized();
   std::istream upload_data_stream(&stream_wrapper_);
   std::stringstream request_data;
-  HttpRequest::Pointer request =
-      provider()->uploadFileRequest(*directory_, filename_, upload_data_stream,
-                                    request_data, provider()->access_token());
+  HttpRequest::Pointer request = provider()->uploadFileRequest(
+      *directory_, filename_, upload_data_stream, request_data);
+  provider()->waitForAuthorized();
+  provider()->authorizeRequest(*request);
   std::stringstream response;
   return request->send(request_data, response, nullptr, httpCallback());
 }
