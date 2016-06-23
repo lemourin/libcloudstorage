@@ -102,13 +102,12 @@ bool Auth::authorize(ICallback* callback) {
     Token::Pointer token;
     if (access_token() && (token = refreshToken())) {
       set_access_token(std::move(token));
-    } else {
-      if (callback) {
-        if (callback->userConsentRequired(*this) == ICallback::Status::None)
-          return false;
+    } else if (callback) {
+      if (callback->userConsentRequired(*this) ==
+          ICallback::Status::WaitForAuthorizationCode) {
+        set_authorization_code(requestAuthorizationCode());
+        set_access_token(requestAccessToken());
       }
-      set_authorization_code(requestAuthorizationCode());
-      set_access_token(requestAccessToken());
     }
   }
   return access_token() != nullptr;
