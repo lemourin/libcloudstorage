@@ -50,6 +50,9 @@ class Request {
   std::stringstream& input_stream() { return input_stream_; }
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
 
+  void set_cancelled(bool e) { is_cancelled_ = e; }
+  bool is_cancelled() { return is_cancelled_; }
+
  private:
   std::shared_ptr<CloudProvider> provider_;
   std::stringstream input_stream_;
@@ -77,7 +80,9 @@ class ListDirectoryRequest : public Request {
   std::vector<IItem::Pointer> result();
 
  private:
-  std::future<std::vector<IItem::Pointer>> result_;
+  friend class GetItemRequest;
+
+  std::shared_future<std::vector<IItem::Pointer>> result_;
   IItem::Pointer directory_;
   ICallback::Pointer callback_;
 };
@@ -95,7 +100,7 @@ class GetItemRequest : public Request {
   IItem::Pointer result();
 
  private:
-  IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,
+  IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
                          const std::string& name) const;
 
   std::mutex mutex_;

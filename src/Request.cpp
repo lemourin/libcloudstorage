@@ -119,12 +119,15 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     std::string token;
     while (std::getline(stream, token, '/')) {
       if (!node || !node->is_directory()) return nullptr;
+      std::shared_future<std::vector<IItem::Pointer>> current_directory;
       {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (is_cancelled()) return nullptr;
         current_request_ =
             provider()->listDirectoryAsync(std::move(node), nullptr);
+        current_directory = current_request_->result_;
       }
-      node = getItem(current_request_->result(), token);
+      node = getItem(current_directory.get(), token);
     }
     if (callback_) callback_(node);
     return node;
@@ -138,8 +141,11 @@ void GetItemRequest::finish() {
 }
 
 void GetItemRequest::cancel() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (current_request_) current_request_->cancel();
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    set_cancelled(true);
+    if (current_request_) current_request_->cancel();
+  }
   finish();
 }
 
@@ -148,10 +154,10 @@ IItem::Pointer GetItemRequest::result() {
   return result_.get();
 }
 
-IItem::Pointer GetItemRequest::getItem(std::vector<IItem::Pointer>&& items,
+IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
                                        const std::string& name) const {
-  for (IItem::Pointer& i : items)
-    if (i->filename() == name) return std::move(i);
+  for (const IItem::Pointer& i : items)
+    if (i->filename() == name) return i;
   return nullptr;
 }
 
