@@ -28,11 +28,21 @@
 
 class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
+  Callback(std::string drive_file) : drive_file_(drive_file) {}
+
   Status userConsentRequired(const cloudstorage::ICloudProvider& provider) {
     std::cout << "required consent at url: \n";
     std::cout << provider.authorizeLibraryUrl() << "\n";
     return Status::WaitForAuthorizationCode;
   }
+
+  void initialized(const cloudstorage::ICloudProvider& provider) {
+    std::fstream file(drive_file_, std::fstream::out);
+    file << provider.token();
+  }
+
+ private:
+  std::string drive_file_;
 };
 
 void traverse_drive(cloudstorage::ICloudProvider& drive,
@@ -62,17 +72,9 @@ int main(int argc, char** argv) {
     std::fstream file(drive_file, std::fstream::in);
     file >> token;
   }
-  if (!drive->initialize(token, std::unique_ptr<Callback>(new Callback))
-           ->result()) {
-    std::cout << "Failed to authorize.";
-    return 1;
-  } else {
-    {
-      std::fstream file(drive_file, std::fstream::out);
-      file << drive->token();
-    }
-    traverse_drive(*drive, drive->rootDirectory(), "/");
-  }
+  auto i = drive->initialize(
+      token, std::unique_ptr<Callback>(new Callback(drive_file)));
+  traverse_drive(*drive, drive->rootDirectory(), "/");
 
   return 0;
 }

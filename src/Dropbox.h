@@ -33,7 +33,6 @@ class Dropbox : public CloudProvider {
   Dropbox();
 
   std::string name() const;
-  std::string token();
   IItem::Pointer rootDirectory() const;
 
   HttpRequest::Pointer listDirectoryRequest(const IItem&,

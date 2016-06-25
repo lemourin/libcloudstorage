@@ -45,6 +45,7 @@ class ICloudProvider {
 
     virtual ~ICallback() = default;
     virtual Status userConsentRequired(const ICloudProvider&) = 0;
+    virtual void initialized(const ICloudProvider&) = 0;
   };
 
   virtual ~ICloudProvider() = default;
@@ -52,7 +53,7 @@ class ICloudProvider {
   virtual AuthorizeRequest::Pointer initialize(const std::string& token,
                                                ICallback::Pointer) = 0;
 
-  virtual std::string token() = 0;
+  virtual std::string token() const = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
   virtual IItem::Pointer rootDirectory() const = 0;

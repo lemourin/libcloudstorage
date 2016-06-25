@@ -280,7 +280,10 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
       std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
       ret = authorize();
     }
-    if (ret) provider()->authorized_.notify_all();
+    if (ret) {
+      provider()->callback_->initialized(*provider());
+      provider()->authorized_.notify_all();
+    }
     return ret;
   });
 }

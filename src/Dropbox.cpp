@@ -36,8 +36,6 @@ Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
 
 std::string Dropbox::name() const { return "dropbox"; }
 
-std::string Dropbox::token() { return auth()->access_token()->token_; }
-
 IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
 }
@@ -123,6 +121,7 @@ IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
     const std::string& str) const {
   Token::Pointer token = make_unique<Token>();
   token->token_ = str;
+  token->refresh_token_ = str;
   token->expires_in_ = -1;
   return token;
 }

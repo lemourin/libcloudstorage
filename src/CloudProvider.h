@@ -48,7 +48,7 @@ class CloudProvider : public ICloudProvider,
   IAuth* auth() const;
 
   std::string authorizeLibraryUrl() const;
-  std::string token();
+  std::string token() const;
   IItem::Pointer rootDirectory() const;
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
@@ -83,7 +83,7 @@ class CloudProvider : public ICloudProvider,
 
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
-  std::mutex auth_mutex_;
+  mutable std::mutex auth_mutex_;
   std::condition_variable authorized_;
 };
 
