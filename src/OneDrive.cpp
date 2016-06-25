@@ -36,52 +36,6 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
-std::vector<IItem::Pointer> OneDrive::executeListDirectory(const IItem& f) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
-      HttpRequest::Type::GET);
-  request.setParameter("access_token", access_token());
-  request.setParameter("select", "name,folder,id");
-
-  std::vector<IItem::Pointer> result;
-  while (true) {
-    Json::Value response;
-    std::stringstream(request.send()) >> response;
-    for (Json::Value v : response["value"]) {
-      result.push_back(make_unique<Item>(
-          v["name"].asString(), v["id"].asString(), v.isMember("folder")));
-    }
-
-    if (!response.isMember("@odata.nextLink")) break;
-    request.resetParameters();
-    request.set_url(response["@odata.nextLink"].asString());
-  }
-  return result;
-}
-
-void OneDrive::executeUploadFile(const IItem& f, const std::string& filename,
-                                 std::istream& stream) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request("https://api.onedrive.com/v1.0/drive/items/" + item.id() +
-                          ":/" + filename + ":/content",
-                      HttpRequest::Type::PUT);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  Json::Value response;
-  std::stringstream(request.send(stream)) >> response;
-  if (response.isMember("error"))
-    throw std::logic_error("Failed to upload file.");
-}
-
-void OneDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",
-      HttpRequest::Type::GET);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  request.send(stream);
-}
-
 HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
                                                     std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);

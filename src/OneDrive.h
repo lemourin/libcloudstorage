@@ -34,10 +34,6 @@ class OneDrive : public CloudProvider {
   OneDrive();
 
   std::string name() const;
-  std::vector<IItem::Pointer> executeListDirectory(const IItem&);
-  void executeUploadFile(const IItem& directory, const std::string& filename,
-                         std::istream&);
-  void executeDownloadFile(const IItem&, std::ostream&);
 
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,

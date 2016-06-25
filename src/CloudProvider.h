@@ -46,26 +46,9 @@ class CloudProvider : public ICloudProvider,
   std::string access_token();
   IAuth* auth() const;
 
-  std::vector<IItem::Pointer> listDirectory(const IItem&) final;
-  void uploadFile(const IItem& directory, const std::string& filename,
-                  std::istream&) final;
-  void downloadFile(const IItem&, std::ostream&) final;
-  IItem::Pointer getItem(const std::string&) final;
-
   std::string authorizeLibraryUrl() const;
   std::string token();
   IItem::Pointer rootDirectory() const;
-
-  template <typename ReturnType, typename... FArgs, typename... Args>
-  ReturnType execute(ReturnType (CloudProvider::*f)(FArgs...), Args&&... args) {
-    try {
-      if (!isAuthorized()) authorize();
-      return (this->*f)(std::forward<Args>(args)...);
-    } catch (const AuthorizationException&) {
-      if (!authorize()) throw std::logic_error("Authorization failed.");
-      return (this->*f)(std::forward<Args>(args)...);
-    }
-  }
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, ListDirectoryRequest::ICallback::Pointer);
@@ -95,17 +78,7 @@ class CloudProvider : public ICloudProvider,
   bool isAuthorized();
   bool authorize();
 
- protected:
-  virtual std::vector<IItem::Pointer> executeListDirectory(const IItem&) = 0;
-  virtual void executeUploadFile(const IItem& directory,
-                                 const std::string& filename,
-                                 std::istream&) = 0;
-  virtual void executeDownloadFile(const IItem&, std::ostream&) = 0;
-
  private:
-  IItem::Pointer getItem(std::vector<IItem::Pointer>&& items,
-                         const std::string& filename) const;
-
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   std::mutex auth_mutex_;

@@ -28,8 +28,7 @@
 
 class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
-  Status userConsentRequired(
-      const cloudstorage::ICloudProvider& provider) {
+  Status userConsentRequired(const cloudstorage::ICloudProvider& provider) {
     std::cout << "required consent at url: \n";
     std::cout << provider.authorizeLibraryUrl() << "\n";
     return Status::WaitForAuthorizationCode;
@@ -40,7 +39,8 @@ void traverse_drive(cloudstorage::ICloudProvider& drive,
                     cloudstorage::IItem::Pointer f, std::string path) {
   std::cout << path << "\n";
   if (!f->is_directory()) return;
-  for (cloudstorage::IItem::Pointer& t : drive.listDirectory(*f)) {
+  for (cloudstorage::IItem::Pointer& t :
+       drive.listDirectoryAsync(f, nullptr)->result()) {
     traverse_drive(drive, std::move(t),
                    path + t->filename() + (t->is_directory() ? "/" : ""));
   }

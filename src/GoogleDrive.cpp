@@ -36,39 +36,6 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
-std::vector<IItem::Pointer> GoogleDrive::executeListDirectory(const IItem& f) {
-  std::vector<IItem::Pointer> result;
-  std::stringstream data;
-  HttpRequest::Pointer request = listDirectoryRequest(f, data);
-  authorizeRequest(*request);
-  do {
-    std::stringstream stream(request->send());
-    std::stringstream input;
-    for (auto& f : listDirectoryResponse(stream, request, input))
-      result.push_back(std::move(f));
-  } while (request);
-
-  return result;
-}
-
-void GoogleDrive::executeUploadFile(const IItem& f, const std::string& filename,
-                                    std::istream& stream) {
-  std::stringstream data_stream;
-  HttpRequest::Pointer request =
-      uploadFileRequest(f, filename, stream, data_stream);
-  std::stringstream response_stream;
-  request->send(data_stream, response_stream);
-  Json::Value response;
-  response_stream >> response;
-  if (!response.isMember("id"))
-    throw std::logic_error("Failed to upload file.");
-}
-
-void GoogleDrive::executeDownloadFile(const IItem& f, std::ostream& stream) {
-  std::stringstream data;
-  downloadFileRequest(f, data)->send(stream);
-}
-
 HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
                                                        std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);

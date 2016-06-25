@@ -52,20 +52,6 @@ std::string CloudProvider::access_token() {
 
 IAuth* CloudProvider::auth() const { return auth_.get(); }
 
-std::vector<IItem::Pointer> CloudProvider::listDirectory(const IItem& item) {
-  return execute(&CloudProvider::executeListDirectory, item);
-}
-
-void CloudProvider::uploadFile(const IItem& directory,
-                               const std::string& filename,
-                               std::istream& stream) {
-  execute(&CloudProvider::executeUploadFile, directory, filename, stream);
-}
-
-void CloudProvider::downloadFile(const IItem& item, std::ostream& stream) {
-  execute(&CloudProvider::executeDownloadFile, item, stream);
-}
-
 std::string CloudProvider::authorizeLibraryUrl() const {
   return auth()->authorizeLibraryUrl();
 }
@@ -127,25 +113,6 @@ bool CloudProvider::authorize() {
 bool CloudProvider::isAuthorized() {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   return auth()->access_token() != nullptr;
-}
-
-IItem::Pointer CloudProvider::getItem(std::vector<IItem::Pointer>&& items,
-                                      const std::string& name) const {
-  for (IItem::Pointer& i : items)
-    if (i->filename() == name) return std::move(i);
-  return nullptr;
-}
-
-IItem::Pointer CloudProvider::getItem(const std::string& path) {
-  if (path.empty() || path.front() != '/') return nullptr;
-  IItem::Pointer node = rootDirectory();
-  std::stringstream stream(path.substr(1));
-  std::string token;
-  while (std::getline(stream, token, '/')) {
-    if (!node || !node->is_directory()) return nullptr;
-    node = getItem(listDirectory(*node), token);
-  }
-  return node;
 }
 
 }  // namespace cloudstorage

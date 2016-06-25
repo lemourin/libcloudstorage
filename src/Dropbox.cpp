@@ -34,75 +34,12 @@ namespace cloudstorage {
 
 Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
 
-std::vector<IItem::Pointer> Dropbox::executeListDirectory(const IItem& f) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request("https://api.dropboxapi.com/2/files/list_folder",
-                      HttpRequest::Type::POST);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  request.setHeaderParameter("Content-Type", "application/json");
-
-  std::vector<IItem::Pointer> result;
-  std::string cursor;
-  while (true) {
-    Json::Value parameter;
-    if (!cursor.empty())
-      parameter["cursor"] = cursor;
-    else
-      parameter["path"] = item.id();
-    std::istringstream data_stream(parameter.toStyledString());
-    Json::Value response;
-    if (!Json::Reader().parse(request.send(data_stream), response)) {
-      throw std::logic_error("This is not JSON!");
-    }
-
-    if (!response.isMember("entries"))
-      throw std::logic_error("Invalid response.");
-    for (Json::Value v : response["entries"]) {
-      result.push_back(make_unique<Item>(v["name"].asString(),
-                                         v["path_display"].asString(),
-                                         v[".tag"].asString() == "folder"));
-    }
-    if (!response["has_more"].asBool()) break;
-
-    request.set_url("https://api.dropboxapi.com/2/files/list_folder/continue");
-    cursor = response["cursor"].asString();
-  }
-  return result;
-}
-
 std::string Dropbox::name() const { return "dropbox"; }
 
 std::string Dropbox::token() { return auth()->access_token()->token_; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", true);
-}
-
-void Dropbox::executeUploadFile(const IItem& directory,
-                                const std::string& filename,
-                                std::istream& stream) {
-  const Item& item = static_cast<const Item&>(directory);
-  HttpRequest request(
-      "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
-      HttpRequest::Type::PUT);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  Json::Value response;
-  std::stringstream(request.send(stream)) >> response;
-  if (response.isMember("error")) throw std::logic_error("Failed to upload.");
-}
-
-void Dropbox::executeDownloadFile(const IItem& f, std::ostream& stream) {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest request("https://content.dropboxapi.com/2/files/download",
-                      HttpRequest::Type::POST);
-  request.setHeaderParameter("Authorization", "Bearer " + access_token());
-  request.setHeaderParameter("Content-Type", "");
-  Json::Value parameter;
-  parameter["path"] = item.id();
-  std::string str = Json::FastWriter().write(parameter);
-  str.pop_back();
-  request.setHeaderParameter("Dropbox-API-arg", str);
-  request.send(stream);
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
