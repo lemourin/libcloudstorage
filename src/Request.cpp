@@ -54,7 +54,7 @@ Request::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
 void Request::cancel() {
-  is_cancelled_ = true;
+  set_cancelled(true);
   finish();
 }
 
@@ -104,8 +104,9 @@ void ListDirectoryRequest::finish() {
 }
 
 std::vector<IItem::Pointer> ListDirectoryRequest::result() {
-  if (!result_.valid()) throw std::logic_error("Future invalid.");
-  return result_.get();
+  std::shared_future<std::vector<IItem::Pointer>> future = result_;
+  if (!future.valid()) throw std::logic_error("Future invalid.");
+  return future.get();
 }
 
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
@@ -150,8 +151,9 @@ void GetItemRequest::cancel() {
 }
 
 IItem::Pointer GetItemRequest::result() {
-  if (!result_.valid()) throw std::logic_error("Future invalid.");
-  return result_.get();
+  std::shared_future<IItem::Pointer> future = result_;
+  if (!future.valid()) throw std::logic_error("Future invalid.");
+  return future.get();
 }
 
 IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
@@ -183,7 +185,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
 void DownloadFileRequest::finish() {
-  if (function_.valid()) function_.get();
+  if (function_.valid()) function_.wait();
 }
 
 int DownloadFileRequest::download() {

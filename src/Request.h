@@ -105,7 +105,7 @@ class GetItemRequest : public Request {
 
   std::mutex mutex_;
   ListDirectoryRequest::Pointer current_request_;
-  std::future<IItem::Pointer> result_;
+  std::shared_future<IItem::Pointer> result_;
   std::string path_;
   std::function<void(IItem::Pointer)> callback_;
 };
