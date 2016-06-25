@@ -145,29 +145,32 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
   curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
-  bool success = true;
+  CURLcode status = CURLE_OK;
   if (type_ == Type::POST) {
     curl_easy_setopt(handle_.get(), CURLOPT_POST, true);
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE_LARGE,
                      stream_length(data));
-    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
+    status = curl_easy_perform(handle_.get());
   } else if (type_ == Type::GET) {
-    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
+    status = curl_easy_perform(handle_.get());
   } else if (type_ == Type::PUT) {
     curl_easy_setopt(handle_.get(), CURLOPT_PUT, true);
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE_LARGE,
                      stream_length(data));
-    if (curl_easy_perform(handle_.get()) != CURLE_OK) success = false;
+    status = curl_easy_perform(handle_.get());
   }
+  curl_slist_free_all(header_list);
+
   int return_code = 0;
-  if (success) {
+  if (status == CURLE_OK) {
     long http_code = 0;
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
     return_code = http_code;
+  } else if (status != CURLE_ABORTED_BY_CALLBACK) {
+    throw HttpException(status);
   }
-  curl_slist_free_all(header_list);
   return return_code;
 }
 
@@ -197,5 +200,8 @@ curl_slist* HttpRequest::headerParametersToList() const {
 void HttpRequest::CurlDeleter::operator()(CURL* handle) const {
   curl_easy_cleanup(handle);
 }
+
+HttpException::HttpException(CURLcode code)
+    : code_(code), description_(curl_easy_strerror(code)) {}
 
 }  // namespace cloudstorage

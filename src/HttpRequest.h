@@ -31,6 +31,18 @@
 
 namespace cloudstorage {
 
+class HttpException : public std::exception {
+ public:
+  HttpException(CURLcode);
+
+  CURLcode code() const { return code_; }
+  const char* what() const noexcept { return description_.c_str(); }
+
+ private:
+  CURLcode code_;
+  std::string description_;
+};
+
 class HttpRequest {
  public:
   using Pointer = std::unique_ptr<HttpRequest>;
