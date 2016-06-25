@@ -152,38 +152,58 @@ bool OneDrive::Auth::validateToken(IAuth::Token& token) const {
 }
 
 HttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream& input_data) const {
-  // TODO
-  return 0;
+    std::ostream& data) const {
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://login.live.com/oauth20_token.srf", HttpRequest::Type::POST);
+  data << "client_id=" << client_id() << "&"
+       << "client_secret=" << client_secret() << "&"
+       << "redirect_uri=" << redirect_uri() << "&"
+       << "code=" << authorization_code() << "&"
+       << "grant_type=authorization_code";
+  return request;
 }
 
 HttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
-    std::ostream& input_data) const {
-  // TODO
-  return 0;
+    std::ostream& data) const {
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://login.live.com/oauth20_token.srf", HttpRequest::Type::POST);
+  data << "client_id=" << client_id() << "&"
+       << "client_secret=" << client_secret() << "&"
+       << "refresh_token=" << access_token()->refresh_token_ << "&"
+       << "grant_type=refresh_token";
+  return request;
 }
 
 HttpRequest::Pointer OneDrive::Auth::validateTokenRequest(
     std::ostream& input_data) const {
-  // TODO
-  return 0;
+  return refreshTokenRequest(input_data);
 }
 
 IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  // TODO
-  return 0;
+    std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+
+  Token::Pointer token = make_unique<Token>();
+  token->token_ = response["access_token"].asString();
+  token->refresh_token_ = response["refresh_token"].asString();
+  token->expires_in_ = response["expires_in"].asInt();
+  return token;
 }
 
 IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
-    std::istream&) const {
-  // TODO
-  return 0;
+    std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+  Token::Pointer token = make_unique<Token>();
+  token->token_ = response["access_token"].asString();
+  token->refresh_token_ = response["refresh_token"].asString();
+  token->expires_in_ = response["expires_in"].asInt();
+  return token;
 }
 
 bool OneDrive::Auth::validateTokenResponse(std::istream&) const {
-  // TODO
-  return 0;
+  return !access_token()->token_.empty();
 }
 
 }  // namespace cloudstorage
