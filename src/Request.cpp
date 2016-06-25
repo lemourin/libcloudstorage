@@ -338,6 +338,7 @@ bool AuthorizeRequest::authorize() {
     }
   }
   if (provider()->callback_) {
+    if (is_cancelled()) return false;
     if (provider()->callback_->userConsentRequired(*provider()) ==
         ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
       {
