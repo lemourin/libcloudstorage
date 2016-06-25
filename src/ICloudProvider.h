@@ -49,7 +49,8 @@ class ICloudProvider {
 
   virtual ~ICloudProvider() = default;
 
-  virtual bool initialize(const std::string& token, ICallback::Pointer) = 0;
+  virtual AuthorizeRequest::Pointer initialize(const std::string& token,
+                                               ICallback::Pointer) = 0;
 
   virtual std::string token() = 0;
   virtual std::string name() const = 0;

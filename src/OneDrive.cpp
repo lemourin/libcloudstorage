@@ -102,10 +102,6 @@ std::string OneDrive::Auth::authorizeLibraryUrl() const {
   return result;
 }
 
-std::string OneDrive::Auth::requestAuthorizationCode() const {
-  return awaitAuthorizationCode("code", "error");
-}
-
 IAuth::Token::Pointer OneDrive::Auth::requestAccessToken() const {
   HttpRequest request("https://login.live.com/oauth20_token.srf",
                       HttpRequest::Type::POST);

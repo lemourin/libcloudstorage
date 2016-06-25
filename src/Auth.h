@@ -59,22 +59,16 @@ class Auth : public IAuth {
   Token* access_token() const;
   void set_access_token(Token::Pointer);
 
-  std::string awaitAuthorizationCode(std::string code_parameter_name,
-                                     std::string error_parameter_name) const;
+  std::string awaitAuthorizationCode(
+      std::string code_parameter_name, std::string error_parameter_name,
+      std::function<void()> server_started = nullptr,
+      std::function<void()> server_stopped = nullptr) const;
+
+  std::string requestAuthorizationCode(
+      std::function<void()> server_started = nullptr,
+      std::function<void()> server_stopped = nullptr) const;
 
   Token::Pointer fromTokenString(const std::string&) const;
-
-  virtual HttpRequest::Pointer exchangeAuthorizationCodeRequest(
-      std::ostream& input_data) const = 0;
-  virtual HttpRequest::Pointer refreshTokenRequest(
-      std::ostream& input_data) const = 0;
-  virtual HttpRequest::Pointer validateTokenRequest(
-      std::ostream& input_data) const = 0;
-
-  virtual Token::Pointer exchangeAuthorizationCodeResponse(
-      std::istream&) const = 0;
-  virtual Token::Pointer refreshTokenResponse(std::istream&) const = 0;
-  virtual bool validateTokenResponse(std::istream&) const = 0;
 
  private:
   std::string authorization_code_;

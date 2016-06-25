@@ -41,7 +41,8 @@ class CloudProvider : public ICloudProvider,
  public:
   CloudProvider(IAuth::Pointer);
 
-  bool initialize(const std::string& token, ICallback::Pointer);
+  AuthorizeRequest::Pointer initialize(const std::string& token,
+                                       ICallback::Pointer);
 
   std::string access_token();
   IAuth* auth() const;
@@ -79,6 +80,8 @@ class CloudProvider : public ICloudProvider,
   bool authorize();
 
  private:
+  friend class AuthorizeRequest;
+
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   std::mutex auth_mutex_;

@@ -26,6 +26,7 @@
 #include <jsoncpp/json/json.h>
 #include <microhttpd.h>
 #include <fstream>
+
 #include "Utility.h"
 
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
@@ -149,13 +150,17 @@ void Auth::set_access_token(Token::Pointer token) {
 }
 
 std::string Auth::awaitAuthorizationCode(
-    std::string code_parameter_name, std::string error_parameter_name) const {
+    std::string code_parameter_name, std::string error_parameter_name,
+    std::function<void()> server_started,
+    std::function<void()> server_stopped) const {
   uint16_t http_server_port = redirect_uri_port();
   HttpServerData data = {"", code_parameter_name, error_parameter_name,
                          http_server_port, HttpServerData::Awaiting};
   MHD_Daemon* http_server =
       MHD_start_daemon(0, http_server_port, NULL, NULL, &httpRequestCallback,
                        &data, MHD_OPTION_END);
+  if (server_started) server_started();
+
   fd_set rs, ws, es;
   MHD_socket max;
   while (data.state_ == HttpServerData::Awaiting) {
@@ -168,11 +173,19 @@ std::string Auth::awaitAuthorizationCode(
   }
 
   MHD_stop_daemon(http_server);
+  if (server_stopped) server_stopped();
 
   if (data.state_ == HttpServerData::Accepted)
     return data.code_;
   else
     return "";
+}
+
+std::string Auth::requestAuthorizationCode(
+    std::function<void()> server_started,
+    std::function<void()> server_stopped) const {
+  return awaitAuthorizationCode("code", "error", server_started,
+                                server_stopped);
 }
 
 IAuth::Token::Pointer Auth::fromTokenString(

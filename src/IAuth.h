@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 
+#include "HttpRequest.h"
 #include "ICloudProvider.h"
 
 namespace cloudstorage {
@@ -67,10 +68,13 @@ class IAuth {
   virtual std::string authorizeLibraryUrl() const = 0;
 
   virtual std::string awaitAuthorizationCode(
-      std::string code_parameter_name,
-      std::string error_parameter_name) const = 0;
+      std::string code_parameter_name, std::string error_parameter_name,
+      std::function<void()> server_started = nullptr,
+      std::function<void()> server_stopped = nullptr) const = 0;
 
-  virtual std::string requestAuthorizationCode() const = 0;
+  virtual std::string requestAuthorizationCode(
+      std::function<void()> server_started = nullptr,
+      std::function<void()> server_stopped = nullptr) const = 0;
 
   virtual Token::Pointer requestAccessToken() const = 0;
   virtual Token::Pointer refreshToken() const = 0;
@@ -78,6 +82,18 @@ class IAuth {
   virtual bool validateToken(Token&) const = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
+
+  virtual HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+      std::ostream& input_data) const = 0;
+  virtual HttpRequest::Pointer refreshTokenRequest(
+      std::ostream& input_data) const = 0;
+  virtual HttpRequest::Pointer validateTokenRequest(
+      std::ostream& input_data) const = 0;
+
+  virtual Token::Pointer exchangeAuthorizationCodeResponse(
+      std::istream&) const = 0;
+  virtual Token::Pointer refreshTokenResponse(std::istream&) const = 0;
+  virtual bool validateTokenResponse(std::istream&) const = 0;
 };
 
 }  // namespace cloudstorage

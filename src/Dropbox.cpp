@@ -119,10 +119,6 @@ std::string Dropbox::Auth::authorizeLibraryUrl() const {
   return url;
 }
 
-std::string Dropbox::Auth::requestAuthorizationCode() const {
-  return awaitAuthorizationCode("code", "error");
-}
-
 IAuth::Token::Pointer Dropbox::Auth::requestAccessToken() const {
   HttpRequest request("https://api.dropboxapi.com/oauth2/token",
                       HttpRequest::Type::POST);

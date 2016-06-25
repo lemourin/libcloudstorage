@@ -33,6 +33,7 @@
 namespace cloudstorage {
 
 class CloudProvider;
+class HttpRequest;
 namespace {
 class HttpCallback;
 }  // namespace
@@ -185,6 +186,23 @@ class UploadFileRequest : public Request {
   IItem::Pointer directory_;
   std::string filename_;
   UploadStreamWrapper stream_wrapper_;
+};
+
+class AuthorizeRequest : public Request {
+ public:
+  using Pointer = std::unique_ptr<AuthorizeRequest>;
+
+  AuthorizeRequest(std::shared_ptr<CloudProvider>);
+  ~AuthorizeRequest();
+
+  bool result();
+  void finish();
+  void cancel();
+
+ private:
+  std::mutex mutex_;
+  bool awaiting_authorization_code_;
+  std::shared_future<bool> function_;
 };
 
 }  // namespace cloudstorage

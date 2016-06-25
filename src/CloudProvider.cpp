@@ -33,14 +33,12 @@ namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth) : auth_(std::move(auth)) {}
 
-bool CloudProvider::initialize(const std::string& token,
-                               ICallback::Pointer callback) {
-  {
-    std::lock_guard<std::mutex> lock(auth_mutex_);
-    callback_ = std::move(callback);
-    auth()->set_access_token(auth()->fromTokenString(token));
-  }
-  return authorize();
+AuthorizeRequest::Pointer CloudProvider::initialize(
+    const std::string& token, ICallback::Pointer callback) {
+  std::lock_guard<std::mutex> lock(auth_mutex_);
+  callback_ = std::move(callback);
+  auth()->set_access_token(auth()->fromTokenString(token));
+  return make_unique<AuthorizeRequest>(shared_from_this());
 }
 
 std::string CloudProvider::access_token() {
@@ -105,7 +103,7 @@ void CloudProvider::waitForAuthorized() {
 
 bool CloudProvider::authorize() {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  bool ret = auth_->authorize(*this, callback_.get());
+  bool ret = AuthorizeRequest(shared_from_this()).result();
   if (ret) authorized_.notify_all();
   return ret;
 }
