@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
     std::fstream file(drive_file, std::fstream::in);
     file >> token;
   }
-  if (!drive->initialize(token, std::unique_ptr<Callback>(new Callback))) {
+  if (!drive->initialize(token, std::unique_ptr<Callback>(new Callback))
+           ->result()) {
     std::cout << "Failed to authorize.";
     return 1;
   } else {
