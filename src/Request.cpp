@@ -275,53 +275,13 @@ std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
     : Request(p), awaiting_authorization_code_() {
   function_ = std::async(std::launch::async, [this]() {
-    IAuth* auth = provider()->auth();
-    if (auth->access_token()) {
-      std::stringstream input, output;
-      HttpRequest::Pointer r = auth->validateTokenRequest(input);
-      if (HttpRequest::isSuccess(
-              r->send(input, output, nullptr, httpCallback()))) {
-        if (auth->validateTokenResponse(output)) return true;
-      }
+    bool ret;
+    {
+      std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
+      ret = authorize();
     }
-    if (auth->access_token()) {
-      std::stringstream input, output;
-      HttpRequest::Pointer r = auth->refreshTokenRequest(input);
-      if (HttpRequest::isSuccess(
-              r->send(input, output, nullptr, httpCallback()))) {
-        auth->set_access_token(auth->refreshTokenResponse(output));
-        return true;
-      }
-    }
-    if (provider()->callback_) {
-      if (provider()->callback_->userConsentRequired(*provider()) ==
-          ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
-        {
-          std::unique_lock<std::mutex> lock(mutex_);
-          if (is_cancelled()) return false;
-          std::string authorization_code = auth->requestAuthorizationCode(
-              [this, &lock]() {
-                awaiting_authorization_code_ = true;
-                lock.unlock();
-              },
-              [this, &lock]() {
-                lock.lock();
-                awaiting_authorization_code_ = false;
-              });
-          if (authorization_code.empty()) return false;
-          auth->set_authorization_code(authorization_code);
-        }
-        std::stringstream input, output;
-        HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
-        if (HttpRequest::isSuccess(
-                r->send(input, output, nullptr, httpCallback()))) {
-          auth->set_access_token(
-              auth->exchangeAuthorizationCodeResponse(output));
-          return true;
-        }
-      }
-    }
-    return false;
+    if (ret) provider()->authorized_.notify_all();
+    return ret;
   });
 }
 
@@ -353,6 +313,55 @@ void AuthorizeRequest::cancel() {
     }
   }
   finish();
+}
+
+bool AuthorizeRequest::authorize() {
+  IAuth* auth = provider()->auth();
+  if (auth->access_token()) {
+    std::stringstream input, output;
+    HttpRequest::Pointer r = auth->validateTokenRequest(input);
+    if (HttpRequest::isSuccess(
+            r->send(input, output, nullptr, httpCallback()))) {
+      if (auth->validateTokenResponse(output)) return true;
+    }
+  }
+  if (auth->access_token()) {
+    std::stringstream input, output;
+    HttpRequest::Pointer r = auth->refreshTokenRequest(input);
+    if (HttpRequest::isSuccess(
+            r->send(input, output, nullptr, httpCallback()))) {
+      auth->set_access_token(auth->refreshTokenResponse(output));
+      return true;
+    }
+  }
+  if (provider()->callback_) {
+    if (provider()->callback_->userConsentRequired(*provider()) ==
+        ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
+      {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (is_cancelled()) return false;
+        std::string authorization_code = auth->requestAuthorizationCode(
+            [this, &lock]() {
+              awaiting_authorization_code_ = true;
+              lock.unlock();
+            },
+            [this, &lock]() {
+              lock.lock();
+              awaiting_authorization_code_ = false;
+            });
+        if (authorization_code.empty()) return false;
+        auth->set_authorization_code(authorization_code);
+      }
+      std::stringstream input, output;
+      HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
+      if (HttpRequest::isSuccess(
+              r->send(input, output, nullptr, httpCallback()))) {
+        auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace cloudstorage

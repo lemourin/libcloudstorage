@@ -77,7 +77,6 @@ class CloudProvider : public ICloudProvider,
 
   void waitForAuthorized();
   bool isAuthorized();
-  bool authorize();
 
  private:
   friend class AuthorizeRequest;

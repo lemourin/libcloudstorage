@@ -101,16 +101,9 @@ void CloudProvider::waitForAuthorized() {
   authorized_.wait(lock, std::bind(&CloudProvider::isAuthorized, this));
 }
 
-bool CloudProvider::authorize() {
-  std::lock_guard<std::mutex> lock(auth_mutex_);
-  bool ret = AuthorizeRequest(shared_from_this()).result();
-  if (ret) authorized_.notify_all();
-  return ret;
-}
-
 bool CloudProvider::isAuthorized() {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  return auth()->access_token() != nullptr;
+  return !auth()->access_token()->token_.empty();
 }
 
 }  // namespace cloudstorage
