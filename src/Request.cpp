@@ -130,12 +130,18 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                std::function<void(IItem::Pointer)> callback)
     : Request(p), path_(path), callback_(callback) {
   result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
-    if (path_.empty() || path_.front() != '/') return nullptr;
+    if (path_.empty() || path_.front() != '/') {
+      if (callback_) callback_(nullptr);
+      return nullptr;
+    }
     IItem::Pointer node = provider()->rootDirectory();
     std::stringstream stream(path_.substr(1));
     std::string token;
     while (std::getline(stream, token, '/')) {
-      if (!node || !node->is_directory()) return nullptr;
+      if (!node || !node->is_directory()) {
+        node = nullptr;
+        break;
+      }
       std::shared_future<std::vector<IItem::Pointer>> current_directory;
       {
         std::lock_guard<std::mutex> lock(mutex_);
