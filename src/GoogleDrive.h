@@ -52,9 +52,6 @@ class GoogleDrive : public CloudProvider {
     Auth();
 
     std::string authorizeLibraryUrl() const;
-    Token::Pointer requestAccessToken() const;
-    Token::Pointer refreshToken() const;
-    bool validateToken(Token&) const;
 
     HttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;

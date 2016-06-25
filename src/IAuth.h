@@ -46,8 +46,6 @@ class IAuth {
 
   virtual ~IAuth() = default;
 
-  virtual bool authorize(const ICloudProvider&, ICloudProvider::ICallback*) = 0;
-
   virtual const std::string& authorization_code() const = 0;
   virtual void set_authorization_code(const std::string&) = 0;
 
@@ -75,11 +73,6 @@ class IAuth {
   virtual std::string requestAuthorizationCode(
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const = 0;
-
-  virtual Token::Pointer requestAccessToken() const = 0;
-  virtual Token::Pointer refreshToken() const = 0;
-
-  virtual bool validateToken(Token&) const = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 

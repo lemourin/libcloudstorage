@@ -119,43 +119,6 @@ std::string Dropbox::Auth::authorizeLibraryUrl() const {
   return url;
 }
 
-IAuth::Token::Pointer Dropbox::Auth::requestAccessToken() const {
-  HttpRequest request("https://api.dropboxapi.com/oauth2/token",
-                      HttpRequest::Type::POST);
-  request.setParameter("grant_type", "authorization_code");
-  request.setParameter("client_id", client_id());
-  request.setParameter("client_secret", client_secret());
-  request.setParameter("redirect_uri", redirect_uri());
-  request.setParameter("code", authorization_code());
-
-  Json::Value response;
-  std::stringstream(request.send()) >> response;
-
-  Token::Pointer token = make_unique<Token>();
-  token->token_ = response["access_token"].asString();
-  token->expires_in_ = -1;
-  return token;
-}
-
-IAuth::Token::Pointer Dropbox::Auth::refreshToken() const {
-  if (!access_token()) return nullptr;
-  Token::Pointer token = make_unique<Token>(*access_token());
-  if (!validateToken(*token)) return nullptr;
-  return token;
-}
-
-bool Dropbox::Auth::validateToken(IAuth::Token& token) const {
-  Dropbox dropbox;
-  dropbox.auth()->set_access_token(make_unique<Token>(token));
-
-  std::stringstream stream;
-  HttpRequest::Pointer r = dropbox.listDirectoryRequest(
-      *dropbox.rootDirectory(), static_cast<std::ostream&>(stream));
-  dropbox.authorizeRequest(*r);
-  std::stringstream response;
-  return HttpRequest::isSuccess(r->send(stream, response));
-}
-
 IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
     const std::string& str) const {
   Token::Pointer token = make_unique<Token>();

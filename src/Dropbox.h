@@ -55,9 +55,6 @@ class Dropbox : public CloudProvider {
     Auth();
 
     std::string authorizeLibraryUrl() const;
-    Token::Pointer requestAccessToken() const;
-    Token::Pointer refreshToken() const;
-    bool validateToken(Token&) const;
     Token::Pointer fromTokenString(const std::string&) const;
 
     HttpRequest::Pointer exchangeAuthorizationCodeRequest(
