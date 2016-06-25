@@ -118,10 +118,6 @@ std::string GoogleDrive::Auth::authorizeLibraryUrl() const {
   return url;
 }
 
-std::string GoogleDrive::Auth::requestAuthorizationCode() const {
-  return awaitAuthorizationCode("code", "error");
-}
-
 IAuth::Token::Pointer GoogleDrive::Auth::requestAccessToken() const {
   HttpRequest request("https://accounts.google.com/o/oauth2/token",
                       HttpRequest::Type::POST);
@@ -191,37 +187,61 @@ bool GoogleDrive::Auth::validateToken(IAuth::Token& token) const {
 
 HttpRequest::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& arguments) const {
-  // TODO
-  return 0;
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://accounts.google.com/o/oauth2/token", HttpRequest::Type::POST);
+  arguments << "grant_type=authorization_code&"
+            << "client_secret=" << client_secret() << "&"
+            << "code=" << authorization_code() << "&"
+            << "client_id=" << client_id() << "&"
+            << "redirect_uri=" << redirect_uri();
+  return request;
 }
 
 HttpRequest::Pointer GoogleDrive::Auth::refreshTokenRequest(
-    std::ostream& input_data) const {
-  // TODO
-  return 0;
+    std::ostream& arguments) const {
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://accounts.google.com/o/oauth2/token", HttpRequest::Type::POST);
+  arguments << "refresh_token=" << access_token()->refresh_token_ << "&"
+            << "client_id=" << client_id() << "&"
+            << "client_secret=" << client_secret() << "&"
+            << "redirect_uri=" << redirect_uri() << "&"
+            << "grant_type=refresh_token";
+  return request;
 }
 
 HttpRequest::Pointer GoogleDrive::Auth::validateTokenRequest(
-    std::ostream& input_data) const {
-  // TODO
-  return 0;
+    std::ostream&) const {
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/oauth2/v3/tokeninfo", HttpRequest::Type::GET);
+  request->setParameter("access_token", access_token()->token_);
+  return request;
 }
 
 IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  // TODO
-  return 0;
+    std::istream& data) const {
+  Json::Value response;
+  data >> response;
+
+  Token::Pointer token = make_unique<Token>();
+  token->token_ = response["access_token"].asString();
+  token->refresh_token_ = response["refresh_token"].asString();
+  token->expires_in_ = response["expires_in"].asInt();
+  return token;
 }
 
 IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
-    std::istream&) const {
-  // TODO
-  return 0;
+    std::istream& data) const {
+  Json::Value response;
+  data >> response;
+  Token::Pointer token = make_unique<Token>();
+  token->token_ = response["access_token"].asString();
+  token->refresh_token_ = access_token()->refresh_token_;
+  token->expires_in_ = response["expires_in"].asInt();
+  return token;
 }
 
 bool GoogleDrive::Auth::validateTokenResponse(std::istream&) const {
-  // TODO
-  return 0;
+  return true;
 }
 
 }  // namespace cloudstorage
