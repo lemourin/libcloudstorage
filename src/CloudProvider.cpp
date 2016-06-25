@@ -24,6 +24,7 @@
 #include "CloudProvider.h"
 
 #include <jsoncpp/json/json.h>
+#include <iostream>
 #include <sstream>
 
 #include "Item.h"
@@ -93,17 +94,6 @@ UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
 
 void CloudProvider::authorizeRequest(HttpRequest& r) {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
-}
-
-void CloudProvider::waitForAuthorized() {
-  std::mutex mutex;
-  std::unique_lock<std::mutex> lock(mutex);
-  authorized_.wait(lock, std::bind(&CloudProvider::isAuthorized, this));
-}
-
-bool CloudProvider::isAuthorized() {
-  std::lock_guard<std::mutex> lock(auth_mutex_);
-  return !auth()->access_token()->token_.empty();
 }
 
 }  // namespace cloudstorage

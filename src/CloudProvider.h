@@ -75,16 +75,12 @@ class CloudProvider : public ICloudProvider,
 
   virtual void authorizeRequest(HttpRequest&);
 
-  void waitForAuthorized();
-  bool isAuthorized();
-
  private:
   friend class AuthorizeRequest;
 
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   mutable std::mutex auth_mutex_;
-  std::condition_variable authorized_;
 };
 
 }  // namespace cloudstorage

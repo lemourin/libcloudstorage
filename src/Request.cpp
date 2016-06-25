@@ -86,7 +86,6 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       directory_(std::move(directory)),
       callback_(std::move(callback)) {
   result_ = std::async(std::launch::async, [this]() {
-    provider()->waitForAuthorized();
     std::vector<IItem::Pointer> result;
     HttpRequest::Pointer r =
         provider()->listDirectoryRequest(*directory_, input_stream());
@@ -185,7 +184,6 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          ICallback::Pointer callback)
     : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
-    provider()->waitForAuthorized();
     int code = download();
     if (HttpRequest::isClientError(code)) {
       if (stream_wrapper_.callback_) stream_wrapper_.callback_->reset();
@@ -232,7 +230,6 @@ UploadFileRequest::UploadFileRequest(
       filename_(filename),
       stream_wrapper_(std::move(callback)) {
   function_ = std::async(std::launch::async, [this]() {
-    provider()->waitForAuthorized();
     int code = upload();
     if (HttpRequest::isClientError(code)) {
       stream_wrapper_.callback_->reset();
@@ -280,10 +277,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
       std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
       ret = authorize();
     }
-    if (ret) {
-      provider()->callback_->initialized(*provider());
-      provider()->authorized_.notify_all();
-    }
+    if (ret) provider()->callback_->initialized(*provider());
     return ret;
   });
 }
