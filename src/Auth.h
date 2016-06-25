@@ -25,6 +25,8 @@
 #define AUTH_H
 
 #include <jsoncpp/json/forwards.h>
+
+#include "HttpRequest.h"
 #include "IAuth.h"
 
 namespace cloudstorage {
@@ -61,6 +63,18 @@ class Auth : public IAuth {
                                      std::string error_parameter_name) const;
 
   Token::Pointer fromTokenString(const std::string&) const;
+
+  virtual HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+      std::ostream& input_data) const = 0;
+  virtual HttpRequest::Pointer refreshTokenRequest(
+      std::ostream& input_data) const = 0;
+  virtual HttpRequest::Pointer validateTokenRequest(
+      std::ostream& input_data) const = 0;
+
+  virtual Token::Pointer exchangeAuthorizationCodeResponse(
+      std::istream&) const = 0;
+  virtual Token::Pointer refreshTokenResponse(std::istream&) const = 0;
+  virtual bool validateTokenResponse(std::istream&) const = 0;
 
  private:
   std::string authorization_code_;

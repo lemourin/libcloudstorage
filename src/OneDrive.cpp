@@ -155,4 +155,39 @@ bool OneDrive::Auth::validateToken(IAuth::Token& token) const {
   return true;
 }
 
+HttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
+    std::ostream& input_data) const {
+  // TODO
+  return 0;
+}
+
+HttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
+    std::ostream& input_data) const {
+  // TODO
+  return 0;
+}
+
+HttpRequest::Pointer OneDrive::Auth::validateTokenRequest(
+    std::ostream& input_data) const {
+  // TODO
+  return 0;
+}
+
+IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
+    std::istream&) const {
+  // TODO
+  return 0;
+}
+
+IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
+    std::istream&) const {
+  // TODO
+  return 0;
+}
+
+bool OneDrive::Auth::validateTokenResponse(std::istream&) const {
+  // TODO
+  return 0;
+}
+
 }  // namespace cloudstorage

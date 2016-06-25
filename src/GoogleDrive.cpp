@@ -189,4 +189,39 @@ bool GoogleDrive::Auth::validateToken(IAuth::Token& token) const {
     return false;
 }
 
+HttpRequest::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeRequest(
+    std::ostream& arguments) const {
+  // TODO
+  return 0;
+}
+
+HttpRequest::Pointer GoogleDrive::Auth::refreshTokenRequest(
+    std::ostream& input_data) const {
+  // TODO
+  return 0;
+}
+
+HttpRequest::Pointer GoogleDrive::Auth::validateTokenRequest(
+    std::ostream& input_data) const {
+  // TODO
+  return 0;
+}
+
+IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
+    std::istream&) const {
+  // TODO
+  return 0;
+}
+
+IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
+    std::istream&) const {
+  // TODO
+  return 0;
+}
+
+bool GoogleDrive::Auth::validateTokenResponse(std::istream&) const {
+  // TODO
+  return 0;
+}
+
 }  // namespace cloudstorage
