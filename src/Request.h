@@ -32,6 +32,7 @@
 
 namespace cloudstorage {
 
+class AuthorizeRequest;
 class CloudProvider;
 class HttpRequest;
 namespace {
@@ -50,11 +51,14 @@ class Request {
   std::unique_ptr<HttpCallback> httpCallback();
   std::stringstream& input_stream() { return input_stream_; }
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
+  bool reauthorize();
 
   void set_cancelled(bool e) { is_cancelled_ = e; }
   bool is_cancelled() { return is_cancelled_; }
 
  private:
+  std::mutex mutex_;
+  std::unique_ptr<AuthorizeRequest> authorize_request_;
   std::shared_ptr<CloudProvider> provider_;
   std::stringstream input_stream_;
   std::atomic_bool is_cancelled_;

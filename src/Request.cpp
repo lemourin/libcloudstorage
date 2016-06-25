@@ -54,12 +54,29 @@ Request::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
 void Request::cancel() {
-  set_cancelled(true);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    set_cancelled(true);
+    if (authorize_request_) {
+      authorize_request_->cancel();
+    }
+  }
   finish();
 }
 
 std::unique_ptr<HttpCallback> Request::httpCallback() {
   return make_unique<HttpCallback>(is_cancelled_);
+}
+
+bool Request::reauthorize() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (is_cancelled()) return false;
+  authorize_request_ = make_unique<AuthorizeRequest>(provider());
+  lock.unlock();
+  if (!authorize_request_->result()) throw AuthorizationException();
+  lock.lock();
+  authorize_request_ = nullptr;
+  return true;
 }
 
 ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
@@ -86,7 +103,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
           result.push_back(t);
         }
       } else if (HttpRequest::isClientError(code)) {
-        if (!provider()->authorize()) throw AuthorizationException();
+        if (!reauthorize()) return result;
         input_stream() = std::stringstream();
         input_stream() << backup_data;
       } else {
@@ -147,7 +164,7 @@ void GetItemRequest::cancel() {
     set_cancelled(true);
     if (current_request_) current_request_->cancel();
   }
-  finish();
+  Request::cancel();
 }
 
 IItem::Pointer GetItemRequest::result() {
@@ -172,7 +189,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
     int code = download();
     if (HttpRequest::isClientError(code)) {
       if (stream_wrapper_.callback_) stream_wrapper_.callback_->reset();
-      if (!provider()->authorize()) throw AuthorizationException();
+      if (!reauthorize()) return;
       code = download();
       if (!HttpRequest::isSuccess(code))
         throw std::logic_error("Invalid download request.");
@@ -219,7 +236,7 @@ UploadFileRequest::UploadFileRequest(
     int code = upload();
     if (HttpRequest::isClientError(code)) {
       stream_wrapper_.callback_->reset();
-      if (!provider()->authorize()) throw AuthorizationException();
+      if (!reauthorize()) return;
       code = upload();
       if (!HttpRequest::isSuccess(code))
         throw std::logic_error("Invalid upload request.");
@@ -256,7 +273,7 @@ std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
 }
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
-    : Request(p) {
+    : Request(p), awaiting_authorization_code_() {
   function_ = std::async(std::launch::async, [this]() {
     IAuth* auth = provider()->auth();
     if (auth->access_token()) {
