@@ -274,9 +274,26 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
   function_ = std::async(std::launch::async, [this]() {
     bool ret;
     {
-      std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
-      ret = authorize();
+      std::unique_lock<std::mutex> currently_authorizing(
+          provider()->currently_authorizing_mutex_);
+      if (provider()->currently_authorizing_) {
+        provider()->authorized_.wait(currently_authorizing, [this]() {
+          return !provider()->currently_authorizing_;
+        });
+        return provider()->current_authorization_successful_;
+      }
+      provider()->currently_authorizing_ = true;
+      provider()->current_authorization_successful_ = false;
+      currently_authorizing.unlock();
+      {
+        std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
+        ret = authorize();
+      }
+      currently_authorizing.lock();
+      provider()->currently_authorizing_ = false;
+      provider()->current_authorization_successful_ = ret;
     }
+    provider()->authorized_.notify_all();
     if (ret) provider()->callback_->initialized(*provider());
     return ret;
   });
