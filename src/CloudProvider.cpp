@@ -42,7 +42,7 @@ AuthorizeRequest::Pointer CloudProvider::initialize(
   return make_unique<AuthorizeRequest>(shared_from_this());
 }
 
-std::string CloudProvider::access_token() {
+std::string CloudProvider::access_token() const {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   if (auth()->access_token() == nullptr)
     throw std::logic_error("Not authenticated yet.");
