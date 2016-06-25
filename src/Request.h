@@ -75,6 +75,7 @@ class ListDirectoryRequest : public Request {
     virtual ~ICallback() = default;
 
     virtual void receivedItem(IItem::Pointer item) = 0;
+    virtual void done(const std::vector<IItem::Pointer>& result) = 0;
   };
 
   ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,

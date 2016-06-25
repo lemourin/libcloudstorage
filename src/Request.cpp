@@ -109,6 +109,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         r = nullptr;
       }
     } while (r);
+    if (callback_) callback_->done(result);
     return result;
   });
 }
