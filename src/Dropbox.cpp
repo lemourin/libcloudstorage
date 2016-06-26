@@ -161,6 +161,7 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
 
   Token::Pointer token = make_unique<Token>();
   token->token_ = response["access_token"].asString();
+  token->refresh_token_ = token->token_;
   token->expires_in_ = -1;
   return token;
 }
