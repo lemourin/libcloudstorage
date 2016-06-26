@@ -36,9 +36,13 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
     return Status::WaitForAuthorizationCode;
   }
 
-  void initialized(const cloudstorage::ICloudProvider& provider) {
+  void accepted(const cloudstorage::ICloudProvider& provider) {
     std::fstream file(drive_file_, std::fstream::out);
     file << provider.token();
+  }
+
+  void declined(const cloudstorage::ICloudProvider&) {
+    std::cerr << "access denied ;_;\n";
   }
 
  private:

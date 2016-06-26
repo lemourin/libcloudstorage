@@ -301,7 +301,10 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
       provider()->current_authorization_successful_ = ret;
     }
     provider()->authorized_.notify_all();
-    if (ret) provider()->callback_->initialized(*provider());
+    if (ret)
+      provider()->callback_->accepted(*provider());
+    else
+      provider()->callback_->declined(*provider());
     return ret;
   });
 }
