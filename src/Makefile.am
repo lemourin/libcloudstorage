@@ -5,6 +5,10 @@ AM_CXXFLAGS = \
 	$(libjsoncpp_CXXFLAGS) \
 	$(libmicrohttpd_CXXFLAGS)
 
+AM_LDFLAGS = \
+	-no-undefined \
+	$(SOCKET_LIBS)
+
 lib_LTLIBRARIES = libcloudstorage.la
 
 libcloudstorage_la_SOURCES = \
