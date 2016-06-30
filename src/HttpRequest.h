@@ -50,11 +50,12 @@ class HttpRequest {
   class ICallback {
    public:
     using Pointer = std::unique_ptr<ICallback>;
+
     virtual ~ICallback() = default;
 
     virtual bool abort() = 0;
-    virtual void progressDownload(uint total, uint now) = 0;
-    virtual void progressUpload(uint total, uint now) = 0;
+    virtual void progressDownload(uint32_t total, uint32_t now) = 0;
+    virtual void progressUpload(uint32_t total, uint32_t now) = 0;
     virtual void receivedHttpCode(int code) = 0;
     virtual void receivedContentLength(int length) = 0;
   };

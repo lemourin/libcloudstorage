@@ -36,9 +36,9 @@ class HttpCallback : public HttpRequest::ICallback {
 
   bool abort() { return is_cancelled_; }
 
-  void progressDownload(uint, uint) {}
+  void progressDownload(uint32_t, uint32_t) {}
 
-  void progressUpload(uint, uint) {}
+  void progressUpload(uint32_t, uint32_t) {}
 
   void receivedHttpCode(int) {}
 
@@ -270,7 +270,7 @@ UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
     : callback_(std::move(callback)) {}
 
 std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
-  uint size = callback_->putData(buffer_, BUFFER_SIZE);
+  uint32_t size = callback_->putData(buffer_, BUFFER_SIZE);
   if (gptr() == egptr()) setg(buffer_, buffer_, buffer_ + size);
   return gptr() == egptr() ? std::char_traits<char>::eof()
                            : std::char_traits<char>::to_int_type(*gptr());

@@ -38,7 +38,7 @@ class DownloadFileCallback : public DownloadFileRequest::ICallback {
   DownloadFileCallback(InputDevice *p);
 
   void reset();
-  void receivedData(const char *data, uint length);
+  void receivedData(const char *data, uint32_t length);
   void done();
 
  private:

@@ -27,6 +27,7 @@
 #include <future>
 #include <sstream>
 #include <vector>
+#include <mutex>
 
 #include "IItem.h"
 
@@ -126,7 +127,7 @@ class DownloadFileRequest : public Request {
     virtual ~ICallback() = default;
 
     virtual void reset() = 0;
-    virtual void receivedData(const char* data, uint length) = 0;
+    virtual void receivedData(const char* data, uint32_t length) = 0;
     virtual void done() = 0;
   };
 
@@ -162,7 +163,7 @@ class UploadFileRequest : public Request {
     virtual ~ICallback() = default;
 
     virtual void reset() = 0;
-    virtual uint putData(char* data, uint maxlength) = 0;
+    virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
     virtual void done() = 0;
   };
 
@@ -175,7 +176,7 @@ class UploadFileRequest : public Request {
  private:
   class UploadStreamWrapper : public std::streambuf {
    public:
-    static constexpr uint BUFFER_SIZE = 1024;
+    static constexpr uint32_t BUFFER_SIZE = 1024;
 
     UploadStreamWrapper(UploadFileRequest::ICallback::Pointer callback);
 

@@ -31,9 +31,9 @@ DownloadFileCallback::DownloadFileCallback(InputDevice* p) : device_(p) {}
 
 void DownloadFileCallback::reset() {}
 
-void DownloadFileCallback::receivedData(const char* data, uint length) {
+void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
   std::lock_guard<std::mutex> lock(device_->queue_mutex_);
-  for (uint i = 0; i < length; i++) device_->queue_.push(data[i]);
+  for (uint32_t i = 0; i < length; i++) device_->queue_.push(data[i]);
   if (device_->queue_.size() >= 2 * MIN_DATA_SIZE) emit device_->runPlayer();
 }
 
