@@ -37,10 +37,18 @@ class Item : public IItem {
   std::string id() const;
   bool is_directory() const;
 
+  std::string thumbnail_url() const;
+  bool is_hidden() const;
+  FileType type() const;
+
  private:
   std::string filename_;
   std::string id_;
   bool is_directory_;
+  std::string thumbnail_url_;
+  FileType type_;
+  bool is_hidden_;
+
 };
 
 }  // namespace cloudstorage
