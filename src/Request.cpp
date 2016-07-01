@@ -213,8 +213,9 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
         }
         code = download(error_stream);
       }
-      if (!HttpRequest::isSuccess(code))
-        stream_wrapper_.callback_->error(error_stream.str());
+      if (HttpRequest::isClientError(code))
+        stream_wrapper_.callback_->error("HTTP code " + std::to_string(code) +
+                                         ": " + error_stream.str());
       else
         stream_wrapper_.callback_->done();
     } catch (const HttpException& e) {
@@ -269,7 +270,7 @@ UploadFileRequest::UploadFileRequest(
         }
         code = upload(error_stream);
       }
-      if (!HttpRequest::isSuccess(code))
+      if (HttpRequest::isClientError(code))
         stream_wrapper_.callback_->error(error_stream.str());
       else
         stream_wrapper_.callback_->done();
