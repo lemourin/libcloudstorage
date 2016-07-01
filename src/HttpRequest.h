@@ -85,6 +85,7 @@ class HttpRequest {
 
   static bool isSuccess(int code);
   static bool isClientError(int code);
+  static bool isAuthorizationError(int code);
 
  private:
   struct CurlDeleter {

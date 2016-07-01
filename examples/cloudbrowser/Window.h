@@ -58,6 +58,7 @@ class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
   Status userConsentRequired(const cloudstorage::ICloudProvider&);
   void accepted(const cloudstorage::ICloudProvider&);
   void declined(const cloudstorage::ICloudProvider&);
+  void error(const cloudstorage::ICloudProvider&, const std::string&);
 
  private:
   Window* window_;

@@ -45,6 +45,8 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
     std::cerr << "access denied ;_;\n";
   }
 
+  void error(const cloudstorage::ICloudProvider&, const std::string&) {}
+
  private:
   std::string drive_file_;
 };

@@ -89,26 +89,36 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
     std::vector<IItem::Pointer> result;
     HttpRequest::Pointer r =
         provider()->listDirectoryRequest(*directory_, input_stream());
-    do {
-      std::stringstream output_stream;
-      std::string backup_data = input_stream().str();
-      provider()->authorizeRequest(*r);
-      int code =
-          r->send(input_stream(), output_stream, nullptr, httpCallback());
-      if (HttpRequest::isSuccess(code)) {
-        for (auto& t : provider()->listDirectoryResponse(output_stream, r,
-                                                         input_stream())) {
-          if (callback_) callback_->receivedItem(t);
-          result.push_back(t);
+    try {
+      do {
+        std::stringstream output_stream;
+        std::string backup_data = input_stream().str();
+        provider()->authorizeRequest(*r);
+        int code =
+            r->send(input_stream(), output_stream, nullptr, httpCallback());
+        if (HttpRequest::isSuccess(code)) {
+          for (auto& t : provider()->listDirectoryResponse(output_stream, r,
+                                                           input_stream())) {
+            if (callback_) callback_->receivedItem(t);
+            result.push_back(t);
+          }
+        } else if (HttpRequest::isAuthorizationError(code)) {
+          if (!reauthorize()) {
+            if (callback_) callback_->error("Failed to authorize.");
+            return result;
+          }
+          input_stream() = std::stringstream();
+          input_stream() << backup_data;
+        } else {
+          if (callback_) callback_->error(output_stream.str());
+          return result;
         }
-      } else if (HttpRequest::isClientError(code)) {
-        if (!reauthorize()) return result;
-        input_stream() = std::stringstream();
-        input_stream() << backup_data;
-      } else {
-        r = nullptr;
-      }
-    } while (r);
+      } while (r);
+    } catch (const HttpException& e) {
+      if (callback_) callback_->error(e.what());
+      return result;
+    }
+
     if (callback_) callback_->done(result);
     return result;
   });
@@ -117,7 +127,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
 void ListDirectoryRequest::finish() {
-  if (result_.valid()) result_.wait();
+  if (result_.valid()) result_.get();
 }
 
 std::vector<IItem::Pointer> ListDirectoryRequest::result() {
@@ -161,7 +171,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
 GetItemRequest::~GetItemRequest() { cancel(); }
 
 void GetItemRequest::finish() {
-  if (result_.valid()) result_.wait();
+  if (result_.valid()) result_.get();
 }
 
 void GetItemRequest::cancel() {
@@ -190,17 +200,26 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
                                          ICallback::Pointer callback)
     : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
+  if (!stream_wrapper_.callback_)
+    throw std::logic_error("Callback can't be null.");
   function_ = std::async(std::launch::async, [this]() {
-    int code = download();
-    if (HttpRequest::isClientError(code)) {
-      if (stream_wrapper_.callback_) stream_wrapper_.callback_->reset();
-      if (!reauthorize()) return;
-      code = download();
+    try {
+      std::stringstream error_stream;
+      int code = download(error_stream);
+      if (HttpRequest::isAuthorizationError(code)) {
+        if (!reauthorize()) {
+          stream_wrapper_.callback_->error("Failed to authorize.");
+          return;
+        }
+        code = download(error_stream);
+      }
       if (!HttpRequest::isSuccess(code))
-        throw std::logic_error("Invalid download request.");
+        stream_wrapper_.callback_->error(error_stream.str());
+      else
+        stream_wrapper_.callback_->done();
+    } catch (const HttpException& e) {
+      stream_wrapper_.callback_->error(e.what());
     }
-    if (HttpRequest::isSuccess(code) && stream_wrapper_.callback_)
-      stream_wrapper_.callback_->done();
   });
 }
 
@@ -210,13 +229,13 @@ void DownloadFileRequest::finish() {
   if (function_.valid()) function_.wait();
 }
 
-int DownloadFileRequest::download() {
+int DownloadFileRequest::download(std::ostream& error_stream) {
   std::stringstream stream;
   HttpRequest::Pointer request =
       provider()->downloadFileRequest(*file_, stream);
   provider()->authorizeRequest(*request);
   std::ostream response_stream(&stream_wrapper_);
-  return request->send(stream, response_stream, nullptr, httpCallback());
+  return request->send(stream, response_stream, &error_stream, httpCallback());
 }
 
 DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
@@ -225,7 +244,7 @@ DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
 
 std::streamsize DownloadFileRequest::DownloadStreamWrapper::xsputn(
     const char_type* data, std::streamsize length) {
-  if (callback_) callback_->receivedData(data, length);
+  callback_->receivedData(data, static_cast<uint32_t>(length));
   return length;
 }
 
@@ -236,33 +255,44 @@ UploadFileRequest::UploadFileRequest(
       directory_(std::move(directory)),
       filename_(filename),
       stream_wrapper_(std::move(callback)) {
+  if (!stream_wrapper_.callback_)
+    throw std::logic_error("Callback can't be null.");
   function_ = std::async(std::launch::async, [this]() {
-    int code = upload();
-    if (HttpRequest::isClientError(code)) {
-      stream_wrapper_.callback_->reset();
-      if (!reauthorize()) return;
-      code = upload();
+    try {
+      std::stringstream error_stream;
+      int code = upload(error_stream);
+      if (HttpRequest::isAuthorizationError(code)) {
+        stream_wrapper_.callback_->reset();
+        if (!reauthorize()) {
+          stream_wrapper_.callback_->error("Failed to authorize.");
+          return;
+        }
+        code = upload(error_stream);
+      }
       if (!HttpRequest::isSuccess(code))
-        throw std::logic_error("Invalid upload request.");
+        stream_wrapper_.callback_->error(error_stream.str());
+      else
+        stream_wrapper_.callback_->done();
+    } catch (const HttpException& e) {
+      stream_wrapper_.callback_->error(e.what());
     }
-    if (HttpRequest::isSuccess(code)) stream_wrapper_.callback_->done();
   });
 }
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }
 
 void UploadFileRequest::finish() {
-  if (function_.valid()) function_.wait();
+  if (function_.valid()) function_.get();
 }
 
-int UploadFileRequest::upload() {
+int UploadFileRequest::upload(std::ostream& error_stream) {
   std::istream upload_data_stream(&stream_wrapper_);
   std::stringstream request_data;
   HttpRequest::Pointer request = provider()->uploadFileRequest(
       *directory_, filename_, upload_data_stream, request_data);
   provider()->authorizeRequest(*request);
   std::stringstream response;
-  return request->send(request_data, response, nullptr, httpCallback());
+  return request->send(request_data, response, &error_stream, httpCallback());
 }
 
 UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
@@ -278,6 +308,8 @@ std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
     : Request(p), awaiting_authorization_code_() {
+  if (!provider()->callback_)
+    throw std::logic_error("CloudProvider's callback can't be null.");
   function_ = std::async(std::launch::async, [this]() {
     bool ret;
     {
@@ -318,7 +350,7 @@ bool AuthorizeRequest::result() {
 }
 
 void AuthorizeRequest::finish() {
-  if (function_.valid()) function_.wait();
+  if (function_.valid()) function_.get();
 }
 
 void AuthorizeRequest::cancel() {
@@ -340,25 +372,26 @@ void AuthorizeRequest::cancel() {
 }
 
 bool AuthorizeRequest::authorize() {
-  IAuth* auth = provider()->auth();
-  if (auth->access_token()) {
-    std::stringstream input, output;
-    HttpRequest::Pointer r = auth->validateTokenRequest(input);
-    if (HttpRequest::isSuccess(
-            r->send(input, output, nullptr, httpCallback()))) {
-      if (auth->validateTokenResponse(output)) return true;
+  try {
+    IAuth* auth = provider()->auth();
+    if (auth->access_token()) {
+      std::stringstream input, output;
+      HttpRequest::Pointer r = auth->validateTokenRequest(input);
+      if (HttpRequest::isSuccess(
+              r->send(input, output, nullptr, httpCallback()))) {
+        if (auth->validateTokenResponse(output)) return true;
+      }
+
+      input = std::stringstream();
+      output = std::stringstream();
+      r = auth->refreshTokenRequest(input);
+      if (HttpRequest::isSuccess(
+              r->send(input, output, nullptr, httpCallback()))) {
+        auth->set_access_token(auth->refreshTokenResponse(output));
+        return true;
+      }
     }
-  }
-  if (auth->access_token()) {
-    std::stringstream input, output;
-    HttpRequest::Pointer r = auth->refreshTokenRequest(input);
-    if (HttpRequest::isSuccess(
-            r->send(input, output, nullptr, httpCallback()))) {
-      auth->set_access_token(auth->refreshTokenResponse(output));
-      return true;
-    }
-  }
-  if (provider()->callback_) {
+
     if (is_cancelled()) return false;
     if (provider()->callback_->userConsentRequired(*provider()) ==
         ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
@@ -385,8 +418,11 @@ bool AuthorizeRequest::authorize() {
         return true;
       }
     }
+    return false;
+  } catch (const HttpException& e) {
+    provider()->callback_->error(*provider(), e.what());
+    return false;
   }
-  return false;
 }
 
 }  // namespace cloudstorage

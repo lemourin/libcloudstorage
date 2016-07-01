@@ -39,6 +39,8 @@ class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
 
   void done(const std::vector<IItem::Pointer>&) {}
 
+  void error(const std::string& str) { qDebug() << str.c_str(); }
+
  private:
   Window* window_;
 };
@@ -73,9 +75,9 @@ Window::~Window() { clearCurrentDirectoryList(); }
 void Window::initializeCloud(QString name) {
   QSettings settings;
   cloud_provider_ = CloudStorage().provider(name.toStdString());
-  authorization_request_ = cloud_provider_->initialize(
-      settings.value(name).toString().toStdString(),
-      make_unique<CloudProviderCallback>(this));
+  authorization_request_ =
+      cloud_provider_->initialize(settings.value(name).toString().toStdString(),
+                                  make_unique<CloudProviderCallback>(this));
 }
 
 void Window::listDirectory() {
@@ -91,6 +93,7 @@ void Window::changeCurrentDirectory(ItemModel* directory) {
 }
 
 void Window::onSuccessfullyAuthorized() {
+  qDebug() << "[OK] Successfully authorized" << cloud_provider_->name().c_str();
   current_directory_ = cloud_provider_->rootDirectory();
   listDirectory();
 }
@@ -172,6 +175,11 @@ void CloudProviderCallback::accepted(const ICloudProvider& drive) {
 
 void CloudProviderCallback::declined(const ICloudProvider&) {
   emit window_->closeBrowser();
+}
+
+void CloudProviderCallback::error(const ICloudProvider&,
+                                  const std::string& desc) {
+  qDebug() << "[FAIL]" << desc.c_str();
 }
 
 ItemModel::ItemModel(IItem::Pointer item) : item_(item) {}

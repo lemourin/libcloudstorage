@@ -25,9 +25,9 @@
 #define REQUEST_H
 
 #include <future>
+#include <mutex>
 #include <sstream>
 #include <vector>
-#include <mutex>
 
 #include "IItem.h"
 
@@ -77,6 +77,7 @@ class ListDirectoryRequest : public Request {
 
     virtual void receivedItem(IItem::Pointer item) = 0;
     virtual void done(const std::vector<IItem::Pointer>& result) = 0;
+    virtual void error(const std::string& description) = 0;
   };
 
   ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
@@ -126,9 +127,9 @@ class DownloadFileRequest : public Request {
     using Pointer = std::unique_ptr<ICallback>;
     virtual ~ICallback() = default;
 
-    virtual void reset() = 0;
     virtual void receivedData(const char* data, uint32_t length) = 0;
     virtual void done() = 0;
+    virtual void error(const std::string& description) = 0;
   };
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
@@ -146,7 +147,7 @@ class DownloadFileRequest : public Request {
     DownloadFileRequest::ICallback::Pointer callback_;
   };
 
-  int download();
+  int download(std::ostream& error_stream);
 
   std::future<void> function_;
   IItem::Pointer file_;
@@ -165,6 +166,7 @@ class UploadFileRequest : public Request {
     virtual void reset() = 0;
     virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
     virtual void done() = 0;
+    virtual void error(const std::string& description) = 0;
   };
 
   UploadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
@@ -186,7 +188,7 @@ class UploadFileRequest : public Request {
     UploadFileRequest::ICallback::Pointer callback_;
   };
 
-  int upload();
+  int upload(std::ostream& error_stream);
 
   std::future<void> function_;
   IItem::Pointer directory_;

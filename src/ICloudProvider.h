@@ -47,6 +47,8 @@ class ICloudProvider {
     virtual Status userConsentRequired(const ICloudProvider&) = 0;
     virtual void accepted(const ICloudProvider&) = 0;
     virtual void declined(const ICloudProvider&) = 0;
+    virtual void error(const ICloudProvider&,
+                       const std::string& description) = 0;
   };
 
   virtual ~ICloudProvider() = default;
