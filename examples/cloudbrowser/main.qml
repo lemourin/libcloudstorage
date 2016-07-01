@@ -50,23 +50,12 @@ Item {
         }
     }
 
-    ScrollView {
-        id: browserView
-        visible: false
-        anchors.fill: parent
-
-        WebView {
-            id: browser
-            anchors.fill: parent
-        }
-    }
-
     ListView {
         id: directory
         anchors.left: cloudView.right
         anchors.top: parent.top
-        width: 200
-        height: 400
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         model: directoryModel
         delegate: Component {
             Text {
@@ -99,5 +88,16 @@ Item {
     VideoOutput {
         anchors.fill: parent
         source: window
+    }
+
+    ScrollView {
+        id: browserView
+        visible: false
+        anchors.fill: parent
+
+        WebView {
+            id: browser
+            anchors.fill: parent
+        }
     }
 }
