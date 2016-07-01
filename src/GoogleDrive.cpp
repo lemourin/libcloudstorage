@@ -42,6 +42,10 @@ HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::GET);
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
+  request->setParameter(
+      "fields",
+      "files(id,name,thumbnailLink,trashed,webContentLink,mimeType),kind,"
+      "nextPageToken");
   return request;
 }
 
@@ -87,9 +91,14 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   stream >> response;
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["files"]) {
-    result.push_back(make_unique<Item>(
-        v["name"].asString(), v["id"].asString(),
-        v["mimeType"].asString() == "application/vnd.google-apps.folder"));
+    IItem::FileType type = IItem::FileType::Unknown;
+    if (v["mimeType"].asString() == "application/vnd.google-apps.folder")
+      type = IItem::FileType::Directory;
+    auto item =
+        make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+    item->set_hidden(v["trashed"].asBool());
+    item->set_thumbnail_url(v["thumbnailLink"].asString());
+    result.push_back(std::move(item));
   }
 
   if (response.isMember("nextPageToken"))

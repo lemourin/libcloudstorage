@@ -74,8 +74,11 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
   Json::Value response;
   stream >> response;
   for (Json::Value v : response["value"]) {
-    result.push_back(make_unique<Item>(v["name"].asString(), v["id"].asString(),
-                                       v.isMember("folder")));
+    IItem::FileType type = IItem::FileType::Unknown;
+    if (v.isMember("folder"))
+      type = IItem::FileType::Directory;
+    result.push_back(
+        make_unique<Item>(v["name"].asString(), v["id"].asString(), type));
   }
   if (response.isMember("@odata.nextLink")) {
     next_page_request->resetParameters();

@@ -37,7 +37,7 @@ Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
 std::string Dropbox::name() const { return "dropbox"; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
-  return make_unique<Item>("/", "", true);
+  return make_unique<Item>("/", "", IItem::FileType::Directory);
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
@@ -88,9 +88,9 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
 
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["entries"]) {
+    IItem::FileType type;// = v[".tag"].asString() == "folder";
     result.push_back(make_unique<Item>(v["name"].asString(),
-                                       v["path_display"].asString(),
-                                       v[".tag"].asString() == "folder"));
+                                       v["path_display"].asString(), type));
   }
   if (!response["has_more"].asBool())
     next_page_request = nullptr;

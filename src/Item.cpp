@@ -25,20 +25,19 @@
 
 namespace cloudstorage {
 
-Item::Item(std::string filename, std::string id, bool is_directory)
+Item::Item(std::string filename, std::string id, FileType type)
     : filename_(filename),
       id_(id),
-      is_directory_(is_directory),
       url_(),
       thumbnail_url_(),
-      type_(FileType::Unknown),
+      type_(type),
       is_hidden_(false) {}
 
 std::string Item::filename() const { return filename_; }
 
 std::string Item::id() const { return id_; }
 
-bool Item::is_directory() const { return is_directory_; }
+bool Item::is_directory() const { return type() == FileType::Directory; }
 
 std::string Item::url() const { return url_; }
 

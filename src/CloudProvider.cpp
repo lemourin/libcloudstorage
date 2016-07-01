@@ -66,7 +66,7 @@ std::string CloudProvider::token() const {
 }
 
 IItem::Pointer CloudProvider::rootDirectory() const {
-  return make_unique<Item>("/", "root", true);
+  return make_unique<Item>("/", "root", IItem::FileType::Directory);
 }
 
 ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
