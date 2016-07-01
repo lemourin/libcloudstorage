@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 #include "HttpRequest.h"
+
 #include <sstream>
 
 namespace cloudstorage {
@@ -90,10 +91,12 @@ HttpRequest::HttpRequest(const std::string& url, Type t)
     : handle_(curl_easy_init(), CurlDeleter()), url_(url), type_(t) {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
-  curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER, false);
-  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, true);
+  curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER,
+                   static_cast<long>(false));
+  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION,
+                   static_cast<long>(true));
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
-  curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, false);
+  curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
 }
 
 void HttpRequest::setParameter(const std::string& parameter,
@@ -147,18 +150,18 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
   CURLcode status = CURLE_OK;
   if (type_ == Type::POST) {
-    curl_easy_setopt(handle_.get(), CURLOPT_POST, true);
+    curl_easy_setopt(handle_.get(), CURLOPT_POST, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
-    curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE_LARGE,
-                     stream_length(data));
+    curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE,
+                     static_cast<long>(stream_length(data)));
     status = curl_easy_perform(handle_.get());
   } else if (type_ == Type::GET) {
     status = curl_easy_perform(handle_.get());
   } else if (type_ == Type::PUT) {
-    curl_easy_setopt(handle_.get(), CURLOPT_PUT, true);
+    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
-    curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE_LARGE,
-                     stream_length(data));
+    curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
+                     static_cast<long>(stream_length(data)));
     status = curl_easy_perform(handle_.get());
   }
   curl_slist_free_all(header_list);

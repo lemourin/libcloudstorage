@@ -411,11 +411,14 @@ bool AuthorizeRequest::authorize() {
         auth->set_authorization_code(authorization_code);
       }
       std::stringstream input, output;
+      std::stringstream error_stream;
       HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
       if (HttpRequest::isSuccess(
-              r->send(input, output, nullptr, httpCallback()))) {
+              r->send(input, output, &error_stream, httpCallback()))) {
         auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
         return true;
+      } else {
+        provider()->callback_->error(*provider(), error_stream.str());
       }
     }
     return false;
