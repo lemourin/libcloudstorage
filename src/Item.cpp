@@ -29,6 +29,7 @@ Item::Item(std::string filename, std::string id, bool is_directory)
     : filename_(filename),
       id_(id),
       is_directory_(is_directory),
+      url_(),
       thumbnail_url_(),
       type_(FileType::Unknown),
       is_hidden_(false) {}
@@ -39,10 +40,20 @@ std::string Item::id() const { return id_; }
 
 bool Item::is_directory() const { return is_directory_; }
 
+std::string Item::url() const { return url_; }
+
+void Item::set_url(std::string url) { url_ = url; }
+
 std::string Item::thumbnail_url() const { return thumbnail_url_; }
+
+void Item::set_thumbnail_url(std::string url) { thumbnail_url_ = url; }
 
 bool Item::is_hidden() const { return is_hidden_; }
 
+void Item::set_hidden(bool e) { is_hidden_ = e; }
+
 IItem::FileType Item::type() const { return type_; }
+
+void Item::set_type(FileType t) { type_ = t; }
 
 }  // namespace cloudstorage

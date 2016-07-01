@@ -37,14 +37,23 @@ class Item : public IItem {
   std::string id() const;
   bool is_directory() const;
 
+  std::string url() const;
+  void set_url(std::string);
+
   std::string thumbnail_url() const;
+  void set_thumbnail_url(std::string);
+
   bool is_hidden() const;
+  void set_hidden(bool);
+
   FileType type() const;
+  void set_type(FileType);
 
  private:
   std::string filename_;
   std::string id_;
   bool is_directory_;
+  std::string url_;
   std::string thumbnail_url_;
   FileType type_;
   bool is_hidden_;
