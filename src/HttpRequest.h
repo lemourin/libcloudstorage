@@ -47,6 +47,9 @@ class HttpRequest {
  public:
   using Pointer = std::unique_ptr<HttpRequest>;
 
+  static constexpr int Aborted = -1;
+  static constexpr int Unknown = -2;
+
   class ICallback {
    public:
     using Pointer = std::unique_ptr<ICallback>;

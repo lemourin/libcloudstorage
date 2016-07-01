@@ -45,18 +45,18 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
     if (data->callback_) {
       long http_code = 0;
       curl_easy_getinfo(data->handle_, CURLINFO_RESPONSE_CODE, &http_code);
-      data->callback_->receivedHttpCode(http_code);
-      data->success_ = HttpRequest::isSuccess(http_code);
+      data->callback_->receivedHttpCode(static_cast<int>(http_code));
+      data->success_ = HttpRequest::isSuccess(static_cast<int>(http_code));
       double content_length = 0;
       curl_easy_getinfo(data->handle_, CURLINFO_CONTENT_LENGTH_DOWNLOAD,
                         &content_length);
-      data->callback_->receivedContentLength(content_length);
+      data->callback_->receivedContentLength(static_cast<int>(content_length));
     }
   }
   if (!data->error_stream_ || data->success_)
-    data->stream_->write(ptr, size * nmemb);
+    data->stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
   else
-    data->error_stream_->write(ptr, size * nmemb);
+    data->error_stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
   return size * nmemb;
 }
 
@@ -71,8 +71,12 @@ int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
   HttpRequest::ICallback* callback =
       static_cast<HttpRequest::ICallback*>(clientp);
   if (callback) {
-    if (ultotal != 0) callback->progressUpload(ultotal, ulnow);
-    if (dltotal != 0) callback->progressDownload(dltotal, dlnow);
+    if (ultotal != 0)
+      callback->progressUpload(static_cast<uint32_t>(ultotal),
+                               static_cast<uint32_t>(ulnow));
+    if (dltotal != 0)
+      callback->progressDownload(static_cast<uint32_t>(dltotal),
+                                 static_cast<uint32_t>(dlnow));
     if (callback->abort()) return 1;
   }
   return 0;
@@ -166,15 +170,14 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   }
   curl_slist_free_all(header_list);
 
-  int return_code = 0;
-  if (status == CURLE_OK) {
-    long http_code = 0;
+  if (status == CURLE_ABORTED_BY_CALLBACK)
+    return Aborted;
+  else if (status == CURLE_OK) {
+    long http_code = static_cast<long>(Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
-    return_code = http_code;
-  } else if (status != CURLE_ABORTED_BY_CALLBACK) {
+    return static_cast<int>(http_code);
+  } else
     throw HttpException(status);
-  }
-  return return_code;
 }
 
 void HttpRequest::resetParameters() {
