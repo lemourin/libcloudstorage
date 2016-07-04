@@ -185,6 +185,10 @@ void Window::onPausePlayer() {
 }
 
 void Window::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
+  if (status == QMediaPlayer::StalledMedia)
+    media_player_.pause();
+  else if (status == QMediaPlayer::BufferedMedia)
+    media_player_.play();
   std::cerr << "[DIAG] Media status: " << mediaStatusToString(status) << "\n";
 }
 
