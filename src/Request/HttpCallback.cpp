@@ -1,0 +1,45 @@
+/*****************************************************************************
+ * HttpCallback.cpp : HttpCallback implementation
+ *
+ *****************************************************************************
+ * Copyright (C) 2016-2016 VideoLAN
+ *
+ * Authors: Paweł Wegner <pawel.wegner95@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
+ *****************************************************************************/
+
+#include "HttpCallback.h"
+
+namespace cloudstorage {
+
+HttpCallback::HttpCallback(
+    std::atomic_bool& is_cancelled,
+    std::function<void(uint32_t, uint32_t)> progress_download)
+    : is_cancelled_(is_cancelled), progress_download_(progress_download) {}
+
+bool HttpCallback::abort() { return is_cancelled_; }
+
+void HttpCallback::progressDownload(uint32_t total, uint32_t now) {
+  if (progress_download_) progress_download_(total, now);
+}
+
+void HttpCallback::progressUpload(uint32_t, uint32_t) {}
+
+void HttpCallback::receivedHttpCode(int) {}
+
+void HttpCallback::receivedContentLength(int) {}
+
+}  // namespace cloudstorage

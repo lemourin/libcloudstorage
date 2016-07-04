@@ -29,7 +29,11 @@
 #include <vector>
 
 #include "IItem.h"
-#include "Request.h"
+#include "Request/AuthorizeRequest.h"
+#include "Request/DownloadFileRequest.h"
+#include "Request/GetItemRequest.h"
+#include "Request/ListDirectoryRequest.h"
+#include "Request/UploadFileRequest.h"
 
 namespace cloudstorage {
 

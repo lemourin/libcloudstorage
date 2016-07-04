@@ -20,7 +20,13 @@ libcloudstorage_la_SOURCES = \
 	OneDrive.cpp \
 	Dropbox.cpp \
 	CloudStorage.cpp \
-	Request.cpp
+	Request/Request.cpp \
+	Request/HttpCallback.cpp \
+	Request/AuthorizeRequest.cpp \
+	Request/DownloadFileRequest.cpp \
+	Request/GetItemRequest.cpp \
+	Request/ListDirectoryRequest.cpp \
+	Request/UploadFileRequest.cpp
 
 noinst_HEADERS = \
 	Utility.h \
@@ -31,14 +37,20 @@ noinst_HEADERS = \
 	HttpRequest.h \
 	GoogleDrive.h \
 	OneDrive.h \
-	Dropbox.h
+	Dropbox.h \
+	Request/HttpCallback.h
 
-include_HEADERS = \
+nobase_include_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
 	CloudStorage.h \
-	Request.h
+	Request/Request.h \
+	Request/AuthorizeRequest.h \
+	Request/DownloadFileRequest.h \
+	Request/GetItemRequest.h \
+	Request/ListDirectoryRequest.h \
+	Request/UploadFileRequest.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
