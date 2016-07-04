@@ -26,7 +26,8 @@ libcloudstorage_la_SOURCES = \
 	Request/DownloadFileRequest.cpp \
 	Request/GetItemRequest.cpp \
 	Request/ListDirectoryRequest.cpp \
-	Request/UploadFileRequest.cpp
+	Request/UploadFileRequest.cpp \
+	Request/GetItemDataRequest.cpp
 
 noinst_HEADERS = \
 	IAuth.h \

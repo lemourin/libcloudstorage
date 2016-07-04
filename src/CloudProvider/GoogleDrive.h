@@ -34,9 +34,6 @@ class GoogleDrive : public CloudProvider {
   GoogleDrive();
   std::string name() const;
 
-  GetItemDataRequest::Pointer getItemDataAsync(
-      IItem::Pointer, std::function<void(IItem::Pointer)> f);
-
  private:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             std::ostream& input_stream) const;

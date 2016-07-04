@@ -33,13 +33,17 @@ class GetItemDataRequest : public Request {
   using Pointer = std::unique_ptr<GetItemDataRequest>;
 
   GetItemDataRequest(std::shared_ptr<CloudProvider>,
+                     IItem::Pointer item,
                      std::function<void(IItem::Pointer)>);
 
+  IItem::Pointer item() const;
   std::function<void(IItem::Pointer)> callback() const;
 
-  virtual IItem::Pointer result() = 0;
+  void finish();
+  virtual IItem::Pointer result();
 
  private:
+  IItem::Pointer item_;
   std::function<void(IItem::Pointer)> callback_;
 };
 

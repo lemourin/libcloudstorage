@@ -29,15 +29,17 @@
 #include <sstream>
 #include <thread>
 
-#include "Utility/HttpRequest.h"
 #include "ICloudProvider.h"
 #include "Utility/Auth.h"
+#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
 class CloudProvider : public ICloudProvider,
                       public std::enable_shared_from_this<CloudProvider> {
  public:
+  using Pointer = std::shared_ptr<CloudProvider>;
+
   CloudProvider(IAuth::Pointer);
 
   AuthorizeRequest::Pointer initialize(const std::string& token,
@@ -59,6 +61,8 @@ class CloudProvider : public ICloudProvider,
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       UploadFileRequest::ICallback::Pointer);
+  GetItemDataRequest::Pointer getItemDataAsync(
+      IItem::Pointer, std::function<void(IItem::Pointer)> f);
 
   virtual HttpRequest::Pointer listDirectoryRequest(
       const IItem&, std::ostream& input_stream) const = 0;

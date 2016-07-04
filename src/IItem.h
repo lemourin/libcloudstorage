@@ -33,18 +33,15 @@ class IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
 
-  enum class FileType {
-    Directory,
-    Video,
-    Audio,
-    Unknown
-  };
+  enum class FileType { Directory, Video, Audio, Unknown };
 
   virtual ~IItem() = default;
 
   virtual std::string filename() const = 0;
   virtual bool is_directory() const = 0;
 
+  virtual std::string id() const = 0;
+  virtual std::string url() const = 0;
   virtual std::string thumbnail_url() const = 0;
   virtual bool is_hidden() const = 0;
   virtual FileType type() const = 0;

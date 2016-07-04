@@ -28,12 +28,20 @@
 namespace cloudstorage {
 
 GetItemDataRequest::GetItemDataRequest(
-    std::shared_ptr<CloudProvider> p,
+    std::shared_ptr<CloudProvider> p, IItem::Pointer item,
     std::function<void(IItem::Pointer)> callback)
-    : Request(p), callback_(callback) {}
+    : Request(p), item_(item), callback_(callback) {
+  callback(item);
+}
+
+IItem::Pointer GetItemDataRequest::item() const { return item_; }
 
 std::function<void(IItem::Pointer)> GetItemDataRequest::callback() const {
   return callback_;
 }
+
+void GetItemDataRequest::finish() {}
+
+IItem::Pointer GetItemDataRequest::result() { return item_; }
 
 }  // namespace cloudstorage

@@ -95,6 +95,11 @@ UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
       shared_from_this(), std::move(directory), filename, std::move(callback));
 }
 
+GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
+    IItem::Pointer item, std::function<void(IItem::Pointer)> f) {
+  return make_unique<GetItemDataRequest>(shared_from_this(), item, f);
+}
+
 void CloudProvider::authorizeRequest(HttpRequest& r) {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
 }

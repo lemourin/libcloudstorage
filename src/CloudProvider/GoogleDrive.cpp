@@ -36,12 +36,6 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
-GetItemDataRequest::Pointer GoogleDrive::getItemDataAsync(
-    IItem::Pointer, std::function<void(IItem::Pointer)>) {
-  // TODO
-  return 0;
-}
-
 HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
                                                        std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
@@ -104,6 +98,8 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
         make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
     item->set_hidden(v["trashed"].asBool());
     item->set_thumbnail_url(v["thumbnailLink"].asString());
+    item->set_url("https://www.googleapis.com/drive/v3/files/" + item->id() +
+                  "?alt=media&access_token=" + access_token());
     result.push_back(std::move(item));
   }
 
