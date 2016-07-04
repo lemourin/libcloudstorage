@@ -24,8 +24,8 @@
 #ifndef ONEDRIVE_H
 #define ONEDRIVE_H
 
-#include "Utility/Auth.h"
 #include "CloudProvider.h"
+#include "Utility/Auth.h"
 
 namespace cloudstorage {
 
@@ -34,8 +34,6 @@ class OneDrive : public CloudProvider {
   OneDrive();
 
   std::string name() const;
-  GetItemDataRequest::Pointer getItemDataAsync(
-      IItem::Pointer, std::function<void(IItem::Pointer)> f);
 
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
@@ -47,8 +45,9 @@ class OneDrive : public CloudProvider {
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
 
-  std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, HttpRequest::Pointer&, std::ostream&) const;
+  std::vector<IItem::Pointer> listDirectoryResponse(std::istream&,
+                                                    HttpRequest::Pointer&,
+                                                    std::ostream&) const;
 
  private:
   class Auth : public cloudstorage::Auth {

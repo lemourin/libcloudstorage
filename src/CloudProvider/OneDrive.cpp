@@ -36,19 +36,13 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
-GetItemDataRequest::Pointer OneDrive::getItemDataAsync(
-    IItem::Pointer, std::function<void(IItem::Pointer)>) {
-  // TODO
-  return 0;
-}
-
 HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
                                                     std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
       HttpRequest::Type::GET);
-  request->setParameter("select", "name,folder,id");
+  request->setParameter("select", "name,folder,id,@content.downloadUrl");
   return request;
 }
 
@@ -82,8 +76,10 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
   for (Json::Value v : response["value"]) {
     IItem::FileType type = IItem::FileType::Unknown;
     if (v.isMember("folder")) type = IItem::FileType::Directory;
-    result.push_back(
-        make_unique<Item>(v["name"].asString(), v["id"].asString(), type));
+    auto item =
+        make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+    item->set_url(v["@content.downloadUrl"].asString());
+    result.push_back(std::move(item));
   }
   if (response.isMember("@odata.nextLink")) {
     next_page_request->resetParameters();
