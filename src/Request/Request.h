@@ -49,7 +49,6 @@ class Request {
  protected:
   std::unique_ptr<HttpCallback> httpCallback(
       std::function<void(uint32_t, uint32_t)> progress_download = nullptr);
-  std::stringstream& input_stream() { return input_stream_; }
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   bool reauthorize();
 
@@ -60,7 +59,6 @@ class Request {
   std::mutex mutex_;
   std::unique_ptr<AuthorizeRequest> authorize_request_;
   std::shared_ptr<CloudProvider> provider_;
-  std::stringstream input_stream_;
   std::atomic_bool is_cancelled_;
 };
 

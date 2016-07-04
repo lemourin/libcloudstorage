@@ -37,18 +37,19 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)) {
   result_ = std::async(std::launch::async, [this]() {
     std::vector<IItem::Pointer> result;
+    std::stringstream input_stream;
     HttpRequest::Pointer r =
-        provider()->listDirectoryRequest(*directory_, input_stream());
+        provider()->listDirectoryRequest(*directory_, input_stream);
     try {
       do {
         std::stringstream output_stream;
-        std::string backup_data = input_stream().str();
+        std::string backup_data = input_stream.str();
         provider()->authorizeRequest(*r);
         int code =
-            r->send(input_stream(), output_stream, nullptr, httpCallback());
+            r->send(input_stream, output_stream, nullptr, httpCallback());
         if (HttpRequest::isSuccess(code)) {
           for (auto& t : provider()->listDirectoryResponse(output_stream, r,
-                                                           input_stream())) {
+                                                           input_stream)) {
             if (callback_) callback_->receivedItem(t);
             result.push_back(t);
           }
@@ -57,8 +58,8 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
             if (callback_) callback_->error("Failed to authorize.");
             return result;
           }
-          input_stream() = std::stringstream();
-          input_stream() << backup_data;
+          input_stream = std::stringstream();
+          input_stream << backup_data;
         } else {
           if (callback_) callback_->error(output_stream.str());
           return result;
