@@ -26,9 +26,9 @@
 #include <jsoncpp/json/json.h>
 #include <fstream>
 
-#include "Dropbox.h"
-#include "GoogleDrive.h"
-#include "OneDrive.h"
+#include "CloudProvider/Dropbox.h"
+#include "CloudProvider/GoogleDrive.h"
+#include "CloudProvider/OneDrive.h"
 #include "Utility.h"
 
 namespace cloudstorage {

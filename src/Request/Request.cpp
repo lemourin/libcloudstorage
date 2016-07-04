@@ -23,7 +23,7 @@
 
 #include "Request.h"
 
-#include "CloudProvider.h"
+#include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "Utility.h"
 

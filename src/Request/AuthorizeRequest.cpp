@@ -23,7 +23,7 @@
 
 #include "AuthorizeRequest.h"
 
-#include "CloudProvider.h"
+#include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "HttpRequest.h"
 

@@ -14,12 +14,12 @@ lib_LTLIBRARIES = libcloudstorage.la
 libcloudstorage_la_SOURCES = \
 	Auth.cpp \
 	Item.cpp \
-	CloudProvider.cpp \
 	HttpRequest.cpp \
-	GoogleDrive.cpp \
-	OneDrive.cpp \
-	Dropbox.cpp \
 	CloudStorage.cpp \
+	CloudProvider/CloudProvider.cpp \
+	CloudProvider/GoogleDrive.cpp \
+	CloudProvider/OneDrive.cpp \
+	CloudProvider/Dropbox.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -33,11 +33,11 @@ noinst_HEADERS = \
 	IAuth.h \
 	Auth.h \
 	Item.h \
-	CloudProvider.h \
 	HttpRequest.h \
-	GoogleDrive.h \
-	OneDrive.h \
-	Dropbox.h \
+	CloudProvider/CloudProvider.h \
+	CloudProvider/GoogleDrive.h \
+	CloudProvider/OneDrive.h \
+	CloudProvider/Dropbox.h \
 	Request/HttpCallback.h
 
 nobase_include_HEADERS = \
