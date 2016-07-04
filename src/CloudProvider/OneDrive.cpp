@@ -36,6 +36,12 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
+GetItemDataRequest::Pointer OneDrive::getItemDataAsync(
+    IItem::Pointer, std::function<void(IItem::Pointer)>) {
+  // TODO
+  return 0;
+}
+
 HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
                                                     std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
@@ -75,8 +81,7 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
   stream >> response;
   for (Json::Value v : response["value"]) {
     IItem::FileType type = IItem::FileType::Unknown;
-    if (v.isMember("folder"))
-      type = IItem::FileType::Directory;
+    if (v.isMember("folder")) type = IItem::FileType::Directory;
     result.push_back(
         make_unique<Item>(v["name"].asString(), v["id"].asString(), type));
   }

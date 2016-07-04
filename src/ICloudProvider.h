@@ -31,6 +31,7 @@
 #include "IItem.h"
 #include "Request/AuthorizeRequest.h"
 #include "Request/DownloadFileRequest.h"
+#include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
 #include "Request/ListDirectoryRequest.h"
 #include "Request/UploadFileRequest.h"
@@ -75,6 +76,8 @@ class ICloudProvider {
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string& filename,
       UploadFileRequest::ICallback::Pointer) = 0;
+  virtual GetItemDataRequest::Pointer getItemDataAsync(
+      IItem::Pointer item, std::function<void(IItem::Pointer)>) = 0;
 };
 
 }  // namespace cloudstorage

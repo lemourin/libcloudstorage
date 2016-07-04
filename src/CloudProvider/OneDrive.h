@@ -34,6 +34,8 @@ class OneDrive : public CloudProvider {
   OneDrive();
 
   std::string name() const;
+  GetItemDataRequest::Pointer getItemDataAsync(
+      IItem::Pointer, std::function<void(IItem::Pointer)> f);
 
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,

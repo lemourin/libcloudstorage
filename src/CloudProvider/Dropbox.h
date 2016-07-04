@@ -35,6 +35,9 @@ class Dropbox : public CloudProvider {
   std::string name() const;
   IItem::Pointer rootDirectory() const;
 
+  GetItemDataRequest::Pointer getItemDataAsync(
+      IItem::Pointer, std::function<void(IItem::Pointer)> f);
+
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer uploadFileRequest(const IItem& directory,

@@ -40,6 +40,12 @@ IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", IItem::FileType::Directory);
 }
 
+GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
+    IItem::Pointer, std::function<void(IItem::Pointer)>) {
+  // TODO
+  return 0;
+}
+
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
     const IItem& f, std::ostream& input_stream) const {
   const Item& item = static_cast<const Item&>(f);

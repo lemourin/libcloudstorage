@@ -36,6 +36,12 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
+GetItemDataRequest::Pointer GoogleDrive::getItemDataAsync(
+    IItem::Pointer, std::function<void(IItem::Pointer)>) {
+  // TODO
+  return 0;
+}
+
 HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
                                                        std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);

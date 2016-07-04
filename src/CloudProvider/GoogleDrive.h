@@ -24,8 +24,8 @@
 #ifndef GOOGLEDRIVE_H
 #define GOOGLEDRIVE_H
 
-#include "Utility/Auth.h"
 #include "CloudProvider.h"
+#include "Utility/Auth.h"
 
 namespace cloudstorage {
 
@@ -34,16 +34,19 @@ class GoogleDrive : public CloudProvider {
   GoogleDrive();
   std::string name() const;
 
+  GetItemDataRequest::Pointer getItemDataAsync(
+      IItem::Pointer, std::function<void(IItem::Pointer)> f);
+
  private:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             std::ostream& input_stream) const;
-  virtual HttpRequest::Pointer uploadFileRequest(
-      const IItem& directory, const std::string& filename, std::istream& stream,
-      std::ostream& input_stream) const;
+  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
+                                         const std::string& filename,
+                                         std::istream& stream,
+                                         std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
-
-  virtual std::vector<IItem::Pointer> listDirectoryResponse(
+  std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, HttpRequest::Pointer& next_page_request,
       std::ostream&) const;
 
