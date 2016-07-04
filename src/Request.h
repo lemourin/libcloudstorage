@@ -49,7 +49,8 @@ class Request {
   virtual void cancel();
 
  protected:
-  std::unique_ptr<HttpCallback> httpCallback();
+  std::unique_ptr<HttpCallback> httpCallback(
+      std::function<void(uint32_t, uint32_t)> progress_download = nullptr);
   std::stringstream& input_stream() { return input_stream_; }
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   bool reauthorize();
@@ -130,6 +131,7 @@ class DownloadFileRequest : public Request {
     virtual void receivedData(const char* data, uint32_t length) = 0;
     virtual void done() = 0;
     virtual void error(const std::string& description) = 0;
+    virtual void progress(uint32_t total, uint32_t now) = 0;
   };
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,

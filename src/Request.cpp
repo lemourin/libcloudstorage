@@ -32,11 +32,15 @@ namespace {
 
 class HttpCallback : public HttpRequest::ICallback {
  public:
-  HttpCallback(std::atomic_bool& is_cancelled) : is_cancelled_(is_cancelled) {}
+  HttpCallback(std::atomic_bool& is_cancelled,
+               std::function<void(uint32_t, uint32_t)> progress_download)
+      : is_cancelled_(is_cancelled), progress_download_(progress_download) {}
 
   bool abort() { return is_cancelled_; }
 
-  void progressDownload(uint32_t, uint32_t) {}
+  void progressDownload(uint32_t total, uint32_t now) {
+    if (progress_download_) progress_download_(total, now);
+  }
 
   void progressUpload(uint32_t, uint32_t) {}
 
@@ -46,6 +50,7 @@ class HttpCallback : public HttpRequest::ICallback {
 
  private:
   std::atomic_bool& is_cancelled_;
+  std::function<void(uint32_t, uint32_t)> progress_download_;
 };
 
 }  // namespace
@@ -64,8 +69,9 @@ void Request::cancel() {
   finish();
 }
 
-std::unique_ptr<HttpCallback> Request::httpCallback() {
-  return make_unique<HttpCallback>(is_cancelled_);
+std::unique_ptr<HttpCallback> Request::httpCallback(
+    std::function<void(uint32_t, uint32_t)> progress_download) {
+  return make_unique<HttpCallback>(is_cancelled_, progress_download);
 }
 
 bool Request::reauthorize() {
@@ -236,7 +242,11 @@ int DownloadFileRequest::download(std::ostream& error_stream) {
       provider()->downloadFileRequest(*file_, stream);
   provider()->authorizeRequest(*request);
   std::ostream response_stream(&stream_wrapper_);
-  return request->send(stream, response_stream, &error_stream, httpCallback());
+  return request->send(
+      stream, response_stream, &error_stream,
+      httpCallback(std::bind(&DownloadFileRequest::ICallback::progress,
+                             stream_wrapper_.callback_.get(),
+                             std::placeholders::_1, std::placeholders::_2)));
 }
 
 DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
