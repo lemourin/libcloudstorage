@@ -24,7 +24,7 @@
 #ifndef GOOGLEDRIVE_H
 #define GOOGLEDRIVE_H
 
-#include "Auth.h"
+#include "Utility/Auth.h"
 #include "CloudProvider.h"
 
 namespace cloudstorage {

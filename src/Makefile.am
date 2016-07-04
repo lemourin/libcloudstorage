@@ -12,10 +12,10 @@ AM_LDFLAGS = \
 lib_LTLIBRARIES = libcloudstorage.la
 
 libcloudstorage_la_SOURCES = \
-	Auth.cpp \
-	Item.cpp \
-	HttpRequest.cpp \
-	CloudStorage.cpp \
+	Utility/CloudStorage.cpp \
+	Utility/Auth.cpp \
+	Utility/Item.cpp \
+	Utility/HttpRequest.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -29,11 +29,12 @@ libcloudstorage_la_SOURCES = \
 	Request/UploadFileRequest.cpp
 
 noinst_HEADERS = \
-	Utility.h \
 	IAuth.h \
-	Auth.h \
-	Item.h \
-	HttpRequest.h \
+	Utility/CloudStorage.h \
+	Utility/Auth.h \
+	Utility/Item.h \
+	Utility/Utility.h \
+	Utility/HttpRequest.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
@@ -44,7 +45,6 @@ nobase_include_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
-	CloudStorage.h \
 	Request/Request.h \
 	Request/AuthorizeRequest.h \
 	Request/DownloadFileRequest.h \

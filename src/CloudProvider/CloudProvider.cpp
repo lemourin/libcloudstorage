@@ -27,8 +27,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "Item.h"
-#include "Utility.h"
+#include "Utility/Item.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 

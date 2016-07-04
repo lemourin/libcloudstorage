@@ -26,9 +26,9 @@
 #include <jsoncpp/json/json.h>
 #include <sstream>
 
-#include "HttpRequest.h"
-#include "Item.h"
-#include "Utility.h"
+#include "Utility/HttpRequest.h"
+#include "Utility/Item.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 
@@ -88,7 +88,7 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
 
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["entries"]) {
-    IItem::FileType type;// = v[".tag"].asString() == "folder";
+    IItem::FileType type;  // = v[".tag"].asString() == "folder";
     result.push_back(make_unique<Item>(v["name"].asString(),
                                        v["path_display"].asString(), type));
   }

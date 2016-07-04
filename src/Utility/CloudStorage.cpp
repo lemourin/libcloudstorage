@@ -29,7 +29,7 @@
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
 #include "CloudProvider/OneDrive.h"
-#include "Utility.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 
@@ -45,6 +45,10 @@ ICloudProvider::Pointer CloudStorage::provider(const std::string& name) const {
   for (ICloudProvider::Pointer p : providers_)
     if (p->name() == name) return p;
   return nullptr;
+}
+
+ICloudStorage::Pointer ICloudStorage::create() {
+  return make_unique<CloudStorage>();
 }
 
 }  // namespace cloudstorage

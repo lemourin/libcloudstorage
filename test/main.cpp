@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#include <CloudStorage.h>
+#include <ICloudStorage.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   if (argc >= 2) drive_backend = argv[1];
 
   cloudstorage::ICloudProvider::Pointer drive =
-      cloudstorage::CloudStorage().provider(drive_backend);
+      cloudstorage::ICloudStorage::create()->provider(drive_backend);
   if (drive == nullptr) {
     std::cout << "Invalid drive backend.\n";
     return 1;

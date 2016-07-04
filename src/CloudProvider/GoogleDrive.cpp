@@ -26,9 +26,9 @@
 #include <jsoncpp/json/json.h>
 #include <sstream>
 
-#include "HttpRequest.h"
-#include "Item.h"
-#include "Utility.h"
+#include "Utility/HttpRequest.h"
+#include "Utility/Item.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 

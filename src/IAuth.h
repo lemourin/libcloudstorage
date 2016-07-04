@@ -27,7 +27,7 @@
 #include <memory>
 #include <string>
 
-#include "HttpRequest.h"
+#include "Utility/HttpRequest.h"
 #include "ICloudProvider.h"
 
 namespace cloudstorage {

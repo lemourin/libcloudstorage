@@ -24,18 +24,22 @@
 #ifndef ICLOUDSTORAGE_H
 #define ICLOUDSTORAGE_H
 
-#include <jsoncpp/json/forwards.h>
 #include <vector>
+
 #include "ICloudProvider.h"
 
 namespace cloudstorage {
 
 class ICloudStorage {
  public:
+  using Pointer = std::unique_ptr<ICloudStorage>;
+
   virtual ~ICloudStorage() = default;
 
   virtual std::vector<ICloudProvider::Pointer> providers() const = 0;
   virtual ICloudProvider::Pointer provider(const std::string& name) const = 0;
+
+  static ICloudStorage::Pointer create();
 };
 
 }  // namespace cloudstorage

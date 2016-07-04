@@ -26,7 +26,7 @@
 
 #include <atomic>
 
-#include "HttpRequest.h"
+#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 class HttpCallback : public HttpRequest::ICallback {

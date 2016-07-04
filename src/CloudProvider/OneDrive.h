@@ -24,7 +24,7 @@
 #ifndef ONEDRIVE_H
 #define ONEDRIVE_H
 
-#include "Auth.h"
+#include "Utility/Auth.h"
 #include "CloudProvider.h"
 
 namespace cloudstorage {

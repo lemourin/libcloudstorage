@@ -29,10 +29,9 @@
 #include <sstream>
 #include <thread>
 
-#include "Auth.h"
-#include "HttpRequest.h"
+#include "Utility/HttpRequest.h"
 #include "ICloudProvider.h"
-#include "Request.h"
+#include "Utility/Auth.h"
 
 namespace cloudstorage {
 
