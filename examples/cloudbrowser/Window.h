@@ -24,7 +24,6 @@
 #ifndef WINDOW_HPP
 #define WINDOW_HPP
 
-#include <CloudStorage.h>
 #include <ICloudProvider.h>
 #include <IItem.h>
 #include <QMediaObject>
@@ -77,7 +76,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void listDirectory();
   Q_INVOKABLE void changeCurrentDirectory(ItemModel* directory);
   Q_INVOKABLE bool goBack();
-  Q_INVOKABLE void play(ItemModel* item);
+  Q_INVOKABLE void play(ItemModel* item, QString method);
   Q_INVOKABLE void stop();
   Q_INVOKABLE bool playing();
 
@@ -85,13 +84,18 @@ class Window : public QQuickView {
   void onAddedItem(cloudstorage::IItem::Pointer);
   void onPlay(cloudstorage::IItem::Pointer);
   void onRunPlayer();
+  void onPlayFile(QString filename);
+  void onPlayFileFromUrl(QString url);
   void onPausePlayer();
+  void onMediaStatusChanged(QMediaPlayer::MediaStatus);
 
  signals:
   void openBrowser(QString url);
   void closeBrowser();
   void successfullyAuthorized();
   void addedItem(cloudstorage::IItem::Pointer);
+  void runPlayer(QString file);
+  void runPlayerFromUrl(QString url);
 
  private:
   friend class CloudProviderCallback;
@@ -107,6 +111,7 @@ class Window : public QQuickView {
   std::unique_ptr<InputDevice> device_;
   QMediaPlayer media_player_;
   DownloadFileRequest::Pointer download_request_;
+  GetItemDataRequest::Pointer item_data_request_;
 
   Q_OBJECT
 };

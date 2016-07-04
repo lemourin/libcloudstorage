@@ -24,8 +24,13 @@
 #include "Window.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QMediaService>
+#include <QMetaObject>
 #include <QQmlContext>
+#include <QMetaEnum>
 #include <QSettings>
+#include <iostream>
 
 using namespace cloudstorage;
 
@@ -39,7 +44,7 @@ class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
 
   void done(const std::vector<IItem::Pointer>&) {}
 
-  void error(const std::string& str) { qDebug() << str.c_str(); }
+  void error(const std::string& str) { std::cerr << "[FAIL] " << str << "\n"; }
 
  private:
   Window* window_;
@@ -52,11 +57,12 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 
 }  // namespace
 
-Window::Window() {
+Window::Window() : media_player_(this, QMediaPlayer::StreamPlayback) {
   qRegisterMetaType<IItem::Pointer>();
 
   QStringList clouds;
-  for (auto p : CloudStorage().providers()) clouds.append(p->name().c_str());
+  for (auto p : ICloudStorage::create()->providers())
+    clouds.append(p->name().c_str());
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
   rootContext()->setContextProperty(
@@ -68,13 +74,31 @@ Window::Window() {
   connect(this, &Window::successfullyAuthorized, this,
           &Window::onSuccessfullyAuthorized);
   connect(this, &Window::addedItem, this, &Window::onAddedItem);
+  connect(this, &Window::runPlayer, this, &Window::onPlayFile);
+  connect(this, &Window::runPlayerFromUrl, this, &Window::onPlayFileFromUrl);
+
+  connect(&media_player_, &QMediaPlayer::mediaStatusChanged, this,
+          &Window::onMediaStatusChanged);
+  connect(&media_player_,
+          static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(
+              &QMediaPlayer::error),
+          [this](QMediaPlayer::Error error) {
+            std::cerr << "[FAIL] Error: " << error << " "
+                      << media_player_.errorString().toStdString() << "\n";
+          });
+  connect(&media_player_, &QMediaPlayer::videoAvailableChanged,
+          [](bool available) {
+            std::cerr << "[DIAG] Video availability: " << available << "\n";
+          });
 }
 
 Window::~Window() { clearCurrentDirectoryList(); }
 
 void Window::initializeCloud(QString name) {
   QSettings settings;
-  cloud_provider_ = CloudStorage().provider(name.toStdString());
+  cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
+  std::cerr << "[DIAG] Trying to authorize with "
+            << settings.value(name).toString().toStdString() << std::endl;
   authorization_request_ =
       cloud_provider_->initialize(settings.value(name).toString().toStdString(),
                                   make_unique<CloudProviderCallback>(this));
@@ -93,7 +117,8 @@ void Window::changeCurrentDirectory(ItemModel* directory) {
 }
 
 void Window::onSuccessfullyAuthorized() {
-  qDebug() << "[OK] Successfully authorized" << cloud_provider_->name().c_str();
+  std::cerr << "[OK] Successfully authorized "
+            << cloud_provider_->name().c_str() << "\n";
   current_directory_ = cloud_provider_->rootDirectory();
   listDirectory();
 }
@@ -108,16 +133,35 @@ void Window::onAddedItem(IItem::Pointer i) {
 
 void Window::onRunPlayer() {
   if (media_player_.state() != QMediaPlayer::PlayingState) {
-    if (media_player_.mediaStream() == nullptr)
+    std::cerr << "[DIAG] Run player\n";
+    if (media_player_.mediaStream() == nullptr) {
       media_player_.setMedia(nullptr, device_.get());
+    }
     media_player_.play();
   }
 }
 
+void Window::onPlayFile(QString filename) {
+  media_player_.setMedia(
+      QUrl::fromLocalFile(QDir::currentPath() + "/" + filename));
+  media_player_.play();
+}
+
+void Window::onPlayFileFromUrl(QString url) {
+  std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
+  media_player_.setMedia(QUrl(url));
+  media_player_.play();
+}
+
 void Window::onPausePlayer() {
   if (media_player_.state() == QMediaPlayer::PlayingState) {
+    std::cerr << "[DIAG] Pausing player\n";
     media_player_.pause();
   }
+}
+
+void Window::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
+  std::cerr << "[DIAG] Media status: " << status << "\n";
 }
 
 void Window::clearCurrentDirectoryList() {
@@ -137,20 +181,51 @@ bool Window::goBack() {
   return true;
 }
 
-void Window::play(ItemModel* item) {
+void Window::play(ItemModel* item, QString method) {
   stop();
 
-  device_ = make_unique<InputDevice>();
-  download_request_ = cloud_provider_->downloadFileAsync(
-      item->item(), make_unique<DownloadFileCallback>(device_.get()));
-  connect(device_.get(), &InputDevice::runPlayer, this, &Window::onRunPlayer);
-  connect(device_.get(), &InputDevice::pausePlayer, this,
-          &Window::onPausePlayer);
+  if (method == "link") {
+    item_data_request_ = cloud_provider_->getItemDataAsync(
+        item->item(), [this](IItem::Pointer item) {
+          emit runPlayerFromUrl(item->url().c_str());
+        });
+    return;
+  }
+
+  if (method == "stream")
+    device_ = make_unique<InputDevice>(true);
+  else if (method == "memory")
+    device_ = make_unique<InputDevice>(false);
+  else
+    device_ = nullptr;
+
+  if (device_) {
+    connect(device_.get(), &InputDevice::runPlayer, this, &Window::onRunPlayer);
+    connect(device_.get(), &InputDevice::pausePlayer, this,
+            &Window::onPausePlayer);
+  }
+
+  DownloadFileRequest::ICallback::Pointer callback(
+      method == "file"
+          ? static_cast<DownloadFileRequest::ICallback*>(
+                new DownloadToFileCallback(this, item->item()->filename()))
+          : static_cast<DownloadFileRequest::ICallback*>(
+                new DownloadFileCallback(device_.get())));
+  download_request_ =
+      cloud_provider_->downloadFileAsync(item->item(), std::move(callback));
+
+  std::cerr << "[DIAG] Starting " << method.toStdString() << " "
+            << item->item()->filename().c_str() << "\n";
+  if (!media_player_.service())
+    std::cerr << "[FAIL] No media service\n";
+  else
+    std::cerr << "[DIAG] Media service "
+              << media_player_.service()->metaObject()->className() << "\n";
 }
 
 void Window::stop() {
   media_player_.stop();
-  media_player_.setMedia(nullptr, nullptr);
+  media_player_.setMedia(nullptr);
   download_request_ = nullptr;
 }
 
@@ -162,6 +237,8 @@ CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}
 
 ICloudProvider::ICallback::Status CloudProviderCallback::userConsentRequired(
     const ICloudProvider& p) {
+  std::cerr << "[DIAG] User consent required: " << p.authorizeLibraryUrl()
+            << "\n";
   emit window_->openBrowser(p.authorizeLibraryUrl().c_str());
   return Status::WaitForAuthorizationCode;
 }
@@ -179,7 +256,7 @@ void CloudProviderCallback::declined(const ICloudProvider&) {
 
 void CloudProviderCallback::error(const ICloudProvider&,
                                   const std::string& desc) {
-  qDebug() << "[FAIL]" << desc.c_str();
+  std::cerr << "[FAIL] " << desc.c_str() << "\n";
 }
 
 ItemModel::ItemModel(IItem::Pointer item) : item_(item) {}

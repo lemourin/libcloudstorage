@@ -68,21 +68,58 @@ Item {
 
         Keys.onPressed: {
             if (event.key === Qt.Key_Backspace) {
-                if (window.playing()) {
-                    window.stop();
-                } else if (!window.goBack()) {
+                if (!window.goBack()) {
                     directory.focus = false;
                     cloudView.focus = true;
                 }
-            } else if (event.key === Qt.Key_Return) {
-                var t = directoryModel[currentIndex];
+            }
+            if (currentIndex == -1)
+                return
+            var t = directoryModel[currentIndex];
+            if (event.key === Qt.Key_Return) {
                 if (t.directory)
                     window.changeCurrentDirectory(t);
                 else {
-                    window.play(t);
+                    window.play(t, "stream");
                 }
+            } else if (event.key === Qt.Key_S)
+                window.play(t, "stream");
+            else if (event.key === Qt.Key_M)
+                window.play(t, "memory");
+            else if (event.key === Qt.Key_F)
+                window.play(t, "file");
+            else if (event.key === Qt.Key_P) {
+                if (window.playing())
+                    window.stop();
+            } else if (event.key === Qt.Key_L)
+                window.play(t, "link");
+        }
+    }
+
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        width: 100
+        height: 100
+
+        Row {
+            Column {
+                width: 20
+                Row { Text { text: "F" } }
+                Row { Text { text: "M" } }
+                Row { Text { text: "S" } }
+                Row { Text { text: "P" } }
+                Row { Text { text: "L" } }
+            }
+            Column {
+                Row { Text { text: "Download a file" } }
+                Row { Text { text: "Download file to memory" } }
+                Row { Text { text: "Stream a file" } }
+                Row { Text { text: "Pause file" } }
+                Row { Text { text: "Play from link"} }
             }
         }
+
     }
 
     VideoOutput {
@@ -100,4 +137,5 @@ Item {
             anchors.fill: parent
         }
     }
+
 }

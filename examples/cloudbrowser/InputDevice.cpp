@@ -23,6 +23,10 @@
 
 #include "InputDevice.h"
 
+#include <iostream>
+
+#include "Window.h"
+
 const int MIN_DATA_SIZE = 1000000;
 
 using namespace cloudstorage;
@@ -30,39 +34,93 @@ using namespace cloudstorage;
 DownloadFileCallback::DownloadFileCallback(InputDevice* p) : device_(p) {}
 
 void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
-  std::lock_guard<std::mutex> lock(device_->queue_mutex_);
-  for (uint32_t i = 0; i < length; i++) device_->queue_.push(data[i]);
-  if (device_->queue_.size() >= 2 * MIN_DATA_SIZE) emit device_->runPlayer();
+  std::lock_guard<std::mutex> lock(device_->buffer_mutex_);
+  device_->buffer_ += std::string(data, length);
+  device_->length_ += length;
+  if (!device_->isSequential()) emit device_->readyRead();
 }
 
 void DownloadFileCallback::done() {
-  std::lock_guard<std::mutex> lock(device_->queue_mutex_);
+  std::lock_guard<std::mutex> lock(device_->buffer_mutex_);
   device_->finished_ = true;
+
   emit device_->runPlayer();
+
+  std::cerr << "[OK] Finished downloading\n";
 }
 
-void DownloadFileCallback::error(const std::string&) {}
+void DownloadFileCallback::error(const std::string& error) {
+  std::cerr << "[FAIL] " << error.c_str() << "\n";
+}
 
-InputDevice::InputDevice() : finished_() { open(QIODevice::ReadOnly); }
+void DownloadFileCallback::progress(uint32_t total, uint32_t) {
+  {
+    std::lock_guard<std::mutex> lock(device_->buffer_mutex_);
+    device_->total_length_ = total;
+  }
+  if (device_->isSequential() && device_->bytesAvailable() >= 2 * MIN_DATA_SIZE)
+    emit device_->runPlayer();
+}
+
+InputDevice::InputDevice(bool streaming)
+    : finished_(),
+      length_(),
+      position_(),
+      total_length_(),
+      streaming_(streaming) {
+  open(QIODevice::ReadOnly);
+}
 
 qint64 InputDevice::bytesAvailable() const {
-  std::lock_guard<std::mutex> lock(queue_mutex_);
-  if (queue_.size() < MIN_DATA_SIZE && !finished_)
-    emit pausePlayer();
-  else
-    emit runPlayer();
-  return queue_.size() + QIODevice::bytesAvailable();
+  uint32_t bytes;
+  {
+    std::lock_guard<std::mutex> lock(buffer_mutex_);
+    bytes = length_ - position_;
+  }
+  if (isSequential() && bytes < MIN_DATA_SIZE && !finished_) emit pausePlayer();
+  return bytes + QIODevice::bytesAvailable();
+}
+
+qint64 InputDevice::size() const {
+  std::lock_guard<std::mutex> lock(buffer_mutex_);
+  if (isSequential()) return QIODevice::size();
+  return total_length_;
 }
 
 qint64 InputDevice::readData(char* data, qint64 length) {
-  std::lock_guard<std::mutex> lock(queue_mutex_);
-  int i;
+  std::lock_guard<std::mutex> lock(buffer_mutex_);
+  uint32_t i;
   for (i = 0; i < length; i++)
-    if (queue_.empty()) {
+    if (i + position_ < buffer_.length())
+      data[i] = buffer_[i + position_];
+    else
       break;
-    } else {
-      data[i] = queue_.front();
-      queue_.pop();
-    }
+  position_ += i;
   return i;
 }
+
+bool InputDevice::seek(qint64 position) {
+  QIODevice::seek(position);
+  position_ = position;
+  return true;
+}
+
+DownloadToFileCallback::DownloadToFileCallback(Window* window,
+                                               std::string filename)
+    : window_(window),
+      file_(filename, std::ios_base::out | std::ios_base::binary),
+      filename_(filename) {}
+
+void DownloadToFileCallback::receivedData(const char* data, uint32_t length) {
+  file_.write(data, length);
+}
+
+void DownloadToFileCallback::done() {
+  file_.close();
+  emit window_->runPlayer(filename_.c_str());
+  std::cerr << "[OK] Finished download.\n";
+}
+
+void DownloadToFileCallback::error(const std::string&) {}
+
+void DownloadToFileCallback::progress(uint32_t, uint32_t) {}

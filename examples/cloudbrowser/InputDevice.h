@@ -27,11 +27,13 @@
 #include <ICloudStorage.h>
 #include <QMediaPlayer>
 #include <QObject>
+#include <fstream>
 #include <queue>
 
 using namespace cloudstorage;
 
 class InputDevice;
+class Window;
 
 class DownloadFileCallback : public DownloadFileRequest::ICallback {
  public:
@@ -39,23 +41,42 @@ class DownloadFileCallback : public DownloadFileRequest::ICallback {
 
   void receivedData(const char *data, uint32_t length);
   void done();
-  void error(const std::string&);
+  void error(const std::string &);
+  void progress(uint32_t total, uint32_t now);
 
  private:
   InputDevice *device_;
 };
 
+class DownloadToFileCallback : public DownloadFileRequest::ICallback {
+ public:
+  DownloadToFileCallback(Window *, std::string filename);
+
+  void receivedData(const char *data, uint32_t length);
+  void done();
+  void error(const std::string &);
+  void progress(uint32_t total, uint32_t now);
+
+ private:
+  Window *window_;
+  std::fstream file_;
+  std::string filename_;
+};
+
 class InputDevice : public QIODevice,
                     public std::enable_shared_from_this<InputDevice> {
  public:
-  InputDevice();
+  InputDevice(bool streaming);
 
   qint64 bytesAvailable() const;
-  bool isSequential() const { return true; }
+  qint64 size() const;
+  bool isSequential() const { return streaming_; }
 
   qint64 readData(char *data, qint64 length);
 
   qint64 writeData(const char *, qint64) { return 0; }
+
+  bool seek(qint64);
 
  signals:
   void runPlayer() const;
@@ -65,13 +86,17 @@ class InputDevice : public QIODevice,
   friend class DownloadFileCallback;
 
   QMediaPlayer *player_;
-  mutable std::mutex queue_mutex_;
-  std::queue<char> queue_;
+  mutable std::mutex buffer_mutex_;
   ICloudProvider::Pointer cloud_provider_;
   GetItemRequest::Pointer item_request_;
   DownloadFileRequest::Pointer download_request_;
   AuthorizeRequest::Pointer authorize_request_;
   bool finished_;
+  std::string buffer_;
+  uint32_t length_;
+  uint32_t position_;
+  uint32_t total_length_;
+  bool streaming_;
 
   Q_OBJECT
 };
