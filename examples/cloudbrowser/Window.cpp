@@ -26,9 +26,9 @@
 #include <QDebug>
 #include <QDir>
 #include <QMediaService>
+#include <QMetaEnum>
 #include <QMetaObject>
 #include <QQmlContext>
-#include <QMetaEnum>
 #include <QSettings>
 #include <iostream>
 
@@ -53,6 +53,30 @@ class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
 template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+std::string mediaStatusToString(QMediaPlayer::MediaStatus state) {
+  switch (state) {
+    case QMediaPlayer::UnknownMediaStatus:
+      return "UnknowMediaStatus";
+    case QMediaPlayer::NoMedia:
+      return "NoMedia";
+    case QMediaPlayer::LoadingMedia:
+      return "LoadingMedia";
+    case QMediaPlayer::LoadedMedia:
+      return "LoadedMedia";
+    case QMediaPlayer::StalledMedia:
+      return "StalledMedia";
+    case QMediaPlayer::BufferingMedia:
+      return "BufferingMedia";
+    case QMediaPlayer::BufferedMedia:
+      return "BufferedMedia";
+    case QMediaPlayer::EndOfMedia:
+      return "EndOfMedia";
+    case QMediaPlayer::InvalidMedia:
+      return "InvalidMedia";
+  }
+  return "UnknownMediaStatus";
 }
 
 }  // namespace
@@ -161,7 +185,7 @@ void Window::onPausePlayer() {
 }
 
 void Window::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
-  std::cerr << "[DIAG] Media status: " << status << "\n";
+  std::cerr << "[DIAG] Media status: " << mediaStatusToString(status) << "\n";
 }
 
 void Window::clearCurrentDirectoryList() {
