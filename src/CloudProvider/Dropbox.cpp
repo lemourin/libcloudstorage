@@ -24,8 +24,10 @@
 #include "Dropbox.h"
 
 #include <jsoncpp/json/json.h>
+#include <iostream>
 #include <sstream>
 
+#include "Request/HttpCallback.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -41,9 +43,8 @@ IItem::Pointer Dropbox::rootDirectory() const {
 }
 
 GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
-    IItem::Pointer, std::function<void(IItem::Pointer)>) {
-  // TODO
-  return 0;
+    IItem::Pointer item, std::function<void(IItem::Pointer)> callback) {
+  return make_unique<DataRequest>(shared_from_this(), item, callback);
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
@@ -177,5 +178,52 @@ IAuth::Token::Pointer Dropbox::Auth::refreshTokenResponse(std::istream&) const {
 }
 
 bool Dropbox::Auth::validateTokenResponse(std::istream&) const { return true; }
+
+Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
+                                  std::function<void(IItem::Pointer)> callback)
+    : GetItemDataRequest(p, item, callback, false) {
+  result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
+    int code = makeRequest();
+    if (HttpRequest::isAuthorizationError(code)) {
+      reauthorize();
+      code = makeRequest();
+    }
+    this->callback()(item_);
+    return item_;
+  });
+}
+
+void Dropbox::DataRequest::finish() { result_.wait(); }
+
+IItem::Pointer Dropbox::DataRequest::result() {
+  std::shared_future<IItem::Pointer> future = result_;
+  return future.get();
+}
+
+int Dropbox::DataRequest::makeRequest() {
+  HttpRequest request("https://api.dropboxapi.com/2/files/get_temporary_link",
+                      HttpRequest::Type::POST);
+  request.setHeaderParameter("Content-Type", "application/json");
+  provider()->authorizeRequest(request);
+  std::stringstream input, output, error;
+
+  Json::Value parameter;
+  parameter["path"] = item()->id();
+  std::string str = Json::FastWriter().write(parameter);
+  input << str;
+
+  int code = request.send(input, output, &error, httpCallback());
+  if (HttpRequest::isSuccess(code)) {
+    auto i =
+        make_unique<Item>(item()->filename(), item()->id(), item()->type());
+    Json::Value response;
+    output >> response;
+    i->set_url(response["link"].asString());
+    item_ = std::move(i);
+  } else {
+    std::cerr << "[FAIL] " << error.rdbuf() << "\n";
+  }
+  return code;
+}
 
 }  // namespace cloudstorage

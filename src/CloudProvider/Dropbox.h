@@ -68,6 +68,21 @@ class Dropbox : public CloudProvider {
     Token::Pointer refreshTokenResponse(std::istream&) const;
     bool validateTokenResponse(std::istream&) const;
   };
+
+  class DataRequest : public GetItemDataRequest {
+   public:
+    DataRequest(CloudProvider::Pointer, IItem::Pointer item,
+                std::function<void(IItem::Pointer)> callback);
+
+    void finish();
+    IItem::Pointer result();
+
+   private:
+    int makeRequest();
+
+    std::shared_future<IItem::Pointer> result_;
+    IItem::Pointer item_;
+  };
 };
 
 }  // namespace cloudstorage
