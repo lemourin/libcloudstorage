@@ -23,6 +23,7 @@
 
 #include "ListDirectoryRequest.h"
 
+#include <iostream>
 #include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "Utility/HttpRequest.h"
@@ -60,10 +61,11 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
           }
           input_stream = std::stringstream();
           input_stream << backup_data;
-        } else {
+        } else if (HttpRequest::isClientError(code)) {
           if (callback_) callback_->error(output_stream.str());
           return result;
-        }
+        } else
+          break;
       } while (r);
     } catch (const HttpException& e) {
       if (callback_) callback_->error(e.what());
