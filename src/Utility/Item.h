@@ -38,6 +38,7 @@ class Item : public IItem {
   std::string filename() const;
   std::string id() const;
   bool is_directory() const;
+  IItem::Pointer copy() const;
 
   std::string url() const;
   void set_url(std::string);

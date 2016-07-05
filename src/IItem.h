@@ -45,6 +45,7 @@ class IItem {
   virtual std::string thumbnail_url() const = 0;
   virtual bool is_hidden() const = 0;
   virtual FileType type() const = 0;
+  virtual IItem::Pointer copy() const = 0;
 };
 
 }  // namespace cloudstorage
