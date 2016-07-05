@@ -6,11 +6,47 @@ import QtMultimedia 5.5
 Item {
     id: root
 
+    Rectangle {
+        property int padding: 5
+
+        anchors.margins: padding
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        border.color: "black"
+        radius: 5
+        color: "grey"
+        width: content.width + 2 * padding
+        height: content.height + 2 * padding
+
+        Row {
+            id: content
+            x: parent.padding
+            y: parent.padding
+
+            Column {
+                width: 20
+                Row { Text { text: "F" } }
+                Row { Text { text: "M" } }
+                Row { Text { text: "S" } }
+                Row { Text { text: "P" } }
+                Row { Text { text: "L" } }
+            }
+            Column {
+                Row { Text { text: "Download a file" } }
+                Row { Text { text: "Download file to memory" } }
+                Row { Text { text: "Stream a file" } }
+                Row { Text { text: "Pause file" } }
+                Row { Text { text: "Play from link"} }
+            }
+        }
+    }
+
     Gradient {
         id: colors
         GradientStop { position: 0.0; color: "#8EE2FE"}
         GradientStop { position: 0.66; color: "#7ED2EE"}
     }
+
     ListView {
         id: cloudView
         focus: true
@@ -58,8 +94,23 @@ Item {
         anchors.bottom: parent.bottom
         model: directoryModel
         delegate: Component {
-            Text {
-                text: name
+            Row {
+                property int thumbnailWidth: 50
+                property int thumbnailHeight: 50
+                Image {
+                    width: thumbnailWidth
+                    height: thumbnailHeight
+                    source: thumbnail
+                }
+                Item {
+                    height: thumbnailHeight
+                    width: text.width
+                    Text {
+                        id: text
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: name
+                    }
+                }
             }
         }
         highlight: Rectangle {
@@ -94,32 +145,6 @@ Item {
             } else if (event.key === Qt.Key_L)
                 window.play(t, "link");
         }
-    }
-
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        width: 100
-        height: 100
-
-        Row {
-            Column {
-                width: 20
-                Row { Text { text: "F" } }
-                Row { Text { text: "M" } }
-                Row { Text { text: "S" } }
-                Row { Text { text: "P" } }
-                Row { Text { text: "L" } }
-            }
-            Column {
-                Row { Text { text: "Download a file" } }
-                Row { Text { text: "Download file to memory" } }
-                Row { Text { text: "Stream a file" } }
-                Row { Text { text: "Pause file" } }
-                Row { Text { text: "Play from link"} }
-            }
-        }
-
     }
 
     VideoOutput {

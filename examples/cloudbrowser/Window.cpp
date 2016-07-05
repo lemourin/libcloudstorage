@@ -148,7 +148,7 @@ void Window::onSuccessfullyAuthorized() {
 }
 
 void Window::onAddedItem(IItem::Pointer i) {
-  ItemModel* model = new ItemModel(i);
+  ItemModel* model = new ItemModel(i, cloud_provider_);
   model->setParent(this);
   current_directory_list_.append(model);
   rootContext()->setContextProperty(
@@ -287,6 +287,14 @@ void CloudProviderCallback::error(const ICloudProvider&,
   std::cerr << "[FAIL] " << desc.c_str() << "\n";
 }
 
-ItemModel::ItemModel(IItem::Pointer item) : item_(item) {}
+ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p)
+    : item_(item) {
+  connect(this, &ItemModel::receivedData, [this](IItem::Pointer i) {
+    item_ = i;
+    emit thumbnailChanged();
+  });
+  data_request_ = p->getItemDataAsync(
+      item, [this](IItem::Pointer i) { emit receivedData(i); });
+}
 
 ItemModel::~ItemModel() {}

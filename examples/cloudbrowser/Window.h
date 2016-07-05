@@ -36,16 +36,24 @@ class ItemModel : public QObject {
  public:
   Q_PROPERTY(QString name READ name CONSTANT)
   Q_PROPERTY(bool directory READ is_directory CONSTANT)
+  Q_PROPERTY(QString thumbnail READ thumbnail NOTIFY thumbnailChanged)
 
-  ItemModel(cloudstorage::IItem::Pointer item);
+  ItemModel(cloudstorage::IItem::Pointer item,
+            cloudstorage::ICloudProvider::Pointer);
   ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
   bool is_directory() const { return item_->is_directory(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
+  QString thumbnail() const { return item_->thumbnail_url().c_str(); }
+
+ signals:
+  void thumbnailChanged();
+  void receivedData(IItem::Pointer);
 
  private:
   cloudstorage::IItem::Pointer item_;
+  cloudstorage::GetItemDataRequest::Pointer data_request_;
 
   Q_OBJECT
 };
