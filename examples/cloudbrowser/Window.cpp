@@ -36,6 +36,11 @@ using namespace cloudstorage;
 
 namespace {
 
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
  public:
   ListDirectoryCallback(Window* w) : window_(w) {}
@@ -50,10 +55,31 @@ class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
   Window* window_;
 };
 
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
+class DownloadThumbnailCallback : public DownloadFileCallback::ICallback {
+ public:
+  DownloadThumbnailCallback(ItemModel* i) : item_(i) {}
+
+  void receivedData(const char* data, uint32_t length) {
+    data_ += std::string(data, data + length);
+  }
+
+  void done() {
+    ImagePointer image = make_unique<QImage>();
+    if (image->loadFromData(reinterpret_cast<const uchar*>(data_.data()),
+                            data_.length()))
+      emit item_->receivedImage(std::move(image));
+  }
+
+  void error(const std::string& error) {
+    std::cerr << "[FAIL] " << error << "\n";
+  }
+
+  void progress(uint32_t, uint32_t) {}
+
+ private:
+  ItemModel* item_;
+  std::string data_;
+};
 
 std::string mediaStatusToString(QMediaPlayer::MediaStatus state) {
   switch (state) {
@@ -81,8 +107,11 @@ std::string mediaStatusToString(QMediaPlayer::MediaStatus state) {
 
 }  // namespace
 
-Window::Window() : media_player_(this, QMediaPlayer::StreamPlayback) {
-  qRegisterMetaType<IItem::Pointer>();
+Window::Window()
+    : media_player_(this, QMediaPlayer::StreamPlayback),
+      image_provider_(new ImageProvider) {
+  qRegisterMetaType<ItemPointer>();
+  qRegisterMetaType<ImagePointer>();
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -91,6 +120,7 @@ Window::Window() : media_player_(this, QMediaPlayer::StreamPlayback) {
   rootContext()->setContextProperty("window", this);
   rootContext()->setContextProperty(
       "directoryModel", QVariant::fromValue(current_directory_list_));
+  engine()->addImageProvider("provider", imageProvider());
 
   setSource(QUrl("qrc:/main.qml"));
   setResizeMode(SizeRootObjectToView);
@@ -148,7 +178,7 @@ void Window::onSuccessfullyAuthorized() {
 }
 
 void Window::onAddedItem(IItem::Pointer i) {
-  ItemModel* model = new ItemModel(i, cloud_provider_);
+  ItemModel* model = new ItemModel(i, cloud_provider_, this);
   model->setParent(this);
   current_directory_list_.append(model);
   rootContext()->setContextProperty(
@@ -287,14 +317,40 @@ void CloudProviderCallback::error(const ICloudProvider&,
   std::cerr << "[FAIL] " << desc.c_str() << "\n";
 }
 
-ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p)
-    : item_(item) {
-  connect(this, &ItemModel::receivedData, [this](IItem::Pointer i) {
-    item_ = i;
+ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
+    : item_(item), window_(w) {
+  QString id = (p->name() + "/" + item_->id()).c_str();
+  connect(this, &ItemModel::receivedImage, [this, id](ImagePointer image) {
+    window_->imageProvider()->addImage(id, std::move(image));
+    thumbnail_ = "image://provider//" + id;
     emit thumbnailChanged();
   });
-  data_request_ = p->getItemDataAsync(
-      item, [this](IItem::Pointer i) { emit receivedData(i); });
+
+  if (window_->imageProvider()->hasImage(id))
+    thumbnail_ = "image://provider//" + id;
+  else
+    thumbnail_request_ = p->getThumbnailAsync(
+        item, make_unique<DownloadThumbnailCallback>(this));
 }
 
 ItemModel::~ItemModel() {}
+
+ImageProvider::ImageProvider() : QQuickImageProvider(Image) {}
+
+QImage ImageProvider::requestImage(const QString& id, QSize* size,
+                                   const QSize& requested_size) {
+  if (cache_.find(id) == cache_.end()) return QImage();
+  QImage img = *cache_[id];
+  if (requested_size.isValid())
+    img = img.scaled(requested_size.width(), requested_size.height());
+  *size = requested_size;
+  return img;
+}
+
+void ImageProvider::addImage(QString id, ImagePointer img) {
+  cache_["/" + id] = std::move(img);
+}
+
+bool ImageProvider::hasImage(QString id) {
+  return cache_.find("/" + id) != cache_.end();
+}

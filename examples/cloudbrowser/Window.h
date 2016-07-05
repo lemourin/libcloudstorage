@@ -27,10 +27,25 @@
 #include <ICloudProvider.h>
 #include <IItem.h>
 #include <QMediaObject>
+#include <QQuickImageProvider>
 #include <QQuickView>
 #include "InputDevice.h"
 
+using ItemPointer = cloudstorage::IItem::Pointer;
+using ImagePointer = std::shared_ptr<QImage>;
+
 class Window;
+
+class ImageProvider : public QQuickImageProvider {
+ public:
+  ImageProvider();
+  QImage requestImage(const QString&, QSize*, const QSize&);
+  void addImage(QString id, ImagePointer);
+  bool hasImage(QString id);
+
+ private:
+  std::map<QString, ImagePointer> cache_;
+};
 
 class ItemModel : public QObject {
  public:
@@ -39,21 +54,23 @@ class ItemModel : public QObject {
   Q_PROPERTY(QString thumbnail READ thumbnail NOTIFY thumbnailChanged)
 
   ItemModel(cloudstorage::IItem::Pointer item,
-            cloudstorage::ICloudProvider::Pointer);
+            cloudstorage::ICloudProvider::Pointer, Window*);
   ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
   bool is_directory() const { return item_->is_directory(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
-  QString thumbnail() const { return item_->thumbnail_url().c_str(); }
+  QString thumbnail() const { return thumbnail_; }
 
  signals:
   void thumbnailChanged();
-  void receivedData(IItem::Pointer);
+  void receivedImage(ImagePointer);
 
  private:
+  QString thumbnail_;
   cloudstorage::IItem::Pointer item_;
-  cloudstorage::GetItemDataRequest::Pointer data_request_;
+  cloudstorage::DownloadFileRequest::Pointer thumbnail_request_;
+  Window* window_;
 
   Q_OBJECT
 };
@@ -79,6 +96,7 @@ class Window : public QQuickView {
   ~Window();
 
   QObject* mediaObject() { return &media_player_; };
+  ImageProvider* imageProvider() { return image_provider_; }
 
   Q_INVOKABLE void initializeCloud(QString name);
   Q_INVOKABLE void listDirectory();
@@ -101,7 +119,7 @@ class Window : public QQuickView {
   void openBrowser(QString url);
   void closeBrowser();
   void successfullyAuthorized();
-  void addedItem(cloudstorage::IItem::Pointer);
+  void addedItem(ItemPointer);
   void runPlayer(QString file);
   void runPlayerFromUrl(QString url);
 
@@ -120,10 +138,12 @@ class Window : public QQuickView {
   QMediaPlayer media_player_;
   DownloadFileRequest::Pointer download_request_;
   GetItemDataRequest::Pointer item_data_request_;
+  ImageProvider* image_provider_;
 
   Q_OBJECT
 };
 
-Q_DECLARE_METATYPE(cloudstorage::IItem::Pointer)
+Q_DECLARE_METATYPE(ItemPointer)
+Q_DECLARE_METATYPE(ImagePointer)
 
 #endif  // WINDOW_HPP

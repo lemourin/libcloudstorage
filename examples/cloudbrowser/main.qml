@@ -6,41 +6,6 @@ import QtMultimedia 5.5
 Item {
     id: root
 
-    Rectangle {
-        property int padding: 5
-
-        anchors.margins: padding
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        border.color: "black"
-        radius: padding
-        color: "grey"
-        width: content.width + 2 * padding
-        height: content.height + 2 * padding
-
-        Row {
-            id: content
-            x: parent.padding
-            y: parent.padding
-
-            Column {
-                width: 20
-                Row { Text { text: "F" } }
-                Row { Text { text: "M" } }
-                Row { Text { text: "S" } }
-                Row { Text { text: "P" } }
-                Row { Text { text: "L" } }
-            }
-            Column {
-                Row { Text { text: "Download a file" } }
-                Row { Text { text: "Download file to memory" } }
-                Row { Text { text: "Stream a file" } }
-                Row { Text { text: "Pause file" } }
-                Row { Text { text: "Play from link"} }
-            }
-        }
-    }
-
     Gradient {
         id: colors
         GradientStop { position: 0.0; color: "#8EE2FE"}
@@ -114,7 +79,7 @@ Item {
                     }
                     Item {
                         height: fileEntry.thumbnailHeight
-                        width: text.width
+                        width: text.width + fileEntry.padding
                         Text {
                             x: fileEntry.padding
                             id: text
@@ -152,8 +117,7 @@ Item {
             else if (event.key === Qt.Key_F)
                 window.play(t, "file");
             else if (event.key === Qt.Key_P) {
-                if (window.playing())
-                    window.stop();
+                window.stop();
             } else if (event.key === Qt.Key_L)
                 window.play(t, "link");
         }
@@ -162,6 +126,41 @@ Item {
     VideoOutput {
         anchors.fill: parent
         source: window
+    }
+
+    Rectangle {
+        property int padding: 5
+
+        anchors.margins: padding
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        border.color: "black"
+        radius: padding
+        color: "grey"
+        width: content.width + 2 * padding
+        height: content.height + 2 * padding
+
+        Row {
+            id: content
+            x: parent.padding
+            y: parent.padding
+
+            Column {
+                width: 20
+                Row { Text { text: "F" } }
+                Row { Text { text: "M" } }
+                Row { Text { text: "S" } }
+                Row { Text { text: "P" } }
+                Row { Text { text: "L" } }
+            }
+            Column {
+                Row { Text { text: "Download a file" } }
+                Row { Text { text: "Download file to memory" } }
+                Row { Text { text: "Stream a file" } }
+                Row { Text { text: "Pause file" } }
+                Row { Text { text: "Play from link"} }
+            }
+        }
     }
 
     ScrollView {
