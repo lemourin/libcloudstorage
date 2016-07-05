@@ -63,6 +63,8 @@ class CloudProvider : public ICloudProvider,
       UploadFileRequest::ICallback::Pointer);
   GetItemDataRequest::Pointer getItemDataAsync(
       IItem::Pointer, std::function<void(IItem::Pointer)> f);
+  DownloadFileRequest::Pointer getThumbnailAsync(
+      IItem::Pointer, DownloadFileRequest::ICallback::Pointer);
 
   virtual HttpRequest::Pointer listDirectoryRequest(
       const IItem&, std::ostream& input_stream) const = 0;
@@ -70,6 +72,8 @@ class CloudProvider : public ICloudProvider,
       const IItem& directory, const std::string& filename, std::istream& stream,
       std::ostream& input_stream) const = 0;
   virtual HttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const = 0;
+  virtual HttpRequest::Pointer getThumbnailRequest(
       const IItem&, std::ostream& input_stream) const = 0;
 
   virtual std::vector<IItem::Pointer> listDirectoryResponse(

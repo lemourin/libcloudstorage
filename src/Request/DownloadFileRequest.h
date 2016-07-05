@@ -28,9 +28,20 @@
 
 namespace cloudstorage {
 
+class DownloadStreamWrapper : public std::streambuf {
+ public:
+  DownloadStreamWrapper(std::function<void(const char*, uint32_t)> callback);
+  std::streamsize xsputn(const char_type* data, std::streamsize length);
+
+ private:
+  std::function<void(const char*, uint32_t)> callback_;
+};
+
 class DownloadFileRequest : public Request {
  public:
   using Pointer = std::unique_ptr<DownloadFileRequest>;
+  using RequestFactory =
+      std::function<std::unique_ptr<HttpRequest>(const IItem&, std::ostream&)>;
 
   class ICallback {
    public:
@@ -44,25 +55,19 @@ class DownloadFileRequest : public Request {
   };
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
-                      ICallback::Pointer);
+                      ICallback::Pointer, RequestFactory request_factory);
   ~DownloadFileRequest();
 
   void finish();
 
  private:
-  class DownloadStreamWrapper : public std::streambuf {
-   public:
-    DownloadStreamWrapper(DownloadFileRequest::ICallback::Pointer callback);
-    std::streamsize xsputn(const char_type* data, std::streamsize length);
-
-    DownloadFileRequest::ICallback::Pointer callback_;
-  };
-
   int download(std::ostream& error_stream);
 
   std::future<void> function_;
   IItem::Pointer file_;
   DownloadStreamWrapper stream_wrapper_;
+  ICallback::Pointer callback_;
+  RequestFactory request_factory_;
 };
 
 }  // namespace cloudstorage

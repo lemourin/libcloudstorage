@@ -35,8 +35,8 @@ class OneDrive : public CloudProvider {
 
   std::string name() const;
 
-  GetItemDataRequest::Pointer getItemDataAsync(
-      IItem::Pointer, std::function<void(IItem::Pointer)> f);
+  HttpRequest::Pointer getThumbnailRequest(const IItem&,
+                                           std::ostream& input_stream) const;
 
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
@@ -67,21 +67,6 @@ class OneDrive : public CloudProvider {
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;
     bool validateTokenResponse(std::istream&) const;
-  };
-
-  class DataRequest : public GetItemDataRequest {
-   public:
-    DataRequest(CloudProvider::Pointer, IItem::Pointer,
-                std::function<void(IItem::Pointer)>);
-
-    IItem::Pointer result();
-    void finish();
-
-   private:
-    int makeThumbnailRequest();
-
-    std::shared_future<IItem::Pointer> result_;
-    IItem::Pointer item_;
   };
 };
 

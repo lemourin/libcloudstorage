@@ -24,6 +24,7 @@
 #include "Dropbox.h"
 
 #include <jsoncpp/json/json.h>
+#include <iostream>
 #include <sstream>
 
 #include "Request/HttpCallback.h"
@@ -84,6 +85,12 @@ HttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& f,
   str.pop_back();
   request->setHeaderParameter("Dropbox-API-arg", str);
   return request;
+}
+
+HttpRequest::Pointer Dropbox::getThumbnailRequest(
+    const IItem&, std::ostream& input_stream) const {
+  // TODO
+  return 0;
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
@@ -182,10 +189,13 @@ Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
                                   std::function<void(IItem::Pointer)> callback)
     : GetItemDataRequest(p, item, callback, false) {
   result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
-    int code = makeRequest();
+    int code = makeTemporaryLinkRequest();
     if (HttpRequest::isAuthorizationError(code)) {
       reauthorize();
-      code = makeRequest();
+      code = makeTemporaryLinkRequest();
+    }
+    if (HttpRequest::isSuccess(code)) {
+      code = makeThumbnailRequest();
     }
     this->callback()(item_);
     return item_;
@@ -199,7 +209,7 @@ IItem::Pointer Dropbox::DataRequest::result() {
   return future.get();
 }
 
-int Dropbox::DataRequest::makeRequest() {
+int Dropbox::DataRequest::makeTemporaryLinkRequest() {
   HttpRequest request("https://api.dropboxapi.com/2/files/get_temporary_link",
                       HttpRequest::Type::POST);
   request.setHeaderParameter("Content-Type", "application/json");
@@ -208,8 +218,7 @@ int Dropbox::DataRequest::makeRequest() {
 
   Json::Value parameter;
   parameter["path"] = item()->id();
-  std::string str = Json::FastWriter().write(parameter);
-  input << str;
+  input << Json::FastWriter().write(parameter);
 
   int code = request.send(input, output, &error, httpCallback());
   if (HttpRequest::isSuccess(code)) {
@@ -222,6 +231,33 @@ int Dropbox::DataRequest::makeRequest() {
     item_ = item();
   }
   return code;
+}
+
+int Dropbox::DataRequest::makeThumbnailRequest() {
+  return 0;
+  HttpRequest request("https://content.dropboxapi.com/2/files/get_thumbnail",
+                      HttpRequest::Type::POST);
+  request.setHeaderParameter("Content-Type", "");
+  provider()->authorizeRequest(request);
+
+  std::stringstream input, output, error;
+  Json::Value parameter;
+  parameter["path"] = item()->id();
+  std::string str = Json::FastWriter().write(parameter);
+  str.pop_back();
+  std::cerr << str << "\n";
+  request.setHeaderParameter("Dropbox-API-arg", str);
+  int code = request.send(input, output, &error, httpCallback());
+  if (HttpRequest::isSuccess(code)) {
+    std::cerr << output.rdbuf();
+    // auto i = item()->copy();
+
+    // static_cast<Item*>(i.get())->set_thumbnail_url();
+  } else {
+    std::cerr << code << "\n";
+    std::cerr << error.rdbuf() << "\n";
+    // std::cerr << error.rdbuf() << "\n";
+  }
 }
 
 }  // namespace cloudstorage

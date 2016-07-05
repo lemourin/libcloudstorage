@@ -84,8 +84,10 @@ GetItemRequest::Pointer CloudProvider::getItemAsync(
 
 DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer file, DownloadFileRequest::ICallback::Pointer callback) {
-  return make_unique<DownloadFileRequest>(shared_from_this(), std::move(file),
-                                          std::move(callback));
+  return make_unique<DownloadFileRequest>(
+      shared_from_this(), std::move(file), std::move(callback),
+      std::bind(&CloudProvider::downloadFileRequest, this,
+                std::placeholders::_1, std::placeholders::_2));
 }
 
 UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
@@ -102,6 +104,12 @@ GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
 
 void CloudProvider::authorizeRequest(HttpRequest& r) {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
+}
+
+DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
+    IItem::Pointer item, DownloadFileRequest::ICallback::Pointer callback) {
+  return make_unique<DownloadFileRequest>(shared_from_this(), item,
+                                          std::move(callback), nullptr);
 }
 
 }  // namespace cloudstorage

@@ -31,28 +31,32 @@ namespace cloudstorage {
 
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
-                                         ICallback::Pointer callback)
-    : Request(p), file_(std::move(file)), stream_wrapper_(std::move(callback)) {
-  if (!stream_wrapper_.callback_)
-    throw std::logic_error("Callback can't be null.");
+                                         ICallback::Pointer callback,
+                                         RequestFactory request_factory)
+    : Request(p),
+      file_(std::move(file)),
+      stream_wrapper_(std::bind(&ICallback::receivedData, callback.get(),
+                                std::placeholders::_1, std::placeholders::_2)),
+      callback_(std::move(callback)),
+      request_factory_(request_factory) {
   function_ = std::async(std::launch::async, [this]() {
     try {
       std::stringstream error_stream;
       int code = download(error_stream);
       if (HttpRequest::isAuthorizationError(code)) {
         if (!reauthorize()) {
-          stream_wrapper_.callback_->error("Failed to authorize.");
+          callback_->error("Failed to authorize.");
           return;
         }
         code = download(error_stream);
       }
       if (HttpRequest::isClientError(code))
-        stream_wrapper_.callback_->error("HTTP code " + std::to_string(code) +
-                                         ": " + error_stream.str());
+        callback_->error("HTTP code " + std::to_string(code) + ": " +
+                         error_stream.str());
       else
-        stream_wrapper_.callback_->done();
+        callback_->done();
     } catch (const HttpException& e) {
-      stream_wrapper_.callback_->error(e.what());
+      callback_->error(e.what());
     }
   });
 }
@@ -65,24 +69,23 @@ void DownloadFileRequest::finish() {
 
 int DownloadFileRequest::download(std::ostream& error_stream) {
   std::stringstream stream;
-  HttpRequest::Pointer request =
-      provider()->downloadFileRequest(*file_, stream);
+  HttpRequest::Pointer request = request_factory_(*file_, stream);
   provider()->authorizeRequest(*request);
   std::ostream response_stream(&stream_wrapper_);
   return request->send(
       stream, response_stream, &error_stream,
       httpCallback(std::bind(&DownloadFileRequest::ICallback::progress,
-                             stream_wrapper_.callback_.get(),
-                             std::placeholders::_1, std::placeholders::_2)));
+                             callback_.get(), std::placeholders::_1,
+                             std::placeholders::_2)));
 }
 
-DownloadFileRequest::DownloadStreamWrapper::DownloadStreamWrapper(
-    DownloadFileRequest::ICallback::Pointer callback)
+DownloadStreamWrapper::DownloadStreamWrapper(
+    std::function<void(const char*, uint32_t)> callback)
     : callback_(std::move(callback)) {}
 
-std::streamsize DownloadFileRequest::DownloadStreamWrapper::xsputn(
-    const char_type* data, std::streamsize length) {
-  callback_->receivedData(data, static_cast<uint32_t>(length));
+std::streamsize DownloadStreamWrapper::xsputn(const char_type* data,
+                                              std::streamsize length) {
+  callback_(data, static_cast<uint32_t>(length));
   return length;
 }
 
