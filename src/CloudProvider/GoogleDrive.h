@@ -62,6 +62,8 @@ class GoogleDrive : public CloudProvider {
     Token::Pointer refreshTokenResponse(std::istream&) const;
     bool validateTokenResponse(std::istream&) const;
   };
+
+  bool isGoogleMimeType(const std::string& mime_type) const;
 };
 
 }  // namespace cloudstorage

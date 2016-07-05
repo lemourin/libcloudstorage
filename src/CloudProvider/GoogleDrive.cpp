@@ -24,6 +24,7 @@
 #include "GoogleDrive.h"
 
 #include <jsoncpp/json/json.h>
+#include <algorithm>
 #include <sstream>
 
 #include "Utility/HttpRequest.h"
@@ -97,7 +98,10 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
     auto item =
         make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
     item->set_hidden(v["trashed"].asBool());
-    item->set_thumbnail_url(v["thumbnailLink"].asString());
+    std::string thumnail_url = v["thumbnailLink"].asString();
+    if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))
+      thumnail_url += "&access_token=" + access_token();
+    item->set_thumbnail_url(thumnail_url);
     item->set_url("https://www.googleapis.com/drive/v3/files/" + item->id() +
                   "?alt=media&access_token=" + access_token());
     result.push_back(std::move(item));
@@ -109,6 +113,19 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   else
     next_page_request = nullptr;
   return result;
+}
+
+bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
+  std::vector<std::string> types = {"application/vnd.google-apps.document",
+                                    "application/vnd.google-apps.drawing",
+                                    "application/vnd.google-apps.form",
+                                    "application/vnd.google-apps.fusiontable",
+                                    "application/vnd.google-apps.map",
+                                    "application/vnd.google-apps.presentation",
+                                    "application/vnd.google-apps.script",
+                                    "application/vnd.google-apps.sites",
+                                    "application/vnd.google-apps.spreadsheet"};
+  return std::find(types.begin(), types.end(), mime_type) != types.end();
 }
 
 GoogleDrive::Auth::Auth() {
