@@ -53,7 +53,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
       if (HttpRequest::isClientError(code))
         callback_->error("HTTP code " + std::to_string(code) + ": " +
                          error_stream.str());
-      else
+      else if (HttpRequest::isSuccess(code))
         callback_->done();
     } catch (const HttpException& e) {
       callback_->error(e.what());

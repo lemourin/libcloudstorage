@@ -108,8 +108,10 @@ void CloudProvider::authorizeRequest(HttpRequest& r) {
 
 DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, DownloadFileRequest::ICallback::Pointer callback) {
-  return make_unique<DownloadFileRequest>(shared_from_this(), item,
-                                          std::move(callback), nullptr);
+  return make_unique<DownloadFileRequest>(
+      shared_from_this(), item, std::move(callback),
+      std::bind(&CloudProvider::getThumbnailRequest, this,
+                std::placeholders::_1, std::placeholders::_2));
 }
 
 }  // namespace cloudstorage
