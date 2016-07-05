@@ -43,10 +43,10 @@ HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::GET);
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
-  request->setParameter(
-      "fields",
-      "files(id,name,thumbnailLink,trashed,webContentLink,mimeType),kind,"
-      "nextPageToken");
+  request->setParameter("fields",
+                        "files(id,name,thumbnailLink,trashed,webContentLink,"
+                        "mimeType,iconLink),kind,"
+                        "nextPageToken");
   return request;
 }
 
@@ -101,6 +101,8 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
     std::string thumnail_url = v["thumbnailLink"].asString();
     if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))
       thumnail_url += "&access_token=" + access_token();
+    else if (thumnail_url.empty())
+      thumnail_url = v["iconLink"].asString();
     item->set_thumbnail_url(thumnail_url);
     item->set_url("https://www.googleapis.com/drive/v3/files/" + item->id() +
                   "?alt=media&access_token=" + access_token());
