@@ -85,10 +85,12 @@ HttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& f,
   return request;
 }
 
-HttpRequest::Pointer GoogleDrive::getThumbnailRequest(
-    const IItem&, std::ostream& input_stream) const {
-  // TODO
-  return 0;
+HttpRequest::Pointer GoogleDrive::getThumbnailRequest(const IItem& f,
+                                                      std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request =
+      make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
+  return request;
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(

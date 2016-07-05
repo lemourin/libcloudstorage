@@ -38,10 +38,10 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
-HttpRequest::Pointer OneDrive::getThumbnailRequest(
-    const IItem&, std::ostream& input_stream) const {
-  // TODO
-  return 0;
+HttpRequest::Pointer OneDrive::getThumbnailRequest(const IItem& f,
+                                                   std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
 }
 
 HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,

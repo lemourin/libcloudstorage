@@ -87,10 +87,20 @@ HttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& f,
   return request;
 }
 
-HttpRequest::Pointer Dropbox::getThumbnailRequest(
-    const IItem&, std::ostream& input_stream) const {
-  // TODO
-  return 0;
+HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
+                                                  std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://content.dropboxapi.com/2/files/get_thumbnail",
+      HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "");
+
+  Json::Value parameter;
+  parameter["path"] = item.id();
+  std::string str = Json::FastWriter().write(parameter);
+  str.pop_back();
+  request->setHeaderParameter("Dropbox-API-arg", str);
+  return request;
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
@@ -101,7 +111,8 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
 
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["entries"]) {
-    IItem::FileType type;  // = v[".tag"].asString() == "folder";
+    IItem::FileType type = IItem::FileType::Unknown;
+    if (v[".tag"].asString() == "folder") type = IItem::FileType::Directory;
     result.push_back(make_unique<Item>(v["name"].asString(),
                                        v["path_display"].asString(), type));
   }
@@ -194,9 +205,6 @@ Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
       reauthorize();
       code = makeTemporaryLinkRequest();
     }
-    if (HttpRequest::isSuccess(code)) {
-      code = makeThumbnailRequest();
-    }
     this->callback()(item_);
     return item_;
   });
@@ -231,33 +239,6 @@ int Dropbox::DataRequest::makeTemporaryLinkRequest() {
     item_ = item();
   }
   return code;
-}
-
-int Dropbox::DataRequest::makeThumbnailRequest() {
-  return 0;
-  HttpRequest request("https://content.dropboxapi.com/2/files/get_thumbnail",
-                      HttpRequest::Type::POST);
-  request.setHeaderParameter("Content-Type", "");
-  provider()->authorizeRequest(request);
-
-  std::stringstream input, output, error;
-  Json::Value parameter;
-  parameter["path"] = item()->id();
-  std::string str = Json::FastWriter().write(parameter);
-  str.pop_back();
-  std::cerr << str << "\n";
-  request.setHeaderParameter("Dropbox-API-arg", str);
-  int code = request.send(input, output, &error, httpCallback());
-  if (HttpRequest::isSuccess(code)) {
-    std::cerr << output.rdbuf();
-    // auto i = item()->copy();
-
-    // static_cast<Item*>(i.get())->set_thumbnail_url();
-  } else {
-    std::cerr << code << "\n";
-    std::cerr << error.rdbuf() << "\n";
-    // std::cerr << error.rdbuf() << "\n";
-  }
 }
 
 }  // namespace cloudstorage
