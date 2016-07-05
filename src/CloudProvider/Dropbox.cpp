@@ -24,7 +24,6 @@
 #include "Dropbox.h"
 
 #include <jsoncpp/json/json.h>
-#include <iostream>
 #include <sstream>
 
 #include "Request/HttpCallback.h"
@@ -214,14 +213,13 @@ int Dropbox::DataRequest::makeRequest() {
 
   int code = request.send(input, output, &error, httpCallback());
   if (HttpRequest::isSuccess(code)) {
-    auto i =
-        make_unique<Item>(item()->filename(), item()->id(), item()->type());
+    auto i = item()->copy();
     Json::Value response;
     output >> response;
-    i->set_url(response["link"].asString());
+    static_cast<Item*>(i.get())->set_url(response["link"].asString());
     item_ = std::move(i);
   } else {
-    std::cerr << "[FAIL] " << error.rdbuf() << "\n";
+    item_ = item();
   }
   return code;
 }
