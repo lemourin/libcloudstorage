@@ -13,7 +13,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         border.color: "black"
-        radius: 5
+        radius: padding
         color: "grey"
         width: content.width + 2 * padding
         height: content.height + 2 * padding
@@ -94,21 +94,33 @@ Item {
         anchors.bottom: parent.bottom
         model: directoryModel
         delegate: Component {
-            Row {
+            Item {
                 property int thumbnailWidth: 50
                 property int thumbnailHeight: 50
-                Image {
-                    width: thumbnailWidth
-                    height: thumbnailHeight
-                    source: thumbnail
-                }
-                Item {
-                    height: thumbnailHeight
-                    width: text.width
-                    Text {
-                        id: text
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: name
+                property int padding: 5
+
+                id: fileEntry
+                height: thumbnailHeight + 2 * padding
+                width: row.width + 2 * padding
+
+                Row {
+                    id: row
+                    x: padding
+                    y: padding
+                    Image {
+                        width: fileEntry.thumbnailWidth
+                        height: fileEntry.thumbnailHeight
+                        source: thumbnail
+                    }
+                    Item {
+                        height: fileEntry.thumbnailHeight
+                        width: text.width
+                        Text {
+                            x: fileEntry.padding
+                            id: text
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: name
+                        }
                     }
                 }
             }
