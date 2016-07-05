@@ -24,8 +24,10 @@
 #include "OneDrive.h"
 
 #include <jsoncpp/json/json.h>
+#include <iostream>
 #include <sstream>
 
+#include "Request/HttpCallback.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -35,6 +37,11 @@ namespace cloudstorage {
 OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
+
+GetItemDataRequest::Pointer OneDrive::getItemDataAsync(
+    IItem::Pointer item, std::function<void(IItem::Pointer)> f) {
+  return make_unique<DataRequest>(shared_from_this(), item, f);
+}
 
 HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
                                                     std::ostream&) const {
@@ -79,6 +86,9 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
     auto item =
         make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
     item->set_url(v["@content.downloadUrl"].asString());
+    //    item->set_thumbnail_url(
+    //        "https://api.onedrive.com/v1.0/drive/items/" + item->id() +
+    //        "/thumbnails/0/small/content?access_token=" + access_token());
     result.push_back(std::move(item));
   }
   if (response.isMember("@odata.nextLink")) {
@@ -159,6 +169,47 @@ IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
 
 bool OneDrive::Auth::validateTokenResponse(std::istream&) const {
   return !access_token()->token_.empty();
+}
+
+OneDrive::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer i,
+                                   std::function<void(IItem::Pointer)> f)
+    : GetItemDataRequest(p, i, f, false) {
+  result_ = std::async(std::launch::async, [this]() {
+    int code = makeThumbnailRequest();
+    if (HttpRequest::isAuthorizationError(code)) {
+      reauthorize();
+      code = makeThumbnailRequest();
+    }
+    this->callback()(item_);
+    return item_;
+  });
+}
+
+IItem::Pointer OneDrive::DataRequest::result() {
+  std::shared_future<IItem::Pointer> future = result_;
+  return future.get();
+}
+
+void OneDrive::DataRequest::finish() { result_.wait(); }
+
+int OneDrive::DataRequest::makeThumbnailRequest() {
+  HttpRequest request("https://api.onedrive.com/v1.0/drive/items/" +
+                          item()->id() + "/thumbnails/",
+                      HttpRequest::Type::GET);
+  provider()->authorizeRequest(request);
+
+  std::stringstream input, output;
+  int code = request.send(input, output, nullptr, httpCallback());
+  if (HttpRequest::isSuccess(code)) {
+    Json::Value response;
+    output >> response;
+
+    item_ = item()->copy();
+    static_cast<Item*>(item_.get())
+        ->set_thumbnail_url(response["value"][0]["small"]["url"].asString());
+  } else
+    item_ = item();
+  return code;
 }
 
 }  // namespace cloudstorage
