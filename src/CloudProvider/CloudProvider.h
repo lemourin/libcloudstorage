@@ -43,7 +43,9 @@ class CloudProvider : public ICloudProvider,
   CloudProvider(IAuth::Pointer);
 
   AuthorizeRequest::Pointer initialize(const std::string& token,
-                                       ICallback::Pointer);
+                                       ICallback::Pointer,
+                                       const std::string& client_id,
+                                       const std::string& client_secret);
 
   std::string access_token() const;
   IAuth* auth() const;

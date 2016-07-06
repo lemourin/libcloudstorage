@@ -24,7 +24,6 @@
 #include "CloudProvider.h"
 
 #include <jsoncpp/json/json.h>
-#include <iostream>
 #include <sstream>
 
 #include "Utility/Item.h"
@@ -38,10 +37,13 @@ CloudProvider::CloudProvider(IAuth::Pointer auth)
       current_authorization_successful_() {}
 
 AuthorizeRequest::Pointer CloudProvider::initialize(
-    const std::string& token, ICallback::Pointer callback) {
+    const std::string& token, ICallback::Pointer callback,
+    const std::string& client_id, const std::string& client_secret) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   callback_ = std::move(callback);
   auth()->set_access_token(auth()->fromTokenString(token));
+  if (!client_id.empty()) auth()->set_client_id(client_id);
+  if (!client_secret.empty()) auth()->set_client_secret(client_secret);
   return make_unique<AuthorizeRequest>(shared_from_this());
 }
 
