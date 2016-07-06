@@ -52,7 +52,7 @@ UploadFileRequest::UploadFileRequest(
       }
       if (HttpRequest::isClientError(code))
         stream_wrapper_.callback_->error(error_stream.str());
-      else
+      else if (HttpRequest::isSuccess(code))
         stream_wrapper_.callback_->done();
     } catch (const HttpException& e) {
       stream_wrapper_.callback_->error(e.what());

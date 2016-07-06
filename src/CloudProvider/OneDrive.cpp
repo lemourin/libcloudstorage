@@ -58,12 +58,28 @@ HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
 HttpRequest::Pointer OneDrive::uploadFileRequest(
     const IItem& f, const std::string& filename, std::istream& stream,
     std::ostream& input_stream) const {
+  const std::string separator = "1BPT6g1G6FUkXNkiqx5s";
   const Item& item = static_cast<const Item&>(f);
-  HttpRequest::Pointer request =
-      make_unique<HttpRequest>("https://api.onedrive.com/v1.0/drive/items/" +
-                                   item.id() + ":/" + filename + ":/content",
-                               HttpRequest::Type::PUT);
-  input_stream.rdbuf(stream.rdbuf());
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
+      HttpRequest::Type::POST);
+  request->setHeaderParameter(
+      "Content-Type", "multipart/related; boundary=\"" + separator + "\"");
+  Json::Value parameter;
+  parameter["name"] = filename;
+  parameter["file"] = {};
+  parameter["@content.sourceUrl"] = "cid:content";
+  input_stream << "--" << separator << "\r\n"
+               << "Content-ID: <metadata>\r\n"
+               << "Content-Type: application/json\r\n"
+               << "\r\n"
+               << parameter << "\r\n\r\n"
+               << "--" << separator << "\r\n"
+               << "Content-ID: <content>\r\n"
+               << "Content-Type: application/octet-stream\r\n"
+               << "\r\n"
+               << stream.rdbuf() << "\r\n"
+               << "--" << separator << "--\r\n";
   return request;
 }
 

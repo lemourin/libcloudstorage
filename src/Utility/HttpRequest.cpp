@@ -187,7 +187,9 @@ void HttpRequest::resetParameters() {
 
 bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
 
-bool HttpRequest::isClientError(int code) { return (code / 100) == 4; }
+bool HttpRequest::isClientError(int code) {
+  return (code / 100) == 4 || (code / 100) == 5;
+}
 
 bool HttpRequest::isAuthorizationError(int code) { return code == 401; }
 

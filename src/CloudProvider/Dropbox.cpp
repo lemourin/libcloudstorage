@@ -69,7 +69,7 @@ HttpRequest::Pointer Dropbox::uploadFileRequest(
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
       HttpRequest::Type::PUT);
-  input_stream.rdbuf(stream.rdbuf());
+  input_stream << stream.rdbuf();
   return request;
 }
 
@@ -119,7 +119,7 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
       std::string file_type = v["media_info"]["metadata"][".tag"].asString();
       if (file_type == "video")
         type = IItem::FileType::Video;
-      else  if (file_type == "photo")
+      else if (file_type == "photo")
         type = IItem::FileType::Image;
     }
     result.push_back(make_unique<Item>(v["name"].asString(),
