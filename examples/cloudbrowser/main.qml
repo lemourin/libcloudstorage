@@ -114,7 +114,7 @@ Item {
                 }
             }
             if (currentIndex == -1)
-                return
+                return;
             var t = directoryModel[currentIndex];
             if (event.key === Qt.Key_Return) {
                 if (t.directory)

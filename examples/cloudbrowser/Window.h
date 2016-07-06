@@ -55,7 +55,6 @@ class ItemModel : public QObject {
 
   ItemModel(cloudstorage::IItem::Pointer item,
             cloudstorage::ICloudProvider::Pointer, Window*);
-  ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
   bool is_directory() const { return item_->is_directory(); }
@@ -138,7 +137,6 @@ class Window : public QQuickView {
   cloudstorage::IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
   cloudstorage::ListDirectoryRequest::Pointer list_directory_request_;
-  QObjectList current_directory_list_;
   std::unique_ptr<InputDevice> device_;
   QMediaPlayer media_player_;
   DownloadFileRequest::Pointer download_request_;

@@ -112,14 +112,14 @@ Window::Window()
       image_provider_(new ImageProvider) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
+  qmlRegisterType<ItemModel>();
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
     clouds.append(p->name().c_str());
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
-  rootContext()->setContextProperty(
-      "directoryModel", QVariant::fromValue(current_directory_list_));
+  rootContext()->setContextProperty("directoryModel", nullptr);
   engine()->addImageProvider("provider", imageProvider());
 
   setSource(QUrl("qrc:/main.qml"));
@@ -179,11 +179,13 @@ void Window::onSuccessfullyAuthorized() {
 }
 
 void Window::onAddedItem(IItem::Pointer i) {
+  QObjectList object_list =
+      rootContext()->contextProperty("directoryModel").value<QObjectList>();
   ItemModel* model = new ItemModel(i, cloud_provider_, this);
   model->setParent(this);
-  current_directory_list_.append(model);
-  rootContext()->setContextProperty(
-      "directoryModel", QVariant::fromValue(current_directory_list_));
+  object_list.append(model);
+  rootContext()->setContextProperty("directoryModel",
+                                    QVariant::fromValue(object_list));
 }
 
 void Window::onRunPlayer() {
@@ -224,9 +226,10 @@ void Window::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
 }
 
 void Window::clearCurrentDirectoryList() {
+  QObjectList object_list =
+      rootContext()->contextProperty("directoryModel").value<QObjectList>();
   rootContext()->setContextProperty("directoryModel", nullptr);
-  for (QObject* obj : current_directory_list_) delete obj;
-  current_directory_list_.clear();
+  for (QObject* object : object_list) delete object;
 }
 
 bool Window::goBack() {
@@ -346,8 +349,6 @@ ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     thumbnail_request_ = p->getThumbnailAsync(
         item, make_unique<DownloadThumbnailCallback>(this));
 }
-
-ItemModel::~ItemModel() {}
 
 ImageProvider::ImageProvider() : QQuickImageProvider(Image) {}
 
