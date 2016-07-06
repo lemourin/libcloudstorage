@@ -48,7 +48,8 @@ class Request {
 
  protected:
   std::unique_ptr<HttpCallback> httpCallback(
-      std::function<void(uint32_t, uint32_t)> progress_download = nullptr);
+      std::function<void(uint32_t, uint32_t)> progress_download = nullptr,
+      std::function<void(uint32_t, uint32_t)> progress_upload = nullptr);
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   bool reauthorize();
 

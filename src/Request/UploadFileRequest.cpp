@@ -73,7 +73,12 @@ int UploadFileRequest::upload(std::ostream& error_stream) {
       *directory_, filename_, upload_data_stream, request_data);
   provider()->authorizeRequest(*request);
   std::stringstream response;
-  return request->send(request_data, response, &error_stream, httpCallback());
+  return request->send(
+      request_data, response, &error_stream,
+      httpCallback(
+          nullptr,
+          std::bind(&ICallback::progress, stream_wrapper_.callback_.get(),
+                    std::placeholders::_1, std::placeholders::_2)));
 }
 
 UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
