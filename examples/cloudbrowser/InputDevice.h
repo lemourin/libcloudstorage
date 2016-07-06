@@ -27,6 +27,7 @@
 #include <ICloudStorage.h>
 #include <QMediaPlayer>
 #include <QObject>
+#include <QFile>
 #include <fstream>
 #include <queue>
 
@@ -61,6 +62,21 @@ class DownloadToFileCallback : public DownloadFileRequest::ICallback {
   Window *window_;
   std::fstream file_;
   std::string filename_;
+};
+
+class UploadFileCallback : public UploadFileRequest::ICallback {
+ public:
+  UploadFileCallback(Window*, QUrl url);
+
+  void reset();
+  uint32_t putData(char *data, uint32_t maxlength);
+  void done();
+  void error(const std::string &description);
+  void progress(uint32_t total, uint32_t now);
+
+ private:
+  Window* window_;
+  QFile file_;
 };
 
 class InputDevice : public QIODevice,

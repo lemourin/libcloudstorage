@@ -2,8 +2,11 @@ import QtQuick 2.5
 import QtWebKit 3.0
 import QtQuick.Controls 1.0
 import QtMultimedia 5.5
+import QtQuick.Dialogs 1.2
 
 Item {
+    property int padding: 5
+
     id: root
 
     Gradient {
@@ -15,7 +18,7 @@ Item {
     ListView {
         id: cloudView
         focus: true
-        width: 200
+        width: help.width + padding
         height: parent.height
         model: cloudModel
         delegate: Component {
@@ -49,6 +52,10 @@ Item {
             directory.visible = true;
             directory.focus = true;
         }
+        onProgressChanged: {
+            progress.visible = total != 0
+            progress.value = now / total
+        }
     }
 
     ListView {
@@ -63,6 +70,7 @@ Item {
                 property int thumbnailWidth: 50
                 property int thumbnailHeight: 50
                 property int padding: 5
+                property var view: ListView.view
 
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
@@ -123,17 +131,35 @@ Item {
         }
     }
 
-    VideoOutput {
-        anchors.fill: parent
-        source: window
+    MultiPointTouchArea {
+        visible: directory.focus && directory.currentIndex != -1
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: 100
+        height: 100
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 5
+            border.color: "black"
+            color: "grey"
+            radius: 5
+            Text {
+                anchors.centerIn: parent
+                text: "Upload file"
+            }
+        }
+        FileDialog {
+            id: fileDialog
+            onAccepted: window.uploadFile(fileDialog.fileUrl)
+        }
+        onPressed: fileDialog.visible = true
     }
 
     Rectangle {
-        property int padding: 5
-
+        id: help
         anchors.margins: padding
         anchors.bottom: parent.bottom
-        anchors.right: parent.right
+        anchors.left: parent.left
         border.color: "black"
         radius: padding
         color: "grey"
@@ -142,8 +168,8 @@ Item {
 
         Row {
             id: content
-            x: parent.padding
-            y: parent.padding
+            x: padding
+            y: padding
 
             Column {
                 width: 20
@@ -161,6 +187,18 @@ Item {
                 Row { Text { text: "Play from link"} }
             }
         }
+    }
+
+    ProgressBar {
+        id: progress
+        visible: false
+        anchors.bottom: help.top
+        anchors.horizontalCenter: help.horizontalCenter
+    }
+
+    VideoOutput {
+        anchors.fill: parent
+        source: window
     }
 
     ScrollView {

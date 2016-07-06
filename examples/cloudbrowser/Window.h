@@ -105,6 +105,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void play(ItemModel* item, QString method);
   Q_INVOKABLE void stop();
   Q_INVOKABLE bool playing();
+  Q_INVOKABLE void uploadFile(QString path);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(cloudstorage::IItem::Pointer);
@@ -122,6 +123,8 @@ class Window : public QQuickView {
   void addedItem(ItemPointer);
   void runPlayer(QString file);
   void runPlayerFromUrl(QString url);
+  void cloudChanged();
+  void progressChanged(int total, int now);
 
  private:
   friend class CloudProviderCallback;
@@ -137,6 +140,7 @@ class Window : public QQuickView {
   std::unique_ptr<InputDevice> device_;
   QMediaPlayer media_player_;
   DownloadFileRequest::Pointer download_request_;
+  UploadFileRequest::Pointer upload_request_;
   GetItemDataRequest::Pointer item_data_request_;
   ImageProvider* image_provider_;
 

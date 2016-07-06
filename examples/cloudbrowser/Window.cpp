@@ -130,6 +130,7 @@ Window::Window()
   connect(this, &Window::addedItem, this, &Window::onAddedItem);
   connect(this, &Window::runPlayer, this, &Window::onPlayFile);
   connect(this, &Window::runPlayerFromUrl, this, &Window::onPlayFileFromUrl);
+  connect(this, &Window::cloudChanged, this, &Window::listDirectory);
 
   connect(&media_player_, &QMediaPlayer::mediaStatusChanged, this,
           &Window::onMediaStatusChanged);
@@ -289,6 +290,14 @@ void Window::stop() {
 
 bool Window::playing() {
   return media_player_.state() != QMediaPlayer::StoppedState;
+}
+
+void Window::uploadFile(QString path) {
+  std::cerr << "[DIAG] Uploading file " << path.toStdString() << "\n";
+  QUrl url = path;
+  upload_request_ = cloud_provider_->uploadFileAsync(
+      current_directory_, url.fileName().toStdString(),
+      make_unique<UploadFileCallback>(this, url));
 }
 
 CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}

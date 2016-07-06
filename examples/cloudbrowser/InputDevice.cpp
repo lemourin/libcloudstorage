@@ -124,3 +124,31 @@ void DownloadToFileCallback::done() {
 void DownloadToFileCallback::error(const std::string&) {}
 
 void DownloadToFileCallback::progress(uint32_t, uint32_t) {}
+
+UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
+    : window_(window), file_(url.toLocalFile()) {
+  file_.open(QFile::ReadOnly);
+}
+
+void UploadFileCallback::reset() {
+  std::cerr << "[FAIL] Retransmission needed\n";
+}
+
+uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
+  return static_cast<uint32_t>(file_.read(data, maxlength));
+}
+
+void UploadFileCallback::done() {
+  std::cerr << "[OK] Successfuly uploaded\n";
+  emit window_->cloudChanged();
+  emit window_->progressChanged(0, 0);
+}
+
+void UploadFileCallback::error(const std::string& description) {
+  std::cerr << "[FAIL] Upload: " << description << "\n";
+  emit window_->progressChanged(0, 0);
+}
+
+void UploadFileCallback::progress(uint32_t total, uint32_t now) {
+  emit window_->progressChanged(total, now);
+}
