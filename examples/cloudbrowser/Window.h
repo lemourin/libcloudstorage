@@ -106,6 +106,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void stop();
   Q_INVOKABLE bool playing();
   Q_INVOKABLE void uploadFile(QString path);
+  Q_INVOKABLE void downloadFile(ItemModel*, QUrl path);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(cloudstorage::IItem::Pointer);
@@ -124,7 +125,8 @@ class Window : public QQuickView {
   void runPlayer(QString file);
   void runPlayerFromUrl(QString url);
   void cloudChanged();
-  void progressChanged(int total, int now);
+  void uploadProgressChanged(int total, int now);
+  void downloadProgressChanged(int total, int now);
 
  private:
   friend class CloudProviderCallback;

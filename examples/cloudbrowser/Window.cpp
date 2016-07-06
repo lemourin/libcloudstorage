@@ -264,12 +264,8 @@ void Window::play(ItemModel* item, QString method) {
             &Window::onPausePlayer);
   }
 
-  DownloadFileRequest::ICallback::Pointer callback(
-      method == "file"
-          ? static_cast<DownloadFileRequest::ICallback*>(
-                new DownloadToFileCallback(this, item->item()->filename()))
-          : static_cast<DownloadFileRequest::ICallback*>(
-                new DownloadFileCallback(device_.get())));
+  DownloadFileRequest::ICallback::Pointer callback =
+      make_unique<DownloadFileCallback>(device_.get());
   download_request_ =
       cloud_provider_->downloadFileAsync(item->item(), std::move(callback));
 
@@ -298,6 +294,15 @@ void Window::uploadFile(QString path) {
   upload_request_ = cloud_provider_->uploadFileAsync(
       current_directory_, url.fileName().toStdString(),
       make_unique<UploadFileCallback>(this, url));
+}
+
+void Window::downloadFile(ItemModel* i, QUrl path) {
+  download_request_ = cloud_provider_->downloadFileAsync(
+      i->item(), make_unique<DownloadToFileCallback>(
+                     this, path.toLocalFile().toStdString() + "/" +
+                               i->item()->filename()));
+  std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
+            << "\n";
 }
 
 CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}

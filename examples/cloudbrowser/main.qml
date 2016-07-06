@@ -52,9 +52,13 @@ Item {
             directory.visible = true;
             directory.focus = true;
         }
-        onProgressChanged: {
-            progress.visible = total != 0
-            progress.value = now / total
+        onUploadProgressChanged: {
+            uploadProgress.visible = total != 0
+            uploadProgress.value = now / total
+        }
+        onDownloadProgressChanged: {
+            downloadProgress.visible = total != 0
+            downloadProgress.value = now / total
         }
     }
 
@@ -115,19 +119,29 @@ Item {
             if (event.key === Qt.Key_Return) {
                 if (t.directory)
                     window.changeCurrentDirectory(t);
-                else {
-                    window.play(t, "stream");
-                }
+                else
+                    window.play(t, "link");
             } else if (event.key === Qt.Key_S)
                 window.play(t, "stream");
             else if (event.key === Qt.Key_M)
                 window.play(t, "memory");
-            else if (event.key === Qt.Key_F)
-                window.play(t, "file");
-            else if (event.key === Qt.Key_P) {
+            else if (event.key === Qt.Key_P)
                 window.stop();
-            } else if (event.key === Qt.Key_L)
+            else if (event.key === Qt.Key_L)
                 window.play(t, "link");
+            else if (event.key === Qt.Key_D) {
+                downloadFileDialog.visible = true;
+                downloadFileDialog.file = t;
+                downloadFileDialog.open();
+            } else if (event.key === Qt.Key_F5)
+                window.listDirectory();
+        }
+        FileDialog {
+            property var file
+
+            id: downloadFileDialog
+            selectFolder: true
+            onAccepted: window.downloadFile(file, fileUrl)
         }
     }
 
@@ -173,7 +187,7 @@ Item {
 
             Column {
                 width: 20
-                Row { Text { text: "F" } }
+                Row { Text { text: "D" } }
                 Row { Text { text: "M" } }
                 Row { Text { text: "S" } }
                 Row { Text { text: "P" } }
@@ -181,7 +195,7 @@ Item {
             }
             Column {
                 Row { Text { text: "Download a file" } }
-                Row { Text { text: "Download file to memory" } }
+                Row { Text { text: "Play file from memory" } }
                 Row { Text { text: "Stream a file" } }
                 Row { Text { text: "Pause file" } }
                 Row { Text { text: "Play from link"} }
@@ -190,10 +204,17 @@ Item {
     }
 
     ProgressBar {
-        id: progress
+        id: uploadProgress
         visible: false
         anchors.bottom: help.top
         anchors.horizontalCenter: help.horizontalCenter
+    }
+
+    ProgressBar {
+        id: downloadProgress
+        visible: false
+        anchors.bottom: uploadProgress.top
+        anchors.horizontalCenter: uploadProgress.horizontalCenter
     }
 
     VideoOutput {
