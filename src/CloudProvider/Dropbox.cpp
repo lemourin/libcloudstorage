@@ -57,6 +57,7 @@ HttpRequest::Pointer Dropbox::listDirectoryRequest(
 
   Json::Value parameter;
   parameter["path"] = item.id();
+  parameter["include_media_info"] = true;
   input_stream << Json::FastWriter().write(parameter);
   return request;
 }
@@ -112,7 +113,15 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["entries"]) {
     IItem::FileType type = IItem::FileType::Unknown;
-    if (v[".tag"].asString() == "folder") type = IItem::FileType::Directory;
+    if (v[".tag"].asString() == "folder")
+      type = IItem::FileType::Directory;
+    else {
+      std::string file_type = v["media_info"]["metadata"][".tag"].asString();
+      if (file_type == "video")
+        type = IItem::FileType::Video;
+      else  if (file_type == "photo")
+        type = IItem::FileType::Image;
+    }
     result.push_back(make_unique<Item>(v["name"].asString(),
                                        v["path_display"].asString(), type));
   }

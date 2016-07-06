@@ -33,7 +33,7 @@ class IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
 
-  enum class FileType { Directory, Video, Audio, Unknown };
+  enum class FileType { Directory, Video, Audio, Image, Unknown };
 
   virtual ~IItem() = default;
 

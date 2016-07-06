@@ -50,7 +50,8 @@ HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
       HttpRequest::Type::GET);
-  request->setParameter("select", "name,folder,id,@content.downloadUrl");
+  request->setParameter(
+      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
   return request;
 }
 
@@ -83,7 +84,14 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
   stream >> response;
   for (Json::Value v : response["value"]) {
     IItem::FileType type = IItem::FileType::Unknown;
-    if (v.isMember("folder")) type = IItem::FileType::Directory;
+    if (v.isMember("folder"))
+      type = IItem::FileType::Directory;
+    else if (v.isMember("image") || v.isMember("photo"))
+      type = IItem::FileType::Image;
+    else if (v.isMember("video"))
+      type = IItem::FileType::Video;
+    else if (v.isMember("audio"))
+      type = IItem::FileType::Audio;
     auto item =
         make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
     item->set_url(v["@content.downloadUrl"].asString());

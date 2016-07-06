@@ -67,6 +67,7 @@ class GoogleDrive : public CloudProvider {
   };
 
   bool isGoogleMimeType(const std::string& mime_type) const;
+  IItem::FileType toFileType(const std::string& mime_type) const;
 };
 
 }  // namespace cloudstorage

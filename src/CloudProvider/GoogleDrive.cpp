@@ -100,11 +100,8 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   stream >> response;
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["files"]) {
-    IItem::FileType type = IItem::FileType::Unknown;
-    if (v["mimeType"].asString() == "application/vnd.google-apps.folder")
-      type = IItem::FileType::Directory;
-    auto item =
-        make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+    auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(),
+                                  toFileType(v["mimeType"].asString()));
     item->set_hidden(v["trashed"].asBool());
     std::string thumnail_url = v["thumbnailLink"].asString();
     if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))
@@ -136,6 +133,19 @@ bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
                                     "application/vnd.google-apps.sites",
                                     "application/vnd.google-apps.spreadsheet"};
   return std::find(types.begin(), types.end(), mime_type) != types.end();
+}
+
+IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
+  if (mime_type == "application/vnd.google-apps.folder")
+    return IItem::FileType::Directory;
+  else if (mime_type == "application/vnd.google-apps.audio")
+    return IItem::FileType::Audio;
+  else if (mime_type == "application/vnd.google-apps.video")
+    return IItem::FileType::Video;
+  else if (mime_type == "application/vnd.google-apps.photo")
+    return IItem::FileType::Image;
+  else
+    return IItem::FileType::Unknown;
 }
 
 GoogleDrive::Auth::Auth() {
