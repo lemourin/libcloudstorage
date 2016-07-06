@@ -76,7 +76,7 @@ class UploadFileCallback : public UploadFileRequest::ICallback {
 
  private:
   Window* window_;
-  QFile file_;
+  std::fstream file_;
 };
 
 class InputDevice : public QIODevice,

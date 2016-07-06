@@ -126,16 +126,17 @@ void DownloadToFileCallback::error(const std::string&) {}
 void DownloadToFileCallback::progress(uint32_t, uint32_t) {}
 
 UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
-    : window_(window), file_(url.toLocalFile()) {
-  file_.open(QFile::ReadOnly);
-}
+    : window_(window),
+      file_(url.toLocalFile().toStdString(),
+            std::ios_base::in | std::ios_base::binary) {}
 
 void UploadFileCallback::reset() {
   std::cerr << "[FAIL] Retransmission needed\n";
 }
 
 uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
-  return static_cast<uint32_t>(file_.read(data, maxlength));
+  file_.read(data, maxlength);
+  return file_.gcount();
 }
 
 void UploadFileCallback::done() {
