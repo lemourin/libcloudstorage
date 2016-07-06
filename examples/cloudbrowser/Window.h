@@ -103,7 +103,6 @@ class Window : public QQuickView {
   Q_INVOKABLE bool goBack();
   Q_INVOKABLE void play(ItemModel* item, QString method);
   Q_INVOKABLE void stop();
-  Q_INVOKABLE bool playing();
   Q_INVOKABLE void uploadFile(QString path);
   Q_INVOKABLE void downloadFile(ItemModel*, QUrl path);
 
@@ -115,6 +114,7 @@ class Window : public QQuickView {
   void onPlayFileFromUrl(QString url);
   void onPausePlayer();
   void onMediaStatusChanged(QMediaPlayer::MediaStatus);
+  void onStateChanged(QMediaPlayer::State);
 
  signals:
   void openBrowser(QString url);
@@ -126,6 +126,8 @@ class Window : public QQuickView {
   void cloudChanged();
   void uploadProgressChanged(int total, int now);
   void downloadProgressChanged(int total, int now);
+  void showPlayer();
+  void hidePlayer();
 
  private:
   friend class CloudProviderCallback;

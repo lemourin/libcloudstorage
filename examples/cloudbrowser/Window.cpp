@@ -132,6 +132,8 @@ Window::Window()
   connect(this, &Window::runPlayerFromUrl, this, &Window::onPlayFileFromUrl);
   connect(this, &Window::cloudChanged, this, &Window::listDirectory);
 
+  connect(&media_player_, &QMediaPlayer::stateChanged, this,
+          &Window::onStateChanged);
   connect(&media_player_, &QMediaPlayer::mediaStatusChanged, this,
           &Window::onMediaStatusChanged);
   connect(&media_player_,
@@ -141,10 +143,15 @@ Window::Window()
             std::cerr << "[FAIL] Error: " << error << " "
                       << media_player_.errorString().toStdString() << "\n";
           });
-  connect(&media_player_, &QMediaPlayer::videoAvailableChanged,
-          [](bool available) {
-            std::cerr << "[DIAG] Video availability: " << available << "\n";
-          });
+  connect(
+      &media_player_, &QMediaPlayer::videoAvailableChanged,
+      [this](bool available) {
+        if (available && media_player_.state() == QMediaPlayer::PlayingState)
+          emit showPlayer();
+        else if (!available)
+          emit hidePlayer();
+        std::cerr << "[DIAG] Video availability: " << available << "\n";
+      });
 }
 
 Window::~Window() { clearCurrentDirectoryList(); }
@@ -225,6 +232,13 @@ void Window::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
   std::cerr << "[DIAG] Media status: " << mediaStatusToString(status) << "\n";
 }
 
+void Window::onStateChanged(QMediaPlayer::State state) {
+  if (media_player_.isVideoAvailable() && state == QMediaPlayer::PlayingState)
+    emit showPlayer();
+  else if (state == QMediaPlayer::StoppedState)
+    emit hidePlayer();
+}
+
 void Window::clearCurrentDirectoryList() {
   QObjectList object_list =
       rootContext()->contextProperty("directoryModel").value<QObjectList>();
@@ -245,7 +259,6 @@ bool Window::goBack() {
 
 void Window::play(ItemModel* item, QString method) {
   stop();
-
   if (method == "link") {
     item_data_request_ = cloud_provider_->getItemDataAsync(
         item->item(), [this](IItem::Pointer item) {
@@ -285,10 +298,6 @@ void Window::stop() {
   media_player_.stop();
   media_player_.setMedia(nullptr);
   download_request_ = nullptr;
-}
-
-bool Window::playing() {
-  return media_player_.state() != QMediaPlayer::StoppedState;
 }
 
 void Window::uploadFile(QString path) {

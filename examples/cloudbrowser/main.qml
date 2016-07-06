@@ -53,12 +53,20 @@ Item {
             directory.focus = true;
         }
         onUploadProgressChanged: {
-            uploadProgress.visible = total != 0
-            uploadProgress.value = now / total
+            uploadProgress.visible = total != 0;
+            uploadProgress.value = now / total;
         }
         onDownloadProgressChanged: {
-            downloadProgress.visible = total != 0
-            downloadProgress.value = now / total
+            downloadProgress.visible = total != 0;
+            downloadProgress.value = now / total;
+        }
+        onShowPlayer: {
+            videoPlayer.visible = true;
+            directory.focus = false;
+        }
+        onHidePlayer: {
+            videoPlayer.visible = false;
+            directory.focus = true;
         }
     }
 
@@ -125,8 +133,6 @@ Item {
                 window.play(t, "stream");
             else if (event.key === Qt.Key_M)
                 window.play(t, "memory");
-            else if (event.key === Qt.Key_P)
-                window.stop();
             else if (event.key === Qt.Key_L)
                 window.play(t, "link");
             else if (event.key === Qt.Key_D) {
@@ -135,6 +141,8 @@ Item {
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();
+            else if (event.key === Qt.Key_P)
+                window.stop();
         }
         FileDialog {
             property var file
@@ -218,8 +226,20 @@ Item {
     }
 
     VideoOutput {
+        id: videoPlayer
         anchors.fill: parent
         source: window
+        visible: false
+        focus: visible
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            z: -1
+        }
+        Keys.onPressed: {
+            if (event.key === Qt.Key_P)
+             window.stop();
+        }
     }
 
     ScrollView {
