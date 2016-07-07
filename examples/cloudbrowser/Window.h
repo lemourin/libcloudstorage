@@ -21,15 +21,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef WINDOW_HPP
-#define WINDOW_HPP
+#ifndef WINDOW_H
+#define WINDOW_H
 
 #include <ICloudProvider.h>
 #include <IItem.h>
-#include <QMediaObject>
 #include <QQuickImageProvider>
 #include <QQuickView>
-#include "InputDevice.h"
+#include <vlcpp/vlc.hpp>
+
+#include "Callback.h"
 
 using ItemPointer = cloudstorage::IItem::Pointer;
 using ImagePointer = std::shared_ptr<QImage>;
@@ -74,47 +75,26 @@ class ItemModel : public QObject {
   Q_OBJECT
 };
 
-class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
- public:
-  CloudProviderCallback(Window*);
-
-  Status userConsentRequired(const cloudstorage::ICloudProvider&);
-  void accepted(const cloudstorage::ICloudProvider&);
-  void declined(const cloudstorage::ICloudProvider&);
-  void error(const cloudstorage::ICloudProvider&, const std::string&);
-
- private:
-  Window* window_;
-};
-
 class Window : public QQuickView {
  public:
-  Q_PROPERTY(QObject* mediaObject READ mediaObject CONSTANT)
-
   Window();
   ~Window();
 
-  QObject* mediaObject() { return &media_player_; };
   ImageProvider* imageProvider() { return image_provider_; }
 
   Q_INVOKABLE void initializeCloud(QString name);
   Q_INVOKABLE void listDirectory();
   Q_INVOKABLE void changeCurrentDirectory(ItemModel* directory);
   Q_INVOKABLE bool goBack();
-  Q_INVOKABLE void play(ItemModel* item, QString method);
+  Q_INVOKABLE void play(ItemModel* item);
   Q_INVOKABLE void stop();
   Q_INVOKABLE void uploadFile(QString path);
   Q_INVOKABLE void downloadFile(ItemModel*, QUrl path);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(cloudstorage::IItem::Pointer);
-  void onPlay(cloudstorage::IItem::Pointer);
-  void onRunPlayer();
   void onPlayFile(QString filename);
   void onPlayFileFromUrl(QString url);
-  void onPausePlayer();
-  void onMediaStatusChanged(QMediaPlayer::MediaStatus);
-  void onStateChanged(QMediaPlayer::State);
 
  signals:
   void openBrowser(QString url);
@@ -129,22 +109,26 @@ class Window : public QQuickView {
   void showPlayer();
   void hidePlayer();
 
+ protected:
+  void keyPressEvent(QKeyEvent*);
+
  private:
   friend class CloudProviderCallback;
 
   void clearCurrentDirectoryList();
+  std::shared_ptr<VLC::MediaPlayer> getMediaPlayer(VLC::Media&);
 
   cloudstorage::ICloudProvider::Pointer cloud_provider_;
   cloudstorage::AuthorizeRequest::Pointer authorization_request_;
   cloudstorage::IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
   cloudstorage::ListDirectoryRequest::Pointer list_directory_request_;
-  std::unique_ptr<InputDevice> device_;
-  QMediaPlayer media_player_;
   DownloadFileRequest::Pointer download_request_;
   UploadFileRequest::Pointer upload_request_;
   GetItemDataRequest::Pointer item_data_request_;
   ImageProvider* image_provider_;
+  VLC::Instance vlc_instance_;
+  std::shared_ptr<VLC::MediaPlayer> media_player_;
 
   Q_OBJECT
 };
@@ -152,4 +136,4 @@ class Window : public QQuickView {
 Q_DECLARE_METATYPE(ItemPointer)
 Q_DECLARE_METATYPE(ImagePointer)
 
-#endif  // WINDOW_HPP
+#endif  // WINDOW_H

@@ -1,7 +1,6 @@
 import QtQuick 2.5
 import QtWebKit 3.0
 import QtQuick.Controls 1.0
-import QtMultimedia 5.5
 import QtQuick.Dialogs 1.2
 
 Item {
@@ -9,10 +8,15 @@ Item {
 
     id: root
 
+    Rectangle {
+        anchors.fill: parent
+        color: "white"
+    }
+
     Gradient {
         id: colors
-        GradientStop { position: 0.0; color: "#8EE2FE"}
-        GradientStop { position: 0.66; color: "#7ED2EE"}
+        GradientStop { position: 0.0; color: "#8EE2FE" }
+        GradientStop { position: 0.66; color: "#7ED2EE" }
     }
 
     ListView {
@@ -61,11 +65,9 @@ Item {
             downloadProgress.value = now / total;
         }
         onShowPlayer: {
-            videoPlayer.visible = true;
             directory.focus = false;
         }
         onHidePlayer: {
-            videoPlayer.visible = false;
             directory.focus = true;
         }
     }
@@ -128,14 +130,8 @@ Item {
                 if (t.directory)
                     window.changeCurrentDirectory(t);
                 else
-                    window.play(t, "link");
-            } else if (event.key === Qt.Key_S)
-                window.play(t, "stream");
-            else if (event.key === Qt.Key_M)
-                window.play(t, "memory");
-            else if (event.key === Qt.Key_L)
-                window.play(t, "link");
-            else if (event.key === Qt.Key_D) {
+                    window.play(t);
+            } else if (event.key === Qt.Key_D) {
                 downloadFileDialog.visible = true;
                 downloadFileDialog.file = t;
                 downloadFileDialog.open();
@@ -196,17 +192,11 @@ Item {
             Column {
                 width: 20
                 Row { Text { text: "D" } }
-                Row { Text { text: "M" } }
-                Row { Text { text: "S" } }
                 Row { Text { text: "P" } }
-                Row { Text { text: "L" } }
             }
             Column {
                 Row { Text { text: "Download a file" } }
-                Row { Text { text: "Play file from memory" } }
-                Row { Text { text: "Stream a file" } }
                 Row { Text { text: "Pause file" } }
-                Row { Text { text: "Play from link"} }
             }
         }
     }
@@ -223,23 +213,6 @@ Item {
         visible: false
         anchors.bottom: uploadProgress.top
         anchors.horizontalCenter: uploadProgress.horizontalCenter
-    }
-
-    VideoOutput {
-        id: videoPlayer
-        anchors.fill: parent
-        source: window
-        visible: false
-        focus: visible
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            z: -1
-        }
-        Keys.onPressed: {
-            if (event.key === Qt.Key_P)
-             window.stop();
-        }
     }
 
     ScrollView {

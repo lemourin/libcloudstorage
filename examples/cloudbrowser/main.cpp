@@ -22,16 +22,24 @@
  *****************************************************************************/
 
 #include <QGuiApplication>
+#include <iostream>
+#include <vlcpp/vlc.hpp>
 #include "Window.h"
 
-int main(int argc, char *argv[]) {
-  QGuiApplication app(argc, argv);
-  app.setOrganizationName("VideoLAN");
-  app.setApplicationName("cloudbrowser");
+int main(int argc, char* argv[]) {
+  try {
+    QGuiApplication app(argc, argv);
+    app.setOrganizationName("VideoLAN");
+    app.setApplicationName("cloudbrowser");
 
-  Window window;
-  window.resize(800, 600);
-  window.show();
+    Window window;
+    window.resize(800, 600);
+    window.show();
 
-  return app.exec();
+    return app.exec();
+  } catch (const std::exception& e) {
+    std::cerr << "Exception: " << e.what() << "\n";
+  }
+
+  return 0;
 }

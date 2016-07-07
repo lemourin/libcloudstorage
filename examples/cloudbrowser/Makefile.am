@@ -11,20 +11,24 @@ cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
 	Window.cpp Window.h \
-	InputDevice.cpp InputDevice.h \
+	Callback.cpp Callback.h \
 	main.cpp
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
-	$(QT_CFLAGS)
+	$(QT_CFLAGS) \
+	$(LIBVLCPP_CFLAGS) \
+	$(LIBVLC_CFLAGS)
 
 libcloudbrowser_la_LIBADD = \
 	../../src/libcloudstorage.la \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(LIBVLCPP_LIBS) \
+	$(LIBVLC_LIBS)
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
-	InputDevice.moc.cpp \
+	Callback.moc.cpp \
 	resources.cpp
 
 DEPS_res = \
