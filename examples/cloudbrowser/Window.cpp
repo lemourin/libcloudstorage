@@ -84,12 +84,28 @@ class DownloadThumbnailCallback : public DownloadFileRequest::ICallback {
 }  // namespace
 
 Window::Window()
-    : image_provider_(new ImageProvider), vlc_instance_(0, nullptr) {
+    : image_provider_(new ImageProvider),
+      vlc_instance_(0, nullptr),
+      media_player_(vlc_instance_) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
   qmlRegisterType<ItemModel>();
 
   setClearBeforeRendering(false);
+
+#ifdef Q_OS_LINUX
+  media_player_.setXwindow(winId());
+#elif defined Q_OS_WIN
+  media_player_.setHwnd(reinterpret_cast<void*>(winId()));
+#elif defined Q_OS_DARWIN
+  media_player_.setNsobject(reinterpret_cast<void*>(winId()));
+#endif
+
+  media_player_.eventManager().onPlaying([this]() {
+    if (media_player_.videoTrackCount() > 0) emit showPlayer();
+  });
+  media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
+  media_player_.eventManager().onEndReached([this]() { emit hidePlayer(); });
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -159,15 +175,15 @@ void Window::onPlayFile(QString filename) {
   VLC::Media media(vlc_instance_, QDir::currentPath().toStdString() + "/" +
                                       filename.toStdString(),
                    VLC::Media::FromPath);
-  media_player_ = getMediaPlayer(media);
-  media_player_->play();
+  media_player_.setMedia(media);
+  media_player_.play();
 }
 
 void Window::onPlayFileFromUrl(QString url) {
   std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
   VLC::Media media(vlc_instance_, url.toStdString(), VLC::Media::FromLocation);
-  media_player_ = getMediaPlayer(media);
-  media_player_->play();
+  media_player_.setMedia(media);
+  media_player_.play();
 }
 
 void Window::keyPressEvent(QKeyEvent* e) {
@@ -184,25 +200,6 @@ void Window::clearCurrentDirectoryList() {
       rootContext()->contextProperty("directoryModel").value<QObjectList>();
   rootContext()->setContextProperty("directoryModel", nullptr);
   for (QObject* object : object_list) delete object;
-}
-
-std::shared_ptr<VLC::MediaPlayer> Window::getMediaPlayer(VLC::Media& media) {
-  auto player = std::make_shared<VLC::MediaPlayer>(media);
-
-#ifdef Q_OS_LINUX
-  player->setXwindow(winId());
-#elif defined Q_OS_WIN
-  player->setHwnd(reinterpret_cast<void*>(winId()));
-#elif defined Q_OS_DARWIN
-  player->setNsobject(reinterpret_cast<void*>(winId()));
-#endif
-
-  player->eventManager().onPlaying([this, player]() {
-    if (player->videoTrackCount() > 0) emit showPlayer();
-  });
-  player->eventManager().onStopped([this]() { emit hidePlayer(); });
-  player->eventManager().onEndReached([this]() { emit hidePlayer(); });
-  return player;
 }
 
 bool Window::goBack() {
@@ -225,10 +222,7 @@ void Window::play(ItemModel* item) {
 }
 
 void Window::stop() {
-  if (media_player_) {
-    media_player_->stop();
-    media_player_ = nullptr;
-  }
+  media_player_.stop();
   download_request_ = nullptr;
 }
 
@@ -242,9 +236,9 @@ void Window::uploadFile(QString path) {
 
 void Window::downloadFile(ItemModel* i, QUrl path) {
   download_request_ = cloud_provider_->downloadFileAsync(
-      i->item(), make_unique<DownloadFileCallback>(
-                     this, path.toLocalFile().toStdString() + "/" +
-                               i->item()->filename()));
+      i->item(),
+      make_unique<DownloadFileCallback>(this, path.toLocalFile().toStdString() +
+                                                  "/" + i->item()->filename()));
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
             << "\n";
 }

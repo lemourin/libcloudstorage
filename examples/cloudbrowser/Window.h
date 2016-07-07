@@ -116,7 +116,6 @@ class Window : public QQuickView {
   friend class CloudProviderCallback;
 
   void clearCurrentDirectoryList();
-  std::shared_ptr<VLC::MediaPlayer> getMediaPlayer(VLC::Media&);
 
   cloudstorage::ICloudProvider::Pointer cloud_provider_;
   cloudstorage::AuthorizeRequest::Pointer authorization_request_;
@@ -128,7 +127,7 @@ class Window : public QQuickView {
   GetItemDataRequest::Pointer item_data_request_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
-  std::shared_ptr<VLC::MediaPlayer> media_player_;
+  VLC::MediaPlayer media_player_;
 
   Q_OBJECT
 };
