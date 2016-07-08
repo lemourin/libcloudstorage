@@ -69,6 +69,7 @@ Window::Window()
 }
 
 Window::~Window() {
+  authorization_request_ = nullptr;
   clearCurrentDirectoryList();
   saveCloudAccessToken();
 }
