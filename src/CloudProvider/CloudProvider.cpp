@@ -36,14 +36,17 @@ CloudProvider::CloudProvider(IAuth::Pointer auth)
       currently_authorizing_(),
       current_authorization_successful_() {}
 
-AuthorizeRequest::Pointer CloudProvider::initialize(
-    const std::string& token, ICallback::Pointer callback,
-    const std::string& client_id, const std::string& client_secret) {
+AuthorizeRequest::Pointer CloudProvider::initialize(const std::string& token,
+                                                    ICallback::Pointer callback,
+                                                    const Hints& hints) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   callback_ = std::move(callback);
-  auth()->set_access_token(auth()->fromTokenString(token));
-  if (!client_id.empty()) auth()->set_client_id(client_id);
-  if (!client_secret.empty()) auth()->set_client_secret(client_secret);
+  auto t = auth()->fromTokenString(token);
+  if (!hints.access_token_.empty()) t->token_ = hints.access_token_;
+  auth()->set_access_token(std::move(t));
+  if (!hints.client_id_.empty()) auth()->set_client_id(hints.client_id_);
+  if (!hints.client_secret_.empty())
+    auth()->set_client_secret(hints.client_secret_);
   return make_unique<AuthorizeRequest>(shared_from_this());
 }
 

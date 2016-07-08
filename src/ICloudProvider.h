@@ -56,14 +56,19 @@ class ICloudProvider {
                        const std::string& description) = 0;
   };
 
+  struct Hints {
+    std::string client_id_;
+    std::string client_secret_;
+    std::string access_token_;
+  };
+
   virtual ~ICloudProvider() = default;
 
-  virtual AuthorizeRequest::Pointer initialize(
-      const std::string& token, ICallback::Pointer,
-      const std::string& client_id = "",
-      const std::string& client_secret = "") = 0;
-
+  virtual AuthorizeRequest::Pointer initialize(const std::string& token,
+                                               ICallback::Pointer,
+                                               const Hints& = Hints()) = 0;
   virtual std::string token() const = 0;
+  virtual std::string access_token() const = 0;
   virtual std::string name() const = 0;
   virtual std::string authorizeLibraryUrl() const = 0;
   virtual IItem::Pointer rootDirectory() const = 0;
