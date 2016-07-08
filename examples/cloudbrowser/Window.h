@@ -116,6 +116,7 @@ class Window : public QQuickView {
   friend class CloudProviderCallback;
 
   void clearCurrentDirectoryList();
+  void saveCloudAccessToken();
   void initializeMediaPlayer();
 
   cloudstorage::ICloudProvider::Pointer cloud_provider_;

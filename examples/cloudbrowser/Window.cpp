@@ -68,16 +68,25 @@ Window::Window()
           [this]() { contentItem()->setVisible(true); }, Qt::QueuedConnection);
 }
 
-Window::~Window() { clearCurrentDirectoryList(); }
+Window::~Window() {
+  clearCurrentDirectoryList();
+  saveCloudAccessToken();
+}
 
 void Window::initializeCloud(QString name) {
+  saveCloudAccessToken();
+
   QSettings settings;
   cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
   std::cerr << "[DIAG] Trying to authorize with "
             << settings.value(name).toString().toStdString() << std::endl;
-  authorization_request_ =
-      cloud_provider_->initialize(settings.value(name).toString().toStdString(),
-                                  make_unique<CloudProviderCallback>(this));
+  ICloudProvider::Hints hints;
+  hints.access_token_ =
+      settings.value(name + "_token").toString().toStdString();
+  std::cerr << "[DIAG] Cached token: " << hints.access_token_ << "\n";
+  authorization_request_ = cloud_provider_->initialize(
+      settings.value(name).toString().toStdString(),
+      make_unique<CloudProviderCallback>(this), hints);
 }
 
 void Window::listDirectory() {
@@ -138,6 +147,14 @@ void Window::clearCurrentDirectoryList() {
       rootContext()->contextProperty("directoryModel").value<QObjectList>();
   rootContext()->setContextProperty("directoryModel", nullptr);
   for (QObject* object : object_list) delete object;
+}
+
+void Window::saveCloudAccessToken() {
+  if (cloud_provider_) {
+    QSettings settings;
+    settings.setValue((cloud_provider_->name() + "_token").c_str(),
+                      cloud_provider_->access_token().c_str());
+  }
 }
 
 void Window::initializeMediaPlayer() {
