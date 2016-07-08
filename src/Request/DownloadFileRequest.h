@@ -24,6 +24,7 @@
 #ifndef DOWNLOADFILEREQUEST_H
 #define DOWNLOADFILEREQUEST_H
 
+#include "IItem.h"
 #include "Request.h"
 
 namespace cloudstorage {

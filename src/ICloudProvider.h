@@ -29,7 +29,6 @@
 #include <vector>
 
 #include "IItem.h"
-#include "Request/AuthorizeRequest.h"
 #include "Request/DownloadFileRequest.h"
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
@@ -64,9 +63,8 @@ class ICloudProvider {
 
   virtual ~ICloudProvider() = default;
 
-  virtual AuthorizeRequest::Pointer initialize(const std::string& token,
-                                               ICallback::Pointer,
-                                               const Hints& = Hints()) = 0;
+  virtual void initialize(const std::string& token, ICallback::Pointer,
+                          const Hints& = Hints()) = 0;
   virtual std::string token() const = 0;
   virtual std::string access_token() const = 0;
   virtual std::string name() const = 0;

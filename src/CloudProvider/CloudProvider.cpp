@@ -36,9 +36,9 @@ CloudProvider::CloudProvider(IAuth::Pointer auth)
       currently_authorizing_(),
       current_authorization_successful_() {}
 
-AuthorizeRequest::Pointer CloudProvider::initialize(const std::string& token,
-                                                    ICallback::Pointer callback,
-                                                    const Hints& hints) {
+void CloudProvider::initialize(const std::string& token,
+                               ICallback::Pointer callback,
+                               const Hints& hints) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   callback_ = std::move(callback);
   auto t = auth()->fromTokenString(token);
@@ -47,7 +47,6 @@ AuthorizeRequest::Pointer CloudProvider::initialize(const std::string& token,
   if (!hints.client_id_.empty()) auth()->set_client_id(hints.client_id_);
   if (!hints.client_secret_.empty())
     auth()->set_client_secret(hints.client_secret_);
-  return authorizeAsync();
 }
 
 std::string CloudProvider::access_token() const {
@@ -111,15 +110,6 @@ GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
 
 void CloudProvider::authorizeRequest(HttpRequest& r) {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
-}
-
-void CloudProvider::waitForAuthorization() const {
-  std::unique_lock<std::mutex> currently_authorizing(
-      currently_authorizing_mutex_);
-  if (currently_authorizing || auth()->access_token()->token_.empty())
-    authorized_.wait(currently_authorizing, [this]() {
-      return !currently_authorizing_ && !auth()->access_token()->token_.empty();
-    });
 }
 
 AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {

@@ -78,8 +78,7 @@ int main(int argc, char** argv) {
     std::fstream file(drive_file, std::fstream::in);
     file >> token;
   }
-  auto i = drive->initialize(
-      token, std::unique_ptr<Callback>(new Callback(drive_file)));
+  drive->initialize(token, std::unique_ptr<Callback>(new Callback(drive_file)));
   traverse_drive(*drive, drive->rootDirectory(), "/");
 
   return 0;

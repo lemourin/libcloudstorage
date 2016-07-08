@@ -53,7 +53,7 @@ std::unique_ptr<HttpCallback> Request::httpCallback(
 bool Request::reauthorize() {
   std::unique_lock<std::mutex> lock(mutex_);
   if (is_cancelled()) return false;
-  authorize_request_ = make_unique<AuthorizeRequest>(provider());
+  authorize_request_ = provider()->authorizeAsync();
   lock.unlock();
   if (!authorize_request_->result()) throw AuthorizationException();
   lock.lock();

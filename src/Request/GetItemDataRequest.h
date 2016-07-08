@@ -24,6 +24,7 @@
 #ifndef GETITEMDATAREQUEST_H
 #define GETITEMDATAREQUEST_H
 
+#include "IItem.h"
 #include "Request.h"
 
 namespace cloudstorage {

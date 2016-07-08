@@ -38,8 +38,12 @@ AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
 std::string AmazonDrive::name() const { return "amazon"; }
 
 IItem::Pointer AmazonDrive::rootDirectory() const {
-  waitForAuthorization();
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  std::unique_lock<std::mutex> lock(auth_mutex());
+  if (root_id_.empty()) {
+    lock.unlock();
+    const_cast<AmazonDrive*>(this)->authorizeAsync()->finish();
+    lock.lock();
+  }
   return make_unique<Item>("/", root_id_, IItem::FileType::Directory);
 }
 
@@ -63,8 +67,8 @@ HttpRequest::Pointer AmazonDrive::uploadFileRequest(
   return nullptr;
 }
 
-HttpRequest::Pointer AmazonDrive::downloadFileRequest(
-    const IItem& i, std::ostream&) const {
+HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& i,
+                                                      std::ostream&) const {
   const Item& item = static_cast<const Item&>(i);
   return make_unique<HttpRequest>(item.url(), HttpRequest::Type::GET);
 }

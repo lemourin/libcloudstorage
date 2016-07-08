@@ -30,6 +30,7 @@
 #include <thread>
 
 #include "ICloudProvider.h"
+#include "Request/AuthorizeRequest.h"
 #include "Utility/Auth.h"
 #include "Utility/HttpRequest.h"
 
@@ -42,8 +43,8 @@ class CloudProvider : public ICloudProvider,
 
   CloudProvider(IAuth::Pointer);
 
-  AuthorizeRequest::Pointer initialize(const std::string& token,
-                                       ICallback::Pointer, const Hints& hints);
+  void initialize(const std::string& token, ICallback::Pointer,
+                  const Hints& hints);
 
   std::string access_token() const;
   IAuth* auth() const;
@@ -82,7 +83,6 @@ class CloudProvider : public ICloudProvider,
       std::ostream& next_page_request_input) const = 0;
 
   virtual void authorizeRequest(HttpRequest&);
-  void waitForAuthorization() const;
 
  protected:
   virtual AuthorizeRequest::Pointer authorizeAsync();

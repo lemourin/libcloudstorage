@@ -24,6 +24,7 @@
 #ifndef LISTDIRECTORYREQUEST_H
 #define LISTDIRECTORYREQUEST_H
 
+#include "IItem.h"
 #include "Request.h"
 
 namespace cloudstorage {

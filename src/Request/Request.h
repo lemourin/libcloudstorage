@@ -29,8 +29,6 @@
 #include <sstream>
 #include <vector>
 
-#include "IItem.h"
-
 namespace cloudstorage {
 
 class AuthorizeRequest;
@@ -58,7 +56,7 @@ class Request {
 
  private:
   std::mutex mutex_;
-  std::unique_ptr<AuthorizeRequest> authorize_request_;
+  std::shared_ptr<AuthorizeRequest> authorize_request_;
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
 };

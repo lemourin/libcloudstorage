@@ -42,14 +42,14 @@ noinst_HEADERS = \
 	CloudProvider/OneDrive.h \
 	CloudProvider/Dropbox.h \
 	CloudProvider/AmazonDrive.h \
-	Request/HttpCallback.h
+	Request/HttpCallback.h \
+	Request/AuthorizeRequest.h
 
 nobase_include_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
 	Request/Request.h \
-	Request/AuthorizeRequest.h \
 	Request/DownloadFileRequest.h \
 	Request/GetItemRequest.h \
 	Request/ListDirectoryRequest.h \

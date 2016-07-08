@@ -23,7 +23,6 @@
 
 #include "ListDirectoryRequest.h"
 
-#include <iostream>
 #include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "Utility/HttpRequest.h"
