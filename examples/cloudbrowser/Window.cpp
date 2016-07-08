@@ -34,55 +34,6 @@
 
 using namespace cloudstorage;
 
-namespace {
-
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
- public:
-  ListDirectoryCallback(Window* w) : window_(w) {}
-
-  void receivedItem(IItem::Pointer item) { emit window_->addedItem(item); }
-
-  void done(const std::vector<IItem::Pointer>&) {}
-
-  void error(const std::string& str) { std::cerr << "[FAIL] " << str << "\n"; }
-
- private:
-  Window* window_;
-};
-
-class DownloadThumbnailCallback : public DownloadFileRequest::ICallback {
- public:
-  DownloadThumbnailCallback(ItemModel* i) : item_(i) {}
-
-  void receivedData(const char* data, uint32_t length) {
-    data_ += std::string(data, data + length);
-  }
-
-  void done() {
-    ImagePointer image = make_unique<QImage>();
-    if (image->loadFromData(reinterpret_cast<const uchar*>(data_.data()),
-                            data_.length()))
-      emit item_->receivedImage(std::move(image));
-  }
-
-  void error(const std::string& error) {
-    std::cerr << "[FAIL] " << error << "\n";
-  }
-
-  void progress(uint32_t, uint32_t) {}
-
- private:
-  ItemModel* item_;
-  std::string data_;
-};
-
-}  // namespace
-
 Window::Window()
     : image_provider_(new ImageProvider),
       vlc_instance_(0, nullptr),
@@ -92,20 +43,7 @@ Window::Window()
   qmlRegisterType<ItemModel>();
 
   setClearBeforeRendering(false);
-
-#ifdef Q_OS_LINUX
-  media_player_.setXwindow(winId());
-#elif defined Q_OS_WIN
-  media_player_.setHwnd(reinterpret_cast<void*>(winId()));
-#elif defined Q_OS_DARWIN
-  media_player_.setNsobject(reinterpret_cast<void*>(winId()));
-#endif
-
-  media_player_.eventManager().onPlaying([this]() {
-    if (media_player_.videoTrackCount() > 0) emit showPlayer();
-  });
-  media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
-  media_player_.eventManager().onEndReached([this]() { emit hidePlayer(); });
+  initializeMediaPlayer();
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -189,10 +127,10 @@ void Window::onPlayFileFromUrl(QString url) {
 void Window::keyPressEvent(QKeyEvent* e) {
   QQuickView::keyPressEvent(e);
   if (e->isAccepted()) return;
-  if (e->key() == Qt::Key_P) {
-    emit hidePlayer();
+  if (e->key() == Qt::Key_Q)
     stop();
-  }
+  else if (e->key() == Qt::Key_P)
+    media_player_.pause();
 }
 
 void Window::clearCurrentDirectoryList() {
@@ -200,6 +138,21 @@ void Window::clearCurrentDirectoryList() {
       rootContext()->contextProperty("directoryModel").value<QObjectList>();
   rootContext()->setContextProperty("directoryModel", nullptr);
   for (QObject* object : object_list) delete object;
+}
+
+void Window::initializeMediaPlayer() {
+#ifdef Q_OS_LINUX
+  media_player_.setXwindow(winId());
+#elif defined Q_OS_WIN
+  media_player_.setHwnd(reinterpret_cast<void*>(winId()));
+#elif defined Q_OS_DARWIN
+  media_player_.setNsobject(reinterpret_cast<void*>(winId()));
+#endif
+
+  media_player_.eventManager().onPlaying([this]() {
+    if (media_player_.videoTrackCount() > 0) emit showPlayer();
+  });
+  media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
 }
 
 bool Window::goBack() {
@@ -222,7 +175,9 @@ void Window::play(ItemModel* item) {
 }
 
 void Window::stop() {
+  std::cerr << "[DIAG] Trying to stop player\n";
   media_player_.stop();
+  std::cerr << "[DIAG] Stopped\n";
   download_request_ = nullptr;
 }
 

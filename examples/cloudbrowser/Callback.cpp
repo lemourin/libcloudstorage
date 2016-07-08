@@ -108,3 +108,35 @@ void CloudProviderCallback::error(const ICloudProvider&,
                                   const std::string& desc) {
   std::cerr << "[FAIL] " << desc.c_str() << "\n";
 }
+
+ListDirectoryCallback::ListDirectoryCallback(Window* w) : window_(w) {}
+
+void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
+  emit window_->addedItem(item);
+}
+
+void ListDirectoryCallback::done(const std::vector<IItem::Pointer>&) {}
+
+void ListDirectoryCallback::error(const std::string& str) {
+  std::cerr << "[FAIL] " << str << "\n";
+}
+
+DownloadThumbnailCallback::DownloadThumbnailCallback(ItemModel* i) : item_(i) {}
+
+void DownloadThumbnailCallback::receivedData(const char* data,
+                                             uint32_t length) {
+  data_ += std::string(data, data + length);
+}
+
+void DownloadThumbnailCallback::done() {
+  ImagePointer image = make_unique<QImage>();
+  if (image->loadFromData(reinterpret_cast<const uchar*>(data_.data()),
+                          data_.length()))
+    emit item_->receivedImage(std::move(image));
+}
+
+void DownloadThumbnailCallback::error(const std::string& error) {
+  std::cerr << "[FAIL] " << error << "\n";
+}
+
+void DownloadThumbnailCallback::progress(uint32_t, uint32_t) {}

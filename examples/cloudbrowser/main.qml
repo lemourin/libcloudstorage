@@ -137,7 +137,7 @@ Item {
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();
-            else if (event.key === Qt.Key_P)
+            else if (event.key === Qt.Key_Q)
                 window.stop();
         }
         FileDialog {
@@ -192,10 +192,12 @@ Item {
             Column {
                 width: 20
                 Row { Text { text: "D" } }
+                Row { Text { text: "Q" } }
                 Row { Text { text: "P" } }
             }
             Column {
                 Row { Text { text: "Download a file" } }
+                Row { Text { text: "Quit a file" } }
                 Row { Text { text: "Pause file" } }
             }
         }

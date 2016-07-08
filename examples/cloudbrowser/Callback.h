@@ -31,6 +31,43 @@
 using namespace cloudstorage;
 
 class Window;
+class ItemModel;
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
+ public:
+  ListDirectoryCallback(Window* w);
+
+  void receivedItem(IItem::Pointer item);
+
+  void done(const std::vector<IItem::Pointer>&);
+
+  void error(const std::string& str);
+
+ private:
+  Window* window_;
+};
+
+class DownloadThumbnailCallback : public DownloadFileRequest::ICallback {
+ public:
+  DownloadThumbnailCallback(ItemModel* i);
+
+  void receivedData(const char* data, uint32_t length);
+
+  void done();
+
+  void error(const std::string& error);
+
+  void progress(uint32_t, uint32_t);
+
+ private:
+  ItemModel* item_;
+  std::string data_;
+};
 
 class DownloadFileCallback : public DownloadFileRequest::ICallback {
  public:
