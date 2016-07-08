@@ -43,8 +43,7 @@ class CloudProvider : public ICloudProvider,
   CloudProvider(IAuth::Pointer);
 
   AuthorizeRequest::Pointer initialize(const std::string& token,
-                                       ICallback::Pointer,
-                                       const Hints& hints);
+                                       ICallback::Pointer, const Hints& hints);
 
   std::string access_token() const;
   IAuth* auth() const;
@@ -52,6 +51,7 @@ class CloudProvider : public ICloudProvider,
   std::string authorizeLibraryUrl() const;
   std::string token() const;
   IItem::Pointer rootDirectory() const;
+  ICallback* callback() const;
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, ListDirectoryRequest::ICallback::Pointer);
@@ -82,6 +82,12 @@ class CloudProvider : public ICloudProvider,
       std::ostream& next_page_request_input) const = 0;
 
   virtual void authorizeRequest(HttpRequest&);
+  void waitForAuthorization() const;
+
+ protected:
+  virtual AuthorizeRequest::Pointer authorizeAsync();
+
+  std::mutex& auth_mutex() const;
 
  private:
   friend class Request;
@@ -90,10 +96,10 @@ class CloudProvider : public ICloudProvider,
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   mutable std::mutex auth_mutex_;
-  std::mutex currently_authorizing_mutex_;
+  mutable std::mutex currently_authorizing_mutex_;
   bool currently_authorizing_;
   bool current_authorization_successful_;
-  std::condition_variable authorized_;
+  mutable std::condition_variable authorized_;
 };
 
 }  // namespace cloudstorage

@@ -39,9 +39,10 @@ class AuthorizeRequest : public Request {
   void finish();
   void cancel();
 
- private:
-  bool authorize();
+ protected:
+  virtual bool authorize();
 
+ private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;
   std::shared_future<bool> function_;

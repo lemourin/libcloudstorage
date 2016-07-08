@@ -28,10 +28,14 @@
 
 namespace cloudstorage {
 
-class AmazonDrive {
+class AmazonDrive : public CloudProvider {
  public:
   AmazonDrive();
   std::string name() const;
+  IItem::Pointer rootDirectory() const;
+
+ protected:
+  cloudstorage::AuthorizeRequest::Pointer authorizeAsync();
 
  private:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
@@ -49,6 +53,8 @@ class AmazonDrive {
       std::istream&, HttpRequest::Pointer& next_page_request,
       std::ostream&) const;
 
+  IItem::FileType kindToType(const std::string& type) const;
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -64,6 +70,18 @@ class AmazonDrive {
     Token::Pointer refreshTokenResponse(std::istream&) const;
     bool validateTokenResponse(std::istream&) const;
   };
+
+  class AuthorizeRequest : public cloudstorage::AuthorizeRequest {
+   public:
+    using cloudstorage::AuthorizeRequest::AuthorizeRequest;
+
+   protected:
+    bool authorize();
+  };
+
+  std::string metadata_url_;
+  std::string content_url_;
+  std::string root_id_;
 };
 
 }  // namespace cloudstorage

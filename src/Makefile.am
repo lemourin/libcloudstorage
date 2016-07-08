@@ -20,6 +20,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
 	CloudProvider/Dropbox.cpp \
+	CloudProvider/AmazonDrive.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -40,6 +41,7 @@ noinst_HEADERS = \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
 	CloudProvider/Dropbox.h \
+	CloudProvider/AmazonDrive.h \
 	Request/HttpCallback.h
 
 nobase_include_HEADERS = \

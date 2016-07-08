@@ -100,8 +100,8 @@ bool AuthorizeRequest::authorize() {
     if (auth->access_token()) {
       std::stringstream input, output;
       HttpRequest::Pointer r = auth->validateTokenRequest(input);
-      if (HttpRequest::isSuccess(
-              r->send(input, output, nullptr, httpCallback()))) {
+      if (r && HttpRequest::isSuccess(
+                   r->send(input, output, nullptr, httpCallback()))) {
         if (auth->validateTokenResponse(output)) return true;
       }
 

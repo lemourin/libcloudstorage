@@ -47,7 +47,7 @@ AuthorizeRequest::Pointer CloudProvider::initialize(const std::string& token,
   if (!hints.client_id_.empty()) auth()->set_client_id(hints.client_id_);
   if (!hints.client_secret_.empty())
     auth()->set_client_secret(hints.client_secret_);
-  return make_unique<AuthorizeRequest>(shared_from_this());
+  return authorizeAsync();
 }
 
 std::string CloudProvider::access_token() const {
@@ -70,6 +70,10 @@ std::string CloudProvider::token() const {
 
 IItem::Pointer CloudProvider::rootDirectory() const {
   return make_unique<Item>("/", "root", IItem::FileType::Directory);
+}
+
+ICloudProvider::ICallback* CloudProvider::callback() const {
+  return callback_.get();
 }
 
 ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
@@ -108,6 +112,21 @@ GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
 void CloudProvider::authorizeRequest(HttpRequest& r) {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
 }
+
+void CloudProvider::waitForAuthorization() const {
+  std::unique_lock<std::mutex> currently_authorizing(
+      currently_authorizing_mutex_);
+  if (currently_authorizing || auth()->access_token()->token_.empty())
+    authorized_.wait(currently_authorizing, [this]() {
+      return !currently_authorizing_ && !auth()->access_token()->token_.empty();
+    });
+}
+
+AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
+  return make_unique<AuthorizeRequest>(shared_from_this());
+}
+
+std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
 
 DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, DownloadFileRequest::ICallback::Pointer callback) {
