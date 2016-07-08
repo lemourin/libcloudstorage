@@ -52,8 +52,7 @@ AuthorizeRequest::Pointer CloudProvider::initialize(const std::string& token,
 
 std::string CloudProvider::access_token() const {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  if (auth()->access_token() == nullptr)
-    throw std::logic_error("Not authenticated yet.");
+  if (auth()->access_token() == nullptr) return "";
   return auth()->access_token()->token_;
 }
 
@@ -65,8 +64,7 @@ std::string CloudProvider::authorizeLibraryUrl() const {
 
 std::string CloudProvider::token() const {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  if (auth()->access_token() == nullptr)
-    throw std::logic_error("Not authenticated yet.");
+  if (auth()->access_token() == nullptr) return "";
   return auth()->access_token()->refresh_token_;
 }
 
