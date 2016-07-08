@@ -66,10 +66,15 @@ Window::Window()
           [this]() { contentItem()->setVisible(false); }, Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() { contentItem()->setVisible(true); }, Qt::QueuedConnection);
+  connect(this, &Window::foundRoot, this,
+          [this](IItem::Pointer i) {
+            current_directory_ = i;
+            listDirectory();
+          },
+          Qt::QueuedConnection);
 }
 
 Window::~Window() {
-  authorization_request_ = nullptr;
   clearCurrentDirectoryList();
   saveCloudAccessToken();
 }
@@ -85,9 +90,10 @@ void Window::initializeCloud(QString name) {
   hints.access_token_ =
       settings.value(name + "_token").toString().toStdString();
   std::cerr << "[DIAG] Cached token: " << hints.access_token_ << "\n";
-  authorization_request_ = cloud_provider_->initialize(
-      settings.value(name).toString().toStdString(),
-      make_unique<CloudProviderCallback>(this), hints);
+  cloud_provider_->initialize(settings.value(name).toString().toStdString(),
+                              make_unique<CloudProviderCallback>(this), hints);
+  item_request_ = cloud_provider_->getItemAsync(
+      "/", [this](IItem::Pointer i) { emit foundRoot(i); });
 }
 
 void Window::listDirectory() {
@@ -105,8 +111,6 @@ void Window::changeCurrentDirectory(ItemModel* directory) {
 void Window::onSuccessfullyAuthorized() {
   std::cerr << "[OK] Successfully authorized "
             << cloud_provider_->name().c_str() << "\n";
-  current_directory_ = cloud_provider_->rootDirectory();
-  listDirectory();
 }
 
 void Window::onAddedItem(IItem::Pointer i) {

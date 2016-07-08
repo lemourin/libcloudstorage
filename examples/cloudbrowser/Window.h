@@ -108,6 +108,7 @@ class Window : public QQuickView {
   void downloadProgressChanged(int total, int now);
   void showPlayer();
   void hidePlayer();
+  void foundRoot(ItemPointer);
 
  protected:
   void keyPressEvent(QKeyEvent*);
@@ -120,13 +121,13 @@ class Window : public QQuickView {
   void initializeMediaPlayer();
 
   cloudstorage::ICloudProvider::Pointer cloud_provider_;
-  cloudstorage::AuthorizeRequest::Pointer authorization_request_;
   cloudstorage::IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
   cloudstorage::ListDirectoryRequest::Pointer list_directory_request_;
   DownloadFileRequest::Pointer download_request_;
   UploadFileRequest::Pointer upload_request_;
   GetItemDataRequest::Pointer item_data_request_;
+  GetItemRequest::Pointer item_request_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;

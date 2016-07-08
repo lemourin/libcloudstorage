@@ -52,7 +52,7 @@ Item {
             browserView.visible = false;
             cloudView.focus = true;
         }
-        onSuccessfullyAuthorized: {
+        onAddedItem: {
             directory.visible = true;
             directory.focus = true;
         }
