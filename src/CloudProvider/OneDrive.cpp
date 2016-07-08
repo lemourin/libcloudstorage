@@ -164,11 +164,6 @@ HttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
   return request;
 }
 
-HttpRequest::Pointer OneDrive::Auth::validateTokenRequest(
-    std::ostream& input_data) const {
-  return refreshTokenRequest(input_data);
-}
-
 IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   Json::Value response;
@@ -190,10 +185,6 @@ IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
   return token;
-}
-
-bool OneDrive::Auth::validateTokenResponse(std::istream&) const {
-  return !access_token()->token_.empty();
 }
 
 }  // namespace cloudstorage

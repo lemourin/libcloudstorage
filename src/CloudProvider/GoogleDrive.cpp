@@ -190,14 +190,6 @@ HttpRequest::Pointer GoogleDrive::Auth::refreshTokenRequest(
   return request;
 }
 
-HttpRequest::Pointer GoogleDrive::Auth::validateTokenRequest(
-    std::ostream&) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://www.googleapis.com/oauth2/v3/tokeninfo", HttpRequest::Type::GET);
-  request->setParameter("access_token", access_token()->token_);
-  return request;
-}
-
 IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& data) const {
   Json::Value response;
@@ -219,10 +211,6 @@ IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
   token->refresh_token_ = access_token()->refresh_token_;
   token->expires_in_ = response["expires_in"].asInt();
   return token;
-}
-
-bool GoogleDrive::Auth::validateTokenResponse(std::istream&) const {
-  return true;
 }
 
 }  // namespace cloudstorage

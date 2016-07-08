@@ -80,13 +80,10 @@ class IAuth {
       std::ostream& input_data) const = 0;
   virtual HttpRequest::Pointer refreshTokenRequest(
       std::ostream& input_data) const = 0;
-  virtual HttpRequest::Pointer validateTokenRequest(
-      std::ostream& input_data) const = 0;
 
   virtual Token::Pointer exchangeAuthorizationCodeResponse(
       std::istream&) const = 0;
   virtual Token::Pointer refreshTokenResponse(std::istream&) const = 0;
-  virtual bool validateTokenResponse(std::istream&) const = 0;
 };
 
 }  // namespace cloudstorage

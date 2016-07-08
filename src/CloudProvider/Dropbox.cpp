@@ -24,7 +24,6 @@
 #include "Dropbox.h"
 
 #include <jsoncpp/json/json.h>
-#include <iostream>
 #include <sstream>
 
 #include "Request/HttpCallback.h"
@@ -173,16 +172,10 @@ HttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
 
 HttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(
     std::ostream& input_data) const {
-  return validateTokenRequest(input_data);
-}
-
-HttpRequest::Pointer Dropbox::Auth::validateTokenRequest(
-    std::ostream& stream) const {
   Dropbox dropbox;
   dropbox.auth()->set_access_token(make_unique<Token>(*access_token()));
-
-  HttpRequest::Pointer r = dropbox.listDirectoryRequest(
-      *dropbox.rootDirectory(), static_cast<std::ostream&>(stream));
+  HttpRequest::Pointer r =
+      dropbox.listDirectoryRequest(*dropbox.rootDirectory(), input_data);
   dropbox.authorizeRequest(*r);
   return r;
 }
@@ -202,8 +195,6 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
 IAuth::Token::Pointer Dropbox::Auth::refreshTokenResponse(std::istream&) const {
   return make_unique<Token>(*access_token());
 }
-
-bool Dropbox::Auth::validateTokenResponse(std::istream&) const { return true; }
 
 Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
                                   std::function<void(IItem::Pointer)> callback)

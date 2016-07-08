@@ -97,22 +97,12 @@ void AuthorizeRequest::cancel() {
 bool AuthorizeRequest::authorize() {
   try {
     IAuth* auth = provider()->auth();
-    if (auth->access_token()) {
-      std::stringstream input, output;
-      HttpRequest::Pointer r = auth->validateTokenRequest(input);
-      if (r && HttpRequest::isSuccess(
-                   r->send(input, output, nullptr, httpCallback()))) {
-        if (auth->validateTokenResponse(output)) return true;
-      }
-
-      input = std::stringstream();
-      output = std::stringstream();
-      r = auth->refreshTokenRequest(input);
-      if (HttpRequest::isSuccess(
-              r->send(input, output, nullptr, httpCallback()))) {
-        auth->set_access_token(auth->refreshTokenResponse(output));
-        return true;
-      }
+    std::stringstream input, output;
+    HttpRequest::Pointer r = auth->refreshTokenRequest(input);
+    if (HttpRequest::isSuccess(
+            r->send(input, output, nullptr, httpCallback()))) {
+      auth->set_access_token(auth->refreshTokenResponse(output));
+      return true;
     }
 
     if (is_cancelled()) return false;

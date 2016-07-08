@@ -151,14 +151,6 @@ HttpRequest::Pointer AmazonDrive::Auth::refreshTokenRequest(
   return request;
 }
 
-HttpRequest::Pointer AmazonDrive::Auth::validateTokenRequest(
-    std::ostream& input_data) const {
-  return nullptr;
-  AmazonDrive drive;
-  drive.auth()->set_access_token(make_unique<Token>(*access_token()));
-  return drive.listDirectoryRequest(*drive.rootDirectory(), input_data);
-}
-
 IAuth::Token::Pointer AmazonDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   Json::Value response;
@@ -179,10 +171,6 @@ IAuth::Token::Pointer AmazonDrive::Auth::refreshTokenResponse(
   token->token_ = response["access_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
   return token;
-}
-
-bool AmazonDrive::Auth::validateTokenResponse(std::istream&) const {
-  return true;
 }
 
 bool AmazonDrive::AuthorizeRequest::authorize() {

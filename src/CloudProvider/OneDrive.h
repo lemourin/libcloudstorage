@@ -62,11 +62,9 @@ class OneDrive : public CloudProvider {
     HttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;
     HttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
-    HttpRequest::Pointer validateTokenRequest(std::ostream& input_data) const;
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;
-    bool validateTokenResponse(std::istream&) const;
   };
 };
 
