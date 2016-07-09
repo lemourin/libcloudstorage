@@ -69,12 +69,14 @@ int Request::sendRequest(
   std::stringstream input, temp_error;
   auto request = factory(input);
   int code = send(request.get(), input, output, &temp_error, download, upload);
+  provider()->authorizeRequest(*request);
   if (!HttpRequest::isSuccess(code)) {
     if (code != HttpRequest::Aborted) {
       if (!reauthorize()) {
         this->error(code, "Authorization error.");
       } else {
         request = factory(input);
+        provider()->authorizeRequest(*request);
         std::stringstream error_stream;
         code =
             send(request.get(), input, output, &error_stream, download, upload);
@@ -91,7 +93,6 @@ int Request::sendRequest(
 int Request::send(HttpRequest* request, std::istream& input,
                   std::ostream& output, std::ostream* error,
                   ProgressFunction download, ProgressFunction upload) {
-  provider()->authorizeRequest(*request);
   int code;
   try {
     code = request->send(input, output, error, httpCallback(download, upload));

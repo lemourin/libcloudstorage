@@ -94,48 +94,43 @@ void AuthorizeRequest::cancel() {
 }
 
 bool AuthorizeRequest::authorize() {
-  try {
-    IAuth* auth = provider()->auth();
-    std::stringstream input, output;
-    HttpRequest::Pointer r = auth->refreshTokenRequest(input);
-    if (HttpRequest::isSuccess(send(r.get(), input, output, nullptr))) {
-      auth->set_access_token(auth->refreshTokenResponse(output));
-      return true;
-    }
-
-    if (is_cancelled()) return false;
-    if (provider()->callback_->userConsentRequired(*provider()) ==
-        ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
-      {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (is_cancelled()) return false;
-        std::string authorization_code = auth->requestAuthorizationCode(
-            [this, &lock]() {
-              awaiting_authorization_code_ = true;
-              lock.unlock();
-            },
-            [this, &lock]() {
-              lock.lock();
-              awaiting_authorization_code_ = false;
-            });
-        if (authorization_code.empty()) return false;
-        auth->set_authorization_code(authorization_code);
-      }
-      std::stringstream input, output;
-      std::stringstream error_stream;
-      HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
-      if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
-        auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
-        return true;
-      } else {
-        provider()->callback_->error(*provider(), error_stream.str());
-      }
-    }
-    return false;
-  } catch (const HttpException& e) {
-    provider()->callback_->error(*provider(), e.what());
-    return false;
+  IAuth* auth = provider()->auth();
+  std::stringstream input, output;
+  HttpRequest::Pointer r = auth->refreshTokenRequest(input);
+  if (HttpRequest::isSuccess(send(r.get(), input, output, nullptr))) {
+    auth->set_access_token(auth->refreshTokenResponse(output));
+    return true;
   }
+
+  if (is_cancelled()) return false;
+  if (provider()->callback_->userConsentRequired(*provider()) ==
+      ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      if (is_cancelled()) return false;
+      std::string authorization_code = auth->requestAuthorizationCode(
+          [this, &lock]() {
+            awaiting_authorization_code_ = true;
+            lock.unlock();
+          },
+          [this, &lock]() {
+            lock.lock();
+            awaiting_authorization_code_ = false;
+          });
+      if (authorization_code.empty()) return false;
+      auth->set_authorization_code(authorization_code);
+    }
+    std::stringstream input, output;
+    std::stringstream error_stream;
+    HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
+    if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
+      auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
+      return true;
+    } else {
+      provider()->callback_->error(*provider(), error_stream.str());
+    }
+  }
+  return false;
 }
 
 }  // namespace cloudstorage
