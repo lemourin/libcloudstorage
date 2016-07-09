@@ -37,6 +37,16 @@ OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
+HttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
+                                                  std::ostream&) const {
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + id,
+      HttpRequest::Type::GET);
+  request->setParameter(
+      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
+  return request;
+}
+
 HttpRequest::Pointer OneDrive::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (!page_token.empty())
@@ -87,29 +97,36 @@ HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
   return request;
 }
 
+IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json);
+}
+
+IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
+  IItem::FileType type = IItem::FileType::Unknown;
+  if (v.isMember("folder"))
+    type = IItem::FileType::Directory;
+  else if (v.isMember("image") || v.isMember("photo"))
+    type = IItem::FileType::Image;
+  else if (v.isMember("video"))
+    type = IItem::FileType::Video;
+  else if (v.isMember("audio"))
+    type = IItem::FileType::Audio;
+  auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+  item->set_url(v["@content.downloadUrl"].asString());
+  item->set_thumbnail_url(
+      "https://api.onedrive.com/v1.0/drive/items/" + item->id() +
+      "/thumbnails/0/small/content?access_token=" + access_token());
+  return item;
+}
+
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   std::vector<IItem::Pointer> result;
   Json::Value response;
   stream >> response;
-  for (Json::Value v : response["value"]) {
-    IItem::FileType type = IItem::FileType::Unknown;
-    if (v.isMember("folder"))
-      type = IItem::FileType::Directory;
-    else if (v.isMember("image") || v.isMember("photo"))
-      type = IItem::FileType::Image;
-    else if (v.isMember("video"))
-      type = IItem::FileType::Video;
-    else if (v.isMember("audio"))
-      type = IItem::FileType::Audio;
-    auto item =
-        make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
-    item->set_url(v["@content.downloadUrl"].asString());
-    item->set_thumbnail_url(
-        "https://api.onedrive.com/v1.0/drive/items/" + item->id() +
-        "/thumbnails/0/small/content?access_token=" + access_token());
-    result.push_back(std::move(item));
-  }
+  for (Json::Value v : response["value"]) result.push_back(toItem(v));
   if (response.isMember("@odata.nextLink"))
     next_page_token = response["@odata.nextLink"].asString();
   return result;

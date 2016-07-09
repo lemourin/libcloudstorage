@@ -36,6 +36,8 @@ class OneDrive : public CloudProvider {
   std::string name() const;
 
  protected:
+  HttpRequest::Pointer getItemDataRequest(const std::string&,
+                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
@@ -48,6 +50,7 @@ class OneDrive : public CloudProvider {
 
   std::vector<IItem::Pointer> listDirectoryResponse(std::istream&,
                                                     std::string&) const;
+  IItem::Pointer getItemDataResponse(std::istream& response) const;
 
  private:
   class Auth : public cloudstorage::Auth {
@@ -63,6 +66,8 @@ class OneDrive : public CloudProvider {
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;
   };
+
+  IItem::Pointer toItem(const Json::Value&) const;
 };
 
 }  // namespace cloudstorage

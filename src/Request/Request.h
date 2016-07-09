@@ -46,13 +46,6 @@ class Request {
   virtual void finish();
   virtual void cancel();
 
- protected:
-  std::shared_ptr<CloudProvider> provider() const { return provider_; }
-  virtual void error(int code, const std::string& description);
-
-  void set_cancelled(bool e) { is_cancelled_ = e; }
-  bool is_cancelled() { return is_cancelled_; }
-
   int sendRequest(
       std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
       std::ostream& output, ProgressFunction download = nullptr,
@@ -60,6 +53,13 @@ class Request {
   int send(HttpRequest*, std::istream& input, std::ostream& output,
            std::ostream* error, ProgressFunction download = nullptr,
            ProgressFunction upload = nullptr);
+
+ protected:
+  std::shared_ptr<CloudProvider> provider() const { return provider_; }
+  virtual void error(int code, const std::string& description);
+
+  void set_cancelled(bool e) { is_cancelled_ = e; }
+  bool is_cancelled() { return is_cancelled_; }
 
  private:
   std::unique_ptr<HttpCallback> httpCallback(

@@ -78,7 +78,7 @@ class ICloudProvider {
       IItem::Pointer, const std::string& filename,
       UploadFileRequest::ICallback::Pointer) = 0;
   virtual GetItemDataRequest::Pointer getItemDataAsync(
-      IItem::Pointer item, std::function<void(IItem::Pointer)>) = 0;
+      const std::string& id, GetItemDataRequest::Callback) = 0;
   virtual DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer item, DownloadFileRequest::ICallback::Pointer) = 0;
 };

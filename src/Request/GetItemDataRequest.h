@@ -25,6 +25,7 @@
 #define GETITEMDATAREQUEST_H
 
 #include "IItem.h"
+#include "ListDirectoryRequest.h"
 #include "Request.h"
 
 namespace cloudstorage {
@@ -32,19 +33,26 @@ namespace cloudstorage {
 class GetItemDataRequest : public Request {
  public:
   using Pointer = std::unique_ptr<GetItemDataRequest>;
+  using Callback = std::function<void(IItem::Pointer)>;
+  using Factory = std::function<IItem::Pointer(GetItemDataRequest*)>;
 
-  GetItemDataRequest(std::shared_ptr<CloudProvider>, IItem::Pointer item,
-                     std::function<void(IItem::Pointer)>, bool ready = true);
+  GetItemDataRequest(std::shared_ptr<CloudProvider>, const std::string& id,
+                     Callback, Factory = nullptr);
+  ~GetItemDataRequest();
 
-  IItem::Pointer item() const;
-  std::function<void(IItem::Pointer)> callback() const;
+  Callback callback() const;
 
   void finish();
   virtual IItem::Pointer result();
 
+ protected:
+  void error(int, const std::string&);
+  static IItem::Pointer resolve(GetItemDataRequest*);
+
  private:
-  IItem::Pointer item_;
-  std::function<void(IItem::Pointer)> callback_;
+  std::string id_;
+  Callback callback_;
+  std::shared_future<IItem::Pointer> function_;
 };
 
 }  // namespace cloudstorage

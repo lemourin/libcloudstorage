@@ -64,6 +64,14 @@ cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   return make_unique<AuthorizeRequest>(shared_from_this());
 }
 
+HttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
+                                                     std::ostream&) const {
+  auto request = make_unique<HttpRequest>(metadata_url() + "/nodes/" + id,
+                                          HttpRequest::Type::GET);
+  request->setParameter("tempLink", "true");
+  return request;
+}
+
 HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
     const IItem& i, const std::string& page_token, std::ostream&) const {
   if (i.id() == rootDirectory()->id()) {
@@ -117,25 +125,19 @@ HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& item,
       HttpRequest::Type::GET);
 }
 
+IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json);
+}
+
 std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
 
   std::vector<IItem::Pointer> result;
-  for (const Json::Value& v : response["data"]) {
-    std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-    auto item = make_unique<Item>(name, v["id"].asString(), type(v));
-    item->set_url(v["tempLink"].asString());
-    if (item->type() == IItem::FileType::Image)
-      item->set_thumbnail_url(item->url() + "?viewBox=" +
-                              std::to_string(THUMBNAIL_SIZE));
-    for (const Json::Value& asset : v["assets"])
-      if (type(asset) == IItem::FileType::Image)
-        item->set_thumbnail_url(asset["tempLink"].asString() + "?viewBox=" +
-                                std::to_string(THUMBNAIL_SIZE));
-    result.push_back(std::move(item));
-  }
+  for (const Json::Value& v : response["data"]) result.push_back(toItem(v));
   if (response.isMember("nextToken"))
     next_page_token = response["nextToken"].asString();
 
@@ -150,6 +152,20 @@ IItem::FileType AmazonDrive::type(const Json::Value& v) const {
     return IItem::FileType::Video;
   else
     return IItem::FileType::Unknown;
+}
+
+IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
+  std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
+  auto item = make_unique<Item>(name, v["id"].asString(), type(v));
+  item->set_url(v["tempLink"].asString());
+  if (item->type() == IItem::FileType::Image)
+    item->set_thumbnail_url(item->url() + "?viewBox=" +
+                            std::to_string(THUMBNAIL_SIZE));
+  for (const Json::Value& asset : v["assets"])
+    if (type(asset) == IItem::FileType::Image)
+      item->set_thumbnail_url(asset["tempLink"].asString() + "?viewBox=" +
+                              std::to_string(THUMBNAIL_SIZE));
+  return item;
 }
 
 std::string AmazonDrive::metadata_url() const {

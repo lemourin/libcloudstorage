@@ -36,8 +36,11 @@ class Dropbox : public CloudProvider {
   IItem::Pointer rootDirectory() const;
 
   GetItemDataRequest::Pointer getItemDataAsync(
-      IItem::Pointer, std::function<void(IItem::Pointer)> f);
+      const std::string& id, GetItemDataRequest::Callback);
 
+ protected:
+  HttpRequest::Pointer getItemDataRequest(const std::string&,
+                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
@@ -50,10 +53,13 @@ class Dropbox : public CloudProvider {
   HttpRequest::Pointer getThumbnailRequest(const IItem&,
                                            std::ostream& input_stream) const;
 
+  IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 
  private:
+  static IItem::Pointer toItem(const Json::Value&);
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -67,18 +73,6 @@ class Dropbox : public CloudProvider {
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;
-  };
-
-  class DataRequest : public GetItemDataRequest {
-   public:
-    DataRequest(CloudProvider::Pointer, IItem::Pointer item,
-                std::function<void(IItem::Pointer)> callback);
-
-    void finish();
-    IItem::Pointer result();
-
-   private:
-    std::shared_future<IItem::Pointer> result_;
   };
 };
 

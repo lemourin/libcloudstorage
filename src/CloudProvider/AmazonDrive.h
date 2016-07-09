@@ -43,6 +43,8 @@ class AmazonDrive : public CloudProvider {
   cloudstorage::AuthorizeRequest::Pointer authorizeAsync();
 
  private:
+  HttpRequest::Pointer getItemDataRequest(const std::string& id,
+                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
@@ -53,10 +55,12 @@ class AmazonDrive : public CloudProvider {
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
 
+  IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& page_token) const;
 
   IItem::FileType type(const Json::Value&) const;
+  IItem::Pointer toItem(const Json::Value&) const;
 
   std::string metadata_url() const;
   std::string content_url() const;

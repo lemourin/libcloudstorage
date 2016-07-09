@@ -111,8 +111,8 @@ UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
 }
 
 GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
-    IItem::Pointer item, std::function<void(IItem::Pointer)> f) {
-  return make_unique<GetItemDataRequest>(shared_from_this(), item, f);
+    const std::string& id, GetItemDataRequest::Callback f) {
+  return make_unique<GetItemDataRequest>(shared_from_this(), id, f);
 }
 
 void CloudProvider::authorizeRequest(HttpRequest& r) {

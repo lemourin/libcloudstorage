@@ -35,12 +35,10 @@ Request::Request(std::shared_ptr<CloudProvider> provider)
 void Request::finish() {}
 
 void Request::cancel() {
+  set_cancelled(true);
   {
-    std::lock_guard<std::mutex> lock(mutex_);
-    set_cancelled(true);
-    if (authorize_request_) {
-      authorize_request_->cancel();
-    }
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (authorize_request_) authorize_request_->cancel();
   }
   finish();
 }
@@ -57,10 +55,10 @@ bool Request::reauthorize() {
   if (is_cancelled()) return false;
   authorize_request_ = provider()->authorizeAsync();
   lock.unlock();
-  if (!authorize_request_->result()) throw AuthorizationException();
+  bool result = authorize_request_->result();
   lock.lock();
   authorize_request_ = nullptr;
-  return true;
+  return result;
 }
 
 void Request::error(int, const std::string&) {}

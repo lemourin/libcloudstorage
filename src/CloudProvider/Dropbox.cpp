@@ -41,8 +41,50 @@ IItem::Pointer Dropbox::rootDirectory() const {
 }
 
 GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
-    IItem::Pointer item, std::function<void(IItem::Pointer)> callback) {
-  return make_unique<DataRequest>(shared_from_this(), item, callback);
+    const std::string& id, GetItemDataRequest::Callback callback) {
+  return make_unique<GetItemDataRequest>(
+      shared_from_this(), id, callback,
+      [id](GetItemDataRequest* r) -> IItem::Pointer {
+        auto item_data = [r, id](std::ostream& input) {
+          auto request = make_unique<HttpRequest>(
+              "https://api.dropboxapi.com/2/files/get_metadata",
+              HttpRequest::Type::POST);
+          request->setHeaderParameter("Content-Type", "application/json");
+          Json::Value parameter;
+          parameter["path"] = id;
+          parameter["include_media_info"] = true;
+          input << Json::FastWriter().write(parameter);
+          return request;
+        };
+        std::stringstream output;
+        if (!HttpRequest::isSuccess(r->sendRequest(item_data, output)))
+          return nullptr;
+        Json::Value response;
+        output >> response;
+        auto item = toItem(response);
+        if (item->is_directory()) return item;
+        auto temporary_link = [r, id](std::ostream& input) {
+          auto request = make_unique<HttpRequest>(
+              "https://api.dropboxapi.com/2/files/get_temporary_link",
+              HttpRequest::Type::POST);
+          request->setHeaderParameter("Content-Type", "application/json");
+
+          Json::Value parameter;
+          parameter["path"] = id;
+          input << Json::FastWriter().write(parameter);
+          return request;
+        };
+        if (!HttpRequest::isSuccess(r->sendRequest(temporary_link, output)))
+          return item;
+        output >> response;
+        static_cast<Item*>(item.get())->set_url(response["link"].asString());
+        return item;
+      });
+}
+
+HttpRequest::Pointer Dropbox::getItemDataRequest(const std::string&,
+                                                 std::ostream&) const {
+  return nullptr;
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
@@ -111,30 +153,36 @@ HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
   return request;
 }
 
+IItem::Pointer Dropbox::getItemDataResponse(std::istream&) const {
+  return nullptr;
+}
+
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
 
   std::vector<IItem::Pointer> result;
-  for (Json::Value v : response["entries"]) {
-    IItem::FileType type = IItem::FileType::Unknown;
-    if (v[".tag"].asString() == "folder")
-      type = IItem::FileType::Directory;
-    else {
-      std::string file_type = v["media_info"]["metadata"][".tag"].asString();
-      if (file_type == "video")
-        type = IItem::FileType::Video;
-      else if (file_type == "photo")
-        type = IItem::FileType::Image;
-    }
-    result.push_back(make_unique<Item>(v["name"].asString(),
-                                       v["path_display"].asString(), type));
-  }
+  for (const Json::Value& v : response["entries"]) result.push_back(toItem(v));
   if (response["has_more"].asBool()) {
     next_page_token = response["cursor"].asString();
   }
   return result;
+}
+
+IItem::Pointer Dropbox::toItem(const Json::Value& v) {
+  IItem::FileType type = IItem::FileType::Unknown;
+  if (v[".tag"].asString() == "folder")
+    type = IItem::FileType::Directory;
+  else {
+    std::string file_type = v["media_info"]["metadata"][".tag"].asString();
+    if (file_type == "video")
+      type = IItem::FileType::Video;
+    else if (file_type == "photo")
+      type = IItem::FileType::Image;
+  }
+  return make_unique<Item>(v["name"].asString(), v["path_display"].asString(),
+                           type);
 }
 
 Dropbox::Auth::Auth() {
@@ -195,44 +243,6 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
 
 IAuth::Token::Pointer Dropbox::Auth::refreshTokenResponse(std::istream&) const {
   return make_unique<Token>(*access_token());
-}
-
-Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
-                                  std::function<void(IItem::Pointer)> callback)
-    : GetItemDataRequest(p, item, callback, false) {
-  result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
-    std::stringstream output;
-    int code = sendRequest(
-        [this](std::ostream& input) {
-          HttpRequest::Pointer request = make_unique<HttpRequest>(
-              "https://api.dropboxapi.com/2/files/get_temporary_link",
-              HttpRequest::Type::POST);
-          request->setHeaderParameter("Content-Type", "application/json");
-
-          Json::Value parameter;
-          parameter["path"] = this->item()->id();
-          input << Json::FastWriter().write(parameter);
-          return request;
-        },
-        output);
-    if (HttpRequest::isSuccess(code)) {
-      auto i = this->item()->copy();
-      Json::Value response;
-      output >> response;
-      static_cast<Item*>(i.get())->set_url(response["link"].asString());
-      this->callback()(i);
-      return i;
-    }
-    this->callback()(this->item());
-    return this->item();
-  });
-}
-
-void Dropbox::DataRequest::finish() { result_.wait(); }
-
-IItem::Pointer Dropbox::DataRequest::result() {
-  std::shared_future<IItem::Pointer> future = result_;
-  return future.get();
 }
 
 }  // namespace cloudstorage

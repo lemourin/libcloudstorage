@@ -23,25 +23,62 @@
 
 #include "GetItemDataRequest.h"
 
+#include <iostream>
+
 #include "CloudProvider/CloudProvider.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 
-GetItemDataRequest::GetItemDataRequest(
-    std::shared_ptr<CloudProvider> p, IItem::Pointer item,
-    std::function<void(IItem::Pointer)> callback, bool ready)
-    : Request(p), item_(item), callback_(callback) {
-  if (ready) callback(item);
+GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
+                                       const std::string& id, Callback callback,
+                                       Factory f)
+    : Request(p), id_(id), callback_(callback) {
+  if (f)
+    function_ = std::async(std::launch::async, [this, f]() {
+      auto item = f(this);
+      callback_(item);
+      return item;
+    });
+  else
+    function_ = std::async(std::launch::async,
+                           std::bind(&GetItemDataRequest::resolve, this));
 }
 
-IItem::Pointer GetItemDataRequest::item() const { return item_; }
+GetItemDataRequest::~GetItemDataRequest() { cancel(); }
 
-std::function<void(IItem::Pointer)> GetItemDataRequest::callback() const {
+GetItemDataRequest::Callback GetItemDataRequest::callback() const {
   return callback_;
 }
 
-void GetItemDataRequest::finish() {}
+void GetItemDataRequest::finish() {
+  if (function_.valid()) function_.wait();
+}
 
-IItem::Pointer GetItemDataRequest::result() { return item_; }
+IItem::Pointer GetItemDataRequest::result() {
+  std::shared_future<IItem::Pointer> future = function_;
+  if (!future.valid()) throw std::logic_error("Future invalid.");
+  return future.get();
+}
+
+void GetItemDataRequest::error(int code, const std::string& error) {
+  std::cerr << "[FAIL] Code " << code << ": " << error << "\n";
+}
+
+IItem::Pointer GetItemDataRequest::resolve(GetItemDataRequest* t) {
+  std::stringstream response_stream;
+  int code = t->sendRequest(
+      [t](std::ostream& input) {
+        return t->provider()->getItemDataRequest(t->id_, input);
+      },
+      response_stream);
+  if (HttpRequest::isSuccess(code)) {
+    auto i = t->provider()->getItemDataResponse(response_stream);
+    t->callback_(i);
+    return i;
+  }
+  t->callback_(nullptr);
+  return nullptr;
+}
 
 }  // namespace cloudstorage
