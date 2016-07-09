@@ -120,6 +120,9 @@ class Window : public QQuickView {
   void saveCloudAccessToken();
   void initializeMediaPlayer();
 
+  ICloudProvider::Hints fromQMap(const QMap<QString, QVariant>&) const;
+  QMap<QString, QVariant> toQMap(const ICloudProvider::Hints&) const;
+
   cloudstorage::ICloudProvider::Pointer cloud_provider_;
   cloudstorage::IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;

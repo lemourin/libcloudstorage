@@ -86,10 +86,8 @@ void Window::initializeCloud(QString name) {
   cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
   std::cerr << "[DIAG] Trying to authorize with "
             << settings.value(name).toString().toStdString() << std::endl;
-  ICloudProvider::Hints hints;
-  hints.access_token_ =
-      settings.value(name + "_token").toString().toStdString();
-  std::cerr << "[DIAG] Cached token: " << hints.access_token_ << "\n";
+  ICloudProvider::Hints hints =
+      fromQMap(settings.value(name + "_hints").toMap());
   cloud_provider_->initialize(settings.value(name).toString().toStdString(),
                               make_unique<CloudProviderCallback>(this), hints);
   item_request_ = cloud_provider_->getItemAsync(
@@ -157,8 +155,8 @@ void Window::clearCurrentDirectoryList() {
 void Window::saveCloudAccessToken() {
   if (cloud_provider_) {
     QSettings settings;
-    settings.setValue((cloud_provider_->name() + "_token").c_str(),
-                      cloud_provider_->access_token().c_str());
+    settings.setValue((cloud_provider_->name() + "_hints").c_str(),
+                      toQMap(cloud_provider_->hints()));
   }
 }
 
@@ -175,6 +173,21 @@ void Window::initializeMediaPlayer() {
     if (media_player_.videoTrackCount() > 0) emit showPlayer();
   });
   media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
+}
+
+ICloudProvider::Hints Window::fromQMap(
+    const QMap<QString, QVariant>& map) const {
+  ICloudProvider::Hints result;
+  for (auto it = map.begin(); it != map.end(); it++)
+    result[it.key().toStdString()] = it.value().toString().toStdString();
+  return result;
+}
+
+QMap<QString, QVariant> Window::toQMap(const ICloudProvider::Hints& map) const {
+  QMap<QString, QVariant> result;
+  for (auto it = map.begin(); it != map.end(); it++)
+    result[it->first.c_str()] = it->second.c_str();
+  return result;
 }
 
 bool Window::goBack() {
