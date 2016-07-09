@@ -106,7 +106,8 @@ void CloudProviderCallback::declined(const ICloudProvider&) {
 
 void CloudProviderCallback::error(const ICloudProvider&,
                                   const std::string& desc) {
-  std::cerr << "[FAIL] " << desc.c_str() << "\n";
+  std::cerr << "[FAIL] Authorize " << desc.c_str() << "\n";
+  emit window_->closeBrowser();
 }
 
 ListDirectoryCallback::ListDirectoryCallback(Window* w) : window_(w) {}
@@ -118,7 +119,8 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
 void ListDirectoryCallback::done(const std::vector<IItem::Pointer>&) {}
 
 void ListDirectoryCallback::error(const std::string& str) {
-  std::cerr << "[FAIL] " << str << "\n";
+  std::cerr << "[FAIL] ListDirectory: " << str << "\n";
+  emit window_->closeBrowser();
 }
 
 DownloadThumbnailCallback::DownloadThumbnailCallback(ItemModel* i) : item_(i) {}
@@ -136,7 +138,7 @@ void DownloadThumbnailCallback::done() {
 }
 
 void DownloadThumbnailCallback::error(const std::string& error) {
-  std::cerr << "[FAIL] " << error << "\n";
+  std::cerr << "[FAIL] Thumbnail: " << error << "\n";
 }
 
 void DownloadThumbnailCallback::progress(uint32_t, uint32_t) {}
