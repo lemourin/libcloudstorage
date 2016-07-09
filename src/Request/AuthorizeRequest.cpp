@@ -130,7 +130,7 @@ bool AuthorizeRequest::authorize() {
     if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return true;
-    } else {
+    } else if (!is_cancelled()) {
       provider()->callback_->error(*provider(), error_stream.str());
     }
   }

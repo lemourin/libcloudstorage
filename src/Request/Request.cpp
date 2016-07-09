@@ -73,14 +73,14 @@ int Request::sendRequest(
   if (!HttpRequest::isSuccess(code)) {
     if (code != HttpRequest::Aborted) {
       if (!reauthorize()) {
-        this->error(code, "Authorization error.");
+        if (!is_cancelled()) this->error(code, "Authorization error.");
       } else {
         request = factory(input);
         provider()->authorizeRequest(*request);
         std::stringstream error_stream;
         code =
             send(request.get(), input, output, &error_stream, download, upload);
-        if (!HttpRequest::isSuccess(code))
+        if (!is_cancelled() && !HttpRequest::isSuccess(code))
           this->error(code, error_stream.str());
       }
     } else {
