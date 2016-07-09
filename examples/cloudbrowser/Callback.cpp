@@ -60,7 +60,7 @@ UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
             std::ios_base::in | std::ios_base::binary) {}
 
 void UploadFileCallback::reset() {
-  std::cerr << "[FAIL] Retransmission needed\n";
+  std::cerr << "[DIAG] Starting transmission\n";
   file_.seekg(std::ios::beg);
 }
 
