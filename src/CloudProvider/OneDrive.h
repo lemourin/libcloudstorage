@@ -35,9 +35,6 @@ class OneDrive : public CloudProvider {
 
   std::string name() const;
 
-  HttpRequest::Pointer getThumbnailRequest(const IItem&,
-                                           std::ostream& input_stream) const;
-
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,

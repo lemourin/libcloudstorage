@@ -44,8 +44,6 @@ class GoogleDrive : public CloudProvider {
                                          std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer getThumbnailRequest(const IItem&,
-                                           std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;

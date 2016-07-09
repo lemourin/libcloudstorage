@@ -140,4 +140,11 @@ DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
                 std::placeholders::_1, std::placeholders::_2));
 }
 
+HttpRequest::Pointer CloudProvider::getThumbnailRequest(const IItem& i,
+                                                        std::ostream&) const {
+  const Item& item = static_cast<const Item&>(i);
+  if (item.thumbnail_url().empty()) return nullptr;
+  return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
+}
+
 }  // namespace cloudstorage
