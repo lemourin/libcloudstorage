@@ -220,8 +220,10 @@ Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
       Json::Value response;
       output >> response;
       static_cast<Item*>(i.get())->set_url(response["link"].asString());
+      this->callback()(i);
       return i;
     }
+    this->callback()(this->item());
     return this->item();
   });
 }
