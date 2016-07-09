@@ -193,6 +193,8 @@ bool HttpRequest::isClientError(int code) {
 
 bool HttpRequest::isAuthorizationError(int code) { return code == 401; }
 
+bool HttpRequest::isCurlError(int code) { return code < 200 && code > 0; }
+
 std::string HttpRequest::parametersToString() const {
   std::string result;
   for (std::pair<std::string, std::string> p : parameters_)

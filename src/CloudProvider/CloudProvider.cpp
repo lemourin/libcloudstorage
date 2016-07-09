@@ -115,8 +115,12 @@ GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
   return make_unique<GetItemDataRequest>(shared_from_this(), id, f);
 }
 
-void CloudProvider::authorizeRequest(HttpRequest& r) {
+void CloudProvider::authorizeRequest(HttpRequest& r) const {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
+}
+
+bool CloudProvider::reauthorize(int code) const {
+  return HttpRequest::isAuthorizationError(code);
 }
 
 AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {

@@ -65,6 +65,8 @@ class AmazonDrive : public CloudProvider {
   std::string metadata_url() const;
   std::string content_url() const;
 
+  bool reauthorize(int code) const;
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();

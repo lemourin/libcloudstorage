@@ -23,6 +23,7 @@
 
 #include "Request.h"
 
+#include <iostream>
 #include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "Utility/Utility.h"
@@ -66,26 +67,27 @@ void Request::error(int, const std::string&) {}
 int Request::sendRequest(
     std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
-  std::stringstream input, temp_error;
+  std::stringstream input, error_stream;
   auto request = factory(input);
   if (request) provider()->authorizeRequest(*request);
-  int code = send(request.get(), input, output, &temp_error, download, upload);
-  if (!HttpRequest::isSuccess(code)) {
-    if (code != HttpRequest::Aborted) {
-      if (!reauthorize()) {
-        if (!is_cancelled()) this->error(code, "Authorization error.");
-      } else {
-        request = factory(input);
-        if (request) provider()->authorizeRequest(*request);
-        std::stringstream error_stream;
-        code =
-            send(request.get(), input, output, &error_stream, download, upload);
-        if (!is_cancelled() && !HttpRequest::isSuccess(code))
-          this->error(code, error_stream.str());
-      }
+  int code =
+      send(request.get(), input, output, &error_stream, download, upload);
+  if (HttpRequest::isSuccess(code)) return code;
+  if (provider()->reauthorize(code)) {
+    if (!reauthorize()) {
+      if (!is_cancelled()) this->error(code, error_stream.str());
     } else {
-      return code;
+      request = factory(input);
+      if (request) provider()->authorizeRequest(*request);
+      std::stringstream error_stream;
+      code =
+          send(request.get(), input, output, &error_stream, download, upload);
+      if (!is_cancelled() && !HttpRequest::isSuccess(code))
+        this->error(code, error_stream.str());
     }
+  } else {
+    if (!is_cancelled() && code != HttpRequest::Aborted)
+      this->error(code, error_stream.str());
   }
   return code;
 }

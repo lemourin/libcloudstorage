@@ -86,7 +86,8 @@ class CloudProvider : public ICloudProvider,
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream& response, std::string& next_page_token) const = 0;
 
-  virtual void authorizeRequest(HttpRequest&);
+  virtual void authorizeRequest(HttpRequest&) const;
+  virtual bool reauthorize(int code) const;
 
  protected:
   virtual AuthorizeRequest::Pointer authorizeAsync();

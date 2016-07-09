@@ -178,6 +178,10 @@ std::string AmazonDrive::content_url() const {
   return content_url_;
 }
 
+bool AmazonDrive::reauthorize(int code) const {
+  return CloudProvider::reauthorize(code) || HttpRequest::isCurlError(code);
+}
+
 AmazonDrive::Auth::Auth() {
   set_client_id(
       "amzn1.application-oa2-client.04f642253f4e43668e5b1441ecf263f0");
