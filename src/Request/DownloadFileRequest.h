@@ -42,7 +42,7 @@ class DownloadFileRequest : public Request {
  public:
   using Pointer = std::unique_ptr<DownloadFileRequest>;
   using RequestFactory =
-      std::function<std::unique_ptr<HttpRequest>(const IItem&, std::ostream&)>;
+      std::function<std::shared_ptr<HttpRequest>(const IItem&, std::ostream&)>;
 
   class ICallback {
    public:

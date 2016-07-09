@@ -50,9 +50,16 @@ class Request {
       std::function<void(uint32_t, uint32_t)> progress_upload = nullptr);
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   bool reauthorize();
+  virtual void error(int code, const std::string& description);
 
   void set_cancelled(bool e) { is_cancelled_ = e; }
   bool is_cancelled() { return is_cancelled_; }
+
+  int sendRequest(
+      std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
+      std::ostream& output, std::ostream* error);
+  int send(HttpRequest*, std::istream& input, std::ostream& output,
+           std::ostream* error);
 
  private:
   std::mutex mutex_;

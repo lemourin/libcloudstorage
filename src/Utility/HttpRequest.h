@@ -45,7 +45,7 @@ class HttpException : public std::exception {
 
 class HttpRequest {
  public:
-  using Pointer = std::unique_ptr<HttpRequest>;
+  using Pointer = std::shared_ptr<HttpRequest>;
 
   static constexpr int Aborted = -1;
   static constexpr int Unknown = -2;

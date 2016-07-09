@@ -61,4 +61,39 @@ bool Request::reauthorize() {
   return true;
 }
 
+void Request::error(int, const std::string&) {}
+
+int Request::sendRequest(
+    std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
+    std::ostream& output, std::ostream* error) {
+  std::stringstream input;
+  auto request = factory(input);
+  int code = send(request.get(), input, output, nullptr);
+  if (!HttpRequest::isSuccess(code)) {
+    if (code != HttpRequest::Aborted) {
+      if (!reauthorize()) {
+        this->error(code, "Authorization error.");
+      } else {
+        request = factory(input);
+        code = send(request.get(), input, output, error);
+      }
+    } else {
+      return code;
+    }
+  }
+  return code;
+}
+
+int Request::send(HttpRequest* request, std::istream& input,
+                  std::ostream& output, std::ostream* error) {
+  provider()->authorizeRequest(*request);
+  int code;
+  try {
+    code = request->send(input, output, error, httpCallback());
+  } catch (const HttpException& e) {
+    code = e.code();
+  }
+  return code;
+}
+
 }  // namespace cloudstorage
