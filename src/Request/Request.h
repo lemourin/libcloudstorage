@@ -57,6 +57,7 @@ class Request {
  protected:
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   virtual void error(int code, const std::string& description);
+  std::string error_string(int code, const std::string& desc) const;
 
   void set_cancelled(bool e) { is_cancelled_ = e; }
   bool is_cancelled() { return is_cancelled_; }

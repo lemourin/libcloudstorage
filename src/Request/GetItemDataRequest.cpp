@@ -23,8 +23,6 @@
 
 #include "GetItemDataRequest.h"
 
-#include <iostream>
-
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/Utility.h"
 
@@ -59,10 +57,6 @@ IItem::Pointer GetItemDataRequest::result() {
   std::shared_future<IItem::Pointer> future = function_;
   if (!future.valid()) throw std::logic_error("Future invalid.");
   return future.get();
-}
-
-void GetItemDataRequest::error(int code, const std::string& error) {
-  std::cerr << "[FAIL] Code " << code << ": " << error << "\n";
 }
 
 IItem::Pointer GetItemDataRequest::resolve(GetItemDataRequest* t) {

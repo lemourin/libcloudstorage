@@ -64,6 +64,16 @@ bool Request::reauthorize() {
 
 void Request::error(int, const std::string&) {}
 
+std::string Request::error_string(int code, const std::string& desc) const {
+  std::stringstream stream;
+  if (HttpRequest::isCurlError(code))
+    stream << "CURL code " << code << ": "
+           << curl_easy_strerror(static_cast<CURLcode>(code));
+  else
+    stream << "HTTP code " << code << ": " << desc;
+  return stream.str();
+}
+
 int Request::sendRequest(
     std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {

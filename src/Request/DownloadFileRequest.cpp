@@ -56,7 +56,7 @@ void DownloadFileRequest::finish() {
 }
 
 void DownloadFileRequest::error(int code, const std::string& description) {
-  if (callback_) callback_->error(std::to_string(code) + ": " + description);
+  if (callback_) callback_->error(error_string(code, description));
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(

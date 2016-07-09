@@ -46,7 +46,6 @@ class GetItemDataRequest : public Request {
   virtual IItem::Pointer result();
 
  protected:
-  void error(int, const std::string&);
   static IItem::Pointer resolve(GetItemDataRequest*);
 
  private:

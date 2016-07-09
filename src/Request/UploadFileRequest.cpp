@@ -61,7 +61,7 @@ void UploadFileRequest::finish() {
 
 void UploadFileRequest::error(int code, const std::string& description) {
   if (stream_wrapper_.callback_)
-    stream_wrapper_.callback_->error(std::to_string(code) + ": " + description);
+    stream_wrapper_.callback_->error(error_string(code, description));
 }
 
 UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(

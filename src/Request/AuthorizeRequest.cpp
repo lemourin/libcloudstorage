@@ -107,7 +107,8 @@ bool AuthorizeRequest::authorize() {
     return true;
   } else if (!HttpRequest::isClientError(code)) {
     if (!is_cancelled())
-      provider()->callback()->error(*provider(), error_stream.str());
+      provider()->callback()->error(*provider(),
+                                    error_string(code, error_stream.str()));
     return false;
   }
 
@@ -136,7 +137,8 @@ bool AuthorizeRequest::authorize() {
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return true;
     } else if (!is_cancelled()) {
-      provider()->callback()->error(*provider(), error_stream.str());
+      provider()->callback()->error(*provider(),
+                                    error_string(code, error_stream.str()));
     }
   }
   return false;
