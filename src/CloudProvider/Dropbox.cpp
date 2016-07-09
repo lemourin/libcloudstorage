@@ -26,7 +26,6 @@
 #include <jsoncpp/json/json.h>
 #include <sstream>
 
-#include "Request/HttpCallback.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -202,13 +201,28 @@ Dropbox::DataRequest::DataRequest(CloudProvider::Pointer p, IItem::Pointer item,
                                   std::function<void(IItem::Pointer)> callback)
     : GetItemDataRequest(p, item, callback, false) {
   result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
-    int code = makeTemporaryLinkRequest();
-    if (HttpRequest::isAuthorizationError(code)) {
-      reauthorize();
-      code = makeTemporaryLinkRequest();
+    std::stringstream output;
+    int code = sendRequest(
+        [this](std::ostream& input) {
+          HttpRequest::Pointer request = make_unique<HttpRequest>(
+              "https://api.dropboxapi.com/2/files/get_temporary_link",
+              HttpRequest::Type::POST);
+          request->setHeaderParameter("Content-Type", "application/json");
+
+          Json::Value parameter;
+          parameter["path"] = this->item()->id();
+          input << Json::FastWriter().write(parameter);
+          return request;
+        },
+        output);
+    if (HttpRequest::isSuccess(code)) {
+      auto i = this->item()->copy();
+      Json::Value response;
+      output >> response;
+      static_cast<Item*>(i.get())->set_url(response["link"].asString());
+      return i;
     }
-    this->callback()(item_);
-    return item_;
+    return this->item();
   });
 }
 
@@ -217,30 +231,6 @@ void Dropbox::DataRequest::finish() { result_.wait(); }
 IItem::Pointer Dropbox::DataRequest::result() {
   std::shared_future<IItem::Pointer> future = result_;
   return future.get();
-}
-
-int Dropbox::DataRequest::makeTemporaryLinkRequest() {
-  HttpRequest request("https://api.dropboxapi.com/2/files/get_temporary_link",
-                      HttpRequest::Type::POST);
-  request.setHeaderParameter("Content-Type", "application/json");
-  provider()->authorizeRequest(request);
-  std::stringstream input, output, error;
-
-  Json::Value parameter;
-  parameter["path"] = item()->id();
-  input << Json::FastWriter().write(parameter);
-
-  int code = request.send(input, output, &error, httpCallback());
-  if (HttpRequest::isSuccess(code)) {
-    auto i = item()->copy();
-    Json::Value response;
-    output >> response;
-    static_cast<Item*>(i.get())->set_url(response["link"].asString());
-    item_ = std::move(i);
-  } else {
-    item_ = item();
-  }
-  return code;
 }
 
 }  // namespace cloudstorage

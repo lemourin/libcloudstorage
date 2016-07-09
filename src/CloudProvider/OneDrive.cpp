@@ -27,7 +27,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "Request/HttpCallback.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"

@@ -26,7 +26,6 @@
 #include <jsoncpp/json/json.h>
 #include <cstring>
 
-#include "Request/HttpCallback.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -179,7 +178,7 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   request.setHeaderParameter(
       "Authorization", "Bearer " + provider()->auth()->access_token()->token_);
   std::stringstream input, output;
-  int code = request.send(input, output, nullptr, httpCallback());
+  int code = send(&request, input, output, nullptr);
   if (!HttpRequest::isSuccess(code)) {
     provider()->callback()->error(*provider(), "Couldn't obtain endpoints.");
     return false;
@@ -193,7 +192,7 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   input = std::stringstream();
   output = std::stringstream();
   request.set_url(drive->metadata_url_ + "/nodes?filters=isRoot:true");
-  code = request.send(input, output, nullptr, httpCallback());
+  code = send(&request, input, output, nullptr);
   if (!HttpRequest::isSuccess(code)) {
     provider()->callback()->error(*provider(),
                                   "Couldn't obtain root folder id.");

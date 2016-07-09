@@ -24,7 +24,6 @@
 #include "AuthorizeRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "HttpCallback.h"
 #include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
@@ -99,8 +98,7 @@ bool AuthorizeRequest::authorize() {
     IAuth* auth = provider()->auth();
     std::stringstream input, output;
     HttpRequest::Pointer r = auth->refreshTokenRequest(input);
-    if (HttpRequest::isSuccess(
-            r->send(input, output, nullptr, httpCallback()))) {
+    if (HttpRequest::isSuccess(send(r.get(), input, output, nullptr))) {
       auth->set_access_token(auth->refreshTokenResponse(output));
       return true;
     }
@@ -126,8 +124,7 @@ bool AuthorizeRequest::authorize() {
       std::stringstream input, output;
       std::stringstream error_stream;
       HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
-      if (HttpRequest::isSuccess(
-              r->send(input, output, &error_stream, httpCallback()))) {
+      if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
         auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
         return true;
       } else {

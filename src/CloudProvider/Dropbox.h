@@ -78,10 +78,7 @@ class Dropbox : public CloudProvider {
     IItem::Pointer result();
 
    private:
-    int makeTemporaryLinkRequest();
-
     std::shared_future<IItem::Pointer> result_;
-    IItem::Pointer item_;
   };
 };
 

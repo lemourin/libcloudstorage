@@ -24,7 +24,6 @@
 #include "GetItemRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "HttpCallback.h"
 #include "Utility/HttpRequest.h"
 
 namespace cloudstorage {

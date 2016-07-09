@@ -47,11 +47,7 @@ class Request {
   virtual void cancel();
 
  protected:
-  std::unique_ptr<HttpCallback> httpCallback(
-      ProgressFunction progress_download = nullptr,
-      ProgressFunction progress_upload = nullptr);
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
-  bool reauthorize();
   virtual void error(int code, const std::string& description);
 
   void set_cancelled(bool e) { is_cancelled_ = e; }
@@ -66,6 +62,11 @@ class Request {
            ProgressFunction upload = nullptr);
 
  private:
+  std::unique_ptr<HttpCallback> httpCallback(
+      ProgressFunction progress_download = nullptr,
+      ProgressFunction progress_upload = nullptr);
+  bool reauthorize();
+
   std::mutex mutex_;
   std::shared_ptr<AuthorizeRequest> authorize_request_;
   std::shared_ptr<CloudProvider> provider_;
