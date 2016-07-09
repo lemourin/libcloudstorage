@@ -49,8 +49,10 @@ Item {
             browser.url = url;
         }
         onCloseBrowser: {
-            browserView.visible = false;
-            cloudView.focus = true;
+            if (browserView.visible) {
+                browserView.visible = false;
+                cloudView.focus = true;
+            }
         }
         onAddedItem: {
             directory.visible = true;

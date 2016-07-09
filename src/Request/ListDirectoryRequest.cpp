@@ -39,12 +39,12 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
     std::vector<IItem::Pointer> result;
     std::string page_token;
     do {
-      std::stringstream output_stream, error_stream;
+      std::stringstream output_stream;
       int code = sendRequest(
           [this, &page_token](std::ostream& i) {
             return provider()->listDirectoryRequest(*directory_, page_token, i);
           },
-          output_stream, &error_stream);
+          output_stream);
       if (HttpRequest::isSuccess(code)) {
         page_token = "";
         for (auto& t :

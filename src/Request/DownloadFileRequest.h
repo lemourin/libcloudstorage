@@ -61,9 +61,10 @@ class DownloadFileRequest : public Request {
 
   void finish();
 
- private:
-  int download(std::ostream& error_stream);
+ protected:
+  void error(int code, const std::string& description);
 
+ private:
   std::future<void> function_;
   IItem::Pointer file_;
   DownloadStreamWrapper stream_wrapper_;

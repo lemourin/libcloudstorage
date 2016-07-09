@@ -38,6 +38,8 @@ class HttpCallback;
 
 class Request {
  public:
+  using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
+
   Request(std::shared_ptr<CloudProvider>);
   virtual ~Request() = default;
 
@@ -46,8 +48,8 @@ class Request {
 
  protected:
   std::unique_ptr<HttpCallback> httpCallback(
-      std::function<void(uint32_t, uint32_t)> progress_download = nullptr,
-      std::function<void(uint32_t, uint32_t)> progress_upload = nullptr);
+      ProgressFunction progress_download = nullptr,
+      ProgressFunction progress_upload = nullptr);
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   bool reauthorize();
   virtual void error(int code, const std::string& description);
@@ -57,9 +59,11 @@ class Request {
 
   int sendRequest(
       std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
-      std::ostream& output, std::ostream* error);
+      std::ostream& output, ProgressFunction download = nullptr,
+      ProgressFunction upload = nullptr);
   int send(HttpRequest*, std::istream& input, std::ostream& output,
-           std::ostream* error);
+           std::ostream* error, ProgressFunction download = nullptr,
+           ProgressFunction upload = nullptr);
 
  private:
   std::mutex mutex_;

@@ -65,17 +65,21 @@ void Request::error(int, const std::string&) {}
 
 int Request::sendRequest(
     std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
-    std::ostream& output, std::ostream* error) {
-  std::stringstream input;
+    std::ostream& output, ProgressFunction download, ProgressFunction upload) {
+  std::stringstream input, temp_error;
   auto request = factory(input);
-  int code = send(request.get(), input, output, nullptr);
+  int code = send(request.get(), input, output, &temp_error, download, upload);
   if (!HttpRequest::isSuccess(code)) {
     if (code != HttpRequest::Aborted) {
       if (!reauthorize()) {
         this->error(code, "Authorization error.");
       } else {
         request = factory(input);
-        code = send(request.get(), input, output, error);
+        std::stringstream error_stream;
+        code =
+            send(request.get(), input, output, &error_stream, download, upload);
+        if (!HttpRequest::isSuccess(code))
+          this->error(code, error_stream.str());
       }
     } else {
       return code;
@@ -85,11 +89,12 @@ int Request::sendRequest(
 }
 
 int Request::send(HttpRequest* request, std::istream& input,
-                  std::ostream& output, std::ostream* error) {
+                  std::ostream& output, std::ostream* error,
+                  ProgressFunction download, ProgressFunction upload) {
   provider()->authorizeRequest(*request);
   int code;
   try {
-    code = request->send(input, output, error, httpCallback());
+    code = request->send(input, output, error, httpCallback(download, upload));
   } catch (const HttpException& e) {
     code = e.code();
   }

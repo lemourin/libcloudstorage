@@ -40,24 +40,13 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)),
       request_factory_(request_factory) {
   function_ = std::async(std::launch::async, [this]() {
-    try {
-      std::stringstream error_stream;
-      int code = download(error_stream);
-      if (HttpRequest::isAuthorizationError(code)) {
-        if (!reauthorize()) {
-          callback_->error("Failed to authorize.");
-          return;
-        }
-        code = download(error_stream);
-      }
-      if (HttpRequest::isClientError(code))
-        callback_->error("HTTP code " + std::to_string(code) + ": " +
-                         error_stream.str());
-      else if (HttpRequest::isSuccess(code))
-        callback_->done();
-    } catch (const HttpException& e) {
-      callback_->error(e.what());
-    }
+    std::ostream response_stream(&stream_wrapper_);
+    int code = sendRequest(
+        [this](std::ostream& input) { return request_factory_(*file_, input); },
+        response_stream,
+        std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
+                  std::placeholders::_1, std::placeholders::_2));
+    if (HttpRequest::isSuccess(code)) callback_->done();
   });
 }
 
@@ -67,16 +56,8 @@ void DownloadFileRequest::finish() {
   if (function_.valid()) function_.wait();
 }
 
-int DownloadFileRequest::download(std::ostream& error_stream) {
-  std::stringstream stream;
-  HttpRequest::Pointer request = request_factory_(*file_, stream);
-  provider()->authorizeRequest(*request);
-  std::ostream response_stream(&stream_wrapper_);
-  return request->send(
-      stream, response_stream, &error_stream,
-      httpCallback(std::bind(&DownloadFileRequest::ICallback::progress,
-                             callback_.get(), std::placeholders::_1,
-                             std::placeholders::_2)));
+void DownloadFileRequest::error(int code, const std::string& description) {
+  if (callback_) callback_->error(std::to_string(code) + ": " + description);
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(
