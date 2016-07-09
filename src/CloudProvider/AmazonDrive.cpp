@@ -52,8 +52,14 @@ cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
 }
 
 HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
-    const IItem& i, std::ostream& input_stream) const {
+    const IItem& i, const std::string& page_token,
+    std::ostream& input_stream) const {
   std::lock_guard<std::mutex> lock(auth_mutex());
+  if (!page_token.empty()) {
+    return make_unique<HttpRequest>(metadata_url_ + "nodes/" + i.id() +
+                                        "/children?startToken=" + page_token,
+                                    HttpRequest::Type::GET);
+  }
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       metadata_url_ + "nodes/" + i.id() + "/children?asset=ALL&tempLink=true",
       HttpRequest::Type::GET);
@@ -82,8 +88,7 @@ HttpRequest::Pointer AmazonDrive::getThumbnailRequest(const IItem& i,
 }
 
 std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request,
-    std::ostream&) const {
+    std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
 
@@ -94,18 +99,8 @@ std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
     item->set_url(v["tempLink"].asString());
     result.push_back(std::move(item));
   }
-  if (response.isMember("nextToken")) {
-    std::lock_guard<std::mutex> lock(auth_mutex());
-    std::string url = next_page_request->url();
-    int node_pos = url.find("nodes/");
-    std::string id(
-        url.begin() + node_pos + strlen("nodes/"),
-        url.begin() + url.find_first_of('/', node_pos + strlen("nodes/")));
-    next_page_request->set_url(metadata_url_ + "nodes/" + id +
-                               "/children?startToken=" +
-                               response["nextToken"].asString());
-  } else
-    next_page_request = nullptr;
+  if (response.isMember("nextToken"))
+    next_page_token = response["nextToken"].asString();
 
   return result;
 }

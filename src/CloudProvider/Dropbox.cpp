@@ -47,8 +47,17 @@ GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
-    const IItem& f, std::ostream& input_stream) const {
-  const Item& item = static_cast<const Item&>(f);
+    const IItem& item, const std::string& page_token,
+    std::ostream& input_stream) const {
+  if (!page_token.empty()) {
+    HttpRequest::Pointer request = make_unique<HttpRequest>(
+        "https://api.dropboxapi.com/2/files/list_folder/continue",
+        HttpRequest::Type::POST);
+    Json::Value input;
+    input["cursor"] = page_token;
+    input_stream << input;
+    return request;
+  }
   HttpRequest::Pointer request =
       make_unique<HttpRequest>("https://api.dropboxapi.com/2/files/list_folder",
                                HttpRequest::Type::POST);
@@ -104,8 +113,7 @@ HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request,
-    std::ostream& next_page_request_input) const {
+    std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
 
@@ -124,14 +132,8 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     result.push_back(make_unique<Item>(v["name"].asString(),
                                        v["path_display"].asString(), type));
   }
-  if (!response["has_more"].asBool())
-    next_page_request = nullptr;
-  else {
-    next_page_request->set_url(
-        "https://api.dropboxapi.com/2/files/list_folder/continue");
-    Json::Value input;
-    input["cursor"] = response["cursor"];
-    next_page_request_input << input;
+  if (response["has_more"].asBool()) {
+    next_page_token = response["cursor"].asString();
   }
   return result;
 }
@@ -175,7 +177,7 @@ HttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(
   Dropbox dropbox;
   dropbox.auth()->set_access_token(make_unique<Token>(*access_token()));
   HttpRequest::Pointer r =
-      dropbox.listDirectoryRequest(*dropbox.rootDirectory(), input_data);
+      dropbox.listDirectoryRequest(*dropbox.rootDirectory(), "", input_data);
   dropbox.authorizeRequest(*r);
   return r;
 }

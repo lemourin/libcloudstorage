@@ -37,39 +37,23 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)) {
   result_ = std::async(std::launch::async, [this]() {
     std::vector<IItem::Pointer> result;
-    std::stringstream input_stream;
-    HttpRequest::Pointer r =
-        provider()->listDirectoryRequest(*directory_, input_stream);
-    try {
-      do {
-        std::stringstream output_stream;
-        std::string backup_data = input_stream.str();
-        provider()->authorizeRequest(*r);
-        int code =
-            r->send(input_stream, output_stream, nullptr, httpCallback());
-        if (HttpRequest::isSuccess(code)) {
-          for (auto& t : provider()->listDirectoryResponse(output_stream, r,
-                                                           input_stream)) {
-            if (callback_) callback_->receivedItem(t);
-            result.push_back(t);
-          }
-        } else if (HttpRequest::isAuthorizationError(code)) {
-          if (!reauthorize()) {
-            if (callback_) callback_->error("Failed to authorize.");
-            return result;
-          }
-          input_stream = std::stringstream();
-          input_stream << backup_data;
-        } else if (HttpRequest::isClientError(code)) {
-          if (callback_) callback_->error(output_stream.str());
-          return result;
-        } else
-          break;
-      } while (r);
-    } catch (const HttpException& e) {
-      if (callback_) callback_->error(e.what());
-      return result;
-    }
+    std::string page_token;
+    do {
+      std::stringstream output_stream, error_stream;
+      int code = sendRequest(
+          [this, &page_token](std::ostream& i) {
+            return provider()->listDirectoryRequest(*directory_, page_token, i);
+          },
+          output_stream, &error_stream);
+      if (HttpRequest::isSuccess(code)) {
+        page_token = "";
+        for (auto& t :
+             provider()->listDirectoryResponse(output_stream, page_token)) {
+          if (callback_) callback_->receivedItem(t);
+          result.push_back(t);
+        }
+      }
+    } while (!page_token.empty());
 
     if (callback_) callback_->done(result);
     return result;
@@ -86,6 +70,10 @@ std::vector<IItem::Pointer> ListDirectoryRequest::result() {
   std::shared_future<std::vector<IItem::Pointer>> future = result_;
   if (!future.valid()) throw std::logic_error("Future invalid.");
   return future.get();
+}
+
+void ListDirectoryRequest::error(int code, const std::string& description) {
+  if (callback_) callback_->error(std::to_string(code) + ": " + description);
 }
 
 }  // namespace cloudstorage

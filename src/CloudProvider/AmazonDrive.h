@@ -39,6 +39,7 @@ class AmazonDrive : public CloudProvider {
 
  private:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                            const std::string& page_token,
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                          const std::string& filename,
@@ -50,8 +51,7 @@ class AmazonDrive : public CloudProvider {
                                            std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, HttpRequest::Pointer& next_page_request,
-      std::ostream&) const;
+      std::istream&, std::string& page_token) const;
 
   IItem::FileType kindToType(const std::string& type) const;
 

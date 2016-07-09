@@ -51,6 +51,9 @@ class ListDirectoryRequest : public Request {
   void finish();
   std::vector<IItem::Pointer> result();
 
+ protected:
+  void error(int code, const std::string& description);
+
  private:
   friend class GetItemRequest;
 

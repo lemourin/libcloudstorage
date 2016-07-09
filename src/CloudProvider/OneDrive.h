@@ -40,6 +40,7 @@ class OneDrive : public CloudProvider {
 
  protected:
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                            const std::string& page_token,
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                          const std::string& filename,
@@ -49,8 +50,7 @@ class OneDrive : public CloudProvider {
                                            std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(std::istream&,
-                                                    HttpRequest::Pointer&,
-                                                    std::ostream&) const;
+                                                    std::string&) const;
 
  private:
   class Auth : public cloudstorage::Auth {

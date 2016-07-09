@@ -69,7 +69,8 @@ class CloudProvider : public ICloudProvider,
       IItem::Pointer, DownloadFileRequest::ICallback::Pointer);
 
   virtual HttpRequest::Pointer listDirectoryRequest(
-      const IItem&, std::ostream& input_stream) const = 0;
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const = 0;
   virtual HttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename, std::istream& stream,
       std::ostream& input_stream) const = 0;
@@ -79,8 +80,7 @@ class CloudProvider : public ICloudProvider,
       const IItem&, std::ostream& input_stream) const = 0;
 
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream& response, HttpRequest::Pointer& next_page_request,
-      std::ostream& next_page_request_input) const = 0;
+      std::istream& response, std::string& next_page_token) const = 0;
 
   virtual void authorizeRequest(HttpRequest&);
 

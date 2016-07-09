@@ -37,8 +37,8 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
-HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
-                                                       std::ostream&) const {
+HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
+    const IItem& f, const std::string& page_token, std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::GET);
@@ -47,6 +47,7 @@ HttpRequest::Pointer GoogleDrive::listDirectoryRequest(const IItem& f,
                         "files(id,name,thumbnailLink,trashed,webContentLink,"
                         "mimeType,iconLink),kind,"
                         "nextPageToken");
+  if (!page_token.empty()) request->setParameter("pageToken", page_token);
   return request;
 }
 
@@ -94,8 +95,7 @@ HttpRequest::Pointer GoogleDrive::getThumbnailRequest(const IItem& f,
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request,
-    std::ostream&) const {
+    std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
@@ -115,10 +115,7 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   }
 
   if (response.isMember("nextPageToken"))
-    next_page_request->setParameter("pageToken",
-                                    response["nextPageToken"].asString());
-  else
-    next_page_request = nullptr;
+    next_page_token = response["nextPageToken"].asString();
   return result;
 }
 

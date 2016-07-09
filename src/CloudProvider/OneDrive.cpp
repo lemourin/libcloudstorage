@@ -44,14 +44,16 @@ HttpRequest::Pointer OneDrive::getThumbnailRequest(const IItem& f,
   return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
 }
 
-HttpRequest::Pointer OneDrive::listDirectoryRequest(const IItem& f,
-                                                    std::ostream&) const {
-  const Item& item = static_cast<const Item&>(f);
+HttpRequest::Pointer OneDrive::listDirectoryRequest(
+    const IItem& item, const std::string& page_token, std::ostream&) const {
+  if (!page_token.empty())
+    return make_unique<HttpRequest>(page_token, HttpRequest::Type::GET);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
       HttpRequest::Type::GET);
   request->setParameter(
       "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
+
   return request;
 }
 
@@ -93,8 +95,7 @@ HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
 }
 
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
-    std::istream& stream, HttpRequest::Pointer& next_page_request,
-    std::ostream&) const {
+    std::istream& stream, std::string& next_page_token) const {
   std::vector<IItem::Pointer> result;
   Json::Value response;
   stream >> response;
@@ -116,11 +117,8 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
         "/thumbnails/0/small/content?access_token=" + access_token());
     result.push_back(std::move(item));
   }
-  if (response.isMember("@odata.nextLink")) {
-    next_page_request->resetParameters();
-    next_page_request->set_url(response["@odata.nextLink"].asString());
-  } else
-    next_page_request = nullptr;
+  if (response.isMember("@odata.nextLink"))
+    next_page_token = response["@odata.nextLink"].asString();
   return result;
 }
 
