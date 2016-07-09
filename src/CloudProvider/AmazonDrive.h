@@ -52,13 +52,14 @@ class AmazonDrive : public CloudProvider {
                                          std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer getThumbnailRequest(const IItem&,
-                                           std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& page_token) const;
 
-  IItem::FileType kindToType(const std::string& type) const;
+  IItem::FileType type(const Json::Value&) const;
+
+  std::string metadata_url() const;
+  std::string content_url() const;
 
   class Auth : public cloudstorage::Auth {
    public:

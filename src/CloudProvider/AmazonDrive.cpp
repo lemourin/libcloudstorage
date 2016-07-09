@@ -29,6 +29,8 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+const int THUMBNAIL_SIZE = 64;
+
 namespace cloudstorage {
 
 AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
@@ -45,8 +47,8 @@ void AmazonDrive::initialize(const std::string& token,
 }
 
 ICloudProvider::Hints AmazonDrive::hints() const {
-  Hints result = {{"metadata_url", metadata_url_},
-                  {"content_url", content_url_}};
+  Hints result = {{"metadata_url", metadata_url()},
+                  {"content_url", content_url()}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
@@ -64,18 +66,17 @@ cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
 
 HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
     const IItem& i, const std::string& page_token, std::ostream&) const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
   if (i.id() == rootDirectory()->id()) {
     return make_unique<HttpRequest>(
-        metadata_url_ + "/nodes?filters=isRoot:true", HttpRequest::Type::GET);
+        metadata_url() + "/nodes?filters=isRoot:true", HttpRequest::Type::GET);
   }
   if (!page_token.empty()) {
-    return make_unique<HttpRequest>(metadata_url_ + "nodes/" + i.id() +
+    return make_unique<HttpRequest>(metadata_url() + "nodes/" + i.id() +
                                         "/children?startToken=" + page_token,
                                     HttpRequest::Type::GET);
   }
   HttpRequest::Pointer request = make_unique<HttpRequest>(
-      metadata_url_ + "nodes/" + i.id() + "/children?asset=ALL&tempLink=true",
+      metadata_url() + "nodes/" + i.id() + "/children?asset=ALL&tempLink=true",
       HttpRequest::Type::GET);
   return request;
 }
@@ -83,19 +84,37 @@ HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
 HttpRequest::Pointer AmazonDrive::uploadFileRequest(
     const IItem& directory, const std::string& filename, std::istream& stream,
     std::ostream& input_stream) const {
-  // TODO
-  return nullptr;
+  if (directory.id() == rootDirectory()->id()) return nullptr;
+  const std::string separator = "Thnlg1ecwyUJHyhYYGrQ";
+  HttpRequest::Pointer request = make_unique<HttpRequest>(
+      content_url() + "/nodes", HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type",
+                              "multipart/form-data; boundary=" + separator);
+  Json::Value json;
+  json["name"] = filename;
+  json["kind"] = "FILE";
+  json["parents"].append(directory.id());
+  std::string json_data = Json::FastWriter().write(json);
+  json_data.pop_back();
+  input_stream
+      << "--" << separator << "\r\n"
+      << "Content-Disposition: form-data; name=\"metadata\"\r\n\r\n"
+      << json_data << "\r\n"
+      << "--" << separator << "\r\n"
+      << "Content-Disposition: form-data; name=\"content\"; filename=\""
+      << filename << "\"\r\n"
+      << "Content-Type: application/octet-stream\r\n\r\n"
+      << stream.rdbuf() << "\r\n"
+      << "\r\n"
+      << "--" << separator << "--\r\n";
+  return request;
 }
 
-HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& i,
+HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& item,
                                                       std::ostream&) const {
-  const Item& item = static_cast<const Item&>(i);
-  return make_unique<HttpRequest>(item.url(), HttpRequest::Type::GET);
-}
-
-HttpRequest::Pointer AmazonDrive::getThumbnailRequest(const IItem&,
-                                                      std::ostream&) const {
-  return nullptr;
+  return make_unique<HttpRequest>(
+      content_url() + "/nodes/" + item.id() + "/content",
+      HttpRequest::Type::GET);
 }
 
 std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
@@ -106,9 +125,15 @@ std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["data"]) {
     std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-    auto item = make_unique<Item>(name, v["id"].asString(),
-                                  kindToType(v["kind"].asString()));
+    auto item = make_unique<Item>(name, v["id"].asString(), type(v));
     item->set_url(v["tempLink"].asString());
+    if (item->type() == IItem::FileType::Image)
+      item->set_thumbnail_url(item->url() + "?viewBox=" +
+                              std::to_string(THUMBNAIL_SIZE));
+    for (const Json::Value& asset : v["assets"])
+      if (type(asset) == IItem::FileType::Image)
+        item->set_thumbnail_url(asset["tempLink"].asString() + "?viewBox=" +
+                                std::to_string(THUMBNAIL_SIZE));
     result.push_back(std::move(item));
   }
   if (response.isMember("nextToken"))
@@ -117,11 +142,24 @@ std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
   return result;
 }
 
-IItem::FileType AmazonDrive::kindToType(const std::string& type) const {
-  if (type == "FOLDER")
-    return IItem::FileType::Directory;
+IItem::FileType AmazonDrive::type(const Json::Value& v) const {
+  if (v["kind"].asString() == "FOLDER") return IItem::FileType::Directory;
+  if (v["contentProperties"].isMember("image"))
+    return IItem::FileType::Image;
+  else if (v["contentProperties"].isMember("video"))
+    return IItem::FileType::Video;
   else
     return IItem::FileType::Unknown;
+}
+
+std::string AmazonDrive::metadata_url() const {
+  std::lock_guard<std::mutex> lock(auth_mutex());
+  return metadata_url_;
+}
+
+std::string AmazonDrive::content_url() const {
+  std::lock_guard<std::mutex> lock(auth_mutex());
+  return content_url_;
 }
 
 AmazonDrive::Auth::Auth() {
