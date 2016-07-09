@@ -43,7 +43,7 @@ class Request {
   Request(std::shared_ptr<CloudProvider>);
   virtual ~Request() = default;
 
-  virtual void finish() = 0;
+  virtual void finish();
   virtual void cancel();
 
  protected:

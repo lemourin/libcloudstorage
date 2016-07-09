@@ -32,6 +32,8 @@ namespace cloudstorage {
 Request::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
+void Request::finish() {}
+
 void Request::cancel() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -68,7 +70,7 @@ int Request::sendRequest(
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
   std::stringstream input, temp_error;
   auto request = factory(input);
-  provider()->authorizeRequest(*request);
+  if (request) provider()->authorizeRequest(*request);
   int code = send(request.get(), input, output, &temp_error, download, upload);
   if (!HttpRequest::isSuccess(code)) {
     if (code != HttpRequest::Aborted) {
@@ -76,7 +78,7 @@ int Request::sendRequest(
         if (!is_cancelled()) this->error(code, "Authorization error.");
       } else {
         request = factory(input);
-        provider()->authorizeRequest(*request);
+        if (request) provider()->authorizeRequest(*request);
         std::stringstream error_stream;
         code =
             send(request.get(), input, output, &error_stream, download, upload);
@@ -93,6 +95,7 @@ int Request::sendRequest(
 int Request::send(HttpRequest* request, std::istream& input,
                   std::ostream& output, std::ostream* error,
                   ProgressFunction download, ProgressFunction upload) {
+  if (!request) return HttpRequest::Aborted;
   int code;
   try {
     code = request->send(input, output, error, httpCallback(download, upload));

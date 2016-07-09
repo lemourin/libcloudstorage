@@ -24,7 +24,6 @@
 #include "AmazonDrive.h"
 
 #include <jsoncpp/json/json.h>
-#include <cstring>
 
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
@@ -34,16 +33,29 @@ namespace cloudstorage {
 
 AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
 
+void AmazonDrive::initialize(const std::string& token,
+                             ICloudProvider::ICallback::Pointer callback,
+                             const ICloudProvider::Hints& hints) {
+  CloudProvider::initialize(token, std::move(callback), hints);
+  std::unique_lock<std::mutex> lock(auth_mutex());
+  setWithHint(hints, "metadata_url",
+              [this](std::string v) { metadata_url_ = v; });
+  setWithHint(hints, "content_url",
+              [this](std::string v) { content_url_ = v; });
+}
+
+ICloudProvider::Hints AmazonDrive::hints() const {
+  Hints result = {{"metadata_url", metadata_url_},
+                  {"content_url", content_url_}};
+  auto t = CloudProvider::hints();
+  result.insert(t.begin(), t.end());
+  return result;
+}
+
 std::string AmazonDrive::name() const { return "amazon"; }
 
 IItem::Pointer AmazonDrive::rootDirectory() const {
-  std::unique_lock<std::mutex> lock(auth_mutex());
-  if (root_id_.empty()) {
-    lock.unlock();
-    const_cast<AmazonDrive*>(this)->authorizeAsync()->finish();
-    lock.lock();
-  }
-  return make_unique<Item>("/", root_id_, IItem::FileType::Directory);
+  return make_unique<Item>("root", "root", IItem::FileType::Directory);
 }
 
 cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
@@ -51,9 +63,12 @@ cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
 }
 
 HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
-    const IItem& i, const std::string& page_token,
-    std::ostream& input_stream) const {
+    const IItem& i, const std::string& page_token, std::ostream&) const {
   std::lock_guard<std::mutex> lock(auth_mutex());
+  if (i.id() == rootDirectory()->id()) {
+    return make_unique<HttpRequest>(
+        metadata_url_ + "/nodes?filters=isRoot:true", HttpRequest::Type::GET);
+  }
   if (!page_token.empty()) {
     return make_unique<HttpRequest>(metadata_url_ + "nodes/" + i.id() +
                                         "/children?startToken=" + page_token,
@@ -78,12 +93,9 @@ HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& i,
   return make_unique<HttpRequest>(item.url(), HttpRequest::Type::GET);
 }
 
-HttpRequest::Pointer AmazonDrive::getThumbnailRequest(const IItem& i,
+HttpRequest::Pointer AmazonDrive::getThumbnailRequest(const IItem&,
                                                       std::ostream&) const {
-  const Item& item = static_cast<const Item&>(i);
-  HttpRequest::Pointer request =
-      make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
-  return request;
+  return nullptr;
 }
 
 std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
@@ -93,7 +105,8 @@ std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
 
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["data"]) {
-    auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(),
+    std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
+    auto item = make_unique<Item>(name, v["id"].asString(),
                                   kindToType(v["kind"].asString()));
     item->set_url(v["tempLink"].asString());
     result.push_back(std::move(item));
@@ -180,7 +193,8 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   std::stringstream input, output;
   int code = send(&request, input, output, nullptr);
   if (!HttpRequest::isSuccess(code)) {
-    provider()->callback()->error(*provider(), "Couldn't obtain endpoints.");
+    if (!is_cancelled())
+      provider()->callback()->error(*provider(), "Couldn't obtain endpoints.");
     return false;
   }
   Json::Value response;
@@ -188,18 +202,6 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   auto drive = std::dynamic_pointer_cast<AmazonDrive>(provider());
   drive->metadata_url_ = response["metadataUrl"].asString();
   drive->content_url_ = response["contentUrl"].asString();
-
-  input = std::stringstream();
-  output = std::stringstream();
-  request.set_url(drive->metadata_url_ + "/nodes?filters=isRoot:true");
-  code = send(&request, input, output, nullptr);
-  if (!HttpRequest::isSuccess(code)) {
-    provider()->callback()->error(*provider(),
-                                  "Couldn't obtain root folder id.");
-    return false;
-  }
-  output >> response;
-  drive->root_id_ = response["data"][0]["id"].asString();
   return true;
 }
 

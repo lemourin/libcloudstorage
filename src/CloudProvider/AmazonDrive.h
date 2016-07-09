@@ -31,6 +31,11 @@ namespace cloudstorage {
 class AmazonDrive : public CloudProvider {
  public:
   AmazonDrive();
+
+  void initialize(const std::string& token, ICallback::Pointer,
+                  const Hints& hints);
+
+  Hints hints() const;
   std::string name() const;
   IItem::Pointer rootDirectory() const;
 
@@ -79,7 +84,6 @@ class AmazonDrive : public CloudProvider {
 
   std::string metadata_url_;
   std::string content_url_;
-  std::string root_id_;
 };
 
 }  // namespace cloudstorage
