@@ -41,12 +41,19 @@ void CloudProvider::initialize(const std::string& token,
                                const Hints& hints) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   callback_ = std::move(callback);
+
   auto t = auth()->fromTokenString(token);
-  if (!hints.access_token_.empty()) t->token_ = hints.access_token_;
+  setWithHint(hints, "access_token", [&t](std::string v) { t->token_ = v; });
   auth()->set_access_token(std::move(t));
-  if (!hints.client_id_.empty()) auth()->set_client_id(hints.client_id_);
-  if (!hints.client_secret_.empty())
-    auth()->set_client_secret(hints.client_secret_);
+
+  setWithHint(hints, "client_id",
+              [this](std::string v) { auth()->set_client_id(v); });
+  setWithHint(hints, "client_secret",
+              [this](std::string v) { auth()->set_client_secret(v); });
+}
+
+ICloudProvider::Hints CloudProvider::hints() const {
+  return {{"access_token", access_token()}};
 }
 
 std::string CloudProvider::access_token() const {
@@ -117,6 +124,13 @@ AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
 }
 
 std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
+
+void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
+                                const std::string& name,
+                                std::function<void(std::string)> f) const {
+  auto it = hints.find(name);
+  if (it != hints.end()) f(it->second);
+}
 
 DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, DownloadFileRequest::ICallback::Pointer callback) {

@@ -46,6 +46,7 @@ class CloudProvider : public ICloudProvider,
   void initialize(const std::string& token, ICallback::Pointer,
                   const Hints& hints);
 
+  Hints hints() const;
   std::string access_token() const;
   IAuth* auth() const;
 
@@ -88,6 +89,8 @@ class CloudProvider : public ICloudProvider,
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
   std::mutex& auth_mutex() const;
+  void setWithHint(const Hints& hints, const std::string& name,
+                   std::function<void(std::string)>) const;
 
  private:
   friend class Request;
