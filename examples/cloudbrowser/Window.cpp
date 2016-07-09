@@ -204,9 +204,8 @@ bool Window::goBack() {
 void Window::play(ItemModel* item) {
   stop();
   item_data_request_ = cloud_provider_->getItemDataAsync(
-      item->item(), [this](IItem::Pointer item) {
-        emit runPlayerFromUrl(item->url().c_str());
-      });
+      item->item()->id(),
+      [this](IItem::Pointer i) { emit runPlayerFromUrl(i->url().c_str()); });
 }
 
 void Window::stop() {
