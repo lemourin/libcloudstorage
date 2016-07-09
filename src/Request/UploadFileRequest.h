@@ -51,6 +51,9 @@ class UploadFileRequest : public Request {
 
   void finish();
 
+ protected:
+  void error(int code, const std::string& description);
+
  private:
   class UploadStreamWrapper : public std::streambuf {
    public:
@@ -63,8 +66,6 @@ class UploadFileRequest : public Request {
     char buffer_[BUFFER_SIZE];
     UploadFileRequest::ICallback::Pointer callback_;
   };
-
-  int upload(std::ostream& error_stream);
 
   std::future<void> function_;
   IItem::Pointer directory_;

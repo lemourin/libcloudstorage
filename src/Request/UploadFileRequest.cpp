@@ -39,24 +39,18 @@ UploadFileRequest::UploadFileRequest(
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
   function_ = std::async(std::launch::async, [this]() {
-    try {
-      std::stringstream error_stream;
-      int code = upload(error_stream);
-      if (HttpRequest::isAuthorizationError(code)) {
-        stream_wrapper_.callback_->reset();
-        if (!reauthorize()) {
-          stream_wrapper_.callback_->error("Failed to authorize.");
-          return;
-        }
-        code = upload(error_stream);
-      }
-      if (HttpRequest::isClientError(code))
-        stream_wrapper_.callback_->error(error_stream.str());
-      else if (HttpRequest::isSuccess(code))
-        stream_wrapper_.callback_->done();
-    } catch (const HttpException& e) {
-      stream_wrapper_.callback_->error(e.what());
-    }
+    std::stringstream response_stream;
+    int code = sendRequest(
+        [this](std::ostream& input) {
+          stream_wrapper_.callback_->reset();
+          std::istream stream(&stream_wrapper_);
+          return provider()->uploadFileRequest(*directory_, filename_, stream,
+                                               input);
+        },
+        response_stream, nullptr,
+        std::bind(&ICallback::progress, stream_wrapper_.callback_.get(),
+                  std::placeholders::_1, std::placeholders::_2));
+    if (HttpRequest::isSuccess(code)) stream_wrapper_.callback_->done();
   });
 }
 
@@ -66,19 +60,9 @@ void UploadFileRequest::finish() {
   if (function_.valid()) function_.get();
 }
 
-int UploadFileRequest::upload(std::ostream& error_stream) {
-  std::istream upload_data_stream(&stream_wrapper_);
-  std::stringstream request_data;
-  HttpRequest::Pointer request = provider()->uploadFileRequest(
-      *directory_, filename_, upload_data_stream, request_data);
-  provider()->authorizeRequest(*request);
-  std::stringstream response;
-  return request->send(
-      request_data, response, &error_stream,
-      httpCallback(
-          nullptr,
-          std::bind(&ICallback::progress, stream_wrapper_.callback_.get(),
-                    std::placeholders::_1, std::placeholders::_2)));
+void UploadFileRequest::error(int code, const std::string& description) {
+  if (stream_wrapper_.callback_)
+    stream_wrapper_.callback_->error(std::to_string(code) + ": " + description);
 }
 
 UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
