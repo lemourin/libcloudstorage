@@ -89,8 +89,7 @@ ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
 }
 
 GetItemRequest::Pointer CloudProvider::getItemAsync(
-    const std::string& absolute_path,
-    std::function<void(IItem::Pointer)> callback) {
+    const std::string& absolute_path, GetItemRequest::Callback callback) {
   return make_unique<GetItemRequest>(shared_from_this(), absolute_path,
                                      callback);
 }

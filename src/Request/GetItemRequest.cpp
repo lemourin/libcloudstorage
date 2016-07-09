@@ -29,8 +29,7 @@
 namespace cloudstorage {
 
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
-                               const std::string& path,
-                               std::function<void(IItem::Pointer)> callback)
+                               const std::string& path, Callback callback)
     : Request(p), path_(path), callback_(callback) {
   result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
     if (path_.empty() || path_.front() != '/') {
