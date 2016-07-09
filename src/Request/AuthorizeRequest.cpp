@@ -80,9 +80,9 @@ void AuthorizeRequest::finish() {
 }
 
 void AuthorizeRequest::cancel() {
+  set_cancelled(true);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    set_cancelled(true);
     if (awaiting_authorization_code_) {
       HttpRequest request(provider()->auth()->redirect_uri(),
                           HttpRequest::Type::GET);
@@ -99,15 +99,20 @@ void AuthorizeRequest::cancel() {
 
 bool AuthorizeRequest::authorize() {
   IAuth* auth = provider()->auth();
-  std::stringstream input, output;
+  std::stringstream input, output, error_stream;
   HttpRequest::Pointer r = auth->refreshTokenRequest(input);
-  if (HttpRequest::isSuccess(send(r.get(), input, output, nullptr))) {
+  int code = send(r.get(), input, output, &error_stream);
+  if (HttpRequest::isSuccess(code)) {
     auth->set_access_token(auth->refreshTokenResponse(output));
     return true;
+  } else if (!HttpRequest::isClientError(code)) {
+    if (!is_cancelled())
+      provider()->callback()->error(*provider(), error_stream.str());
+    return false;
   }
 
   if (is_cancelled()) return false;
-  if (provider()->callback_->userConsentRequired(*provider()) ==
+  if (provider()->callback()->userConsentRequired(*provider()) ==
       ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
     {
       std::unique_lock<std::mutex> lock(mutex_);
@@ -131,7 +136,7 @@ bool AuthorizeRequest::authorize() {
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return true;
     } else if (!is_cancelled()) {
-      provider()->callback_->error(*provider(), error_stream.str());
+      provider()->callback()->error(*provider(), error_stream.str());
     }
   }
   return false;
