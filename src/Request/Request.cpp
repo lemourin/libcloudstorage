@@ -68,8 +68,8 @@ int Request::sendRequest(
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
   std::stringstream input, temp_error;
   auto request = factory(input);
-  int code = send(request.get(), input, output, &temp_error, download, upload);
   provider()->authorizeRequest(*request);
+  int code = send(request.get(), input, output, &temp_error, download, upload);
   if (!HttpRequest::isSuccess(code)) {
     if (code != HttpRequest::Aborted) {
       if (!reauthorize()) {
