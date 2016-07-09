@@ -154,6 +154,12 @@ void Window::clearCurrentDirectoryList() {
 
 void Window::saveCloudAccessToken() {
   if (cloud_provider_) {
+    item_data_request_ = nullptr;
+    upload_request_ = nullptr;
+    download_request_ = nullptr;
+    list_directory_request_ = nullptr;
+    item_request_ = nullptr;
+    clearCurrentDirectoryList();
     QSettings settings;
     settings.setValue((cloud_provider_->name() + "_hints").c_str(),
                       toQMap(cloud_provider_->hints()));
