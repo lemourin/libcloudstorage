@@ -181,8 +181,10 @@ void Window::startDirectoryClear(std::function<void()> f) {
   clear_directory_ = std::async(std::launch::async, [this, f]() {
     QObjectList object_list =
         rootContext()->contextProperty("directoryModel").value<QObjectList>();
-    for (QObject* object : object_list)
-      static_cast<ItemModel*>(object)->thumbnail_request_->cancel();
+    for (QObject* object : object_list) {
+      auto item = static_cast<ItemModel*>(object);
+      if (item->thumbnail_request_) item->thumbnail_request_->cancel();
+    }
     f();
   });
 }
