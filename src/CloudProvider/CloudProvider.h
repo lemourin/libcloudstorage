@@ -24,7 +24,6 @@
 #ifndef CLOUDPROVIDER_H
 #define CLOUDPROVIDER_H
 
-#include <future>
 #include <mutex>
 #include <sstream>
 #include <thread>

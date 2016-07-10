@@ -37,7 +37,6 @@ class GetItemRequest : public Request {
                  Callback callback);
   ~GetItemRequest();
 
-  void finish();
   void cancel();
   IItem::Pointer result();
 
@@ -47,7 +46,7 @@ class GetItemRequest : public Request {
 
   std::mutex mutex_;
   ListDirectoryRequest::Pointer current_request_;
-  std::shared_future<IItem::Pointer> result_;
+  IItem::Pointer result_;
   std::string path_;
   Callback callback_;
 };

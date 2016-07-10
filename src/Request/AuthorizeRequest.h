@@ -36,7 +36,6 @@ class AuthorizeRequest : public Request {
   ~AuthorizeRequest();
 
   bool result();
-  void finish();
   void cancel();
 
  protected:
@@ -45,7 +44,7 @@ class AuthorizeRequest : public Request {
  private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;
-  std::shared_future<bool> function_;
+  bool success_;
 };
 
 }  // namespace cloudstorage

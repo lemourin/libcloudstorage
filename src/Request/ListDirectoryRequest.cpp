@@ -34,8 +34,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
     : Request(p),
       directory_(std::move(directory)),
       callback_(std::move(callback)) {
-  result_ = std::async(std::launch::async, [this]() {
-    std::vector<IItem::Pointer> result;
+  set_resolver([this](Request*) {
     std::string page_token;
     do {
       std::stringstream output_stream;
@@ -49,26 +48,20 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {
           if (callback_) callback_->receivedItem(t);
-          result.push_back(t);
+          result_.push_back(t);
         }
       }
     } while (!page_token.empty());
 
-    if (callback_) callback_->done(result);
-    return result;
+    if (callback_) callback_->done(result_);
   });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
-void ListDirectoryRequest::finish() {
-  if (result_.valid()) result_.get();
-}
-
 std::vector<IItem::Pointer> ListDirectoryRequest::result() {
-  std::shared_future<std::vector<IItem::Pointer>> future = result_;
-  if (!future.valid()) throw std::logic_error("Future invalid.");
-  return future.get();
+  finish();
+  return result_;
 }
 
 void ListDirectoryRequest::error(int code, const std::string& description) {

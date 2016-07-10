@@ -31,10 +31,10 @@ namespace cloudstorage {
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
     : Request(p), path_(path), callback_(callback) {
-  result_ = std::async(std::launch::async, [this]() -> IItem::Pointer {
+  set_resolver([this](Request*) {
     if (path_.empty() || path_.front() != '/') {
       if (callback_) callback_(nullptr);
-      return nullptr;
+      return;
     }
     IItem::Pointer node = provider()->rootDirectory();
     std::stringstream stream(path_.substr(1));
@@ -44,40 +44,32 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
         node = nullptr;
         break;
       }
-      std::shared_future<std::vector<IItem::Pointer>> current_directory;
       {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (is_cancelled()) return nullptr;
+        if (is_cancelled()) return;
         current_request_ =
             provider()->listDirectoryAsync(std::move(node), nullptr);
-        current_directory = current_request_->result_;
       }
-      node = getItem(current_directory.get(), token);
+      node = getItem(current_request_->result(), token);
     }
     if (callback_) callback_(node);
-    return node;
   });
 }
 
 GetItemRequest::~GetItemRequest() { cancel(); }
 
-void GetItemRequest::finish() {
-  if (result_.valid()) result_.get();
-}
-
 void GetItemRequest::cancel() {
+  set_cancelled(true);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    set_cancelled(true);
     if (current_request_) current_request_->cancel();
   }
   Request::cancel();
 }
 
 IItem::Pointer GetItemRequest::result() {
-  std::shared_future<IItem::Pointer> future = result_;
-  if (!future.valid()) throw std::logic_error("Future invalid.");
-  return future.get();
+  finish();
+  return result_;
 }
 
 IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,

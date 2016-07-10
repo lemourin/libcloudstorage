@@ -38,9 +38,12 @@ class HttpCallback;
 class Request {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
+  using Resolver = std::function<void(Request*)>;
 
   Request(std::shared_ptr<CloudProvider>);
   virtual ~Request() = default;
+
+  void set_resolver(Resolver);
 
   virtual void finish();
   virtual void cancel();
@@ -69,6 +72,7 @@ class Request {
 
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
+  std::shared_future<void> function_;
 };
 
 }  // namespace cloudstorage

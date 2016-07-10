@@ -33,14 +33,12 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        Factory f)
     : Request(p), id_(id), callback_(callback) {
   if (f)
-    function_ = std::async(std::launch::async, [this, f]() {
-      auto item = f(this);
-      callback_(item);
-      return item;
+    set_resolver([this, f](Request*) {
+      result_ = f(this);
+      callback_(result_);
     });
   else
-    function_ = std::async(std::launch::async,
-                           std::bind(&GetItemDataRequest::resolve, this));
+    set_resolver([this, f](Request*) { result_ = resolve(this); });
 }
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }
@@ -49,14 +47,9 @@ GetItemDataRequest::Callback GetItemDataRequest::callback() const {
   return callback_;
 }
 
-void GetItemDataRequest::finish() {
-  if (function_.valid()) function_.wait();
-}
-
 IItem::Pointer GetItemDataRequest::result() {
-  std::shared_future<IItem::Pointer> future = function_;
-  if (!future.valid()) throw std::logic_error("Future invalid.");
-  return future.get();
+  finish();
+  return result_;
 }
 
 IItem::Pointer GetItemDataRequest::resolve(GetItemDataRequest* t) {

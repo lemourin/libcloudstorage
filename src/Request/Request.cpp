@@ -34,7 +34,14 @@ namespace cloudstorage {
 Request::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
-void Request::finish() {}
+void Request::set_resolver(Request::Resolver resolver) {
+  function_ = std::async(std::launch::async, std::bind(resolver, this));
+}
+
+void Request::finish() {
+  std::shared_future<void> future = function_;
+  if (future.valid()) future.get();
+}
 
 void Request::cancel() {
   set_cancelled(true);

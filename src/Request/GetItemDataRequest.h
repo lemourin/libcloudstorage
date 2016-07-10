@@ -42,7 +42,6 @@ class GetItemDataRequest : public Request {
 
   Callback callback() const;
 
-  void finish();
   virtual IItem::Pointer result();
 
  protected:
@@ -51,7 +50,7 @@ class GetItemDataRequest : public Request {
  private:
   std::string id_;
   Callback callback_;
-  std::shared_future<IItem::Pointer> function_;
+  IItem::Pointer result_;
 };
 
 }  // namespace cloudstorage

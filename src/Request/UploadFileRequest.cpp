@@ -37,7 +37,7 @@ UploadFileRequest::UploadFileRequest(
       stream_wrapper_(std::move(callback)) {
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
-  function_ = std::async(std::launch::async, [this]() {
+  set_resolver([this](Request*) {
     std::stringstream response_stream;
     int code = sendRequest(
         [this](std::ostream& input) {
@@ -54,10 +54,6 @@ UploadFileRequest::UploadFileRequest(
 }
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }
-
-void UploadFileRequest::finish() {
-  if (function_.valid()) function_.get();
-}
 
 void UploadFileRequest::error(int code, const std::string& description) {
   if (stream_wrapper_.callback_)

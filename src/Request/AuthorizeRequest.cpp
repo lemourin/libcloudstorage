@@ -29,41 +29,34 @@
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
-    : Request(p), awaiting_authorization_code_() {
+    : Request(p), awaiting_authorization_code_(), success_(false) {
   if (!provider()->callback_)
     throw std::logic_error("CloudProvider's callback can't be null.");
-  function_ = std::async(std::launch::async, [this]() {
-    bool ret;
+  set_resolver([this](Request*) {
     {
       std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
-      ret = authorize();
+      success_ = authorize();
     }
     {
       std::unique_lock<std::mutex> current_authorization(
           provider()->current_authorization_mutex_);
       provider()->current_authorization_status_ =
-          ret ? CloudProvider::AuthorizationStatus::Success
-              : CloudProvider::AuthorizationStatus::Fail;
+          success_ ? CloudProvider::AuthorizationStatus::Success
+                   : CloudProvider::AuthorizationStatus::Fail;
     }
     provider()->authorized_.notify_all();
-    if (ret)
+    if (success_)
       provider()->callback_->accepted(*provider());
     else
       provider()->callback_->declined(*provider());
-    return ret;
   });
 }
 
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
 bool AuthorizeRequest::result() {
-  std::shared_future<bool> future = function_;
-  if (!future.valid()) throw std::logic_error("Future invalid.");
-  return future.get();
-}
-
-void AuthorizeRequest::finish() {
-  if (function_.valid()) function_.get();
+  finish();
+  return success_;
 }
 
 void AuthorizeRequest::cancel() {

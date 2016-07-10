@@ -38,7 +38,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                 std::placeholders::_1, std::placeholders::_2)),
       callback_(std::move(callback)),
       request_factory_(request_factory) {
-  function_ = std::async(std::launch::async, [this]() {
+  set_resolver([this](Request*) {
     std::ostream response_stream(&stream_wrapper_);
     int code = sendRequest(
         [this](std::ostream& input) { return request_factory_(*file_, input); },
@@ -50,10 +50,6 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
 }
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
-
-void DownloadFileRequest::finish() {
-  if (function_.valid()) function_.wait();
-}
 
 void DownloadFileRequest::error(int code, const std::string& description) {
   if (callback_) callback_->error(error_string(code, description));

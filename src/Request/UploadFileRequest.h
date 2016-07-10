@@ -49,8 +49,6 @@ class UploadFileRequest : public Request {
                     const std::string& filename, ICallback::Pointer);
   ~UploadFileRequest();
 
-  void finish();
-
  protected:
   void error(int code, const std::string& description);
 
@@ -67,7 +65,6 @@ class UploadFileRequest : public Request {
     UploadFileRequest::ICallback::Pointer callback_;
   };
 
-  std::future<void> function_;
   IItem::Pointer directory_;
   std::string filename_;
   UploadStreamWrapper stream_wrapper_;

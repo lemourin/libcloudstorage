@@ -48,7 +48,6 @@ class ListDirectoryRequest : public Request {
                        ICallback::Pointer);
   ~ListDirectoryRequest();
 
-  void finish();
   std::vector<IItem::Pointer> result();
 
  protected:
@@ -57,7 +56,7 @@ class ListDirectoryRequest : public Request {
  private:
   friend class GetItemRequest;
 
-  std::shared_future<std::vector<IItem::Pointer>> result_;
+  std::vector<IItem::Pointer> result_;
   IItem::Pointer directory_;
   ICallback::Pointer callback_;
 };
