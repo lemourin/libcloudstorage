@@ -179,7 +179,7 @@ std::string AmazonDrive::content_url() const {
 }
 
 bool AmazonDrive::reauthorize(int code) const {
-  return CloudProvider::reauthorize(code) || HttpRequest::isCurlError(code);
+  return HttpRequest::isClientError(code) || HttpRequest::isCurlError(code);
 }
 
 AmazonDrive::Auth::Auth() {
