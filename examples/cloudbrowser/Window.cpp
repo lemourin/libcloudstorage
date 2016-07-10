@@ -66,15 +66,12 @@ Window::Window()
           [this]() { contentItem()->setVisible(false); }, Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() { contentItem()->setVisible(true); }, Qt::QueuedConnection);
-  connect(this, &Window::foundRoot, this,
-          [this](IItem::Pointer i) {
-            current_directory_ = i;
-            listDirectory();
-          },
+  connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
           Qt::QueuedConnection);
 }
 
 Window::~Window() {
+  if (clear_directory_.valid()) clear_directory_.get();
   clearCurrentDirectoryList();
   saveCloudAccessToken();
 }
@@ -90,8 +87,8 @@ void Window::initializeCloud(QString name) {
       fromQMap(settings.value(name + "_hints").toMap());
   cloud_provider_->initialize(settings.value(name).toString().toStdString(),
                               make_unique<CloudProviderCallback>(this), hints);
-  item_request_ = cloud_provider_->getItemAsync(
-      "/", [this](IItem::Pointer i) { emit foundRoot(i); });
+  current_directory_ = cloud_provider_->rootDirectory();
+  emit runListDirectory();
 }
 
 void Window::listDirectory() {
@@ -103,7 +100,9 @@ void Window::listDirectory() {
 void Window::changeCurrentDirectory(ItemModel* directory) {
   directory_stack_.push_back(current_directory_);
   current_directory_ = directory->item();
-  listDirectory();
+
+  list_directory_request_ = nullptr;
+  startDirectoryClear([this]() { emit runListDirectory(); });
 }
 
 void Window::onSuccessfullyAuthorized() {
@@ -176,6 +175,16 @@ void Window::initializeMediaPlayer() {
   media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
 }
 
+void Window::startDirectoryClear(std::function<void()> f) {
+  clear_directory_ = std::async(std::launch::async, [this, f]() {
+    QObjectList object_list =
+        rootContext()->contextProperty("directoryModel").value<QObjectList>();
+    for (QObject* object : object_list)
+      static_cast<ItemModel*>(object)->thumbnail_request_->cancel();
+    f();
+  });
+}
+
 ICloudProvider::Hints Window::fromQMap(
     const QMap<QString, QVariant>& map) const {
   ICloudProvider::Hints result;
@@ -193,12 +202,12 @@ QMap<QString, QVariant> Window::toQMap(const ICloudProvider::Hints& map) const {
 
 bool Window::goBack() {
   if (directory_stack_.empty()) {
-    clearCurrentDirectoryList();
+    startDirectoryClear([]() {});
     return false;
   }
   current_directory_ = directory_stack_.back();
   directory_stack_.pop_back();
-  listDirectory();
+  startDirectoryClear([this]() { emit runListDirectory(); });
   return true;
 }
 

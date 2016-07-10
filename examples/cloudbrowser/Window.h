@@ -67,6 +67,8 @@ class ItemModel : public QObject {
   void receivedImage(ImagePointer);
 
  private:
+  friend class Window;
+
   QString thumbnail_;
   cloudstorage::IItem::Pointer item_;
   cloudstorage::DownloadFileRequest::Pointer thumbnail_request_;
@@ -108,7 +110,7 @@ class Window : public QQuickView {
   void downloadProgressChanged(int total, int now);
   void showPlayer();
   void hidePlayer();
-  void foundRoot(ItemPointer);
+  void runListDirectory();
 
  protected:
   void keyPressEvent(QKeyEvent*);
@@ -119,6 +121,7 @@ class Window : public QQuickView {
   void clearCurrentDirectoryList();
   void saveCloudAccessToken();
   void initializeMediaPlayer();
+  void startDirectoryClear(std::function<void()>);
 
   ICloudProvider::Hints fromQMap(const QMap<QString, QVariant>&) const;
   QMap<QString, QVariant> toQMap(const ICloudProvider::Hints&) const;
@@ -130,10 +133,10 @@ class Window : public QQuickView {
   DownloadFileRequest::Pointer download_request_;
   UploadFileRequest::Pointer upload_request_;
   GetItemDataRequest::Pointer item_data_request_;
-  GetItemRequest::Pointer item_request_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;
+  std::future<void> clear_directory_;
 
   Q_OBJECT
 };
