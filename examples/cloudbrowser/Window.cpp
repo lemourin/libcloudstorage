@@ -65,7 +65,11 @@ Window::Window()
   connect(this, &Window::showPlayer, this,
           [this]() { contentItem()->setVisible(false); }, Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
-          [this]() { contentItem()->setVisible(true); }, Qt::QueuedConnection);
+          [this]() {
+            media_player_.stop();
+            contentItem()->setVisible(true);
+          },
+          Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
           Qt::QueuedConnection);
   connect(this, &Window::runClearDirectory, this,
