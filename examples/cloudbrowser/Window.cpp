@@ -68,6 +68,8 @@ Window::Window()
           [this]() { contentItem()->setVisible(true); }, Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
           Qt::QueuedConnection);
+  connect(this, &Window::runClearDirectory, this,
+          [this]() { clearCurrentDirectoryList(); }, Qt::QueuedConnection);
 }
 
 Window::~Window() {
@@ -202,7 +204,7 @@ QMap<QString, QVariant> Window::toQMap(const ICloudProvider::Hints& map) const {
 
 bool Window::goBack() {
   if (directory_stack_.empty()) {
-    startDirectoryClear([]() {});
+    startDirectoryClear([this]() { emit runClearDirectory(); });
     return false;
   }
   current_directory_ = directory_stack_.back();

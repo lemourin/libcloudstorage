@@ -111,6 +111,7 @@ class Window : public QQuickView {
   void showPlayer();
   void hidePlayer();
   void runListDirectory();
+  void runClearDirectory();
 
  protected:
   void keyPressEvent(QKeyEvent*);
