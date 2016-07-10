@@ -207,14 +207,16 @@ Item {
         id: uploadProgress
         visible: false
         anchors.bottom: help.top
-        anchors.horizontalCenter: help.horizontalCenter
+        anchors.right: help.right
+        anchors.left: parent.left
     }
 
     ProgressBar {
         id: downloadProgress
         visible: false
         anchors.bottom: uploadProgress.top
-        anchors.horizontalCenter: uploadProgress.horizontalCenter
+        anchors.right: help.right
+        anchors.left: parent.left
     }
 
     ScrollView {
