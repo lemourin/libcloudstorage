@@ -100,12 +100,14 @@ class CloudProvider : public ICloudProvider,
   friend class Request;
   friend class AuthorizeRequest;
 
+  enum class AuthorizationStatus { None, InProgress, Fail, Success };
+
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   mutable std::mutex auth_mutex_;
-  mutable std::mutex currently_authorizing_mutex_;
-  bool currently_authorizing_;
-  bool current_authorization_successful_;
+  mutable std::mutex current_authorization_mutex_;
+  AuthorizeRequest::Pointer current_authorization_;
+  AuthorizationStatus current_authorization_status_;
   mutable std::condition_variable authorized_;
 };
 

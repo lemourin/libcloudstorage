@@ -26,8 +26,6 @@
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/HttpRequest.h"
 
-const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
-
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
@@ -37,26 +35,15 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
   function_ = std::async(std::launch::async, [this]() {
     bool ret;
     {
-      std::unique_lock<std::mutex> currently_authorizing(
-          provider()->currently_authorizing_mutex_);
-      if (provider()->currently_authorizing_) {
-        while (provider()->currently_authorizing_ && !is_cancelled()) {
-          provider()->authorized_.wait_for(currently_authorizing,
-                                           AUTHORIZE_WAIT_INTERVAL);
-        }
-        return is_cancelled() ? false
-                              : provider()->current_authorization_successful_;
-      }
-      provider()->currently_authorizing_ = true;
-      provider()->current_authorization_successful_ = false;
-      currently_authorizing.unlock();
-      {
-        std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
-        ret = authorize();
-      }
-      currently_authorizing.lock();
-      provider()->currently_authorizing_ = false;
-      provider()->current_authorization_successful_ = ret;
+      std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
+      ret = authorize();
+    }
+    {
+      std::unique_lock<std::mutex> current_authorization(
+          provider()->current_authorization_mutex_);
+      provider()->current_authorization_status_ =
+          ret ? CloudProvider::AuthorizationStatus::Success
+              : CloudProvider::AuthorizationStatus::Fail;
     }
     provider()->authorized_.notify_all();
     if (ret)

@@ -30,7 +30,7 @@ namespace cloudstorage {
 
 class AuthorizeRequest : public Request {
  public:
-  using Pointer = std::unique_ptr<AuthorizeRequest>;
+  using Pointer = std::shared_ptr<AuthorizeRequest>;
 
   AuthorizeRequest(std::shared_ptr<CloudProvider>);
   ~AuthorizeRequest();

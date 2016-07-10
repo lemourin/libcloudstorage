@@ -31,7 +31,6 @@
 
 namespace cloudstorage {
 
-class AuthorizeRequest;
 class CloudProvider;
 class HttpRequest;
 class HttpCallback;
@@ -68,8 +67,6 @@ class Request {
       ProgressFunction progress_upload = nullptr);
   bool reauthorize();
 
-  std::mutex mutex_;
-  std::shared_ptr<AuthorizeRequest> authorize_request_;
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
 };

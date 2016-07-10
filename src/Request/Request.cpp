@@ -23,10 +23,11 @@
 
 #include "Request.h"
 
-#include <iostream>
 #include "CloudProvider/CloudProvider.h"
 #include "HttpCallback.h"
 #include "Utility/Utility.h"
+
+const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
 
 namespace cloudstorage {
 
@@ -37,10 +38,6 @@ void Request::finish() {}
 
 void Request::cancel() {
   set_cancelled(true);
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (authorize_request_) authorize_request_->cancel();
-  }
   finish();
 }
 
@@ -52,14 +49,26 @@ std::unique_ptr<HttpCallback> Request::httpCallback(
 }
 
 bool Request::reauthorize() {
-  std::unique_lock<std::mutex> lock(mutex_);
   if (is_cancelled()) return false;
-  authorize_request_ = provider()->authorizeAsync();
-  lock.unlock();
-  bool result = authorize_request_->result();
-  lock.lock();
-  authorize_request_ = nullptr;
-  return result;
+  std::unique_lock<std::mutex> current_authorization(
+      provider()->current_authorization_mutex_);
+  if (!provider()->current_authorization_) {
+    provider()->current_authorization_ = provider()->authorizeAsync();
+    provider()->current_authorization_status_ =
+        CloudProvider::AuthorizationStatus::InProgress;
+  }
+  while (!is_cancelled() &&
+         provider()->current_authorization_status_ ==
+             CloudProvider::AuthorizationStatus::InProgress)
+    provider()->authorized_.wait_for(current_authorization,
+                                     AUTHORIZE_WAIT_INTERVAL);
+  bool ret =
+      is_cancelled() ? false : provider()->current_authorization_status_ ==
+                                   CloudProvider::AuthorizationStatus::Success;
+  provider()->current_authorization_ = nullptr;
+  provider()->current_authorization_status_ =
+      CloudProvider::AuthorizationStatus::None;
+  return ret;
 }
 
 void Request::error(int, const std::string&) {}

@@ -33,8 +33,7 @@ namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
     : auth_(std::move(auth)),
-      currently_authorizing_(),
-      current_authorization_successful_() {}
+      current_authorization_status_(AuthorizationStatus::None) {}
 
 void CloudProvider::initialize(const std::string& token,
                                ICallback::Pointer callback,
