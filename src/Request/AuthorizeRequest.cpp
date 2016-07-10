@@ -33,10 +33,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
   if (!provider()->callback_)
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) {
-    {
-      std::unique_lock<std::mutex> lock(provider()->auth_mutex_);
-      success_ = authorize();
-    }
+    success_ = authorize();
     {
       std::unique_lock<std::mutex> current_authorization(
           provider()->current_authorization_mutex_);
@@ -83,6 +80,7 @@ bool AuthorizeRequest::authorize() {
   HttpRequest::Pointer r = auth->refreshTokenRequest(input);
   int code = send(r.get(), input, output, &error_stream);
   if (HttpRequest::isSuccess(code)) {
+    std::unique_lock<std::mutex> lock(provider()->auth_mutex());
     auth->set_access_token(auth->refreshTokenResponse(output));
     return true;
   } else if (!HttpRequest::isClientError(code)) {
@@ -114,6 +112,7 @@ bool AuthorizeRequest::authorize() {
     std::stringstream error_stream;
     HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
     if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
+      std::unique_lock<std::mutex> lock(provider()->auth_mutex());
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return true;
     } else if (!is_cancelled()) {

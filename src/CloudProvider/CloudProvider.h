@@ -88,10 +88,11 @@ class CloudProvider : public ICloudProvider,
   virtual void authorizeRequest(HttpRequest&) const;
   virtual bool reauthorize(int code) const;
 
+  std::mutex& auth_mutex() const;
+
  protected:
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
-  std::mutex& auth_mutex() const;
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
 

@@ -246,8 +246,7 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   if (!cloudstorage::AuthorizeRequest::authorize()) return false;
   HttpRequest request("https://drive.amazonaws.com/drive/v1/account/endpoint",
                       HttpRequest::Type::GET);
-  request.setHeaderParameter(
-      "Authorization", "Bearer " + provider()->auth()->access_token()->token_);
+  provider()->authorizeRequest(request);
   std::stringstream input, output;
   int code = send(&request, input, output, nullptr);
   if (!HttpRequest::isSuccess(code)) {
@@ -258,8 +257,11 @@ bool AmazonDrive::AuthorizeRequest::authorize() {
   Json::Value response;
   output >> response;
   auto drive = std::dynamic_pointer_cast<AmazonDrive>(provider());
-  drive->metadata_url_ = response["metadataUrl"].asString();
-  drive->content_url_ = response["contentUrl"].asString();
+  {
+    std::unique_lock<std::mutex> lock(provider()->auth_mutex());
+    drive->metadata_url_ = response["metadataUrl"].asString();
+    drive->content_url_ = response["contentUrl"].asString();
+  }
   return true;
 }
 
