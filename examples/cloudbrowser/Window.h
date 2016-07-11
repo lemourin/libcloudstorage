@@ -28,6 +28,7 @@
 #include <IItem.h>
 #include <QQuickImageProvider>
 #include <QQuickView>
+#include <future>
 #include <vlcpp/vlc.hpp>
 
 #include "Callback.h"
@@ -71,7 +72,7 @@ class ItemModel : public QObject {
 
   QString thumbnail_;
   cloudstorage::IItem::Pointer item_;
-  cloudstorage::DownloadFileRequest::Pointer thumbnail_request_;
+  cloudstorage::ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
   Window* window_;
 
   Q_OBJECT
@@ -127,13 +128,13 @@ class Window : public QQuickView {
   ICloudProvider::Hints fromQMap(const QMap<QString, QVariant>&) const;
   QMap<QString, QVariant> toQMap(const ICloudProvider::Hints&) const;
 
-  cloudstorage::ICloudProvider::Pointer cloud_provider_;
-  cloudstorage::IItem::Pointer current_directory_;
+  ICloudProvider::Pointer cloud_provider_;
+  IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
-  cloudstorage::ListDirectoryRequest::Pointer list_directory_request_;
-  DownloadFileRequest::Pointer download_request_;
-  UploadFileRequest::Pointer upload_request_;
-  GetItemDataRequest::Pointer item_data_request_;
+  ICloudProvider::ListDirectoryRequest::Pointer list_directory_request_;
+  ICloudProvider::DownloadFileRequest::Pointer download_request_;
+  ICloudProvider::UploadFileRequest::Pointer upload_request_;
+  ICloudProvider::GetItemDataRequest::Pointer item_data_request_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;

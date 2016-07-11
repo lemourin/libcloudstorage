@@ -38,7 +38,7 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
+class ListDirectoryCallback : public IListDirectoryCallback {
  public:
   ListDirectoryCallback(Window* w);
 
@@ -52,7 +52,7 @@ class ListDirectoryCallback : public ListDirectoryRequest::ICallback {
   Window* window_;
 };
 
-class DownloadThumbnailCallback : public DownloadFileRequest::ICallback {
+class DownloadThumbnailCallback : public IDownloadFileCallback {
  public:
   DownloadThumbnailCallback(ItemModel* i);
 
@@ -69,33 +69,33 @@ class DownloadThumbnailCallback : public DownloadFileRequest::ICallback {
   std::string data_;
 };
 
-class DownloadFileCallback : public DownloadFileRequest::ICallback {
+class DownloadFileCallback : public IDownloadFileCallback {
  public:
-  DownloadFileCallback(Window *, std::string filename);
+  DownloadFileCallback(Window*, std::string filename);
 
-  void receivedData(const char *data, uint32_t length);
+  void receivedData(const char* data, uint32_t length);
   void done();
-  void error(const std::string &);
+  void error(const std::string&);
   void progress(uint32_t total, uint32_t now);
 
  private:
-  Window *window_;
+  Window* window_;
   std::fstream file_;
   std::string filename_;
 };
 
-class UploadFileCallback : public UploadFileRequest::ICallback {
+class UploadFileCallback : public IUploadFileCallback {
  public:
-  UploadFileCallback(Window *, QUrl url);
+  UploadFileCallback(Window*, QUrl url);
 
   void reset();
-  uint32_t putData(char *data, uint32_t maxlength);
+  uint32_t putData(char* data, uint32_t maxlength);
   void done();
-  void error(const std::string &description);
+  void error(const std::string& description);
   void progress(uint32_t total, uint32_t now);
 
  private:
-  Window *window_;
+  Window* window_;
   std::fstream file_;
 };
 
