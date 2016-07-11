@@ -29,24 +29,28 @@
 #include <sstream>
 #include <vector>
 
+#include "IRequest.h"
+
 namespace cloudstorage {
 
 class CloudProvider;
 class HttpRequest;
 class HttpCallback;
+class IItem;
 
-class Request {
+template <class ReturnValue>
+class Request : public IRequest<ReturnValue> {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
-  using Resolver = std::function<void(Request*)>;
+  using Resolver = std::function<ReturnValue(Request*)>;
 
   Request(std::shared_ptr<CloudProvider>);
-  virtual ~Request() = default;
 
   void set_resolver(Resolver);
 
-  virtual void finish();
-  virtual void cancel();
+  void finish();
+  void cancel();
+  ReturnValue result();
 
   int sendRequest(
       std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
@@ -72,7 +76,7 @@ class Request {
 
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
-  std::shared_future<void> function_;
+  std::shared_future<ReturnValue> function_;
 };
 
 }  // namespace cloudstorage

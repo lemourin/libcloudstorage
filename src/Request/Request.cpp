@@ -31,56 +31,75 @@ const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
 
 namespace cloudstorage {
 
-Request::Request(std::shared_ptr<CloudProvider> provider)
+template class Request<void>;
+template class Request<bool>;
+template class Request<std::shared_ptr<cloudstorage::IItem>>;
+template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
+
+template <class T>
+Request<T>::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
-void Request::set_resolver(Request::Resolver resolver) {
+template <class T>
+void Request<T>::set_resolver(Resolver resolver) {
   function_ = std::async(std::launch::async, std::bind(resolver, this));
 }
 
-void Request::finish() {
-  std::shared_future<void> future = function_;
-  if (future.valid()) future.get();
+template <class T>
+void Request<T>::finish() {
+  std::shared_future<T> future = function_;
+  if (future.valid()) future.wait();
 }
 
-void Request::cancel() {
+template <class T>
+void Request<T>::cancel() {
   set_cancelled(true);
   finish();
 }
 
-std::unique_ptr<HttpCallback> Request::httpCallback(
+template <class T>
+T Request<T>::result() {
+  std::shared_future<T> future = function_;
+  return future.get();
+}
+
+template <class T>
+std::unique_ptr<HttpCallback> Request<T>::httpCallback(
     std::function<void(uint32_t, uint32_t)> progress_download,
     std::function<void(uint32_t, uint32_t)> progress_upload) {
   return make_unique<HttpCallback>(is_cancelled_, progress_download,
                                    progress_upload);
 }
 
-bool Request::reauthorize() {
+template <class T>
+bool Request<T>::reauthorize() {
   if (is_cancelled()) return false;
   std::unique_lock<std::mutex> current_authorization(
-      provider()->current_authorization_mutex_);
-  if (!provider()->current_authorization_) {
-    provider()->current_authorization_ = provider()->authorizeAsync();
-    provider()->current_authorization_status_ =
-        CloudProvider::AuthorizationStatus::InProgress;
+      provider()->current_authorization_mutex());
+  if (!provider()->current_authorization()) {
+    provider()->set_current_authorization(provider()->authorizeAsync());
+    provider()->set_authorization_status(
+        CloudProvider::AuthorizationStatus::InProgress);
   }
   while (!is_cancelled() &&
-         provider()->current_authorization_status_ ==
+         provider()->authorization_status() ==
              CloudProvider::AuthorizationStatus::InProgress)
-    provider()->authorized_.wait_for(current_authorization,
-                                     AUTHORIZE_WAIT_INTERVAL);
+    provider()->authorized_condition().wait_for(current_authorization,
+                                                AUTHORIZE_WAIT_INTERVAL);
   bool ret =
-      is_cancelled() ? false : provider()->current_authorization_status_ ==
+      is_cancelled() ? false : provider()->authorization_status() ==
                                    CloudProvider::AuthorizationStatus::Success;
-  provider()->current_authorization_ = nullptr;
-  provider()->current_authorization_status_ =
-      CloudProvider::AuthorizationStatus::None;
+  provider()->set_current_authorization(nullptr);
+  provider()->set_authorization_status(
+      CloudProvider::AuthorizationStatus::None);
   return ret;
 }
 
-void Request::error(int, const std::string&) {}
+template <class T>
+void Request<T>::error(int, const std::string&) {}
 
-std::string Request::error_string(int code, const std::string& desc) const {
+template <class T>
+std::string Request<T>::error_string(int code, const std::string& desc) const {
   std::stringstream stream;
   if (HttpRequest::isCurlError(code))
     stream << "CURL code " << code << ": "
@@ -90,7 +109,8 @@ std::string Request::error_string(int code, const std::string& desc) const {
   return stream.str();
 }
 
-int Request::sendRequest(
+template <class T>
+int Request<T>::sendRequest(
     std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
   std::stringstream input, error_stream;
@@ -118,9 +138,10 @@ int Request::sendRequest(
   return code;
 }
 
-int Request::send(HttpRequest* request, std::istream& input,
-                  std::ostream& output, std::ostream* error,
-                  ProgressFunction download, ProgressFunction upload) {
+template <class T>
+int Request<T>::send(HttpRequest* request, std::istream& input,
+                     std::ostream& output, std::ostream* error,
+                     ProgressFunction download, ProgressFunction upload) {
   if (!request) return HttpRequest::Aborted;
   int code;
   try {

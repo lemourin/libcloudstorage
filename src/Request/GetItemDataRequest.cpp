@@ -34,22 +34,18 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), id_(id), callback_(callback) {
   if (f)
     set_resolver([this, f](Request*) {
-      result_ = f(this);
-      callback_(result_);
+      auto result = f(this);
+      callback_(result);
+      return result;
     });
   else
-    set_resolver([this, f](Request*) { result_ = resolve(this); });
+    set_resolver([this](Request*) { return resolve(this); });
 }
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }
 
 GetItemDataRequest::Callback GetItemDataRequest::callback() const {
   return callback_;
-}
-
-IItem::Pointer GetItemDataRequest::result() {
-  finish();
-  return result_;
 }
 
 IItem::Pointer GetItemDataRequest::resolve(GetItemDataRequest* t) {

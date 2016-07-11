@@ -30,6 +30,8 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include "Request/GetItemDataRequest.h"
+
 namespace cloudstorage {
 
 Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
@@ -40,11 +42,11 @@ IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", IItem::FileType::Directory);
 }
 
-GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
-    const std::string& id, GetItemDataRequest::Callback callback) {
-  return make_unique<GetItemDataRequest>(
+ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
+    const std::string& id, GetItemDataCallback callback) {
+  return make_unique<cloudstorage::GetItemDataRequest>(
       shared_from_this(), id, callback,
-      [id](GetItemDataRequest* r) -> IItem::Pointer {
+      [id](cloudstorage::GetItemDataRequest* r) -> IItem::Pointer {
         auto item_data = [r, id](std::ostream& input) {
           auto request = make_unique<HttpRequest>(
               "https://api.dropboxapi.com/2/files/get_metadata",

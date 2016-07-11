@@ -29,6 +29,12 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include "Request/DownloadFileRequest.h"
+#include "Request/GetItemDataRequest.h"
+#include "Request/GetItemRequest.h"
+#include "Request/ListDirectoryRequest.h"
+#include "Request/UploadFileRequest.h"
+
 namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
@@ -81,36 +87,37 @@ ICloudProvider::ICallback* CloudProvider::callback() const {
   return callback_.get();
 }
 
-ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
-    IItem::Pointer item, ListDirectoryRequest::ICallback::Pointer callback) {
-  return make_unique<ListDirectoryRequest>(shared_from_this(), std::move(item),
-                                           std::move(callback));
+ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
+    IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
+  return make_unique<cloudstorage::ListDirectoryRequest>(
+      shared_from_this(), std::move(item), std::move(callback));
 }
 
-GetItemRequest::Pointer CloudProvider::getItemAsync(
-    const std::string& absolute_path, GetItemRequest::Callback callback) {
-  return make_unique<GetItemRequest>(shared_from_this(), absolute_path,
-                                     callback);
+ICloudProvider::GetItemRequest::Pointer CloudProvider::getItemAsync(
+    const std::string& absolute_path, GetItemCallback callback) {
+  return make_unique<cloudstorage::GetItemRequest>(shared_from_this(),
+                                                   absolute_path, callback);
 }
 
-DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
-    IItem::Pointer file, DownloadFileRequest::ICallback::Pointer callback) {
-  return make_unique<DownloadFileRequest>(
+ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
+    IItem::Pointer file, IDownloadFileCallback::Pointer callback) {
+  return make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), std::move(file), std::move(callback),
       std::bind(&CloudProvider::downloadFileRequest, this,
                 std::placeholders::_1, std::placeholders::_2));
 }
 
-UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
+ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
-    UploadFileRequest::ICallback::Pointer callback) {
-  return make_unique<UploadFileRequest>(
+    IUploadFileCallback::Pointer callback) {
+  return make_unique<cloudstorage::UploadFileRequest>(
       shared_from_this(), std::move(directory), filename, std::move(callback));
 }
 
-GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
-    const std::string& id, GetItemDataRequest::Callback f) {
-  return make_unique<GetItemDataRequest>(shared_from_this(), id, f);
+ICloudProvider::GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
+    const std::string& id, GetItemDataCallback f) {
+  return make_unique<cloudstorage::GetItemDataRequest>(shared_from_this(), id,
+                                                       f);
 }
 
 void CloudProvider::authorizeRequest(HttpRequest& r) const {
@@ -127,6 +134,31 @@ AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
 
 std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
 
+std::mutex& CloudProvider::current_authorization_mutex() const {
+  return current_authorization_mutex_;
+}
+
+std::condition_variable& CloudProvider::authorized_condition() const {
+  return authorized_;
+}
+
+CloudProvider::AuthorizationStatus CloudProvider::authorization_status() const {
+  return current_authorization_status_;
+}
+
+void CloudProvider::set_authorization_status(
+    CloudProvider::AuthorizationStatus status) {
+  current_authorization_status_ = status;
+}
+
+AuthorizeRequest::Pointer CloudProvider::current_authorization() const {
+  return current_authorization_;
+}
+
+void CloudProvider::set_current_authorization(AuthorizeRequest::Pointer r) {
+  current_authorization_ = r;
+}
+
 void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
                                 const std::string& name,
                                 std::function<void(std::string)> f) const {
@@ -134,9 +166,9 @@ void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
   if (it != hints.end()) f(it->second);
 }
 
-DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
-    IItem::Pointer item, DownloadFileRequest::ICallback::Pointer callback) {
-  return make_unique<DownloadFileRequest>(
+ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+  return make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), item, std::move(callback),
       std::bind(&CloudProvider::getThumbnailRequest, this,
                 std::placeholders::_1, std::placeholders::_2));

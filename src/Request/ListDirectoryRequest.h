@@ -29,34 +29,18 @@
 
 namespace cloudstorage {
 
-class ListDirectoryRequest : public Request {
+class ListDirectoryRequest : public Request<std::vector<IItem::Pointer>> {
  public:
-  using Pointer = std::unique_ptr<ListDirectoryRequest>;
-
-  class ICallback {
-   public:
-    using Pointer = std::unique_ptr<ICallback>;
-
-    virtual ~ICallback() = default;
-
-    virtual void receivedItem(IItem::Pointer item) = 0;
-    virtual void done(const std::vector<IItem::Pointer>& result) = 0;
-    virtual void error(const std::string& description) = 0;
-  };
+  using ICallback = IListDirectoryCallback;
 
   ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                        ICallback::Pointer);
   ~ListDirectoryRequest();
 
-  std::vector<IItem::Pointer> result();
-
  protected:
   void error(int code, const std::string& description);
 
  private:
-  friend class GetItemRequest;
-
-  std::vector<IItem::Pointer> result_;
   IItem::Pointer directory_;
   ICallback::Pointer callback_;
 };

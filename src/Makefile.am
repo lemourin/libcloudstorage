@@ -43,17 +43,18 @@ noinst_HEADERS = \
 	CloudProvider/Dropbox.h \
 	CloudProvider/AmazonDrive.h \
 	Request/HttpCallback.h \
-	Request/AuthorizeRequest.h
-
-nobase_include_HEADERS = \
-	IItem.h \
-	ICloudProvider.h \
-	ICloudStorage.h \
+	Request/AuthorizeRequest.h \
 	Request/Request.h \
 	Request/DownloadFileRequest.h \
 	Request/GetItemRequest.h \
 	Request/ListDirectoryRequest.h \
 	Request/UploadFileRequest.h
+
+nobase_include_HEADERS = \
+	IItem.h \
+	ICloudProvider.h \
+	ICloudStorage.h \
+	IRequest.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \

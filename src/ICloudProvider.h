@@ -30,11 +30,7 @@
 #include <vector>
 
 #include "IItem.h"
-#include "Request/DownloadFileRequest.h"
-#include "Request/GetItemDataRequest.h"
-#include "Request/GetItemRequest.h"
-#include "Request/ListDirectoryRequest.h"
-#include "Request/UploadFileRequest.h"
+#include "IRequest.h"
 
 namespace cloudstorage {
 
@@ -42,6 +38,12 @@ class ICloudProvider {
  public:
   using Pointer = std::shared_ptr<ICloudProvider>;
   using Hints = std::unordered_map<std::string, std::string>;
+
+  using ListDirectoryRequest = IRequest<std::vector<IItem::Pointer>>;
+  using GetItemRequest = IRequest<IItem::Pointer>;
+  using DownloadFileRequest = IRequest<void>;
+  using UploadFileRequest = IRequest<void>;
+  using GetItemDataRequest = IRequest<IItem::Pointer>;
 
   class ICallback {
    public:
@@ -68,18 +70,18 @@ class ICloudProvider {
   virtual IItem::Pointer rootDirectory() const = 0;
 
   virtual ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, ListDirectoryRequest::ICallback::Pointer) = 0;
-  virtual GetItemRequest::Pointer getItemAsync(
-      const std::string& absolute_path, GetItemDataRequest::Callback) = 0;
+      IItem::Pointer, IListDirectoryCallback::Pointer) = 0;
+  virtual GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
+                                               GetItemCallback) = 0;
   virtual DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, DownloadFileRequest::ICallback::Pointer) = 0;
+      IItem::Pointer, IDownloadFileCallback::Pointer) = 0;
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string& filename,
-      UploadFileRequest::ICallback::Pointer) = 0;
-  virtual GetItemDataRequest::Pointer getItemDataAsync(
-      const std::string& id, GetItemDataRequest::Callback) = 0;
+      IUploadFileCallback::Pointer) = 0;
+  virtual GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
+                                                       GetItemDataCallback) = 0;
   virtual DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer item, DownloadFileRequest::ICallback::Pointer) = 0;
+      IItem::Pointer item, IDownloadFileCallback::Pointer) = 0;
 };
 
 }  // namespace cloudstorage

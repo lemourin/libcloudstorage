@@ -29,21 +29,9 @@
 
 namespace cloudstorage {
 
-class UploadFileRequest : public Request {
+class UploadFileRequest : public Request<void> {
  public:
-  using Pointer = std::unique_ptr<UploadFileRequest>;
-
-  class ICallback {
-   public:
-    using Pointer = std::unique_ptr<ICallback>;
-    virtual ~ICallback() = default;
-
-    virtual void reset() = 0;
-    virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
-    virtual void done() = 0;
-    virtual void error(const std::string& description) = 0;
-    virtual void progress(uint32_t total, uint32_t now) = 0;
-  };
+  using ICallback = IUploadFileCallback;
 
   UploadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
                     const std::string& filename, ICallback::Pointer);

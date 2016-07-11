@@ -35,8 +35,8 @@ class Dropbox : public CloudProvider {
   std::string name() const;
   IItem::Pointer rootDirectory() const;
 
-  GetItemDataRequest::Pointer getItemDataAsync(
-      const std::string& id, GetItemDataRequest::Callback);
+  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
+                                               GetItemDataCallback);
 
  protected:
   HttpRequest::Pointer getItemDataRequest(const std::string&,

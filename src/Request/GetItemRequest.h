@@ -28,17 +28,15 @@
 
 namespace cloudstorage {
 
-class GetItemRequest : public Request {
+class GetItemRequest : public Request<IItem::Pointer> {
  public:
-  using Pointer = std::unique_ptr<GetItemRequest>;
-  using Callback = std::function<void(IItem::Pointer)>;
+  using Callback = GetItemCallback;
 
   GetItemRequest(std::shared_ptr<CloudProvider>, const std::string& path,
                  Callback callback);
   ~GetItemRequest();
 
   void cancel();
-  IItem::Pointer result();
 
  private:
   IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
@@ -46,7 +44,6 @@ class GetItemRequest : public Request {
 
   std::mutex mutex_;
   ListDirectoryRequest::Pointer current_request_;
-  IItem::Pointer result_;
   std::string path_;
   Callback callback_;
 };

@@ -40,6 +40,8 @@ class CloudProvider : public ICloudProvider,
  public:
   using Pointer = std::shared_ptr<CloudProvider>;
 
+  enum class AuthorizationStatus { None, InProgress, Fail, Success };
+
   CloudProvider(IAuth::Pointer);
 
   void initialize(const std::string& token, ICallback::Pointer,
@@ -54,19 +56,20 @@ class CloudProvider : public ICloudProvider,
   IItem::Pointer rootDirectory() const;
   ICallback* callback() const;
 
+  virtual AuthorizeRequest::Pointer authorizeAsync();
+
   ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, ListDirectoryRequest::ICallback::Pointer);
+      IItem::Pointer, IListDirectoryCallback::Pointer);
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
-                                       GetItemRequest::Callback);
+                                       GetItemCallback);
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, DownloadFileRequest::ICallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsync(
-      IItem::Pointer, const std::string&,
-      UploadFileRequest::ICallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer);
+  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
+                                             IUploadFileCallback::Pointer);
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataRequest::Callback f);
+                                               GetItemDataCallback f);
   DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer, DownloadFileRequest::ICallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer);
 
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const = 0;
@@ -89,19 +92,20 @@ class CloudProvider : public ICloudProvider,
   virtual bool reauthorize(int code) const;
 
   std::mutex& auth_mutex() const;
+  std::mutex& current_authorization_mutex() const;
+  std::condition_variable& authorized_condition() const;
+
+  AuthorizationStatus authorization_status() const;
+  void set_authorization_status(AuthorizationStatus);
+
+  AuthorizeRequest::Pointer current_authorization() const;
+  void set_current_authorization(AuthorizeRequest::Pointer);
 
  protected:
-  virtual AuthorizeRequest::Pointer authorizeAsync();
-
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
 
  private:
-  friend class Request;
-  friend class AuthorizeRequest;
-
-  enum class AuthorizationStatus { None, InProgress, Fail, Success };
-
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   mutable std::mutex auth_mutex_;

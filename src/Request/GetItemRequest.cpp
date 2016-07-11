@@ -31,10 +31,10 @@ namespace cloudstorage {
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
     : Request(p), path_(path), callback_(callback) {
-  set_resolver([this](Request*) {
+  set_resolver([this](Request*) -> IItem::Pointer {
     if (path_.empty() || path_.front() != '/') {
       if (callback_) callback_(nullptr);
-      return;
+      return nullptr;
     }
     IItem::Pointer node = provider()->rootDirectory();
     std::stringstream stream(path_.substr(1));
@@ -46,14 +46,14 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
       }
       {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (is_cancelled()) return;
+        if (is_cancelled()) return nullptr;
         current_request_ =
             provider()->listDirectoryAsync(std::move(node), nullptr);
       }
       node = getItem(current_request_->result(), token);
     }
     if (callback_) callback_(node);
-    result_ = node;
+    return node;
   });
 }
 
@@ -66,11 +66,6 @@ void GetItemRequest::cancel() {
     if (current_request_) current_request_->cancel();
   }
   Request::cancel();
-}
-
-IItem::Pointer GetItemRequest::result() {
-  finish();
-  return result_;
 }
 
 IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,

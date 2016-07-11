@@ -28,14 +28,13 @@
 
 namespace cloudstorage {
 
-class AuthorizeRequest : public Request {
+class AuthorizeRequest : public Request<bool> {
  public:
   using Pointer = std::shared_ptr<AuthorizeRequest>;
 
   AuthorizeRequest(std::shared_ptr<CloudProvider>);
   ~AuthorizeRequest();
 
-  bool result();
   void cancel();
 
  protected:
@@ -44,7 +43,6 @@ class AuthorizeRequest : public Request {
  private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;
-  bool success_;
 };
 
 }  // namespace cloudstorage

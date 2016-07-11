@@ -38,22 +38,11 @@ class DownloadStreamWrapper : public std::streambuf {
   std::function<void(const char*, uint32_t)> callback_;
 };
 
-class DownloadFileRequest : public Request {
+class DownloadFileRequest : public Request<void> {
  public:
-  using Pointer = std::unique_ptr<DownloadFileRequest>;
   using RequestFactory =
       std::function<std::shared_ptr<HttpRequest>(const IItem&, std::ostream&)>;
-
-  class ICallback {
-   public:
-    using Pointer = std::unique_ptr<ICallback>;
-    virtual ~ICallback() = default;
-
-    virtual void receivedData(const char* data, uint32_t length) = 0;
-    virtual void done() = 0;
-    virtual void error(const std::string& description) = 0;
-    virtual void progress(uint32_t total, uint32_t now) = 0;
-  };
+  using ICallback = IDownloadFileCallback;
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
                       ICallback::Pointer, RequestFactory request_factory);

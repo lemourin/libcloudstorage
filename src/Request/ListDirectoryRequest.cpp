@@ -36,6 +36,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)) {
   set_resolver([this](Request*) {
     std::string page_token;
+    std::vector<IItem::Pointer> result;
     do {
       std::stringstream output_stream;
       int code = sendRequest(
@@ -48,21 +49,17 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {
           if (callback_) callback_->receivedItem(t);
-          result_.push_back(t);
+          result.push_back(t);
         }
       }
     } while (!page_token.empty());
 
-    if (callback_) callback_->done(result_);
+    if (callback_) callback_->done(result);
+    return result;
   });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
-
-std::vector<IItem::Pointer> ListDirectoryRequest::result() {
-  finish();
-  return result_;
-}
 
 void ListDirectoryRequest::error(int code, const std::string& description) {
   if (callback_) callback_->error(error_string(code, description));
