@@ -47,6 +47,7 @@ class ImageProvider : public QQuickImageProvider {
   bool hasImage(QString id);
 
  private:
+  std::mutex mutex_;
   std::map<QString, ImagePointer> cache_;
 };
 
@@ -54,12 +55,12 @@ class ItemModel : public QObject {
  public:
   using Pointer = std::unique_ptr<ItemModel>;
 
-  ItemModel(cloudstorage::IItem::Pointer item,
-            cloudstorage::ICloudProvider::Pointer, Window*);
+  ItemModel(IItem::Pointer item, ICloudProvider::Pointer, Window*);
 
   QString name() const { return item_->filename().c_str(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
   QString thumbnail() const { return thumbnail_; }
+  void fetchThumbnail();
 
  signals:
   void thumbnailChanged();
@@ -69,8 +70,9 @@ class ItemModel : public QObject {
   friend class Window;
 
   QString thumbnail_;
-  cloudstorage::IItem::Pointer item_;
-  cloudstorage::ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
+  IItem::Pointer item_;
+  ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
+  ICloudProvider::Pointer provider_;
   Window* window_;
 
   Q_OBJECT
@@ -107,7 +109,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void downloadFile(int, QUrl path);
 
   void onSuccessfullyAuthorized();
-  void onAddedItem(cloudstorage::IItem::Pointer);
+  void onAddedItem(ItemPointer);
   void onPlayFile(QString filename);
   void onPlayFileFromUrl(QString url);
 

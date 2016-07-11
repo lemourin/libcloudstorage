@@ -85,7 +85,7 @@ Item {
                 property int thumbnailWidth: 50
                 property int thumbnailHeight: 50
                 property int padding: 5
-                property string isDirectory: display["is_directory"]
+                property bool isDirectory: display.is_directory
 
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
@@ -98,7 +98,7 @@ Item {
                     Image {
                         width: fileEntry.thumbnailWidth
                         height: fileEntry.thumbnailHeight
-                        source: display["thumbnail"]
+                        source: display.thumbnail
                     }
                     Item {
                         height: fileEntry.thumbnailHeight
@@ -107,7 +107,7 @@ Item {
                             x: fileEntry.padding
                             id: text
                             anchors.verticalCenter: parent.verticalCenter
-                            text: display["name"]
+                            text: display.name
                         }
                     }
                 }
