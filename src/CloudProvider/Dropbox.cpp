@@ -64,7 +64,7 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
         Json::Value response;
         output >> response;
         auto item = toItem(response);
-        if (item->is_directory()) return item;
+        if (item->type() == IItem::FileType::Directory) return item;
         auto temporary_link = [r, id](std::ostream& input) {
           auto request = make_unique<HttpRequest>(
               "https://api.dropboxapi.com/2/files/get_temporary_link",

@@ -40,7 +40,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     std::stringstream stream(path_.substr(1));
     std::string token;
     while (std::getline(stream, token, '/')) {
-      if (!node || !node->is_directory()) {
+      if (!node || node->type() != IItem::FileType::Directory) {
         node = nullptr;
         break;
       }

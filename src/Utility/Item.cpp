@@ -39,8 +39,6 @@ std::string Item::filename() const { return filename_; }
 
 std::string Item::id() const { return id_; }
 
-bool Item::is_directory() const { return type() == FileType::Directory; }
-
 std::string Item::url() const { return url_; }
 
 void Item::set_url(std::string url) { url_ = url; }

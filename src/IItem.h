@@ -38,8 +38,6 @@ class IItem {
   virtual ~IItem() = default;
 
   virtual std::string filename() const = 0;
-  virtual bool is_directory() const = 0;
-
   virtual std::string id() const = 0;
   virtual std::string url() const = 0;
   virtual bool is_hidden() const = 0;
