@@ -12,6 +12,7 @@ cloudbrowser_LDADD = libcloudbrowser.la
 libcloudbrowser_la_SOURCES = \
 	Window.cpp Window.h \
 	Callback.cpp Callback.h \
+	MockProvider.cpp MockProvider.h \
 	main.cpp
 
 libcloudbrowser_la_CXXFLAGS = \
