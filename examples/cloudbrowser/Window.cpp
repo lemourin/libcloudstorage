@@ -246,15 +246,17 @@ void Window::downloadFile(int item_id, QUrl path) {
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
   QString id = (p->name() + "/" + item_->id()).c_str();
-  connect(this, &ItemModel::receivedImage, [this, id](ImagePointer image) {
-    window_->imageProvider()->addImage(id, std::move(image));
-    thumbnail_ = "image://provider//" + id;
-    emit thumbnailChanged();
-  });
+  connect(this, &ItemModel::receivedImage, this,
+          [this, id](ImagePointer image) {
+            window_->imageProvider()->addImage(id, std::move(image));
+            thumbnail_ = "image://provider//" + id;
+            emit thumbnailChanged();
+          },
+          Qt::QueuedConnection);
 }
 
 void ItemModel::fetchThumbnail() {
-  if (!thumbnail_.isEmpty()) return;
+  if (thumbnail_request_) return;
   QString id = (provider_->name() + "/" + item_->id()).c_str();
   if (window_->imageProvider()->hasImage(id))
     thumbnail_ = "image://provider//" + id;
