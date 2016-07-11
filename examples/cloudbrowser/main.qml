@@ -52,10 +52,9 @@ Item {
             browserView.visible = false;
             if (!directory.focus) cloudView.focus = true;
         }
-        onAddedItem: {
+        onRunListDirectory: {
             directory.visible = true;
             directory.focus = true;
-            //console.log(directory.currentIndex);
         }
         onUploadProgressChanged: {
             uploadProgress.visible = total != 0;

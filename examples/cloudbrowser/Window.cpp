@@ -201,6 +201,7 @@ QMap<QString, QVariant> Window::toQMap(const ICloudProvider::Hints& map) const {
 }
 
 bool Window::goBack() {
+  if (list_directory_request_) list_directory_request_->cancel();
   if (directory_stack_.empty()) {
     startDirectoryClear([this]() { emit runClearDirectory(); });
     return false;
