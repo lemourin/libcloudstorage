@@ -52,8 +52,7 @@ IItem::Pointer MockProvider::rootDirectory() const {
 
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
     IItem::Pointer directory, IListDirectoryCallback::Pointer callback) {
-  return make_unique<MockListDirectoryRequest>(directory,
-                                                 std::move(callback));
+  return make_unique<MockListDirectoryRequest>(directory, std::move(callback));
 }
 
 ICloudProvider::GetItemRequest::Pointer MockProvider::getItemAsync(

@@ -51,10 +51,10 @@ class MockProvider : public ICloudProvider {
     MockListDirectoryRequest(IItem::Pointer directory,
                              IListDirectoryCallback::Pointer callback);
     ~MockListDirectoryRequest() { cancel(); }
-    void finish() { result_.get(); }
+    void finish() { result_.wait(); }
     void cancel() {
       cancelled_ = true;
-      result_.get();
+      result_.wait();
     }
     std::vector<IItem::Pointer> result() { return result_.get(); }
 
@@ -79,8 +79,8 @@ class MockProvider : public ICloudProvider {
    public:
     MockDownloadFileRequest(IItem::Pointer item,
                             IDownloadFileCallback::Pointer);
-    void finish() { function_.get(); }
-    void cancel() { function_.get(); }
+    void finish() { function_.wait(); }
+    void cancel() { function_.wait(); }
     void result() { function_.get(); }
 
    private:
