@@ -32,7 +32,9 @@ nodist_libcloudbrowser_la_SOURCES = \
 	resources.cpp
 
 DEPS_res = \
-	main.qml
+	main.qml \
+	resources/directory.png \
+	resources/file.png
 
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<
