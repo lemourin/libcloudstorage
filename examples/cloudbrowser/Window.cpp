@@ -32,6 +32,8 @@
 #include <QSettings>
 #include <iostream>
 
+#include "MockProvider.h"
+
 using namespace cloudstorage;
 
 Window::Window()
@@ -40,7 +42,6 @@ Window::Window()
       media_player_(vlc_instance_) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
-  qmlRegisterType<ItemModel>();
 
   setClearBeforeRendering(false);
   initializeMediaPlayer();
@@ -48,9 +49,10 @@ Window::Window()
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
     clouds.append(p->name().c_str());
+  clouds.append("mock");
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
-  rootContext()->setContextProperty("directoryModel", nullptr);
+  rootContext()->setContextProperty("directoryModel", &directory_model_);
   engine()->addImageProvider("provider", imageProvider());
 
   setSource(QUrl("qrc:/main.qml"));
@@ -86,7 +88,10 @@ void Window::initializeCloud(QString name) {
   saveCloudAccessToken();
 
   QSettings settings;
-  cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
+  if (name != "mock")
+    cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
+  else
+    cloud_provider_ = make_unique<MockProvider>();
   std::cerr << "[DIAG] Trying to authorize with "
             << settings.value(name).toString().toStdString() << std::endl;
   ICloudProvider::Hints hints =
@@ -103,7 +108,8 @@ void Window::listDirectory() {
       current_directory_, make_unique<ListDirectoryCallback>(this));
 }
 
-void Window::changeCurrentDirectory(ItemModel* directory) {
+void Window::changeCurrentDirectory(int directory_id) {
+  auto directory = directory_model_.get(directory_id);
   directory_stack_.push_back(current_directory_);
   current_directory_ = directory->item();
 
@@ -117,13 +123,7 @@ void Window::onSuccessfullyAuthorized() {
 }
 
 void Window::onAddedItem(IItem::Pointer i) {
-  QObjectList object_list =
-      rootContext()->contextProperty("directoryModel").value<QObjectList>();
-  ItemModel* model = new ItemModel(i, cloud_provider_, this);
-  model->setParent(this);
-  object_list.append(model);
-  rootContext()->setContextProperty("directoryModel",
-                                    QVariant::fromValue(object_list));
+  directory_model_.addItem(i, this);
 }
 
 void Window::onPlayFile(QString filename) {
@@ -150,12 +150,7 @@ void Window::keyPressEvent(QKeyEvent* e) {
     media_player_.pause();
 }
 
-void Window::clearCurrentDirectoryList() {
-  QObjectList object_list =
-      rootContext()->contextProperty("directoryModel").value<QObjectList>();
-  rootContext()->setContextProperty("directoryModel", nullptr);
-  for (QObject* object : object_list) delete object;
-}
+void Window::clearCurrentDirectoryList() { directory_model_.clear(); }
 
 void Window::saveCloudAccessToken() {
   if (cloud_provider_) {
@@ -182,12 +177,11 @@ void Window::initializeMediaPlayer() {
 }
 
 void Window::startDirectoryClear(std::function<void()> f) {
+  if (list_directory_request_) list_directory_request_->cancel();
   clear_directory_ = std::async(std::launch::async, [this, f]() {
-    QObjectList object_list =
-        rootContext()->contextProperty("directoryModel").value<QObjectList>();
-    for (QObject* object : object_list) {
-      auto item = static_cast<ItemModel*>(object);
-      if (item->thumbnail_request_) item->thumbnail_request_->cancel();
+    for (int i = 0; i < directory_model_.rowCount(); i++) {
+      auto model = directory_model_.get(i);
+      if (model->thumbnail_request_) model->thumbnail_request_->cancel();
     }
     f();
   });
@@ -219,7 +213,8 @@ bool Window::goBack() {
   return true;
 }
 
-void Window::play(ItemModel* item) {
+void Window::play(int item_id) {
+  ItemModel* item = directory_model_.get(item_id);
   stop();
   item_data_request_ = cloud_provider_->getItemDataAsync(
       item->item()->id(),
@@ -241,7 +236,8 @@ void Window::uploadFile(QString path) {
       make_unique<UploadFileCallback>(this, url));
 }
 
-void Window::downloadFile(ItemModel* i, QUrl path) {
+void Window::downloadFile(int item_id, QUrl path) {
+  ItemModel* i = directory_model_.get(item_id);
   download_request_ = cloud_provider_->downloadFileAsync(
       i->item(),
       make_unique<DownloadFileCallback>(this, path.toLocalFile().toStdString() +
@@ -284,4 +280,32 @@ void ImageProvider::addImage(QString id, ImagePointer img) {
 
 bool ImageProvider::hasImage(QString id) {
   return cache_.find("/" + id) != cache_.end();
+}
+
+int DirectoryModel::rowCount(const QModelIndex&) const { return list_.size(); }
+
+QVariant DirectoryModel::data(const QModelIndex& id, int) const {
+  QVariantMap dict;
+  dict["thumbnail"] = list_[id.row()]->thumbnail();
+  dict["name"] = list_[id.row()]->item()->filename().c_str();
+  dict["is_directory"] =
+      list_[id.row()]->item()->type() == IItem::FileType::Directory;
+  return dict;
+}
+
+void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
+  beginInsertRows(QModelIndex(), rowCount(), rowCount());
+  auto model = make_unique<ItemModel>(item, w->cloud_provider_, w);
+  list_.push_back(std::move(model));
+  endInsertRows();
+  int idx = rowCount() - 1;
+  connect(list_.back().get(), &ItemModel::thumbnailChanged, this,
+          [this, idx]() { emit dataChanged(index(idx, 0), index(idx, 0)); },
+          Qt::QueuedConnection);
+}
+
+void DirectoryModel::clear() {
+  beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
+  list_.clear();
+  endRemoveRows();
 }

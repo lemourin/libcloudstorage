@@ -55,6 +55,7 @@ Item {
         onAddedItem: {
             directory.visible = true;
             directory.focus = true;
+            //console.log(directory.currentIndex);
         }
         onUploadProgressChanged: {
             uploadProgress.visible = total != 0;
@@ -84,7 +85,7 @@ Item {
                 property int thumbnailWidth: 50
                 property int thumbnailHeight: 50
                 property int padding: 5
-                property var view: ListView.view
+                property string isDirectory: display["is_directory"]
 
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
@@ -97,7 +98,7 @@ Item {
                     Image {
                         width: fileEntry.thumbnailWidth
                         height: fileEntry.thumbnailHeight
-                        source: thumbnail
+                        source: display["thumbnail"]
                     }
                     Item {
                         height: fileEntry.thumbnailHeight
@@ -106,7 +107,7 @@ Item {
                             x: fileEntry.padding
                             id: text
                             anchors.verticalCenter: parent.verticalCenter
-                            text: name
+                            text: display["name"]
                         }
                     }
                 }
@@ -125,15 +126,14 @@ Item {
             }
             if (currentIndex == -1)
                 return;
-            var t = directoryModel[currentIndex];
             if (event.key === Qt.Key_Return) {
-                if (t.directory)
-                    window.changeCurrentDirectory(t);
+                if (currentItem.isDirectory)
+                    window.changeCurrentDirectory(currentIndex);
                 else
-                    window.play(t);
+                    window.play(currentIndex);
             } else if (event.key === Qt.Key_D) {
                 downloadFileDialog.visible = true;
-                downloadFileDialog.file = t;
+                downloadFileDialog.file = currentIndex;
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();

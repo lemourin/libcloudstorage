@@ -26,6 +26,7 @@
 
 #include <ICloudProvider.h>
 #include <IItem.h>
+#include <QAbstractListModel>
 #include <QQuickImageProvider>
 #include <QQuickView>
 #include <future>
@@ -51,15 +52,12 @@ class ImageProvider : public QQuickImageProvider {
 
 class ItemModel : public QObject {
  public:
-  Q_PROPERTY(QString name READ name CONSTANT)
-  Q_PROPERTY(bool directory READ is_directory CONSTANT)
-  Q_PROPERTY(QString thumbnail READ thumbnail NOTIFY thumbnailChanged)
+  using Pointer = std::unique_ptr<ItemModel>;
 
   ItemModel(cloudstorage::IItem::Pointer item,
             cloudstorage::ICloudProvider::Pointer, Window*);
 
   QString name() const { return item_->filename().c_str(); }
-  bool is_directory() const { return item_->is_directory(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
   QString thumbnail() const { return thumbnail_; }
 
@@ -78,6 +76,20 @@ class ItemModel : public QObject {
   Q_OBJECT
 };
 
+class DirectoryModel : public QAbstractListModel {
+ public:
+  int rowCount(const QModelIndex& parent = QModelIndex()) const;
+  QVariant data(const QModelIndex& index, int) const;
+
+  void addItem(IItem::Pointer, Window* w);
+  ItemModel* get(int id) const { return list_[id].get(); }
+
+  void clear();
+
+ private:
+  std::vector<ItemModel::Pointer> list_;
+};
+
 class Window : public QQuickView {
  public:
   Window();
@@ -87,12 +99,12 @@ class Window : public QQuickView {
 
   Q_INVOKABLE void initializeCloud(QString name);
   Q_INVOKABLE void listDirectory();
-  Q_INVOKABLE void changeCurrentDirectory(ItemModel* directory);
+  Q_INVOKABLE void changeCurrentDirectory(int directory);
   Q_INVOKABLE bool goBack();
-  Q_INVOKABLE void play(ItemModel* item);
+  Q_INVOKABLE void play(int item);
   Q_INVOKABLE void stop();
   Q_INVOKABLE void uploadFile(QString path);
-  Q_INVOKABLE void downloadFile(ItemModel*, QUrl path);
+  Q_INVOKABLE void downloadFile(int, QUrl path);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(cloudstorage::IItem::Pointer);
@@ -119,6 +131,7 @@ class Window : public QQuickView {
 
  private:
   friend class CloudProviderCallback;
+  friend class DirectoryModel;
 
   void clearCurrentDirectoryList();
   void saveCloudAccessToken();
@@ -139,6 +152,7 @@ class Window : public QQuickView {
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;
   std::future<void> clear_directory_;
+  DirectoryModel directory_model_;
 
   Q_OBJECT
 };
