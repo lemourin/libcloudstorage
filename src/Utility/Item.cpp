@@ -41,15 +41,6 @@ std::string Item::id() const { return id_; }
 
 bool Item::is_directory() const { return type() == FileType::Directory; }
 
-IItem::Pointer Item::copy() const {
-  Item::Pointer item = make_unique<Item>(filename(), id(), type());
-  item->set_url(url());
-  item->set_thumbnail_url(thumbnail_url());
-  item->set_hidden(is_hidden());
-  item->set_type(type());
-  return item;
-}
-
 std::string Item::url() const { return url_; }
 
 void Item::set_url(std::string url) { url_ = url; }
