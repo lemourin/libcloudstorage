@@ -45,11 +45,12 @@ Item {
    Connections {
         target: window
         onOpenBrowser: {
-            browserView.visible = true;
+            browser.visible = true;
             browser.url = url;
         }
         onCloseBrowser: {
-            browserView.visible = false;
+            if (browser.visible) directory.focus = true;
+            browser.visible = false;
             if (!directory.focus) cloudView.focus = true;
         }
         onRunListDirectory: {
@@ -218,15 +219,9 @@ Item {
         anchors.left: parent.left
     }
 
-    ScrollView {
-        id: browserView
+    WebView {
+        id: browser
         visible: false
         anchors.fill: parent
-
-        WebView {
-            id: browser
-            anchors.fill: parent
-        }
     }
-
 }

@@ -216,8 +216,9 @@ void Window::play(int item_id) {
   ItemModel* item = directory_model_.get(item_id);
   stop();
   item_data_request_ = cloud_provider_->getItemDataAsync(
-      item->item()->id(),
-      [this](IItem::Pointer i) { emit runPlayerFromUrl(i->url().c_str()); });
+      item->item()->id(), [this](IItem::Pointer i) {
+        if (i) emit runPlayerFromUrl(i->url().c_str());
+      });
 }
 
 void Window::stop() {
