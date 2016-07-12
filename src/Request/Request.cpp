@@ -142,7 +142,10 @@ template <class T>
 int Request<T>::send(HttpRequest* request, std::istream& input,
                      std::ostream& output, std::ostream* error,
                      ProgressFunction download, ProgressFunction upload) {
-  if (!request) return HttpRequest::Aborted;
+  if (!request) {
+    this->error(HttpRequest::Aborted, "Not available.");
+    return HttpRequest::Aborted;
+  }
   int code;
   try {
     code = request->send(input, output, error, httpCallback(download, upload));
