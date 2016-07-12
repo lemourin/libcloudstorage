@@ -24,9 +24,12 @@
 #include "YouTube.h"
 
 #include <jsoncpp/json/json.h>
+#include <cstring>
 
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
+
+const std::string VIDEO_ID_PREFIX = "video###";
 
 namespace cloudstorage {
 
@@ -36,12 +39,20 @@ std::string YouTube::name() const { return "youtube"; }
 
 HttpRequest::Pointer YouTube::getItemDataRequest(const std::string& id,
                                                  std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://www.googleapis.com/youtube/v3/playlistItems",
-      HttpRequest::Type::GET);
-  request->setParameter("part", "contentDetails,snippet");
-  request->setParameter("id", id);
-  return request;
+  if (id.find(VIDEO_ID_PREFIX) != std::string::npos) {
+    auto request = make_unique<HttpRequest>(
+        "https://www.googleapis.com/youtube/v3/videos", HttpRequest::Type::GET);
+    request->setParameter("part", "contentDetails,snippet");
+    request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
+    return request;
+  } else {
+    auto request = make_unique<HttpRequest>(
+        "https://www.googleapis.com/youtube/v3/playlistItems",
+        HttpRequest::Type::GET);
+    request->setParameter("part", "contentDetails,snippet");
+    request->setParameter("id", id);
+    return request;
+  }
 }
 
 HttpRequest::Pointer YouTube::listDirectoryRequest(
@@ -103,7 +114,6 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     for (const std::string& name : related_playlits.getMemberNames()) {
       auto item = make_unique<Item>(name, related_playlits[name].asString(),
                                     IItem::FileType::Directory);
-
       item->set_thumbnail_url(response["items"][0]["snippet"]["thumbnails"]
                                       ["default"]["url"]
                                           .asString());
@@ -129,14 +139,23 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind) const {
         v["snippet"]["thumbnails"]["default"]["url"].asString());
     return item;
   } else {
-    auto item = make_unique<Item>(v["snippet"]["title"].asString(),
-                                  v["id"].asString(), IItem::FileType::Video);
+    std::string video_id;
+    if (kind == "youtube#playlistItemListResponse")
+      video_id = v["snippet"]["resourceId"]["videoId"].asString();
+    else if (kind == "youtube#videoListResponse")
+      video_id = v["id"].asString();
+    else
+      return nullptr;
+
+    auto item =
+        make_unique<Item>(v["snippet"]["title"].asString(),
+                          VIDEO_ID_PREFIX + video_id, IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
     item->set_url(
         "http://youtube-dl.appspot.com/api/play?url=https://www.youtube.com/"
         "watch?v=" +
-        v["snippet"]["resourceId"]["videoId"].asString());
+        video_id);
     return item;
   }
 }
