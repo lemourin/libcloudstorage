@@ -34,6 +34,9 @@ class YouTube : public CloudProvider {
  public:
   YouTube();
 
+  void initialize(const std::string& token, ICallback::Pointer,
+                  const Hints& hints);
+  Hints hints() const;
   std::string name() const;
 
  private:
@@ -59,6 +62,8 @@ class YouTube : public CloudProvider {
    public:
     std::string authorizeLibraryUrl() const;
   };
+
+  std::string youtube_dl_url_;
 };
 
 }  // namespace cloudstorage

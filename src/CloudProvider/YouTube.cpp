@@ -33,7 +33,24 @@ const std::string VIDEO_ID_PREFIX = "video###";
 
 namespace cloudstorage {
 
-YouTube::YouTube() : CloudProvider(make_unique<Auth>()) {}
+YouTube::YouTube()
+    : CloudProvider(make_unique<Auth>()),
+      youtube_dl_url_("http://youtube-dl.appspot.com") {}
+
+void YouTube::initialize(const std::string& token,
+                         ICloudProvider::ICallback::Pointer callback,
+                         const ICloudProvider::Hints& hints) {
+  CloudProvider::initialize(token, std::move(callback), hints);
+  setWithHint(hints, "youtube_dl_url",
+              [this](std::string url) { youtube_dl_url_ = url; });
+}
+
+ICloudProvider::Hints YouTube::hints() const {
+  Hints result = {{"youtube_dl_url", youtube_dl_url_}};
+  auto t = CloudProvider::hints();
+  result.insert(t.begin(), t.end());
+  return result;
+}
 
 std::string YouTube::name() const { return "youtube"; }
 
@@ -152,10 +169,10 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind) const {
                           VIDEO_ID_PREFIX + video_id, IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
-    item->set_url(
-        "http://youtube-dl.appspot.com/api/play?url=https://www.youtube.com/"
-        "watch?v=" +
-        video_id);
+    item->set_url(youtube_dl_url_ +
+                  "/api/play?url=https://www.youtube.com/"
+                  "watch?v=" +
+                  video_id);
     return item;
   }
 }
