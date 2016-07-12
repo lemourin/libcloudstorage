@@ -215,7 +215,7 @@ IAuth::Token::Pointer Box::Auth::refreshTokenResponse(
   Json::Value response;
   stream >> response;
   return make_unique<Token>(Token{response["access_token"].asString(),
-                                  access_token()->refresh_token_, -1});
+                                  response["refresh_token"].asString(), -1});
 }
 
 }  // namespace cloudstorage
