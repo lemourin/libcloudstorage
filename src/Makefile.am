@@ -23,6 +23,8 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/AmazonDrive.cpp \
 	CloudProvider/Box.cpp \
 	CloudProvider/Box.h \
+	CloudProvider/YouTube.cpp \
+	CloudProvider/YouTube.h \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
