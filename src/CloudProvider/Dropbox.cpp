@@ -42,6 +42,8 @@ IItem::Pointer Dropbox::rootDirectory() const {
   return make_unique<Item>("/", "", IItem::FileType::Directory);
 }
 
+bool Dropbox::reauthorize(int code) const { return code == 400 || code == 401; }
+
 ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   return make_unique<cloudstorage::GetItemDataRequest>(
