@@ -68,6 +68,7 @@ class ItemModel : public QObject {
 
  private:
   friend class Window;
+  friend class DownloadThumbnailCallback;
 
   QString thumbnail_;
   IItem::Pointer item_;
@@ -113,6 +114,8 @@ class Window : public QQuickView {
   void onPlayFile(QString filename);
   void onPlayFileFromUrl(QString url);
 
+  std::mutex& stream_mutex() const { return stream_mutex_; }
+
  signals:
   void openBrowser(QString url);
   void closeBrowser();
@@ -155,6 +158,7 @@ class Window : public QQuickView {
   VLC::MediaPlayer media_player_;
   std::future<void> clear_directory_;
   DirectoryModel directory_model_;
+  mutable std::mutex stream_mutex_;
 
   Q_OBJECT
 };

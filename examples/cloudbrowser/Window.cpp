@@ -92,8 +92,11 @@ void Window::initializeCloud(QString name) {
     cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
   else
     cloud_provider_ = make_unique<MockProvider>();
-  std::cerr << "[DIAG] Trying to authorize with "
-            << settings.value(name).toString().toStdString() << std::endl;
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Trying to authorize with "
+              << settings.value(name).toString().toStdString() << std::endl;
+  }
   ICloudProvider::Hints hints =
       fromQMap(settings.value(name + "_hints").toMap());
   cloud_provider_->initialize(settings.value(name).toString().toStdString(),
@@ -118,6 +121,7 @@ void Window::changeCurrentDirectory(int directory_id) {
 }
 
 void Window::onSuccessfullyAuthorized() {
+  std::unique_lock<std::mutex> lock(stream_mutex());
   std::cerr << "[OK] Successfully authorized "
             << cloud_provider_->name().c_str() << "\n";
 }
@@ -133,7 +137,10 @@ void Window::onPlayFile(QString filename) {
 }
 
 void Window::onPlayFileFromUrl(QString url) {
-  std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
+  }
   VLC::Media media(vlc_instance_, url.toStdString(), VLC::Media::FromLocation);
   media_player_.setMedia(media);
   media_player_.play();
@@ -222,13 +229,22 @@ void Window::play(int item_id) {
 }
 
 void Window::stop() {
-  std::cerr << "[DIAG] Trying to stop player\n";
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Trying to stop player\n";
+  }
   media_player_.stop();
-  std::cerr << "[DIAG] Stopped\n";
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Stopped\n";
+  }
 }
 
 void Window::uploadFile(QString path) {
-  std::cerr << "[DIAG] Uploading file " << path.toStdString() << "\n";
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Uploading file " << path.toStdString() << "\n";
+  }
   QUrl url = path;
   upload_request_ = cloud_provider_->uploadFileAsync(
       current_directory_, url.fileName().toStdString(),
@@ -241,6 +257,8 @@ void Window::downloadFile(int item_id, QUrl path) {
       i->item(),
       make_unique<DownloadFileCallback>(this, path.toLocalFile().toStdString() +
                                                   "/" + i->item()->filename()));
+
+  std::unique_lock<std::mutex> lock(stream_mutex());
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
             << "\n";
 }
@@ -296,10 +314,7 @@ bool ImageProvider::hasImage(QString id) {
 int DirectoryModel::rowCount(const QModelIndex&) const { return list_.size(); }
 
 QVariant DirectoryModel::data(const QModelIndex& id, int) const {
-  if (static_cast<uint32_t>(id.row()) >= list_.size()) {
-    std::cerr << "[FAIL] QML requests nonexistent object.\n";
-    return QVariant();
-  }
+  if (static_cast<uint32_t>(id.row()) >= list_.size()) return QVariant();
   auto model = list_[id.row()].get();
   model->fetchThumbnail();
 

@@ -40,12 +40,16 @@ void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
 }
 
 void DownloadFileCallback::done() {
+  {
+    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    std::cerr << "[OK] Finished download.\n";
+  }
   file_.close();
   emit window_->downloadProgressChanged(0, 0);
-  std::cerr << "[OK] Finished download.\n";
 }
 
 void DownloadFileCallback::error(const std::string& desc) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[FAIL] Download: " << desc << "\n";
   emit window_->downloadProgressChanged(0, 0);
 }
@@ -60,7 +64,10 @@ UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
             std::ios_base::in | std::ios_base::binary) {}
 
 void UploadFileCallback::reset() {
-  std::cerr << "[DIAG] Starting transmission\n";
+  {
+    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    std::cerr << "[DIAG] Starting transmission\n";
+  }
   file_.seekg(std::ios::beg);
 }
 
@@ -70,11 +77,13 @@ uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
 }
 
 void UploadFileCallback::done() {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[OK] Successfuly uploaded\n";
   emit window_->uploadProgressChanged(0, 0);
 }
 
 void UploadFileCallback::error(const std::string& description) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[FAIL] Upload: " << description << "\n";
   emit window_->uploadProgressChanged(0, 0);
 }
@@ -87,6 +96,7 @@ CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}
 
 ICloudProvider::ICallback::Status CloudProviderCallback::userConsentRequired(
     const ICloudProvider& p) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[DIAG] User consent required: " << p.authorizeLibraryUrl()
             << "\n";
   emit window_->openBrowser(p.authorizeLibraryUrl().c_str());
@@ -106,6 +116,7 @@ void CloudProviderCallback::declined(const ICloudProvider&) {
 
 void CloudProviderCallback::error(const ICloudProvider&,
                                   const std::string& desc) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[FAIL] Authorize " << desc.c_str() << "\n";
   emit window_->closeBrowser();
 }
@@ -119,6 +130,7 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
 void ListDirectoryCallback::done(const std::vector<IItem::Pointer>&) {}
 
 void ListDirectoryCallback::error(const std::string& str) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[FAIL] ListDirectory: " << str << "\n";
   emit window_->closeBrowser();
 }
@@ -138,6 +150,7 @@ void DownloadThumbnailCallback::done() {
 }
 
 void DownloadThumbnailCallback::error(const std::string& error) {
+  std::unique_lock<std::mutex> lock(item_->window_->stream_mutex());
   std::cerr << "[FAIL] Thumbnail: " << error << "\n";
 }
 
