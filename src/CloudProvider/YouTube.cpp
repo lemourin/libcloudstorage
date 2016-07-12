@@ -24,7 +24,6 @@
 #include "YouTube.h"
 
 #include <jsoncpp/json/json.h>
-#include <iostream>
 
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -51,7 +50,7 @@ HttpRequest::Pointer YouTube::listDirectoryRequest(
     if (page_token.empty())
       return make_unique<HttpRequest>(
           "https://www.googleapis.com/youtube/v3/"
-          "channels?mine=true&part=contentDetails",
+          "channels?mine=true&part=contentDetails,snippet",
           HttpRequest::Type::GET);
     else if (page_token == "real_playlist")
       return make_unique<HttpRequest>(
@@ -101,9 +100,15 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
   if (response["kind"].asString() == "youtube#channelListResponse") {
     Json::Value related_playlits =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
-    for (const std::string& name : related_playlits.getMemberNames())
-      result.push_back(make_unique<Item>(
-          name, related_playlits[name].asString(), IItem::FileType::Directory));
+    for (const std::string& name : related_playlits.getMemberNames()) {
+      auto item = make_unique<Item>(name, related_playlits[name].asString(),
+                                    IItem::FileType::Directory);
+
+      item->set_thumbnail_url(response["items"][0]["snippet"]["thumbnails"]
+                                      ["default"]["url"]
+                                          .asString());
+      result.push_back(std::move(item));
+    }
     next_page_token = "real_playlist";
   } else {
     for (const Json::Value& v : response["items"])
