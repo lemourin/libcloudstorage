@@ -108,10 +108,11 @@ class CloudProvider : public ICloudProvider,
  private:
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
-  mutable std::mutex auth_mutex_;
-  mutable std::mutex current_authorization_mutex_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
+  mutable std::mutex auth_mutex_;
+  mutable std::mutex current_authorization_mutex_;
+  mutable std::mutex authorization_status_mutex_;
   mutable std::condition_variable authorized_;
 };
 

@@ -34,13 +34,9 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) {
     bool success = authorize();
-    {
-      std::unique_lock<std::mutex> current_authorization(
-          provider()->current_authorization_mutex());
-      provider()->set_authorization_status(
-          success ? CloudProvider::AuthorizationStatus::Success
-                  : CloudProvider::AuthorizationStatus::Fail);
-    }
+    provider()->set_authorization_status(
+        success ? CloudProvider::AuthorizationStatus::Success
+                : CloudProvider::AuthorizationStatus::Fail);
     provider()->authorized_condition().notify_all();
     if (success)
       provider()->callback()->accepted(*provider());

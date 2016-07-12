@@ -143,11 +143,13 @@ std::condition_variable& CloudProvider::authorized_condition() const {
 }
 
 CloudProvider::AuthorizationStatus CloudProvider::authorization_status() const {
+  std::unique_lock<std::mutex> lock(authorization_status_mutex_);
   return current_authorization_status_;
 }
 
 void CloudProvider::set_authorization_status(
     CloudProvider::AuthorizationStatus status) {
+  std::unique_lock<std::mutex> lock(authorization_status_mutex_);
   current_authorization_status_ = status;
 }
 
