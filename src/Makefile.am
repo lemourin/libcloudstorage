@@ -21,6 +21,8 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/OneDrive.cpp \
 	CloudProvider/Dropbox.cpp \
 	CloudProvider/AmazonDrive.cpp \
+	CloudProvider/Box.cpp \
+	CloudProvider/Box.h \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \

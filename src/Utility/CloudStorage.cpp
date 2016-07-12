@@ -27,6 +27,7 @@
 #include <fstream>
 
 #include "CloudProvider/AmazonDrive.h"
+#include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
 #include "CloudProvider/OneDrive.h"
@@ -36,7 +37,8 @@ namespace cloudstorage {
 
 CloudStorage::CloudStorage()
     : providers_({make_unique<GoogleDrive>(), make_unique<OneDrive>(),
-                  make_unique<Dropbox>(), make_unique<AmazonDrive>()}) {}
+                  make_unique<Dropbox>(), make_unique<AmazonDrive>(),
+                  make_unique<Box>()}) {}
 
 std::vector<ICloudProvider::Pointer> CloudStorage::providers() const {
   return providers_;
