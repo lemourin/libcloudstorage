@@ -34,7 +34,6 @@ class GoogleDrive : public CloudProvider {
   GoogleDrive();
   std::string name() const;
 
- private:
   HttpRequest::Pointer getItemDataRequest(const std::string&,
                                           std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
@@ -51,6 +50,10 @@ class GoogleDrive : public CloudProvider {
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 
+  bool isGoogleMimeType(const std::string& mime_type) const;
+  IItem::FileType toFileType(const std::string& mime_type) const;
+  IItem::Pointer toItem(const Json::Value&) const;
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -64,10 +67,6 @@ class GoogleDrive : public CloudProvider {
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;
   };
-
-  bool isGoogleMimeType(const std::string& mime_type) const;
-  IItem::FileType toFileType(const std::string& mime_type) const;
-  IItem::Pointer toItem(const Json::Value&) const;
 };
 
 }  // namespace cloudstorage
