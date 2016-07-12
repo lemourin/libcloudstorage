@@ -37,6 +37,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
   set_resolver([this](Request*) {
     std::string page_token;
     std::vector<IItem::Pointer> result;
+    bool failure = false;
     do {
       std::stringstream output_stream;
       int code = sendRequest(
@@ -51,10 +52,10 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
           if (callback_) callback_->receivedItem(t);
           result.push_back(t);
         }
-      }
-    } while (!page_token.empty());
-
-    if (callback_) callback_->done(result);
+      } else
+        failure = true;
+    } while (!page_token.empty() && !failure);
+    if (!failure && callback_) callback_->done(result);
     return result;
   });
 }
