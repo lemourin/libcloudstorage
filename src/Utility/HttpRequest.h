@@ -71,6 +71,9 @@ class HttpRequest {
   void setHeaderParameter(const std::string& parameter,
                           const std::string& value);
 
+  bool follow_redirect() const;
+  void set_follow_redirect(bool);
+
   const std::string& url() const;
   void set_url(const std::string&);
 
@@ -87,6 +90,7 @@ class HttpRequest {
   void resetParameters();
 
   static bool isSuccess(int code);
+  static bool isRedirect(int code);
   static bool isClientError(int code);
   static bool isAuthorizationError(int code);
   static bool isCurlError(int code);
@@ -104,6 +108,7 @@ class HttpRequest {
   std::unordered_map<std::string, std::string> parameters_;
   std::unordered_map<std::string, std::string> header_parameters_;
   Type type_;
+  bool follow_redirect_;
 };
 
 }  // namespace cloudstorage

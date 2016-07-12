@@ -23,7 +23,10 @@
 
 #include "HttpRequest.h"
 
+#include <array>
 #include <sstream>
+
+const uint32_t MAX_URL_LENGTH = 1024;
 
 namespace cloudstorage {
 
@@ -92,7 +95,10 @@ std::ios::pos_type stream_length(std::istream& data) {
 }  // namespace
 
 HttpRequest::HttpRequest(const std::string& url, Type t)
-    : handle_(curl_easy_init(), CurlDeleter()), url_(url), type_(t) {
+    : handle_(curl_easy_init(), CurlDeleter()),
+      url_(url),
+      type_(t),
+      follow_redirect_(true) {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER,
@@ -111,6 +117,13 @@ void HttpRequest::setParameter(const std::string& parameter,
 void HttpRequest::setHeaderParameter(const std::string& parameter,
                                      const std::string& value) {
   header_parameters_[parameter] = value;
+}
+
+bool HttpRequest::follow_redirect() const { return follow_redirect_; }
+
+void HttpRequest::set_follow_redirect(bool e) {
+  follow_redirect_ = e;
+  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, static_cast<long>(e));
 }
 
 const std::string& HttpRequest::url() const { return url_; }
@@ -175,6 +188,12 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   else if (status == CURLE_OK) {
     long http_code = static_cast<long>(Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
+    if (!follow_redirect() && isRedirect(http_code)) {
+      std::array<char, MAX_URL_LENGTH> redirect_url;
+      char* data = redirect_url.data();
+      curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
+      response << data;
+    }
     return static_cast<int>(http_code);
   } else
     throw HttpException(status);
@@ -185,7 +204,11 @@ void HttpRequest::resetParameters() {
   header_parameters_.clear();
 }
 
-bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
+bool HttpRequest::isSuccess(int code) {
+  return (code / 100) == 2 || (code / 100) == 3;
+}
+
+bool HttpRequest::isRedirect(int code) { return (code / 100) == 3; }
 
 bool HttpRequest::isClientError(int code) {
   return (code / 100) == 4 || (code / 100) == 5;
