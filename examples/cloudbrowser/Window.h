@@ -143,8 +143,8 @@ class Window : public QQuickView {
   void initializeMediaPlayer();
   void startDirectoryClear(std::function<void()>);
 
-  ICloudProvider::Hints fromQMap(const QMap<QString, QVariant>&) const;
-  QMap<QString, QVariant> toQMap(const ICloudProvider::Hints&) const;
+  ICloudProvider::Hints fromJson(const QJsonObject&) const;
+  QJsonObject toJson(const ICloudProvider::Hints&) const;
 
   ICloudProvider::Pointer cloud_provider_;
   IItem::Pointer current_directory_;

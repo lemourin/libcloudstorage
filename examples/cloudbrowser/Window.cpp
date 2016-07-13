@@ -25,6 +25,8 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMetaEnum>
 #include <QMetaObject>
 #include <QQmlContext>
@@ -97,10 +99,11 @@ void Window::initializeCloud(QString name) {
     std::cerr << "[DIAG] Trying to authorize with "
               << settings.value(name).toString().toStdString() << std::endl;
   }
-  ICloudProvider::Hints hints =
-      fromQMap(settings.value(name + "_hints").toMap());
-  cloud_provider_->initialize(settings.value(name).toString().toStdString(),
-                              make_unique<CloudProviderCallback>(this), hints);
+  QString json = settings.value(name + "_hints").toString();
+  QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
+  cloud_provider_->initialize(settings.value("name").toString().toStdString(),
+                              make_unique<CloudProviderCallback>(this),
+                              fromJson(data));
   current_directory_ = cloud_provider_->rootDirectory();
   emit runListDirectory();
 }
@@ -161,8 +164,11 @@ void Window::saveCloudAccessToken() {
   if (cloud_provider_) {
     clearCurrentDirectoryList();
     QSettings settings;
+    std::string data = QJsonDocument(toJson(cloud_provider_->hints()))
+                           .toJson(QJsonDocument::Compact)
+                           .toStdString();
     settings.setValue((cloud_provider_->name() + "_hints").c_str(),
-                      toQMap(cloud_provider_->hints()));
+                      data.c_str());
   }
 }
 
@@ -192,16 +198,15 @@ void Window::startDirectoryClear(std::function<void()> f) {
   });
 }
 
-ICloudProvider::Hints Window::fromQMap(
-    const QMap<QString, QVariant>& map) const {
-  ICloudProvider::Hints result;
-  for (auto it = map.begin(); it != map.end(); it++)
-    result[it.key().toStdString()] = it.value().toString().toStdString();
-  return result;
+ICloudProvider::Hints Window::fromJson(const QJsonObject& json) const {
+  ICloudProvider::Hints hints;
+  for (QString key : json.keys())
+    hints[key.toStdString()] = json[key].toString().toStdString();
+  return hints;
 }
 
-QMap<QString, QVariant> Window::toQMap(const ICloudProvider::Hints& map) const {
-  QMap<QString, QVariant> result;
+QJsonObject Window::toJson(const ICloudProvider::Hints& map) const {
+  QJsonObject result;
   for (auto it = map.begin(); it != map.end(); it++)
     result[it->first.c_str()] = it->second.c_str();
   return result;
