@@ -27,6 +27,8 @@
 #include "HttpCallback.h"
 #include "Utility/Utility.h"
 
+#include <cctype>
+
 const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
 
 namespace cloudstorage {
@@ -35,6 +37,16 @@ template class Request<void>;
 template class Request<bool>;
 template class Request<std::shared_ptr<cloudstorage::IItem>>;
 template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
+
+namespace {
+
+bool isPrintable(const std::string& str) {
+  for (char c : str)
+    if (!isprint(c)) return false;
+  return true;
+}
+
+}  // namespace
 
 template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider)
@@ -104,8 +116,10 @@ std::string Request<T>::error_string(int code, const std::string& desc) const {
   if (HttpRequest::isCurlError(code))
     stream << "CURL code " << code << ": "
            << curl_easy_strerror(static_cast<CURLcode>(code));
-  else
-    stream << "HTTP code " << code << ": " << desc;
+  else {
+    stream << "HTTP code " << code;
+    if (isPrintable(desc)) stream << ": " << desc;
+  }
   return stream.str();
 }
 
