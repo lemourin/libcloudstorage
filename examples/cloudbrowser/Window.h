@@ -130,6 +130,7 @@ class Window : public QQuickView {
   void hidePlayer();
   void runListDirectory();
   void runClearDirectory();
+  void playNext();
 
  protected:
   void keyPressEvent(QKeyEvent*);
@@ -159,6 +160,7 @@ class Window : public QQuickView {
   std::future<void> clear_directory_;
   DirectoryModel directory_model_;
   mutable std::mutex stream_mutex_;
+  int last_played_;
 
   Q_OBJECT
 };

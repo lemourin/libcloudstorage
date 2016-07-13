@@ -41,7 +41,8 @@ using namespace cloudstorage;
 Window::Window()
     : image_provider_(new ImageProvider),
       vlc_instance_(0, nullptr),
-      media_player_(vlc_instance_) {
+      media_player_(vlc_instance_),
+      last_played_(-1) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
 
@@ -78,6 +79,21 @@ Window::Window()
           Qt::QueuedConnection);
   connect(this, &Window::runClearDirectory, this,
           [this]() { clearCurrentDirectoryList(); }, Qt::QueuedConnection);
+  connect(this, &Window::playNext, this,
+          [this]() {
+            if (last_played_ == -1) return;
+            for (int i = last_played_ + 1; i < directory_model_.rowCount();
+                 i++) {
+              auto type = directory_model_.get(i)->item()->type();
+              if (type == IItem::FileType::Audio ||
+                  type == IItem::FileType::Video ||
+                  type == IItem::FileType::Image) {
+                play(i);
+                break;
+              }
+            }
+          },
+          Qt::QueuedConnection);
 }
 
 Window::~Window() {
@@ -147,6 +163,10 @@ void Window::onPlayFileFromUrl(QString url) {
   VLC::Media media(vlc_instance_, url.toStdString(), VLC::Media::FromLocation);
   media_player_.setMedia(media);
   media_player_.play();
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
+  }
 }
 
 void Window::keyPressEvent(QKeyEvent* e) {
@@ -158,7 +178,10 @@ void Window::keyPressEvent(QKeyEvent* e) {
     media_player_.pause();
 }
 
-void Window::clearCurrentDirectoryList() { directory_model_.clear(); }
+void Window::clearCurrentDirectoryList() {
+  directory_model_.clear();
+  last_played_ = -1;
+}
 
 void Window::saveCloudAccessToken() {
   if (cloud_provider_) {
@@ -185,6 +208,7 @@ void Window::initializeMediaPlayer() {
     if (media_player_.videoTrackCount() > 0) emit showPlayer();
   });
   media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
+  media_player_.eventManager().onEndReached([this]() { emit playNext(); });
 }
 
 void Window::startDirectoryClear(std::function<void()> f) {
@@ -227,6 +251,7 @@ bool Window::goBack() {
 void Window::play(int item_id) {
   ItemModel* item = directory_model_.get(item_id);
   stop();
+  last_played_ = item_id;
   item_data_request_ = cloud_provider_->getItemDataAsync(
       item->item()->id(), [this](IItem::Pointer i) {
         if (i) emit runPlayerFromUrl(i->url().c_str());
