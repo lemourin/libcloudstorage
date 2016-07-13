@@ -29,6 +29,7 @@
 #include <QAbstractListModel>
 #include <QQuickImageProvider>
 #include <QQuickView>
+#include <QQuickWidget>
 #include <future>
 #include <vlcpp/vlc.hpp>
 
@@ -95,7 +96,7 @@ class DirectoryModel : public QAbstractListModel {
 
 class Window : public QQuickView {
  public:
-  Window();
+  Window(QWidget* player_widget);
   ~Window();
 
   ImageProvider* imageProvider() { return image_provider_; }
@@ -115,6 +116,10 @@ class Window : public QQuickView {
   void onPlayFileFromUrl(QString url);
 
   std::mutex& stream_mutex() const { return stream_mutex_; }
+  VLC::MediaPlayer& media_player() { return media_player_; }
+
+  void set_container(QWidget* w) { container_ = w; }
+  QWidget* container() const { return container_; }
 
  signals:
   void openBrowser(QString url);
@@ -132,16 +137,13 @@ class Window : public QQuickView {
   void runClearDirectory();
   void playNext();
 
- protected:
-  void keyPressEvent(QKeyEvent*);
-
  private:
   friend class CloudProviderCallback;
   friend class DirectoryModel;
 
   void clearCurrentDirectoryList();
   void saveCloudAccessToken();
-  void initializeMediaPlayer();
+  void initializeMediaPlayer(QWidget* player_widget);
   void startDirectoryClear(std::function<void()>);
 
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
@@ -161,6 +163,7 @@ class Window : public QQuickView {
   DirectoryModel directory_model_;
   mutable std::mutex stream_mutex_;
   int last_played_;
+  QWidget* container_;
 
   Q_OBJECT
 };

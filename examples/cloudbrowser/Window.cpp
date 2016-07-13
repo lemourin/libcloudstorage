@@ -38,16 +38,16 @@
 
 using namespace cloudstorage;
 
-Window::Window()
+Window::Window(QWidget* player_widget)
     : image_provider_(new ImageProvider),
       vlc_instance_(0, nullptr),
       media_player_(vlc_instance_),
-      last_played_(-1) {
+      last_played_(-1),
+      container_() {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
 
-  setClearBeforeRendering(false);
-  initializeMediaPlayer();
+  initializeMediaPlayer(player_widget);
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -68,11 +68,17 @@ Window::Window()
   connect(this, &Window::runPlayerFromUrl, this, &Window::onPlayFileFromUrl);
   connect(this, &Window::cloudChanged, this, &Window::listDirectory);
   connect(this, &Window::showPlayer, this,
-          [this]() { contentItem()->setVisible(false); }, Qt::QueuedConnection);
+          [this]() {
+            if (container()) container()->hide();
+          },
+          Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() {
-            media_player_.stop();
-            contentItem()->setVisible(true);
+            stop();
+            if (container()) {
+              container()->show();
+              container()->setFocus();
+            }
           },
           Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
@@ -169,15 +175,6 @@ void Window::onPlayFileFromUrl(QString url) {
   }
 }
 
-void Window::keyPressEvent(QKeyEvent* e) {
-  QQuickView::keyPressEvent(e);
-  if (e->isAccepted()) return;
-  if (e->key() == Qt::Key_Q)
-    stop();
-  else if (e->key() == Qt::Key_P)
-    media_player_.pause();
-}
-
 void Window::clearCurrentDirectoryList() {
   directory_model_.clear();
   last_played_ = -1;
@@ -195,13 +192,13 @@ void Window::saveCloudAccessToken() {
   }
 }
 
-void Window::initializeMediaPlayer() {
+void Window::initializeMediaPlayer(QWidget* player_widget) {
 #ifdef Q_OS_LINUX
-  media_player_.setXwindow(winId());
+  media_player_.setXwindow(player_widget->winId());
 #elif defined Q_OS_WIN
-  media_player_.setHwnd(reinterpret_cast<void*>(winId()));
+  media_player_.setHwnd(reinterpret_cast<void*>(player_widget->winId()));
 #elif defined Q_OS_DARWIN
-  media_player_.setNsobject(reinterpret_cast<void*>(winId()));
+  media_player_.setNsobject(reinterpret_cast<void*>(player_widget->winId()));
 #endif
 
   media_player_.eventManager().onPlaying([this]() {

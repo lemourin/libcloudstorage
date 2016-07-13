@@ -21,20 +21,55 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#include <QGuiApplication>
+#include <QApplication>
+#include <QResizeEvent>
 #include <iostream>
 #include <vlcpp/vlc.hpp>
 #include "Window.h"
 
+class MainWidget : public QWidget {
+ public:
+  MainWidget()
+      : player_widget_(this),
+        window_(&player_widget_),
+        container_(createWindowContainer(&window_, this)) {
+    window_.set_container(container_);
+
+    container_->setFocus();
+    player_widget_.show();
+  }
+
+ protected:
+  void resizeEvent(QResizeEvent* e) {
+    QWidget::resizeEvent(e);
+    player_widget_.resize(e->size());
+    container_->resize(e->size());
+  }
+
+  void keyPressEvent(QKeyEvent* e) {
+    QWidget::keyPressEvent(e);
+    if (e->isAccepted()) return;
+    if (e->key() == Qt::Key_Q)
+      window_.stop();
+    else if (e->key() == Qt::Key_P)
+      window_.media_player().pause();
+  }
+
+ private:
+  QWidget player_widget_;
+  Window window_;
+  QWidget* container_;
+};
+
 int main(int argc, char* argv[]) {
   try {
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
 
-    Window window;
-    window.resize(800, 600);
-    window.show();
+    MainWidget widget;
+    widget.resize(800, 600);
+    widget.show();
 
     return app.exec();
   } catch (const std::exception& e) {

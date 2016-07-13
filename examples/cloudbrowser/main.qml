@@ -42,7 +42,7 @@ Item {
             }
         }
     }
-   Connections {
+    Connections {
         target: window
         onOpenBrowser: {
             browser.visible = true;

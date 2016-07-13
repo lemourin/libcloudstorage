@@ -41,7 +41,7 @@ AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 
 AS_IF([test "x$with_examples" = "xyes"], [
-  PKG_CHECK_MODULES(QT, [Qt5Core Qt5Gui Qt5Quick], [
+  PKG_CHECK_MODULES(QT, [Qt5Core Qt5Gui Qt5Quick Qt5Widgets], [
     QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
     QT_HOST_PATH="$(eval $PKG_CONFIG --variable=host_bins Qt5Core)"
     AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
