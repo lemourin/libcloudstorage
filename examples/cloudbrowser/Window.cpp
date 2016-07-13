@@ -75,10 +75,8 @@ Window::Window(QWidget* player_widget)
   connect(this, &Window::hidePlayer, this,
           [this]() {
             stop();
-            if (container()) {
+            if (container())
               container()->show();
-              container()->setFocus();
-            }
           },
           Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
@@ -94,6 +92,7 @@ Window::Window(QWidget* player_widget)
               if (type == IItem::FileType::Audio ||
                   type == IItem::FileType::Video ||
                   type == IItem::FileType::Image) {
+                emit currentItemChanged(i);
                 play(i);
                 break;
               }

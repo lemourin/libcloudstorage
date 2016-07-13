@@ -29,7 +29,7 @@
 #include <QAbstractListModel>
 #include <QQuickImageProvider>
 #include <QQuickView>
-#include <QQuickWidget>
+#include <QWidget>
 #include <future>
 #include <vlcpp/vlc.hpp>
 
@@ -136,6 +136,7 @@ class Window : public QQuickView {
   void runListDirectory();
   void runClearDirectory();
   void playNext();
+  void currentItemChanged(int index);
 
  private:
   friend class CloudProviderCallback;

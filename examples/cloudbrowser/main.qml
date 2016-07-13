@@ -71,6 +71,9 @@ Item {
         onHidePlayer: {
             directory.focus = true;
         }
+        onCurrentItemChanged: {
+            directory.currentIndex = index;
+        }
     }
 
     ListView {
