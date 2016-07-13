@@ -101,7 +101,7 @@ void Window::initializeCloud(QString name) {
   }
   QString json = settings.value(name + "_hints").toString();
   QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
-  cloud_provider_->initialize(settings.value("name").toString().toStdString(),
+  cloud_provider_->initialize(settings.value(name).toString().toStdString(),
                               make_unique<CloudProviderCallback>(this),
                               fromJson(data));
   current_directory_ = cloud_provider_->rootDirectory();
