@@ -43,10 +43,12 @@ class Request : public IRequest<ReturnValue> {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using Resolver = std::function<ReturnValue(Request*)>;
+  using ErrorCallback = std::function<void(int, const std::string&)>;
 
   Request(std::shared_ptr<CloudProvider>);
 
   void set_resolver(Resolver);
+  void set_error_callback(ErrorCallback);
 
   void finish();
   void cancel();
@@ -60,7 +62,6 @@ class Request : public IRequest<ReturnValue> {
            std::ostream* error, ProgressFunction download = nullptr,
            ProgressFunction upload = nullptr);
 
- protected:
   std::shared_ptr<CloudProvider> provider() const { return provider_; }
   virtual void error(int code, const std::string& description);
   std::string error_string(int code, const std::string& desc) const;
@@ -77,6 +78,7 @@ class Request : public IRequest<ReturnValue> {
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
+  ErrorCallback error_callback_;
 };
 
 }  // namespace cloudstorage

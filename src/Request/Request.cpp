@@ -58,6 +58,11 @@ void Request<T>::set_resolver(Resolver resolver) {
 }
 
 template <class T>
+void Request<T>::set_error_callback(ErrorCallback f) {
+  error_callback_ = f;
+}
+
+template <class T>
 void Request<T>::finish() {
   std::shared_future<T> future = function_;
   if (future.valid()) future.wait();
@@ -108,7 +113,9 @@ bool Request<T>::reauthorize() {
 }
 
 template <class T>
-void Request<T>::error(int, const std::string&) {}
+void Request<T>::error(int code, const std::string& desc) {
+  if (error_callback_) error_callback_(code, desc);
+}
 
 template <class T>
 std::string Request<T>::error_string(int code, const std::string& desc) const {
