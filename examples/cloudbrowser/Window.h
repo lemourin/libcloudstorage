@@ -86,7 +86,7 @@ class DirectoryModel : public QAbstractListModel {
   QVariant data(const QModelIndex& index, int) const;
 
   void addItem(IItem::Pointer, Window* w);
-  ItemModel* get(int id) const { return list_[id].get(); }
+  ItemModel* get(int id) const;
 
   void clear();
 
@@ -137,6 +137,9 @@ class Window : public QQuickView {
   void runClearDirectory();
   void playNext();
   void currentItemChanged(int index);
+
+ protected:
+  void keyPressEvent(QKeyEvent* e);
 
  private:
   friend class CloudProviderCallback;

@@ -69,7 +69,8 @@ Window::Window(QWidget* player_widget)
   connect(this, &Window::cloudChanged, this, &Window::listDirectory);
   connect(this, &Window::showPlayer, this,
           [this]() {
-            if (container()->isVisible()) {
+            ItemModel* item = directory_model_.get(last_played_);
+            if (item && item->item()->type() != IItem::FileType::Audio) {
               container()->hide();
               contentItem()->setFocus(false);
             }
@@ -77,11 +78,8 @@ Window::Window(QWidget* player_widget)
           Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() {
-            stop();
-            if (container()->isHidden()) {
-              container()->show();
-              contentItem()->setFocus(true);
-            }
+            container()->show();
+            contentItem()->setFocus(true);
           },
           Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
@@ -179,6 +177,14 @@ void Window::onPlayFileFromUrl(QString url) {
   }
 }
 
+void Window::keyPressEvent(QKeyEvent* e) {
+  if (e->key() == Qt::Key_Q) {
+    stop();
+    e->accept();
+  }
+  QQuickView::keyPressEvent(e);
+}
+
 void Window::clearCurrentDirectoryList() {
   directory_model_.clear();
   last_played_ = -1;
@@ -205,9 +211,7 @@ void Window::initializeMediaPlayer(QWidget* player_widget) {
   media_player_.setNsobject(reinterpret_cast<void*>(player_widget->winId()));
 #endif
 
-  media_player_.eventManager().onPlaying([this]() {
-    if (media_player_.videoTrackCount() > 0) emit showPlayer();
-  });
+  media_player_.eventManager().onPlaying([this]() { emit showPlayer(); });
   media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
   media_player_.eventManager().onEndReached([this]() { emit playNext(); });
 }
@@ -251,8 +255,8 @@ bool Window::goBack() {
 
 void Window::play(int item_id) {
   ItemModel* item = directory_model_.get(item_id);
-  stop();
-  contentItem()->setFocus(false);
+  if (item->item()->type() != IItem::FileType::Audio)
+    contentItem()->setFocus(false);
   last_played_ = item_id;
   item_data_request_ = cloud_provider_->getItemDataAsync(
       item->item()->id(), [this](IItem::Pointer i) {
@@ -366,6 +370,11 @@ void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
   connect(list_.back().get(), &ItemModel::thumbnailChanged, this,
           [this, idx]() { emit dataChanged(index(idx, 0), index(idx, 0)); },
           Qt::QueuedConnection);
+}
+
+ItemModel* DirectoryModel::get(int id) const {
+  if (id < 0 || id >= list_.size()) return nullptr;
+  return list_[id].get();
 }
 
 void DirectoryModel::clear() {

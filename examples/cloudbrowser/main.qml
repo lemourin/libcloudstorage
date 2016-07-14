@@ -65,12 +65,6 @@ Item {
             downloadProgress.visible = total != 0;
             downloadProgress.value = now / total;
         }
-        onShowPlayer: {
-            directory.focus = false;
-        }
-        onHidePlayer: {
-            directory.focus = true;
-        }
         onCurrentItemChanged: {
             directory.currentIndex = index;
         }
@@ -140,8 +134,6 @@ Item {
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();
-            else if (event.key === Qt.Key_Q)
-                window.stop();
         }
         FileDialog {
             property var file
