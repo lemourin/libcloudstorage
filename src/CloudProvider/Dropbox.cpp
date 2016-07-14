@@ -223,14 +223,8 @@ HttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
   return request;
 }
 
-HttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(
-    std::ostream& input_data) const {
-  Dropbox dropbox;
-  dropbox.auth()->set_access_token(make_unique<Token>(*access_token()));
-  HttpRequest::Pointer r =
-      dropbox.listDirectoryRequest(*dropbox.rootDirectory(), "", input_data);
-  dropbox.authorizeRequest(*r);
-  return r;
+HttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(std::ostream&) const {
+  return nullptr;
 }
 
 IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
@@ -246,7 +240,7 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
 }
 
 IAuth::Token::Pointer Dropbox::Auth::refreshTokenResponse(std::istream&) const {
-  return make_unique<Token>(*access_token());
+  return nullptr;
 }
 
 }  // namespace cloudstorage

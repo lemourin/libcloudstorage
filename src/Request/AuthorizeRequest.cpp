@@ -75,7 +75,7 @@ bool AuthorizeRequest::authorize() {
     std::unique_lock<std::mutex> lock(provider()->auth_mutex());
     auth->set_access_token(auth->refreshTokenResponse(output));
     return true;
-  } else if (!HttpRequest::isClientError(code)) {
+  } else if (r && !HttpRequest::isClientError(code)) {
     if (!is_cancelled())
       provider()->callback()->error(*provider(),
                                     error_string(code, error_stream.str()));
