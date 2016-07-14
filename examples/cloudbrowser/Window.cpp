@@ -178,11 +178,15 @@ void Window::onPlayFileFromUrl(QString url) {
 }
 
 void Window::keyPressEvent(QKeyEvent* e) {
+  QQuickView::keyPressEvent(e);
+  if (e->isAccepted() && contentItem()->hasFocus()) return;
   if (e->key() == Qt::Key_Q) {
     stop();
     e->accept();
+  } else if (e->key() == Qt::Key_P) {
+    media_player_.pause();
+    e->accept();
   }
-  QQuickView::keyPressEvent(e);
 }
 
 void Window::clearCurrentDirectoryList() {
