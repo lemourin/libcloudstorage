@@ -34,7 +34,7 @@ namespace cloudstorage {
 template <class ReturnValue>
 class IRequest {
  public:
-  using Pointer = std::unique_ptr<IRequest>;
+  using Pointer = std::shared_ptr<IRequest>;
 
   virtual ~IRequest() = default;
 
@@ -45,7 +45,7 @@ class IRequest {
 
 class IListDirectoryCallback {
  public:
-  using Pointer = std::unique_ptr<IListDirectoryCallback>;
+  using Pointer = std::shared_ptr<IListDirectoryCallback>;
 
   virtual ~IListDirectoryCallback() = default;
 
@@ -56,7 +56,7 @@ class IListDirectoryCallback {
 
 class IDownloadFileCallback {
  public:
-  using Pointer = std::unique_ptr<IDownloadFileCallback>;
+  using Pointer = std::shared_ptr<IDownloadFileCallback>;
 
   virtual ~IDownloadFileCallback() = default;
 
@@ -68,7 +68,7 @@ class IDownloadFileCallback {
 
 class IUploadFileCallback {
  public:
-  using Pointer = std::unique_ptr<IUploadFileCallback>;
+  using Pointer = std::shared_ptr<IUploadFileCallback>;
 
   virtual ~IUploadFileCallback() = default;
 

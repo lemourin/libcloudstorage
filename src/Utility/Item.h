@@ -31,7 +31,7 @@ namespace cloudstorage {
 
 class Item : public IItem {
  public:
-  using Pointer = std::unique_ptr<Item>;
+  using Pointer = std::shared_ptr<Item>;
 
   Item(std::string filename, std::string id, FileType);
 

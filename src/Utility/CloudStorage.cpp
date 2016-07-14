@@ -31,6 +31,7 @@
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
 #include "CloudProvider/OneDrive.h"
+#include "CloudProvider/YandexDisk.h"
 #include "CloudProvider/YouTube.h"
 #include "Utility/Utility.h"
 
@@ -39,7 +40,8 @@ namespace cloudstorage {
 CloudStorage::CloudStorage()
     : providers_({make_unique<GoogleDrive>(), make_unique<OneDrive>(),
                   make_unique<Dropbox>(), make_unique<AmazonDrive>(),
-                  make_unique<Box>(), make_unique<YouTube>()}) {}
+                  make_unique<Box>(), make_unique<YouTube>(),
+                  make_unique<YandexDisk>()}) {}
 
 std::vector<ICloudProvider::Pointer> CloudStorage::providers() const {
   return providers_;
