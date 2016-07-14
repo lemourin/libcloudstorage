@@ -29,6 +29,18 @@
 
 namespace cloudstorage {
 
+class UploadStreamWrapper : public std::streambuf {
+ public:
+  static constexpr uint32_t BUFFER_SIZE = 1024;
+
+  UploadStreamWrapper(std::function<uint32_t(char*, uint32_t)> callback);
+
+  int_type underflow();
+
+  char buffer_[BUFFER_SIZE];
+  std::function<uint32_t(char*, uint32_t)> callback_;
+};
+
 class UploadFileRequest : public Request<void> {
  public:
   using ICallback = IUploadFileCallback;
@@ -41,21 +53,10 @@ class UploadFileRequest : public Request<void> {
   void error(int code, const std::string& description);
 
  private:
-  class UploadStreamWrapper : public std::streambuf {
-   public:
-    static constexpr uint32_t BUFFER_SIZE = 1024;
-
-    UploadStreamWrapper(UploadFileRequest::ICallback::Pointer callback);
-
-    int_type underflow();
-
-    char buffer_[BUFFER_SIZE];
-    UploadFileRequest::ICallback::Pointer callback_;
-  };
-
   IItem::Pointer directory_;
   std::string filename_;
   UploadStreamWrapper stream_wrapper_;
+  ICallback::Pointer callback_;
 };
 
 }  // namespace cloudstorage

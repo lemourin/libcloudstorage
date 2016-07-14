@@ -34,38 +34,40 @@ UploadFileRequest::UploadFileRequest(
     : Request(p),
       directory_(std::move(directory)),
       filename_(filename),
-      stream_wrapper_(std::move(callback)) {
+      stream_wrapper_(std::bind(&ICallback::putData, callback.get(),
+                                std::placeholders::_1, std::placeholders::_2)),
+      callback_(callback) {
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
   set_resolver([this](Request*) {
     std::stringstream response_stream;
     int code = sendRequest(
         [this](std::ostream& input) {
-          stream_wrapper_.callback_->reset();
+          callback_->reset();
           std::istream stream(&stream_wrapper_);
           return provider()->uploadFileRequest(*directory_, filename_, stream,
                                                input);
         },
         response_stream, nullptr,
-        std::bind(&ICallback::progress, stream_wrapper_.callback_.get(),
+        std::bind(&ICallback::progress, callback_.get(),
                   std::placeholders::_1, std::placeholders::_2));
-    if (HttpRequest::isSuccess(code)) stream_wrapper_.callback_->done();
+    if (HttpRequest::isSuccess(code)) callback_->done();
   });
 }
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }
 
 void UploadFileRequest::error(int code, const std::string& description) {
-  if (stream_wrapper_.callback_)
-    stream_wrapper_.callback_->error(error_string(code, description));
+  if (callback_)
+    callback_->error(error_string(code, description));
 }
 
-UploadFileRequest::UploadStreamWrapper::UploadStreamWrapper(
-    UploadFileRequest::ICallback::Pointer callback)
+UploadStreamWrapper::UploadStreamWrapper(
+    std::function<uint32_t(char*, uint32_t)> callback)
     : callback_(std::move(callback)) {}
 
-std::streambuf::int_type UploadFileRequest::UploadStreamWrapper::underflow() {
-  uint32_t size = callback_->putData(buffer_, BUFFER_SIZE);
+std::streambuf::int_type UploadStreamWrapper::underflow() {
+  uint32_t size = callback_(buffer_, BUFFER_SIZE);
   if (gptr() == egptr()) setg(buffer_, buffer_, buffer_ + size);
   return gptr() == egptr() ? std::char_traits<char>::eof()
                            : std::char_traits<char>::to_int_type(*gptr());
