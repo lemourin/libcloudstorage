@@ -29,39 +29,29 @@
 namespace cloudstorage {
 
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
-                                       const std::string& id, Callback callback,
-                                       Factory f)
+                                       const std::string& id, Callback callback)
     : Request(p), id_(id), callback_(callback) {
-  if (f)
-    set_resolver([this, f](Request*) {
-      auto result = f(this);
-      callback_(result);
-      return result;
-    });
-  else
-    set_resolver([this](Request*) { return resolve(this); });
+  set_resolver([this](Request*) -> IItem::Pointer {
+    std::stringstream response_stream;
+    int code = sendRequest(
+        [this](std::ostream& input) {
+          return provider()->getItemDataRequest(id_, input);
+        },
+        response_stream);
+    if (HttpRequest::isSuccess(code)) {
+      auto i = provider()->getItemDataResponse(response_stream);
+      callback_(i);
+      return i;
+    }
+    callback_(nullptr);
+    return nullptr;
+  });
 }
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }
 
 GetItemDataRequest::Callback GetItemDataRequest::callback() const {
   return callback_;
-}
-
-IItem::Pointer GetItemDataRequest::resolve(GetItemDataRequest* t) {
-  std::stringstream response_stream;
-  int code = t->sendRequest(
-      [t](std::ostream& input) {
-        return t->provider()->getItemDataRequest(t->id_, input);
-      },
-      response_stream);
-  if (HttpRequest::isSuccess(code)) {
-    auto i = t->provider()->getItemDataResponse(response_stream);
-    t->callback_(i);
-    return i;
-  }
-  t->callback_(nullptr);
-  return nullptr;
 }
 
 }  // namespace cloudstorage

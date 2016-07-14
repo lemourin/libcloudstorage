@@ -33,16 +33,12 @@ namespace cloudstorage {
 class GetItemDataRequest : public Request<IItem::Pointer> {
  public:
   using Callback = GetItemDataCallback;
-  using Factory = std::function<IItem::Pointer(GetItemDataRequest*)>;
 
   GetItemDataRequest(std::shared_ptr<CloudProvider>, const std::string& id,
-                     Callback, Factory = nullptr);
+                     Callback);
   ~GetItemDataRequest();
 
   Callback callback() const;
-
- protected:
-  static IItem::Pointer resolve(GetItemDataRequest*);
 
  private:
   std::string id_;

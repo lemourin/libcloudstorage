@@ -30,7 +30,7 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
-#include "Request/GetItemDataRequest.h"
+#include "Request/Request.h"
 
 namespace cloudstorage {
 
@@ -46,9 +46,9 @@ bool Dropbox::reauthorize(int code) const { return code == 400 || code == 401; }
 
 ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  return make_unique<cloudstorage::GetItemDataRequest>(
-      shared_from_this(), id, callback,
-      [id](cloudstorage::GetItemDataRequest* r) -> IItem::Pointer {
+  auto f = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  f->set_resolver(
+      [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
         auto item_data = [r, id](std::ostream& input) {
           auto request = make_unique<HttpRequest>(
               "https://api.dropboxapi.com/2/files/get_metadata",
@@ -61,12 +61,17 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
           return request;
         };
         std::stringstream output;
-        if (!HttpRequest::isSuccess(r->sendRequest(item_data, output)))
+        if (!HttpRequest::isSuccess(r->sendRequest(item_data, output))) {
+          callback(nullptr);
           return nullptr;
+        }
         Json::Value response;
         output >> response;
         auto item = toItem(response);
-        if (item->type() == IItem::FileType::Directory) return item;
+        if (item->type() == IItem::FileType::Directory) {
+          callback(item);
+          return item;
+        }
         auto temporary_link = [r, id](std::ostream& input) {
           auto request = make_unique<HttpRequest>(
               "https://api.dropboxapi.com/2/files/get_temporary_link",
@@ -78,12 +83,16 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
           input << Json::FastWriter().write(parameter);
           return request;
         };
-        if (!HttpRequest::isSuccess(r->sendRequest(temporary_link, output)))
+        if (!HttpRequest::isSuccess(r->sendRequest(temporary_link, output))) {
+          callback(item);
           return item;
+        }
         output >> response;
         static_cast<Item*>(item.get())->set_url(response["link"].asString());
+        callback(item);
         return item;
       });
+  return f;
 }
 
 HttpRequest::Pointer Dropbox::getItemDataRequest(const std::string&,
