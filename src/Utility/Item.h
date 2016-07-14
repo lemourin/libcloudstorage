@@ -50,6 +50,8 @@ class Item : public IItem {
   FileType type() const;
   void set_type(FileType);
 
+  static FileType fromMimeType(const std::string& mime_type);
+
  private:
   std::string filename_;
   std::string id_;

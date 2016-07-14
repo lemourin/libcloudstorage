@@ -55,4 +55,16 @@ IItem::FileType Item::type() const { return type_; }
 
 void Item::set_type(FileType t) { type_ = t; }
 
+IItem::FileType Item::fromMimeType(const std::string& mime_type) {
+  std::string type = mime_type.substr(0, mime_type.find_first_of('/'));
+  if (type == "audio")
+    return IItem::FileType::Audio;
+  else if (type == "video")
+    return IItem::FileType::Video;
+  else if (type == "image")
+    return IItem::FileType::Image;
+  else
+    return IItem::FileType::Unknown;
+}
+
 }  // namespace cloudstorage
