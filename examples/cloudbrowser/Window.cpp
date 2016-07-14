@@ -69,13 +69,19 @@ Window::Window(QWidget* player_widget)
   connect(this, &Window::cloudChanged, this, &Window::listDirectory);
   connect(this, &Window::showPlayer, this,
           [this]() {
-            if (container()) container()->hide();
+            if (container()->isVisible()) {
+              container()->hide();
+              contentItem()->setFocus(false);
+            }
           },
           Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() {
             stop();
-            if (container()) container()->show();
+            if (container()->isHidden()) {
+              container()->show();
+              contentItem()->setFocus(true);
+            }
           },
           Qt::QueuedConnection);
   connect(this, &Window::runListDirectory, this, [this]() { listDirectory(); },
@@ -246,11 +252,7 @@ bool Window::goBack() {
 void Window::play(int item_id) {
   ItemModel* item = directory_model_.get(item_id);
   stop();
-  if (container()) {
-    // container()->clearFocus() doesn't clear focus
-    container()->hide();
-    container()->show();
-  }
+  contentItem()->setFocus(false);
   last_played_ = item_id;
   item_data_request_ = cloud_provider_->getItemDataAsync(
       item->item()->id(), [this](IItem::Pointer i) {
