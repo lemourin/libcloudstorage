@@ -27,8 +27,11 @@
 
 #include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
+#include "Request/UploadFileRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
+
+using namespace std::placeholders;
 
 namespace cloudstorage {
 
@@ -105,17 +108,57 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     else {
       Json::Value json;
       output >> json;
-      DownloadStreamWrapper wrapper(
-          std::bind(&IDownloadFileCallback::receivedData, callback.get(),
-                    std::placeholders::_1, std::placeholders::_2));
+      DownloadStreamWrapper wrapper(std::bind(
+          &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
       std::ostream stream(&wrapper);
       std::string url = json["href"].asString();
       code = r->sendRequest(
           [url](std::ostream&) {
             return make_unique<HttpRequest>(url, HttpRequest::Type::GET);
           },
-          stream, std::bind(&IDownloadFileCallback::progress, callback.get(),
-                            std::placeholders::_1, std::placeholders::_2));
+          stream,
+          std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
+      if (HttpRequest::isSuccess(code)) callback->done();
+    }
+  });
+  return r;
+}
+
+ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
+    IItem::Pointer directory, const std::string& filename,
+    IUploadFileCallback::Pointer callback) {
+  auto r = std::make_shared<Request<void>>(shared_from_this());
+  r->set_error_callback([this, callback, r](int code, const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([this, directory, filename, callback](Request<void>* r) {
+    std::stringstream output;
+    int code = r->sendRequest(
+        [directory, filename](std::ostream&) {
+          auto request = make_unique<HttpRequest>(
+              "https://cloud-api.yandex.net/v1/disk/resources/upload",
+              HttpRequest::Type::GET);
+          request->setParameter("path", directory->id() + "/" + filename);
+          return request;
+        },
+        output);
+    if (HttpRequest::isSuccess(code)) {
+      Json::Value response;
+      output >> response;
+      std::string url = response["href"].asString();
+      UploadStreamWrapper wrapper(
+          std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2));
+      std::istream stream(&wrapper);
+      code = r->sendRequest(
+          [url, callback, &stream](std::ostream& input) {
+            auto request =
+                make_unique<HttpRequest>(url, HttpRequest::Type::PUT);
+            callback->reset();
+            input << stream.rdbuf();
+            return request;
+          },
+          output, nullptr,
+          std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
       if (HttpRequest::isSuccess(code)) callback->done();
     }
   });

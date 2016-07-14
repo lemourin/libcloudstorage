@@ -38,7 +38,9 @@ class YandexDisk : public CloudProvider {
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback callback);
   DownloadFileRequest::Pointer downloadFileAsync(
-        IItem::Pointer, IDownloadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer);
+  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
+                                             IUploadFileCallback::Pointer);
 
   HttpRequest::Pointer getItemDataRequest(const std::string&,
                                           std::ostream& input_stream) const;
