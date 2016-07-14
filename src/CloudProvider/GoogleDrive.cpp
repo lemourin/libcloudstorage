@@ -25,7 +25,6 @@
 
 #include <jsoncpp/json/json.h>
 #include <algorithm>
-#include <iostream>
 #include <sstream>
 
 #include "Utility/HttpRequest.h"
@@ -130,14 +129,8 @@ bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
 IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
   if (mime_type == "application/vnd.google-apps.folder")
     return IItem::FileType::Directory;
-  else if (mime_type == "application/vnd.google-apps.audio")
-    return IItem::FileType::Audio;
-  else if (mime_type == "application/vnd.google-apps.video")
-    return IItem::FileType::Video;
-  else if (mime_type == "application/vnd.google-apps.photo")
-    return IItem::FileType::Image;
   else
-    return IItem::FileType::Unknown;
+    return Item::fromMimeType(mime_type);
 }
 
 IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
