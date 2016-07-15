@@ -26,14 +26,17 @@
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/HttpRequest.h"
 
+#include <iostream>
 namespace cloudstorage {
 
-AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p)
-    : Request(p), awaiting_authorization_code_() {
+AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
+                                   Callback callback)
+    : Request(p), awaiting_authorization_code_(), callback_(callback) {
   if (!provider()->callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) {
     bool success = authorize();
+    if (callback_) success = callback_(success, this);
     provider()->set_authorization_status(
         success ? CloudProvider::AuthorizationStatus::Success
                 : CloudProvider::AuthorizationStatus::Fail);

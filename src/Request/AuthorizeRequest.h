@@ -31,18 +31,20 @@ namespace cloudstorage {
 class AuthorizeRequest : public Request<bool> {
  public:
   using Pointer = std::shared_ptr<AuthorizeRequest>;
+  using Callback = std::function<bool(bool, AuthorizeRequest*)>;
 
-  AuthorizeRequest(std::shared_ptr<CloudProvider>);
+  AuthorizeRequest(std::shared_ptr<CloudProvider>, Callback = nullptr);
   ~AuthorizeRequest();
 
   void cancel();
 
  protected:
-  virtual bool authorize();
+  bool authorize();
 
  private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;
+  Callback callback_;
 };
 
 }  // namespace cloudstorage
