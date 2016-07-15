@@ -26,7 +26,6 @@
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/HttpRequest.h"
 
-#include <iostream>
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,

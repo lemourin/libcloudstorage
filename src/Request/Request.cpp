@@ -94,9 +94,9 @@ bool Request<T>::reauthorize() {
   std::unique_lock<std::mutex> current_authorization(
       provider()->current_authorization_mutex());
   if (!provider()->current_authorization()) {
-    provider()->set_current_authorization(provider()->authorizeAsync());
     provider()->set_authorization_status(
         CloudProvider::AuthorizationStatus::InProgress);
+    provider()->set_current_authorization(provider()->authorizeAsync());
   }
   while (!is_cancelled() &&
          provider()->authorization_status() ==
