@@ -30,13 +30,12 @@
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
-                                   Callback callback)
+                                   AuthorizationFlow callback)
     : Request(p), awaiting_authorization_code_(), callback_(callback) {
   if (!provider()->callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) {
-    bool success = authorize();
-    if (callback_) success = callback_(success, this);
+    bool success = callback_ ? callback_(this) : oauth2Authorization();
     provider()->set_authorization_status(
         success ? CloudProvider::AuthorizationStatus::Success
                 : CloudProvider::AuthorizationStatus::Fail);
@@ -69,7 +68,7 @@ void AuthorizeRequest::cancel() {
   finish();
 }
 
-bool AuthorizeRequest::authorize() {
+bool AuthorizeRequest::oauth2Authorization() {
   IAuth* auth = provider()->auth();
   std::stringstream input, output, error_stream;
   HttpRequest::Pointer r = auth->refreshTokenRequest(input);
