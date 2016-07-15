@@ -14,6 +14,14 @@ PKG_CHECK_MODULES([libcurl], [libcurl])
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
 PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 
+AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
+AM_CONDITIONAL([WITH_MEGA], [test "x$with_mega" = "xyes"])
+
+AS_IF([test "x$with_mega" = "xyes"], [
+  PKG_CHECK_MODULES([libmega], [libmega])
+  AC_DEFINE(WITH_MEGA)
+])
+
 case "${host_os}" in
   *mingw32*)
     SYS=mingw32

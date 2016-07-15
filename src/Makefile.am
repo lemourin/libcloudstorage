@@ -66,3 +66,10 @@ libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
 	$(libjsoncpp_LIBS) \
 	$(libmicrohttpd_LIBS)
+
+if WITH_MEGA
+AM_CXXFLAGS += $(libmega_CXXFLAGS)
+libcloudstorage_la_LIBADD += $(libmega_LIBS)
+libcloudstorage_la_SOURCES += CloudProvider/MegaNz.cpp
+noinst_HEADERS += CloudProvider/MegaNz.h
+endif
