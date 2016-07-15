@@ -47,6 +47,7 @@ void AmazonDrive::initialize(const std::string& token,
 }
 
 ICloudProvider::Hints AmazonDrive::hints() const {
+  return CloudProvider::hints();
   Hints result = {{"metadata_url", metadata_url()},
                   {"content_url", content_url()}};
   auto t = CloudProvider::hints();
@@ -60,8 +61,31 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
   return make_unique<Item>("root", "root", IItem::FileType::Directory);
 }
 
-cloudstorage::AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
-  return make_unique<AuthorizeRequest>(shared_from_this());
+AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
+  auto r = std::make_shared<AuthorizeRequest>(
+      shared_from_this(), [this](bool e, AuthorizeRequest* r) -> bool {
+        if (!e) return false;
+        HttpRequest request(
+            "https://drive.amazonaws.com/drive/v1/account/endpoint",
+            HttpRequest::Type::GET);
+        authorizeRequest(request);
+        std::stringstream input, output;
+        int code = r->send(&request, input, output, nullptr);
+        if (!HttpRequest::isSuccess(code)) {
+          if (!r->is_cancelled())
+            callback()->error(*this, "Couldn't obtain endpoints.");
+          return false;
+        }
+        Json::Value response;
+        output >> response;
+        {
+          std::unique_lock<std::mutex> lock(auth_mutex());
+          metadata_url_ = response["metadataUrl"].asString();
+          content_url_ = response["contentUrl"].asString();
+        }
+        return true;
+      });
+  return r;
 }
 
 HttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
@@ -240,29 +264,6 @@ IAuth::Token::Pointer AmazonDrive::Auth::refreshTokenResponse(
   token->token_ = response["access_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
   return token;
-}
-
-bool AmazonDrive::AuthorizeRequest::authorize() {
-  if (!cloudstorage::AuthorizeRequest::authorize()) return false;
-  HttpRequest request("https://drive.amazonaws.com/drive/v1/account/endpoint",
-                      HttpRequest::Type::GET);
-  provider()->authorizeRequest(request);
-  std::stringstream input, output;
-  int code = send(&request, input, output, nullptr);
-  if (!HttpRequest::isSuccess(code)) {
-    if (!is_cancelled())
-      provider()->callback()->error(*provider(), "Couldn't obtain endpoints.");
-    return false;
-  }
-  Json::Value response;
-  output >> response;
-  auto drive = std::dynamic_pointer_cast<AmazonDrive>(provider());
-  {
-    std::unique_lock<std::mutex> lock(provider()->auth_mutex());
-    drive->metadata_url_ = response["metadataUrl"].asString();
-    drive->content_url_ = response["contentUrl"].asString();
-  }
-  return true;
 }
 
 }  // namespace cloudstorage

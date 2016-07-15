@@ -81,14 +81,6 @@ class AmazonDrive : public CloudProvider {
     Token::Pointer refreshTokenResponse(std::istream&) const;
   };
 
-  class AuthorizeRequest : public cloudstorage::AuthorizeRequest {
-   public:
-    using cloudstorage::AuthorizeRequest::AuthorizeRequest;
-
-   protected:
-    bool authorize();
-  };
-
   std::string metadata_url_;
   std::string content_url_;
 };
