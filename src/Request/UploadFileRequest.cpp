@@ -26,6 +26,8 @@
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/HttpRequest.h"
 
+using namespace std::placeholders;
+
 namespace cloudstorage {
 
 UploadFileRequest::UploadFileRequest(
@@ -34,8 +36,7 @@ UploadFileRequest::UploadFileRequest(
     : Request(p),
       directory_(std::move(directory)),
       filename_(filename),
-      stream_wrapper_(std::bind(&ICallback::putData, callback.get(),
-                                std::placeholders::_1, std::placeholders::_2)),
+      stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2)),
       callback_(callback) {
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
@@ -49,8 +50,7 @@ UploadFileRequest::UploadFileRequest(
                                                input);
         },
         response_stream, nullptr,
-        std::bind(&ICallback::progress, callback_.get(),
-                  std::placeholders::_1, std::placeholders::_2));
+        std::bind(&ICallback::progress, callback_.get(), _1, _2));
     if (HttpRequest::isSuccess(code)) callback_->done();
   });
 }
@@ -58,8 +58,7 @@ UploadFileRequest::UploadFileRequest(
 UploadFileRequest::~UploadFileRequest() { cancel(); }
 
 void UploadFileRequest::error(int code, const std::string& description) {
-  if (callback_)
-    callback_->error(error_string(code, description));
+  if (callback_) callback_->error(error_string(code, description));
 }
 
 UploadStreamWrapper::UploadStreamWrapper(

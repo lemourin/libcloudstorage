@@ -35,6 +35,8 @@
 #include "Request/ListDirectoryRequest.h"
 #include "Request/UploadFileRequest.h"
 
+using namespace std::placeholders;
+
 namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
@@ -103,8 +105,7 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer file, IDownloadFileCallback::Pointer callback) {
   return make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), std::move(file), std::move(callback),
-      std::bind(&CloudProvider::downloadFileRequest, this,
-                std::placeholders::_1, std::placeholders::_2));
+      std::bind(&CloudProvider::downloadFileRequest, this, _1, _2));
 }
 
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
@@ -172,8 +173,7 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), item, std::move(callback),
-      std::bind(&CloudProvider::getThumbnailRequest, this,
-                std::placeholders::_1, std::placeholders::_2));
+      std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2));
 }
 
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,

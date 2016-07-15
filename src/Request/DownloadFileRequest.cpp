@@ -26,6 +26,8 @@
 #include "CloudProvider/CloudProvider.h"
 #include "Utility/HttpRequest.h"
 
+using namespace std::placeholders;
+
 namespace cloudstorage {
 
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
@@ -34,17 +36,16 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          RequestFactory request_factory)
     : Request(p),
       file_(std::move(file)),
-      stream_wrapper_(std::bind(&ICallback::receivedData, callback.get(),
-                                std::placeholders::_1, std::placeholders::_2)),
+      stream_wrapper_(
+          std::bind(&ICallback::receivedData, callback.get(), _1, _2)),
       callback_(std::move(callback)),
       request_factory_(request_factory) {
   set_resolver([this](Request*) {
     std::ostream response_stream(&stream_wrapper_);
     int code = sendRequest(
         [this](std::ostream& input) { return request_factory_(*file_, input); },
-        response_stream,
-        std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
-                  std::placeholders::_1, std::placeholders::_2));
+        response_stream, std::bind(&DownloadFileRequest::ICallback::progress,
+                                   callback_.get(), _1, _2));
     if (HttpRequest::isSuccess(code)) callback_->done();
   });
 }
