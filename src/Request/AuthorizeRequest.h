@@ -39,6 +39,8 @@ class AuthorizeRequest : public Request<bool> {
   void cancel();
   bool oauth2Authorization();
 
+  std::string getAuthorizationCode();
+
  private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;
