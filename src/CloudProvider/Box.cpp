@@ -82,11 +82,6 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
   return r;
 }
 
-HttpRequest::Pointer Box::getItemDataRequest(const std::string&,
-                                             std::ostream&) const {
-  return nullptr;
-}
-
 HttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
                                                const std::string& page_token,
                                                std::ostream&) const {

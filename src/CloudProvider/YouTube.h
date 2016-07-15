@@ -45,10 +45,6 @@ class YouTube : public CloudProvider {
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
-  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                         const std::string& filename,
-                                         std::istream& stream,
-                                         std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
 

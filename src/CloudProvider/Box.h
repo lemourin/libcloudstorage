@@ -40,8 +40,6 @@ class Box : public CloudProvider {
                                                GetItemDataCallback);
 
  private:
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;

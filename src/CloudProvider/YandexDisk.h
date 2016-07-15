@@ -42,19 +42,10 @@ class YandexDisk : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
                                              IUploadFileCallback::Pointer);
 
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
-  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                         const std::string& filename,
-                                         std::istream& stream,
-                                         std::ostream& input_stream) const;
-  HttpRequest::Pointer downloadFileRequest(const IItem&,
-                                           std::ostream& input_stream) const;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 

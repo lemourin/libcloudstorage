@@ -40,8 +40,6 @@ class Dropbox : public CloudProvider {
                                                GetItemDataCallback);
 
  protected:
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
@@ -54,7 +52,6 @@ class Dropbox : public CloudProvider {
   HttpRequest::Pointer getThumbnailRequest(const IItem&,
                                            std::ostream& input_stream) const;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 

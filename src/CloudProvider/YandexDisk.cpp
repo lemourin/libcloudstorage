@@ -165,11 +165,6 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   return r;
 }
 
-HttpRequest::Pointer YandexDisk::getItemDataRequest(const std::string&,
-                                                    std::ostream&) const {
-  return nullptr;
-}
-
 HttpRequest::Pointer YandexDisk::listDirectoryRequest(
     const IItem& item, const std::string& page_token,
     std::ostream& input_stream) const {
@@ -178,22 +173,6 @@ HttpRequest::Pointer YandexDisk::listDirectoryRequest(
   request->setParameter("path", item.id());
   if (!page_token.empty()) request->setParameter("offset", page_token);
   return request;
-}
-
-HttpRequest::Pointer YandexDisk::uploadFileRequest(const IItem&,
-                                                   const std::string&,
-                                                   std::istream&,
-                                                   std::ostream&) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer YandexDisk::downloadFileRequest(const IItem&,
-                                                     std::ostream&) const {
-  return nullptr;
-}
-
-IItem::Pointer YandexDisk::getItemDataResponse(std::istream&) const {
-  return nullptr;
 }
 
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(

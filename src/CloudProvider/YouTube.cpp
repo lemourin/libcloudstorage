@@ -102,13 +102,6 @@ HttpRequest::Pointer YouTube::listDirectoryRequest(
   }
 }
 
-HttpRequest::Pointer YouTube::uploadFileRequest(const IItem&,
-                                                const std::string&,
-                                                std::istream&,
-                                                std::ostream&) const {
-  return nullptr;
-}
-
 HttpRequest::Pointer YouTube::downloadFileRequest(const IItem& item,
                                                   std::ostream&) const {
   return make_unique<HttpRequest>(item.url(), HttpRequest::Type::GET);

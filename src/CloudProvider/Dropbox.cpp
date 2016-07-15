@@ -95,11 +95,6 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
   return f;
 }
 
-HttpRequest::Pointer Dropbox::getItemDataRequest(const std::string&,
-                                                 std::ostream&) const {
-  return nullptr;
-}
-
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
     const IItem& item, const std::string& page_token,
     std::ostream& input_stream) const {
@@ -164,10 +159,6 @@ HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
   str.pop_back();
   request->setHeaderParameter("Dropbox-API-arg", str);
   return request;
-}
-
-IItem::Pointer Dropbox::getItemDataResponse(std::istream&) const {
-  return nullptr;
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
