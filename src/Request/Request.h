@@ -53,6 +53,7 @@ class Request : public IRequest<ReturnValue> {
   void finish();
   void cancel();
   ReturnValue result();
+  bool reauthorize();
 
   int sendRequest(
       std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
@@ -73,7 +74,6 @@ class Request : public IRequest<ReturnValue> {
   std::unique_ptr<HttpCallback> httpCallback(
       ProgressFunction progress_download = nullptr,
       ProgressFunction progress_upload = nullptr);
-  bool reauthorize();
 
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
