@@ -46,6 +46,7 @@ class Request : public IRequest<ReturnValue> {
   using ErrorCallback = std::function<void(int, const std::string&)>;
 
   Request(std::shared_ptr<CloudProvider>);
+  ~Request();
 
   void set_resolver(Resolver);
   void set_error_callback(ErrorCallback);

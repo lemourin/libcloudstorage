@@ -53,6 +53,11 @@ Request<T>::Request(std::shared_ptr<CloudProvider> provider)
     : provider_(provider), is_cancelled_(false) {}
 
 template <class T>
+Request<T>::~Request() {
+  cancel();
+}
+
+template <class T>
 void Request<T>::set_resolver(Resolver resolver) {
   function_ = std::async(std::launch::async, std::bind(resolver, this));
 }
