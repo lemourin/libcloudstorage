@@ -47,7 +47,6 @@ void AmazonDrive::initialize(const std::string& token,
 }
 
 ICloudProvider::Hints AmazonDrive::hints() const {
-  return CloudProvider::hints();
   Hints result = {{"metadata_url", metadata_url()},
                   {"content_url", content_url()}};
   auto t = CloudProvider::hints();
@@ -63,8 +62,8 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   auto r = std::make_shared<AuthorizeRequest>(
-      shared_from_this(), [this](bool e, AuthorizeRequest* r) -> bool {
-        if (!e) return false;
+      shared_from_this(), [this](AuthorizeRequest* r) -> bool {
+        if (!r->oauth2Authorization()) return false;
         HttpRequest request(
             "https://drive.amazonaws.com/drive/v1/account/endpoint",
             HttpRequest::Type::GET);
