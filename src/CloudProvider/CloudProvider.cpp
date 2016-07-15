@@ -176,11 +176,43 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
                 std::placeholders::_1, std::placeholders::_2));
 }
 
+HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
+                                                       std::ostream&) const {
+  return nullptr;
+}
+
+HttpRequest::Pointer CloudProvider::listDirectoryRequest(const IItem&,
+                                                         const std::string&,
+                                                         std::ostream&) const {
+  return nullptr;
+}
+
+HttpRequest::Pointer CloudProvider::uploadFileRequest(const IItem&,
+                                                      const std::string&,
+                                                      std::istream&,
+                                                      std::ostream&) const {
+  return nullptr;
+}
+
+HttpRequest::Pointer CloudProvider::downloadFileRequest(const IItem&,
+                                                        std::ostream&) const {
+  return nullptr;
+}
+
 HttpRequest::Pointer CloudProvider::getThumbnailRequest(const IItem& i,
                                                         std::ostream&) const {
   const Item& item = static_cast<const Item&>(i);
   if (item.thumbnail_url().empty()) return nullptr;
   return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
+}
+
+IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
+  return nullptr;
+}
+
+std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
+    std::istream&, std::string&) const {
+  return {};
 }
 
 }  // namespace cloudstorage
