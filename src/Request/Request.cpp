@@ -68,6 +68,11 @@ void Request<T>::set_error_callback(ErrorCallback f) {
 }
 
 template <class T>
+void Request<T>::set_cancel_callback(CancelCallback f) {
+  cancel_callback_ = f;
+}
+
+template <class T>
 void Request<T>::finish() {
   std::shared_future<T> future = function_;
   if (future.valid()) future.wait();
@@ -76,6 +81,7 @@ void Request<T>::finish() {
 template <class T>
 void Request<T>::cancel() {
   set_cancelled(true);
+  if (cancel_callback_) cancel_callback_();
   finish();
 }
 

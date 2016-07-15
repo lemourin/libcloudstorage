@@ -44,12 +44,14 @@ class Request : public IRequest<ReturnValue> {
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using Resolver = std::function<ReturnValue(Request*)>;
   using ErrorCallback = std::function<void(int, const std::string&)>;
+  using CancelCallback = std::function<void()>;
 
   Request(std::shared_ptr<CloudProvider>);
   ~Request();
 
   void set_resolver(Resolver);
   void set_error_callback(ErrorCallback);
+  void set_cancel_callback(CancelCallback);
 
   void finish();
   void cancel();
@@ -80,6 +82,7 @@ class Request : public IRequest<ReturnValue> {
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
   ErrorCallback error_callback_;
+  CancelCallback cancel_callback_;
 };
 
 }  // namespace cloudstorage
