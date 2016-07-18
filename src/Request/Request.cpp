@@ -30,8 +30,6 @@
 #include <algorithm>
 #include <cctype>
 
-const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
-
 namespace cloudstorage {
 
 template class Request<void>;
@@ -82,11 +80,12 @@ void Request<T>::finish() {
 template <class T>
 void Request<T>::cancel() {
   set_cancelled(true);
-  if (cancel_callback_) cancel_callback_();
   {
     std::lock_guard<std::mutex> lock(semaphore_list_mutex_);
     for (Semaphore* semaphore : semaphore_list_) semaphore->notify();
   }
+  if (cancel_callback_) cancel_callback_();
+  provider()->authorized_condition().notify_all();
   finish();
 }
 
@@ -117,8 +116,7 @@ bool Request<T>::reauthorize() {
   while (!is_cancelled() &&
          provider()->authorization_status() ==
              CloudProvider::AuthorizationStatus::InProgress)
-    provider()->authorized_condition().wait_for(current_authorization,
-                                                AUTHORIZE_WAIT_INTERVAL);
+    provider()->authorized_condition().wait(current_authorization);
   bool ret =
       is_cancelled() ? false : provider()->authorization_status() ==
                                    CloudProvider::AuthorizationStatus::Success;

@@ -36,7 +36,6 @@ class AuthorizeRequest : public Request<bool> {
   AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizationFlow = nullptr);
   ~AuthorizeRequest();
 
-  void cancel();
   bool oauth2Authorization();
 
   std::string getAuthorizationCode();

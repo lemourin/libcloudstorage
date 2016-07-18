@@ -45,13 +45,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
       provider()->callback()->declined(*provider());
     return success;
   });
-}
-
-AuthorizeRequest::~AuthorizeRequest() { cancel(); }
-
-void AuthorizeRequest::cancel() {
-  set_cancelled(true);
-  {
+  set_cancel_callback([this]() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (awaiting_authorization_code_) {
       HttpRequest request(provider()->auth()->redirect_uri(),
@@ -63,9 +57,10 @@ void AuthorizeRequest::cancel() {
         if (e.code() != CURLE_GOT_NOTHING) throw;
       }
     }
-  }
-  finish();
+  });
 }
+
+AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
 bool AuthorizeRequest::oauth2Authorization() {
   IAuth* auth = provider()->auth();
