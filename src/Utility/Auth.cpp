@@ -70,6 +70,7 @@ struct HttpServerData {
   std::string error_parameter_name_;
   uint16_t port_;
   enum { Awaiting, Accepted, Denied } state_;
+  Semaphore* semaphore_;
 };
 
 std::string sendHttpRequestFromJavaScript(const Json::Value& json) {
@@ -112,6 +113,7 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char* url,
       data->state_ = HttpServerData::Accepted;
     } else
       data->state_ = HttpServerData::Denied;
+    data->semaphore_->notify();
   }
 
   MHD_Response* response = MHD_create_response_from_buffer(
@@ -164,27 +166,20 @@ std::string Auth::awaitAuthorizationCode(
     std::function<void()> server_started,
     std::function<void()> server_stopped) const {
   uint16_t http_server_port = redirect_uri_port();
-  HttpServerData data = {"", code_parameter_name, error_parameter_name,
-                         http_server_port, HttpServerData::Awaiting};
+  Semaphore semaphore;
+  HttpServerData data = {"",
+                         code_parameter_name,
+                         error_parameter_name,
+                         http_server_port,
+                         HttpServerData::Awaiting,
+                         &semaphore};
   MHD_Daemon* http_server =
-      MHD_start_daemon(0, http_server_port, NULL, NULL, &httpRequestCallback,
-                       &data, MHD_OPTION_END);
+      MHD_start_daemon(MHD_USE_POLL_INTERNALLY, http_server_port, NULL, NULL,
+                       &httpRequestCallback, &data, MHD_OPTION_END);
   if (server_started) server_started();
-
-  fd_set rs, ws, es;
-  MHD_socket max;
-  while (data.state_ == HttpServerData::Awaiting) {
-    FD_ZERO(&rs);
-    FD_ZERO(&ws);
-    FD_ZERO(&es);
-    MHD_get_fdset(http_server, &rs, &ws, &es, &max);
-    select(max + 1, &rs, &ws, &es, NULL);
-    MHD_run_from_select(http_server, &rs, &ws, &es);
-  }
-
+  semaphore.wait();
   MHD_stop_daemon(http_server);
   if (server_stopped) server_stopped();
-
   if (data.state_ == HttpServerData::Accepted)
     return data.code_;
   else
