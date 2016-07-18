@@ -27,12 +27,16 @@
 #include "CloudProvider.h"
 
 #include <megaapi.h>
+#include <random>
 
 namespace cloudstorage {
 
 class MegaNz : public CloudProvider {
  public:
   MegaNz();
+
+  void initialize(const std::string& token, ICallback::Pointer,
+                  const Hints& hints);
 
   std::string name() const;
   IItem::Pointer rootDirectory() const;
@@ -46,6 +50,12 @@ class MegaNz : public CloudProvider {
       IItem::Pointer, IDownloadFileCallback::Pointer);
   UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
                                              IUploadFileCallback::Pointer);
+
+  std::pair<std::string, std::string> creditentialsFromString(
+      const std::string&) const;
+
+  bool login(Request<bool>* r);
+  std::string passwordHash(const std::string& password);
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -68,10 +78,14 @@ class MegaNz : public CloudProvider {
   };
 
   IItem::Pointer toItem(mega::MegaNode*);
+  std::string randomString(int length);
 
  private:
-  mega::MegaApi mega_;
+  std::unique_ptr<mega::MegaApi> mega_;
   std::atomic_bool authorized_;
+  std::random_device device_;
+  std::default_random_engine engine_;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace cloudstorage
