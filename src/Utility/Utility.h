@@ -24,7 +24,9 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace cloudstorage {
 
@@ -32,6 +34,28 @@ template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+
+class Semaphore {
+ public:
+  Semaphore() : count_() {}
+
+  void notify() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    count_++;
+    condition_.notify_one();
+  }
+
+  void wait() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (count_ == 0) condition_.wait(lock);
+    count_--;
+  }
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  uint32_t count_;
+};
 
 }  // namespace cloudstorage
 
