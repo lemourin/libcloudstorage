@@ -150,7 +150,7 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
       provider->mega()->getNodeByHandle(provider->mega()->base64ToHandle(file));
   if (!node) return MHD_NO;
   auto data_provider = [](void* cls, uint64_t, char* buf,
-                          size_t max) -> long int {
+                          size_t max) -> ssize_t {
     HttpData* data = static_cast<HttpData*>(cls);
     bool wait = false;
     {
