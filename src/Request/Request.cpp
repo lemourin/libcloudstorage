@@ -27,6 +27,7 @@
 #include "HttpCallback.h"
 #include "Utility/Utility.h"
 
+#include <algorithm>
 #include <cctype>
 
 const auto AUTHORIZE_WAIT_INTERVAL = std::chrono::milliseconds(100);
@@ -82,6 +83,10 @@ template <class T>
 void Request<T>::cancel() {
   set_cancelled(true);
   if (cancel_callback_) cancel_callback_();
+  {
+    std::lock_guard<std::mutex> lock(semaphore_list_mutex_);
+    for (Semaphore* semaphore : semaphore_list_) semaphore->notify();
+  }
   finish();
 }
 
@@ -185,6 +190,20 @@ int Request<T>::send(HttpRequest* request, std::istream& input,
     code = e.code();
   }
   return code;
+}
+
+template <class T>
+Request<T>::Semaphore::Semaphore(Request* request) : request_(request) {
+  std::lock_guard<std::mutex> lock(request_->semaphore_list_mutex_);
+  request_->semaphore_list_.push_back(this);
+  if (request_->is_cancelled()) notify();
+}
+
+template <class T>
+Request<T>::Semaphore::~Semaphore() {
+  std::lock_guard<std::mutex> lock(request_->semaphore_list_mutex_);
+  const auto& list = request_->semaphore_list_;
+  request_->semaphore_list_.erase(std::find(list.begin(), list.end(), this));
 }
 
 }  // namespace cloudstorage

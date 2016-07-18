@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "IRequest.h"
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
 
@@ -73,6 +74,15 @@ class Request : public IRequest<ReturnValue> {
   void set_cancelled(bool e) { is_cancelled_ = e; }
   bool is_cancelled() { return is_cancelled_; }
 
+  class Semaphore : public cloudstorage::Semaphore {
+   public:
+    Semaphore(Request*);
+    ~Semaphore();
+
+   private:
+    Request<ReturnValue>* request_;
+  };
+
  private:
   std::unique_ptr<HttpCallback> httpCallback(
       ProgressFunction progress_download = nullptr,
@@ -83,6 +93,8 @@ class Request : public IRequest<ReturnValue> {
   std::shared_future<ReturnValue> function_;
   ErrorCallback error_callback_;
   CancelCallback cancel_callback_;
+  std::mutex semaphore_list_mutex_;
+  std::vector<Semaphore*> semaphore_list_;
 };
 
 }  // namespace cloudstorage
