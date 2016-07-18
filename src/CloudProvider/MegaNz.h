@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Mega.h : Mega headers
+ * MegaNz.h : Mega headers
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -27,6 +27,7 @@
 #include "CloudProvider.h"
 
 #include <megaapi.h>
+#include <microhttpd.h>
 #include <random>
 
 namespace cloudstorage {
@@ -34,6 +35,7 @@ namespace cloudstorage {
 class MegaNz : public CloudProvider {
  public:
   MegaNz();
+  ~MegaNz();
 
   void initialize(const std::string& token, ICallback::Pointer,
                   const Hints& hints);
@@ -58,6 +60,8 @@ class MegaNz : public CloudProvider {
 
   bool login(Request<bool>* r);
   std::string passwordHash(const std::string& password);
+
+  mega::MegaApi* mega() const { return mega_.get(); }
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -88,6 +92,7 @@ class MegaNz : public CloudProvider {
   std::random_device device_;
   std::default_random_engine engine_;
   mutable std::mutex mutex_;
+  MHD_Daemon* daemon_;
 };
 
 }  // namespace cloudstorage

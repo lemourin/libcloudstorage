@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Mega.cpp : Mega implementation
+ * MegaNz.cpp : Mega implementation
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -29,12 +29,14 @@
 #include "Utility/Utility.h"
 
 #include <fstream>
+#include <queue>
 
 using namespace mega;
 
 const int BUFFER_SIZE = 1024;
 const std::string SEPARATOR = "##";
 const int CACHE_FILENAME_LENGTH = 12;
+const int DAEMON_PORT = 12346;
 
 namespace cloudstorage {
 
@@ -82,9 +84,10 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     return !request_->is_cancelled();
   }
 
-  void onTransferUpdate(MegaApi*, MegaTransfer* t) {
+  void onTransferUpdate(MegaApi* mega, MegaTransfer* t) {
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
+    if (request_->is_cancelled()) mega->cancelTransfer(t);
   }
 
   void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) {
@@ -100,13 +103,101 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   Request<void>* request_;
 };
 
+struct HttpData {
+  HttpData() : done_(), waiting_() {}
+
+  std::mutex mutex_;
+  std::queue<char> buffer_;
+  std::atomic_bool done_;
+  std::atomic_bool waiting_;
+  Semaphore data_available_;
+  ICloudProvider::DownloadFileRequest::Pointer request_;
+};
+
+class DownloadFileCallback : public IDownloadFileCallback {
+ public:
+  DownloadFileCallback(HttpData* data) : data_(data) {}
+  ~DownloadFileCallback() { data_->data_available_.notify(); }
+
+  virtual void receivedData(const char* data, uint32_t length) {
+    std::lock_guard<std::mutex> lock(data_->mutex_);
+    for (uint32_t i = 0; i < length; i++) data_->buffer_.push(data[i]);
+    if (data_->waiting_ && !data_->buffer_.empty()) {
+      data_->waiting_ = false;
+      data_->data_available_.notify();
+    }
+  }
+
+  virtual void done() {
+    std::lock_guard<std::mutex> lock(data_->mutex_);
+    data_->done_ = true;
+  }
+
+  virtual void error(const std::string&) {}
+  virtual void progress(uint32_t, uint32_t) {}
+
+  HttpData* data_;
+};
+
+int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
+                        const char* /*method*/, const char* /*version*/,
+                        const char* /*upload_data*/,
+                        size_t* /*upload_data_size*/, void** /*ptr*/) {
+  MegaNz* provider = static_cast<MegaNz*>(cls);
+  const char* file =
+      MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "file");
+  auto node =
+      provider->mega()->getNodeByHandle(provider->mega()->base64ToHandle(file));
+  if (!node) return MHD_NO;
+  auto data_provider = [](void* cls, uint64_t, char* buf,
+                          size_t max) -> long int {
+    HttpData* data = static_cast<HttpData*>(cls);
+    bool wait = false;
+    {
+      std::lock_guard<std::mutex> lock(data->mutex_);
+      if (data->buffer_.empty() && !data->done_) wait = true;
+    }
+    if (wait) {
+      data->waiting_ = true;
+      data->data_available_.wait();
+    }
+    std::lock_guard<std::mutex> lock(data->mutex_);
+    size_t cnt = std::min(data->buffer_.size(), max);
+    for (size_t i = 0; i < cnt; i++) {
+      buf[i] = data->buffer_.front();
+      data->buffer_.pop();
+    }
+    if (data->done_ && data->buffer_.empty())
+      return MHD_CONTENT_READER_END_OF_STREAM;
+    return cnt;
+  };
+  auto release_data = [](void* cls) {
+    HttpData* data = static_cast<HttpData*>(cls);
+    delete data;
+  };
+
+  HttpData* data = new HttpData;
+  data->request_ = provider->downloadFileAsync(
+      provider->toItem(node), make_unique<DownloadFileCallback>(data));
+  MHD_Response* response = MHD_create_response_from_callback(
+      MHD_SIZE_UNKNOWN, BUFFER_SIZE, data_provider, data, release_data);
+  int ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+  MHD_destroy_response(response);
+  return ret;
+}
+
 }  // namespace
 
 MegaNz::MegaNz()
     : CloudProvider(make_unique<Auth>()),
       mega_(),
       authorized_(),
-      engine_(device_()) {}
+      engine_(device_()),
+      daemon_() {}
+
+MegaNz::~MegaNz() {
+  if (daemon_) MHD_stop_daemon(daemon_);
+}
 
 void MegaNz::initialize(const std::string& token,
                         ICloudProvider::ICallback::Pointer callback,
@@ -118,6 +209,8 @@ void MegaNz::initialize(const std::string& token,
     mega_ = make_unique<MegaApi>("ZVhB0Czb");
   else
     mega_ = make_unique<MegaApi>(auth()->client_id().c_str());
+  daemon_ = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, DAEMON_PORT, NULL,
+                             NULL, &httpRequestCallback, this, MHD_OPTION_END);
 }
 
 std::string MegaNz::name() const { return "mega"; }
@@ -150,8 +243,10 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
         RequestListener fetch_nodes_listener_(&semaphore);
         mega_->fetchNodes(&fetch_nodes_listener_);
         semaphore.wait();
-        if (fetch_nodes_listener_.status_ != RequestListener::SUCCESS)
+        mega_->removeRequestListener(&fetch_nodes_listener_);
+        if (fetch_nodes_listener_.status_ != RequestListener::SUCCESS) {
           return false;
+        }
         authorized_ = true;
         return true;
       });
@@ -172,8 +267,13 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
         RequestListener listener(&semaphore);
         mega_->exportNode(node, &listener);
         semaphore.wait();
-        if (listener.status_ == RequestListener::SUCCESS)
-          static_cast<Item*>(item.get())->set_url(listener.link_);
+        mega_->removeRequestListener(&listener);
+        if (listener.status_ == RequestListener::SUCCESS) {
+          std::unique_ptr<char> handle(node->getBase64Handle());
+          static_cast<Item*>(item.get())
+              ->set_url("http://localhost:" + std::to_string(DAEMON_PORT) +
+                        "?file=" + handle.get());
+        }
         callback(item);
         return item;
       });
@@ -218,9 +318,12 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     listener.request_ = r;
     mega_->startStreaming(node, 0, node->getSize(), &listener);
     semaphore.wait();
-    if (listener.status_ != Listener::SUCCESS)
-      callback->error("Failed to download");
-    else
+    if (r->is_cancelled())
+      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
+    mega_->removeTransferListener(&listener);
+    if (listener.status_ != Listener::SUCCESS) {
+      if (r->is_cancelled()) callback->error("Failed to download");
+    } else
       callback->done();
   });
   return r;
@@ -232,10 +335,6 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback, filename](Request<void>* r) {
     if (!authorized_) r->reauthorize();
-    Request<void>::Semaphore semaphore(r);
-    TransferListener listener(&semaphore);
-    listener.upload_callback_ = callback;
-    listener.request_ = r;
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
     {
       std::fstream mega_cache(cache.c_str(),
@@ -246,9 +345,16 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         mega_cache.write(buffer.data(), length);
       }
     }
+    Request<void>::Semaphore semaphore(r);
+    TransferListener listener(&semaphore);
+    listener.upload_callback_ = callback;
+    listener.request_ = r;
     mega_->startUpload(cache.c_str(), mega_->getNodeByPath(item->id().c_str()),
                        filename.c_str(), &listener);
     semaphore.wait();
+    if (r->is_cancelled())
+      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
+    mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS)
       callback->error("Failed to upload");
     else
@@ -268,6 +374,9 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     auto node = mega_->getNodeByPath(item->id().c_str());
     mega_->getThumbnail(node, cache.c_str(), &listener);
     semaphore.wait();
+    if (r->is_cancelled())
+      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
+    mega_->removeRequestListener(&listener);
     if (listener.status_ == Listener::SUCCESS) {
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
@@ -305,6 +414,7 @@ bool MegaNz::login(Request<bool>* r) {
   mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
                    &auth_listener);
   semaphore.wait();
+  mega_->removeRequestListener(&auth_listener);
   return auth_listener.status_ == Listener::SUCCESS;
 }
 
