@@ -26,10 +26,40 @@
 #include <jsoncpp/json/json.h>
 #include <microhttpd.h>
 #include <fstream>
+#include <sstream>
 
 #include "Utility.h"
 
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
+
+const std::string JQUERY =
+    "<script src=\"https://code.jquery.com/jquery-3.1.0.min.js\""
+    "integrity=\"sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=\""
+    "crossorigin=\"anonymous\"></script>";
+
+const std::string LOGIN_PAGE =
+    "<body>"
+    "libcloudstorage login page"
+    "<table>"
+    "<tr><td>Login:</td><td><input id='login'></td></tr>"
+    "<tr><td>Password:</td><td><input id='password' type='password'></td></tr>"
+    "<tr><td><input id='submit' type='button' value='Login'></td></tr>"
+    "<script>"
+    " $(function() {"
+    "   $('#submit').click(function() {"
+    "     $.ajax({"
+    "       url: '/',"
+    "       method: 'GET',"
+    "       data: {"
+    "         'code' : $('#login').val() + '##' + $('#password').val(),"
+    "         'accepted' : 'true'"
+    "       }"
+    "     });"
+    "   })"
+    " });"
+    "</script>"
+    "</table>"
+    "</body>";
 
 namespace cloudstorage {
 namespace {
@@ -42,40 +72,37 @@ struct HttpServerData {
   enum { Awaiting, Accepted, Denied } state_;
 };
 
-std::string sendHttpRequestFromJavaScript(const std::string& request) {
-  return "<script>\n"
-         "  var request = new XMLHttpRequest();\n"
-         "  request.open(\"GET\", \"" +
-         request +
-         "\", false);\n"
-         "  request.send(null);\n"
-         "</script>\n";
+std::string sendHttpRequestFromJavaScript(const Json::Value& json) {
+  std::stringstream stream;
+  stream << "<script>$.ajax(" << json << ")</script>";
+  return stream.str();
 }
 
-int httpRequestCallback(void* cls, MHD_Connection* connection,
-                        const char* /*url*/, const char* /*method*/,
-                        const char* /*version*/, const char* /*upload_data*/,
+int httpRequestCallback(void* cls, MHD_Connection* connection, const char* url,
+                        const char* /*method*/, const char* /*version*/,
+                        const char* /*upload_data*/,
                         size_t* /*upload_data_size*/, void** /*ptr*/) {
   HttpServerData* data = static_cast<HttpServerData*>(cls);
-  std::string page;
+  std::string page = JQUERY;
+
+  if (std::string(url) == "/login") page += LOGIN_PAGE;
 
   const char* code = MHD_lookup_connection_value(
       connection, MHD_GET_ARGUMENT_KIND, data->code_parameter_name_.c_str());
   if (code) {
     data->code_ = code;
-    page = "<body>Success.</body>" +
-           sendHttpRequestFromJavaScript("http://localhost:" +
-                                         std::to_string(data->port_) +
-                                         "/?accepted=true");
+    Json::Value json;
+    json["data"]["accepted"] = "true";
+    page += "<body>Success.</body>" + sendHttpRequestFromJavaScript(json);
   }
 
   const char* error = MHD_lookup_connection_value(
       connection, MHD_GET_ARGUMENT_KIND, data->error_parameter_name_.c_str());
   if (error) {
-    page = "<body>Error occurred.</body>" +
-           sendHttpRequestFromJavaScript("http://localhost:" +
-                                         std::to_string(data->port_) +
-                                         "/?accepted=false");
+    Json::Value json;
+    json["data"]["accepted"] = "false";
+    page +=
+        "<body>Error occurred.</body>" + sendHttpRequestFromJavaScript(json);
   }
 
   const char* accepted = MHD_lookup_connection_value(
