@@ -29,7 +29,6 @@
 #include "Utility/Utility.h"
 
 #include <fstream>
-#include <iostream>
 
 using namespace mega;
 
@@ -254,6 +253,33 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       callback->error("Failed to upload");
     else
       callback->done();
+    std::remove(cache.c_str());
+  });
+  return r;
+}
+
+ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+  auto r = make_unique<Request<void>>(shared_from_this());
+  r->set_resolver([this, item, callback](Request<void>* r) {
+    Request<void>::Semaphore semaphore(r);
+    RequestListener listener(&semaphore);
+    std::string cache = randomString(CACHE_FILENAME_LENGTH);
+    auto node = mega_->getNodeByPath(item->id().c_str());
+    mega_->getThumbnail(node, cache.c_str(), &listener);
+    semaphore.wait();
+    if (listener.status_ == Listener::SUCCESS) {
+      std::fstream cache_file(cache.c_str(),
+                              std::fstream::in | std::fstream::binary);
+      std::array<char, BUFFER_SIZE> buffer;
+      do {
+        cache_file.read(buffer.data(), BUFFER_SIZE);
+        callback->receivedData(buffer.data(), cache_file.gcount());
+      } while (cache_file.gcount() > 0);
+      callback->done();
+    } else if (listener.status_ == Listener::FAILURE) {
+      callback->error("Failed to get thumbnail");
+    }
     std::remove(cache.c_str());
   });
   return r;
