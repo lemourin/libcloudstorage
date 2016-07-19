@@ -180,7 +180,8 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
   data->request_ = provider->downloadFileAsync(
       provider->toItem(node), make_unique<DownloadFileCallback>(data));
   MHD_Response* response = MHD_create_response_from_callback(
-      MHD_SIZE_UNKNOWN, BUFFER_SIZE, data_provider, data, release_data);
+      node->getSize(), BUFFER_SIZE, data_provider, data, release_data);
+  MHD_add_response_header(response, "Content-Type", "application/octet-stream");
   int ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
   MHD_destroy_response(response);
   return ret;
@@ -276,7 +277,7 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
           std::unique_ptr<char> handle(node->getBase64Handle());
           static_cast<Item*>(item.get())
               ->set_url("http://localhost:" + std::to_string(DAEMON_PORT) +
-                        "?file=" + handle.get());
+                        "/?file=" + handle.get());
         }
         callback(item);
         return item;
