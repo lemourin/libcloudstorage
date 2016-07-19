@@ -291,7 +291,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
   r->set_resolver([this, item, callback](Request<std::vector<IItem::Pointer>>*
                                              r) -> std::vector<IItem::Pointer> {
     if (!ensureAuthorized(r)) {
-      callback->error("Authorization failed.");
+      if (!r->is_cancelled()) callback->error("Authorization failed.");
       return {};
     }
     std::unique_ptr<mega::MegaNode> node(
@@ -317,7 +317,10 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<void>* r) {
-    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
+    if (!ensureAuthorized(r)) {
+      if (!r->is_cancelled()) callback->error("Authorization failed.");
+      return;
+    }
     auto node = mega_->getNodeByPath(item->id().c_str());
     Request<void>::Semaphore semaphore(r);
     TransferListener listener(&semaphore);
@@ -329,7 +332,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
     mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS) {
-      if (r->is_cancelled()) callback->error("Failed to download");
+      if (!r->is_cancelled()) callback->error("Failed to download");
     } else
       callback->done();
   });
@@ -341,7 +344,10 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IUploadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback, filename](Request<void>* r) {
-    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
+    if (!ensureAuthorized(r)) {
+      if (!r->is_cancelled()) callback->error("Authorization failed.");
+      return;
+    }
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
     {
       std::fstream mega_cache(cache.c_str(),
@@ -362,9 +368,9 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
     mega_->removeTransferListener(&listener);
-    if (listener.status_ != Listener::SUCCESS)
-      callback->error("Failed to upload");
-    else
+    if (listener.status_ != Listener::SUCCESS) {
+      if (!r->is_cancelled()) callback->error("Failed to upload");
+    } else
       callback->done();
     std::remove(cache.c_str());
   });
@@ -375,7 +381,10 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<void>* r) {
-    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
+    if (!ensureAuthorized(r)) {
+      if (!r->is_cancelled()) callback->error("Authorization failed.");
+      return;
+    }
     Request<void>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
@@ -394,8 +403,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
         callback->receivedData(buffer.data(), cache_file.gcount());
       } while (cache_file.gcount() > 0);
       callback->done();
-    } else if (listener.status_ == Listener::FAILURE) {
-      callback->error("Failed to get thumbnail");
+    } else {
+      if (!r->is_cancelled()) callback->error("Failed to get thumbnail");
     }
     std::remove(cache.c_str());
   });
