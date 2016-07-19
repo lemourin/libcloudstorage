@@ -36,6 +36,8 @@ class MainWidget : public QWidget {
     window_.set_container(container_);
 
     container_->setFocus();
+
+    player_widget_.setStyleSheet("background-color:black;");
     player_widget_.show();
   }
 
