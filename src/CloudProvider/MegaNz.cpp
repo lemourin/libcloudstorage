@@ -423,7 +423,7 @@ std::pair<std::string, std::string> MegaNz::creditentialsFromString(
 bool MegaNz::login(Request<bool>* r) {
   Authorize::Semaphore semaphore(r);
   RequestListener auth_listener(&semaphore);
-  auto data = creditentialsFromString(access_token());
+  auto data = creditentialsFromString(token());
   std::string mail = data.first;
   std::string private_key = data.second;
   std::unique_ptr<char> hash(
