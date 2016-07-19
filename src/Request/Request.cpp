@@ -113,13 +113,17 @@ bool Request<T>::reauthorize() {
         CloudProvider::AuthorizationStatus::InProgress);
     provider()->set_current_authorization(provider()->authorizeAsync());
   }
-  while (!is_cancelled() &&
-         provider()->authorization_status() ==
-             CloudProvider::AuthorizationStatus::InProgress)
-    provider()->authorized_condition().wait(current_authorization);
-  bool ret =
-      is_cancelled() ? false : provider()->authorization_status() ==
-                                   CloudProvider::AuthorizationStatus::Success;
+  provider()->authorized_condition().wait(current_authorization, [this] {
+    return provider()->authorization_status() !=
+               CloudProvider::AuthorizationStatus::InProgress ||
+           is_cancelled();
+  });
+  if (is_cancelled() &&
+      provider()->authorization_status() ==
+          CloudProvider::AuthorizationStatus::InProgress)
+    return false;
+  bool ret = provider()->authorization_status() ==
+             CloudProvider::AuthorizationStatus::Success;
   provider()->set_current_authorization(nullptr);
   provider()->set_authorization_status(
       CloudProvider::AuthorizationStatus::None);
