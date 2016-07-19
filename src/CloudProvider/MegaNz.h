@@ -63,6 +63,12 @@ class MegaNz : public CloudProvider {
 
   mega::MegaApi* mega() const { return mega_.get(); }
 
+  IItem::Pointer toItem(mega::MegaNode*);
+  std::string randomString(int length);
+
+  template <class T>
+  bool ensureAuthorized(Request<T>*);
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -82,9 +88,6 @@ class MegaNz : public CloudProvider {
     using AuthorizeRequest::AuthorizeRequest;
     ~Authorize();
   };
-
-  IItem::Pointer toItem(mega::MegaNode*);
-  std::string randomString(int length);
 
  private:
   std::unique_ptr<mega::MegaApi> mega_;

@@ -257,6 +257,10 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
   auto r = std::make_shared<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver(
       [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
+        if (!ensureAuthorized(r)) {
+          callback(nullptr);
+          return nullptr;
+        }
         auto node = mega_->getNodeByPath(id.c_str());
         if (!node) {
           callback(nullptr);
@@ -286,7 +290,10 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
       make_unique<Request<std::vector<IItem::Pointer>>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<std::vector<IItem::Pointer>>*
                                              r) -> std::vector<IItem::Pointer> {
-    if (!authorized_) r->reauthorize();
+    if (!ensureAuthorized(r)) {
+      callback->error("Authorization failed.");
+      return {};
+    }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     std::vector<IItem::Pointer> result;
@@ -310,7 +317,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<void>* r) {
-    if (!authorized_) r->reauthorize();
+    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
     auto node = mega_->getNodeByPath(item->id().c_str());
     Request<void>::Semaphore semaphore(r);
     TransferListener listener(&semaphore);
@@ -334,7 +341,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IUploadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback, filename](Request<void>* r) {
-    if (!authorized_) r->reauthorize();
+    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
     {
       std::fstream mega_cache(cache.c_str(),
@@ -368,6 +375,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<void>* r) {
+    if (!ensureAuthorized(r)) return callback->error("Authorization failed.");
     Request<void>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
@@ -437,6 +445,14 @@ std::string MegaNz::randomString(int length) {
   std::string result;
   for (int i = 0; i < length; i++) result += dist(engine_);
   return result;
+}
+
+template <class T>
+bool MegaNz::ensureAuthorized(Request<T>* r) {
+  if (!authorized_)
+    return r->reauthorize();
+  else
+    return true;
 }
 
 MegaNz::Auth::Auth() {}
