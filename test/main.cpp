@@ -51,12 +51,21 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
   std::string drive_file_;
 };
 
+class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
+  void receivedItem(cloudstorage::IItem::Pointer) {}
+  void done(const std::vector<cloudstorage::IItem::Pointer>&) {}
+  void error(const std::string&) {}
+};
+
 void traverse_drive(cloudstorage::ICloudProvider& drive,
                     cloudstorage::IItem::Pointer f, std::string path) {
   std::cout << path << "\n";
   if (f->type() != cloudstorage::IItem::FileType::Directory) return;
   for (cloudstorage::IItem::Pointer& t :
-       drive.listDirectoryAsync(f, nullptr)->result()) {
+       drive
+           .listDirectoryAsync(f, std::unique_ptr<ListDirectoryCallback>(
+                                      new ListDirectoryCallback))
+           ->result()) {
     traverse_drive(
         drive, std::move(t),
         path + t->filename() +
