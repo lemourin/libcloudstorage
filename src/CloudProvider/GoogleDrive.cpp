@@ -37,28 +37,6 @@ GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
-ICloudProvider::DeleteItemRequest::Pointer GoogleDrive::deleteItemAsync(
-    IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([item, callback](Request<bool>* r) {
-    std::stringstream output;
-    if (HttpRequest::isSuccess(r->sendRequest(
-            [item](std::ostream&) {
-              return make_unique<HttpRequest>(
-                  "https://www.googleapis.com/drive/v3/files/" + item->id(),
-                  HttpRequest::Type::DELETE);
-            },
-            output))) {
-      callback(true);
-      return true;
-    } else {
-      callback(false);
-      return false;
-    }
-  });
-  return r;
-}
-
 HttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
                                                      std::ostream&) const {
   auto request = make_unique<HttpRequest>(
@@ -115,6 +93,13 @@ HttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& item,
       HttpRequest::Type::GET);
   request->setParameter("alt", "media");
   return request;
+}
+
+HttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
+                                                    std::ostream&) const {
+  return make_unique<HttpRequest>(
+      "https://www.googleapis.com/drive/v3/files/" + item.id(),
+      HttpRequest::Type::DELETE);
 }
 
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
