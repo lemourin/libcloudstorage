@@ -24,7 +24,6 @@
 #include <QApplication>
 #include <QResizeEvent>
 #include <iostream>
-#include <vlcpp/vlc.hpp>
 #include "Window.h"
 
 class MainWidget : public QWidget {
