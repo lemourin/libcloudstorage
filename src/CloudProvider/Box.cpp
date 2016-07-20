@@ -135,6 +135,18 @@ HttpRequest::Pointer Box::getThumbnailRequest(const IItem& item,
       HttpRequest::Type::GET);
 }
 
+HttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
+                                            std::ostream&) const {
+  if (item.type() == IItem::FileType::Directory)
+    return make_unique<HttpRequest>(
+        "https://api.box.com/2.0/folders/" + item.id() + "?recursive=true",
+        HttpRequest::Type::DELETE);
+  else
+    return make_unique<HttpRequest>(
+        "https://api.box.com/2.0/files/" + item.id(),
+        HttpRequest::Type::DELETE);
+}
+
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
   Json::Value response;
   stream >> response;

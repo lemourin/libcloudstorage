@@ -51,6 +51,8 @@ class Box : public CloudProvider {
                                            std::ostream& input_stream) const;
   HttpRequest::Pointer getThumbnailRequest(
       const IItem&, std::ostream& input_stream) const;
+  HttpRequest::Pointer deleteItemRequest(const IItem&,
+                                         std::ostream& input_stream) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
