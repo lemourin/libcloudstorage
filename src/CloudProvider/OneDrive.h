@@ -47,6 +47,8 @@ class OneDrive : public CloudProvider {
                                          std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
+  HttpRequest::Pointer deleteItemRequest(const IItem&,
+                                         std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(std::istream&,
                                                     std::string&) const;

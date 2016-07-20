@@ -97,6 +97,13 @@ HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
   return request;
 }
 
+HttpRequest::Pointer OneDrive::deleteItemRequest(const IItem& item,
+                                                 std::ostream&) const {
+  return make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id(),
+      HttpRequest::Type::DELETE);
+}
+
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
