@@ -148,6 +148,14 @@ HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& item,
       HttpRequest::Type::GET);
 }
 
+HttpRequest::Pointer AmazonDrive::deleteItemRequest(const IItem& i,
+                                                    std::ostream&) const {
+  const AmazonItem& item = static_cast<const AmazonItem&>(i);
+  return make_unique<HttpRequest>(
+      metadata_url() + "/nodes/" + item.parent_ + "/children/" + item.id(),
+      HttpRequest::Type::DELETE);
+}
+
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
@@ -179,8 +187,9 @@ IItem::FileType AmazonDrive::type(const Json::Value& v) const {
 
 IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-  auto item = make_unique<Item>(name, v["id"].asString(), type(v));
+  auto item = make_unique<AmazonItem>(name, v["id"].asString(), type(v));
   item->set_url(v["tempLink"].asString());
+  item->parent_ = v["parents"][0].asString();
   if (item->type() == IItem::FileType::Image)
     item->set_thumbnail_url(item->url() + "?viewBox=" +
                             std::to_string(THUMBNAIL_SIZE));

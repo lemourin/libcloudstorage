@@ -25,6 +25,7 @@
 #define AMAZONDRIVE_H
 
 #include "CloudProvider.h"
+#include "Utility/Item.h"
 
 namespace cloudstorage {
 
@@ -54,6 +55,8 @@ class AmazonDrive : public CloudProvider {
                                          std::ostream& input_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
+  HttpRequest::Pointer deleteItemRequest(const IItem&,
+                                         std::ostream& input_stream) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
@@ -66,6 +69,13 @@ class AmazonDrive : public CloudProvider {
   std::string content_url() const;
 
   bool reauthorize(int code) const;
+
+  class AmazonItem : public Item {
+   public:
+    using Item::Item;
+
+    std::string parent_;
+  };
 
   class Auth : public cloudstorage::Auth {
    public:
