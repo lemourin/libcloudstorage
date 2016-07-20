@@ -171,18 +171,16 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE,
                      static_cast<long>(stream_length(data)));
-    status = curl_easy_perform(handle_.get());
-  } else if (type_ == Type::GET) {
-    status = curl_easy_perform(handle_.get());
   } else if (type_ == Type::PUT) {
     curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(data)));
-    status = curl_easy_perform(handle_.get());
+  } else if (type_ == Type::DELETE) {
+    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "DELETE");
   }
+  status = curl_easy_perform(handle_.get());
   curl_slist_free_all(header_list);
-
   if (status == CURLE_ABORTED_BY_CALLBACK)
     return Aborted;
   else if (status == CURLE_OK) {

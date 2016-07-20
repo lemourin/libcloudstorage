@@ -63,7 +63,7 @@ class HttpRequest {
     virtual void receivedContentLength(int length) = 0;
   };
 
-  enum class Type { POST, GET, PUT };
+  enum class Type { POST, GET, PUT, DELETE };
 
   HttpRequest(const std::string& url, Type);
 
