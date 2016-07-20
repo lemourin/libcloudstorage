@@ -81,6 +81,7 @@ class IUploadFileCallback {
 
 using GetItemCallback = std::function<void(IItem::Pointer)>;
 using GetItemDataCallback = std::function<void(IItem::Pointer)>;
+using DeleteItemCallback = std::function<void(bool)>;
 
 }  // namespace cloudstorage
 

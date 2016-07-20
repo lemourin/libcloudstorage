@@ -70,6 +70,8 @@ class CloudProvider : public ICloudProvider,
                                                GetItemDataCallback f);
   DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer, IDownloadFileCallback::Pointer);
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                             DeleteItemCallback);
 
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;

@@ -44,6 +44,7 @@ class ICloudProvider {
   using DownloadFileRequest = IRequest<void>;
   using UploadFileRequest = IRequest<void>;
   using GetItemDataRequest = IRequest<IItem::Pointer>;
+  using DeleteItemRequest = IRequest<bool>;
 
   class ICallback {
    public:
@@ -82,6 +83,8 @@ class ICloudProvider {
                                                        GetItemDataCallback) = 0;
   virtual DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer item, IDownloadFileCallback::Pointer) = 0;
+  virtual DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                                     DeleteItemCallback) = 0;
 };
 
 }  // namespace cloudstorage

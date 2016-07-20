@@ -176,6 +176,16 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
       std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2));
 }
 
+ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
+    IItem::Pointer, DeleteItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([callback](Request<bool>*) {
+    callback(false);
+    return false;
+  });
+  return r;
+}
+
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                        std::ostream&) const {
   return nullptr;
