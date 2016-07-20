@@ -75,6 +75,12 @@ ICloudProvider::GetItemDataRequest::Pointer MockProvider::getItemDataAsync(
   return make_unique<MockGetItemDataRequest>(id, callback);
 }
 
+ICloudProvider::DeleteItemRequest::Pointer MockProvider::deleteItemAsync(
+    IItem::Pointer, DeleteItemCallback callback) {
+  callback(false);
+  return make_unique<MockDeleteItemRequest>();
+}
+
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<MockDownloadFileRequest>(item, std::move(callback));

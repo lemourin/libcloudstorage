@@ -105,6 +105,13 @@ class MockProvider : public ICloudProvider {
     IItem::Pointer result_;
   };
 
+  class MockDeleteItemRequest : public DeleteItemRequest {
+   public:
+    void finish() {}
+    void cancel() {}
+    bool result() { return false; }
+  };
+
   MockProvider();
 
   void initialize(const std::string& token, ICallback::Pointer,
@@ -128,6 +135,8 @@ class MockProvider : public ICloudProvider {
                                                GetItemDataCallback);
   DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer item, IDownloadFileCallback::Pointer);
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                             DeleteItemCallback);
 };
 
 }  // namespace cloudstorage
