@@ -54,6 +54,8 @@ class MegaNz : public CloudProvider {
                                              IUploadFileCallback::Pointer);
   DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer, IDownloadFileCallback::Pointer);
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                             DeleteItemCallback);
 
   std::pair<std::string, std::string> creditentialsFromString(
       const std::string&) const;

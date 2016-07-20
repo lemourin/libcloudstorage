@@ -412,6 +412,27 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
   return r;
 }
 
+ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
+    IItem::Pointer item, DeleteItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([this, item, callback](Request<bool>* r) {
+    auto node = mega_->getNodeByPath(item->id().c_str());
+    Request<bool>::Semaphore semaphore(r);
+    RequestListener listener(&semaphore);
+    mega_->remove(node, &listener);
+    semaphore.wait();
+    mega_->removeRequestListener(&listener);
+    if (listener.status_ == Listener::SUCCESS) {
+      callback(true);
+      return true;
+    } else {
+      callback(false);
+      return false;
+    }
+  });
+  return r;
+}
+
 std::pair<std::string, std::string> MegaNz::creditentialsFromString(
     const std::string& str) const {
   auto it = str.find(SEPARATOR);
