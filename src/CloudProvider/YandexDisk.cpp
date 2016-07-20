@@ -182,7 +182,7 @@ HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
                                                    std::ostream&) const {
   auto request =
       make_unique<HttpRequest>("https://cloud-api.yandex.net/v1/disk/resources",
-                               HttpRequest::Type::DELETE);
+                               HttpRequest::Type::DEL);
   request->setParameter("path", item.id());
   request->setParameter("permamently", "true");
   return request;

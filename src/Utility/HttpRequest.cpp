@@ -176,7 +176,7 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
     curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(data)));
-  } else if (type_ == Type::DELETE) {
+  } else if (type_ == Type::DEL) {
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "DELETE");
   }
   status = curl_easy_perform(handle_.get());

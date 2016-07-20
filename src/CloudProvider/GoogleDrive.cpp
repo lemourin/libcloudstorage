@@ -99,7 +99,7 @@ HttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
                                                     std::ostream&) const {
   return make_unique<HttpRequest>(
       "https://www.googleapis.com/drive/v3/files/" + item.id(),
-      HttpRequest::Type::DELETE);
+      HttpRequest::Type::DEL);
 }
 
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {

@@ -140,11 +140,11 @@ HttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
   if (item.type() == IItem::FileType::Directory)
     return make_unique<HttpRequest>(
         "https://api.box.com/2.0/folders/" + item.id() + "?recursive=true",
-        HttpRequest::Type::DELETE);
+        HttpRequest::Type::DEL);
   else
     return make_unique<HttpRequest>(
         "https://api.box.com/2.0/files/" + item.id(),
-        HttpRequest::Type::DELETE);
+        HttpRequest::Type::DEL);
 }
 
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {

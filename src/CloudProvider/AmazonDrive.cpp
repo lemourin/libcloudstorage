@@ -153,7 +153,7 @@ HttpRequest::Pointer AmazonDrive::deleteItemRequest(const IItem& i,
   const AmazonItem& item = static_cast<const AmazonItem&>(i);
   return make_unique<HttpRequest>(
       metadata_url() + "/nodes/" + item.parent_ + "/children/" + item.id(),
-      HttpRequest::Type::DELETE);
+      HttpRequest::Type::DEL);
 }
 
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
