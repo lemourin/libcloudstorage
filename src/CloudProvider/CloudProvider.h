@@ -85,6 +85,8 @@ class CloudProvider : public ICloudProvider,
       const IItem&, std::ostream& input_stream) const;
   virtual HttpRequest::Pointer getThumbnailRequest(
       const IItem&, std::ostream& input_stream) const;
+  virtual HttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const;
 
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
   virtual std::vector<IItem::Pointer> listDirectoryResponse(

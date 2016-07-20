@@ -29,6 +29,7 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include "Request/DeleteItemRequest.h"
 #include "Request/DownloadFileRequest.h"
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
@@ -177,13 +178,9 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
 }
 
 ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
-    IItem::Pointer, DeleteItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([callback](Request<bool>*) {
-    callback(false);
-    return false;
-  });
-  return r;
+    IItem::Pointer item, DeleteItemCallback callback) {
+  return make_unique<cloudstorage::DeleteItemRequest>(shared_from_this(), item,
+                                                      callback);
 }
 
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
@@ -214,6 +211,11 @@ HttpRequest::Pointer CloudProvider::getThumbnailRequest(const IItem& i,
   const Item& item = static_cast<const Item&>(i);
   if (item.thumbnail_url().empty()) return nullptr;
   return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
+}
+
+HttpRequest::Pointer CloudProvider::deleteItemRequest(const IItem&,
+                                                      std::ostream&) const {
+  return nullptr;
 }
 
 IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
