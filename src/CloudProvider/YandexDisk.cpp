@@ -138,7 +138,10 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           auto request = make_unique<HttpRequest>(
               "https://cloud-api.yandex.net/v1/disk/resources/upload",
               HttpRequest::Type::GET);
-          request->setParameter("path", directory->id() + "/" + filename);
+          std::string path = directory->id();
+          if (path.back() != '/') path += "/";
+          path += filename;
+          request->setParameter("path", path);
           return request;
         },
         output);
@@ -160,18 +163,28 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           output, nullptr,
           std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
       if (HttpRequest::isSuccess(code)) callback->done();
-    }
+    } else
+      callback->error("Couldn't get upload url.");
   });
   return r;
 }
 
 HttpRequest::Pointer YandexDisk::listDirectoryRequest(
-    const IItem& item, const std::string& page_token,
-    std::ostream& input_stream) const {
+    const IItem& item, const std::string& page_token, std::ostream&) const {
   auto request = make_unique<HttpRequest>(
       "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::GET);
   request->setParameter("path", item.id());
   if (!page_token.empty()) request->setParameter("offset", page_token);
+  return request;
+}
+
+HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
+                                                   std::ostream&) const {
+  auto request =
+      make_unique<HttpRequest>("https://cloud-api.yandex.net/v1/disk/resources",
+                               HttpRequest::Type::DELETE);
+  request->setParameter("path", item.id());
+  request->setParameter("permamently", "true");
   return request;
 }
 
