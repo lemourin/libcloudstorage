@@ -161,6 +161,17 @@ HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
   return request;
 }
 
+HttpRequest::Pointer Dropbox::deleteItemRequest(
+    const IItem& item, std::ostream& input_stream) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.dropboxapi.com/2/files/delete", HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value parameter;
+  parameter["path"] = item.id();
+  input_stream << parameter;
+  return request;
+}
+
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
