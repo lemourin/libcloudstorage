@@ -34,6 +34,9 @@ class GoogleDrive : public CloudProvider {
   GoogleDrive();
   std::string name() const;
 
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer item,
+                                             DeleteItemCallback);
+
   HttpRequest::Pointer getItemDataRequest(const std::string&,
                                           std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
