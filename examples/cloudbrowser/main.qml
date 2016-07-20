@@ -134,6 +134,8 @@ Item {
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();
+            else if (event.key === Qt.Key_Delete)
+                window.deleteItem(currentIndex);
         }
         FileDialog {
             property var file
@@ -185,15 +187,17 @@ Item {
             y: padding
 
             Column {
-                width: 20
+                width: childrenRect.width + padding
                 Row { Text { text: "D" } }
                 Row { Text { text: "Q" } }
                 Row { Text { text: "P" } }
+                Row { Text { text: "DEL" } }
             }
             Column {
                 Row { Text { text: "Download a file" } }
                 Row { Text { text: "Quit a file" } }
                 Row { Text { text: "Pause file" } }
+                Row { Text { text: "Delete file" } }
             }
         }
     }

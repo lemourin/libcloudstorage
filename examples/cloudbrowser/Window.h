@@ -109,6 +109,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void stop();
   Q_INVOKABLE void uploadFile(QString path);
   Q_INVOKABLE void downloadFile(int, QUrl path);
+  Q_INVOKABLE void deleteItem(int item);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(ItemPointer);
@@ -160,6 +161,7 @@ class Window : public QQuickView {
   ICloudProvider::DownloadFileRequest::Pointer download_request_;
   ICloudProvider::UploadFileRequest::Pointer upload_request_;
   ICloudProvider::GetItemDataRequest::Pointer item_data_request_;
+  ICloudProvider::DeleteItemRequest::Pointer delete_item_request_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;

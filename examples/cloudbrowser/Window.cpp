@@ -303,6 +303,17 @@ void Window::downloadFile(int item_id, QUrl path) {
             << "\n";
 }
 
+void Window::deleteItem(int item_id) {
+  ItemModel* i = directory_model_.get(item_id);
+  delete_item_request_ =
+      cloud_provider_->deleteItemAsync(i->item(), [](bool e) {
+        if (e)
+          std::cerr << "[DIAG] Successfully deleted file\n";
+        else
+          std::cerr << "[FAIL] Failed to delete file.\n";
+      });
+}
+
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
   QString id = (p->name() + "/" + item_->id()).c_str();
