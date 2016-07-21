@@ -25,6 +25,8 @@
 #define ITEM_H
 
 #include <string>
+#include <vector>
+
 #include "IItem.h"
 
 namespace cloudstorage {
@@ -50,6 +52,9 @@ class Item : public IItem {
   FileType type() const;
   void set_type(FileType);
 
+  const std::vector<std::string>& parents() const;
+  void set_parents(const std::vector<std::string>&);
+
   static FileType fromMimeType(const std::string& mime_type);
 
  private:
@@ -59,6 +64,7 @@ class Item : public IItem {
   std::string thumbnail_url_;
   FileType type_;
   bool is_hidden_;
+  std::vector<std::string> parents_;
 };
 
 }  // namespace cloudstorage

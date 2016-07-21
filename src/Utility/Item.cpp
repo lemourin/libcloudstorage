@@ -55,6 +55,12 @@ IItem::FileType Item::type() const { return type_; }
 
 void Item::set_type(FileType t) { type_ = t; }
 
+const std::vector<std::string>& Item::parents() const { return parents_; }
+
+void Item::set_parents(const std::vector<std::string>& parents) {
+  parents_ = parents;
+}
+
 IItem::FileType Item::fromMimeType(const std::string& mime_type) {
   std::string type = mime_type.substr(0, mime_type.find_first_of('/'));
   if (type == "audio")
