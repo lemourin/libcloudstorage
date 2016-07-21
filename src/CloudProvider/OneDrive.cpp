@@ -103,6 +103,19 @@ HttpRequest::Pointer OneDrive::deleteItemRequest(const IItem& item,
       HttpRequest::Type::DEL);
 }
 
+HttpRequest::Pointer OneDrive::createDirectoryRequest(
+    const IItem& parent, const std::string& name, std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + parent.id() + "/children",
+      HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  json["folder"] = Json::Value(Json::objectValue);
+  input << json;
+  return request;
+}
+
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
