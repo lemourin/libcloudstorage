@@ -143,8 +143,20 @@ HttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
         HttpRequest::Type::DEL);
   else
     return make_unique<HttpRequest>(
-        "https://api.box.com/2.0/files/" + item.id(),
-        HttpRequest::Type::DEL);
+        "https://api.box.com/2.0/files/" + item.id(), HttpRequest::Type::DEL);
+}
+
+HttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream& stream) const {
+  auto request = make_unique<HttpRequest>("https://api.box.com/2.0/folders",
+                                          HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  json["parent"]["id"] = item.id();
+  stream << json;
+  return request;
 }
 
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
