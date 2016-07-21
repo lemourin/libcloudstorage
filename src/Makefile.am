@@ -1,9 +1,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
-	$(libcurl_CXXFLAGS) \
-	$(libjsoncpp_CXXFLAGS) \
-	$(libmicrohttpd_CXXFLAGS)
+	$(libcurl_CFLAGS) \
+	$(libjsoncpp_CFLAGS) \
+	$(libmicrohttpd_CFLAGS)
 
 AM_LDFLAGS = \
 	-no-undefined \
@@ -70,7 +70,7 @@ libcloudstorage_la_LIBADD = \
 	$(libmicrohttpd_LIBS)
 
 if WITH_MEGA
-AM_CXXFLAGS += $(libmega_CXXFLAGS)
+AM_CXXFLAGS += $(libmega_CFLAGS)
 libcloudstorage_la_LIBADD += $(libmega_LIBS)
 libcloudstorage_la_SOURCES += CloudProvider/MegaNz.cpp
 noinst_HEADERS += CloudProvider/MegaNz.h
