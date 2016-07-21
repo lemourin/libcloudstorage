@@ -45,10 +45,11 @@ class ICloudProvider {
   using UploadFileRequest = IRequest<void>;
   using GetItemDataRequest = IRequest<IItem::Pointer>;
   using DeleteItemRequest = IRequest<bool>;
+  using CreateDirectoryRequest = IRequest<IItem::Pointer>;
 
   class ICallback {
    public:
-    using Pointer = std::unique_ptr<ICallback>;
+    using Pointer = std::shared_ptr<ICallback>;
 
     enum class Status { WaitForAuthorizationCode, None };
 
@@ -85,6 +86,9 @@ class ICloudProvider {
       IItem::Pointer item, IDownloadFileCallback::Pointer) = 0;
   virtual DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                                      DeleteItemCallback) = 0;
+  virtual CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer parent, const std::string& name,
+      CreateDirectoryCallback) = 0;
 };
 
 }  // namespace cloudstorage

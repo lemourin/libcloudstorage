@@ -72,6 +72,9 @@ class CloudProvider : public ICloudProvider,
       IItem::Pointer, IDownloadFileCallback::Pointer);
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback);
+  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer parent,
+                                                       const std::string& name,
+                                                       CreateDirectoryCallback);
 
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;
@@ -87,10 +90,14 @@ class CloudProvider : public ICloudProvider,
       const IItem&, std::ostream& input_stream) const;
   virtual HttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const;
+  virtual HttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                                      const std::string&,
+                                                      std::ostream&) const;
 
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream& response, std::string& next_page_token) const;
+  virtual IItem::Pointer createDirectoryResponse(std::istream& response) const;
 
   virtual void authorizeRequest(HttpRequest&) const;
   virtual bool reauthorize(int code) const;

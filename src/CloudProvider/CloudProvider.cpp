@@ -29,6 +29,7 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include "Request/CreateDirectoryRequest.h"
 #include "Request/DeleteItemRequest.h"
 #include "Request/DownloadFileRequest.h"
 #include "Request/GetItemDataRequest.h"
@@ -183,6 +184,14 @@ ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
                                                       callback);
 }
 
+ICloudProvider::CreateDirectoryRequest::Pointer
+CloudProvider::createDirectoryAsync(IItem::Pointer parent,
+                                    const std::string& name,
+                                    CreateDirectoryCallback callback) {
+  return make_unique<cloudstorage::CreateDirectoryRequest>(
+      shared_from_this(), parent, name, callback);
+}
+
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                        std::ostream&) const {
   return nullptr;
@@ -218,6 +227,11 @@ HttpRequest::Pointer CloudProvider::deleteItemRequest(const IItem&,
   return nullptr;
 }
 
+HttpRequest::Pointer CloudProvider::createDirectoryRequest(
+    const IItem&, const std::string&, std::ostream&) const {
+  return nullptr;
+}
+
 IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
 }
@@ -225,6 +239,10 @@ IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
 std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
     std::istream&, std::string&) const {
   return {};
+}
+
+IItem::Pointer CloudProvider::createDirectoryResponse(std::istream&) const {
+  return nullptr;
 }
 
 }  // namespace cloudstorage
