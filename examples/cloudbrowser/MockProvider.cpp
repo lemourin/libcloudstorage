@@ -88,6 +88,12 @@ MockProvider::createDirectoryAsync(IItem::Pointer parent,
   return make_unique<MockCreateDirectoryRequest>(parent, name, callback);
 }
 
+ICloudProvider::MoveItemRequest::Pointer MockProvider::moveItemAsync(
+    IItem::Pointer, IItem::Pointer, MoveItemCallback callback) {
+  callback(false);
+  return make_unique<MockMoveItemRequest>();
+}
+
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<MockDownloadFileRequest>(item, std::move(callback));
