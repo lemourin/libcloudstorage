@@ -102,6 +102,22 @@ HttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
       HttpRequest::Type::DEL);
 }
 
+HttpRequest::Pointer GoogleDrive::createDirectoryRequest(
+    const IItem& item, const std::string& name, std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/drive/v3/files", HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  request->setParameter("fields",
+                        "id,name,thumbnailLink,trashed,"
+                        "mimeType,iconLink");
+  Json::Value json;
+  json["mimeType"] = "application/vnd.google-apps.folder";
+  json["name"] = name;
+  json["parents"].append(item.id());
+  input << json;
+  return request;
+}
+
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
@@ -118,6 +134,13 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
   return result;
+}
+
+IItem::Pointer GoogleDrive::createDirectoryResponse(
+    std::istream& stream) const {
+  Json::Value json;
+  stream >> json;
+  return toItem(json);
 }
 
 bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
