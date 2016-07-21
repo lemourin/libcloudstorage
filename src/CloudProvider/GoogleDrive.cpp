@@ -44,7 +44,7 @@ HttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
       HttpRequest::Type::GET);
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink");
+                        "mimeType,iconLink,parents");
   return request;
 }
 
@@ -55,7 +55,7 @@ HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
   request->setParameter("fields",
                         "files(id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink),kind,"
+                        "mimeType,iconLink,parents),kind,"
                         "nextPageToken");
   if (!page_token.empty()) request->setParameter("pageToken", page_token);
   return request;
@@ -109,12 +109,29 @@ HttpRequest::Pointer GoogleDrive::createDirectoryRequest(
   request->setHeaderParameter("Content-Type", "application/json");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink");
+                        "mimeType,iconLink,parents");
   Json::Value json;
   json["mimeType"] = "application/vnd.google-apps.folder";
   json["name"] = name;
   json["parents"].append(item.id());
   input << json;
+  return request;
+}
+
+HttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
+                                                  const IItem& destination,
+                                                  std::ostream& input) const {
+  const Item& source = static_cast<const Item&>(s);
+  auto request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/upload/drive/v3/files/" + source.id(),
+      HttpRequest::Type::PATCH);
+  request->setHeaderParameter("Content-Type", "application/json");
+  std::string current_parents;
+  for (auto str : source.parents()) current_parents += str + ",";
+  current_parents.pop_back();
+  request->setParameter("removeParents", current_parents);
+  request->setParameter("addParents", destination.id());
+  input << Json::Value();
   return request;
 }
 
@@ -168,6 +185,9 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   item->set_thumbnail_url(thumnail_url);
   item->set_url("https://www.googleapis.com/drive/v3/files/" + item->id() +
                 "?alt=media&access_token=" + access_token());
+  std::vector<std::string> parents;
+  for (auto id : v["parents"]) parents.push_back(id.asString());
+  item->set_parents(parents);
   return item;
 }
 

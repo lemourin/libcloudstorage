@@ -52,6 +52,8 @@ class GoogleDrive : public CloudProvider {
   HttpRequest::Pointer createDirectoryRequest(const IItem&,
                                               const std::string& name,
                                               std::ostream&) const;
+  HttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
+                                       std::ostream&) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
