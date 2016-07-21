@@ -24,6 +24,7 @@
 #include "OneDrive.h"
 
 #include <json/json.h>
+#include <iostream>
 #include <sstream>
 
 #include "Utility/HttpRequest.h"
@@ -113,6 +114,22 @@ HttpRequest::Pointer OneDrive::createDirectoryRequest(
   json["name"] = name;
   json["folder"] = Json::Value(Json::objectValue);
   input << json;
+  return request;
+}
+
+HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
+                                               const IItem& destination,
+                                               std::ostream& stream) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + source.id(),
+      HttpRequest::Type::PATCH);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  if (destination.id() == rootDirectory()->id())
+    json["parentReference"]["path"] = "/drive/root";
+  else
+    json["parentReference"]["id"] = destination.id();
+  stream << json;
   return request;
 }
 
