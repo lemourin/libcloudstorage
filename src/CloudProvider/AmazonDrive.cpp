@@ -156,6 +156,19 @@ HttpRequest::Pointer AmazonDrive::deleteItemRequest(const IItem& i,
       HttpRequest::Type::DEL);
 }
 
+HttpRequest::Pointer AmazonDrive::createDirectoryRequest(
+    const IItem& parent, const std::string& name, std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(metadata_url() + "/nodes",
+                                          HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  json["kind"] = "FOLDER";
+  json["parents"].append(parent.id());
+  input << json;
+  return request;
+}
+
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
