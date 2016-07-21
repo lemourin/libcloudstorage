@@ -169,6 +169,46 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   return r;
 }
 
+ICloudProvider::CreateDirectoryRequest::Pointer
+YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
+                                 CreateDirectoryCallback callback) {
+  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    std::stringstream output;
+    int code = r->sendRequest(
+        [=](std::ostream&) {
+          auto request = make_unique<HttpRequest>(
+              "https://cloud-api.yandex.net/v1/disk/resources/",
+              HttpRequest::Type::PUT);
+          request->setParameter(
+              "path",
+              parent->id() + (parent->id().back() == '/' ? "" : "/") + name);
+          return request;
+        },
+        output);
+    if (HttpRequest::isSuccess(code)) {
+      Json::Value json;
+      output >> json;
+      code = r->sendRequest(
+          [=](std::ostream&) {
+            auto request = make_unique<HttpRequest>(json["href"].asString(),
+                                                    HttpRequest::Type::GET);
+            return request;
+          },
+          output);
+      if (HttpRequest::isSuccess(code)) {
+        output >> json;
+        auto item = toItem(json);
+        callback(item);
+        return item;
+      }
+    }
+    callback(nullptr);
+    return nullptr;
+  });
+  return r;
+}
+
 HttpRequest::Pointer YandexDisk::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   auto request = make_unique<HttpRequest>(
@@ -180,9 +220,8 @@ HttpRequest::Pointer YandexDisk::listDirectoryRequest(
 
 HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
                                                    std::ostream&) const {
-  auto request =
-      make_unique<HttpRequest>("https://cloud-api.yandex.net/v1/disk/resources",
-                               HttpRequest::Type::DEL);
+  auto request = make_unique<HttpRequest>(
+      "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::DEL);
   request->setParameter("path", item.id());
   request->setParameter("permamently", "true");
   return request;
