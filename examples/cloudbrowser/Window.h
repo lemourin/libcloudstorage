@@ -96,6 +96,8 @@ class DirectoryModel : public QAbstractListModel {
 
 class Window : public QQuickView {
  public:
+  Q_PROPERTY(QString movedItem READ movedItem NOTIFY movedItemChanged)
+
   Window(QWidget* player_widget);
   ~Window();
 
@@ -111,6 +113,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void downloadFile(int, QUrl path);
   Q_INVOKABLE void deleteItem(int item);
   Q_INVOKABLE void createDirectory(QString name);
+  Q_INVOKABLE void markMovedItem(int item);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(ItemPointer);
@@ -122,6 +125,8 @@ class Window : public QQuickView {
 
   void set_container(QWidget* w) { container_ = w; }
   QWidget* container() const { return container_; }
+
+  QString movedItem() const;
 
  signals:
   void openBrowser(QString url);
@@ -139,6 +144,7 @@ class Window : public QQuickView {
   void runClearDirectory();
   void playNext();
   void currentItemChanged(int index);
+  void movedItemChanged();
 
  protected:
   void keyPressEvent(QKeyEvent* e);
@@ -164,6 +170,7 @@ class Window : public QQuickView {
   ICloudProvider::GetItemDataRequest::Pointer item_data_request_;
   ICloudProvider::DeleteItemRequest::Pointer delete_item_request_;
   ICloudProvider::CreateDirectoryRequest::Pointer create_directory_request_;
+  IItem::Pointer moved_file_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;

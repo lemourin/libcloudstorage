@@ -133,6 +133,9 @@ Item {
                 window.listDirectory();
             else if (event.key === Qt.Key_Delete && currentIndex != -1)
                 window.deleteItem(currentIndex);
+            else if (event.key === Qt.Key_M && currentIndex != -1) {
+                window.markMovedItem(currentIndex)
+            }
         }
         FileDialog {
             property var file
@@ -178,6 +181,7 @@ Item {
     }
 
     MouseArea {
+        id: createDirectoryButton
         visible: uploadButton.visible
         width: 100
         height: 100
@@ -191,8 +195,12 @@ Item {
             radius: padding
             Text {
                 id: createDirectoryText
-                anchors.centerIn: parent
-                text: "Create\ndirectory"
+                y: 20
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                text: "Create directory"
             }
             TextField {
                 id: directoryName
@@ -203,6 +211,28 @@ Item {
             }
         }
         onPressed: window.createDirectory(directoryName.text)
+    }
+
+    Rectangle {
+        visible: window.movedItem != ""
+        anchors.margins: padding
+        anchors.right: createDirectoryButton.left
+        anchors.bottom: parent.bottom
+        width: 100
+        height: childrenRect.height + 2 * padding
+        border.color: "black"
+        color: "grey"
+        radius: padding
+        Text {
+            x: padding
+            y: padding
+            wrapMode: Text.Wrap
+            anchors.left: parent.left
+            anchors.right: parent.right
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            text: "Moving " + window.movedItem
+        }
     }
 
     Rectangle {
@@ -227,12 +257,14 @@ Item {
                 Row { Text { text: "Q" } }
                 Row { Text { text: "P" } }
                 Row { Text { text: "DEL" } }
+                Row { Text { text: "M" } }
             }
             Column {
                 Row { Text { text: "Download a file" } }
                 Row { Text { text: "Quit a file" } }
                 Row { Text { text: "Pause file" } }
                 Row { Text { text: "Delete file" } }
+                Row { Text { text: "Move file" } }
             }
         }
     }

@@ -129,6 +129,8 @@ void Window::initializeCloud(QString name) {
                               make_unique<CloudProviderCallback>(this),
                               fromJson(data));
   current_directory_ = cloud_provider_->rootDirectory();
+  moved_file_ = nullptr;
+  emit movedItemChanged();
   emit runListDirectory();
 }
 
@@ -175,6 +177,13 @@ void Window::onPlayFileFromUrl(QString url) {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
   }
+}
+
+QString Window::movedItem() const {
+  if (moved_file_)
+    return moved_file_->filename().c_str();
+  else
+    return "";
 }
 
 void Window::keyPressEvent(QKeyEvent* e) {
@@ -248,6 +257,8 @@ QJsonObject Window::toJson(const ICloudProvider::Hints& map) const {
 bool Window::goBack() {
   if (list_directory_request_) list_directory_request_->cancel();
   if (directory_stack_.empty()) {
+    moved_file_ = nullptr;
+    emit movedItemChanged();
     startDirectoryClear([this]() { emit runClearDirectory(); });
     return false;
   }
@@ -324,6 +335,15 @@ void Window::createDirectory(QString name) {
         else
           std::cerr << "[FAIL] Failed to create directory\n";
       });
+}
+
+void Window::markMovedItem(int item_id) {
+  if (moved_file_) {
+    moved_file_ = nullptr;
+  } else {
+    moved_file_ = directory_model_.get(item_id)->item();
+  }
+  emit movedItemChanged();
 }
 
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
