@@ -30,11 +30,14 @@
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
-#include "CloudProvider/MegaNz.h"
 #include "CloudProvider/OneDrive.h"
 #include "CloudProvider/YandexDisk.h"
 #include "CloudProvider/YouTube.h"
 #include "Utility/Utility.h"
+
+#ifdef WITH_MEGA
+#include "CloudProvider/MegaNz.h"
+#endif
 
 namespace cloudstorage {
 
