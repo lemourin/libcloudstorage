@@ -51,7 +51,6 @@ Item {
         onCloseBrowser: {
             if (browser.visible) directory.focus = true;
             browser.visible = false;
-            if (!directory.focus) cloudView.focus = true;
         }
         onRunListDirectory: {
             directory.visible = true;
