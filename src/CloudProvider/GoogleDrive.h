@@ -56,7 +56,6 @@ class GoogleDrive : public CloudProvider {
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
-  IItem::Pointer createDirectoryResponse(std::istream&) const;
 
   bool isGoogleMimeType(const std::string& mime_type) const;
   IItem::FileType toFileType(const std::string& mime_type) const;

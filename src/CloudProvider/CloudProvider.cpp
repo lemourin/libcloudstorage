@@ -241,8 +241,9 @@ std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
   return {};
 }
 
-IItem::Pointer CloudProvider::createDirectoryResponse(std::istream&) const {
-  return nullptr;
+IItem::Pointer CloudProvider::createDirectoryResponse(
+    std::istream& stream) const {
+  return getItemDataResponse(stream);
 }
 
 }  // namespace cloudstorage

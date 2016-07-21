@@ -136,13 +136,6 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   return result;
 }
 
-IItem::Pointer GoogleDrive::createDirectoryResponse(
-    std::istream& stream) const {
-  Json::Value json;
-  stream >> json;
-  return toItem(json);
-}
-
 bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
   std::vector<std::string> types = {"application/vnd.google-apps.document",
                                     "application/vnd.google-apps.drawing",
