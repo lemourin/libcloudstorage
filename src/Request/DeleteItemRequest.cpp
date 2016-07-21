@@ -49,4 +49,6 @@ DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
   });
 }
 
+DeleteItemRequest::~DeleteItemRequest() { cancel(); }
+
 }  // namespace cloudstorage

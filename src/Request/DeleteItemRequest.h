@@ -32,6 +32,7 @@ class DeleteItemRequest : public Request<bool> {
  public:
   DeleteItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer item,
                     DeleteItemCallback);
+  ~DeleteItemRequest();
 
  private:
   IItem::Pointer item_;
