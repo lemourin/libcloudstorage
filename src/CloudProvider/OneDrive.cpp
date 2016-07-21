@@ -23,8 +23,7 @@
 
 #include "OneDrive.h"
 
-#include <jsoncpp/json/json.h>
-#include <iostream>
+#include <json/json.h>
 #include <sstream>
 
 #include "Utility/HttpRequest.h"

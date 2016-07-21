@@ -24,6 +24,8 @@
 #ifndef ONEDRIVE_H
 #define ONEDRIVE_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 #include "Utility/Auth.h"
 

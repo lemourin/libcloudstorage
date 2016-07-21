@@ -23,9 +23,6 @@
 
 #include "CloudStorage.h"
 
-#include <jsoncpp/json/json.h>
-#include <fstream>
-
 #include "CloudProvider/AmazonDrive.h"
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"

@@ -24,6 +24,8 @@
 #ifndef DROPBOX_H
 #define DROPBOX_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 
 namespace cloudstorage {

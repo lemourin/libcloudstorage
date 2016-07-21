@@ -23,7 +23,7 @@
 
 #include "CloudProvider.h"
 
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <sstream>
 
 #include "Utility/Item.h"

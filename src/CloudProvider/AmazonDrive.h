@@ -24,6 +24,8 @@
 #ifndef AMAZONDRIVE_H
 #define AMAZONDRIVE_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 #include "Utility/Item.h"
 

@@ -24,6 +24,8 @@
 #ifndef GOOGLEDRIVE_H
 #define GOOGLEDRIVE_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 #include "Utility/Auth.h"
 

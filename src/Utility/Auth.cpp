@@ -23,7 +23,7 @@
 
 #include "Auth.h"
 
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <microhttpd.h>
 #include <fstream>
 #include <sstream>

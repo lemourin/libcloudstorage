@@ -24,8 +24,6 @@
 #ifndef AUTH_H
 #define AUTH_H
 
-#include <jsoncpp/json/forwards.h>
-
 #include "HttpRequest.h"
 #include "IAuth.h"
 

@@ -23,7 +23,7 @@
 
 #include "YandexDisk.h"
 
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
 #include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"

@@ -23,7 +23,7 @@
 
 #include "AmazonDrive.h"
 
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"

@@ -24,6 +24,8 @@
 #ifndef BOX_H
 #define BOX_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 
 namespace cloudstorage {

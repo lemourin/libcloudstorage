@@ -24,6 +24,8 @@
 #ifndef YANDEXDISK_H
 #define YANDEXDISK_H
 
+#include <json/forwards.h>
+
 #include "CloudProvider.h"
 
 namespace cloudstorage {
