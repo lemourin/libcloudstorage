@@ -65,10 +65,12 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     else
       status_ = FAILURE;
     if (r->getLink()) link_ = r->getLink();
+    node_ = r->getNodeHandle();
     semaphore_->notify();
   }
 
   std::string link_;
+  MegaHandle node_;
 };
 
 class TransferListener : public mega::MegaTransferListener, public Listener {
@@ -428,6 +430,34 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     } else {
       callback(false);
       return false;
+    }
+  });
+  return r;
+}
+
+ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
+    IItem::Pointer parent, const std::string& name,
+    CreateDirectoryCallback callback) {
+  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    auto parent_node = mega_->getNodeByPath(parent->id().c_str());
+    if (!parent_node) {
+      callback(nullptr);
+      return nullptr;
+    }
+    Request<IItem::Pointer>::Semaphore semaphore(r);
+    RequestListener listener(&semaphore);
+    mega_->createFolder(name.c_str(), parent_node, &listener);
+    semaphore.wait();
+    mega_->removeRequestListener(&listener);
+    if (listener.status_ == Listener::SUCCESS) {
+      auto node = mega_->getNodeByHandle(listener.node_);
+      auto item = toItem(node);
+      callback(item);
+      return item;
+    } else {
+      callback(nullptr);
+      return nullptr;
     }
   });
   return r;

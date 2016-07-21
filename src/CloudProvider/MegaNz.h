@@ -56,6 +56,9 @@ class MegaNz : public CloudProvider {
       IItem::Pointer, IDownloadFileCallback::Pointer);
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback);
+  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer,
+                                                       const std::string&,
+                                                       CreateDirectoryCallback);
 
   std::pair<std::string, std::string> creditentialsFromString(
       const std::string&) const;
