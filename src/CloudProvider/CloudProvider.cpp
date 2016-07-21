@@ -35,6 +35,7 @@
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
 #include "Request/ListDirectoryRequest.h"
+#include "Request/MoveItemRequest.h"
 #include "Request/UploadFileRequest.h"
 
 using namespace std::placeholders;
@@ -192,6 +193,13 @@ CloudProvider::createDirectoryAsync(IItem::Pointer parent,
       shared_from_this(), parent, name, callback);
 }
 
+ICloudProvider::MoveItemRequest::Pointer CloudProvider::moveItemAsync(
+    IItem::Pointer source, IItem::Pointer destination,
+    MoveItemCallback callback) {
+  return make_unique<cloudstorage::MoveItemRequest>(shared_from_this(), source,
+                                                    destination, callback);
+}
+
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                        std::ostream&) const {
   return nullptr;
@@ -229,6 +237,11 @@ HttpRequest::Pointer CloudProvider::deleteItemRequest(const IItem&,
 
 HttpRequest::Pointer CloudProvider::createDirectoryRequest(
     const IItem&, const std::string&, std::ostream&) const {
+  return nullptr;
+}
+
+HttpRequest::Pointer CloudProvider::moveItemRequest(const IItem&, const IItem&,
+                                                    std::ostream&) const {
   return nullptr;
 }
 

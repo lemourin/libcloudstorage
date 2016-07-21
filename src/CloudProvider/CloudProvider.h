@@ -75,6 +75,9 @@ class CloudProvider : public ICloudProvider,
   CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer parent,
                                                        const std::string& name,
                                                        CreateDirectoryCallback);
+  MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
+                                         IItem::Pointer destination,
+                                         MoveItemCallback);
 
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;
@@ -93,6 +96,9 @@ class CloudProvider : public ICloudProvider,
   virtual HttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                       const std::string&,
                                                       std::ostream&) const;
+  virtual HttpRequest::Pointer moveItemRequest(const IItem& source,
+                                               const IItem& destination,
+                                               std::ostream&) const;
 
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
