@@ -170,6 +170,7 @@ class Window : public QQuickView {
   ICloudProvider::GetItemDataRequest::Pointer item_data_request_;
   ICloudProvider::DeleteItemRequest::Pointer delete_item_request_;
   ICloudProvider::CreateDirectoryRequest::Pointer create_directory_request_;
+  ICloudProvider::MoveItemRequest::Pointer move_item_request_;
   IItem::Pointer moved_file_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;

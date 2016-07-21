@@ -339,8 +339,8 @@ void Window::createDirectory(QString name) {
 
 void Window::markMovedItem(int item_id) {
   if (moved_file_) {
-    cloud_provider_->moveItemAsync(
-        moved_file_, directory_model_.get(item_id)->item(), [this](bool e) {
+    move_item_request_ = cloud_provider_->moveItemAsync(
+        moved_file_, current_directory_, [this](bool e) {
           std::unique_lock<std::mutex> lock(stream_mutex());
           if (e)
             std::cerr << "[DIAG] Successfully moved file\n";
