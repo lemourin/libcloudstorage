@@ -74,13 +74,6 @@ class AmazonDrive : public CloudProvider {
 
   bool reauthorize(int code) const;
 
-  class AmazonItem : public Item {
-   public:
-    using Item::Item;
-
-    std::string parent_;
-  };
-
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
