@@ -339,6 +339,14 @@ void Window::createDirectory(QString name) {
 
 void Window::markMovedItem(int item_id) {
   if (moved_file_) {
+    cloud_provider_->moveItemAsync(
+        moved_file_, directory_model_.get(item_id)->item(), [this](bool e) {
+          std::unique_lock<std::mutex> lock(stream_mutex());
+          if (e)
+            std::cerr << "[DIAG] Successfully moved file\n";
+          else
+            std::cerr << "[FAIL] Failed to move file.\n";
+        });
     moved_file_ = nullptr;
   } else {
     moved_file_ = directory_model_.get(item_id)->item();
@@ -420,7 +428,7 @@ void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
 }
 
 ItemModel* DirectoryModel::get(int id) const {
-  if (id < 0 || id >= list_.size()) return nullptr;
+  if (id < 0 || id >= (int)list_.size()) return nullptr;
   return list_[id].get();
 }
 
