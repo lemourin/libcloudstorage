@@ -121,20 +121,18 @@ Item {
                     cloudView.focus = true;
                 }
             }
-            if (currentIndex == -1)
-                return;
-            if (event.key === Qt.Key_Return) {
+            if (event.key === Qt.Key_Return && currentIndex != -1) {
                 if (currentItem.isDirectory)
                     window.changeCurrentDirectory(currentIndex);
                 else
                     window.play(currentIndex);
-            } else if (event.key === Qt.Key_D) {
+            } else if (event.key === Qt.Key_D && currentIndex != -1) {
                 downloadFileDialog.visible = true;
                 downloadFileDialog.file = currentIndex;
                 downloadFileDialog.open();
             } else if (event.key === Qt.Key_F5)
                 window.listDirectory();
-            else if (event.key === Qt.Key_Delete)
+            else if (event.key === Qt.Key_Delete && currentIndex != -1)
                 window.deleteItem(currentIndex);
         }
         FileDialog {
@@ -149,7 +147,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         onPressed: {
-            if (directory.currentIndex != -1)
+            if (!cloudView.focus)
                 directory.focus = true;
             mouse.accepted = false;
         }
@@ -157,7 +155,7 @@ Item {
 
     MouseArea {
         id: uploadButton
-        visible: directory.currentIndex != -1
+        visible: !cloudView.focus
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: 100
