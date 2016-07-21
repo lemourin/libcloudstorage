@@ -165,21 +165,23 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
   curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
+  curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
   CURLcode status = CURLE_OK;
   if (type_ == Type::POST) {
     curl_easy_setopt(handle_.get(), CURLOPT_POST, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE,
                      static_cast<long>(stream_length(data)));
   } else if (type_ == Type::PUT) {
     curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(data)));
   } else if (type_ == Type::DEL) {
+    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "DELETE");
-  } else if (type_ == Type::PATCH)
+  } else if (type_ == Type::PATCH) {
+    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "PATCH");
+  }
   status = curl_easy_perform(handle_.get());
   curl_slist_free_all(header_list);
   if (status == CURLE_ABORTED_BY_CALLBACK)
