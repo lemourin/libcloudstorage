@@ -146,18 +146,28 @@ Item {
         }
     }
 
-    MultiPointTouchArea {
-        visible: directory.focus && directory.currentIndex != -1
+    MouseArea {
+        anchors.fill: parent
+        onPressed: {
+            if (directory.currentIndex != -1)
+                directory.focus = true;
+            mouse.accepted = false;
+        }
+    }
+
+    MouseArea {
+        id: uploadButton
+        visible: directory.currentIndex != -1
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: 100
         height: 100
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 5
+            anchors.margins: padding
             border.color: "black"
             color: "grey"
-            radius: 5
+            radius: padding
             Text {
                 anchors.centerIn: parent
                 text: "Upload file"
@@ -168,6 +178,34 @@ Item {
             onAccepted: window.uploadFile(fileDialog.fileUrl)
         }
         onPressed: fileDialog.visible = true
+    }
+
+    MouseArea {
+        visible: uploadButton.visible
+        width: 100
+        height: 100
+        anchors.bottom: parent.bottom
+        anchors.right: uploadButton.left
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: padding
+            border.color: "black"
+            color: "grey"
+            radius: padding
+            Text {
+                id: createDirectoryText
+                anchors.centerIn: parent
+                text: "Create\ndirectory"
+            }
+            TextField {
+                id: directoryName
+                placeholderText: "Name"
+                anchors.top: createDirectoryText.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+        }
+        onPressed: window.createDirectory(directoryName.text)
     }
 
     Rectangle {

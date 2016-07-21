@@ -306,11 +306,23 @@ void Window::downloadFile(int item_id, QUrl path) {
 void Window::deleteItem(int item_id) {
   ItemModel* i = directory_model_.get(item_id);
   delete_item_request_ =
-      cloud_provider_->deleteItemAsync(i->item(), [](bool e) {
+      cloud_provider_->deleteItemAsync(i->item(), [this](bool e) {
+        std::unique_lock<std::mutex> lock(stream_mutex());
         if (e)
           std::cerr << "[DIAG] Successfully deleted file\n";
         else
           std::cerr << "[FAIL] Failed to delete file.\n";
+      });
+}
+
+void Window::createDirectory(QString name) {
+  create_directory_request_ = cloud_provider_->createDirectoryAsync(
+      current_directory_, name.toStdString(), [this](IItem::Pointer item) {
+        std::unique_lock<std::mutex> lock(stream_mutex());
+        if (item)
+          std::cerr << "[DIAG] Successfully created directory\n";
+        else
+          std::cerr << "[FAIL] Failed to create directory\n";
       });
 }
 
