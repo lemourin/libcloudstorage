@@ -162,9 +162,9 @@ int Request<T>::sendRequest(
     if (!reauthorize()) {
       if (!is_cancelled()) this->error(code, error_stream.str());
     } else {
+      std::stringstream input, error_stream;
       request = factory(input);
       if (request) provider()->authorizeRequest(*request);
-      std::stringstream error_stream;
       code =
           send(request.get(), input, output, &error_stream, download, upload);
       if (!is_cancelled() && !HttpRequest::isSuccess(code))
