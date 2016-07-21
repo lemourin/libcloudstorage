@@ -54,9 +54,13 @@ class Dropbox : public CloudProvider {
                                            std::ostream& input_stream) const;
   HttpRequest::Pointer deleteItemRequest(const IItem&,
                                          std::ostream& input_stream) const;
+  HttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                              const std::string& name,
+                                              std::ostream&) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
+  IItem::Pointer createDirectoryResponse(std::istream&) const;
 
  private:
   static IItem::Pointer toItem(const Json::Value&);

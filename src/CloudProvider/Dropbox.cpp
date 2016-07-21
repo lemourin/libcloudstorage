@@ -172,6 +172,18 @@ HttpRequest::Pointer Dropbox::deleteItemRequest(
   return request;
 }
 
+HttpRequest::Pointer Dropbox::createDirectoryRequest(
+    const IItem& item, const std::string& name, std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.dropboxapi.com/2/files/create_folder",
+      HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value parameter;
+  parameter["path"] = item.id() + "/" + name;
+  input << parameter;
+  return request;
+}
+
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
@@ -183,6 +195,12 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     next_page_token = response["cursor"].asString();
   }
   return result;
+}
+
+IItem::Pointer Dropbox::createDirectoryResponse(std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+  return toItem(response);
 }
 
 IItem::Pointer Dropbox::toItem(const Json::Value& v) {
