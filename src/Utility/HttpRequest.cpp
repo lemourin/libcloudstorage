@@ -178,7 +178,8 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
                      static_cast<long>(stream_length(data)));
   } else if (type_ == Type::DEL) {
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "DELETE");
-  }
+  } else if (type_ == Type::PATCH)
+    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "PATCH");
   status = curl_easy_perform(handle_.get());
   curl_slist_free_all(header_list);
   if (status == CURLE_ABORTED_BY_CALLBACK)
