@@ -81,6 +81,13 @@ ICloudProvider::DeleteItemRequest::Pointer MockProvider::deleteItemAsync(
   return make_unique<MockDeleteItemRequest>();
 }
 
+ICloudProvider::CreateDirectoryRequest::Pointer
+MockProvider::createDirectoryAsync(IItem::Pointer parent,
+                                   const std::string& name,
+                                   CreateDirectoryCallback callback) {
+  return make_unique<MockCreateDirectoryRequest>(parent, name, callback);
+}
+
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<MockDownloadFileRequest>(item, std::move(callback));
@@ -147,6 +154,11 @@ MockProvider::MockDownloadFileRequest::MockDownloadFileRequest(
     }
     callback_->done();
   });
+}
+
+MockProvider::MockCreateDirectoryRequest::MockCreateDirectoryRequest(
+    IItem::Pointer, const std::string&, CreateDirectoryCallback callback) {
+  callback(nullptr);
 }
 
 }  // namespace cloudstorage
