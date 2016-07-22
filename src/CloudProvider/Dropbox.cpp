@@ -184,6 +184,19 @@ HttpRequest::Pointer Dropbox::createDirectoryRequest(
   return request;
 }
 
+HttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
+                                              const IItem& destination,
+                                              std::ostream& stream) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.dropboxapi.com/2/files/move", HttpRequest::Type::POST);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["from_path"] = source.id();
+  json["to_path"] = destination.id() + "/" + source.filename();
+  stream << json;
+  return request;
+}
+
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
