@@ -133,7 +133,7 @@ Item {
                 window.listDirectory();
             else if (event.key === Qt.Key_Delete && currentIndex != -1)
                 window.deleteItem(currentIndex);
-            else if (event.key === Qt.Key_M && currentIndex != -1) {
+            else if (event.key === Qt.Key_M) {
                 window.markMovedItem(currentIndex)
             }
         }

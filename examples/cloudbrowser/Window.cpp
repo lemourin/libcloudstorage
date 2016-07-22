@@ -348,7 +348,7 @@ void Window::markMovedItem(int item_id) {
             std::cerr << "[FAIL] Failed to move file.\n";
         });
     moved_file_ = nullptr;
-  } else {
+  } else if (item_id != -1) {
     moved_file_ = directory_model_.get(item_id)->item();
   }
   emit movedItemChanged();
