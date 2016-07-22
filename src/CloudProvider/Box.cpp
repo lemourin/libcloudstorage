@@ -40,7 +40,7 @@ IItem::Pointer Box::rootDirectory() const {
 std::string Box::name() const { return "box"; }
 
 bool Box::reauthorize(int code) const {
-  return HttpRequest::isClientError(code);
+  return HttpRequest::isClientError(code) && code != 404;
 }
 
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
@@ -155,6 +155,25 @@ HttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
   Json::Value json;
   json["name"] = name;
   json["parent"]["id"] = item.id();
+  stream << json;
+  return request;
+}
+
+HttpRequest::Pointer Box::moveItemRequest(const IItem& source,
+                                          const IItem& destination,
+                                          std::ostream& stream) const {
+  HttpRequest::Pointer request;
+  if (source.type() == IItem::FileType::Directory)
+    request = make_unique<HttpRequest>(
+        "https://api.box.com/2.0/folders/" + source.id(),
+        HttpRequest::Type::PUT);
+  else
+    request = make_unique<HttpRequest>(
+        "https://api.box.com/2.0/files/" + source.id(), HttpRequest::Type::PUT);
+
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["parent"]["id"] = destination.id();
   stream << json;
   return request;
 }
