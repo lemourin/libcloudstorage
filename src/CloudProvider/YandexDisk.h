@@ -52,6 +52,9 @@ class YandexDisk : public CloudProvider {
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer deleteItemRequest(const IItem&,
                                          std::ostream& input_stream) const;
+  HttpRequest::Pointer moveItemRequest(const IItem&,
+                                       const IItem&,
+                                       std::ostream&) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;

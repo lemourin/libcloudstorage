@@ -227,6 +227,19 @@ HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
   return request;
 }
 
+HttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
+                                                 const IItem& destination,
+                                                 std::ostream&) const {
+  auto request = make_unique<HttpRequest>(
+      "https://cloud-api.yandex.net/v1/disk/resources/move",
+      HttpRequest::Type::POST);
+  request->setParameter("from", source.id());
+  request->setParameter(
+      "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
+                  source.filename());
+  return request;
+}
+
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
