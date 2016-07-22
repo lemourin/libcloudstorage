@@ -91,6 +91,16 @@ Item {
                     id: row
                     x: padding
                     y: padding
+                    Item {
+                        width: fileEntry.thumbnailWidth
+                        height: fileEntry.thumbnailHeight
+                        Image {
+                            anchors.centerIn: parent
+                            width: parent.width - 2 * padding
+                            height: parent.height - 2 * padding
+                            source: display.icon
+                        }
+                    }
                     Image {
                         width: fileEntry.thumbnailWidth
                         height: fileEntry.thumbnailHeight

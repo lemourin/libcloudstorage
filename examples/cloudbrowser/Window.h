@@ -90,6 +90,8 @@ class DirectoryModel : public QAbstractListModel {
 
   void clear();
 
+  static QString typeToIcon(IItem::FileType);
+
  private:
   std::vector<ItemModel::Pointer> list_;
 };

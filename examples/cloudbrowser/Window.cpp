@@ -413,6 +413,7 @@ QVariant DirectoryModel::data(const QModelIndex& id, int) const {
   dict["thumbnail"] = model->thumbnail();
   dict["name"] = model->item()->filename().c_str();
   dict["is_directory"] = model->item()->type() == IItem::FileType::Directory;
+  dict["icon"] = typeToIcon(model->item()->type());
   return dict;
 }
 
@@ -436,4 +437,19 @@ void DirectoryModel::clear() {
   beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
   list_.clear();
   endRemoveRows();
+}
+
+QString DirectoryModel::typeToIcon(IItem::FileType type) {
+  switch (type) {
+    case IItem::FileType::Audio:
+      return "resources/audio.png";
+    case IItem::FileType::Directory:
+      return "resources/directory.png";
+    case IItem::FileType::Image:
+      return "resources/image.png";
+    case IItem::FileType::Video:
+      return "resources/video.png";
+    case IItem::FileType::Unknown:
+      return "resources/file.png";
+  }
 }
