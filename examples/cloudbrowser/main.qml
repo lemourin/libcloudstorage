@@ -268,6 +268,7 @@ Item {
                 Row { Text { text: "P" } }
                 Row { Text { text: "DEL" } }
                 Row { Text { text: "M" } }
+                Row { Text { text: "F5" } }
             }
             Column {
                 Row { Text { text: "Download a file" } }
@@ -275,6 +276,7 @@ Item {
                 Row { Text { text: "Pause file" } }
                 Row { Text { text: "Delete file" } }
                 Row { Text { text: "Move file" } }
+                Row { Text { text: "Refresh" } }
             }
         }
     }
