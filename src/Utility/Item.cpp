@@ -25,7 +25,31 @@
 
 #include "Utility/Utility.h"
 
+#include <algorithm>
+
+#define SIZE(x) (sizeof(x) / sizeof(x[0]))
+
+const std::string VIDEO_EXTENSIONS[] = {"3g2", "3gp", "asf", "avi", "flv",
+                                        "m4v", "mov", "mp4", "mpg", "rm",
+                                        "srt", "swf", "vob", "wmv"};
+const std::string AUDIO_EXTENSIONS[] = {"aif", "iff", "m3u", "m4a", "mid",
+                                        "mp3", "mpa", "wav", "wma"};
+const std::string IMAGE_EXTENSIONS[] = {
+    "bmp", "dds", "gif",  "jpg", "png", "psd", "pspimage", "tga",
+    "thm", "tif", "tiff", "yuv", "ai",  "eps", "ps",       "svg"};
+
 namespace cloudstorage {
+
+namespace {
+
+bool find(const std::string* array, int length, std::string str) {
+  for (char& c : str) c = std::tolower(c);
+  for (int i = 0; i < length; i++)
+    if (array[i] == str) return true;
+  return false;
+}
+
+}  // namespace
 
 Item::Item(std::string filename, std::string id, FileType type)
     : filename_(filename),
@@ -33,7 +57,9 @@ Item::Item(std::string filename, std::string id, FileType type)
       url_(),
       thumbnail_url_(),
       type_(type),
-      is_hidden_(false) {}
+      is_hidden_(false) {
+  if (type_ == IItem::FileType::Unknown) type_ = fromFileName(filename);
+}
 
 std::string Item::filename() const { return filename_; }
 
@@ -68,6 +94,19 @@ IItem::FileType Item::fromMimeType(const std::string& mime_type) {
   else if (type == "video")
     return IItem::FileType::Video;
   else if (type == "image")
+    return IItem::FileType::Image;
+  else
+    return IItem::FileType::Unknown;
+}
+
+IItem::FileType Item::fromFileName(const std::string& filename) {
+  std::string extension =
+      filename.substr(filename.find_last_of('.') + 1, std::string::npos);
+  if (find(VIDEO_EXTENSIONS, SIZE(VIDEO_EXTENSIONS), extension))
+    return IItem::FileType::Video;
+  else if (find(AUDIO_EXTENSIONS, SIZE(AUDIO_EXTENSIONS), extension))
+    return IItem::FileType::Audio;
+  else if (find(IMAGE_EXTENSIONS, SIZE(IMAGE_EXTENSIONS), extension))
     return IItem::FileType::Image;
   else
     return IItem::FileType::Unknown;

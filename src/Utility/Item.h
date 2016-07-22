@@ -56,6 +56,7 @@ class Item : public IItem {
   void set_parents(const std::vector<std::string>&);
 
   static FileType fromMimeType(const std::string& mime_type);
+  static FileType fromFileName(const std::string& filename);
 
  private:
   std::string filename_;
