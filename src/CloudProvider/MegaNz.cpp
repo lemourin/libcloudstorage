@@ -463,6 +463,30 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
   return r;
 }
 
+ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
+    IItem::Pointer source, IItem::Pointer destination,
+    MoveItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) {
+    auto source_node = mega_->getNodeByPath(source->id().c_str());
+    auto destination_node = mega_->getNodeByPath(destination->id().c_str());
+    if (source_node && destination_node) {
+      Request<bool>::Semaphore semaphore(r);
+      RequestListener listener(&semaphore);
+      mega_->moveNode(source_node, destination_node, &listener);
+      semaphore.wait();
+      mega_->removeRequestListener(&listener);
+      if (listener.status_ == Listener::SUCCESS) {
+        callback(true);
+        return true;
+      }
+    }
+    callback(false);
+    return false;
+  });
+  return r;
+}
+
 std::pair<std::string, std::string> MegaNz::creditentialsFromString(
     const std::string& str) const {
   auto it = str.find(SEPARATOR);
