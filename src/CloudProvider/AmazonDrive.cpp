@@ -60,6 +60,38 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
   return make_unique<Item>("root", "root", IItem::FileType::Directory);
 }
 
+ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
+    IItem::Pointer s, IItem::Pointer d, MoveItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) -> bool {
+    Item* source = static_cast<Item*>(s.get());
+    Item* destination = static_cast<Item*>(d.get());
+    for (const std::string& parent : source->parents()) {
+      std::stringstream output;
+      int code = r->sendRequest(
+          [=](std::ostream& stream) {
+            auto request = make_unique<HttpRequest>(
+                metadata_url() + "/nodes/" + destination->id() + "/children",
+                HttpRequest::Type::POST);
+            request->setHeaderParameter("Content-Type", "application/json");
+            Json::Value json;
+            json["fromParent"] = parent;
+            json["childId"] = source->id();
+            stream << json;
+            return request;
+          },
+          output);
+      if (!HttpRequest::isSuccess(code)) {
+        callback(false);
+        return false;
+      }
+    }
+    callback(true);
+    return true;
+  });
+  return r;
+}
+
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   auto r = std::make_shared<AuthorizeRequest>(
       shared_from_this(), [this](AuthorizeRequest* r) -> bool {
@@ -207,6 +239,9 @@ IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
     if (type(asset) == IItem::FileType::Image)
       item->set_thumbnail_url(asset["tempLink"].asString() + "?viewBox=" +
                               std::to_string(THUMBNAIL_SIZE));
+  std::vector<std::string> parents;
+  for (const Json::Value& p : v["parents"]) parents.push_back(p.asString());
+  item->set_parents(parents);
   return item;
 }
 

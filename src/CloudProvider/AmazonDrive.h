@@ -42,6 +42,10 @@ class AmazonDrive : public CloudProvider {
   std::string name() const;
   IItem::Pointer rootDirectory() const;
 
+  MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
+                                         IItem::Pointer destination,
+                                         MoveItemCallback);
+
  protected:
   cloudstorage::AuthorizeRequest::Pointer authorizeAsync();
 
