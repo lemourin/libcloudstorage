@@ -3,5 +3,8 @@
         <file>main.qml</file>
         <file>resources/directory.png</file>
         <file>resources/file.png</file>
+        <file>resources/image.png</file>
+        <file>resources/video.png</file>
+        <file>resources/audio.png</file>
     </qresource>
 </RCC>
