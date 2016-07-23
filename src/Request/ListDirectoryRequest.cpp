@@ -34,7 +34,11 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
     : Request(p),
       directory_(std::move(directory)),
       callback_(std::move(callback)) {
-  set_resolver([this](Request*) {
+  set_resolver([this](Request*) -> std::vector<IItem::Pointer> {
+    if (directory_->type() != IItem::FileType::Directory) {
+      callback_->error("Trying to list non-directory.");
+      return {};
+    }
     std::string page_token;
     std::vector<IItem::Pointer> result;
     bool failure = false;

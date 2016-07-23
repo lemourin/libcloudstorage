@@ -41,6 +41,10 @@ UploadFileRequest::UploadFileRequest(
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
   set_resolver([this](Request*) {
+    if (directory_->type() != IItem::FileType::Directory) {
+      callback_->error("Can't upload into non-directory.");
+      return;
+    }
     std::stringstream response_stream;
     int code = sendRequest(
         [this](std::ostream& input) {

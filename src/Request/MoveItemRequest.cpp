@@ -33,6 +33,10 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
                                  MoveItemCallback callback)
     : Request(p) {
   set_resolver([=](Request<bool>* r) {
+    if (destination->type() != IItem::FileType::Directory) {
+      callback(false);
+      return false;
+    }
     std::stringstream output;
     int code = r->sendRequest(
         [=](std::ostream& stream) {

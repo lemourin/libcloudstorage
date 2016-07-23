@@ -34,6 +34,10 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                                CreateDirectoryCallback callback)
     : Request(p), parent_(parent), name_(name), callback_(callback) {
   set_resolver([this](Request* r) -> IItem::Pointer {
+    if (parent_->type() != IItem::FileType::Directory) {
+      callback_(nullptr);
+      return nullptr;
+    }
     std::stringstream output;
     int code = r->sendRequest(
         [this](std::ostream& stream) {
