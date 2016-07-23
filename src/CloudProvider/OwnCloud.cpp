@@ -144,7 +144,7 @@ IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_NO_ERROR)
+      tinyxml2::XML_SUCCESS)
     return nullptr;
   return toItem(document.RootElement()->FirstChild());
 }
@@ -155,7 +155,7 @@ std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_NO_ERROR)
+      tinyxml2::XML_SUCCESS)
     return {};
   if (document.RootElement()->FirstChild() == nullptr) return {};
 
