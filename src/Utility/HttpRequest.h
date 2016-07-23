@@ -63,9 +63,10 @@ class HttpRequest {
     virtual void receivedContentLength(int length) = 0;
   };
 
-  enum class Type { POST, GET, PUT, DEL, PATCH };
+  enum class Type { POST, GET, PUT, DEL, PATCH, CUSTOM };
 
   HttpRequest(const std::string& url, Type);
+  HttpRequest(const std::string& url, const std::string& method);
 
   void setParameter(const std::string& parameter, const std::string& value);
   void setHeaderParameter(const std::string& parameter,
@@ -79,6 +80,9 @@ class HttpRequest {
 
   Type type() const;
   void set_type(Type);
+
+  void setCreditentials(const std::string& username,
+                        const std::string& password);
 
   std::string send() const;
   std::string send(std::istream& data) const;
@@ -108,6 +112,7 @@ class HttpRequest {
   std::unordered_map<std::string, std::string> parameters_;
   std::unordered_map<std::string, std::string> header_parameters_;
   Type type_;
+  std::string custom_method_;
   bool follow_redirect_;
 };
 

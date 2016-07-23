@@ -109,6 +109,11 @@ HttpRequest::HttpRequest(const std::string& url, Type t)
   curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
 }
 
+HttpRequest::HttpRequest(const std::string& url, const std::string& method)
+    : HttpRequest(url, Type::CUSTOM) {
+  custom_method_ = method;
+}
+
 void HttpRequest::setParameter(const std::string& parameter,
                                const std::string& value) {
   parameters_[parameter] = value;
@@ -133,6 +138,12 @@ void HttpRequest::set_url(const std::string& url) { url_ = url; }
 HttpRequest::Type HttpRequest::type() const { return type_; }
 
 void HttpRequest::set_type(HttpRequest::Type type) { type_ = type; }
+
+void HttpRequest::setCreditentials(const std::string& username,
+                                   const std::string& password) {
+  curl_easy_setopt(handle_.get(), CURLOPT_USERPWD,
+                   (username + ":" + password).c_str());
+}
 
 std::string HttpRequest::send() const {
   std::stringstream data, response;
@@ -181,6 +192,10 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   } else if (type_ == Type::PATCH) {
     curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "PATCH");
+  } else if (type_ == Type::CUSTOM) {
+    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
+    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST,
+                     custom_method_.c_str());
   }
   status = curl_easy_perform(handle_.get());
   curl_slist_free_all(header_list);
