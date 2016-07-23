@@ -148,8 +148,8 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
   MegaNz* provider = static_cast<MegaNz*>(cls);
   const char* file =
       MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "file");
-  auto node =
-      provider->mega()->getNodeByHandle(provider->mega()->base64ToHandle(file));
+  std::unique_ptr<mega::MegaNode> node(provider->mega()->getNodeByHandle(
+      provider->mega()->base64ToHandle(file)));
   if (!node) return MHD_NO;
   auto data_provider = [](void* cls, uint64_t, char* buf,
                           size_t max) -> ssize_t {
@@ -180,7 +180,7 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
 
   HttpData* data = new HttpData;
   data->request_ = provider->downloadFileAsync(
-      provider->toItem(node), make_unique<DownloadFileCallback>(data));
+      provider->toItem(node.get()), make_unique<DownloadFileCallback>(data));
   MHD_Response* response = MHD_create_response_from_callback(
       node->getSize(), BUFFER_SIZE, data_provider, data, release_data);
   MHD_add_response_header(response, "Content-Type", "application/octet-stream");
@@ -264,23 +264,12 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
           callback(nullptr);
           return nullptr;
         }
-        auto node = mega_->getNodeByPath(id.c_str());
+        std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
         if (!node) {
           callback(nullptr);
           return nullptr;
         }
-        auto item = toItem(node);
-        Request<IItem::Pointer>::Semaphore semaphore(r);
-        RequestListener listener(&semaphore);
-        mega_->exportNode(node, &listener);
-        semaphore.wait();
-        mega_->removeRequestListener(&listener);
-        if (listener.status_ == RequestListener::SUCCESS) {
-          std::unique_ptr<char> handle(node->getBase64Handle());
-          static_cast<Item*>(item.get())
-              ->set_url("http://localhost:" + std::to_string(DAEMON_PORT) +
-                        "/?file=" + handle.get());
-        }
+        auto item = toItem(node.get());
         callback(item);
         return item;
       });
@@ -324,12 +313,13 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
       if (!r->is_cancelled()) callback->error("Authorization failed.");
       return;
     }
-    auto node = mega_->getNodeByPath(item->id().c_str());
+    std::unique_ptr<mega::MegaNode> node(
+        mega_->getNodeByPath(item->id().c_str()));
     Request<void>::Semaphore semaphore(r);
     TransferListener listener(&semaphore);
     listener.download_callback_ = callback;
     listener.request_ = r;
-    mega_->startStreaming(node, 0, node->getSize(), &listener);
+    mega_->startStreaming(node.get(), 0, node->getSize(), &listener);
     semaphore.wait();
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
@@ -365,8 +355,9 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     TransferListener listener(&semaphore);
     listener.upload_callback_ = callback;
     listener.request_ = r;
-    mega_->startUpload(cache.c_str(), mega_->getNodeByPath(item->id().c_str()),
-                       filename.c_str(), &listener);
+    std::unique_ptr<mega::MegaNode> node(
+        mega_->getNodeByPath(item->id().c_str()));
+    mega_->startUpload(cache.c_str(), node.get(), filename.c_str(), &listener);
     semaphore.wait();
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
@@ -391,8 +382,9 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     Request<void>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     std::string cache = randomString(CACHE_FILENAME_LENGTH);
-    auto node = mega_->getNodeByPath(item->id().c_str());
-    mega_->getThumbnail(node, cache.c_str(), &listener);
+    std::unique_ptr<mega::MegaNode> node(
+        mega_->getNodeByPath(item->id().c_str()));
+    mega_->getThumbnail(node.get(), cache.c_str(), &listener);
     semaphore.wait();
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
@@ -418,10 +410,11 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   auto r = make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<bool>* r) {
-    auto node = mega_->getNodeByPath(item->id().c_str());
+    std::unique_ptr<mega::MegaNode> node(
+        mega_->getNodeByPath(item->id().c_str()));
     Request<bool>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
-    mega_->remove(node, &listener);
+    mega_->remove(node.get(), &listener);
     semaphore.wait();
     mega_->removeRequestListener(&listener);
     if (listener.status_ == Listener::SUCCESS) {
@@ -440,19 +433,21 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     CreateDirectoryCallback callback) {
   auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
-    auto parent_node = mega_->getNodeByPath(parent->id().c_str());
+    std::unique_ptr<mega::MegaNode> parent_node(
+        mega_->getNodeByPath(parent->id().c_str()));
     if (!parent_node) {
       callback(nullptr);
       return nullptr;
     }
     Request<IItem::Pointer>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
-    mega_->createFolder(name.c_str(), parent_node, &listener);
+    mega_->createFolder(name.c_str(), parent_node.get(), &listener);
     semaphore.wait();
     mega_->removeRequestListener(&listener);
     if (listener.status_ == Listener::SUCCESS) {
-      auto node = mega_->getNodeByHandle(listener.node_);
-      auto item = toItem(node);
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByHandle(listener.node_));
+      auto item = toItem(node.get());
       callback(item);
       return item;
     } else {
@@ -468,12 +463,14 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     MoveItemCallback callback) {
   auto r = make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) {
-    auto source_node = mega_->getNodeByPath(source->id().c_str());
-    auto destination_node = mega_->getNodeByPath(destination->id().c_str());
+    std::unique_ptr<mega::MegaNode> source_node(
+        mega_->getNodeByPath(source->id().c_str()));
+    std::unique_ptr<mega::MegaNode> destination_node(
+        mega_->getNodeByPath(destination->id().c_str()));
     if (source_node && destination_node) {
       Request<bool>::Semaphore semaphore(r);
       RequestListener listener(&semaphore);
-      mega_->moveNode(source_node, destination_node, &listener);
+      mega_->moveNode(source_node.get(), destination_node.get(), &listener);
       semaphore.wait();
       mega_->removeRequestListener(&listener);
       if (listener.status_ == Listener::SUCCESS) {
@@ -521,6 +518,9 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
   auto item = std::make_shared<Item>(
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
+  std::unique_ptr<char[]> handle(node->getBase64Handle());
+  item->set_url("http://localhost:" + std::to_string(DAEMON_PORT) + "/?file=" +
+                handle.get());
   return item;
 }
 
