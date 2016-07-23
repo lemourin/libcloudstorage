@@ -109,7 +109,7 @@ HttpRequest::Pointer OwnCloud::uploadFileRequest(
     const IItem& directory, const std::string& filename, std::istream& stream,
     std::ostream& input_stream) const {
   auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + directory.id() + filename,
+      api_url() + "/remote.php/webdav" + directory.id() + escape(filename),
       HttpRequest::Type::PUT);
   input_stream << stream.rdbuf();
   return request;
@@ -196,6 +196,15 @@ std::string OwnCloud::unescape(const std::string& str) const {
   int length = 0;
   char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
   std::string result(data, length);
+  free(data);
+  curl_easy_cleanup(handle);
+  return result;
+}
+
+std::string OwnCloud::escape(const std::string& str) const {
+  auto handle = curl_easy_init();
+  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
+  std::string result(data);
   free(data);
   curl_easy_cleanup(handle);
   return result;
