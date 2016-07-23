@@ -3,7 +3,8 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CXXFLAGS = \
 	$(libcurl_CFLAGS) \
 	$(libjsoncpp_CFLAGS) \
-	$(libmicrohttpd_CFLAGS)
+	$(libmicrohttpd_CFLAGS) \
+	$(libtinyxml2_CFLAGS)
 
 AM_LDFLAGS = \
 	-no-undefined \
@@ -71,7 +72,8 @@ nobase_include_HEADERS = \
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
 	$(libjsoncpp_LIBS) \
-	$(libmicrohttpd_LIBS)
+	$(libmicrohttpd_LIBS) \
+	$(libtinyxml2_LIBS)
 
 if WITH_MEGA
 AM_CXXFLAGS += $(libmega_CFLAGS)
