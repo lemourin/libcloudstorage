@@ -140,6 +140,17 @@ HttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
   return request;
 }
 
+HttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream&) const {
+  auto request = make_unique<HttpRequest>(
+      api_url() + "/remote.php/webdav" + item.id(), "MOVE");
+  request->setHeaderParameter(
+      "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
+                         getPath(item.id()) + "/" + name);
+  return request;
+}
+
 IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
