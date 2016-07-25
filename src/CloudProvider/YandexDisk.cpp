@@ -241,6 +241,17 @@ HttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
   return request;
 }
 
+HttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
+                                                   const std::string& name,
+                                                   std::ostream&) const {
+  auto request = make_unique<HttpRequest>(
+      "https://cloud-api.yandex.net/v1/disk/resources/move",
+      HttpRequest::Type::POST);
+  request->setParameter("from", item.id());
+  request->setParameter("path", getPath(item.id()) + "/" + name);
+  return request;
+}
+
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
