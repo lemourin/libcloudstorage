@@ -24,18 +24,76 @@
 #include "OneDrive.h"
 
 #include <json/json.h>
-#include <iostream>
 #include <sstream>
 
+#include "Request/Request.h"
 #include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
+
+const uint32_t CHUNK_SIZE = 60 * 1024 * 1024;
+using namespace std::placeholders;
 
 namespace cloudstorage {
 
 OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
+
+ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
+    IItem::Pointer parent, const std::string& filename,
+    IUploadFileCallback::Pointer callback) {
+  auto r = make_unique<Request<void>>(shared_from_this());
+  r->set_error_callback([=](int code, const std::string& desc) {
+    callback->error(std::to_string(code) + ": " + desc);
+  });
+  r->set_resolver([=](Request<void>* r) {
+    std::stringstream output;
+    int code = r->sendRequest(
+        [=](std::ostream&) {
+          return make_unique<HttpRequest>(
+              "https://api.onedrive.com/v1.0/drive/items/" + parent->id() +
+                  ":/" + HttpRequest::escape(filename) +
+                  ":/upload.createSession",
+              HttpRequest::Type::POST);
+        },
+        output);
+    if (!HttpRequest::isSuccess(code)) {
+      callback->error("Failed to create upload session.");
+      return;
+    }
+    Json::Value response;
+    output >> response;
+
+    uint32_t sent = 0, size = callback->size();
+    std::vector<char> buffer(CHUNK_SIZE);
+    while (sent < size) {
+      uint32_t length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
+      code = r->sendRequest(
+          [=](std::ostream& stream) {
+            auto request = make_unique<HttpRequest>(
+                response["uploadUrl"].asString(), HttpRequest::Type::PUT);
+            std::stringstream content_range;
+            content_range << "bytes " << sent << "-" << sent + length - 1 << "/"
+                          << size;
+            request->setHeaderParameter("Content-Range", content_range.str());
+            stream.write(buffer.data(), length);
+            return request;
+          },
+          output, nullptr,
+          [=](uint32_t, uint32_t now) {
+            callback->progress(size, sent + now);
+          });
+      if (!HttpRequest::isSuccess(code)) {
+        callback->error("Failed to upload chunk.");
+        return;
+      }
+      sent += length;
+    }
+    callback->done();
+  });
+  return r;
+}
 
 HttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
                                                   std::ostream&) const {
@@ -57,33 +115,6 @@ HttpRequest::Pointer OneDrive::listDirectoryRequest(
   request->setParameter(
       "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
 
-  return request;
-}
-
-HttpRequest::Pointer OneDrive::uploadFileRequest(
-    const IItem& f, const std::string& filename, std::ostream& prefix_stream,
-    std::ostream& suffix_stream) const {
-  const std::string separator = "1BPT6g1G6FUkXNkiqx5s";
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
-      HttpRequest::Type::POST);
-  request->setHeaderParameter(
-      "Content-Type", "multipart/related; boundary=\"" + separator + "\"");
-  Json::Value parameter;
-  parameter["name"] = filename;
-  parameter["file"] = {};
-  parameter["@content.sourceUrl"] = "cid:content";
-  prefix_stream << "--" << separator << "\r\n"
-                << "Content-ID: <metadata>\r\n"
-                << "Content-Type: application/json\r\n"
-                << "\r\n"
-                << parameter << "\r\n\r\n"
-                << "--" << separator << "\r\n"
-                << "Content-ID: <content>\r\n"
-                << "Content-Type: application/octet-stream\r\n"
-                << "\r\n";
-  suffix_stream << "\r\n--" << separator << "--";
   return request;
 }
 

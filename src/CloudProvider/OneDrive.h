@@ -38,14 +38,15 @@ class OneDrive : public CloudProvider {
   std::string name() const;
 
  protected:
+  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer,
+                                             const std::string& filename,
+                                             IUploadFileCallback::Pointer);
+
   HttpRequest::Pointer getItemDataRequest(const std::string&,
                                           std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
-  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                         const std::string& filename,
-                                         std::ostream&, std::ostream&) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
   HttpRequest::Pointer deleteItemRequest(const IItem&,
