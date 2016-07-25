@@ -102,6 +102,9 @@ class CloudProvider : public ICloudProvider,
   virtual HttpRequest::Pointer moveItemRequest(const IItem& source,
                                                const IItem& destination,
                                                std::ostream&) const;
+  virtual HttpRequest::Pointer renameItemRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream&) const;
 
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
   virtual std::vector<IItem::Pointer> listDirectoryResponse(

@@ -252,6 +252,12 @@ HttpRequest::Pointer CloudProvider::moveItemRequest(const IItem&, const IItem&,
   return nullptr;
 }
 
+HttpRequest::Pointer CloudProvider::renameItemRequest(const IItem&,
+                                                      const std::string&,
+                                                      std::ostream&) const {
+  return nullptr;
+}
+
 IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
 }

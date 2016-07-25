@@ -23,6 +23,9 @@
 
 #include "RenameItemRequest.h"
 
+#include "CloudProvider/CloudProvider.h"
+#include "Utility/HttpRequest.h"
+
 namespace cloudstorage {
 
 RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
@@ -31,8 +34,19 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                                      RenameItemCallback callback)
     : Request(p) {
   set_resolver([=](Request*) {
-    callback(false);
-    return false;
+    std::stringstream output;
+    int code = sendRequest(
+        [=](std::ostream& stream) {
+          return provider()->renameItemRequest(*item, name, stream);
+        },
+        output);
+    if (HttpRequest::isSuccess(code)) {
+      callback(true);
+      return false;
+    } else {
+      callback(false);
+      return false;
+    }
   });
 }
 
