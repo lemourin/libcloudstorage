@@ -157,6 +157,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
             auto request =
                 make_unique<HttpRequest>(url, HttpRequest::Type::PUT);
             callback->reset();
+            wrapper.reset();
             input.rdbuf(&wrapper);
             return request;
           },

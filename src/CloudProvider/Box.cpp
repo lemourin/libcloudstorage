@@ -94,8 +94,8 @@ HttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
 
 HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
                                             const std::string& filename,
-                                            std::istream& stream,
-                                            std::ostream& input_stream) const {
+                                            std::ostream& prefix_stream,
+                                            std::ostream& suffix_stream) const {
   const std::string separator = "Thnlg1ecwyUJHyhYYGrQ";
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://upload.box.com/api/2.0/files/content", HttpRequest::Type::POST);
@@ -108,16 +108,14 @@ HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
   json["parent"] = parent;
   std::string json_data = Json::FastWriter().write(json);
   json_data.pop_back();
-  input_stream << "--" << separator << "\r\n"
-               << "Content-Disposition: form-data; name=\"attributes\"\r\n\r\n"
-               << json_data << "\r\n"
-               << "--" << separator << "\r\n"
-               << "Content-Disposition: form-data; name=\"file\"; filename=\""
-               << filename << "\"\r\n"
-               << "Content-Type: application/octet-stream\r\n\r\n"
-               << stream.rdbuf() << "\r\n"
-               << "\r\n"
-               << "--" << separator << "--\r\n";
+  prefix_stream << "--" << separator << "\r\n"
+                << "Content-Disposition: form-data; name=\"attributes\"\r\n\r\n"
+                << json_data << "\r\n"
+                << "--" << separator << "\r\n"
+                << "Content-Disposition: form-data; name=\"file\"; filename=\""
+                << filename << "\"\r\n"
+                << "Content-Type: application/octet-stream\r\n\r\n";
+  suffix_stream << "\r\n--" << separator << "--";
   return request;
 }
 

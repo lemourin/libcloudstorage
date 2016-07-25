@@ -105,13 +105,13 @@ HttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
   return request;
 }
 
-HttpRequest::Pointer OwnCloud::uploadFileRequest(
-    const IItem& directory, const std::string& filename, std::istream& stream,
-    std::ostream& input_stream) const {
+HttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
+                                                 const std::string& filename,
+                                                 std::ostream&,
+                                                 std::ostream&) const {
   auto request = make_unique<HttpRequest>(
       api_url() + "/remote.php/webdav" + directory.id() + escape(filename),
       HttpRequest::Type::PUT);
-  input_stream << stream.rdbuf();
   return request;
 }
 

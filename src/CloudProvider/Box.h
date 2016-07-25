@@ -47,8 +47,7 @@ class Box : public CloudProvider {
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                          const std::string& filename,
-                                         std::istream& stream,
-                                         std::ostream& input_stream) const;
+                                         std::ostream&, std::ostream&) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
   HttpRequest::Pointer getThumbnailRequest(const IItem&,

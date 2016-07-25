@@ -119,14 +119,14 @@ HttpRequest::Pointer Dropbox::listDirectoryRequest(
   return request;
 }
 
-HttpRequest::Pointer Dropbox::uploadFileRequest(
-    const IItem& directory, const std::string& filename, std::istream& stream,
-    std::ostream& input_stream) const {
+HttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& directory,
+                                                const std::string& filename,
+                                                std::ostream&,
+                                                std::ostream&) const {
   const Item& item = static_cast<const Item&>(directory);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
       "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
       HttpRequest::Type::PUT);
-  input_stream << stream.rdbuf();
   return request;
 }
 

@@ -145,8 +145,8 @@ HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
 }
 
 HttpRequest::Pointer AmazonDrive::uploadFileRequest(
-    const IItem& directory, const std::string& filename, std::istream& stream,
-    std::ostream& input_stream) const {
+    const IItem& directory, const std::string& filename,
+    std::ostream& prefix_stream, std::ostream& suffix_stream) const {
   if (directory.id() == rootDirectory()->id()) return nullptr;
   const std::string separator = "Thnlg1ecwyUJHyhYYGrQ";
   HttpRequest::Pointer request = make_unique<HttpRequest>(
@@ -159,17 +159,15 @@ HttpRequest::Pointer AmazonDrive::uploadFileRequest(
   json["parents"].append(directory.id());
   std::string json_data = Json::FastWriter().write(json);
   json_data.pop_back();
-  input_stream
+  prefix_stream
       << "--" << separator << "\r\n"
       << "Content-Disposition: form-data; name=\"metadata\"\r\n\r\n"
       << json_data << "\r\n"
       << "--" << separator << "\r\n"
       << "Content-Disposition: form-data; name=\"content\"; filename=\""
       << filename << "\"\r\n"
-      << "Content-Type: application/octet-stream\r\n\r\n"
-      << stream.rdbuf() << "\r\n"
-      << "\r\n"
-      << "--" << separator << "--\r\n";
+      << "Content-Type: application/octet-stream\r\n\r\n";
+  suffix_stream << "\r\n--" << separator << "--";
   return request;
 }
 
