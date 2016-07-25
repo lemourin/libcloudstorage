@@ -176,6 +176,22 @@ HttpRequest::Pointer Box::moveItemRequest(const IItem& source,
   return request;
 }
 
+HttpRequest::Pointer Box::renameItemRequest(const IItem& item,
+                                            const std::string& name,
+                                            std::ostream& input) const {
+  HttpRequest::Pointer request;
+  if (item.type() == IItem::FileType::Directory)
+    request = make_unique<HttpRequest>(
+        "https://api.box.com/2.0/folders/" + item.id(), HttpRequest::Type::PUT);
+  else
+    request = make_unique<HttpRequest>(
+        "https://api.box.com/2.0/files/" + item.id(), HttpRequest::Type::PUT);
+  Json::Value json;
+  json["name"] = name;
+  input << json;
+  return request;
+}
+
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
   Json::Value response;
   stream >> response;
