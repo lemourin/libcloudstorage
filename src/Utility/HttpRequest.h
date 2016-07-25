@@ -99,6 +99,9 @@ class HttpRequest {
   static bool isAuthorizationError(int code);
   static bool isCurlError(int code);
 
+  static std::string unescape(const std::string&);
+  static std::string escape(const std::string&);
+
  private:
   struct CurlDeleter {
     void operator()(CURL*) const;

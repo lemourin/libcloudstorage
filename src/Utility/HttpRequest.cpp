@@ -234,6 +234,25 @@ bool HttpRequest::isAuthorizationError(int code) { return code == 401; }
 
 bool HttpRequest::isCurlError(int code) { return code < CURL_LAST && code > 0; }
 
+std::string HttpRequest::unescape(const std::string& str) {
+  auto handle = curl_easy_init();
+  int length = 0;
+  char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
+  std::string result(data, length);
+  free(data);
+  curl_easy_cleanup(handle);
+  return result;
+}
+
+std::string HttpRequest::escape(const std::string& str) {
+  auto handle = curl_easy_init();
+  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
+  std::string result(data);
+  free(data);
+  curl_easy_cleanup(handle);
+  return result;
+}
+
 std::string HttpRequest::parametersToString() const {
   std::string result;
   for (std::pair<std::string, std::string> p : parameters_)

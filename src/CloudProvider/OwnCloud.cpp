@@ -109,9 +109,10 @@ HttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
                                                  const std::string& filename,
                                                  std::ostream&,
                                                  std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + directory.id() + escape(filename),
-      HttpRequest::Type::PUT);
+  auto request = make_unique<HttpRequest>(api_url() + "/remote.php/webdav" +
+                                              directory.id() +
+                                              HttpRequest::escape(filename),
+                                          HttpRequest::Type::PUT);
   return request;
 }
 
@@ -180,7 +181,7 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto item = make_unique<Item>(unescape(filename), id, type);
+  auto item = make_unique<Item>(HttpRequest::unescape(filename), id, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return item;
 }
@@ -190,25 +191,6 @@ bool OwnCloud::reauthorize(int code) const {
 }
 
 void OwnCloud::authorizeRequest(HttpRequest&) const {}
-
-std::string OwnCloud::unescape(const std::string& str) const {
-  auto handle = curl_easy_init();
-  int length = 0;
-  char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
-  std::string result(data, length);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
-
-std::string OwnCloud::escape(const std::string& str) const {
-  auto handle = curl_easy_init();
-  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
-  std::string result(data);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
 
 void OwnCloud::unpackCreditentials(const std::string& code) {
   std::unique_lock<std::mutex> lock(auth_mutex());

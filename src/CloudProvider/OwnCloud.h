@@ -73,9 +73,6 @@ class OwnCloud : public CloudProvider {
   bool reauthorize(int code) const;
   void authorizeRequest(HttpRequest&) const;
 
-  std::string unescape(const std::string&) const;
-  std::string escape(const std::string&) const;
-
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
