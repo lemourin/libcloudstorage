@@ -197,6 +197,18 @@ HttpRequest::Pointer AmazonDrive::createDirectoryRequest(
   return request;
 }
 
+HttpRequest::Pointer AmazonDrive::renameItemRequest(const IItem& item,
+                                                    const std::string& name,
+                                                    std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(
+      metadata_url() + "/nodes/" + item.id(), HttpRequest::Type::PATCH);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  input << json;
+  return request;
+}
+
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;

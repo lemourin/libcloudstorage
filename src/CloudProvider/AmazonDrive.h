@@ -64,6 +64,8 @@ class AmazonDrive : public CloudProvider {
                                          std::ostream& input_stream) const;
   HttpRequest::Pointer createDirectoryRequest(const IItem&, const std::string&,
                                               std::ostream&) const;
+  HttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
+                                         std::ostream&) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
