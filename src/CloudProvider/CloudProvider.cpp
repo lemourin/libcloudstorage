@@ -173,6 +173,12 @@ void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
   if (it != hints.end()) f(it->second);
 }
 
+std::string CloudProvider::getPath(const std::string& p) {
+  std::string result = p;
+  if (result.back() == '/') result.pop_back();
+  return result.substr(0, result.find_last_of('/'));
+}
+
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<cloudstorage::DownloadFileRequest>(

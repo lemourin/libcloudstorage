@@ -127,6 +127,7 @@ class CloudProvider : public ICloudProvider,
  protected:
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
+  static std::string getPath(const std::string&);
 
  private:
   IAuth::Pointer auth_;
