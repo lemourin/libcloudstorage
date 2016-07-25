@@ -122,7 +122,7 @@ HttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
                                                   std::ostream& input) const {
   const Item& source = static_cast<const Item&>(s);
   auto request = make_unique<HttpRequest>(
-      "https://www.googleapis.com/upload/drive/v3/files/" + source.id(),
+      "https://www.googleapis.com/drive/v3/files/" + source.id(),
       HttpRequest::Type::PATCH);
   request->setHeaderParameter("Content-Type", "application/json");
   std::string current_parents;
@@ -131,6 +131,19 @@ HttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
   request->setParameter("removeParents", current_parents);
   request->setParameter("addParents", destination.id());
   input << Json::Value();
+  return request;
+}
+
+HttpRequest::Pointer GoogleDrive::renameItemRequest(const IItem& item,
+                                                    const std::string& name,
+                                                    std::ostream& input) const {
+  auto request = make_unique<HttpRequest>(
+      "https://www.googleapis.com/drive/v3/files/" + item.id(),
+      HttpRequest::Type::PATCH);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  input << json;
   return request;
 }
 
