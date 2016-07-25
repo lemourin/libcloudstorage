@@ -61,6 +61,9 @@ class MegaNz : public CloudProvider {
                                                        CreateDirectoryCallback);
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer, IItem::Pointer,
                                          MoveItemCallback);
+  RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
+                                             const std::string& name,
+                                             RenameItemCallback);
 
   std::pair<std::string, std::string> creditentialsFromString(
       const std::string&) const;

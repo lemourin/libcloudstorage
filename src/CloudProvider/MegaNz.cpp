@@ -484,6 +484,29 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
   return r;
 }
 
+ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
+    IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) {
+    std::unique_ptr<mega::MegaNode> node(
+        mega_->getNodeByPath(item->id().c_str()));
+    if (node) {
+      Request<bool>::Semaphore semaphore(r);
+      RequestListener listener(&semaphore);
+      mega_->renameNode(node.get(), name.c_str(), &listener);
+      semaphore.wait();
+      mega_->removeRequestListener(&listener);
+      if (listener.status_ == Listener::SUCCESS) {
+        callback(true);
+        return true;
+      }
+    }
+    callback(false);
+    return false;
+  });
+  return r;
+}
+
 std::pair<std::string, std::string> MegaNz::creditentialsFromString(
     const std::string& str) const {
   auto it = str.find(SEPARATOR);
