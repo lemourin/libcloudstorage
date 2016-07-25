@@ -36,6 +36,7 @@
 #include "Request/GetItemRequest.h"
 #include "Request/ListDirectoryRequest.h"
 #include "Request/MoveItemRequest.h"
+#include "Request/RenameItemRequest.h"
 #include "Request/UploadFileRequest.h"
 
 using namespace std::placeholders;
@@ -198,6 +199,12 @@ ICloudProvider::MoveItemRequest::Pointer CloudProvider::moveItemAsync(
     MoveItemCallback callback) {
   return make_unique<cloudstorage::MoveItemRequest>(shared_from_this(), source,
                                                     destination, callback);
+}
+
+ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
+    IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
+  return make_unique<cloudstorage::RenameItemRequest>(shared_from_this(), item,
+                                                      name, callback);
 }
 
 HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,

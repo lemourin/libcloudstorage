@@ -85,6 +85,7 @@ using GetItemDataCallback = std::function<void(IItem::Pointer)>;
 using DeleteItemCallback = std::function<void(bool)>;
 using CreateDirectoryCallback = std::function<void(IItem::Pointer)>;
 using MoveItemCallback = std::function<void(bool)>;
+using RenameItemCallback = std::function<void(bool)>;
 
 }  // namespace cloudstorage
 

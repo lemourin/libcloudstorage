@@ -78,6 +78,9 @@ class CloudProvider : public ICloudProvider,
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
                                          MoveItemCallback);
+  RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
+                                             const std::string&,
+                                             RenameItemCallback);
 
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;

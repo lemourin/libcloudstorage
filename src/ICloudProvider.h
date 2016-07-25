@@ -47,6 +47,7 @@ class ICloudProvider {
   using DeleteItemRequest = IRequest<bool>;
   using CreateDirectoryRequest = IRequest<IItem::Pointer>;
   using MoveItemRequest = IRequest<bool>;
+  using RenameItemRequest = IRequest<bool>;
 
   class ICallback {
    public:
@@ -93,6 +94,9 @@ class ICloudProvider {
   virtual MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                                  IItem::Pointer destination,
                                                  MoveItemCallback) = 0;
+  virtual RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
+                                                     const std::string& name,
+                                                     RenameItemCallback) = 0;
 };
 
 }  // namespace cloudstorage

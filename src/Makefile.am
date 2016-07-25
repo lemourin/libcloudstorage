@@ -36,7 +36,8 @@ libcloudstorage_la_SOURCES = \
 	Request/GetItemDataRequest.cpp \
 	Request/DeleteItemRequest.cpp \
 	Request/CreateDirectoryRequest.cpp \
-	Request/MoveItemRequest.cpp
+	Request/MoveItemRequest.cpp \
+	Request/RenameItemRequest.cpp
 
 noinst_HEADERS = \
 	IAuth.h \
@@ -63,7 +64,8 @@ noinst_HEADERS = \
 	Request/UploadFileRequest.h \
 	Request/DeleteItemRequest.h \
 	Request/CreateDirectoryRequest.h \
-	Request/MoveItemRequest.h
+	Request/MoveItemRequest.h \
+	Request/RenameItemRequest.h
 
 nobase_include_HEADERS = \
 	IItem.h \
