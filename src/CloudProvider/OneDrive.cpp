@@ -92,7 +92,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     }
     callback->done();
   });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
@@ -114,7 +114,6 @@ HttpRequest::Pointer OneDrive::listDirectoryRequest(
       HttpRequest::Type::GET);
   request->setParameter(
       "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
-
   return request;
 }
 
@@ -144,7 +143,7 @@ HttpRequest::Pointer OneDrive::createDirectoryRequest(
   json["name"] = name;
   json["folder"] = Json::Value(Json::objectValue);
   input << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
@@ -160,7 +159,7 @@ HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
   else
     json["parentReference"]["id"] = destination.id();
   stream << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
@@ -173,7 +172,7 @@ HttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
   Json::Value json;
   json["name"] = name;
   stream << json;
-  return request;
+  return std::move(request);
 }
 
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
@@ -197,7 +196,7 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
   item->set_thumbnail_url(
       "https://api.onedrive.com/v1.0/drive/items/" + item->id() +
       "/thumbnails/0/small/content?access_token=" + access_token());
-  return item;
+  return std::move(item);
 }
 
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(

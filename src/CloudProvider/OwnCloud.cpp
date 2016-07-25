@@ -85,7 +85,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
       return nullptr;
     }
   });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
@@ -93,7 +93,7 @@ HttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
   auto request = make_unique<HttpRequest>(api_url() + "/remote.php/webdav" + id,
                                           "PROPFIND");
   request->setHeaderParameter("Depth", "0");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
@@ -102,18 +102,17 @@ HttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
   auto request = make_unique<HttpRequest>(
       api_url() + "/remote.php/webdav" + item.id(), "PROPFIND");
   request->setHeaderParameter("Depth", "1");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
                                                  const std::string& filename,
                                                  std::ostream&,
                                                  std::ostream&) const {
-  auto request = make_unique<HttpRequest>(api_url() + "/remote.php/webdav" +
-                                              directory.id() +
-                                              HttpRequest::escape(filename),
-                                          HttpRequest::Type::PUT);
-  return request;
+  return make_unique<HttpRequest>(api_url() + "/remote.php/webdav" +
+                                      directory.id() +
+                                      HttpRequest::escape(filename),
+                                  HttpRequest::Type::PUT);
 }
 
 HttpRequest::Pointer OwnCloud::downloadFileRequest(const IItem& item,
@@ -122,11 +121,11 @@ HttpRequest::Pointer OwnCloud::downloadFileRequest(const IItem& item,
                                   HttpRequest::Type::GET);
 }
 
-HttpRequest::Pointer OwnCloud::deleteItemRequest(
-    const IItem& item, std::ostream& input_stream) const {
+HttpRequest::Pointer OwnCloud::deleteItemRequest(const IItem& item,
+                                                 std::ostream&) const {
   auto request = make_unique<HttpRequest>(
       api_url() + "/remote.php/webdav" + item.id(), "DELETE");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
@@ -137,7 +136,7 @@ HttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
   request->setHeaderParameter(
       "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
                          destination.id() + "/" + source.filename());
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
@@ -148,7 +147,7 @@ HttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
   request->setHeaderParameter(
       "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
                          getPath(item.id()) + "/" + name);
-  return request;
+  return std::move(request);
 }
 
 IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
@@ -194,7 +193,7 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   filename = filename.substr(filename.find_last_of('/') + 1);
   auto item = make_unique<Item>(HttpRequest::unescape(filename), id, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
-  return item;
+  return std::move(item);
 }
 
 bool OwnCloud::reauthorize(int code) const {

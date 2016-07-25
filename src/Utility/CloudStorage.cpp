@@ -40,12 +40,13 @@
 namespace cloudstorage {
 
 CloudStorage::CloudStorage()
-    : providers_({make_unique<GoogleDrive>(), make_unique<OneDrive>(),
-                  make_unique<Dropbox>(), make_unique<AmazonDrive>(),
-                  make_unique<Box>(), make_unique<YouTube>(),
-                  make_unique<YandexDisk>(), make_unique<OwnCloud>()}) {
+    : providers_({std::make_shared<GoogleDrive>(), std::make_shared<OneDrive>(),
+                  std::make_shared<Dropbox>(), std::make_shared<AmazonDrive>(),
+                  std::make_shared<Box>(), std::make_shared<YouTube>(),
+                  std::make_shared<YandexDisk>(),
+                  std::make_shared<OwnCloud>()}) {
 #ifdef WITH_MEGA
-  providers_.emplace_back(make_unique<MegaNz>());
+  providers_.emplace_back(std::make_shared<MegaNz>());
 #endif
 }
 

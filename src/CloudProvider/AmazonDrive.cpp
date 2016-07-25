@@ -89,11 +89,11 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     callback(true);
     return true;
   });
-  return r;
+  return std::move(r);
 }
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
-  auto r = std::make_shared<AuthorizeRequest>(
+  auto r = make_unique<AuthorizeRequest>(
       shared_from_this(), [this](AuthorizeRequest* r) -> bool {
         if (!r->oauth2Authorization()) return false;
         HttpRequest request(
@@ -116,7 +116,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
         }
         return true;
       });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
@@ -124,7 +124,7 @@ HttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
   auto request = make_unique<HttpRequest>(metadata_url() + "/nodes/" + id,
                                           HttpRequest::Type::GET);
   request->setParameter("tempLink", "true");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
@@ -194,7 +194,7 @@ HttpRequest::Pointer AmazonDrive::createDirectoryRequest(
   json["kind"] = "FOLDER";
   json["parents"].append(parent.id());
   input << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer AmazonDrive::renameItemRequest(const IItem& item,
@@ -206,7 +206,7 @@ HttpRequest::Pointer AmazonDrive::renameItemRequest(const IItem& item,
   Json::Value json;
   json["name"] = name;
   input << json;
-  return request;
+  return std::move(request);
 }
 
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
@@ -252,7 +252,7 @@ IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   std::vector<std::string> parents;
   for (const Json::Value& p : v["parents"]) parents.push_back(p.asString());
   item->set_parents(parents);
-  return item;
+  return std::move(item);
 }
 
 std::string AmazonDrive::metadata_url() const {

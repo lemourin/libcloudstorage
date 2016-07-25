@@ -83,7 +83,7 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
         callback(item);
         return item;
       });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
@@ -207,7 +207,7 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
     callback(nullptr);
     return nullptr;
   });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer YandexDisk::listDirectoryRequest(
@@ -216,7 +216,7 @@ HttpRequest::Pointer YandexDisk::listDirectoryRequest(
       "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::GET);
   request->setParameter("path", item.id());
   if (!page_token.empty()) request->setParameter("offset", page_token);
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
@@ -225,7 +225,7 @@ HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
       "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::DEL);
   request->setParameter("path", item.id());
   request->setParameter("permamently", "true");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
@@ -238,7 +238,7 @@ HttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
   request->setParameter(
       "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
                   source.filename());
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
@@ -249,7 +249,7 @@ HttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
       HttpRequest::Type::POST);
   request->setParameter("from", item.id());
   request->setParameter("path", getPath(item.id()) + "/" + name);
-  return request;
+  return std::move(request);
 }
 
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
@@ -274,7 +274,7 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
   auto item =
       make_unique<Item>(v["name"].asString(), v["path"].asString(), type);
   item->set_thumbnail_url(v["preview"].asString());
-  return item;
+  return std::move(item);
 }
 
 void YandexDisk::authorizeRequest(HttpRequest& request) const {
@@ -299,7 +299,7 @@ HttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret() << "&"
              << "code=" << authorization_code();
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer YandexDisk::Auth::refreshTokenRequest(

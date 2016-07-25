@@ -45,7 +45,7 @@ HttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
                         "mimeType,iconLink,parents");
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
@@ -114,7 +114,7 @@ HttpRequest::Pointer GoogleDrive::createDirectoryRequest(
   json["name"] = name;
   json["parents"].append(item.id());
   input << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
@@ -131,7 +131,7 @@ HttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
   request->setParameter("removeParents", current_parents);
   request->setParameter("addParents", destination.id());
   input << Json::Value();
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer GoogleDrive::renameItemRequest(const IItem& item,
@@ -144,7 +144,7 @@ HttpRequest::Pointer GoogleDrive::renameItemRequest(const IItem& item,
   Json::Value json;
   json["name"] = name;
   input << json;
-  return request;
+  return std::move(request);
 }
 
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
@@ -200,7 +200,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
   item->set_parents(parents);
-  return item;
+  return std::move(item);
 }
 
 GoogleDrive::Auth::Auth() {

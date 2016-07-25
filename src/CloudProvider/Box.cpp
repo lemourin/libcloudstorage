@@ -79,7 +79,7 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     callback(item);
     return item;
   });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
@@ -89,7 +89,7 @@ HttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
       "https://api.box.com/2.0/folders/" + item.id() + "/items/",
       HttpRequest::Type::GET);
   if (!page_token.empty()) request->setParameter("offset", page_token);
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
@@ -154,7 +154,7 @@ HttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
   json["name"] = name;
   json["parent"]["id"] = item.id();
   stream << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Box::moveItemRequest(const IItem& source,
@@ -217,7 +217,7 @@ IItem::Pointer Box::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v["type"].asString() == "folder") type = IItem::FileType::Directory;
   auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
-  return item;
+  return std::move(item);
 }
 
 Box::Auth::Auth() {
@@ -239,7 +239,7 @@ HttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(
              << "code=" << authorization_code() << "&"
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret();
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Box::Auth::refreshTokenRequest(
@@ -251,7 +251,7 @@ HttpRequest::Pointer Box::Auth::refreshTokenRequest(
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret() << "&"
              << "redirect_uri=" << redirect_uri();
-  return request;
+  return std::move(request);
 }
 
 IAuth::Token::Pointer Box::Auth::exchangeAuthorizationCodeResponse(

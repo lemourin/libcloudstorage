@@ -61,14 +61,14 @@ HttpRequest::Pointer YouTube::getItemDataRequest(const std::string& id,
         "https://www.googleapis.com/youtube/v3/videos", HttpRequest::Type::GET);
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
-    return request;
+    return std::move(request);
   } else {
     auto request = make_unique<HttpRequest>(
         "https://www.googleapis.com/youtube/v3/playlistItems",
         HttpRequest::Type::GET);
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id);
-    return request;
+    return std::move(request);
   }
 }
 
@@ -98,7 +98,7 @@ HttpRequest::Pointer YouTube::listDirectoryRequest(
     request->setParameter("part", "snippet");
     request->setParameter("playlistId", item.id());
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
-    return request;
+    return std::move(request);
   }
 }
 
@@ -147,7 +147,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind) const {
                           IItem::FileType::Directory);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
-    return item;
+    return std::move(item);
   } else {
     std::string video_id;
     if (kind == "youtube#playlistItemListResponse")
@@ -166,7 +166,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind) const {
                   "/api/play?url=https://www.youtube.com/"
                   "watch?v=" +
                   video_id);
-    return item;
+    return std::move(item);
   }
 }
 

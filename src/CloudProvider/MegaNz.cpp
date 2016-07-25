@@ -257,7 +257,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
 
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = std::make_shared<Request<IItem::Pointer>>(shared_from_this());
+  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver(
       [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
         if (!ensureAuthorized(r)) {
@@ -273,7 +273,7 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
         callback(item);
         return item;
       });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
@@ -538,13 +538,13 @@ std::string MegaNz::passwordHash(const std::string& password) {
 
 IItem::Pointer MegaNz::toItem(MegaNode* node) {
   std::unique_ptr<char> path(mega_->getNodePath(node));
-  auto item = std::make_shared<Item>(
+  auto item = make_unique<Item>(
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
   item->set_url("http://localhost:" + std::to_string(DAEMON_PORT) + "/?file=" +
                 handle.get());
-  return item;
+  return std::move(item);
 }
 
 std::string MegaNz::randomString(int length) {

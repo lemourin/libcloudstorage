@@ -92,7 +92,7 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
         callback(item);
         return item;
       });
-  return f;
+  return std::move(f);
 }
 
 HttpRequest::Pointer Dropbox::listDirectoryRequest(
@@ -169,7 +169,7 @@ HttpRequest::Pointer Dropbox::deleteItemRequest(
   Json::Value parameter;
   parameter["path"] = item.id();
   input_stream << parameter;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Dropbox::createDirectoryRequest(
@@ -181,7 +181,7 @@ HttpRequest::Pointer Dropbox::createDirectoryRequest(
   Json::Value parameter;
   parameter["path"] = item.id() + "/" + name;
   input << parameter;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
@@ -194,7 +194,7 @@ HttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
   json["from_path"] = source.id();
   json["to_path"] = destination.id() + "/" + source.filename();
   stream << json;
-  return request;
+  return std::move(request);
 }
 
 HttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
@@ -207,7 +207,7 @@ HttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
   json["from_path"] = item.id();
   json["to_path"] = getPath(item.id()) + "/" + name;
   stream << json;
-  return request;
+  return std::move(request);
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
