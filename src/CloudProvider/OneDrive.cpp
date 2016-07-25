@@ -163,6 +163,19 @@ HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
   return request;
 }
 
+HttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream& stream) const {
+  auto request = make_unique<HttpRequest>(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id(),
+      HttpRequest::Type::PATCH);
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value json;
+  json["name"] = name;
+  stream << json;
+  return request;
+}
+
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
   Json::Value json;
   response >> json;
