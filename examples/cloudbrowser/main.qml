@@ -82,6 +82,7 @@ Item {
                 property int thumbnailHeight: 50
                 property int padding: 5
                 property bool isDirectory: display.is_directory
+                property string name: display.name
 
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
@@ -247,7 +248,7 @@ Item {
             }
             TextField {
                 id: renameValue
-                placeholderText: "Name"
+                text: directory.currentItem ? directory.currentItem.name : ""
                 anchors.top: renameText.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
