@@ -50,9 +50,7 @@ UploadFileRequest::UploadFileRequest(
     int code = sendRequest(
         [this](std::ostream& input) {
           callback_->reset();
-          stream_wrapper_.prefix_ = std::stringstream();
-          stream_wrapper_.suffix_ = std::stringstream();
-          stream_wrapper_.read_ = 0;
+          stream_wrapper_.reset();
           input.rdbuf(&stream_wrapper_);
           return provider()->uploadFileRequest(*directory_, filename_,
                                                stream_wrapper_.prefix_,
@@ -73,6 +71,12 @@ void UploadFileRequest::error(int code, const std::string& description) {
 UploadStreamWrapper::UploadStreamWrapper(
     std::function<uint32_t(char*, uint32_t)> callback, uint64_t size)
     : callback_(std::move(callback)), size_(size), read_(), position_() {}
+
+void UploadStreamWrapper::reset() {
+  prefix_ = std::stringstream();
+  suffix_ = std::stringstream();
+  read_ = 0;
+}
 
 UploadStreamWrapper::pos_type UploadStreamWrapper::seekoff(
     off_type off, std::ios_base::seekdir way, std::ios_base::openmode) {

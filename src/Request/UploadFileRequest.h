@@ -35,6 +35,7 @@ class UploadStreamWrapper : public std::streambuf {
 
   UploadStreamWrapper(std::function<uint32_t(char*, uint32_t)> callback,
                       uint64_t size);
+  void reset();
 
   pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
   int_type underflow();
