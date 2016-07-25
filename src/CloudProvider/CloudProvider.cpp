@@ -213,7 +213,7 @@ HttpRequest::Pointer CloudProvider::listDirectoryRequest(const IItem&,
 
 HttpRequest::Pointer CloudProvider::uploadFileRequest(const IItem&,
                                                       const std::string&,
-                                                      std::istream&,
+                                                      std::ostream&,
                                                       std::ostream&) const {
   return nullptr;
 }

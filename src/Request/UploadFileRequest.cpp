@@ -36,7 +36,8 @@ UploadFileRequest::UploadFileRequest(
     : Request(p),
       directory_(std::move(directory)),
       filename_(filename),
-      stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2)),
+      stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2),
+                      callback->size()),
       callback_(callback) {
   if (!stream_wrapper_.callback_)
     throw std::logic_error("Callback can't be null.");
@@ -49,9 +50,13 @@ UploadFileRequest::UploadFileRequest(
     int code = sendRequest(
         [this](std::ostream& input) {
           callback_->reset();
-          std::istream stream(&stream_wrapper_);
-          return provider()->uploadFileRequest(*directory_, filename_, stream,
-                                               input);
+          stream_wrapper_.prefix_ = std::stringstream();
+          stream_wrapper_.suffix_ = std::stringstream();
+          stream_wrapper_.read_ = 0;
+          input.rdbuf(&stream_wrapper_);
+          return provider()->uploadFileRequest(*directory_, filename_,
+                                               stream_wrapper_.prefix_,
+                                               stream_wrapper_.suffix_);
         },
         response_stream, nullptr,
         std::bind(&ICallback::progress, callback_.get(), _1, _2));
@@ -66,12 +71,36 @@ void UploadFileRequest::error(int code, const std::string& description) {
 }
 
 UploadStreamWrapper::UploadStreamWrapper(
-    std::function<uint32_t(char*, uint32_t)> callback)
-    : callback_(std::move(callback)) {}
+    std::function<uint32_t(char*, uint32_t)> callback, uint64_t size)
+    : callback_(std::move(callback)), size_(size), read_(), position_() {}
+
+UploadStreamWrapper::pos_type UploadStreamWrapper::seekoff(
+    off_type off, std::ios_base::seekdir way, std::ios_base::openmode) {
+  if (off != 0) return pos_type(off_type(-1));
+  if (way == std::ios_base::beg)
+    return position_ = 0;
+  else if (way == std::ios_base::end)
+    return position_ = prefix_.str().size() + size_ + suffix_.str().size();
+  else
+    return position_;
+}
 
 std::streambuf::int_type UploadStreamWrapper::underflow() {
-  uint32_t size = callback_(buffer_, BUFFER_SIZE);
-  if (gptr() == egptr()) setg(buffer_, buffer_, buffer_ + size);
+  pos_type read_data = 0;
+  if (prefix_) {
+    prefix_.read(buffer_ + read_data, BUFFER_SIZE - read_data);
+    read_data += prefix_.gcount();
+  }
+  if (read_ < size_ && !prefix_) {
+    uint32_t size = callback_(buffer_ + read_data, BUFFER_SIZE - read_data);
+    read_data += size;
+    read_ += size;
+  }
+  if (read_ == size_ && !prefix_) {
+    suffix_.read(buffer_ + read_data, BUFFER_SIZE - read_data);
+    read_data += suffix_.gcount();
+  }
+  if (gptr() == egptr()) setg(buffer_, buffer_, buffer_ + read_data);
   return gptr() == egptr() ? std::char_traits<char>::eof()
                            : std::char_traits<char>::to_int_type(*gptr());
 }

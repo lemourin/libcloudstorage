@@ -85,8 +85,8 @@ class CloudProvider : public ICloudProvider,
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const;
   virtual HttpRequest::Pointer uploadFileRequest(
-      const IItem& directory, const std::string& filename, std::istream& stream,
-      std::ostream& input_stream) const;
+      const IItem& directory, const std::string& filename,
+      std::ostream& prefix_stream, std::ostream& suffix_stream) const;
   virtual HttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const;
   virtual HttpRequest::Pointer getThumbnailRequest(

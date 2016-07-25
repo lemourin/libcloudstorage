@@ -33,12 +33,19 @@ class UploadStreamWrapper : public std::streambuf {
  public:
   static constexpr uint32_t BUFFER_SIZE = 1024;
 
-  UploadStreamWrapper(std::function<uint32_t(char*, uint32_t)> callback);
+  UploadStreamWrapper(std::function<uint32_t(char*, uint32_t)> callback,
+                      uint64_t size);
 
+  pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
   int_type underflow();
 
   char buffer_[BUFFER_SIZE];
   std::function<uint32_t(char*, uint32_t)> callback_;
+  std::stringstream prefix_;
+  std::stringstream suffix_;
+  uint64_t size_;
+  uint64_t read_;
+  pos_type position_;
 };
 
 class UploadFileRequest : public Request<void> {

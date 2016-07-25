@@ -43,8 +43,8 @@ class GoogleDrive : public CloudProvider {
                                             std::ostream& input_stream) const;
   HttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                          const std::string& filename,
-                                         std::istream& stream,
-                                         std::ostream& input_stream) const;
+                                         std::ostream& prefix_stream,
+                                         std::ostream& suffix_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
   HttpRequest::Pointer deleteItemRequest(const IItem&,

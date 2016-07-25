@@ -62,8 +62,8 @@ HttpRequest::Pointer GoogleDrive::listDirectoryRequest(
 }
 
 HttpRequest::Pointer GoogleDrive::uploadFileRequest(
-    const IItem& f, const std::string& filename, std::istream& stream,
-    std::ostream& input_stream) const {
+    const IItem& f, const std::string& filename, std::ostream& prefix_stream,
+    std::ostream& suffix_stream) const {
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
   const Item& item = static_cast<const Item&>(f);
   HttpRequest::Pointer request = make_unique<HttpRequest>(
@@ -76,13 +76,12 @@ HttpRequest::Pointer GoogleDrive::uploadFileRequest(
   request_data["parents"].append(item.id());
   std::string json_data = Json::FastWriter().write(request_data);
   json_data.pop_back();
-  input_stream << "--" << separator << "\r\n"
-               << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-               << json_data << "\r\n"
-               << "--" << separator << "\r\n"
-               << "Content-Type: \r\n\r\n"
-               << stream.rdbuf() << "\r\n"
-               << "--" << separator << "--";
+  prefix_stream << "--" << separator << "\r\n"
+                << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+                << json_data << "\r\n"
+                << "--" << separator << "\r\n"
+                << "Content-Type: \r\n\r\n";
+  suffix_stream << "\r\n--" << separator << "--\r\n";
   return request;
 }
 

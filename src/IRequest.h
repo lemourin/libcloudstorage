@@ -74,6 +74,7 @@ class IUploadFileCallback {
 
   virtual void reset() = 0;
   virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
+  virtual uint64_t size() = 0;
   virtual void done() = 0;
   virtual void error(const std::string& description) = 0;
   virtual void progress(uint32_t total, uint32_t now) = 0;

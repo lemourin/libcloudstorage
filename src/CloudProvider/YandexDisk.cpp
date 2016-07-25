@@ -150,14 +150,14 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
       output >> response;
       std::string url = response["href"].asString();
       UploadStreamWrapper wrapper(
-          std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2));
-      std::istream stream(&wrapper);
+          std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
+          callback->size());
       code = r->sendRequest(
-          [url, callback, &stream](std::ostream& input) {
+          [url, callback, &wrapper](std::ostream& input) {
             auto request =
                 make_unique<HttpRequest>(url, HttpRequest::Type::PUT);
             callback->reset();
-            input << stream.rdbuf();
+            input.rdbuf(&wrapper);
             return request;
           },
           output, nullptr,
