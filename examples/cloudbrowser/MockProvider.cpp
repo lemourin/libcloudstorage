@@ -94,6 +94,12 @@ ICloudProvider::MoveItemRequest::Pointer MockProvider::moveItemAsync(
   return make_unique<MockMoveItemRequest>();
 }
 
+ICloudProvider::RenameItemRequest::Pointer MockProvider::renameItemAsync(
+    IItem::Pointer, const std::string&, RenameItemCallback callback) {
+  callback(false);
+  return make_unique<MockMoveItemRequest>();
+}
+
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<MockDownloadFileRequest>(item, std::move(callback));
