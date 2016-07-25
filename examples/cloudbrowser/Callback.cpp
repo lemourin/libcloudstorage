@@ -61,13 +61,18 @@ void DownloadFileCallback::progress(uint32_t total, uint32_t now) {
 UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
     : window_(window),
       file_(url.toLocalFile().toStdString(),
-            std::ios_base::in | std::ios_base::binary) {}
+            std::ios_base::in | std::ios_base::binary) {
+  file_.seekg(0, std::ios::end);
+  size_ = file_.tellg();
+  file_.seekg(std::ios::beg);
+}
 
 void UploadFileCallback::reset() {
   {
     std::unique_lock<std::mutex> lock(window_->stream_mutex());
     std::cerr << "[DIAG] Starting transmission\n";
   }
+  file_.clear();
   file_.seekg(std::ios::beg);
 }
 
@@ -75,6 +80,8 @@ uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
   file_.read(data, maxlength);
   return file_.gcount();
 }
+
+uint64_t UploadFileCallback::size() { return size_; }
 
 void UploadFileCallback::done() {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());

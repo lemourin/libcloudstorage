@@ -90,6 +90,7 @@ class UploadFileCallback : public IUploadFileCallback {
 
   void reset();
   uint32_t putData(char* data, uint32_t maxlength);
+  uint64_t size();
   void done();
   void error(const std::string& description);
   void progress(uint32_t total, uint32_t now);
@@ -97,6 +98,7 @@ class UploadFileCallback : public IUploadFileCallback {
  private:
   Window* window_;
   std::fstream file_;
+  uint64_t size_;
 };
 
 class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
