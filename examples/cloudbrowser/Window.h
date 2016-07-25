@@ -116,6 +116,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void deleteItem(int item);
   Q_INVOKABLE void createDirectory(QString name);
   Q_INVOKABLE void markMovedItem(int item);
+  Q_INVOKABLE void renameItem(int, QString);
 
   void onSuccessfullyAuthorized();
   void onAddedItem(ItemPointer);
@@ -173,6 +174,7 @@ class Window : public QQuickView {
   ICloudProvider::DeleteItemRequest::Pointer delete_item_request_;
   ICloudProvider::CreateDirectoryRequest::Pointer create_directory_request_;
   ICloudProvider::MoveItemRequest::Pointer move_item_request_;
+  ICloudProvider::RenameItemRequest::Pointer rename_item_request_;
   IItem::Pointer moved_file_;
   ImageProvider* image_provider_;
   VLC::Instance vlc_instance_;

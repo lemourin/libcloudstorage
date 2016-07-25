@@ -354,6 +354,18 @@ void Window::markMovedItem(int item_id) {
   emit movedItemChanged();
 }
 
+void Window::renameItem(int item_id, QString name) {
+  auto item = directory_model_.get(item_id)->item();
+  rename_item_request_ = cloud_provider_->renameItemAsync(
+      item, name.toStdString(), [this](bool e) {
+        std::unique_lock<std::mutex> lock(stream_mutex());
+        if (e)
+          std::cerr << "[DIAG] Successfully renamed file\n";
+        else
+          std::cerr << "[FAIL] Failed to rename file.\n";
+      });
+}
+
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
   QString id = (p->name() + "/" + item_->id()).c_str();

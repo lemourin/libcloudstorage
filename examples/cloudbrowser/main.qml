@@ -223,10 +223,43 @@ Item {
         onPressed: window.createDirectory(directoryName.text)
     }
 
+    MouseArea {
+        id: renameButton
+        visible: uploadButton.visible
+        width: 100
+        height: 100
+        anchors.bottom: parent.bottom
+        anchors.right: createDirectoryButton.left
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: padding
+            border.color: "black"
+            color: "grey"
+            radius: padding
+            Text {
+                id: renameText
+                y: 20
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                text: "Change name"
+            }
+            TextField {
+                id: renameValue
+                placeholderText: "Name"
+                anchors.top: renameText.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+        }
+        onPressed: window.renameItem(directory.currentIndex, renameValue.text)
+    }
+
     Rectangle {
         visible: window.movedItem != ""
         anchors.margins: padding
-        anchors.right: createDirectoryButton.left
+        anchors.right: renameButton.left
         anchors.bottom: parent.bottom
         width: 100
         height: childrenRect.height + 2 * padding
