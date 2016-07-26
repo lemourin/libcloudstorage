@@ -25,27 +25,27 @@
 #include <QResizeEvent>
 #include <iostream>
 
-#include "Window.h"
 #include "MediaPlayer.h"
+#include "Window.h"
 
 class MainWidget : public QWidget {
  public:
   MainWidget()
-      : media_player_(this),
-        window_(&media_player_),
+      : media_player_(MediaPlayer::instance(this)),
+        window_(media_player_.get()),
         container_(createWindowContainer(&window_, this)) {
     window_.set_container(container_);
 
     container_->setFocus();
 
-    media_player_.setStyleSheet("background-color:black;");
-    media_player_.show();
+    media_player_->setStyleSheet("background-color:black;");
+    media_player_->show();
   }
 
  protected:
   void resizeEvent(QResizeEvent* e) {
     QWidget::resizeEvent(e);
-    media_player_.resize(e->size());
+    media_player_->resize(e->size());
     container_->resize(e->size());
   }
 
@@ -56,11 +56,11 @@ class MainWidget : public QWidget {
       window_.stop();
       container_->setFocus();
     } else if (e->key() == Qt::Key_P)
-      media_player_.pause();
+      media_player_->pause();
   }
 
  private:
-  VLCMediaPlayer media_player_;
+  std::unique_ptr<MediaPlayer> media_player_;
   Window window_;
   QWidget* container_;
 };

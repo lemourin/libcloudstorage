@@ -18,15 +18,26 @@ libcloudbrowser_la_SOURCES = \
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
-	$(QT_CFLAGS) \
-	$(LIBVLCPP_CFLAGS) \
-	$(LIBVLC_CFLAGS)
+	$(qt_CFLAGS)
 
 libcloudbrowser_la_LIBADD = \
 	../../src/libcloudstorage.la \
-	$(QT_LIBS) \
-	$(LIBVLCPP_LIBS) \
-	$(LIBVLC_LIBS)
+	$(qt_LIBS)
+
+if WITH_VLC
+libcloudbrowser_la_CXXFLAGS += \
+	$(libvlcpp_CFLAGS) \
+	$(libvlc_CFLAGS)
+libcloudbrowser_la_LIBADD += \
+	$(libvlcpp_LIBS) \
+	$(libvlc_LIBS)
+else
+libcloudbrowser_la_CXXFLAGS += \
+	$(qtmultimedia_CFLAGS)
+libcloudbrowser_la_LIBADD += \
+	$(qtmultimedia_LIBS)
+endif
+
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \

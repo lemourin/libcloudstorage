@@ -25,14 +25,28 @@
 #define MEDIAPLAYER_H
 
 #include <QWidget>
+#include <memory>
+
+#ifdef WITH_VLC
 #include <vlcpp/vlc.hpp>
 
-class MediaPlayer : public QObject {
+using Widget = QWidget;
+#else
+#include <QMediaContent>
+#include <QMediaPlayer>
+#include <QVideoWidget>
+
+using Widget = QVideoWidget;
+#endif
+
+class MediaPlayer : public Widget {
  public:
   virtual void pause() = 0;
   virtual void play() = 0;
   virtual void stop() = 0;
   virtual void setMedia(const std::string&) = 0;
+
+  static std::unique_ptr<MediaPlayer> instance(QWidget*);
 
  signals:
   void started();
@@ -43,9 +57,11 @@ class MediaPlayer : public QObject {
   Q_OBJECT
 };
 
-class VLCMediaPlayer : public QWidget, public virtual MediaPlayer {
+#ifdef WITH_VLC
+
+class VLCMediaPlayer : public MediaPlayer {
  public:
-  VLCMediaPlayer(QWidget*);
+  VLCMediaPlayer();
 
   void pause();
   void play();
@@ -56,5 +72,22 @@ class VLCMediaPlayer : public QWidget, public virtual MediaPlayer {
   VLC::Instance vlc_instance_;
   VLC::MediaPlayer media_player_;
 };
+
+#else
+
+class QtMediaPlayer : public MediaPlayer {
+ public:
+  QtMediaPlayer();
+
+  void pause();
+  void play();
+  void stop();
+  void setMedia(const std::string&);
+
+ private:
+  QMediaPlayer media_player_;
+};
+
+#endif  // WITH_VLC
 
 #endif  // MEDIAPLAYER_H
