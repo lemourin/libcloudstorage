@@ -12,6 +12,7 @@ cloudbrowser_LDADD = libcloudbrowser.la
 libcloudbrowser_la_SOURCES = \
 	Window.cpp Window.h \
 	Callback.cpp Callback.h \
+	MediaPlayer.cpp MediaPlayer.h \
 	MockProvider.cpp MockProvider.h \
 	main.cpp
 
@@ -30,6 +31,7 @@ libcloudbrowser_la_LIBADD = \
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
 	Callback.moc.cpp \
+	MediaPlayer.moc.cpp \
 	resources.cpp
 
 DEPS_res = \

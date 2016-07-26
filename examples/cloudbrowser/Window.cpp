@@ -38,16 +38,13 @@
 
 using namespace cloudstorage;
 
-Window::Window(QWidget* player_widget)
+Window::Window(MediaPlayer* media_player)
     : image_provider_(new ImageProvider),
-      vlc_instance_(0, nullptr),
-      media_player_(vlc_instance_),
       last_played_(-1),
-      container_() {
+      container_(),
+      media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
-
-  initializeMediaPlayer(player_widget);
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -61,10 +58,13 @@ Window::Window(QWidget* player_widget)
   setSource(QUrl("qrc:/main.qml"));
   setResizeMode(SizeRootObjectToView);
 
+  connect(media_player_, &MediaPlayer::started, this, &Window::showPlayer);
+  connect(media_player_, &MediaPlayer::stopped, this, &Window::hidePlayer);
+  connect(media_player_, &MediaPlayer::endReached, this, &Window::playNext);
+
   connect(this, &Window::successfullyAuthorized, this,
           &Window::onSuccessfullyAuthorized);
   connect(this, &Window::addedItem, this, &Window::onAddedItem);
-  connect(this, &Window::runPlayer, this, &Window::onPlayFile);
   connect(this, &Window::runPlayerFromUrl, this, &Window::onPlayFileFromUrl);
   connect(this, &Window::cloudChanged, this, &Window::listDirectory);
   connect(this, &Window::showPlayer, this,
@@ -157,22 +157,13 @@ void Window::onSuccessfullyAuthorized() {
 
 void Window::onAddedItem(ItemPointer i) { directory_model_.addItem(i, this); }
 
-void Window::onPlayFile(QString filename) {
-  VLC::Media media(vlc_instance_, QDir::currentPath().toStdString() + "/" +
-                                      filename.toStdString(),
-                   VLC::Media::FromPath);
-  media_player_.setMedia(media);
-  media_player_.play();
-}
-
 void Window::onPlayFileFromUrl(QString url) {
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
   }
-  VLC::Media media(vlc_instance_, url.toStdString(), VLC::Media::FromLocation);
-  media_player_.setMedia(media);
-  media_player_.play();
+  media_player_->setMedia(url.toStdString());
+  media_player_->play();
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
@@ -193,7 +184,7 @@ void Window::keyPressEvent(QKeyEvent* e) {
     stop();
     e->accept();
   } else if (e->key() == Qt::Key_P) {
-    media_player_.pause();
+    media_player_->pause();
     e->accept();
   }
 }
@@ -213,20 +204,6 @@ void Window::saveCloudAccessToken() {
     settings.setValue((cloud_provider_->name() + "_hints").c_str(),
                       data.c_str());
   }
-}
-
-void Window::initializeMediaPlayer(QWidget* player_widget) {
-#ifdef Q_OS_LINUX
-  media_player_.setXwindow(player_widget->winId());
-#elif defined Q_OS_WIN
-  media_player_.setHwnd(reinterpret_cast<void*>(player_widget->winId()));
-#elif defined Q_OS_DARWIN
-  media_player_.setNsobject(reinterpret_cast<void*>(player_widget->winId()));
-#endif
-
-  media_player_.eventManager().onPlaying([this]() { emit showPlayer(); });
-  media_player_.eventManager().onStopped([this]() { emit hidePlayer(); });
-  media_player_.eventManager().onEndReached([this]() { emit playNext(); });
 }
 
 void Window::startDirectoryClear(std::function<void()> f) {
@@ -284,7 +261,7 @@ void Window::stop() {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Trying to stop player\n";
   }
-  media_player_.stop();
+  media_player_->stop();
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Stopped\n";

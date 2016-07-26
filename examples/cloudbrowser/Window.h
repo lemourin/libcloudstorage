@@ -31,9 +31,9 @@
 #include <QQuickView>
 #include <QWidget>
 #include <future>
-#include <vlcpp/vlc.hpp>
 
 #include "Callback.h"
+#include "MediaPlayer.h"
 
 using ItemPointer = cloudstorage::IItem::Pointer;
 using ImagePointer = std::shared_ptr<QImage>;
@@ -100,7 +100,7 @@ class Window : public QQuickView {
  public:
   Q_PROPERTY(QString movedItem READ movedItem NOTIFY movedItemChanged)
 
-  Window(QWidget* player_widget);
+  Window(MediaPlayer* player_widget);
   ~Window();
 
   ImageProvider* imageProvider() { return image_provider_; }
@@ -120,14 +120,14 @@ class Window : public QQuickView {
 
   void onSuccessfullyAuthorized();
   void onAddedItem(ItemPointer);
-  void onPlayFile(QString filename);
   void onPlayFileFromUrl(QString url);
 
   std::mutex& stream_mutex() const { return stream_mutex_; }
-  VLC::MediaPlayer& media_player() { return media_player_; }
 
   void set_container(QWidget* w) { container_ = w; }
   QWidget* container() const { return container_; }
+
+  MediaPlayer* media_player() const { return media_player_; }
 
   QString movedItem() const;
 
@@ -158,7 +158,6 @@ class Window : public QQuickView {
 
   void clearCurrentDirectoryList();
   void saveCloudAccessToken();
-  void initializeMediaPlayer(QWidget* player_widget);
   void startDirectoryClear(std::function<void()>);
 
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
@@ -177,13 +176,12 @@ class Window : public QQuickView {
   ICloudProvider::RenameItemRequest::Pointer rename_item_request_;
   IItem::Pointer moved_file_;
   ImageProvider* image_provider_;
-  VLC::Instance vlc_instance_;
-  VLC::MediaPlayer media_player_;
   std::future<void> clear_directory_;
   DirectoryModel directory_model_;
   mutable std::mutex stream_mutex_;
   int last_played_;
   QWidget* container_;
+  MediaPlayer* media_player_;
 
   Q_OBJECT
 };
