@@ -54,7 +54,10 @@ nodist_libcloudbrowser_la_SOURCES = \
 	resources.cpp
 
 DEPS_res = \
-	main.qml \
+	qml/main.qml \
+	qml/WebView.qml \
+	qml/MediaPlayer.qml \
+	qml/ActionButton.qml \
 	resources/directory.png \
 	resources/file.png \
 	resources/image.png \

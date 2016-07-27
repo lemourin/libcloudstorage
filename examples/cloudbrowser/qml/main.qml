@@ -1,8 +1,6 @@
 import QtQuick 2.5
-import QtWebKit 3.0
 import QtQuick.Controls 1.0
 import QtQuick.Dialogs 1.2
-import QtMultimedia 5.6
 
 Item {
     property int padding: 5
@@ -27,9 +25,19 @@ Item {
         height: parent.height
         model: cloudModel
         delegate: Component {
-            Text {
-                text: modelData
-                font.pixelSize: 25
+            MouseArea {
+                property string text: modelData
+
+                width: childrenRect.width
+                height: childrenRect.height
+                Text {
+                    text: modelData
+                }
+                onClicked: {
+                    cloudView.currentIndex = index;
+                    cloudView.focus = false;
+                    window.initializeCloud(modelData);
+                }
             }
         }
         highlight: Rectangle {
@@ -68,11 +76,17 @@ Item {
         onCurrentItemChanged: {
             directory.currentIndex = index;
         }
-        onPlayQmlPlayer: mediaPlayer.play()
-        onStopQmlPlayer: mediaPlayer.stop()
-        onPauseQmlPlayer: mediaPlayer.pause()
-        onShowQmlPlayer: videoOutput.visible = true
-        onHideQmlPlayer: videoOutput.visible = false
+        onPlayQmlPlayer: player.item.mediaplayer.play()
+        onStopQmlPlayer: player.item.mediaplayer.stop()
+        onPauseQmlPlayer: {
+            if (player.item.mediaplayer.playbackState ===
+                    MediaPlayer.PausedState)
+                player.item.mediaplayer.play();
+            else
+                player.item.mediaplayer.pause();
+        }
+        onShowQmlPlayer: player.item.videooutput.visible = true
+        onHideQmlPlayer: player.item.videooutput.visible = false
     }
 
     ListView {
@@ -83,7 +97,7 @@ Item {
         anchors.bottom: parent.bottom
         model: directoryModel
         delegate: Component {
-            Item {
+            MouseArea {
                 property int thumbnailWidth: 50
                 property int thumbnailHeight: 50
                 property int padding: 5
@@ -93,6 +107,13 @@ Item {
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
                 width: row.width + 2 * padding
+                onClicked: {
+                    directory.currentIndex = index;
+                    if (isDirectory)
+                        window.changeCurrentDirectory(index);
+                    else
+                        window.play(index);
+                }
 
                 Row {
                     id: row
@@ -131,13 +152,13 @@ Item {
         }
 
         Keys.onPressed: {
-            if (event.key === Qt.Key_Backspace) {
+            if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Back) {
                 if (!window.goBack()) {
                     directory.focus = false;
                     cloudView.focus = true;
                 }
             }
-            if (event.key === Qt.Key_Return && currentIndex != -1) {
+            else if (event.key === Qt.Key_Return && currentIndex != -1) {
                 if (currentItem.isDirectory)
                     window.changeCurrentDirectory(currentIndex);
                 else
@@ -172,117 +193,70 @@ Item {
         }
     }
 
-    MouseArea {
+    ActionButton {
+        visible: uploadButton.visible
+        anchors.bottom: uploadButton.top
+        anchors.right: parent.right
+        text: "Go back"
+        onClicked: {
+            if (!window.goBack()) {
+                directory.focus = false;
+                cloudView.focus = true;
+            }
+        }
+    }
+
+    ActionButton {
         id: uploadButton
         visible: !cloudView.focus
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: 100
-        height: 100
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: padding
-            border.color: "black"
-            color: "grey"
-            radius: padding
-            Text {
-                anchors.centerIn: parent
-                text: "Upload file"
-            }
-        }
+        text: "Upload file"
         FileDialog {
             id: fileDialog
             onAccepted: window.uploadFile(fileDialog.fileUrl)
         }
-        onPressed: fileDialog.visible = true
+        onClicked: fileDialog.visible = true
     }
 
-    MouseArea {
+    ActionButton {
         id: createDirectoryButton
         visible: uploadButton.visible
-        width: 100
-        height: 100
         anchors.bottom: parent.bottom
         anchors.right: uploadButton.left
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: padding
-            border.color: "black"
-            color: "grey"
-            radius: padding
-            Text {
-                id: createDirectoryText
-                y: 20
-                anchors.left: parent.left
-                anchors.right: parent.right
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                text: "Create directory"
-            }
-            TextField {
-                id: directoryName
-                placeholderText: "Name"
-                anchors.top: createDirectoryText.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-            }
+        text: "Create\ndirectory"
+        TextField {
+            id: directoryName
+            placeholderText: "Name"
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
         }
-        onPressed: window.createDirectory(directoryName.text)
+        onClicked: window.createDirectory(directoryName.text)
     }
 
-    MouseArea {
+    ActionButton {
         id: renameButton
         visible: uploadButton.visible
-        width: 100
-        height: 100
         anchors.bottom: parent.bottom
         anchors.right: createDirectoryButton.left
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: padding
-            border.color: "black"
-            color: "grey"
-            radius: padding
-            Text {
-                id: renameText
-                y: 20
-                anchors.left: parent.left
-                anchors.right: parent.right
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                text: "Change name"
-            }
-            TextField {
-                id: renameValue
-                text: directory.currentItem ? directory.currentItem.name : ""
-                anchors.top: renameText.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-            }
+        text: "Change\nname"
+        TextField {
+            id: renameValue
+            text: directory.currentItem ? directory.currentItem.name : ""
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
         }
-        onPressed: window.renameItem(directory.currentIndex, renameValue.text)
+        onClicked: window.renameItem(directory.currentIndex, renameValue.text)
     }
 
-    Rectangle {
+    ActionButton {
         visible: window.movedItem != ""
         anchors.margins: padding
         anchors.right: renameButton.left
         anchors.bottom: parent.bottom
-        width: 100
-        height: childrenRect.height + 2 * padding
-        border.color: "black"
-        color: "grey"
-        radius: padding
-        Text {
-            x: padding
-            y: padding
-            wrapMode: Text.Wrap
-            anchors.left: parent.left
-            anchors.right: parent.right
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: "Moving " + window.movedItem
-        }
+        text: "Moving " + window.movedItem
     }
 
     Rectangle {
@@ -337,33 +311,36 @@ Item {
         anchors.left: parent.left
     }
 
-    MediaPlayer {
-        id: mediaPlayer
-        source: window.currentMedia
-        onStatusChanged: {
-            if (status == MediaPlayer.EndOfMedia) {
-                videoOutput.visible = false;
-                window.playNext();
-            } else if (status == MediaPlayer.InvalidMedia)
-                window.hidePlayer();
-        }
-    }
-
-    VideoOutput {
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            z: -1
-        }
-        id: videoOutput
-        source: mediaPlayer
+    Loader {
+        id: player
         anchors.fill: parent
-        visible: false
+        source: "MediaPlayer.qml"
     }
 
-    WebView {
+    MouseArea {
+        property string url
+
         id: browser
         visible: false
         anchors.fill: parent
+        enabled: visible
+        onUrlChanged: webview.item.url = url
+        Rectangle {
+            anchors.fill: parent
+            color: "green"
+        }
+        TextEdit {
+            anchors.fill: parent
+            horizontalAlignment: Text.AlignHCenter
+            text: browser.url
+            wrapMode: Text.Wrap
+            selectByMouse: true
+            readOnly: true
+        }
+        Loader {
+            id: webview
+            source: "WebView.qml"
+            anchors.fill: parent
+        }
     }
 }

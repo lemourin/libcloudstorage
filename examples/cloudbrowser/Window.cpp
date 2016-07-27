@@ -54,7 +54,7 @@ Window::Window(MediaPlayer* media_player)
   rootContext()->setContextProperty("directoryModel", &directory_model_);
   engine()->addImageProvider("provider", imageProvider());
 
-  setSource(QUrl("qrc:/main.qml"));
+  setSource(QUrl("qrc:/qml/main.qml"));
   setResizeMode(SizeRootObjectToView);
 
   if (media_player_) {
@@ -200,7 +200,7 @@ void Window::setCurrentMedia(QString m) {
 void Window::keyPressEvent(QKeyEvent* e) {
   QQuickView::keyPressEvent(e);
   if (e->isAccepted() && contentItem()->hasFocus()) return;
-  if (e->key() == Qt::Key_Q) {
+  if (e->key() == Qt::Key_Q || e->key() == Qt::Key_Back) {
     stop();
     e->accept();
   } else if (e->key() == Qt::Key_P) {
@@ -459,14 +459,14 @@ void DirectoryModel::clear() {
 QString DirectoryModel::typeToIcon(IItem::FileType type) {
   switch (type) {
     case IItem::FileType::Audio:
-      return "resources/audio.png";
+      return "qrc:/resources/audio.png";
     case IItem::FileType::Directory:
-      return "resources/directory.png";
+      return "qrc:/resources/directory.png";
     case IItem::FileType::Image:
-      return "resources/image.png";
+      return "qrc:/resources/image.png";
     case IItem::FileType::Video:
-      return "resources/video.png";
+      return "qrc:/resources/video.png";
     case IItem::FileType::Unknown:
-      return "resources/file.png";
+      return "qrc:/resources/file.png";
   }
 }
