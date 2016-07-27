@@ -21,12 +21,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifdef WITH_QMLPLAYER
+#include <QGuiApplication>
+#else
 #include <QApplication>
+#endif
+
 #include <QResizeEvent>
 #include <iostream>
 
 #include "MediaPlayer.h"
 #include "Window.h"
+
+#ifndef WITH_QMLPLAYER
 
 class MainWidget : public QWidget {
  public:
@@ -34,12 +41,15 @@ class MainWidget : public QWidget {
       : media_player_(MediaPlayer::instance(this)),
         window_(media_player_.get()),
         container_(createWindowContainer(&window_, this)) {
-    window_.set_container(container_);
-
     container_->setFocus();
 
     media_player_->setStyleSheet("background-color:black;");
     media_player_->show();
+
+    connect(&window_, &Window::showWidgetPlayer, this,
+            [this]() { container_->hide(); });
+    connect(&window_, &Window::hideWidgetPlayer, this,
+            [this]() { container_->show(); });
   }
 
  protected:
@@ -53,7 +63,7 @@ class MainWidget : public QWidget {
     QWidget::keyPressEvent(e);
     if (e->isAccepted()) return;
     if (e->key() == Qt::Key_Q) {
-      window_.stop();
+      media_player_->stop();
       container_->setFocus();
     } else if (e->key() == Qt::Key_P)
       media_player_->pause();
@@ -65,15 +75,22 @@ class MainWidget : public QWidget {
   QWidget* container_;
 };
 
+#endif
+
 int main(int argc, char* argv[]) {
   try {
+#ifdef WITH_QMLPLAYER
+    QGuiApplication app(argc, argv);
+    Window window(nullptr);
+#else
     QApplication app(argc, argv);
+    MainWidget window;
+#endif
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
 
-    MainWidget widget;
-    widget.resize(800, 600);
-    widget.show();
+    window.resize(800, 600);
+    window.show();
 
     return app.exec();
   } catch (const std::exception& e) {

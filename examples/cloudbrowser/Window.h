@@ -29,7 +29,6 @@
 #include <QAbstractListModel>
 #include <QQuickImageProvider>
 #include <QQuickView>
-#include <QWidget>
 #include <future>
 
 #include "Callback.h"
@@ -99,6 +98,7 @@ class DirectoryModel : public QAbstractListModel {
 class Window : public QQuickView {
  public:
   Q_PROPERTY(QString movedItem READ movedItem NOTIFY movedItemChanged)
+  Q_PROPERTY(QString currentMedia READ currentMedia NOTIFY currentMediaChanged)
 
   Window(MediaPlayer* player_widget);
   ~Window();
@@ -123,13 +123,11 @@ class Window : public QQuickView {
   void onPlayFileFromUrl(QString url);
 
   std::mutex& stream_mutex() const { return stream_mutex_; }
-
-  void set_container(QWidget* w) { container_ = w; }
-  QWidget* container() const { return container_; }
-
   MediaPlayer* media_player() const { return media_player_; }
-
   QString movedItem() const;
+
+  QString currentMedia() const { return current_media_; }
+  void setCurrentMedia(QString m);
 
  signals:
   void openBrowser(QString url);
@@ -148,6 +146,14 @@ class Window : public QQuickView {
   void playNext();
   void currentItemChanged(int index);
   void movedItemChanged();
+  void currentMediaChanged();
+  void playQmlPlayer();
+  void stopQmlPlayer();
+  void pauseQmlPlayer();
+  void showQmlPlayer();
+  void hideQmlPlayer();
+  void showWidgetPlayer();
+  void hideWidgetPlayer();
 
  protected:
   void keyPressEvent(QKeyEvent* e);
@@ -180,8 +186,8 @@ class Window : public QQuickView {
   DirectoryModel directory_model_;
   mutable std::mutex stream_mutex_;
   int last_played_;
-  QWidget* container_;
   MediaPlayer* media_player_;
+  QString current_media_;
 
   Q_OBJECT
 };

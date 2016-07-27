@@ -52,8 +52,14 @@ AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 AC_ARG_WITH([vlc], AS_HELP_STRING([--with-vlc]))
 AM_CONDITIONAL([WITH_VLC], [test "x$with_vlc" = "xyes"])
 
+AC_ARG_WITH([qtmultimediawidgets], AS_HELP_STRING([--with-qtmultimediawidgets]))
+AM_CONDITIONAL([WITH_QTMULTIMEDIAWIDGETS], [test "x$with_qtmultimediawidgets" = "xyes"])
+
+AC_ARG_WITH([qmlplayer], AS_HELP_STRING([--with-qmlplayer]))
+AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
+
 AS_IF([test "x$with_examples" = "xyes"], [
-  PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick Qt5Widgets], [
+  PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
     QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
     QT_HOST_PATH="$(eval $PKG_CONFIG --variable=host_bins Qt5Core)"
     AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
@@ -63,9 +69,14 @@ AS_IF([test "x$with_examples" = "xyes"], [
   AS_IF([test "x$with_vlc" = "xyes"], [
     PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
     PKG_CHECK_MODULES([libvlc], [libvlc])
+    PKG_CHECK_MODULES([qtwidgets], [Qt5Widgets])
     AC_DEFINE(WITH_VLC)
-  ],[
-    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia Qt5MultimediaWidgets])
+  ], [test "x$with_qmultimediawidgets" = "xyes"], [
+    PKG_CHECK_MODULES([qtmultimediawidgets], [Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets])
+    AC_DEFINE(WITH_QTMULTIMEDIAWIDGETS)
+  ], [
+    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia])
+    AC_DEFINE(WITH_QMLPLAYER)
   ])
 ])
 

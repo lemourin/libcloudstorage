@@ -2,6 +2,7 @@ import QtQuick 2.5
 import QtWebKit 3.0
 import QtQuick.Controls 1.0
 import QtQuick.Dialogs 1.2
+import QtMultimedia 5.6
 
 Item {
     property int padding: 5
@@ -67,6 +68,11 @@ Item {
         onCurrentItemChanged: {
             directory.currentIndex = index;
         }
+        onPlayQmlPlayer: mediaPlayer.play()
+        onStopQmlPlayer: mediaPlayer.stop()
+        onPauseQmlPlayer: mediaPlayer.pause()
+        onShowQmlPlayer: videoOutput.visible = true
+        onHideQmlPlayer: videoOutput.visible = false
     }
 
     ListView {
@@ -329,6 +335,30 @@ Item {
         anchors.bottom: uploadProgress.top
         anchors.right: help.right
         anchors.left: parent.left
+    }
+
+    MediaPlayer {
+        id: mediaPlayer
+        source: window.currentMedia
+        onStatusChanged: {
+            if (status == MediaPlayer.EndOfMedia) {
+                videoOutput.visible = false;
+                window.playNext();
+            } else if (status == MediaPlayer.InvalidMedia)
+                window.hidePlayer();
+        }
+    }
+
+    VideoOutput {
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            z: -1
+        }
+        id: videoOutput
+        source: mediaPlayer
+        anchors.fill: parent
+        visible: false
     }
 
     WebView {

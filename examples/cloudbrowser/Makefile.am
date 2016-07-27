@@ -27,17 +27,25 @@ libcloudbrowser_la_LIBADD = \
 if WITH_VLC
 libcloudbrowser_la_CXXFLAGS += \
 	$(libvlcpp_CFLAGS) \
-	$(libvlc_CFLAGS)
+	$(libvlc_CFLAGS) \
+	$(qtwidgets_CFLAGS)
 libcloudbrowser_la_LIBADD += \
 	$(libvlcpp_LIBS) \
-	$(libvlc_LIBS)
-else
+	$(libvlc_LIBS) \
+	$(qtwidgets_LIBS)
+endif
+if WITH_QTMULTIMEDIAWIDGETS
+libcloudbrowser_la_CXXFLAGS += \
+	$(qtmultimediawidgets_CFLAGS)
+libcloudbrowser_la_LIBADD += \
+	$(qtmultimediawidgets_LIBS)
+endif
+if WITH_QMLPLAYER
 libcloudbrowser_la_CXXFLAGS += \
 	$(qtmultimedia_CFLAGS)
 libcloudbrowser_la_LIBADD += \
 	$(qtmultimedia_LIBS)
 endif
-
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \

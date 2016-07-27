@@ -57,7 +57,7 @@ std::unique_ptr<MediaPlayer> MediaPlayer::instance(QWidget* parent) {
   return player;
 }
 
-#else
+#elif WITH_QTMULTIMEDIAWIDGETS
 
 QtMediaPlayer::QtMediaPlayer() {
   media_player_.setVideoOutput(this);
@@ -90,4 +90,4 @@ std::unique_ptr<MediaPlayer> MediaPlayer::instance(QWidget* parent) {
   return player;
 }
 
-#endif  // WITH_VLC
+#endif

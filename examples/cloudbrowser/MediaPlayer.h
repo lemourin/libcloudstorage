@@ -24,20 +24,25 @@
 #ifndef MEDIAPLAYER_H
 #define MEDIAPLAYER_H
 
-#include <QWidget>
+#include <QObject>
 #include <memory>
 
 #ifdef WITH_VLC
+#include <QWidget>
 #include <vlcpp/vlc.hpp>
 
 using Widget = QWidget;
-#else
+#elif WITH_QTMULTIMEDIAWIDGETS
 #include <QMediaContent>
 #include <QMediaPlayer>
 #include <QVideoWidget>
 
 using Widget = QVideoWidget;
+#else
+using Widget = QObject;
 #endif
+
+class QWidget;
 
 class MediaPlayer : public Widget {
  public:
@@ -73,7 +78,7 @@ class VLCMediaPlayer : public MediaPlayer {
   VLC::MediaPlayer media_player_;
 };
 
-#else
+#elif WITH_QTMULTIMEDIAWIDGETS
 
 class QtMediaPlayer : public MediaPlayer {
  public:
@@ -88,6 +93,6 @@ class QtMediaPlayer : public MediaPlayer {
   QMediaPlayer media_player_;
 };
 
-#endif  // WITH_VLC
+#endif
 
 #endif  // MEDIAPLAYER_H

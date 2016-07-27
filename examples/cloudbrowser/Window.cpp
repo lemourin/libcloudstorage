@@ -41,7 +41,6 @@ using namespace cloudstorage;
 Window::Window(MediaPlayer* media_player)
     : image_provider_(new ImageProvider),
       last_played_(-1),
-      container_(),
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
@@ -58,9 +57,11 @@ Window::Window(MediaPlayer* media_player)
   setSource(QUrl("qrc:/main.qml"));
   setResizeMode(SizeRootObjectToView);
 
-  connect(media_player_, &MediaPlayer::started, this, &Window::showPlayer);
-  connect(media_player_, &MediaPlayer::stopped, this, &Window::hidePlayer);
-  connect(media_player_, &MediaPlayer::endReached, this, &Window::playNext);
+  if (media_player_) {
+    connect(media_player_, &MediaPlayer::started, this, &Window::showPlayer);
+    connect(media_player_, &MediaPlayer::stopped, this, &Window::hidePlayer);
+    connect(media_player_, &MediaPlayer::endReached, this, &Window::playNext);
+  }
 
   connect(this, &Window::successfullyAuthorized, this,
           &Window::onSuccessfullyAuthorized);
@@ -71,14 +72,20 @@ Window::Window(MediaPlayer* media_player)
           [this]() {
             ItemModel* item = directory_model_.get(last_played_);
             if (item && item->item()->type() != IItem::FileType::Audio) {
-              container()->hide();
+              if (media_player_)
+                emit showWidgetPlayer();
+              else
+                emit showQmlPlayer();
               contentItem()->setFocus(false);
             }
           },
           Qt::QueuedConnection);
   connect(this, &Window::hidePlayer, this,
           [this]() {
-            container()->show();
+            if (media_player_)
+              emit hideWidgetPlayer();
+            else
+              emit hideQmlPlayer();
             contentItem()->setFocus(true);
           },
           Qt::QueuedConnection);
@@ -162,8 +169,14 @@ void Window::onPlayFileFromUrl(QString url) {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
   }
-  media_player_->setMedia(url.toStdString());
-  media_player_->play();
+  if (media_player_) {
+    media_player_->setMedia(url.toStdString());
+    media_player_->play();
+  } else {
+    setCurrentMedia(url);
+    emit playQmlPlayer();
+    emit showPlayer();
+  }
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
@@ -177,6 +190,13 @@ QString Window::movedItem() const {
     return "";
 }
 
+void Window::setCurrentMedia(QString m) {
+  if (current_media_ != m) {
+    current_media_ = m;
+    emit currentMediaChanged();
+  }
+}
+
 void Window::keyPressEvent(QKeyEvent* e) {
   QQuickView::keyPressEvent(e);
   if (e->isAccepted() && contentItem()->hasFocus()) return;
@@ -184,7 +204,10 @@ void Window::keyPressEvent(QKeyEvent* e) {
     stop();
     e->accept();
   } else if (e->key() == Qt::Key_P) {
-    media_player_->pause();
+    if (media_player_)
+      media_player_->pause();
+    else
+      emit pauseQmlPlayer();
     e->accept();
   }
 }
@@ -261,7 +284,12 @@ void Window::stop() {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Trying to stop player\n";
   }
-  media_player_->stop();
+  if (media_player_)
+    media_player_->stop();
+  else {
+    emit stopQmlPlayer();
+    emit hidePlayer();
+  }
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Stopped\n";
