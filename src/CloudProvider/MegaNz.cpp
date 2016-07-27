@@ -30,6 +30,7 @@
 
 #include <fstream>
 #include <queue>
+#include <array>
 
 using namespace mega;
 
@@ -302,7 +303,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     callback->done(result);
     return result;
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
@@ -329,7 +330,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     } else
       callback->done();
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
@@ -368,7 +369,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       callback->done();
     std::remove(cache.c_str());
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
@@ -403,7 +404,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     }
     std::remove(cache.c_str());
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
@@ -425,7 +426,7 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
       return false;
     }
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
@@ -455,7 +456,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
       return nullptr;
     }
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
@@ -481,7 +482,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     callback(false);
     return false;
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
@@ -504,7 +505,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     callback(false);
     return false;
   });
-  return r;
+  return std::move(r);
 }
 
 std::pair<std::string, std::string> MegaNz::creditentialsFromString(
