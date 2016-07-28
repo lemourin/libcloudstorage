@@ -224,6 +224,7 @@ Item {
                 if (!window.goBack()) {
                     directory.focus = false;
                     cloudView.focus = true;
+                    browser.visible = false;
                 }
             }
             else if (event.key === Qt.Key_Return && currentIndex != -1) {
