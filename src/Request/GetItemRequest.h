@@ -36,8 +36,6 @@ class GetItemRequest : public Request<IItem::Pointer> {
                  Callback callback);
   ~GetItemRequest();
 
-  void cancel();
-
  private:
   IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
                          const std::string& name) const;

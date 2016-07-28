@@ -55,18 +55,13 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     if (callback_) callback_(node);
     return node;
   });
+  set_cancel_callback([this]() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (current_request_) current_request_->cancel();
+  });
 }
 
 GetItemRequest::~GetItemRequest() { cancel(); }
-
-void GetItemRequest::cancel() {
-  set_cancelled(true);
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (current_request_) current_request_->cancel();
-  }
-  Request::cancel();
-}
 
 IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
                                        const std::string& name) const {

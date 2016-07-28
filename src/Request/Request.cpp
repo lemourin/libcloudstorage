@@ -79,6 +79,7 @@ void Request<T>::finish() {
 
 template <class T>
 void Request<T>::cancel() {
+  if (is_cancelled()) return;
   set_cancelled(true);
   {
     std::lock_guard<std::mutex> lock(semaphore_list_mutex_);
@@ -167,6 +168,7 @@ int Request<T>::sendRequest(
       if (request) provider()->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
+      this->error(code, error_stream.str());
       if (!is_cancelled() && !HttpRequest::isSuccess(code))
         this->error(code, error_stream.str());
     }

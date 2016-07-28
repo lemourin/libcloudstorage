@@ -71,7 +71,6 @@ class Request : public IRequest<ReturnValue> {
   virtual void error(int code, const std::string& description);
   std::string error_string(int code, const std::string& desc) const;
 
-  void set_cancelled(bool e) { is_cancelled_ = e; }
   bool is_cancelled() { return is_cancelled_; }
 
   class Semaphore : public cloudstorage::Semaphore {
@@ -84,6 +83,8 @@ class Request : public IRequest<ReturnValue> {
   };
 
  private:
+  void set_cancelled(bool e) { is_cancelled_ = e; }
+
   std::unique_ptr<HttpCallback> httpCallback(
       ProgressFunction progress_download = nullptr,
       ProgressFunction progress_upload = nullptr);
