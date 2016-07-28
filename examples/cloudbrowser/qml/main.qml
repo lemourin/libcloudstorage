@@ -156,13 +156,14 @@ Item {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.bottom: buttons.top
+        anchors.margins: padding
         model: directoryModel
         clip: true
         delegate: Component {
             MouseArea {
                 property int thumbnailWidth: thumbnailHeight
                 property int thumbnailHeight: root.height * 0.1
-                property int padding: 5
+                property int padding: root.padding
                 property bool isDirectory: display.is_directory
                 property string name: display.name
 
