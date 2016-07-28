@@ -190,7 +190,7 @@ class ICloudProvider {
       IUploadFileCallback::Pointer) = 0;
 
   /**
-   * Retrieves IItem object from it's id. That's the preferred way of updating
+   * Retrieves IItem object from its id. That's the preferred way of updating
    * the IItem structure; IItem caches some data(e.g. thumbnail url or file url)
    * which may get invalidated over time, this function makes sure all IItem's
    * cached data is up to date.
