@@ -18,39 +18,100 @@ Item {
         GradientStop { position: 0.66; color: "#7ED2EE" }
     }
 
-    ListView {
-        id: cloudView
-        focus: true
-        width: help.width + padding
+    Item {
+        id: leftSide
+        width: childrenRect.width
         height: parent.height
-        model: cloudModel
-        delegate: Component {
-            MouseArea {
-                property string text: modelData
+        ListView {
+            id: cloudView
+            focus: true
+            anchors.top: parent.top
+            anchors.bottom: help.top
+            width: 0.3 * root.width
+            model: cloudModel
+            clip: true
+            delegate: Component {
+                MouseArea {
+                    property string text: modelData
 
-                width: childrenRect.width
-                height: childrenRect.height
-                Text {
-                    text: modelData
+                    width: cloudView.width
+                    height: cloudView.height * 0.15
+                    Text {
+                        anchors.centerIn: parent
+                        fontSizeMode: Text.Fit
+                        text: modelData
+                        font.pointSize: 32
+                    }
+                    onClicked: {
+                        cloudView.currentIndex = index;
+                        cloudView.focus = false;
+                        window.initializeCloud(modelData);
+                    }
                 }
-                onClicked: {
-                    cloudView.currentIndex = index;
+            }
+            highlight: Rectangle {
+                color: "lightgray"
+            }
+
+            Keys.onPressed: {
+                if (event.key === Qt.Key_Return) {
+                    window.initializeCloud(currentItem.text);
                     cloudView.focus = false;
-                    window.initializeCloud(modelData);
                 }
             }
         }
-        highlight: Rectangle {
-            color: "lightgray"
+        Rectangle {
+            id: help
+            anchors.margins: padding
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            border.color: "black"
+            radius: padding
+            color: "grey"
+            width: content.width + 2 * padding
+            height: content.height + 2 * padding
+
+            Row {
+                id: content
+                x: padding
+                y: padding
+
+                Column {
+                    width: childrenRect.width + padding
+                    Row { Text { text: "D" } }
+                    Row { Text { text: "Q" } }
+                    Row { Text { text: "P" } }
+                    Row { Text { text: "DEL" } }
+                    Row { Text { text: "M" } }
+                    Row { Text { text: "F5" } }
+                }
+                Column {
+                    Row { Text { text: "Download a file" } }
+                    Row { Text { text: "Quit a file" } }
+                    Row { Text { text: "Pause file" } }
+                    Row { Text { text: "Delete file" } }
+                    Row { Text { text: "Move file" } }
+                    Row { Text { text: "Refresh" } }
+                }
+            }
+        }
+        ProgressBar {
+            id: uploadProgress
+            visible: false
+            anchors.bottom: help.top
+            anchors.right: help.right
+            anchors.left: parent.left
         }
 
-        Keys.onPressed: {
-            if (event.key === Qt.Key_Return) {
-                window.initializeCloud(currentItem.text);
-                cloudView.focus = false;
-            }
+        ProgressBar {
+            id: downloadProgress
+            visible: false
+            anchors.bottom: uploadProgress.top
+            anchors.right: help.right
+            anchors.left: parent.left
         }
     }
+
     Connections {
         target: window
         onOpenBrowser: {
@@ -91,22 +152,23 @@ Item {
 
     ListView {
         id: directory
-        anchors.left: cloudView.right
+        anchors.left: leftSide.right
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         model: directoryModel
+        clip: true
         delegate: Component {
             MouseArea {
-                property int thumbnailWidth: 50
-                property int thumbnailHeight: 50
+                property int thumbnailWidth: thumbnailHeight
+                property int thumbnailHeight: root.height * 0.1
                 property int padding: 5
                 property bool isDirectory: display.is_directory
                 property string name: display.name
 
                 id: fileEntry
                 height: thumbnailHeight + 2 * padding
-                width: row.width + 2 * padding
+                width: directory.width
                 onClicked: {
                     directory.currentIndex = index;
                     if (isDirectory)
@@ -136,12 +198,18 @@ Item {
                     }
                     Item {
                         height: fileEntry.thumbnailHeight
-                        width: text.width + fileEntry.padding
+                        width: fileEntry.width -
+                               2 * (fileEntry.thumbnailWidth + padding)
                         Text {
                             x: fileEntry.padding
                             id: text
                             anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width
+                            height: contentHeight
                             text: display.name
+                            fontSizeMode: Text.Fit
+                            font.pointSize: 16
+                            wrapMode: Text.Wrap
                         }
                     }
                 }
@@ -257,58 +325,6 @@ Item {
         anchors.right: renameButton.left
         anchors.bottom: parent.bottom
         text: "Moving " + window.movedItem
-    }
-
-    Rectangle {
-        id: help
-        anchors.margins: padding
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        border.color: "black"
-        radius: padding
-        color: "grey"
-        width: content.width + 2 * padding
-        height: content.height + 2 * padding
-
-        Row {
-            id: content
-            x: padding
-            y: padding
-
-            Column {
-                width: childrenRect.width + padding
-                Row { Text { text: "D" } }
-                Row { Text { text: "Q" } }
-                Row { Text { text: "P" } }
-                Row { Text { text: "DEL" } }
-                Row { Text { text: "M" } }
-                Row { Text { text: "F5" } }
-            }
-            Column {
-                Row { Text { text: "Download a file" } }
-                Row { Text { text: "Quit a file" } }
-                Row { Text { text: "Pause file" } }
-                Row { Text { text: "Delete file" } }
-                Row { Text { text: "Move file" } }
-                Row { Text { text: "Refresh" } }
-            }
-        }
-    }
-
-    ProgressBar {
-        id: uploadProgress
-        visible: false
-        anchors.bottom: help.top
-        anchors.right: help.right
-        anchors.left: parent.left
-    }
-
-    ProgressBar {
-        id: downloadProgress
-        visible: false
-        anchors.bottom: uploadProgress.top
-        anchors.right: help.right
-        anchors.left: parent.left
     }
 
     Loader {
