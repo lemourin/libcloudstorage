@@ -329,13 +329,11 @@ Item {
             anchors.fill: parent
             color: "green"
         }
-        TextEdit {
-            anchors.fill: parent
-            horizontalAlignment: Text.AlignHCenter
-            text: browser.url
+        Text {
+            anchors.centerIn: parent
+            text: "<a href=\"" + browser.url + "\">Authorize library</a>"
             wrapMode: Text.Wrap
-            selectByMouse: true
-            readOnly: true
+            onLinkActivated: Qt.openUrlExternally(link)
         }
         Loader {
             id: webview
