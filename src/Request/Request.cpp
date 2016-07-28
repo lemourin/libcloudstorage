@@ -168,7 +168,6 @@ int Request<T>::sendRequest(
       if (request) provider()->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
-      this->error(code, error_stream.str());
       if (!is_cancelled() && !HttpRequest::isSuccess(code))
         this->error(code, error_stream.str());
     }
