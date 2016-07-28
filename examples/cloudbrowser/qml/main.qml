@@ -155,7 +155,7 @@ Item {
         anchors.left: leftSide.right
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.bottom: buttons.top
         model: directoryModel
         clip: true
         delegate: Component {
@@ -262,58 +262,66 @@ Item {
         }
     }
 
-    ActionButton {
-        visible: uploadButton.visible
-        anchors.bottom: uploadButton.top
+    Item {
+        id: buttons
+        anchors.left: leftSide.right
         anchors.right: parent.right
-        text: "Go back"
-        onClicked: {
-            if (!window.goBack()) {
-                directory.focus = false;
-                cloudView.focus = true;
+        anchors.bottom: parent.bottom
+        Component.onCompleted: height = childrenRect.height
+        ActionButton {
+            id: goBackButton
+            visible: uploadButton.visible
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            text: "Go back"
+            onClicked: {
+                if (!window.goBack()) {
+                    directory.focus = false;
+                    cloudView.focus = true;
+                }
             }
         }
-    }
 
-    ActionButton {
-        id: uploadButton
-        visible: !cloudView.focus
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        text: "Upload file"
-        FileDialog {
-            id: fileDialog
-            onAccepted: window.uploadFile(fileDialog.fileUrl)
+        ActionButton {
+            id: uploadButton
+            visible: !cloudView.focus
+            anchors.bottom: parent.bottom
+            anchors.right: goBackButton.left
+            text: "Upload file"
+            FileDialog {
+                id: fileDialog
+                onAccepted: window.uploadFile(fileDialog.fileUrl)
+            }
+            onClicked: fileDialog.visible = true
         }
-        onClicked: fileDialog.visible = true
-    }
 
-    ActionTextButton {
-        id: createDirectoryButton
-        visible: uploadButton.visible
-        anchors.bottom: parent.bottom
-        anchors.right: uploadButton.left
-        text: "Create\ndirectory"
-        placeholdertext: "Name"
-        onClicked: window.createDirectory(displaytext)
-    }
+        ActionTextButton {
+            id: createDirectoryButton
+            visible: uploadButton.visible
+            anchors.bottom: parent.bottom
+            anchors.right: uploadButton.left
+            text: "Create\ndirectory"
+            placeholdertext: "Name"
+            onClicked: window.createDirectory(displaytext)
+        }
 
-    ActionTextButton {
-        id: renameButton
-        visible: uploadButton.visible
-        anchors.bottom: parent.bottom
-        anchors.right: createDirectoryButton.left
-        text: "Change\nname"
-        textfield: directory.currentItem ? directory.currentItem.name : ""
-        onClicked: window.renameItem(directory.currentIndex, displaytext)
-    }
+        ActionTextButton {
+            id: renameButton
+            visible: uploadButton.visible
+            anchors.bottom: parent.bottom
+            anchors.right: createDirectoryButton.left
+            text: "Change\nname"
+            textfield: directory.currentItem ? directory.currentItem.name : ""
+            onClicked: window.renameItem(directory.currentIndex, displaytext)
+        }
 
-    ActionButton {
-        visible: window.movedItem != ""
-        anchors.margins: padding
-        anchors.right: renameButton.left
-        anchors.bottom: parent.bottom
-        text: "Moving " + window.movedItem
+        ActionButton {
+            visible: window.movedItem != ""
+            anchors.margins: padding
+            anchors.right: renameButton.left
+            anchors.bottom: parent.bottom
+            text: "Moving " + window.movedItem
+        }
     }
 
     Loader {
