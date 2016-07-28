@@ -25,8 +25,8 @@
 
 #ifdef WITH_VLC
 
-VLCMediaPlayer::VLCMediaPlayer()
-    : vlc_instance_(0, nullptr), media_player_(vlc_instance_) {
+VLCMediaPlayer::VLCMediaPlayer(QWidget* w)
+    : MediaPlayer(w), vlc_instance_(0, nullptr), media_player_(vlc_instance_) {
 #ifdef Q_OS_LINUX
   media_player_.setXwindow(winId());
 #elif defined Q_OS_WIN
@@ -52,14 +52,13 @@ void VLCMediaPlayer::setMedia(const std::string& url) {
 }
 
 std::unique_ptr<MediaPlayer> MediaPlayer::instance(QWidget* parent) {
-  std::unique_ptr<MediaPlayer> player(new VLCMediaPlayer);
-  player->setParent(parent);
+  std::unique_ptr<MediaPlayer> player(new VLCMediaPlayer(parent));
   return player;
 }
 
 #elif WITH_QTMULTIMEDIAWIDGETS
 
-QtMediaPlayer::QtMediaPlayer() {
+QtMediaPlayer::QtMediaPlayer(QWidget* w) : MediaPlayer(w) {
   media_player_.setVideoOutput(this);
   connect(&media_player_, &QMediaPlayer::mediaStatusChanged, this,
           [this](QMediaPlayer::MediaStatus status) {
@@ -85,8 +84,7 @@ void QtMediaPlayer::setMedia(const std::string& url) {
 }
 
 std::unique_ptr<MediaPlayer> MediaPlayer::instance(QWidget* parent) {
-  std::unique_ptr<MediaPlayer> player(new QtMediaPlayer);
-  player->setParent(parent);
+  std::unique_ptr<MediaPlayer> player(new QtMediaPlayer(parent));
   return player;
 }
 

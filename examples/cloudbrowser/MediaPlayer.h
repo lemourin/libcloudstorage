@@ -46,6 +46,8 @@ class QWidget;
 
 class MediaPlayer : public Widget {
  public:
+  using Widget::Widget;
+
   virtual void pause() = 0;
   virtual void play() = 0;
   virtual void stop() = 0;
@@ -66,7 +68,7 @@ class MediaPlayer : public Widget {
 
 class VLCMediaPlayer : public MediaPlayer {
  public:
-  VLCMediaPlayer();
+  VLCMediaPlayer(QWidget*);
 
   void pause();
   void play();
@@ -82,7 +84,7 @@ class VLCMediaPlayer : public MediaPlayer {
 
 class QtMediaPlayer : public MediaPlayer {
  public:
-  QtMediaPlayer();
+  QtMediaPlayer(QWidget*);
 
   void pause();
   void play();
