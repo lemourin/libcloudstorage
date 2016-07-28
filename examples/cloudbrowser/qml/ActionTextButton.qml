@@ -3,7 +3,8 @@ import QtQuick.Controls 1.4
 
 MouseArea {
     property string text
-    property string textfield
+    property string textfield: textField.text
+    property string displaytext: textField.displayText
     property string placeholdertext
     property int minsize: 100
 
@@ -31,7 +32,6 @@ MouseArea {
             }
             TextField {
                 id: textField
-                text: textfield
                 placeholderText: placeholdertext
                 anchors.top: text.bottom
                 width: Math.max(text.width, minsize)

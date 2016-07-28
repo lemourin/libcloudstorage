@@ -295,7 +295,7 @@ Item {
         anchors.right: uploadButton.left
         text: "Create\ndirectory"
         placeholdertext: "Name"
-        onClicked: window.createDirectory(directoryName.text)
+        onClicked: window.createDirectory(displaytext)
     }
 
     ActionTextButton {
@@ -305,7 +305,7 @@ Item {
         anchors.right: createDirectoryButton.left
         text: "Change\nname"
         textfield: directory.currentItem ? directory.currentItem.name : ""
-        onClicked: window.renameItem(directory.currentIndex, renameValue.text)
+        onClicked: window.renameItem(directory.currentIndex, displaytext)
     }
 
     ActionButton {
