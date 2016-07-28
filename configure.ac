@@ -71,7 +71,7 @@ AS_IF([test "x$with_examples" = "xyes"], [
     PKG_CHECK_MODULES([libvlc], [libvlc])
     PKG_CHECK_MODULES([qtwidgets], [Qt5Widgets])
     AC_DEFINE(WITH_VLC)
-  ], [test "x$with_qmultimediawidgets" = "xyes"], [
+  ], [test "x$with_qtmultimediawidgets" = "xyes"], [
     PKG_CHECK_MODULES([qtmultimediawidgets], [Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets])
     AC_DEFINE(WITH_QTMULTIMEDIAWIDGETS)
   ], [
