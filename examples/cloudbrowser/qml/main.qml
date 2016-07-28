@@ -27,6 +27,8 @@ Item {
             focus: true
             anchors.top: parent.top
             anchors.bottom: help.top
+            anchors.margins: padding
+            anchors.left: parent.left
             width: 0.3 * root.width
             model: cloudModel
             clip: true
