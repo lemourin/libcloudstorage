@@ -469,5 +469,7 @@ QString DirectoryModel::typeToIcon(IItem::FileType type) {
       return "qrc:/resources/video.png";
     case IItem::FileType::Unknown:
       return "qrc:/resources/file.png";
+    default:
+      return "";
   }
 }
