@@ -287,35 +287,23 @@ Item {
         onClicked: fileDialog.visible = true
     }
 
-    ActionButton {
+    ActionTextButton {
         id: createDirectoryButton
         visible: uploadButton.visible
         anchors.bottom: parent.bottom
         anchors.right: uploadButton.left
         text: "Create\ndirectory"
-        TextField {
-            id: directoryName
-            placeholderText: "Name"
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-        }
+        placeholdertext: "Name"
         onClicked: window.createDirectory(directoryName.text)
     }
 
-    ActionButton {
+    ActionTextButton {
         id: renameButton
         visible: uploadButton.visible
         anchors.bottom: parent.bottom
         anchors.right: createDirectoryButton.left
         text: "Change\nname"
-        TextField {
-            id: renameValue
-            text: directory.currentItem ? directory.currentItem.name : ""
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-        }
+        textfield: directory.currentItem ? directory.currentItem.name : ""
         onClicked: window.renameItem(directory.currentIndex, renameValue.text)
     }
 

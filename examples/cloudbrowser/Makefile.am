@@ -58,6 +58,7 @@ DEPS_res = \
 	qml/WebView.qml \
 	qml/MediaPlayer.qml \
 	qml/ActionButton.qml \
+	qml/ActionTextButton.qml \
 	resources/directory.png \
 	resources/file.png \
 	resources/image.png \

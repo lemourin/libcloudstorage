@@ -4,6 +4,7 @@
         <file>qml/WebView.qml</file>
         <file>qml/MediaPlayer.qml</file>
         <file>qml/ActionButton.qml</file>
+        <file>qml/ActionTextButton.qml</file>
         <file>resources/directory.png</file>
         <file>resources/file.png</file>
         <file>resources/image.png</file>

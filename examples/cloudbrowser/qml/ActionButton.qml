@@ -2,6 +2,7 @@ import QtQuick 2.0
 
 MouseArea {
     property string text
+
     id: root
     width: container.width
     height: container.height
@@ -18,6 +19,7 @@ MouseArea {
             id: text
             anchors.centerIn: parent
             text: root.text
+            horizontalAlignment: Text.AlignHCenter
         }
     }
 }
