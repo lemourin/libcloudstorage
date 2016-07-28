@@ -136,6 +136,7 @@ void Window::initializeCloud(QString name) {
                               make_unique<CloudProviderCallback>(this),
                               fromJson(data));
   current_directory_ = cloud_provider_->rootDirectory();
+  list_directory_request_ = nullptr;
   moved_file_ = nullptr;
   emit movedItemChanged();
   emit runListDirectory();
