@@ -100,8 +100,14 @@ class ICloudProvider {
    *
    * @param hints various hints which can be retrieved by some previous run with
    * ICloudProvider::hints; providing them may speed up the authorization
-   * process; may contain oauth's "client_id", "client_secret",
-   * "redirect_uri_port"
+   * process; may contain the following:
+   *  - client_id
+   *  - client_secret
+   *  - redirect_uri_port
+   *  - access_token
+   *  - daemon_port(used by mega.nz url provider)
+   *  - metadata_url, content_url(amazon drive's endpoints)
+   *  - youtube_dl_url(url to youtube-dl-server)
    */
   virtual void initialize(const std::string& token, ICallback::Pointer callback,
                           const Hints& hints = Hints()) = 0;
