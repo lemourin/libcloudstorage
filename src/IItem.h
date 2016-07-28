@@ -39,7 +39,17 @@ class IItem {
 
   virtual std::string filename() const = 0;
   virtual std::string id() const = 0;
+
+  /**
+   * This url is valid if IItem instance was received by
+   * ICloudProvider::getItemDataAsync; it's because some cloud providers require
+   * to generate temporary urls per item; ICloudProvider::getItemDataAsync cares
+   * about that, ICloudProvider::listDirectoryAsync does not.
+   *
+   * @return url
+   */
   virtual std::string url() const = 0;
+
   virtual bool is_hidden() const = 0;
   virtual FileType type() const = 0;
 };

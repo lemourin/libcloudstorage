@@ -30,13 +30,28 @@
 
 namespace cloudstorage {
 
+/**
+ * Contains available CloudStorage providers.
+ */
 class ICloudStorage {
  public:
   using Pointer = std::unique_ptr<ICloudStorage>;
 
   virtual ~ICloudStorage() = default;
 
+  /**
+   * Retrieves list of available cloud providers.
+   *
+   * @return cloud providers
+   */
   virtual std::vector<ICloudProvider::Pointer> providers() const = 0;
+
+  /**
+   * Gets provider by name.
+   *
+   * @param name
+   * @return cloud provider
+   */
   virtual ICloudProvider::Pointer provider(const std::string& name) const = 0;
 
   static ICloudStorage::Pointer create();

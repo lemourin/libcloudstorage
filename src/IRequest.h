@@ -31,6 +31,10 @@
 
 namespace cloudstorage {
 
+/**
+ * Class representing pending request. When there is no reference to the
+ * request, it's immediately cancelled.
+ */
 template <class ReturnValue>
 class IRequest {
  public:
@@ -38,8 +42,21 @@ class IRequest {
 
   virtual ~IRequest() = default;
 
+  /**
+   * Blocks until request finishes.
+   */
   virtual void finish() = 0;
+
+  /**
+   * Cancels request; may involve curl request cancellation which may last very
+   * long if curl was compiled without asynchronous name resolver(c-ares).
+   */
   virtual void cancel() = 0;
+
+  /**
+   * Retrieves the result, blocks if it wasn't computed just yet.
+   * @return result
+   */
   virtual ReturnValue result() = 0;
 };
 
@@ -49,8 +66,25 @@ class IListDirectoryCallback {
 
   virtual ~IListDirectoryCallback() = default;
 
+  /**
+   * Called when directory's child was fetched.
+   *
+   * @param item fetched item
+   */
   virtual void receivedItem(IItem::Pointer item) = 0;
+
+  /**
+   * Called when the request was successfully finished.
+   *
+   * @param result contains all retrieved children
+   */
   virtual void done(const std::vector<IItem::Pointer>& result) = 0;
+
+  /**
+   * Called when error occurred.
+   *
+   * @param description error description
+   */
   virtual void error(const std::string& description) = 0;
 };
 
@@ -60,9 +94,32 @@ class IDownloadFileCallback {
 
   virtual ~IDownloadFileCallback() = default;
 
+  /**
+   * Called when received a part of file.
+   *
+   * @param data buffer
+   * @param length length of buffer
+   */
   virtual void receivedData(const char* data, uint32_t length) = 0;
+
+  /**
+   * Called when the download has finished.
+   */
   virtual void done() = 0;
+
+  /**
+   * Called when error occurred.
+   *
+   * @param description error description
+   */
   virtual void error(const std::string& description) = 0;
+
+  /**
+   * Called when progress has changed.
+   *
+   * @param total count of bytes to download
+   * @param now count of bytes downloaded
+   */
   virtual void progress(uint32_t total, uint32_t now) = 0;
 };
 
@@ -72,11 +129,43 @@ class IUploadFileCallback {
 
   virtual ~IUploadFileCallback() = default;
 
+  /**
+   * Called when upload starts, can be also called when retransmission is
+   * required due to network issues.
+   */
   virtual void reset() = 0;
+
+  /**
+   * Called when the file data should be uploaded.
+   *
+   * @param data buffer to put data to
+   * @param maxlength max count of bytes which can be put to the buffer
+   * @return count of bytes put to the buffer
+   */
   virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
+
+  /**
+   * @return size of currently uploaded file
+   */
   virtual uint64_t size() = 0;
+
+  /**
+   * Called when the upload is finished sucessfully.
+   */
   virtual void done() = 0;
+
+  /**
+   * Called when error occurred.
+   * @param description
+   */
   virtual void error(const std::string& description) = 0;
+
+  /**
+   * Called when upload progress changed.
+   *
+   * @param total count of bytes to upload
+   * @param now count of bytes already uploaded
+   */
   virtual void progress(uint32_t total, uint32_t now) = 0;
 };
 
