@@ -61,6 +61,9 @@ void CloudProvider::initialize(const std::string& token,
               [this](std::string v) { auth()->set_client_id(v); });
   setWithHint(hints, "client_secret",
               [this](std::string v) { auth()->set_client_secret(v); });
+  setWithHint(hints, "redirect_uri_port", [this](std::string v) {
+    auth()->set_redirect_uri_port(std::atoi(v.c_str()));
+  });
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {

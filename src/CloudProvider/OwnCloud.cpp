@@ -48,7 +48,7 @@ std::string OwnCloud::name() const { return "owncloud"; }
 
 std::string OwnCloud::token() const {
   std::lock_guard<std::mutex> lock(auth_mutex());
-  return user_ + "@" + owncloud_base_url_ + "##" + password_;
+  return user_ + "@" + owncloud_base_url_ + Auth::SEPARATOR + password_;
 }
 
 AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
@@ -204,14 +204,14 @@ void OwnCloud::authorizeRequest(HttpRequest&) const {}
 
 void OwnCloud::unpackCreditentials(const std::string& code) {
   std::unique_lock<std::mutex> lock(auth_mutex());
-  auto separator = code.find_first_of("##");
+  auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
   if (at_position == std::string::npos || separator == std::string::npos)
     return;
   user_ = code.substr(0, at_position);
   owncloud_base_url_ =
       code.substr(at_position + 1, separator - at_position - 1);
-  password_ = code.substr(separator + strlen("##"));
+  password_ = code.substr(separator + strlen(Auth::SEPARATOR));
 }
 
 OwnCloud::Auth::Auth() {}

@@ -100,7 +100,8 @@ class ICloudProvider {
    *
    * @param hints various hints which can be retrieved by some previous run with
    * ICloudProvider::hints; providing them may speed up the authorization
-   * process; may contain oauth's "client_id" and "client_secret"
+   * process; may contain oauth's "client_id", "client_secret",
+   * "redirect_uri_port"
    */
   virtual void initialize(const std::string& token, ICallback::Pointer callback,
                           const Hints& hints = Hints()) = 0;

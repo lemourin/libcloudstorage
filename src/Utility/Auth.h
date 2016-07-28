@@ -36,6 +36,8 @@ class AuthorizationException : public std::exception {
 
 class Auth : public IAuth {
  public:
+  static constexpr const char* SEPARATOR = "##";
+
   Auth();
 
   const std::string& authorization_code() const;

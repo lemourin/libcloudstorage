@@ -51,7 +51,9 @@ const std::string LOGIN_PAGE =
     "       url: '/',"
     "       method: 'GET',"
     "       data: {"
-    "         'code' : $('#login').val() + '##' + $('#password').val(),"
+    "         'code' : $('#login').val() + '" +
+    std::string(cloudstorage::Auth::SEPARATOR) +
+    "' + $('#password').val(),"
     "         'accepted' : 'true'"
     "       }"
     "     });"

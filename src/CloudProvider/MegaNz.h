@@ -42,6 +42,7 @@ class MegaNz : public CloudProvider {
 
   std::string name() const;
   IItem::Pointer rootDirectory() const;
+  Hints hints() const;
 
   AuthorizeRequest::Pointer authorizeAsync();
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
@@ -105,6 +106,7 @@ class MegaNz : public CloudProvider {
   std::random_device device_;
   std::default_random_engine engine_;
   mutable std::mutex mutex_;
+  uint16_t daemon_port_;
   MHD_Daemon* daemon_;
 };
 

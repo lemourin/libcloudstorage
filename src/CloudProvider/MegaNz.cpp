@@ -28,16 +28,16 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include <array>
+#include <cstring>
 #include <fstream>
 #include <queue>
-#include <array>
 
 using namespace mega;
 
 const int BUFFER_SIZE = 1024;
-const std::string SEPARATOR = "##";
 const int CACHE_FILENAME_LENGTH = 12;
-const int DAEMON_PORT = 12346;
+const int DEFAULT_DAEMON_PORT = 12346;
 
 namespace cloudstorage {
 
@@ -197,6 +197,7 @@ MegaNz::MegaNz()
       mega_(),
       authorized_(),
       engine_(device_()),
+      daemon_port_(DEFAULT_DAEMON_PORT),
       daemon_() {}
 
 MegaNz::~MegaNz() {
@@ -213,7 +214,9 @@ void MegaNz::initialize(const std::string& token,
     mega_ = make_unique<MegaApi>("ZVhB0Czb");
   else
     mega_ = make_unique<MegaApi>(auth()->client_id().c_str());
-  daemon_ = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, DAEMON_PORT, NULL,
+  setWithHint(hints, "daemon_port",
+              [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
+  daemon_ = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
                              NULL, &httpRequestCallback, this, MHD_OPTION_END);
 }
 
@@ -221,6 +224,13 @@ std::string MegaNz::name() const { return "mega"; }
 
 IItem::Pointer MegaNz::rootDirectory() const {
   return make_unique<Item>("root", "/", IItem::FileType::Directory);
+}
+
+ICloudProvider::Hints MegaNz::hints() const {
+  Hints result = {{"daemon_port", std::to_string(daemon_port_)}};
+  auto t = CloudProvider::hints();
+  result.insert(t.begin(), t.end());
+  return result;
 }
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
@@ -236,7 +246,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               std::lock_guard<std::mutex> mutex(auth_mutex());
               IAuth::Token::Pointer token = make_unique<IAuth::Token>();
               token->token_ =
-                  data.first + SEPARATOR + passwordHash(data.second);
+                  data.first + Auth::SEPARATOR + passwordHash(data.second);
               token->refresh_token_ = token->token_;
               auth()->set_access_token(std::move(token));
             }
@@ -510,10 +520,10 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
 
 std::pair<std::string, std::string> MegaNz::creditentialsFromString(
     const std::string& str) const {
-  auto it = str.find(SEPARATOR);
+  auto it = str.find(Auth::SEPARATOR);
   if (it == std::string::npos) return {};
   std::string login(str.begin(), str.begin() + it);
-  std::string password(str.begin() + it + SEPARATOR.length(), str.end());
+  std::string password(str.begin() + it + strlen(Auth::SEPARATOR), str.end());
   return {login, password};
 }
 
@@ -543,7 +553,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
-  item->set_url("http://localhost:" + std::to_string(DAEMON_PORT) + "/?file=" +
+  item->set_url("http://localhost:" + std::to_string(daemon_port_) + "/?file=" +
                 handle.get());
   return std::move(item);
 }
