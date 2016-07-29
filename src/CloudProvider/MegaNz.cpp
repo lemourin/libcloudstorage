@@ -533,7 +533,7 @@ bool MegaNz::login(Request<bool>* r) {
   auto data = creditentialsFromString(token());
   std::string mail = data.first;
   std::string private_key = data.second;
-  std::unique_ptr<char> hash(
+  std::unique_ptr<char[]> hash(
       mega_->getStringHash(private_key.c_str(), mail.c_str()));
   mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
                    &auth_listener);
@@ -543,12 +543,12 @@ bool MegaNz::login(Request<bool>* r) {
 }
 
 std::string MegaNz::passwordHash(const std::string& password) {
-  std::unique_ptr<char> hash(mega_->getBase64PwKey(password.c_str()));
+  std::unique_ptr<char[]> hash(mega_->getBase64PwKey(password.c_str()));
   return std::string(hash.get());
 }
 
 IItem::Pointer MegaNz::toItem(MegaNode* node) {
-  std::unique_ptr<char> path(mega_->getNodePath(node));
+  std::unique_ptr<char[]> path(mega_->getNodePath(node));
   auto item = make_unique<Item>(
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
