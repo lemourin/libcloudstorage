@@ -60,6 +60,7 @@ noinst_HEADERS = \
 	Request/Request.h \
 	Request/DownloadFileRequest.h \
 	Request/GetItemRequest.h \
+	Request/GetItemDataRequest.h \
 	Request/ListDirectoryRequest.h \
 	Request/UploadFileRequest.h \
 	Request/DeleteItemRequest.h \
