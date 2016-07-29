@@ -82,36 +82,147 @@ class CloudProvider : public ICloudProvider,
                                              const std::string&,
                                              RenameItemCallback);
 
+  /**
+   * Used by default implementation of getItemDataAsync.
+   *
+   * @param id
+   * @param input_stream request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;
+
+  /**
+   * Used by default implementation of listDirectoryAsync.
+   *
+   * @param page_token page token
+   * @param input_stream request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const;
+
+  /**
+   * Used by default implementation of uploadFileAsync.
+   *
+   * @param directory
+   * @param filename
+   * @param prefix_stream what should be sent before the file in request's body
+   * @param suffix_stream what should be sent after the file in request's body
+   * @return http request
+   */
   virtual HttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename,
       std::ostream& prefix_stream, std::ostream& suffix_stream) const;
+
+  /**
+   * Used by default implementation of downloadFileAsync.
+   *
+   * @param input_stream request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const;
+
+  /**
+   * Used by default implementation of getThumbnailAsync; tries to download
+   * thumbnail from Item::thumnail_url.
+   *
+   * @param input_stream request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer getThumbnailRequest(
       const IItem&, std::ostream& input_stream) const;
+
+  /**
+   * Used by default implementation of deleteItemAsync.
+   *
+   * @param input_stream request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const;
+
+  /**
+   * Used by default implementation of createDirectoryAsync.
+   *
+   * @return http request
+   */
   virtual HttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                       const std::string&,
                                                       std::ostream&) const;
+
+  /**
+   * Used by default implementation of moveItemAsync.
+   *
+   * @param source
+   * @param destination
+   * @return http request
+   */
   virtual HttpRequest::Pointer moveItemRequest(const IItem& source,
                                                const IItem& destination,
                                                std::ostream&) const;
+
+  /**
+   * Used by default implementation of renameItemAsync.
+   *
+   * @param item
+   * @param name
+   * @return http request
+   */
   virtual HttpRequest::Pointer renameItemRequest(const IItem& item,
                                                  const std::string& name,
                                                  std::ostream&) const;
 
+  /**
+   * Used by default implementation of getItemDataAsync, should translate
+   * reponse into IItem object.
+   *
+   * @param response
+   * @return item object
+   */
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
+
+  /**
+   * Used by default implementation of listDirectoryAsync, should extract items
+   * from response.
+   *
+   * @param response
+   *
+   * @param next_page_token should be set to string describing the next page or
+   * to empty string if there is no next page
+   *
+   * @return item set
+   */
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream& response, std::string& next_page_token) const;
+
+  /**
+   * Used by default implementation of createDirectoryAsync, should translate
+   * response into new directory's item object.
+   *
+   * @param response
+   *
+   * @return item object
+   */
   virtual IItem::Pointer createDirectoryResponse(std::istream& response) const;
 
-  virtual void authorizeRequest(HttpRequest&) const;
+  /**
+   * Should add access token to the request, by default sets Authorization
+   * header parameter to "Bearer access_token()".
+   *
+   * @param request request to be authorized
+   */
+  virtual void authorizeRequest(HttpRequest& request) const;
+
+  /**
+   * Returns whether we should try to authorize again after receiving response
+   * with http code / curl error.
+   *
+   * @param code http code / curl error
+   * @return whether to do authorization again or not
+   */
   virtual bool reauthorize(int code) const;
 
   std::mutex& auth_mutex() const;

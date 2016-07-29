@@ -27,8 +27,8 @@
 #include <memory>
 #include <string>
 
-#include "Utility/HttpRequest.h"
 #include "ICloudProvider.h"
+#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -65,25 +65,71 @@ class IAuth {
 
   virtual std::string authorizeLibraryUrl() const = 0;
 
+  /**
+   * Runs a web server at redirect_uri_port and waits until it receives http
+   * get request with either code_parameter_name or error_parameter_name.
+   *
+   * @param code_parameter_name usually "code"
+   * @param error_parameter_name usually "error"
+   * @param server_started called when server started
+   * @param server_stopped called when server stopped
+   * @return authorization code
+   */
   virtual std::string awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const = 0;
 
+  /**
+   * Shortcut for awaitAuthorizationCode, usually calls
+   * awaitAuthorizationCode("code", "error", server_started, server_stopped).
+   *
+   * @param server_started called when server started
+   * @param server_stopped called when server stopped
+   * @return authorization code
+   */
   virtual std::string requestAuthorizationCode(
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 
+  /**
+   * Should create a request which retrieves refresh token after receiving
+   * authorization_code.
+   *
+   * @param input_data data to be sent in request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer exchangeAuthorizationCodeRequest(
       std::ostream& input_data) const = 0;
+
+  /**
+   * Should create a request which obtains access token from refresh token.
+   *
+   * @param input_data data to be sent in request body
+   * @return http request
+   */
   virtual HttpRequest::Pointer refreshTokenRequest(
       std::ostream& input_data) const = 0;
 
+  /**
+   * Should translate response to exchangeAuthorizationCodeRequest into Token
+   * object.
+   *
+   * @param response
+   * @return token
+   */
   virtual Token::Pointer exchangeAuthorizationCodeResponse(
-      std::istream&) const = 0;
-  virtual Token::Pointer refreshTokenResponse(std::istream&) const = 0;
+      std::istream& response) const = 0;
+
+  /**
+   * Should translate response to refreshTokenResponse into Token object.
+   *
+   * @param response
+   * @return refreshed token
+   */
+  virtual Token::Pointer refreshTokenResponse(std::istream& response) const = 0;
 };
 
 }  // namespace cloudstorage

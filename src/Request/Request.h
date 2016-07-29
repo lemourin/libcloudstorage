@@ -57,12 +57,31 @@ class Request : public IRequest<ReturnValue> {
   void finish();
   void cancel();
   ReturnValue result();
+
+  /**
+   * If there is authorization in progress for the cloud provider, waits until
+   * it finishes and returns its status; otherwise starts authorization itself
+   * and waits for it to finish.
+   *
+   * @return whether the authorization was successful
+   */
   bool reauthorize();
 
+  /**
+   * Sends a request created by factory function; if request failed, tries to do
+   * authorization and does the request again.
+   *
+   * @param factory function which should create request to perform
+   * @param output output stream
+   * @param download download progress callback
+   * @param upload upload progress callback
+   * @return http code or curl error code
+   */
   int sendRequest(
       std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
       std::ostream& output, ProgressFunction download = nullptr,
       ProgressFunction upload = nullptr);
+
   int send(HttpRequest*, std::istream& input, std::ostream& output,
            std::ostream* error, ProgressFunction download = nullptr,
            ProgressFunction upload = nullptr);
