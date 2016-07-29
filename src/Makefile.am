@@ -86,3 +86,6 @@ libcloudstorage_la_LIBADD += $(libmega_LIBS)
 libcloudstorage_la_SOURCES += CloudProvider/MegaNz.cpp
 noinst_HEADERS += CloudProvider/MegaNz.h
 endif
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libcloudstorage.pc

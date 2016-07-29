@@ -34,6 +34,7 @@ esac
 
 AC_CONFIG_FILES([
   Makefile
+  src/libcloudstorage.pc
   src/Makefile
   test/Makefile
   examples/Makefile
