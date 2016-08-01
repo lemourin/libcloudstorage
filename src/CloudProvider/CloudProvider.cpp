@@ -24,6 +24,7 @@
 #include "CloudProvider.h"
 
 #include <json/json.h>
+#include <cstring>
 #include <sstream>
 
 #include "Utility/Item.h"
@@ -180,6 +181,21 @@ std::string CloudProvider::getPath(const std::string& p) {
   std::string result = p;
   if (result.back() == '/') result.pop_back();
   return result.substr(0, result.find_last_of('/'));
+}
+
+std::string CloudProvider::getFilename(const std::string& path) {
+  std::string result = path;
+  if (result.back() == '/') result.pop_back();
+  return result.substr(result.find_last_of('/') + 1);
+}
+
+std::pair<std::string, std::string> CloudProvider::creditentialsFromString(
+    const std::string& str) {
+  auto it = str.find(Auth::SEPARATOR);
+  if (it == std::string::npos) return {};
+  std::string login(str.begin(), str.begin() + it);
+  std::string password(str.begin() + it + strlen(Auth::SEPARATOR), str.end());
+  return {login, password};
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(

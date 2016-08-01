@@ -518,15 +518,6 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
   return std::move(r);
 }
 
-std::pair<std::string, std::string> MegaNz::creditentialsFromString(
-    const std::string& str) const {
-  auto it = str.find(Auth::SEPARATOR);
-  if (it == std::string::npos) return {};
-  std::string login(str.begin(), str.begin() + it);
-  std::string password(str.begin() + it + strlen(Auth::SEPARATOR), str.end());
-  return {login, password};
-}
-
 bool MegaNz::login(Request<bool>* r) {
   Authorize::Semaphore semaphore(r);
   RequestListener auth_listener(&semaphore);

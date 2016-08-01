@@ -239,6 +239,9 @@ class CloudProvider : public ICloudProvider,
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
   static std::string getPath(const std::string&);
+  static std::string getFilename(const std::string& path);
+  static std::pair<std::string, std::string> creditentialsFromString(
+      const std::string&);
 
  private:
   IAuth::Pointer auth_;

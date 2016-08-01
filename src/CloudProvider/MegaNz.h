@@ -75,9 +75,6 @@ class MegaNz : public CloudProvider {
                                              const std::string& name,
                                              RenameItemCallback);
 
-  std::pair<std::string, std::string> creditentialsFromString(
-      const std::string&) const;
-
   bool login(Request<bool>* r);
   std::string passwordHash(const std::string& password);
 
