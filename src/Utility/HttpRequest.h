@@ -72,6 +72,9 @@ class HttpRequest {
   void setHeaderParameter(const std::string& parameter,
                           const std::string& value);
 
+  const std::unordered_map<std::string, std::string>& parameters() const;
+  const std::unordered_map<std::string, std::string>& headerParameters() const;
+
   bool follow_redirect() const;
   void set_follow_redirect(bool);
 

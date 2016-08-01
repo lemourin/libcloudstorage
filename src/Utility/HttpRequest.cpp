@@ -124,6 +124,16 @@ void HttpRequest::setHeaderParameter(const std::string& parameter,
   header_parameters_[parameter] = value;
 }
 
+const std::unordered_map<std::string, std::string>& HttpRequest::parameters()
+    const {
+  return parameters_;
+}
+
+const std::unordered_map<std::string, std::string>&
+HttpRequest::headerParameters() const {
+  return header_parameters_;
+}
+
 bool HttpRequest::follow_redirect() const { return follow_redirect_; }
 
 void HttpRequest::set_follow_redirect(bool e) {
