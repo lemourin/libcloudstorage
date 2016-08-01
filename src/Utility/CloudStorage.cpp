@@ -37,6 +37,10 @@
 #include "CloudProvider/MegaNz.h"
 #endif
 
+#ifdef WITH_CRYPTOPP
+#include "CloudProvider/AmazonS3.h"
+#endif
+
 namespace cloudstorage {
 
 CloudStorage::CloudStorage()
@@ -47,6 +51,9 @@ CloudStorage::CloudStorage()
                   std::make_shared<OwnCloud>()}) {
 #ifdef WITH_MEGA
   providers_.emplace_back(std::make_shared<MegaNz>());
+#endif
+#ifdef WITH_CRYPTOPP
+  providers_.emplace_back(std::make_shared<AmazonS3>());
 #endif
 }
 

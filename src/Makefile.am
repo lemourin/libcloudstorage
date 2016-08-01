@@ -87,5 +87,12 @@ libcloudstorage_la_SOURCES += CloudProvider/MegaNz.cpp
 noinst_HEADERS += CloudProvider/MegaNz.h
 endif
 
+if WITH_CRYPTOPP
+AM_CXXFLAGS += $(libcryptopp_CFLAGS)
+libcloudstorage_la_LIBADD += $(libcryptopp_LIBS)
+libcloudstorage_la_SOURCES += CloudProvider/AmazonS3.cpp
+noinst_HEADERS += CloudProvider/AmazonS3.cpp
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcloudstorage.pc
