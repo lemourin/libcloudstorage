@@ -235,13 +235,14 @@ class CloudProvider : public ICloudProvider,
   AuthorizeRequest::Pointer current_authorization() const;
   void set_current_authorization(AuthorizeRequest::Pointer);
 
- protected:
-  void setWithHint(const Hints& hints, const std::string& name,
-                   std::function<void(std::string)>) const;
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
   static std::pair<std::string, std::string> creditentialsFromString(
       const std::string&);
+
+ protected:
+  void setWithHint(const Hints& hints, const std::string& name,
+                   std::function<void(std::string)>) const;
 
  private:
   IAuth::Pointer auth_;
