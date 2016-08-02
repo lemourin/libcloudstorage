@@ -135,8 +135,7 @@ HttpRequest::Pointer AmazonS3::getItemDataRequest(
 }
 
 HttpRequest::Pointer AmazonS3::listDirectoryRequest(
-    const IItem& item, const std::__cxx11::string& page_token,
-    std::ostream& input_stream) const {
+    const IItem& item, const std::string& page_token, std::ostream&) const {
   if (item.id() == rootDirectory()->id())
     return make_unique<HttpRequest>("https://s3-eu-central-1.amazonaws.com/",
                                     HttpRequest::Type::GET);
@@ -147,6 +146,8 @@ HttpRequest::Pointer AmazonS3::listDirectoryRequest(
     request->setParameter("list-type", "2");
     request->setParameter("prefix", i.id());
     request->setParameter("delimiter", "/");
+    if (!page_token.empty())
+      request->setParameter("continuation-token", page_token);
     return request;
   }
 }
@@ -187,7 +188,7 @@ IItem::Pointer AmazonS3::getItemDataResponse(std::istream& response) const {
 }
 
 std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
-    std::istream& stream, std::__cxx11::string& next_page_token) const {
+    std::istream& stream, std::string& next_page_token) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -207,7 +208,9 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
     std::string bucket =
         document.RootElement()->FirstChildElement("Name")->GetText();
     auto first = document.RootElement()->FirstChildElement("Contents");
-    if (document.RootElement()->FirstChildElement("Prefix")->GetText() && first)
+    if (document.RootElement()->FirstChildElement("Prefix")->GetText() &&
+        !document.RootElement()->FirstChildElement("ContinuationToken") &&
+        first)
       first = first->NextSiblingElement("Contents");
     for (auto child = first; child;
          child = child->NextSiblingElement("Contents")) {
@@ -228,6 +231,12 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
         item->bucket_ = bucket;
         result.push_back(std::move(item));
       }
+    }
+    if (document.RootElement()->FirstChildElement("IsTruncated")->GetText() ==
+        std::string("true")) {
+      next_page_token = document.RootElement()
+                            ->FirstChildElement("NextContinuationToken")
+                            ->GetText();
     }
   }
   return result;
@@ -281,9 +290,14 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   std::string signature = hex(sign(key, string_to_sign));
 
   request.setParameter("X-Amz-Signature", signature);
+
+  auto params = request.parameters();
+  for (auto p : params)
+    request.setParameter(p.first, HttpRequest::escape(p.second));
 }
 
 bool AmazonS3::reauthorize(int code) const {
+  return false;
   return CloudProvider::reauthorize(code) || code == 400 || code == 403;
 }
 
