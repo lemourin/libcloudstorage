@@ -265,8 +265,14 @@ std::string HttpRequest::escape(const std::string& str) {
 
 std::string HttpRequest::parametersToString() const {
   std::string result;
-  for (std::pair<std::string, std::string> p : parameters_)
-    result += p.first + "=" + p.second + "&";
+  bool first = false;
+  for (std::pair<std::string, std::string> p : parameters_) {
+    if (first)
+      result += "&";
+    else
+      first = true;
+    result += p.first + "=" + p.second;
+  }
   return result;
 }
 
