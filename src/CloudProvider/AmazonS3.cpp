@@ -38,6 +38,84 @@ namespace cloudstorage {
 
 namespace {
 
+class ListDirectoryCallback : public IListDirectoryCallback {
+ public:
+  ListDirectoryCallback(Request<bool>::Semaphore* semaphore)
+      : semaphore_(semaphore) {}
+
+  void receivedItem(IItem::Pointer) {}
+  void done(const std::vector<IItem::Pointer>&) { semaphore_->notify(); }
+  void error(const std::string&) { semaphore_->notify(); }
+
+ private:
+  Request<bool>::Semaphore* semaphore_;
+};
+
+std::string escapePath(const std::string& str) {
+  std::string data = HttpRequest::escape(str);
+  std::string slash = HttpRequest::escape("/");
+  std::string result;
+  for (uint32_t i = 0; i < data.size();)
+    if (data.substr(i, slash.length()) == slash) {
+      result += "/";
+      i += slash.length();
+    } else {
+      result += data[i];
+      i++;
+    }
+  return result;
+}
+
+bool rename(Request<bool>* r, std::string dest_id, std::string source_id) {
+  if (!source_id.empty() && source_id.back() != '/') {
+    std::stringstream output;
+    int code = r->sendRequest(
+        [=](std::ostream&) {
+          auto dest_data = AmazonS3::split(dest_id);
+          auto request = make_unique<HttpRequest>(
+              "https://" + dest_data.first + ".s3.amazonaws.com/" +
+                  escapePath(dest_data.second),
+              HttpRequest::Type::PUT);
+          auto source_data = AmazonS3::split(source_id);
+          request->setHeaderParameter(
+              "x-amz-copy-source",
+              escapePath("/" + source_data.first + "/" + source_data.second));
+          return request;
+        },
+        output);
+    if (!HttpRequest::isSuccess(code)) return false;
+  } else {
+    auto directory = r->provider()
+                         ->getItemDataAsync(source_id, [](IItem::Pointer) {})
+                         ->result();
+    Request<bool>::Semaphore semaphore(r);
+    auto children_request = r->provider()->listDirectoryAsync(
+        directory, make_unique<ListDirectoryCallback>(&semaphore));
+    semaphore.wait();
+    if (r->is_cancelled()) {
+      children_request->cancel();
+      return false;
+    }
+    for (auto item : children_request->result())
+      if (!rename(r, dest_id + "/" + item->filename(), item->id()))
+        return false;
+  }
+  std::stringstream output;
+  int code = r->sendRequest(
+      [=](std::ostream&) {
+        auto data = AmazonS3::split(source_id);
+        return make_unique<HttpRequest>("https://" + data.first +
+                                            ".s3.amazonaws.com/" +
+                                            escapePath(data.second),
+                                        HttpRequest::Type::DEL);
+      },
+      output);
+  if (!HttpRequest::isSuccess(code)) {
+    return false;
+  }
+  return true;
+}
+
 std::string host(std::string url) {
   const char* http = "https://";
   return url.substr(strlen(http),
@@ -129,9 +207,136 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
       });
 }
 
-HttpRequest::Pointer AmazonS3::getItemDataRequest(
-    const std::string&, std::ostream& input_stream) const {
-  return nullptr;
+ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
+    IItem::Pointer source, IItem::Pointer destination,
+    MoveItemCallback callback) {
+  auto r = std::make_shared<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) -> bool {
+    bool success =
+        rename(r, destination->id() + source->filename(), source->id());
+    callback(success);
+    return success;
+  });
+  return r;
+}
+
+ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
+    IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
+  auto r = std::make_shared<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) -> bool {
+    std::string path = split(item->id()).second;
+    if (!path.empty() && path.back() == '/') path.pop_back();
+    if (path.find_first_of('/') == std::string::npos)
+      path = split(item->id()).first + Auth::SEPARATOR;
+    else
+      path = split(item->id()).first + Auth::SEPARATOR + getPath(path) + "/";
+    bool success = rename(r, path + name, item->id());
+    callback(success);
+    return success;
+  });
+  return r;
+}
+
+ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
+    IItem::Pointer parent, const std::string& name,
+    CreateDirectoryCallback callback) {
+  auto r = std::make_shared<Request<IItem::Pointer>>(shared_from_this());
+  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    std::stringstream output;
+    int code = r->sendRequest(
+        [=](std::ostream&) {
+          auto data = split(parent->id());
+          return make_unique<HttpRequest>(
+              "https://" + data.first + ".s3.amazonaws.com/" +
+                  escapePath(data.second + name + "/"),
+              HttpRequest::Type::PUT);
+        },
+        output);
+    if (!HttpRequest::isSuccess(code)) {
+      callback(nullptr);
+      return nullptr;
+    } else {
+      auto path = getPath(parent->id());
+      if (!split(path).second.empty()) path += "/";
+      auto item = std::make_shared<Item>(name, path + name + "/",
+                                         IItem::FileType::Directory);
+      callback(item);
+      return item;
+    }
+
+  });
+  return r;
+}
+
+ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
+    IItem::Pointer item, DeleteItemCallback callback) {
+  auto r = make_unique<Request<bool>>(shared_from_this());
+  r->set_resolver([=](Request<bool>* r) -> bool {
+    if (item->type() == IItem::FileType::Directory) {
+      Request<bool>::Semaphore semaphore(r);
+      auto children_request = r->provider()->listDirectoryAsync(
+          item, make_unique<ListDirectoryCallback>(&semaphore));
+      semaphore.wait();
+      if (r->is_cancelled()) {
+        children_request->cancel();
+        callback(false);
+        return false;
+      }
+      for (auto child : children_request->result()) {
+        auto delete_request =
+            deleteItemAsync(child, [&](bool) { semaphore.notify(); });
+        semaphore.wait();
+        if (r->is_cancelled()) {
+          delete_request->cancel();
+          callback(false);
+          return false;
+        }
+      }
+    }
+    std::stringstream output;
+    int code = r->sendRequest(
+        [=](std::ostream&) {
+          auto data = split(item->id());
+          return make_unique<HttpRequest>("https://" + data.first +
+                                              ".s3.amazonaws.com/" +
+                                              escapePath(data.second),
+                                          HttpRequest::Type::DEL);
+        },
+        output);
+    if (!HttpRequest::isSuccess(code)) {
+      callback(false);
+      return false;
+    }
+    callback(true);
+    return true;
+  });
+  return r;
+}
+
+ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
+    const std::string& id, GetItemCallback callback) {
+  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  r->set_resolver([=](Request<IItem::Pointer>*) -> IItem::Pointer {
+    if (access_id().empty() || secret().empty()) {
+      callback(nullptr);
+      return nullptr;
+    }
+    auto data = split(id);
+    auto item =
+        std::make_shared<Item>(getFilename(data.first), id,
+                               data.second.empty() || data.second.back() == '/'
+                                   ? IItem::FileType::Directory
+                                   : IItem::FileType::Unknown);
+    auto request = make_unique<HttpRequest>("https://" + data.first +
+                                                ".s3.amazonaws.com/" +
+                                                escapePath(data.second),
+                                            HttpRequest::Type::GET);
+    authorizeRequest(*request);
+    item->set_url(request->url() + "?" + request->parametersToString());
+    callback(item);
+    return item;
+  });
+  return r;
 }
 
 HttpRequest::Pointer AmazonS3::listDirectoryRequest(
@@ -140,51 +345,35 @@ HttpRequest::Pointer AmazonS3::listDirectoryRequest(
     return make_unique<HttpRequest>("https://s3-eu-central-1.amazonaws.com/",
                                     HttpRequest::Type::GET);
   else {
-    const S3Item& i = static_cast<const S3Item&>(item);
+    auto data = split(item.id());
     auto request = make_unique<HttpRequest>(
-        "https://" + i.bucket_ + ".s3.amazonaws.com/", HttpRequest::Type::GET);
+        "https://" + data.first + ".s3.amazonaws.com/", HttpRequest::Type::GET);
     request->setParameter("list-type", "2");
-    request->setParameter("prefix", i.id());
+    request->setParameter("prefix", data.second);
     request->setParameter("delimiter", "/");
     if (!page_token.empty())
       request->setParameter("continuation-token", page_token);
-    return request;
+    return std::move(request);
   }
 }
 
-HttpRequest::Pointer AmazonS3::uploadFileRequest(
-    const IItem& directory, const std::__cxx11::string& filename,
-    std::ostream& prefix_stream, std::ostream& suffix_stream) const {
-  return nullptr;
+HttpRequest::Pointer AmazonS3::uploadFileRequest(const IItem& directory,
+                                                 const std::string& filename,
+                                                 std::ostream&,
+                                                 std::ostream&) const {
+  auto data = split(directory.id());
+  return make_unique<HttpRequest>("https://" + data.first +
+                                      ".s3.amazonaws.com/" +
+                                      escapePath(data.second + filename),
+                                  HttpRequest::Type::PUT);
 }
 
-HttpRequest::Pointer AmazonS3::downloadFileRequest(
-    const IItem&, std::ostream& input_stream) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer AmazonS3::deleteItemRequest(
-    const IItem&, std::ostream& input_stream) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer AmazonS3::createDirectoryRequest(
-    const IItem&, const std::__cxx11::string& name, std::ostream&) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer AmazonS3::moveItemRequest(const IItem&, const IItem&,
-                                               std::ostream&) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer AmazonS3::renameItemRequest(
-    const IItem&, const std::__cxx11::string& name, std::ostream&) const {
-  return nullptr;
-}
-
-IItem::Pointer AmazonS3::getItemDataResponse(std::istream& response) const {
-  return nullptr;
+HttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
+                                                   std::ostream&) const {
+  auto data = split(item.id());
+  return make_unique<HttpRequest>(
+      "https://" + data.first + ".s3.amazonaws.com/" + escapePath(data.second),
+      HttpRequest::Type::GET);
 }
 
 std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
@@ -200,37 +389,31 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
     for (auto child = buckets->FirstChild(); child;
          child = child->NextSibling()) {
       std::string name = child->FirstChildElement("Name")->GetText();
-      auto item = make_unique<S3Item>(name, "", IItem::FileType::Directory);
-      item->bucket_ = name;
+      auto item = make_unique<Item>(name, name + Auth::SEPARATOR,
+                                    IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
   } else {
     std::string bucket =
         document.RootElement()->FirstChildElement("Name")->GetText();
-    auto first = document.RootElement()->FirstChildElement("Contents");
-    if (document.RootElement()->FirstChildElement("Prefix")->GetText() &&
-        !document.RootElement()->FirstChildElement("ContinuationToken") &&
-        first)
-      first = first->NextSiblingElement("Contents");
-    for (auto child = first; child;
-         child = child->NextSiblingElement("Contents")) {
+    for (auto child = document.RootElement()->FirstChildElement("Contents");
+         child; child = child->NextSiblingElement("Contents")) {
+      if (child->FirstChildElement("Size")->GetText() == std::string("0"))
+        continue;
       std::string id = child->FirstChildElement("Key")->GetText();
       auto item =
-          make_unique<S3Item>(getFilename(id), id, IItem::FileType::Unknown);
-      item->bucket_ = bucket;
+          make_unique<Item>(getFilename(id), bucket + Auth::SEPARATOR + id,
+                            IItem::FileType::Unknown);
       result.push_back(std::move(item));
     }
-    auto common_prefixes =
-        document.RootElement()->FirstChildElement("CommonPrefixes");
-    if (common_prefixes) {
-      for (auto child = common_prefixes->FirstChildElement("Prefix"); child;
-           child = child->NextSiblingElement("Prefix")) {
-        std::string id = child->GetText();
-        auto item = make_unique<S3Item>(getFilename(id), id,
-                                        IItem::FileType::Directory);
-        item->bucket_ = bucket;
-        result.push_back(std::move(item));
-      }
+    for (auto child =
+             document.RootElement()->FirstChildElement("CommonPrefixes");
+         child; child = child->NextSiblingElement("CommonPrefixes")) {
+      std::string id = child->FirstChildElement("Prefix")->GetText();
+      auto item =
+          make_unique<Item>(getFilename(id), bucket + Auth::SEPARATOR + id,
+                            IItem::FileType::Directory);
+      result.push_back(std::move(item));
     }
     if (document.RootElement()->FirstChildElement("IsTruncated")->GetText() ==
         std::string("true")) {
@@ -250,16 +433,34 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   request.setParameter("X-Amz-Credential", access_id() + "/" + scope);
   request.setParameter("X-Amz-Date", time);
   request.setParameter("X-Amz-Expires", "86400");
-  request.setParameter("X-Amz-SignedHeaders", "host");
   request.setHeaderParameter("host", host(request.url()));
 
-  std::string canonical_request =
-      std::string("GET\n") + path(request.url()) + "\n";
+  std::vector<std::pair<std::string, std::string>> header_parameters;
+  for (auto q : request.headerParameters())
+    header_parameters.push_back({q.first, q.second});
+  std::sort(header_parameters.begin(), header_parameters.end());
+
+  std::string signed_headers;
+  {
+    bool first = false;
+    for (auto q : header_parameters) {
+      if (first)
+        signed_headers += ";";
+      else
+        first = true;
+      signed_headers += q.first;
+    }
+    request.setParameter("X-Amz-SignedHeaders", signed_headers);
+  }
 
   std::vector<std::pair<std::string, std::string>> query_parameters;
   for (auto q : request.parameters())
     query_parameters.push_back({q.first, q.second});
   std::sort(query_parameters.begin(), query_parameters.end());
+
+  std::string canonical_request =
+      HttpRequest::toString(request.type()) + "\n" + path(request.url()) + "\n";
+
   bool first = false;
   for (auto q : query_parameters) {
     if (first)
@@ -271,15 +472,10 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   }
   canonical_request += "\n";
 
-  std::vector<std::pair<std::string, std::string>> header_parameters;
-  for (auto q : request.headerParameters())
-    header_parameters.push_back({q.first, q.second});
-  std::sort(header_parameters.begin(), header_parameters.end());
   for (auto q : header_parameters)
-    canonical_request += HttpRequest::escape(q.first) + ":" +
-                         HttpRequest::escape(q.second) + "\n";
+    canonical_request += HttpRequest::escape(q.first) + ":" + q.second + "\n";
   canonical_request += "\n";
-  canonical_request += "host\n";
+  canonical_request += signed_headers + "\n";
   canonical_request += "UNSIGNED-PAYLOAD";
 
   std::string string_to_sign = "AWS4-HMAC-SHA256\n" + time + "\n" + scope +
@@ -297,8 +493,8 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
 }
 
 bool AmazonS3::reauthorize(int code) const {
-  return false;
-  return CloudProvider::reauthorize(code) || code == 400 || code == 403;
+  return CloudProvider::reauthorize(code) || code == 403 ||
+         access_id().empty() || secret().empty();
 }
 
 std::string AmazonS3::access_id() const {
@@ -311,6 +507,10 @@ std::string AmazonS3::secret() const {
   return secret_;
 }
 
+std::pair<std::string, std::string> AmazonS3::split(const std::string& str) {
+  return creditentialsFromString(str);
+}
+
 AmazonS3::Auth::Auth() {}
 
 std::string AmazonS3::Auth::authorizeLibraryUrl() const {
@@ -318,12 +518,11 @@ std::string AmazonS3::Auth::authorizeLibraryUrl() const {
 }
 
 HttpRequest::Pointer AmazonS3::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream& input_data) const {
+    std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer AmazonS3::Auth::refreshTokenRequest(
-    std::ostream& input_data) const {
+HttpRequest::Pointer AmazonS3::Auth::refreshTokenRequest(std::ostream&) const {
   return nullptr;
 }
 

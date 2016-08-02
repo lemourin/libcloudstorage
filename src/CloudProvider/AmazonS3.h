@@ -41,9 +41,20 @@ class AmazonS3 : public CloudProvider {
   std::string name() const;
 
   AuthorizeRequest::Pointer authorizeAsync();
+  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
+                                               GetItemDataCallback f);
+  MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
+                                         IItem::Pointer destination,
+                                         MoveItemCallback);
+  RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
+                                             const std::string&,
+                                             RenameItemCallback);
+  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer parent,
+                                                       const std::string& name,
+                                                       CreateDirectoryCallback);
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                             DeleteItemCallback);
 
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream& input_stream) const;
   HttpRequest::Pointer listDirectoryRequest(const IItem&,
                                             const std::string& page_token,
                                             std::ostream& input_stream) const;
@@ -53,17 +64,7 @@ class AmazonS3 : public CloudProvider {
                                          std::ostream& suffix_stream) const;
   HttpRequest::Pointer downloadFileRequest(const IItem&,
                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer deleteItemRequest(const IItem&,
-                                         std::ostream& input_stream) const;
-  HttpRequest::Pointer createDirectoryRequest(const IItem&,
-                                              const std::string& name,
-                                              std::ostream&) const;
-  HttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                       std::ostream&) const;
-  HttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                         std::ostream&) const;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 
@@ -73,11 +74,7 @@ class AmazonS3 : public CloudProvider {
   std::string access_id() const;
   std::string secret() const;
 
-  struct S3Item : public Item {
-    using Item::Item;
-
-    std::string bucket_;
-  };
+  static std::pair<std::string, std::string> split(const std::string&);
 
   class Auth : public cloudstorage::Auth {
    public:
