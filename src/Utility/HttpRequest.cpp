@@ -263,6 +263,23 @@ std::string HttpRequest::escape(const std::string& str) {
   return result;
 }
 
+std::string HttpRequest::toString(Type type) {
+  switch (type) {
+    case Type::POST:
+      return "POST";
+    case Type::GET:
+      return "GET";
+    case Type::PUT:
+      return "PUT";
+    case Type::DEL:
+      return "DELETE";
+    case Type::PATCH:
+      return "PATCH";
+    default:
+      return "";
+  }
+}
+
 std::string HttpRequest::parametersToString() const {
   std::string result;
   bool first = false;

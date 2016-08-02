@@ -105,12 +105,15 @@ class HttpRequest {
   static std::string unescape(const std::string&);
   static std::string escape(const std::string&);
 
+  static std::string toString(Type);
+
+  std::string parametersToString() const;
+
  private:
   struct CurlDeleter {
     void operator()(CURL*) const;
   };
 
-  std::string parametersToString() const;
   curl_slist* headerParametersToList() const;
 
   std::unique_ptr<CURL, CurlDeleter> handle_;
