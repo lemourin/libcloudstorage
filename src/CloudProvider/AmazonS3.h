@@ -39,6 +39,7 @@ class AmazonS3 : public CloudProvider {
 
   std::string token() const;
   std::string name() const;
+  Hints hints() const;
 
   AuthorizeRequest::Pointer authorizeAsync();
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
@@ -93,6 +94,7 @@ class AmazonS3 : public CloudProvider {
  private:
   std::string access_id_;
   std::string secret_;
+  std::string region_;
 };
 
 }  // namespace cloudstorage

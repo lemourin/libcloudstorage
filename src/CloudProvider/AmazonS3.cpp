@@ -28,7 +28,7 @@
 #include <iomanip>
 #include <iostream>
 
-const std::string region = "eu-central-1";
+const std::string DEFAULT_REGION = "eu-central-1";
 
 using namespace std::placeholders;
 
@@ -145,7 +145,8 @@ std::string currentDateAndTime() {
 
 }  // namespace
 
-AmazonS3::AmazonS3() : CloudProvider(make_unique<Auth>()) {}
+AmazonS3::AmazonS3()
+    : CloudProvider(make_unique<Auth>()), region_(DEFAULT_REGION) {}
 
 void AmazonS3::initialize(const std::string& token,
                           ICloudProvider::ICallback::Pointer callback,
@@ -159,6 +160,7 @@ void AmazonS3::initialize(const std::string& token,
   auto data = creditentialsFromString(token);
   access_id_ = data.first;
   secret_ = data.second;
+  setWithHint(hints, "aws_region", [this](std::string str) { region_ = str; });
 }
 
 std::string AmazonS3::token() const {
@@ -166,6 +168,13 @@ std::string AmazonS3::token() const {
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }
+
+ICloudProvider::Hints AmazonS3::hints() const {
+  Hints result = {{"aws_region", region_}};
+  auto t = CloudProvider::hints();
+  result.insert(t.begin(), t.end());
+  return result;
+}
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
   return make_unique<AuthorizeRequest>(
@@ -403,7 +412,7 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   if (!crypto()) return;
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
-  std::string scope = current_date + "/" + region + "/s3/aws4_request";
+  std::string scope = current_date + "/" + region_ + "/s3/aws4_request";
   request.setParameter("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
   request.setParameter("X-Amz-Credential", access_id() + "/" + scope);
   request.setParameter("X-Amz-Date", time);
@@ -460,7 +469,7 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   std::string string_to_sign = "AWS4-HMAC-SHA256\n" + time + "\n" + scope +
                                "\n" + hex(hash(canonical_request));
   std::string key =
-      sign(sign(sign(sign("AWS4" + secret(), current_date), region), "s3"),
+      sign(sign(sign(sign("AWS4" + secret(), current_date), region_), "s3"),
            "aws4_request");
   std::string signature = hex(sign(key, string_to_sign));
 

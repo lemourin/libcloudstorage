@@ -112,6 +112,7 @@ class ICloudProvider {
    *  - daemon_port(used by mega.nz url provider)
    *  - metadata_url, content_url(amazon drive's endpoints)
    *  - youtube_dl_url(url to youtube-dl-server)
+   *  - aws_region(region used by amazon s3)
    */
   virtual void initialize(const std::string& token, ICallback::Pointer callback,
                           ICrypto::Pointer crypto_engine = nullptr,
