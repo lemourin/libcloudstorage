@@ -24,15 +24,13 @@
 #include "AmazonS3.h"
 
 #include <tinyxml2.h>
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 
-#include <cryptopp/cryptlib.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/hmac.h>
-#include <cryptopp/sha.h>
-
 const std::string region = "eu-central-1";
+
+using namespace std::placeholders;
 
 namespace cloudstorage {
 
@@ -145,43 +143,19 @@ std::string currentDateAndTime() {
   return ss.str();
 }
 
-std::string hash(std::string message) {
-  CryptoPP::SHA256 hash;
-  std::string result;
-  CryptoPP::StringSource(
-      message, true,
-      new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
-  return result;
-}
-
-std::string sign(std::string key, std::string plain) {
-  std::string mac;
-  CryptoPP::HMAC<CryptoPP::SHA256> hmac((byte*)key.c_str(), key.length());
-  CryptoPP::StringSource(plain, true, new CryptoPP::HashFilter(
-                                          hmac, new CryptoPP::StringSink(mac)));
-  std::string result;
-  CryptoPP::StringSource(mac, true, new CryptoPP::StringSink(result));
-  return result;
-}
-
-std::string hex(std::string hash) {
-  std::string result;
-  CryptoPP::StringSource(
-      hash, true,
-      new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false));
-  return result;
-}
-
 }  // namespace
 
 AmazonS3::AmazonS3() : CloudProvider(make_unique<Auth>()) {}
 
 void AmazonS3::initialize(const std::string& token,
                           ICloudProvider::ICallback::Pointer callback,
+                          ICrypto::Pointer crypto,
                           const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, callback, hints);
-
+  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
+                            hints);
   std::unique_lock<std::mutex> lock(auth_mutex());
+  if (!this->crypto())
+    this->callback()->error(*this, "No crypto functions provided.");
   auto data = creditentialsFromString(token);
   access_id_ = data.first;
   secret_ = data.second;
@@ -393,7 +367,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
                                     IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
-  } else {
+  } else if (document.RootElement()->FirstChildElement("Name")) {
     std::string bucket =
         document.RootElement()->FirstChildElement("Name")->GetText();
     for (auto child = document.RootElement()->FirstChildElement("Contents");
@@ -426,6 +400,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
 }
 
 void AmazonS3::authorizeRequest(HttpRequest& request) const {
+  if (!crypto()) return;
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
   std::string scope = current_date + "/" + region + "/s3/aws4_request";
@@ -477,6 +452,10 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
   canonical_request += "\n";
   canonical_request += signed_headers + "\n";
   canonical_request += "UNSIGNED-PAYLOAD";
+
+  auto hash = std::bind(&ICrypto::sha256, crypto(), _1);
+  auto sign = std::bind(&ICrypto::hmac_sha256, crypto(), _1, _2);
+  auto hex = std::bind(&ICrypto::hex, crypto(), _1);
 
   std::string string_to_sign = "AWS4-HMAC-SHA256\n" + time + "\n" + scope +
                                "\n" + hex(hash(canonical_request));

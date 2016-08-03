@@ -40,6 +40,10 @@
 #include "Request/RenameItemRequest.h"
 #include "Request/UploadFileRequest.h"
 
+#ifdef WITH_CRYPTOPP
+#include "Utility/CryptoPP.h"
+#endif
+
 using namespace std::placeholders;
 
 namespace cloudstorage {
@@ -50,9 +54,10 @@ CloudProvider::CloudProvider(IAuth::Pointer auth)
 
 void CloudProvider::initialize(const std::string& token,
                                ICallback::Pointer callback,
-                               const Hints& hints) {
+                               ICrypto::Pointer crypto, const Hints& hints) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
   callback_ = std::move(callback);
+  crypto_ = std::move(crypto);
 
   auto t = auth()->fromTokenString(token);
   setWithHint(hints, "access_token", [&t](std::string v) { t->token_ = v; });
@@ -65,6 +70,10 @@ void CloudProvider::initialize(const std::string& token,
   setWithHint(hints, "redirect_uri_port", [this](std::string v) {
     auth()->set_redirect_uri_port(std::atoi(v.c_str()));
   });
+
+#ifdef WITH_CRYPTOPP
+  if (!crypto_) crypto_ = make_unique<CryptoPP>();
+#endif
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
@@ -96,6 +105,8 @@ IItem::Pointer CloudProvider::rootDirectory() const {
 ICloudProvider::ICallback* CloudProvider::callback() const {
   return callback_.get();
 }
+
+ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {

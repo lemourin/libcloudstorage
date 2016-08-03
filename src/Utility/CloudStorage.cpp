@@ -24,6 +24,7 @@
 #include "CloudStorage.h"
 
 #include "CloudProvider/AmazonDrive.h"
+#include "CloudProvider/AmazonS3.h"
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
@@ -31,14 +32,11 @@
 #include "CloudProvider/OwnCloud.h"
 #include "CloudProvider/YandexDisk.h"
 #include "CloudProvider/YouTube.h"
+
 #include "Utility/Utility.h"
 
 #ifdef WITH_MEGA
 #include "CloudProvider/MegaNz.h"
-#endif
-
-#ifdef WITH_CRYPTOPP
-#include "CloudProvider/AmazonS3.h"
 #endif
 
 namespace cloudstorage {
@@ -47,13 +45,10 @@ CloudStorage::CloudStorage()
     : providers_({std::make_shared<GoogleDrive>(), std::make_shared<OneDrive>(),
                   std::make_shared<Dropbox>(), std::make_shared<AmazonDrive>(),
                   std::make_shared<Box>(), std::make_shared<YouTube>(),
-                  std::make_shared<YandexDisk>(),
-                  std::make_shared<OwnCloud>()}) {
+                  std::make_shared<YandexDisk>(), std::make_shared<OwnCloud>(),
+                  std::make_shared<AmazonS3>()}) {
 #ifdef WITH_MEGA
   providers_.emplace_back(std::make_shared<MegaNz>());
-#endif
-#ifdef WITH_CRYPTOPP
-  providers_.emplace_back(std::make_shared<AmazonS3>());
 #endif
 }
 

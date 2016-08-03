@@ -24,9 +24,9 @@ AS_IF([test "x$with_mega" != "xno"], [
 ])
 
 AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
-AM_CONDITIONAL([WITH_CRYPTOPP], [test "x$with_cryptopp" != "xno"])
+AM_CONDITIONAL([WITH_CRYPTOPP], [test "x$with_cryptopp" = "xyes"])
 
-AS_IF([test "x$with_cryptopp" != "xno"], [
+AS_IF([test "x$with_cryptopp" = "xyes"], [
   PKG_CHECK_MODULES([libcryptopp], [libcrypto++])
   AC_DEFINE(WITH_CRYPTOPP)
 ])

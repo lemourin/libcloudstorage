@@ -39,8 +39,10 @@ IItem::Pointer OwnCloud::rootDirectory() const {
 
 void OwnCloud::initialize(const std::string& token,
                           ICloudProvider::ICallback::Pointer callback,
+                          ICrypto::Pointer crypto,
                           const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, callback, hints);
+  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
+                            hints);
   unpackCreditentials(token);
 }
 

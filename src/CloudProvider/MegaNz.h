@@ -47,7 +47,7 @@ class MegaNz : public CloudProvider {
   ~MegaNz();
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer, const Hints& hints);
 
   std::string name() const;
   IItem::Pointer rootDirectory() const;

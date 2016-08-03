@@ -22,6 +22,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/OneDrive.cpp \
 	CloudProvider/Dropbox.cpp \
 	CloudProvider/AmazonDrive.cpp \
+	CloudProvider/AmazonS3.cpp \
 	CloudProvider/Box.cpp \
 	CloudProvider/YouTube.cpp \
 	CloudProvider/YandexDisk.cpp \
@@ -52,6 +53,7 @@ noinst_HEADERS = \
 	CloudProvider/Dropbox.h \
 	CloudProvider/Box.h \
 	CloudProvider/AmazonDrive.h \
+	CloudProvider/AmazonS3.h \
 	CloudProvider/YouTube.h \
 	CloudProvider/YandexDisk.h \
 	CloudProvider/OwnCloud.h \
@@ -72,7 +74,8 @@ nobase_include_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
-	IRequest.h
+	IRequest.h \
+	ICrypto.h
 
 libcloudstorage_la_LIBADD = \
 	$(libcurl_LIBS) \
@@ -90,8 +93,8 @@ endif
 if WITH_CRYPTOPP
 AM_CXXFLAGS += $(libcryptopp_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcryptopp_LIBS)
-libcloudstorage_la_SOURCES += CloudProvider/AmazonS3.cpp
-noinst_HEADERS += CloudProvider/AmazonS3.cpp
+libcloudstorage_la_SOURCES += Utility/CryptoPP.cpp
+noinst_HEADERS += Utility/CryptoPP.h
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

@@ -35,7 +35,7 @@ class YouTube : public CloudProvider {
   YouTube();
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer crypto, const Hints& hints);
   Hints hints() const;
   std::string name() const;
 

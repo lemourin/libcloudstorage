@@ -206,8 +206,10 @@ MegaNz::~MegaNz() {
 
 void MegaNz::initialize(const std::string& token,
                         ICloudProvider::ICallback::Pointer callback,
+                        ICrypto::Pointer crypto,
                         const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), hints);
+  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
+                            hints);
 
   std::lock_guard<std::mutex> lock(auth_mutex());
   if (auth()->client_id().empty())

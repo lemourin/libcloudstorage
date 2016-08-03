@@ -37,8 +37,10 @@ AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
 
 void AmazonDrive::initialize(const std::string& token,
                              ICloudProvider::ICallback::Pointer callback,
+                             ICrypto::Pointer crypto,
                              const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), hints);
+  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
+                            hints);
   std::unique_lock<std::mutex> lock(auth_mutex());
   setWithHint(hints, "metadata_url",
               [this](std::string v) { metadata_url_ = v; });

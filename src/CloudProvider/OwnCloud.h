@@ -45,7 +45,7 @@ class OwnCloud : public CloudProvider {
   IItem::Pointer rootDirectory() const;
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer, const Hints& hints);
 
   std::string name() const;
   std::string token() const;

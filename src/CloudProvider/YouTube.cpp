@@ -39,8 +39,10 @@ YouTube::YouTube()
 
 void YouTube::initialize(const std::string& token,
                          ICloudProvider::ICallback::Pointer callback,
+                         ICrypto::Pointer crypto,
                          const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), hints);
+  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
+                            hints);
   setWithHint(hints, "youtube_dl_url",
               [this](std::string url) { youtube_dl_url_ = url; });
 }

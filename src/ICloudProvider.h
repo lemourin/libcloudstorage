@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ICrypto.h"
 #include "IItem.h"
 #include "IRequest.h"
 
@@ -98,6 +99,9 @@ class ICloudProvider {
    * @param callback callback which will manage future authorization
    * process
    *
+   * @param crypto_engine provides hashing methods which may be used by the
+   * cloud provider
+   *
    * @param hints various hints which can be retrieved by some previous run with
    * ICloudProvider::hints; providing them may speed up the authorization
    * process; may contain the following:
@@ -110,6 +114,7 @@ class ICloudProvider {
    *  - youtube_dl_url(url to youtube-dl-server)
    */
   virtual void initialize(const std::string& token, ICallback::Pointer callback,
+                          ICrypto::Pointer crypto_engine = nullptr,
                           const Hints& hints = Hints()) = 0;
 
   /**

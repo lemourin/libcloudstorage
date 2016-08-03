@@ -45,7 +45,7 @@ class CloudProvider : public ICloudProvider,
   CloudProvider(IAuth::Pointer);
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer, const Hints& hints);
 
   Hints hints() const;
   std::string access_token() const;
@@ -55,6 +55,7 @@ class CloudProvider : public ICloudProvider,
   std::string token() const;
   IItem::Pointer rootDirectory() const;
   ICallback* callback() const;
+  ICrypto* crypto() const;
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
@@ -247,6 +248,7 @@ class CloudProvider : public ICloudProvider,
  private:
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
+  ICrypto::Pointer crypto_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
   mutable std::mutex auth_mutex_;

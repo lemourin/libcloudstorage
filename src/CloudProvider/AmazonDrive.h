@@ -36,7 +36,7 @@ class AmazonDrive : public CloudProvider {
   AmazonDrive();
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer, const Hints& hints);
 
   Hints hints() const;
   std::string name() const;

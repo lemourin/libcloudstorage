@@ -35,7 +35,7 @@ class AmazonS3 : public CloudProvider {
   AmazonS3();
 
   void initialize(const std::string& token, ICallback::Pointer,
-                  const Hints& hints);
+                  ICrypto::Pointer, const Hints& hints);
 
   std::string token() const;
   std::string name() const;
