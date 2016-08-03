@@ -484,7 +484,6 @@ void AmazonS3::authorizeRequest(HttpRequest& request) const {
 }
 
 bool AmazonS3::reauthorize(int code) const {
-  return false;
   return CloudProvider::reauthorize(code) || code == 403 ||
          access_id().empty() || secret().empty();
 }
