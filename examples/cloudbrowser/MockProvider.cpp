@@ -36,7 +36,7 @@ MockProvider::MockProvider() {}
 
 void MockProvider::initialize(const std::string&,
                               ICloudProvider::ICallback::Pointer,
-                              const ICloudProvider::Hints&) {}
+                              ICrypto::Pointer, const ICloudProvider::Hints&) {}
 
 std::string MockProvider::token() const { return ""; }
 
