@@ -30,6 +30,14 @@
 
 namespace cloudstorage {
 
+/**
+ * AmazonS3 requires computing HMAC-SHA256 hashes, so it requires a valid
+ * ICrypto implementation. Be careful about renaming and moving directories,
+ * because there has to be an http request per each of its subelement. Buckets
+ * are listed as root directory's children, renaming and moving them doesn't
+ * work. Also, only buckets created with specified region(aws_region hint) are
+ * working.
+ */
 class AmazonS3 : public CloudProvider {
  public:
   AmazonS3();
