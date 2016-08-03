@@ -109,9 +109,7 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
                                         HttpRequest::Type::DEL);
       },
       output);
-  if (!HttpRequest::isSuccess(code)) {
-    return false;
-  }
+  if (!HttpRequest::isSuccess(code)) return false;
   return true;
 }
 
@@ -294,7 +292,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     callback(true);
     return true;
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
@@ -320,7 +318,7 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     callback(item);
     return item;
   });
-  return r;
+  return std::move(r);
 }
 
 HttpRequest::Pointer AmazonS3::listDirectoryRequest(
