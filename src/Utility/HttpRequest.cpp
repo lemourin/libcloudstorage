@@ -230,9 +230,7 @@ void HttpRequest::resetParameters() {
   header_parameters_.clear();
 }
 
-bool HttpRequest::isSuccess(int code) {
-  return (code / 100) == 2 || (code / 100) == 3;
-}
+bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
 
 bool HttpRequest::isRedirect(int code) { return (code / 100) == 3; }
 

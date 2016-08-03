@@ -71,7 +71,7 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
           return request;
         },
         output);
-    if (HttpRequest::isSuccess(code)) {
+    if (HttpRequest::isRedirect(code)) {
       std::string redirect_url;
       output >> redirect_url;
       static_cast<Item*>(item.get())->set_url(redirect_url);
