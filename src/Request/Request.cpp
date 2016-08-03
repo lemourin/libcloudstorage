@@ -41,7 +41,7 @@ namespace {
 
 bool isPrintable(const std::string& str) {
   for (char c : str)
-    if (!isprint(c)) return false;
+    if (!isprint(c) && !isspace(c)) return false;
   return true;
 }
 
