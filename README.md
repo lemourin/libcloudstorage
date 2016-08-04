@@ -83,3 +83,27 @@ It requires:
 * Qt5Multimedia if --with-qmlplayer (default)
 * Qt5Widgets, Qt5Multimedia, Qt5MultimediaWidgets if --with-qtmultimediawidgets
 * libvlcpp, libvlc, Qt5Widgets if --with-vlc
+
+TODO:
+=====
+
+Implement following cloud providers:
+* Asus WebStorage
+* Baidu Cloud
+* CloudMe
+* FileDropper
+* Fileserve
+* Handy Backup
+* IBM Connections
+* Apple ICloud
+* Infinit
+* Jumpshare
+* MagicVortex
+* MediaFire
+* Pogoplug
+* SpiderOak
+* SugarSync
+* Tencent Weiyun
+* TitanFile
+* Tresorit
+* XXL Box
