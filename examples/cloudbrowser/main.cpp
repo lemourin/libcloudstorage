@@ -63,7 +63,7 @@ class MainWidget : public QWidget {
     QWidget::keyPressEvent(e);
     if (e->isAccepted()) return;
     if (e->key() == Qt::Key_Q) {
-      media_player_->stop();
+      window_.stop();
       container_->setFocus();
     } else if (e->key() == Qt::Key_P)
       media_player_->pause();
