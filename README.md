@@ -27,7 +27,7 @@ Supported operations on files:
 * create directory
 * move file
 * rename file
-* direct, preauthenticated url to file
+* fetch direct, preauthenticated url to file
 
 Requirements:
 =============
@@ -47,14 +47,14 @@ was tested under the following operating systems:
 
 * Ubuntu 16.04
 * Windows 10
-* Android 5
+* Android 5.0.2
 
 Building:
 ===============
 
 The generic way to build and install it is:
 
-* ./bootstrap.sh
+* ./bootstrap
 * ./configure
 * make
 * sudo make install
