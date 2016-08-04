@@ -34,9 +34,7 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 
 MockProvider::MockProvider() {}
 
-void MockProvider::initialize(const std::string&,
-                              ICloudProvider::ICallback::Pointer,
-                              ICrypto::Pointer, const ICloudProvider::Hints&) {}
+void MockProvider::initialize(InitData&&) {}
 
 std::string MockProvider::token() const { return ""; }
 

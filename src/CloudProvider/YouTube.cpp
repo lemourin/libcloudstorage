@@ -37,14 +37,10 @@ YouTube::YouTube()
     : CloudProvider(make_unique<Auth>()),
       youtube_dl_url_("http://youtube-dl.appspot.com") {}
 
-void YouTube::initialize(const std::string& token,
-                         ICloudProvider::ICallback::Pointer callback,
-                         ICrypto::Pointer crypto,
-                         const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
-                            hints);
-  setWithHint(hints, "youtube_dl_url",
+void YouTube::initialize(InitData&& data) {
+  setWithHint(data.hints_, "youtube_dl_url",
               [this](std::string url) { youtube_dl_url_ = url; });
+  CloudProvider::initialize(std::move(data));
 }
 
 ICloudProvider::Hints YouTube::hints() const {
@@ -56,57 +52,55 @@ ICloudProvider::Hints YouTube::hints() const {
 
 std::string YouTube::name() const { return "youtube"; }
 
-HttpRequest::Pointer YouTube::getItemDataRequest(const std::string& id,
-                                                 std::ostream&) const {
+IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& id,
+                                                  std::ostream&) const {
   if (id.find(VIDEO_ID_PREFIX) != std::string::npos) {
-    auto request = make_unique<HttpRequest>(
-        "https://www.googleapis.com/youtube/v3/videos", HttpRequest::Type::GET);
+    auto request =
+        http()->create("https://www.googleapis.com/youtube/v3/videos", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
-    return std::move(request);
+    return request;
   } else {
-    auto request = make_unique<HttpRequest>(
-        "https://www.googleapis.com/youtube/v3/playlistItems",
-        HttpRequest::Type::GET);
+    auto request = http()->create(
+        "https://www.googleapis.com/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id);
-    return std::move(request);
+    return request;
   }
 }
 
-HttpRequest::Pointer YouTube::listDirectoryRequest(
+IHttpRequest::Pointer YouTube::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (item.id() == rootDirectory()->id()) {
     if (page_token.empty())
-      return make_unique<HttpRequest>(
+      return http()->create(
           "https://www.googleapis.com/youtube/v3/"
           "channels?mine=true&part=contentDetails,snippet",
-          HttpRequest::Type::GET);
+          "GET");
     else if (page_token == "real_playlist")
-      return make_unique<HttpRequest>(
+      return http()->create(
           "https://www.googleapis.com/youtube/v3/"
           "playlists?mine=true&part=snippet",
-          HttpRequest::Type::GET);
+          "GET");
     else
-      return make_unique<HttpRequest>(
+      return http()->create(
           "https://www.googleapis.com/youtube/v3/"
           "playlists?mine=true&part=snippet&pageToken=" +
               page_token,
-          HttpRequest::Type::GET);
+          "GET");
   } else {
-    auto request = make_unique<HttpRequest>(
-        "https://www.googleapis.com/youtube/v3/playlistItems",
-        HttpRequest::Type::GET);
+    auto request = http()->create(
+        "https://www.googleapis.com/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "snippet");
     request->setParameter("playlistId", item.id());
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
-    return std::move(request);
+    return request;
   }
 }
 
-HttpRequest::Pointer YouTube::downloadFileRequest(const IItem& item,
-                                                  std::ostream&) const {
-  return make_unique<HttpRequest>(item.url(), HttpRequest::Type::GET);
+IHttpRequest::Pointer YouTube::downloadFileRequest(const IItem& item,
+                                                   std::ostream&) const {
+  return http()->create(item.url(), "GET");
 }
 
 IItem::Pointer YouTube::getItemDataResponse(std::istream& stream) const {

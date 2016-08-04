@@ -24,7 +24,6 @@
 #include "DownloadFileRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 using namespace std::placeholders;
 
@@ -46,7 +45,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
         [this](std::ostream& input) { return request_factory_(*file_, input); },
         response_stream, std::bind(&DownloadFileRequest::ICallback::progress,
                                    callback_.get(), _1, _2));
-    if (HttpRequest::isSuccess(code)) callback_->done();
+    if (IHttpRequest::isSuccess(code)) callback_->done();
   });
 }
 

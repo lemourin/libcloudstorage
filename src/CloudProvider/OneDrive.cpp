@@ -27,7 +27,6 @@
 #include <sstream>
 
 #include "Request/Request.h"
-#include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -51,14 +50,13 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     std::stringstream output;
     int code = r->sendRequest(
         [=](std::ostream&) {
-          return make_unique<HttpRequest>(
+          return http()->create(
               "https://api.onedrive.com/v1.0/drive/items/" + parent->id() +
-                  ":/" + HttpRequest::escape(filename) +
-                  ":/upload.createSession",
-              HttpRequest::Type::POST);
+                  ":/" + http()->escape(filename) + ":/upload.createSession",
+              "POST");
         },
         output);
-    if (!HttpRequest::isSuccess(code)) {
+    if (!IHttpRequest::isSuccess(code)) {
       callback->error("Failed to create upload session.");
       return;
     }
@@ -71,8 +69,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
       uint32_t length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
       code = r->sendRequest(
           [=](std::ostream& stream) {
-            auto request = make_unique<HttpRequest>(
-                response["uploadUrl"].asString(), HttpRequest::Type::PUT);
+            auto request =
+                http()->create(response["uploadUrl"].asString(), "PUT");
             std::stringstream content_range;
             content_range << "bytes " << sent << "-" << sent + length - 1 << "/"
                           << size;
@@ -84,7 +82,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
           [=](uint32_t, uint32_t now) {
             callback->progress(size, sent + now);
           });
-      if (!HttpRequest::isSuccess(code)) {
+      if (!IHttpRequest::isSuccess(code)) {
         callback->error("Failed to upload chunk.");
         return;
       }
@@ -95,63 +93,59 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
   return std::move(r);
 }
 
-HttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
-                                                  std::ostream&) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + id,
-      HttpRequest::Type::GET);
-  request->setParameter(
-      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
-  return request;
-}
-
-HttpRequest::Pointer OneDrive::listDirectoryRequest(
-    const IItem& item, const std::string& page_token, std::ostream&) const {
-  if (!page_token.empty())
-    return make_unique<HttpRequest>(page_token, HttpRequest::Type::GET);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
-      HttpRequest::Type::GET);
-  request->setParameter(
-      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
-  return request;
-}
-
-HttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
+IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
                                                    std::ostream&) const {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",
-      HttpRequest::Type::GET);
+  IHttpRequest::Pointer request =
+      http()->create("https://api.onedrive.com/v1.0/drive/items/" + id, "GET");
+  request->setParameter(
+      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
   return request;
 }
 
-HttpRequest::Pointer OneDrive::deleteItemRequest(const IItem& item,
-                                                 std::ostream&) const {
-  return make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id(),
-      HttpRequest::Type::DEL);
+IHttpRequest::Pointer OneDrive::listDirectoryRequest(
+    const IItem& item, const std::string& page_token, std::ostream&) const {
+  if (!page_token.empty()) return http()->create(page_token, "GET");
+  auto request = http()->create(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/children",
+      "GET");
+  request->setParameter(
+      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
+  return request;
 }
 
-HttpRequest::Pointer OneDrive::createDirectoryRequest(
+IHttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
+                                                    std::ostream&) const {
+  const Item& item = static_cast<const Item&>(f);
+  auto request = http()->create(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id() + "/content",
+      "GET");
+  return request;
+}
+
+IHttpRequest::Pointer OneDrive::deleteItemRequest(const IItem& item,
+                                                  std::ostream&) const {
+  return http()->create(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id(), "DELETE");
+}
+
+IHttpRequest::Pointer OneDrive::createDirectoryRequest(
     const IItem& parent, const std::string& name, std::ostream& input) const {
-  auto request = make_unique<HttpRequest>(
+  auto request = http()->create(
       "https://api.onedrive.com/v1.0/drive/items/" + parent.id() + "/children",
-      HttpRequest::Type::POST);
+      "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
   json["folder"] = Json::Value(Json::objectValue);
   input << json;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
-                                               const IItem& destination,
-                                               std::ostream& stream) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + source.id(),
-      HttpRequest::Type::PATCH);
+IHttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
+                                                const IItem& destination,
+                                                std::ostream& stream) const {
+  auto request = http()->create(
+      "https://api.onedrive.com/v1.0/drive/items/" + source.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   if (destination.id() == rootDirectory()->id())
@@ -159,20 +153,19 @@ HttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
   else
     json["parentReference"]["id"] = destination.id();
   stream << json;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
-                                                 const std::string& name,
-                                                 std::ostream& stream) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.onedrive.com/v1.0/drive/items/" + item.id(),
-      HttpRequest::Type::PATCH);
+IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
+                                                  const std::string& name,
+                                                  std::ostream& stream) const {
+  auto request = http()->create(
+      "https://api.onedrive.com/v1.0/drive/items/" + item.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
   stream << json;
-  return std::move(request);
+  return request;
 }
 
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
@@ -227,10 +220,10 @@ std::string OneDrive::Auth::authorizeLibraryUrl() const {
   return result;
 }
 
-HttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& data) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://login.live.com/oauth20_token.srf", HttpRequest::Type::POST);
+  auto request =
+      http()->create("https://login.live.com/oauth20_token.srf", "POST");
   data << "client_id=" << client_id() << "&"
        << "client_secret=" << client_secret() << "&"
        << "redirect_uri=" << redirect_uri() << "&"
@@ -239,10 +232,10 @@ HttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
   return request;
 }
 
-HttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
+IHttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
     std::ostream& data) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://login.live.com/oauth20_token.srf", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create("https://login.live.com/oauth20_token.srf", "POST");
   data << "client_id=" << client_id() << "&"
        << "client_secret=" << client_secret() << "&"
        << "refresh_token=" << access_token()->refresh_token_ << "&"

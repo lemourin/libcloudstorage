@@ -40,7 +40,7 @@ IItem::Pointer Box::rootDirectory() const {
 std::string Box::name() const { return "box"; }
 
 bool Box::reauthorize(int code) const {
-  return HttpRequest::isClientError(code) && code != 404;
+  return IHttpRequest::isClientError(code) && code != 404;
 }
 
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
@@ -50,12 +50,11 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
                    this](Request<IItem::Pointer>* r) -> IItem::Pointer {
     std::stringstream output;
     int code = r->sendRequest(
-        [id](std::ostream&) {
-          return make_unique<HttpRequest>("https://api.box.com/2.0/files/" + id,
-                                          HttpRequest::Type::GET);
+        [this, id](std::ostream&) {
+          return http()->create("https://api.box.com/2.0/files/" + id, "GET");
         },
         output);
-    if (!HttpRequest::isSuccess(code)) {
+    if (!IHttpRequest::isSuccess(code)) {
       callback(nullptr);
       return nullptr;
     }
@@ -63,15 +62,13 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     output >> response;
     auto item = toItem(response);
     code = r->sendRequest(
-        [id](std::ostream&) {
-          auto request = make_unique<HttpRequest>(
-              "https://api.box.com/2.0/files/" + id + "/content",
-              HttpRequest::Type::GET);
-          request->set_follow_redirect(false);
+        [this, id](std::ostream&) {
+          auto request = http()->create(
+              "https://api.box.com/2.0/files/" + id + "/content", "GET", false);
           return request;
         },
         output);
-    if (HttpRequest::isRedirect(code)) {
+    if (IHttpRequest::isRedirect(code)) {
       std::string redirect_url;
       output >> redirect_url;
       static_cast<Item*>(item.get())->set_url(redirect_url);
@@ -82,23 +79,21 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
   return std::move(r);
 }
 
-HttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
-                                               const std::string& page_token,
-                                               std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.box.com/2.0/folders/" + item.id() + "/items/",
-      HttpRequest::Type::GET);
+IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
+                                                const std::string& page_token,
+                                                std::ostream&) const {
+  auto request = http()->create(
+      "https://api.box.com/2.0/folders/" + item.id() + "/items/", "GET");
   if (!page_token.empty()) request->setParameter("offset", page_token);
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
-                                            const std::string& filename,
-                                            std::ostream& prefix_stream,
-                                            std::ostream& suffix_stream) const {
+IHttpRequest::Pointer Box::uploadFileRequest(
+    const IItem& directory, const std::string& filename,
+    std::ostream& prefix_stream, std::ostream& suffix_stream) const {
   const std::string separator = "Thnlg1ecwyUJHyhYYGrQ";
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://upload.box.com/api/2.0/files/content", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create("https://upload.box.com/api/2.0/files/content", "POST");
   request->setHeaderParameter("Content-Type",
                               "multipart/form-data; boundary=" + separator);
   Json::Value json;
@@ -113,61 +108,57 @@ HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
                 << json_data << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"file\"; filename=\""
-                << HttpRequest::escapeHeader(filename) << "\"\r\n"
+                << http()->escapeHeader(filename) << "\"\r\n"
                 << "Content-Type: application/octet-stream\r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--";
   return request;
 }
 
-HttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
-                                              std::ostream&) const {
-  return make_unique<HttpRequest>(
-      "https://api.box.com/2.0/files/" + item.id() + "/content",
-      HttpRequest::Type::GET);
+IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
+                                               std::ostream&) const {
+  return http()->create(
+      "https://api.box.com/2.0/files/" + item.id() + "/content", "GET");
 }
 
-HttpRequest::Pointer Box::getThumbnailRequest(const IItem& item,
-                                              std::ostream&) const {
-  return make_unique<HttpRequest>(
-      "https://api.box.com/2.0/files/" + item.id() + "/thumbnail.png",
-      HttpRequest::Type::GET);
+IHttpRequest::Pointer Box::getThumbnailRequest(const IItem& item,
+                                               std::ostream&) const {
+  return http()->create(
+      "https://api.box.com/2.0/files/" + item.id() + "/thumbnail.png", "GET");
 }
 
-HttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
-                                            std::ostream&) const {
+IHttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
+                                             std::ostream&) const {
   if (item.type() == IItem::FileType::Directory)
-    return make_unique<HttpRequest>(
+    return http()->create(
         "https://api.box.com/2.0/folders/" + item.id() + "?recursive=true",
-        HttpRequest::Type::DEL);
+        "DELETE");
   else
-    return make_unique<HttpRequest>(
-        "https://api.box.com/2.0/files/" + item.id(), HttpRequest::Type::DEL);
+    return http()->create("https://api.box.com/2.0/files/" + item.id(),
+                          "DELETE");
 }
 
-HttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
-                                                 const std::string& name,
-                                                 std::ostream& stream) const {
-  auto request = make_unique<HttpRequest>("https://api.box.com/2.0/folders",
-                                          HttpRequest::Type::POST);
+IHttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
+                                                  const std::string& name,
+                                                  std::ostream& stream) const {
+  auto request = http()->create("https://api.box.com/2.0/folders", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
   json["parent"]["id"] = item.id();
   stream << json;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Box::moveItemRequest(const IItem& source,
-                                          const IItem& destination,
-                                          std::ostream& stream) const {
-  HttpRequest::Pointer request;
+IHttpRequest::Pointer Box::moveItemRequest(const IItem& source,
+                                           const IItem& destination,
+                                           std::ostream& stream) const {
+  IHttpRequest::Pointer request;
   if (source.type() == IItem::FileType::Directory)
-    request = make_unique<HttpRequest>(
-        "https://api.box.com/2.0/folders/" + source.id(),
-        HttpRequest::Type::PUT);
+    request =
+        http()->create("https://api.box.com/2.0/folders/" + source.id(), "PUT");
   else
-    request = make_unique<HttpRequest>(
-        "https://api.box.com/2.0/files/" + source.id(), HttpRequest::Type::PUT);
+    request =
+        http()->create("https://api.box.com/2.0/files/" + source.id(), "PUT");
 
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
@@ -176,16 +167,16 @@ HttpRequest::Pointer Box::moveItemRequest(const IItem& source,
   return request;
 }
 
-HttpRequest::Pointer Box::renameItemRequest(const IItem& item,
-                                            const std::string& name,
-                                            std::ostream& input) const {
-  HttpRequest::Pointer request;
+IHttpRequest::Pointer Box::renameItemRequest(const IItem& item,
+                                             const std::string& name,
+                                             std::ostream& input) const {
+  IHttpRequest::Pointer request;
   if (item.type() == IItem::FileType::Directory)
-    request = make_unique<HttpRequest>(
-        "https://api.box.com/2.0/folders/" + item.id(), HttpRequest::Type::PUT);
+    request =
+        http()->create("https://api.box.com/2.0/folders/" + item.id(), "PUT");
   else
-    request = make_unique<HttpRequest>(
-        "https://api.box.com/2.0/files/" + item.id(), HttpRequest::Type::PUT);
+    request =
+        http()->create("https://api.box.com/2.0/files/" + item.id(), "PUT");
   Json::Value json;
   json["name"] = name;
   input << json;
@@ -231,27 +222,25 @@ std::string Box::Auth::authorizeLibraryUrl() const {
          client_id() + "&redirect_uri=" + redirect_uri() + "&state=whatever";
 }
 
-HttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& input_data) const {
-  auto request = make_unique<HttpRequest>("https://api.box.com/oauth2/token",
-                                          HttpRequest::Type::POST);
+  auto request = http()->create("https://api.box.com/oauth2/token", "POST");
   input_data << "grant_type=authorization_code&"
              << "code=" << authorization_code() << "&"
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret();
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Box::Auth::refreshTokenRequest(
+IHttpRequest::Pointer Box::Auth::refreshTokenRequest(
     std::ostream& input_data) const {
-  auto request = make_unique<HttpRequest>("https://api.box.com/oauth2/token",
-                                          HttpRequest::Type::POST);
+  auto request = http()->create("https://api.box.com/oauth2/token", "POST");
   input_data << "grant_type=refresh_token&"
              << "refresh_token=" << access_token()->refresh_token_ << "&"
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret() << "&"
              << "redirect_uri=" << redirect_uri();
-  return std::move(request);
+  return request;
 }
 
 IAuth::Token::Pointer Box::Auth::exchangeAuthorizationCodeResponse(

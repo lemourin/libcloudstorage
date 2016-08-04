@@ -1,7 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
-	$(libcurl_CFLAGS) \
 	$(libjsoncpp_CFLAGS) \
 	$(libmicrohttpd_CFLAGS) \
 	$(libtinyxml2_CFLAGS)
@@ -16,7 +15,6 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
-	Utility/HttpRequest.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -46,7 +44,6 @@ noinst_HEADERS = \
 	Utility/Auth.h \
 	Utility/Item.h \
 	Utility/Utility.h \
-	Utility/HttpRequest.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
@@ -75,10 +72,10 @@ nobase_include_HEADERS = \
 	ICloudProvider.h \
 	ICloudStorage.h \
 	IRequest.h \
-	ICrypto.h
+	ICrypto.h \
+	IHttp.h
 
 libcloudstorage_la_LIBADD = \
-	$(libcurl_LIBS) \
 	$(libjsoncpp_LIBS) \
 	$(libmicrohttpd_LIBS) \
 	$(libtinyxml2_LIBS)
@@ -95,6 +92,13 @@ AM_CXXFLAGS += $(libcryptopp_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcryptopp_LIBS)
 libcloudstorage_la_SOURCES += Utility/CryptoPP.cpp
 noinst_HEADERS += Utility/CryptoPP.h
+endif
+
+if WITH_CURL
+AM_CXXFLAGS += $(libcurl_CFLAGS)
+libcloudstorage_la_LIBADD += $(libcurl_LIBS)
+libcloudstorage_la_SOURCES += Utility/CurlHttp.cpp
+noinst_HEADERS += Utility/CurlHttp.h
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

@@ -31,7 +31,6 @@
 #include "ICloudProvider.h"
 #include "Request/AuthorizeRequest.h"
 #include "Utility/Auth.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -44,8 +43,7 @@ class CloudProvider : public ICloudProvider,
 
   CloudProvider(IAuth::Pointer);
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer, const Hints& hints);
+  void initialize(InitData&&);
 
   Hints hints() const;
   std::string access_token() const;
@@ -56,6 +54,7 @@ class CloudProvider : public ICloudProvider,
   IItem::Pointer rootDirectory() const;
   ICallback* callback() const;
   ICrypto* crypto() const;
+  IHttp* http() const;
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
@@ -90,7 +89,7 @@ class CloudProvider : public ICloudProvider,
    * @param input_stream request body
    * @return http request
    */
-  virtual HttpRequest::Pointer getItemDataRequest(
+  virtual IHttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;
 
   /**
@@ -100,7 +99,7 @@ class CloudProvider : public ICloudProvider,
    * @param input_stream request body
    * @return http request
    */
-  virtual HttpRequest::Pointer listDirectoryRequest(
+  virtual IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const;
 
@@ -113,7 +112,7 @@ class CloudProvider : public ICloudProvider,
    * @param suffix_stream what should be sent after the file in request's body
    * @return http request
    */
-  virtual HttpRequest::Pointer uploadFileRequest(
+  virtual IHttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename,
       std::ostream& prefix_stream, std::ostream& suffix_stream) const;
 
@@ -123,7 +122,7 @@ class CloudProvider : public ICloudProvider,
    * @param input_stream request body
    * @return http request
    */
-  virtual HttpRequest::Pointer downloadFileRequest(
+  virtual IHttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const;
 
   /**
@@ -134,7 +133,7 @@ class CloudProvider : public ICloudProvider,
    * @param input_stream request body
    * @return http request
    */
-  virtual HttpRequest::Pointer getThumbnailRequest(
+  virtual IHttpRequest::Pointer getThumbnailRequest(
       const IItem& item, std::ostream& input_stream) const;
 
   /**
@@ -143,7 +142,7 @@ class CloudProvider : public ICloudProvider,
    * @param input_stream request body
    * @return http request
    */
-  virtual HttpRequest::Pointer deleteItemRequest(
+  virtual IHttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const;
 
   /**
@@ -151,9 +150,9 @@ class CloudProvider : public ICloudProvider,
    *
    * @return http request
    */
-  virtual HttpRequest::Pointer createDirectoryRequest(const IItem&,
-                                                      const std::string&,
-                                                      std::ostream&) const;
+  virtual IHttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                                       const std::string&,
+                                                       std::ostream&) const;
 
   /**
    * Used by default implementation of moveItemAsync.
@@ -162,9 +161,9 @@ class CloudProvider : public ICloudProvider,
    * @param destination
    * @return http request
    */
-  virtual HttpRequest::Pointer moveItemRequest(const IItem& source,
-                                               const IItem& destination,
-                                               std::ostream&) const;
+  virtual IHttpRequest::Pointer moveItemRequest(const IItem& source,
+                                                const IItem& destination,
+                                                std::ostream&) const;
 
   /**
    * Used by default implementation of renameItemAsync.
@@ -173,9 +172,9 @@ class CloudProvider : public ICloudProvider,
    * @param name
    * @return http request
    */
-  virtual HttpRequest::Pointer renameItemRequest(const IItem& item,
-                                                 const std::string& name,
-                                                 std::ostream&) const;
+  virtual IHttpRequest::Pointer renameItemRequest(const IItem& item,
+                                                  const std::string& name,
+                                                  std::ostream&) const;
 
   /**
    * Used by default implementation of getItemDataAsync, should translate
@@ -216,7 +215,7 @@ class CloudProvider : public ICloudProvider,
    *
    * @param request request to be authorized
    */
-  virtual void authorizeRequest(HttpRequest& request) const;
+  virtual void authorizeRequest(IHttpRequest& request) const;
 
   /**
    * Returns whether we should try to authorize again after receiving response
@@ -250,6 +249,7 @@ class CloudProvider : public ICloudProvider,
   IAuth::Pointer auth_;
   ICloudProvider::ICallback::Pointer callback_;
   ICrypto::Pointer crypto_;
+  IHttp::Pointer http_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
   mutable std::mutex auth_mutex_;

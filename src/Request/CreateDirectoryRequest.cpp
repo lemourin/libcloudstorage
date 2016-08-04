@@ -24,7 +24,6 @@
 #include "CreateDirectoryRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -44,7 +43,7 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
           return provider()->createDirectoryRequest(*parent_, name_, stream);
         },
         output);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       auto i = provider()->createDirectoryResponse(output);
       callback_(i);
       return i;

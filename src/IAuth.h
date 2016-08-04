@@ -28,7 +28,6 @@
 #include <string>
 
 #include "ICloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -45,6 +44,9 @@ class IAuth {
   };
 
   virtual ~IAuth() = default;
+
+  virtual void initialize(IHttp*) = 0;
+  virtual IHttp* http() const = 0;
 
   virtual const std::string& authorization_code() const = 0;
   virtual void set_authorization_code(const std::string&) = 0;
@@ -101,7 +103,7 @@ class IAuth {
    * @param input_data data to be sent in request body
    * @return http request
    */
-  virtual HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+  virtual IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
       std::ostream& input_data) const = 0;
 
   /**
@@ -110,7 +112,7 @@ class IAuth {
    * @param input_data data to be sent in request body
    * @return http request
    */
-  virtual HttpRequest::Pointer refreshTokenRequest(
+  virtual IHttpRequest::Pointer refreshTokenRequest(
       std::ostream& input_data) const = 0;
 
   /**

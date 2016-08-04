@@ -46,8 +46,7 @@ class MegaNz : public CloudProvider {
   MegaNz();
   ~MegaNz();
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer, const Hints& hints);
+  void initialize(InitData&&);
 
   std::string name() const;
   IItem::Pointer rootDirectory() const;
@@ -92,9 +91,9 @@ class MegaNz : public CloudProvider {
 
     std::string authorizeLibraryUrl() const;
 
-    HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;
-    HttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;

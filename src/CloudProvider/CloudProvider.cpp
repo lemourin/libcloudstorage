@@ -44,36 +44,48 @@
 #include "Utility/CryptoPP.h"
 #endif
 
+#ifdef WITH_CURL
+#include "Utility/CurlHttp.h"
+#endif
+
 using namespace std::placeholders;
 
 namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
     : auth_(std::move(auth)),
+      http_(),
       current_authorization_status_(AuthorizationStatus::None) {}
 
-void CloudProvider::initialize(const std::string& token,
-                               ICallback::Pointer callback,
-                               ICrypto::Pointer crypto, const Hints& hints) {
+void CloudProvider::initialize(InitData&& data) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
-  callback_ = std::move(callback);
-  crypto_ = std::move(crypto);
+  callback_ = std::move(data.callback_);
+  crypto_ = std::move(data.crypto_engine_);
+  http_ = std::move(data.http_engine_);
 
-  auto t = auth()->fromTokenString(token);
-  setWithHint(hints, "access_token", [&t](std::string v) { t->token_ = v; });
+  auto t = auth()->fromTokenString(data.token_);
+  setWithHint(data.hints_, "access_token",
+              [&t](std::string v) { t->token_ = v; });
   auth()->set_access_token(std::move(t));
 
-  setWithHint(hints, "client_id",
+  setWithHint(data.hints_, "client_id",
               [this](std::string v) { auth()->set_client_id(v); });
-  setWithHint(hints, "client_secret",
+  setWithHint(data.hints_, "client_secret",
               [this](std::string v) { auth()->set_client_secret(v); });
-  setWithHint(hints, "redirect_uri_port", [this](std::string v) {
+  setWithHint(data.hints_, "redirect_uri_port", [this](std::string v) {
     auth()->set_redirect_uri_port(std::atoi(v.c_str()));
   });
 
 #ifdef WITH_CRYPTOPP
   if (!crypto_) crypto_ = make_unique<CryptoPP>();
 #endif
+
+#ifdef WITH_CURL
+  if (!http_) http_ = make_unique<CurlHttp>();
+#endif
+
+  auth()->initialize(http());
+  if (!http_) callback()->error(*this, "No http module specified.");
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
@@ -108,6 +120,8 @@ ICloudProvider::ICallback* CloudProvider::callback() const {
 
 ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
+IHttp* CloudProvider::http() const { return http_.get(); }
+
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   return make_unique<cloudstorage::ListDirectoryRequest>(
@@ -140,12 +154,12 @@ ICloudProvider::GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
                                                        f);
 }
 
-void CloudProvider::authorizeRequest(HttpRequest& r) const {
+void CloudProvider::authorizeRequest(IHttpRequest& r) const {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
 }
 
 bool CloudProvider::reauthorize(int code) const {
-  return HttpRequest::isAuthorizationError(code);
+  return IHttpRequest::isAuthorizationError(code);
 }
 
 AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
@@ -243,54 +257,54 @@ ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
                                                       name, callback);
 }
 
-HttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
+IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
+                                                        std::ostream&) const {
+  return nullptr;
+}
+
+IHttpRequest::Pointer CloudProvider::listDirectoryRequest(const IItem&,
+                                                          const std::string&,
+                                                          std::ostream&) const {
+  return nullptr;
+}
+
+IHttpRequest::Pointer CloudProvider::uploadFileRequest(const IItem&,
+                                                       const std::string&,
+                                                       std::ostream&,
                                                        std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer CloudProvider::listDirectoryRequest(const IItem&,
-                                                         const std::string&,
+IHttpRequest::Pointer CloudProvider::downloadFileRequest(const IItem&,
                                                          std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer CloudProvider::uploadFileRequest(const IItem&,
-                                                      const std::string&,
-                                                      std::ostream&,
-                                                      std::ostream&) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer CloudProvider::downloadFileRequest(const IItem&,
-                                                        std::ostream&) const {
-  return nullptr;
-}
-
-HttpRequest::Pointer CloudProvider::getThumbnailRequest(const IItem& i,
-                                                        std::ostream&) const {
+IHttpRequest::Pointer CloudProvider::getThumbnailRequest(const IItem& i,
+                                                         std::ostream&) const {
   const Item& item = static_cast<const Item&>(i);
   if (item.thumbnail_url().empty()) return nullptr;
-  return make_unique<HttpRequest>(item.thumbnail_url(), HttpRequest::Type::GET);
+  return http()->create(item.thumbnail_url(), "GET");
 }
 
-HttpRequest::Pointer CloudProvider::deleteItemRequest(const IItem&,
-                                                      std::ostream&) const {
+IHttpRequest::Pointer CloudProvider::deleteItemRequest(const IItem&,
+                                                       std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer CloudProvider::createDirectoryRequest(
+IHttpRequest::Pointer CloudProvider::createDirectoryRequest(
     const IItem&, const std::string&, std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer CloudProvider::moveItemRequest(const IItem&, const IItem&,
-                                                    std::ostream&) const {
+IHttpRequest::Pointer CloudProvider::moveItemRequest(const IItem&, const IItem&,
+                                                     std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer CloudProvider::renameItemRequest(const IItem&,
-                                                      const std::string&,
-                                                      std::ostream&) const {
+IHttpRequest::Pointer CloudProvider::renameItemRequest(const IItem&,
+                                                       const std::string&,
+                                                       std::ostream&) const {
   return nullptr;
 }
 

@@ -24,7 +24,6 @@
 #include "AuthorizeRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -48,14 +47,11 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
   set_cancel_callback([this]() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (awaiting_authorization_code_) {
-      HttpRequest request(provider()->auth()->redirect_uri(),
-                          HttpRequest::Type::GET);
-      request.setParameter("accepted", "false");
-      try {
-        request.send();
-      } catch (const HttpException& e) {
-        if (e.code() != CURLE_GOT_NOTHING) throw;
-      }
+      auto request =
+          provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
+      request->setParameter("accepted", "false");
+      std::stringstream input, output;
+      request->send(input, output);
     }
   });
 }
@@ -65,13 +61,13 @@ AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 bool AuthorizeRequest::oauth2Authorization() {
   IAuth* auth = provider()->auth();
   std::stringstream input, output, error_stream;
-  HttpRequest::Pointer r = auth->refreshTokenRequest(input);
+  IHttpRequest::Pointer r = auth->refreshTokenRequest(input);
   int code = send(r.get(), input, output, &error_stream);
-  if (HttpRequest::isSuccess(code)) {
+  if (IHttpRequest::isSuccess(code)) {
     std::unique_lock<std::mutex> lock(provider()->auth_mutex());
     auth->set_access_token(auth->refreshTokenResponse(output));
     return true;
-  } else if (r && !HttpRequest::isClientError(code)) {
+  } else if (r && !IHttpRequest::isClientError(code)) {
     if (!is_cancelled())
       provider()->callback()->error(*provider(),
                                     error_string(code, error_stream.str()));
@@ -86,8 +82,8 @@ bool AuthorizeRequest::oauth2Authorization() {
     auth->set_authorization_code(authorization_code);
     std::stringstream input, output;
     std::stringstream error_stream;
-    HttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
-    if (HttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
+    IHttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
+    if (IHttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
       std::unique_lock<std::mutex> lock(provider()->auth_mutex());
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return true;

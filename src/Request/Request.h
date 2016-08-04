@@ -29,13 +29,13 @@
 #include <sstream>
 #include <vector>
 
+#include "IHttp.h"
 #include "IRequest.h"
 #include "Utility/Utility.h"
 
 namespace cloudstorage {
 
 class CloudProvider;
-class HttpRequest;
 class HttpCallback;
 class IItem;
 
@@ -77,12 +77,11 @@ class Request : public IRequest<ReturnValue> {
    * @param upload upload progress callback
    * @return http code or curl error code
    */
-  int sendRequest(
-      std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
-      std::ostream& output, ProgressFunction download = nullptr,
-      ProgressFunction upload = nullptr);
+  int sendRequest(std::function<IHttpRequest::Pointer(std::ostream&)> factory,
+                  std::ostream& output, ProgressFunction download = nullptr,
+                  ProgressFunction upload = nullptr);
 
-  int send(HttpRequest*, std::istream& input, std::ostream& output,
+  int send(IHttpRequest*, std::istream& input, std::ostream& output,
            std::ostream* error, ProgressFunction download = nullptr,
            ProgressFunction upload = nullptr);
 

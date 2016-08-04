@@ -139,10 +139,11 @@ void Request<T>::error(int code, const std::string& desc) {
 template <class T>
 std::string Request<T>::error_string(int code, const std::string& desc) const {
   std::stringstream stream;
-  if (HttpRequest::isCurlError(code))
-    stream << "CURL code " << code << ": "
-           << curl_easy_strerror(static_cast<CURLcode>(code));
-  else {
+  if (code < 0) {
+    code *= -1;
+    stream << "HTTP library error " << code << ": "
+           << provider()->http()->error(code);
+  } else {
     stream << "HTTP code " << code;
     if (isPrintable(desc)) stream << ": " << desc;
   }
@@ -151,14 +152,14 @@ std::string Request<T>::error_string(int code, const std::string& desc) const {
 
 template <class T>
 int Request<T>::sendRequest(
-    std::function<std::shared_ptr<HttpRequest>(std::ostream&)> factory,
+    std::function<IHttpRequest::Pointer(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
   std::stringstream input, error_stream;
   auto request = factory(input);
   if (request) provider()->authorizeRequest(*request);
   int code =
       send(request.get(), input, output, &error_stream, download, upload);
-  if (HttpRequest::isSuccess(code)) return code;
+  if (IHttpRequest::isSuccess(code)) return code;
   if (provider()->reauthorize(code)) {
     if (!reauthorize()) {
       if (!is_cancelled()) this->error(code, error_stream.str());
@@ -168,31 +169,25 @@ int Request<T>::sendRequest(
       if (request) provider()->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
-      if (!is_cancelled() && !HttpRequest::isSuccess(code))
+      if (!is_cancelled() && !IHttpRequest::isSuccess(code))
         this->error(code, error_stream.str());
     }
   } else {
-    if (!is_cancelled() && code != HttpRequest::Aborted)
+    if (!is_cancelled() && code != IHttpRequest::Aborted)
       this->error(code, error_stream.str());
   }
   return code;
 }
 
 template <class T>
-int Request<T>::send(HttpRequest* request, std::istream& input,
+int Request<T>::send(IHttpRequest* request, std::istream& input,
                      std::ostream& output, std::ostream* error,
                      ProgressFunction download, ProgressFunction upload) {
   if (!request) {
-    this->error(HttpRequest::Aborted, "Not available.");
-    return HttpRequest::Aborted;
+    this->error(IHttpRequest::Aborted, "Not available.");
+    return IHttpRequest::Aborted;
   }
-  int code;
-  try {
-    code = request->send(input, output, error, httpCallback(download, upload));
-  } catch (const HttpException& e) {
-    code = e.code();
-  }
-  return code;
+  return request->send(input, output, error, httpCallback(download, upload));
 }
 
 template <class T>

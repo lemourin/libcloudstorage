@@ -44,8 +44,7 @@ class OwnCloud : public CloudProvider {
 
   IItem::Pointer rootDirectory() const;
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer, const Hints& hints);
+  void initialize(InitData&&);
 
   std::string name() const;
   std::string token() const;
@@ -55,22 +54,22 @@ class OwnCloud : public CloudProvider {
                                                        const std::string&,
                                                        CreateDirectoryCallback);
 
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream& input_stream) const;
-  HttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                            const std::string& page_token,
-                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                         const std::string& filename,
-                                         std::ostream&, std::ostream&) const;
-  HttpRequest::Pointer downloadFileRequest(const IItem&,
+  IHttpRequest::Pointer getItemDataRequest(const std::string&,
                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer deleteItemRequest(const IItem&,
-                                         std::ostream& input_stream) const;
-  HttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                       std::ostream&) const;
-  HttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                         std::ostream&) const;
+  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                             const std::string& page_token,
+                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
+                                          const std::string& filename,
+                                          std::ostream&, std::ostream&) const;
+  IHttpRequest::Pointer downloadFileRequest(const IItem&,
+                                            std::ostream& input_stream) const;
+  IHttpRequest::Pointer deleteItemRequest(const IItem&,
+                                          std::ostream& input_stream) const;
+  IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
+                                        std::ostream&) const;
+  IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
+                                          std::ostream&) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
@@ -81,7 +80,7 @@ class OwnCloud : public CloudProvider {
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 
   bool reauthorize(int code) const;
-  void authorizeRequest(HttpRequest&) const;
+  void authorizeRequest(IHttpRequest&) const;
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -89,9 +88,9 @@ class OwnCloud : public CloudProvider {
 
     std::string authorizeLibraryUrl() const;
 
-    HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;
-    HttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * HttpRequest.h : interface of HttpRequest
+ * CurlHttp.h : interface of CurlHttp
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,52 +21,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef HTTPREQUEST_H
-#define HTTPREQUEST_H
+#ifndef CURLHTTP_H
+#define CURLHTTP_H
 
 #include <curl/curl.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "IHttp.h"
+
 namespace cloudstorage {
 
-class HttpException : public std::exception {
+class CurlHttp : public IHttp {
  public:
-  HttpException(CURLcode);
-
-  CURLcode code() const { return code_; }
-  const char* what() const noexcept { return description_.c_str(); }
-
- private:
-  CURLcode code_;
-  std::string description_;
+  IHttpRequest::Pointer create(const std::string&, const std::string&,
+                               bool) const;
+  std::string unescape(const std::string&) const;
+  std::string escape(const std::string&) const;
+  std::string escapeHeader(const std::string&) const;
+  std::string error(int) const;
 };
 
-class HttpRequest {
+class CurlHttpRequest : public IHttpRequest {
  public:
-  using Pointer = std::shared_ptr<HttpRequest>;
-
-  static constexpr int Aborted = -1;
-  static constexpr int Unknown = -2;
-
-  class ICallback {
-   public:
-    using Pointer = std::unique_ptr<ICallback>;
-
-    virtual ~ICallback() = default;
-
-    virtual bool abort() = 0;
-    virtual void progressDownload(uint32_t total, uint32_t now) = 0;
-    virtual void progressUpload(uint32_t total, uint32_t now) = 0;
-    virtual void receivedHttpCode(int code) = 0;
-    virtual void receivedContentLength(int length) = 0;
-  };
-
-  enum class Type { POST, GET, PUT, DEL, PATCH, CUSTOM };
-
-  HttpRequest(const std::string& url, Type);
-  HttpRequest(const std::string& url, const std::string& method);
+  CurlHttpRequest(const std::string& url, const std::string& method,
+                  bool follow_redirect);
 
   void setParameter(const std::string& parameter, const std::string& value);
   void setHeaderParameter(const std::string& parameter,
@@ -75,38 +55,13 @@ class HttpRequest {
   const std::unordered_map<std::string, std::string>& parameters() const;
   const std::unordered_map<std::string, std::string>& headerParameters() const;
 
-  bool follow_redirect() const;
-  void set_follow_redirect(bool);
-
   const std::string& url() const;
-  void set_url(const std::string&);
+  const std::string& method() const;
+  bool follow_redirect() const;
 
-  Type type() const;
-  void set_type(Type);
-
-  void setCreditentials(const std::string& username,
-                        const std::string& password);
-
-  std::string send() const;
-  std::string send(std::istream& data) const;
-  int send(std::ostream& response) const;
   int send(std::istream& data, std::ostream& response,
            std::ostream* error_stream = nullptr,
            ICallback::Pointer = nullptr) const;
-
-  void resetParameters();
-
-  static bool isSuccess(int code);
-  static bool isRedirect(int code);
-  static bool isClientError(int code);
-  static bool isAuthorizationError(int code);
-  static bool isCurlError(int code);
-
-  static std::string unescape(const std::string&);
-  static std::string escape(const std::string&);
-
-  static std::string escapeHeader(const std::string&);
-  static std::string toString(Type);
 
   std::string parametersToString() const;
 
@@ -121,11 +76,10 @@ class HttpRequest {
   std::string url_;
   std::unordered_map<std::string, std::string> parameters_;
   std::unordered_map<std::string, std::string> header_parameters_;
-  Type type_;
-  std::string custom_method_;
+  std::string method_;
   bool follow_redirect_;
 };
 
 }  // namespace cloudstorage
 
-#endif  // HTTPREQUEST_H
+#endif  // CURLHTTP_H

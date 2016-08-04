@@ -42,8 +42,7 @@ class AmazonS3 : public CloudProvider {
  public:
   AmazonS3();
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer, const Hints& hints);
+  void initialize(InitData&& data);
 
   std::string token() const;
   std::string name() const;
@@ -64,20 +63,20 @@ class AmazonS3 : public CloudProvider {
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback);
 
-  HttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                            const std::string& page_token,
+  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                             const std::string& page_token,
+                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
+                                          const std::string& filename,
+                                          std::ostream& prefix_stream,
+                                          std::ostream& suffix_stream) const;
+  IHttpRequest::Pointer downloadFileRequest(const IItem&,
                                             std::ostream& input_stream) const;
-  HttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                         const std::string& filename,
-                                         std::ostream& prefix_stream,
-                                         std::ostream& suffix_stream) const;
-  HttpRequest::Pointer downloadFileRequest(const IItem&,
-                                           std::ostream& input_stream) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 
-  void authorizeRequest(HttpRequest&) const;
+  void authorizeRequest(IHttpRequest&) const;
   bool reauthorize(int) const;
 
   std::string access_id() const;
@@ -91,9 +90,9 @@ class AmazonS3 : public CloudProvider {
 
     std::string authorizeLibraryUrl() const;
 
-    HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;
-    HttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;

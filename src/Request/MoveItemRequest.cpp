@@ -43,8 +43,8 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
           return p->moveItemRequest(*source, *destination, stream);
         },
         output);
-    callback(HttpRequest::isSuccess(code));
-    return HttpRequest::isSuccess(code);
+    callback(IHttpRequest::isSuccess(code));
+    return IHttpRequest::isSuccess(code);
   });
 }
 

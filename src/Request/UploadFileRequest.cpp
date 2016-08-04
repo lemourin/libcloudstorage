@@ -24,7 +24,6 @@
 #include "UploadFileRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 using namespace std::placeholders;
 
@@ -58,7 +57,7 @@ UploadFileRequest::UploadFileRequest(
         },
         response_stream, nullptr,
         std::bind(&ICallback::progress, callback_.get(), _1, _2));
-    if (HttpRequest::isSuccess(code)) callback_->done();
+    if (IHttpRequest::isSuccess(code)) callback_->done();
   });
 }
 

@@ -32,10 +32,10 @@ Supported operations on files:
 Requirements:
 =============
 
-* cURL (with OpenSSL/c-ares)
 * libmicrohttpd
 * jsoncpp
 * tinyxml2
+* cURL (with OpenSSL/c-ares, optional)
 * libcryptopp (optional)
 * mega (optional, required for mega.nz)
 
@@ -61,7 +61,9 @@ The generic way to build and install it is:
 
 Optionally, you can pass --with-cryptopp flag to ./configure; library then will
 use cryptopp's hashing functions, otherwise, user will have to provide
-ICrypto's interface implementation.
+ICrypto's interface implementation. You can also pass --with-curl flag, then
+libcloudstorage will do all http requestes with curl, without this flag you'll
+have to implement IHttp interface yourself.
 
 If you don't have access to Mega SDK, use --with-mega=no to build the library
 without it.
@@ -71,8 +73,8 @@ Cloud browser:
 
 Optionally, you can build an example program which provides easy graphics user
 interface for all the features implemented in libcloudstorage. You just have to
-pass --with-examples flag to ./configure. Cloud browser also allows playing
-streams from cloud providers, by default it uses qml player as a multimedia
+pass --with-examples and --with-curl flag to ./configure. Cloud browser also allows
+playing streams from cloud providers, by default it uses qml player as a multimedia
 player (--with-qmlplayer). You can choose libvlc as a player with --with-vlc or
 Qt5MultimediaWidgets based player with --with-qtmultimediawidgets.
 

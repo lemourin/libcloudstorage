@@ -24,7 +24,6 @@
 #include "ListDirectoryRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -49,7 +48,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
             return provider()->listDirectoryRequest(*directory_, page_token, i);
           },
           output_stream);
-      if (HttpRequest::isSuccess(code)) {
+      if (IHttpRequest::isSuccess(code)) {
         page_token = "";
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {

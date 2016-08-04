@@ -1,5 +1,5 @@
 /*****************************************************************************
- * HttpRequest.cpp : implementation of HttpRequest
+ * CurlHttp.cpp : implementation of CurlHttp
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,11 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#include "HttpRequest.h"
+#include "CurlHttp.h"
 
 #include <json/json.h>
 #include <array>
 #include <sstream>
+
+#include "Utility.h"
 
 const uint32_t MAX_URL_LENGTH = 1024;
 
@@ -37,7 +39,7 @@ struct write_callback_data {
   CURL* handle_;
   std::ostream* stream_;
   std::ostream* error_stream_;
-  std::shared_ptr<HttpRequest::ICallback> callback_;
+  std::shared_ptr<CurlHttpRequest::ICallback> callback_;
   bool first_call_;
   bool success_;
 };
@@ -50,7 +52,7 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
       long http_code = 0;
       curl_easy_getinfo(data->handle_, CURLINFO_RESPONSE_CODE, &http_code);
       data->callback_->receivedHttpCode(static_cast<int>(http_code));
-      data->success_ = HttpRequest::isSuccess(static_cast<int>(http_code));
+      data->success_ = IHttpRequest::isSuccess(static_cast<int>(http_code));
       double content_length = 0;
       curl_easy_getinfo(data->handle_, CURLINFO_CONTENT_LENGTH_DOWNLOAD,
                         &content_length);
@@ -72,8 +74,8 @@ size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
 
 int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
                       curl_off_t ultotal, curl_off_t ulnow) {
-  HttpRequest::ICallback* callback =
-      static_cast<HttpRequest::ICallback*>(clientp);
+  CurlHttpRequest::ICallback* callback =
+      static_cast<CurlHttpRequest::ICallback*>(clientp);
   if (callback) {
     if (ultotal != 0)
       callback->progressUpload(static_cast<uint32_t>(ultotal),
@@ -95,88 +97,52 @@ std::ios::pos_type stream_length(std::istream& data) {
 
 }  // namespace
 
-HttpRequest::HttpRequest(const std::string& url, Type t)
-    : handle_(curl_easy_init(), CurlDeleter()),
+CurlHttpRequest::CurlHttpRequest(const std::string& url,
+                                 const std::string& method,
+                                 bool follow_redirect)
+    : handle_(curl_easy_init()),
       url_(url),
-      type_(t),
-      follow_redirect_(true) {
+      method_(method),
+      follow_redirect_(follow_redirect) {
   curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER,
                    static_cast<long>(false));
   curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION,
-                   static_cast<long>(true));
+                   static_cast<long>(follow_redirect));
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
   curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
 }
 
-HttpRequest::HttpRequest(const std::string& url, const std::string& method)
-    : HttpRequest(url, Type::CUSTOM) {
-  custom_method_ = method;
-}
-
-void HttpRequest::setParameter(const std::string& parameter,
-                               const std::string& value) {
+void CurlHttpRequest::setParameter(const std::string& parameter,
+                                   const std::string& value) {
   parameters_[parameter] = value;
 }
 
-void HttpRequest::setHeaderParameter(const std::string& parameter,
-                                     const std::string& value) {
+void CurlHttpRequest::setHeaderParameter(const std::string& parameter,
+                                         const std::string& value) {
   header_parameters_[parameter] = value;
 }
 
-const std::unordered_map<std::string, std::string>& HttpRequest::parameters()
-    const {
+const std::unordered_map<std::string, std::string>&
+CurlHttpRequest::parameters() const {
   return parameters_;
 }
 
 const std::unordered_map<std::string, std::string>&
-HttpRequest::headerParameters() const {
+CurlHttpRequest::headerParameters() const {
   return header_parameters_;
 }
 
-bool HttpRequest::follow_redirect() const { return follow_redirect_; }
+bool CurlHttpRequest::follow_redirect() const { return follow_redirect_; }
 
-void HttpRequest::set_follow_redirect(bool e) {
-  follow_redirect_ = e;
-  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION, static_cast<long>(e));
-}
+const std::string& CurlHttpRequest::url() const { return url_; }
 
-const std::string& HttpRequest::url() const { return url_; }
+const std::string& CurlHttpRequest::method() const { return method_; }
 
-void HttpRequest::set_url(const std::string& url) { url_ = url; }
-
-HttpRequest::Type HttpRequest::type() const { return type_; }
-
-void HttpRequest::set_type(HttpRequest::Type type) { type_ = type; }
-
-void HttpRequest::setCreditentials(const std::string& username,
-                                   const std::string& password) {
-  curl_easy_setopt(handle_.get(), CURLOPT_USERPWD,
-                   (username + ":" + password).c_str());
-}
-
-std::string HttpRequest::send() const {
-  std::stringstream data, response;
-  if (!send(data, response))
-    throw std::runtime_error("Failed to send request.");
-  return response.str();
-}
-
-std::string HttpRequest::send(std::istream& data) const {
-  std::stringstream response;
-  if (!send(data, response))
-    throw std::runtime_error("Failed to send request.");
-  return response.str();
-}
-
-int HttpRequest::send(std::ostream& response) const {
-  std::stringstream data;
-  return send(data, response);
-}
-
-int HttpRequest::send(std::istream& data, std::ostream& response,
-                      std::ostream* error_stream, ICallback::Pointer p) const {
+int CurlHttpRequest::send(std::istream& data, std::ostream& response,
+                          std::ostream* error_stream,
+                          ICallback::Pointer p) const {
   std::shared_ptr<ICallback> callback(std::move(p));
   write_callback_data cb_data = {handle_.get(), &response, error_stream,
                                  callback,      true,      false};
@@ -189,24 +155,17 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
   curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
   curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
   CURLcode status = CURLE_OK;
-  if (type_ == Type::POST) {
+  if (method_ == "POST") {
     curl_easy_setopt(handle_.get(), CURLOPT_POST, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE,
                      static_cast<long>(stream_length(data)));
-  } else if (type_ == Type::PUT) {
+  } else if (method_ == "PUT") {
     curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(data)));
-  } else if (type_ == Type::DEL) {
+  } else if (method_ != "GET") {
     curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "DELETE");
-  } else if (type_ == Type::PATCH) {
-    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, "PATCH");
-  } else if (type_ == Type::CUSTOM) {
-    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST,
-                     custom_method_.c_str());
+    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, method_.c_str());
   }
   status = curl_easy_perform(handle_.get());
   curl_slist_free_all(header_list);
@@ -223,67 +182,10 @@ int HttpRequest::send(std::istream& data, std::ostream& response,
     }
     return static_cast<int>(http_code);
   } else
-    throw HttpException(status);
+    return -status;
 }
 
-void HttpRequest::resetParameters() {
-  parameters_.clear();
-  header_parameters_.clear();
-}
-
-bool HttpRequest::isSuccess(int code) { return (code / 100) == 2; }
-
-bool HttpRequest::isRedirect(int code) { return (code / 100) == 3; }
-
-bool HttpRequest::isClientError(int code) {
-  return (code / 100) == 4 || (code / 100) == 5;
-}
-
-bool HttpRequest::isAuthorizationError(int code) { return code == 401; }
-
-bool HttpRequest::isCurlError(int code) { return code < CURL_LAST && code > 0; }
-
-std::string HttpRequest::unescape(const std::string& str) {
-  auto handle = curl_easy_init();
-  int length = 0;
-  char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
-  std::string result(data, length);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
-
-std::string HttpRequest::escape(const std::string& str) {
-  auto handle = curl_easy_init();
-  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
-  std::string result(data);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
-
-std::string HttpRequest::escapeHeader(const std::string& str) {
-  return Json::valueToQuotedString(str.c_str());
-}
-
-std::string HttpRequest::toString(Type type) {
-  switch (type) {
-    case Type::POST:
-      return "POST";
-    case Type::GET:
-      return "GET";
-    case Type::PUT:
-      return "PUT";
-    case Type::DEL:
-      return "DELETE";
-    case Type::PATCH:
-      return "PATCH";
-    default:
-      return "";
-  }
-}
-
-std::string HttpRequest::parametersToString() const {
+std::string CurlHttpRequest::parametersToString() const {
   std::string result;
   bool first = false;
   for (std::pair<std::string, std::string> p : parameters_) {
@@ -296,18 +198,48 @@ std::string HttpRequest::parametersToString() const {
   return result;
 }
 
-curl_slist* HttpRequest::headerParametersToList() const {
+curl_slist* CurlHttpRequest::headerParametersToList() const {
   curl_slist* list = nullptr;
   for (std::pair<std::string, std::string> p : header_parameters_)
     list = curl_slist_append(list, (p.first + ": " + p.second).c_str());
   return list;
 }
 
-void HttpRequest::CurlDeleter::operator()(CURL* handle) const {
+void CurlHttpRequest::CurlDeleter::operator()(CURL* handle) const {
   curl_easy_cleanup(handle);
 }
 
-HttpException::HttpException(CURLcode code)
-    : code_(code), description_(curl_easy_strerror(code)) {}
+IHttpRequest::Pointer CurlHttp::create(const std::string& url,
+                                       const std::string& method,
+                                       bool follow_redirect) const {
+  return make_unique<CurlHttpRequest>(url, method, follow_redirect);
+}
+
+std::string CurlHttp::unescape(const std::string& str) const {
+  auto handle = curl_easy_init();
+  int length = 0;
+  char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
+  std::string result(data, length);
+  free(data);
+  curl_easy_cleanup(handle);
+  return result;
+}
+
+std::string CurlHttp::escape(const std::string& str) const {
+  auto handle = curl_easy_init();
+  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
+  std::string result(data);
+  free(data);
+  curl_easy_cleanup(handle);
+  return result;
+}
+
+std::string CurlHttp::escapeHeader(const std::string& str) const {
+  return Json::valueToQuotedString(str.c_str());
+}
+
+std::string CurlHttp::error(int code) const {
+  return curl_easy_strerror(static_cast<CURLcode>(code));
+}
 
 }  // namespace cloudstorage

@@ -89,7 +89,11 @@ int main(int argc, char** argv) {
     std::fstream file(drive_file, std::fstream::in);
     file >> token;
   }
-  drive->initialize(token, std::unique_ptr<Callback>(new Callback(drive_file)));
+  drive->initialize({token,
+                     std::unique_ptr<Callback>(new Callback(drive_file)),
+                     nullptr,
+                     nullptr,
+                     {}});
   traverse_drive(*drive, drive->rootDirectory(), "/");
 
   return 0;

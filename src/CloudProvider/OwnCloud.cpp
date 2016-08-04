@@ -26,7 +26,6 @@
 #include "Request/AuthorizeRequest.h"
 #include "Utility/Item.h"
 
-#include <curl/curl.h>
 #include <cstring>
 
 namespace cloudstorage {
@@ -37,13 +36,9 @@ IItem::Pointer OwnCloud::rootDirectory() const {
   return make_unique<Item>("root", "/", IItem::FileType::Directory);
 }
 
-void OwnCloud::initialize(const std::string& token,
-                          ICloudProvider::ICallback::Pointer callback,
-                          ICrypto::Pointer crypto,
-                          const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
-                            hints);
-  unpackCreditentials(token);
+void OwnCloud::initialize(InitData&& data) {
+  unpackCreditentials(data.token_);
+  CloudProvider::initialize(std::move(data));
 }
 
 std::string OwnCloud::name() const { return "owncloud"; }
@@ -72,12 +67,12 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     std::stringstream response;
     int code = r->sendRequest(
         [=](std::ostream&) {
-          return make_unique<HttpRequest>(
+          return http()->create(
               api_url() + "/remote.php/webdav" + parent->id() + name + "/",
               "MKCOL");
         },
         response);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       IItem::Pointer item = make_unique<Item>(name, parent->id() + name + "/",
                                               IItem::FileType::Directory);
       callback(item);
@@ -90,66 +85,64 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
   return std::move(r);
 }
 
-HttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
-                                                  std::ostream&) const {
-  auto request = make_unique<HttpRequest>(api_url() + "/remote.php/webdav" + id,
-                                          "PROPFIND");
-  request->setHeaderParameter("Depth", "0");
-  return std::move(request);
-}
-
-HttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
-                                                    const std::string&,
-                                                    std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + item.id(), "PROPFIND");
-  request->setHeaderParameter("Depth", "1");
-  return std::move(request);
-}
-
-HttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
-                                                 const std::string& filename,
-                                                 std::ostream&,
-                                                 std::ostream&) const {
-  return make_unique<HttpRequest>(api_url() + "/remote.php/webdav" +
-                                      directory.id() +
-                                      HttpRequest::escape(filename),
-                                  HttpRequest::Type::PUT);
-}
-
-HttpRequest::Pointer OwnCloud::downloadFileRequest(const IItem& item,
+IHttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
                                                    std::ostream&) const {
-  return make_unique<HttpRequest>(static_cast<const Item&>(item).url(),
-                                  HttpRequest::Type::GET);
+  auto request =
+      http()->create(api_url() + "/remote.php/webdav" + id, "PROPFIND");
+  request->setHeaderParameter("Depth", "0");
+  return request;
 }
 
-HttpRequest::Pointer OwnCloud::deleteItemRequest(const IItem& item,
-                                                 std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + item.id(), "DELETE");
-  return std::move(request);
+IHttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
+                                                     const std::string&,
+                                                     std::ostream&) const {
+  auto request =
+      http()->create(api_url() + "/remote.php/webdav" + item.id(), "PROPFIND");
+  request->setHeaderParameter("Depth", "1");
+  return request;
 }
 
-HttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
-                                               const IItem& destination,
-                                               std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + source.id(), "MOVE");
+IHttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
+                                                  const std::string& filename,
+                                                  std::ostream&,
+                                                  std::ostream&) const {
+  return http()->create(api_url() + "/remote.php/webdav" + directory.id() +
+                            http()->escape(filename),
+                        "PUT");
+}
+
+IHttpRequest::Pointer OwnCloud::downloadFileRequest(const IItem& item,
+                                                    std::ostream&) const {
+  return http()->create(static_cast<const Item&>(item).url(), "GET");
+}
+
+IHttpRequest::Pointer OwnCloud::deleteItemRequest(const IItem& item,
+                                                  std::ostream&) const {
+  auto request =
+      http()->create(api_url() + "/remote.php/webdav" + item.id(), "DELETE");
+  return request;
+}
+
+IHttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
+                                                const IItem& destination,
+                                                std::ostream&) const {
+  auto request =
+      http()->create(api_url() + "/remote.php/webdav" + source.id(), "MOVE");
   request->setHeaderParameter(
       "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
                          destination.id() + "/" + source.filename());
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
-                                                 const std::string& name,
-                                                 std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      api_url() + "/remote.php/webdav" + item.id(), "MOVE");
+IHttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
+                                                  const std::string& name,
+                                                  std::ostream&) const {
+  auto request =
+      http()->create(api_url() + "/remote.php/webdav" + item.id(), "MOVE");
   request->setHeaderParameter(
       "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
                          getPath(item.id()) + "/" + name);
-  return std::move(request);
+  return request;
 }
 
 IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
@@ -193,16 +186,16 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto item = make_unique<Item>(HttpRequest::unescape(filename), id, type);
+  auto item = make_unique<Item>(http()->unescape(filename), id, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return std::move(item);
 }
 
 bool OwnCloud::reauthorize(int code) const {
-  return CloudProvider::reauthorize(code) || HttpRequest::isCurlError(code);
+  return CloudProvider::reauthorize(code) || owncloud_base_url_.empty();
 }
 
-void OwnCloud::authorizeRequest(HttpRequest&) const {}
+void OwnCloud::authorizeRequest(IHttpRequest&) const {}
 
 void OwnCloud::unpackCreditentials(const std::string& code) {
   std::unique_lock<std::mutex> lock(auth_mutex());
@@ -222,12 +215,12 @@ std::string OwnCloud::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login";
 }
 
-HttpRequest::Pointer OwnCloud::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer OwnCloud::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer OwnCloud::Auth::refreshTokenRequest(std::ostream&) const {
+IHttpRequest::Pointer OwnCloud::Auth::refreshTokenRequest(std::ostream&) const {
   return nullptr;
 }
 

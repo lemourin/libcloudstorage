@@ -26,10 +26,10 @@
 
 #include <atomic>
 
-#include "Utility/HttpRequest.h"
+#include "IHttp.h"
 
 namespace cloudstorage {
-class HttpCallback : public HttpRequest::ICallback {
+class HttpCallback : public IHttpRequest::ICallback {
  public:
   HttpCallback(std::atomic_bool& is_cancelled,
                std::function<void(uint32_t, uint32_t)> progress_download,

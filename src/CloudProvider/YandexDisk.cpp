@@ -50,15 +50,14 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
       [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
         std::stringstream output;
         int code = r->sendRequest(
-            [id](std::ostream&) {
-              auto request = make_unique<HttpRequest>(
-                  "https://cloud-api.yandex.net/v1/disk/resources",
-                  HttpRequest::Type::GET);
+            [this, id](std::ostream&) {
+              auto request = http()->create(
+                  "https://cloud-api.yandex.net/v1/disk/resources", "GET");
               request->setParameter("path", id);
               return request;
             },
             output);
-        if (!HttpRequest::isSuccess(code)) {
+        if (!IHttpRequest::isSuccess(code)) {
           callback(nullptr);
           return nullptr;
         }
@@ -67,15 +66,15 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
         auto item = toItem(json);
         if (item->type() != IItem::FileType::Directory) {
           code = r->sendRequest(
-              [id](std::ostream&) {
-                auto request = make_unique<HttpRequest>(
+              [this, id](std::ostream&) {
+                auto request = http()->create(
                     "https://cloud-api.yandex.net/v1/disk/resources/download",
-                    HttpRequest::Type::GET);
+                    "GET");
                 request->setParameter("path", id);
                 return request;
               },
               output);
-          if (HttpRequest::isSuccess(code)) {
+          if (IHttpRequest::isSuccess(code)) {
             output >> json;
             static_cast<Item*>(item.get())->set_url(json["href"].asString());
           }
@@ -95,15 +94,14 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
   r->set_resolver([this, item, callback](Request<void>* r) -> void {
     std::stringstream output;
     int code = r->sendRequest(
-        [item](std::ostream&) {
-          auto request = make_unique<HttpRequest>(
-              "https://cloud-api.yandex.net/v1/disk/resources/download",
-              HttpRequest::Type::GET);
+        [this, item](std::ostream&) {
+          auto request = http()->create(
+              "https://cloud-api.yandex.net/v1/disk/resources/download", "GET");
           request->setParameter("path", item->id());
           return request;
         },
         output);
-    if (!HttpRequest::isSuccess(code))
+    if (!IHttpRequest::isSuccess(code))
       callback->error("Couldn't get download url.");
     else {
       Json::Value json;
@@ -113,12 +111,10 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
       std::ostream stream(&wrapper);
       std::string url = json["href"].asString();
       code = r->sendRequest(
-          [url](std::ostream&) {
-            return make_unique<HttpRequest>(url, HttpRequest::Type::GET);
-          },
+          [this, url](std::ostream&) { return http()->create(url, "GET"); },
           stream,
           std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
-      if (HttpRequest::isSuccess(code)) callback->done();
+      if (IHttpRequest::isSuccess(code)) callback->done();
     }
   });
   return r;
@@ -134,10 +130,9 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   r->set_resolver([this, directory, filename, callback](Request<void>* r) {
     std::stringstream output;
     int code = r->sendRequest(
-        [directory, filename](std::ostream&) {
-          auto request = make_unique<HttpRequest>(
-              "https://cloud-api.yandex.net/v1/disk/resources/upload",
-              HttpRequest::Type::GET);
+        [this, directory, filename](std::ostream&) {
+          auto request = http()->create(
+              "https://cloud-api.yandex.net/v1/disk/resources/upload", "GET");
           std::string path = directory->id();
           if (path.back() != '/') path += "/";
           path += filename;
@@ -145,7 +140,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           return request;
         },
         output);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       Json::Value response;
       output >> response;
       std::string url = response["href"].asString();
@@ -153,9 +148,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
           callback->size());
       code = r->sendRequest(
-          [url, callback, &wrapper](std::ostream& input) {
-            auto request =
-                make_unique<HttpRequest>(url, HttpRequest::Type::PUT);
+          [this, url, callback, &wrapper](std::ostream& input) {
+            auto request = http()->create(url, "PUT");
             callback->reset();
             wrapper.reset();
             input.rdbuf(&wrapper);
@@ -163,7 +157,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           },
           output, nullptr,
           std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
-      if (HttpRequest::isSuccess(code)) callback->done();
+      if (IHttpRequest::isSuccess(code)) callback->done();
     } else
       callback->error("Couldn't get upload url.");
   });
@@ -178,26 +172,24 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
     std::stringstream output;
     int code = r->sendRequest(
         [=](std::ostream&) {
-          auto request = make_unique<HttpRequest>(
-              "https://cloud-api.yandex.net/v1/disk/resources/",
-              HttpRequest::Type::PUT);
+          auto request = http()->create(
+              "https://cloud-api.yandex.net/v1/disk/resources/", "PUT");
           request->setParameter(
               "path",
               parent->id() + (parent->id().back() == '/' ? "" : "/") + name);
           return request;
         },
         output);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       Json::Value json;
       output >> json;
       code = r->sendRequest(
           [=](std::ostream&) {
-            auto request = make_unique<HttpRequest>(json["href"].asString(),
-                                                    HttpRequest::Type::GET);
+            auto request = http()->create(json["href"].asString(), "GET");
             return request;
           },
           output);
-      if (HttpRequest::isSuccess(code)) {
+      if (IHttpRequest::isSuccess(code)) {
         output >> json;
         auto item = toItem(json);
         callback(item);
@@ -210,46 +202,44 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
   return std::move(r);
 }
 
-HttpRequest::Pointer YandexDisk::listDirectoryRequest(
+IHttpRequest::Pointer YandexDisk::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::GET);
+  auto request =
+      http()->create("https://cloud-api.yandex.net/v1/disk/resources", "GET");
   request->setParameter("path", item.id());
   if (!page_token.empty()) request->setParameter("offset", page_token);
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
-                                                   std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://cloud-api.yandex.net/v1/disk/resources", HttpRequest::Type::DEL);
+IHttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
+                                                    std::ostream&) const {
+  auto request = http()->create(
+      "https://cloud-api.yandex.net/v1/disk/resources", "DELETE");
   request->setParameter("path", item.id());
   request->setParameter("permamently", "true");
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
-                                                 const IItem& destination,
-                                                 std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://cloud-api.yandex.net/v1/disk/resources/move",
-      HttpRequest::Type::POST);
+IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
+                                                  const IItem& destination,
+                                                  std::ostream&) const {
+  auto request = http()->create(
+      "https://cloud-api.yandex.net/v1/disk/resources/move", "POST");
   request->setParameter("from", source.id());
   request->setParameter(
       "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
                   source.filename());
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
-                                                   const std::string& name,
-                                                   std::ostream&) const {
-  auto request = make_unique<HttpRequest>(
-      "https://cloud-api.yandex.net/v1/disk/resources/move",
-      HttpRequest::Type::POST);
+IHttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
+                                                    const std::string& name,
+                                                    std::ostream&) const {
+  auto request = http()->create(
+      "https://cloud-api.yandex.net/v1/disk/resources/move", "POST");
   request->setParameter("from", item.id());
   request->setParameter("path", getPath(item.id()) + "/" + name);
-  return std::move(request);
+  return request;
 }
 
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
@@ -277,7 +267,7 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
   return std::move(item);
 }
 
-void YandexDisk::authorizeRequest(HttpRequest& request) const {
+void YandexDisk::authorizeRequest(IHttpRequest& request) const {
   request.setHeaderParameter("Authorization", "OAuth " + access_token());
 }
 
@@ -291,18 +281,17 @@ std::string YandexDisk::Auth::authorizeLibraryUrl() const {
          client_id();
 }
 
-HttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& input_data) const {
-  auto request = make_unique<HttpRequest>("https://oauth.yandex.com/token",
-                                          HttpRequest::Type::POST);
+  auto request = http()->create("https://oauth.yandex.com/token", "POST");
   input_data << "grant_type=authorization_code&"
              << "client_id=" << client_id() << "&"
              << "client_secret=" << client_secret() << "&"
              << "code=" << authorization_code();
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer YandexDisk::Auth::refreshTokenRequest(
+IHttpRequest::Pointer YandexDisk::Auth::refreshTokenRequest(
     std::ostream&) const {
   return nullptr;
 }

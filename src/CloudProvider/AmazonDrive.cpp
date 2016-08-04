@@ -25,7 +25,6 @@
 
 #include <json/json.h>
 
-#include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -35,17 +34,15 @@ namespace cloudstorage {
 
 AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
 
-void AmazonDrive::initialize(const std::string& token,
-                             ICloudProvider::ICallback::Pointer callback,
-                             ICrypto::Pointer crypto,
-                             const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
-                            hints);
-  std::unique_lock<std::mutex> lock(auth_mutex());
-  setWithHint(hints, "metadata_url",
-              [this](std::string v) { metadata_url_ = v; });
-  setWithHint(hints, "content_url",
-              [this](std::string v) { content_url_ = v; });
+void AmazonDrive::initialize(InitData&& data) {
+  {
+    std::unique_lock<std::mutex> lock(auth_mutex());
+    setWithHint(data.hints_, "metadata_url",
+                [this](std::string v) { metadata_url_ = v; });
+    setWithHint(data.hints_, "content_url",
+                [this](std::string v) { content_url_ = v; });
+  }
+  CloudProvider::initialize(std::move(data));
 }
 
 ICloudProvider::Hints AmazonDrive::hints() const {
@@ -72,9 +69,9 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
       std::stringstream output;
       int code = r->sendRequest(
           [=](std::ostream& stream) {
-            auto request = make_unique<HttpRequest>(
+            auto request = http()->create(
                 metadata_url() + "/nodes/" + destination->id() + "/children",
-                HttpRequest::Type::POST);
+                "POST");
             request->setHeaderParameter("Content-Type", "application/json");
             Json::Value json;
             json["fromParent"] = parent;
@@ -83,7 +80,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
             return request;
           },
           output);
-      if (!HttpRequest::isSuccess(code)) {
+      if (!IHttpRequest::isSuccess(code)) {
         callback(false);
         return false;
       }
@@ -98,13 +95,12 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   auto r = make_unique<AuthorizeRequest>(
       shared_from_this(), [this](AuthorizeRequest* r) -> bool {
         if (!r->oauth2Authorization()) return false;
-        HttpRequest request(
-            "https://drive.amazonaws.com/drive/v1/account/endpoint",
-            HttpRequest::Type::GET);
-        authorizeRequest(request);
+        auto request = http()->create(
+            "https://drive.amazonaws.com/drive/v1/account/endpoint", "GET");
+        authorizeRequest(*request);
         std::stringstream input, output;
-        int code = r->send(&request, input, output, nullptr);
-        if (!HttpRequest::isSuccess(code)) {
+        int code = r->send(request.get(), input, output, nullptr);
+        if (!IHttpRequest::isSuccess(code)) {
           if (!r->is_cancelled())
             callback()->error(*this, "Couldn't obtain endpoints.");
           return false;
@@ -121,38 +117,36 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   return std::move(r);
 }
 
-HttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
-                                                     std::ostream&) const {
-  auto request = make_unique<HttpRequest>(metadata_url() + "/nodes/" + id,
-                                          HttpRequest::Type::GET);
+IHttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
+                                                      std::ostream&) const {
+  auto request = http()->create(metadata_url() + "/nodes/" + id, "GET");
   request->setParameter("tempLink", "true");
-  return std::move(request);
-}
-
-HttpRequest::Pointer AmazonDrive::listDirectoryRequest(
-    const IItem& i, const std::string& page_token, std::ostream&) const {
-  if (i.id() == rootDirectory()->id()) {
-    return make_unique<HttpRequest>(
-        metadata_url() + "/nodes?filters=isRoot:true", HttpRequest::Type::GET);
-  }
-  if (!page_token.empty()) {
-    return make_unique<HttpRequest>(metadata_url() + "nodes/" + i.id() +
-                                        "/children?startToken=" + page_token,
-                                    HttpRequest::Type::GET);
-  }
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      metadata_url() + "nodes/" + i.id() + "/children?asset=ALL&tempLink=true",
-      HttpRequest::Type::GET);
   return request;
 }
 
-HttpRequest::Pointer AmazonDrive::uploadFileRequest(
+IHttpRequest::Pointer AmazonDrive::listDirectoryRequest(
+    const IItem& i, const std::string& page_token, std::ostream&) const {
+  if (i.id() == rootDirectory()->id()) {
+    return http()->create(metadata_url() + "/nodes?filters=isRoot:true", "GET");
+  }
+  if (!page_token.empty()) {
+    return http()->create(metadata_url() + "nodes/" + i.id() +
+                              "/children?startToken=" + page_token,
+                          "GET");
+  }
+  IHttpRequest::Pointer request = http()->create(
+      metadata_url() + "nodes/" + i.id() + "/children?asset=ALL&tempLink=true",
+      "GET");
+  return request;
+}
+
+IHttpRequest::Pointer AmazonDrive::uploadFileRequest(
     const IItem& directory, const std::string& filename,
     std::ostream& prefix_stream, std::ostream& suffix_stream) const {
   if (directory.id() == rootDirectory()->id()) return nullptr;
   const std::string separator = "Thnlg1ecwyUJHyhYYGrQ";
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      content_url() + "/nodes", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create(content_url() + "/nodes", "POST");
   request->setHeaderParameter("Content-Type",
                               "multipart/form-data; boundary=" + separator);
   Json::Value json;
@@ -167,48 +161,44 @@ HttpRequest::Pointer AmazonDrive::uploadFileRequest(
       << json_data << "\r\n"
       << "--" << separator << "\r\n"
       << "Content-Disposition: form-data; name=\"content\"; filename=\""
-      << HttpRequest::escapeHeader(filename) << "\"\r\n"
+      << http()->escapeHeader(filename) << "\"\r\n"
       << "Content-Type: application/octet-stream\r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--";
   return request;
 }
 
-HttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& item,
-                                                      std::ostream&) const {
-  return make_unique<HttpRequest>(
-      content_url() + "/nodes/" + item.id() + "/content",
-      HttpRequest::Type::GET);
+IHttpRequest::Pointer AmazonDrive::downloadFileRequest(const IItem& item,
+                                                       std::ostream&) const {
+  return http()->create(content_url() + "/nodes/" + item.id() + "/content",
+                        "GET");
 }
 
-HttpRequest::Pointer AmazonDrive::deleteItemRequest(const IItem& item,
-                                                    std::ostream&) const {
-  return make_unique<HttpRequest>(metadata_url() + "/trash/" + item.id(),
-                                  HttpRequest::Type::PUT);
+IHttpRequest::Pointer AmazonDrive::deleteItemRequest(const IItem& item,
+                                                     std::ostream&) const {
+  return http()->create(metadata_url() + "/trash/" + item.id(), "PUT");
 }
 
-HttpRequest::Pointer AmazonDrive::createDirectoryRequest(
+IHttpRequest::Pointer AmazonDrive::createDirectoryRequest(
     const IItem& parent, const std::string& name, std::ostream& input) const {
-  auto request = make_unique<HttpRequest>(metadata_url() + "/nodes",
-                                          HttpRequest::Type::POST);
+  auto request = http()->create(metadata_url() + "/nodes", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
   json["kind"] = "FOLDER";
   json["parents"].append(parent.id());
   input << json;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer AmazonDrive::renameItemRequest(const IItem& item,
-                                                    const std::string& name,
-                                                    std::ostream& input) const {
-  auto request = make_unique<HttpRequest>(
-      metadata_url() + "/nodes/" + item.id(), HttpRequest::Type::PATCH);
+IHttpRequest::Pointer AmazonDrive::renameItemRequest(
+    const IItem& item, const std::string& name, std::ostream& input) const {
+  auto request =
+      http()->create(metadata_url() + "/nodes/" + item.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
   input << json;
-  return std::move(request);
+  return request;
 }
 
 IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
@@ -268,7 +258,8 @@ std::string AmazonDrive::content_url() const {
 }
 
 bool AmazonDrive::reauthorize(int code) const {
-  return HttpRequest::isClientError(code) || HttpRequest::isCurlError(code);
+  return IHttpRequest::isClientError(code) || metadata_url().empty() ||
+         content_url().empty();
 }
 
 AmazonDrive::Auth::Auth() {
@@ -286,10 +277,10 @@ std::string AmazonDrive::Auth::authorizeLibraryUrl() const {
   return url;
 }
 
-HttpRequest::Pointer AmazonDrive::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer AmazonDrive::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& input_data) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.amazon.com/auth/o2/token", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create("https://api.amazon.com/auth/o2/token", "POST");
   input_data << "grant_type=authorization_code&"
              << "code=" << authorization_code() << "&"
              << "client_id=" << client_id() << "&"
@@ -298,10 +289,10 @@ HttpRequest::Pointer AmazonDrive::Auth::exchangeAuthorizationCodeRequest(
   return request;
 }
 
-HttpRequest::Pointer AmazonDrive::Auth::refreshTokenRequest(
+IHttpRequest::Pointer AmazonDrive::Auth::refreshTokenRequest(
     std::ostream& input_data) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.amazon.com/auth/o2/token", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create("https://api.amazon.com/auth/o2/token", "POST");
   input_data << "grant_type=refresh_token&"
              << "refresh_token=" + access_token()->refresh_token_ << "&"
              << "client_id=" << client_id() << "&"

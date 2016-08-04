@@ -47,22 +47,21 @@ class YandexDisk : public CloudProvider {
                                                        const std::string&,
                                                        CreateDirectoryCallback);
 
-  HttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                            const std::string& page_token,
-                                            std::ostream& input_stream) const;
-  HttpRequest::Pointer deleteItemRequest(const IItem&,
-                                         std::ostream& input_stream) const;
-  HttpRequest::Pointer moveItemRequest(const IItem&,
-                                       const IItem&,
-                                       std::ostream&) const;
-  HttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                         std::ostream&) const;
+  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                             const std::string& page_token,
+                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer deleteItemRequest(const IItem&,
+                                          std::ostream& input_stream) const;
+  IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
+                                        std::ostream&) const;
+  IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
+                                          std::ostream&) const;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       std::istream&, std::string& next_page_token) const;
 
   IItem::Pointer toItem(const Json::Value&) const;
-  void authorizeRequest(HttpRequest&) const;
+  void authorizeRequest(IHttpRequest&) const;
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -70,9 +69,9 @@ class YandexDisk : public CloudProvider {
 
     std::string authorizeLibraryUrl() const;
 
-    HttpRequest::Pointer exchangeAuthorizationCodeRequest(
+    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
         std::ostream& input_data) const;
-    HttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
 
     Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
     Token::Pointer refreshTokenResponse(std::istream&) const;

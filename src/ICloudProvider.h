@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "ICrypto.h"
+#include "IHttp.h"
 #include "IItem.h"
 #include "IRequest.h"
 
@@ -86,37 +87,57 @@ class ICloudProvider {
                        const std::string& description) = 0;
   };
 
+  /**
+   * Struct which provides initialization data for the cloud provider.
+   */
+  struct InitData {
+    /**
+     * Token retrieved by some previous run with ICloudProvider::token or any
+     * string, library will detect whether it's valid and ask for user consent
+     * if it isn't.
+     */
+    std::string token_;
+
+    /**
+     * Callback which will manage future authorization process.
+     */
+    ICallback::Pointer callback_;
+
+    /**
+     * Provides hashing methods which may be used by the cloud provider.
+     */
+    ICrypto::Pointer crypto_engine_;
+
+    /**
+     * Provides methods which are used for http communication.
+     */
+    IHttp::Pointer http_engine_;
+
+    /**
+    * Various hints which can be retrieved by some previous run with
+    * ICloudProvider::hints; providing them may speed up the authorization
+    * process; may contain the following:
+    *  - client_id
+    *  - client_secret
+    *  - redirect_uri_port
+    *  - access_token
+    *  - daemon_port(used by mega.nz url provider)
+    *  - metadata_url, content_url(amazon drive's endpoints)
+    *  - youtube_dl_url(url to youtube-dl-server)
+    *  - aws_region(region used by amazon s3)
+    */
+    Hints hints_;
+  };
+
   virtual ~ICloudProvider() = default;
 
   /**
    * Initializes the cloud provider, doesn't do any authorization just yet. The
    * actual authorization will be done the first time it's actually needed.
    *
-   * @param token token retrieved by some previous run with
-   * ICloudProvider::token or any string, library will detect whether it's valid
-   * and ask for user consent if it isn't
-   *
-   * @param callback callback which will manage future authorization
-   * process
-   *
-   * @param crypto_engine provides hashing methods which may be used by the
-   * cloud provider
-   *
-   * @param hints various hints which can be retrieved by some previous run with
-   * ICloudProvider::hints; providing them may speed up the authorization
-   * process; may contain the following:
-   *  - client_id
-   *  - client_secret
-   *  - redirect_uri_port
-   *  - access_token
-   *  - daemon_port(used by mega.nz url provider)
-   *  - metadata_url, content_url(amazon drive's endpoints)
-   *  - youtube_dl_url(url to youtube-dl-server)
-   *  - aws_region(region used by amazon s3)
+   * @param init_data initialization data
    */
-  virtual void initialize(const std::string& token, ICallback::Pointer callback,
-                          ICrypto::Pointer crypto_engine = nullptr,
-                          const Hints& hints = Hints()) = 0;
+  virtual void initialize(InitData&& init_data) = 0;
 
   /**
    * Token which should be saved and reused as a parameter to

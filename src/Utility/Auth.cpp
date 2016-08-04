@@ -127,7 +127,9 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char* url,
 }
 }  // namespace
 
-Auth::Auth() : redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT) {}
+Auth::Auth() : redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT), http_() {}
+
+void Auth::initialize(IHttp* http) { http_ = http; }
 
 const std::string& Auth::authorization_code() const {
   return authorization_code_;
@@ -162,6 +164,8 @@ Auth::Token* Auth::access_token() const { return access_token_.get(); }
 void Auth::set_access_token(Token::Pointer token) {
   access_token_ = std::move(token);
 }
+
+IHttp* Auth::http() const { return http_; }
 
 std::string Auth::awaitAuthorizationCode(
     std::string code_parameter_name, std::string error_parameter_name,

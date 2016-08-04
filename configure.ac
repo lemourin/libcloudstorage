@@ -10,14 +10,12 @@ AC_PROG_CXX
 
 AX_CXX_COMPILE_STDCXX_11
 
-PKG_CHECK_MODULES([libcurl], [libcurl])
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
 PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 PKG_CHECK_MODULES([libtinyxml2], [tinyxml2])
 
 AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
 AM_CONDITIONAL([WITH_MEGA], [test "x$with_mega" != "xno"])
-
 AS_IF([test "x$with_mega" != "xno"], [
   PKG_CHECK_MODULES([libmega], [libmega])
   AC_DEFINE(WITH_MEGA)
@@ -25,10 +23,16 @@ AS_IF([test "x$with_mega" != "xno"], [
 
 AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
 AM_CONDITIONAL([WITH_CRYPTOPP], [test "x$with_cryptopp" = "xyes"])
-
 AS_IF([test "x$with_cryptopp" = "xyes"], [
   PKG_CHECK_MODULES([libcryptopp], [libcrypto++])
   AC_DEFINE(WITH_CRYPTOPP)
+])
+
+AC_ARG_WITH([curl], AS_HELP_STRING([--with-curl]))
+AM_CONDITIONAL([WITH_CURL], [test "x$with_curl" = "xyes"])
+AS_IF([test "x$with_curl" = "xyes"], [
+  PKG_CHECK_MODULES([libcurl], [libcurl])
+  AC_DEFINE(WITH_CURL)
 ])
 
 case "${host_os}" in

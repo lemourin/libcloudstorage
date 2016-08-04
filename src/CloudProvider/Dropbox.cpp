@@ -26,7 +26,6 @@
 #include <json/json.h>
 #include <sstream>
 
-#include "Utility/HttpRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -49,10 +48,9 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
   auto f = make_unique<Request<IItem::Pointer>>(shared_from_this());
   f->set_resolver(
       [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
-        auto item_data = [r, id](std::ostream& input) {
-          auto request = make_unique<HttpRequest>(
-              "https://api.dropboxapi.com/2/files/get_metadata",
-              HttpRequest::Type::POST);
+        auto item_data = [this, r, id](std::ostream& input) {
+          auto request = http()->create(
+              "https://api.dropboxapi.com/2/files/get_metadata", "POST");
           request->setHeaderParameter("Content-Type", "application/json");
           Json::Value parameter;
           parameter["path"] = id;
@@ -61,7 +59,7 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
           return request;
         };
         std::stringstream output;
-        if (!HttpRequest::isSuccess(r->sendRequest(item_data, output))) {
+        if (!IHttpRequest::isSuccess(r->sendRequest(item_data, output))) {
           callback(nullptr);
           return nullptr;
         }
@@ -72,10 +70,9 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
           callback(item);
           return item;
         }
-        auto temporary_link = [r, id](std::ostream& input) {
-          auto request = make_unique<HttpRequest>(
-              "https://api.dropboxapi.com/2/files/get_temporary_link",
-              HttpRequest::Type::POST);
+        auto temporary_link = [this, r, id](std::ostream& input) {
+          auto request = http()->create(
+              "https://api.dropboxapi.com/2/files/get_temporary_link", "POST");
           request->setHeaderParameter("Content-Type", "application/json");
 
           Json::Value parameter;
@@ -83,7 +80,7 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
           input << Json::FastWriter().write(parameter);
           return request;
         };
-        if (!HttpRequest::isSuccess(r->sendRequest(temporary_link, output))) {
+        if (!IHttpRequest::isSuccess(r->sendRequest(temporary_link, output))) {
           callback(item);
           return item;
         }
@@ -95,21 +92,19 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
   return std::move(f);
 }
 
-HttpRequest::Pointer Dropbox::listDirectoryRequest(
+IHttpRequest::Pointer Dropbox::listDirectoryRequest(
     const IItem& item, const std::string& page_token,
     std::ostream& input_stream) const {
   if (!page_token.empty()) {
-    HttpRequest::Pointer request = make_unique<HttpRequest>(
-        "https://api.dropboxapi.com/2/files/list_folder/continue",
-        HttpRequest::Type::POST);
+    auto request = http()->create(
+        "https://api.dropboxapi.com/2/files/list_folder/continue", "POST");
     Json::Value input;
     input["cursor"] = page_token;
     input_stream << input;
     return request;
   }
-  HttpRequest::Pointer request =
-      make_unique<HttpRequest>("https://api.dropboxapi.com/2/files/list_folder",
-                               HttpRequest::Type::POST);
+  auto request =
+      http()->create("https://api.dropboxapi.com/2/files/list_folder", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
 
   Json::Value parameter;
@@ -119,23 +114,20 @@ HttpRequest::Pointer Dropbox::listDirectoryRequest(
   return request;
 }
 
-HttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& directory,
-                                                const std::string& filename,
-                                                std::ostream&,
-                                                std::ostream&) const {
-  const Item& item = static_cast<const Item&>(directory);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
+IHttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& item,
+                                                 const std::string& filename,
+                                                 std::ostream&,
+                                                 std::ostream&) const {
+  auto request = http()->create(
       "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
-      HttpRequest::Type::PUT);
+      "PUT");
   return request;
 }
 
-HttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& f,
-                                                  std::ostream&) const {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://content.dropboxapi.com/2/files/download",
-      HttpRequest::Type::POST);
+IHttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& item,
+                                                   std::ostream&) const {
+  auto request =
+      http()->create("https://content.dropboxapi.com/2/files/download", "POST");
   request->setHeaderParameter("Content-Type", "");
   Json::Value parameter;
   parameter["path"] = item.id();
@@ -145,12 +137,10 @@ HttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& f,
   return request;
 }
 
-HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
-                                                  std::ostream&) const {
-  const Item& item = static_cast<const Item&>(f);
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://content.dropboxapi.com/2/files/get_thumbnail",
-      HttpRequest::Type::POST);
+IHttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& item,
+                                                   std::ostream&) const {
+  auto request = http()->create(
+      "https://content.dropboxapi.com/2/files/get_thumbnail", "POST");
   request->setHeaderParameter("Content-Type", "");
 
   Json::Value parameter;
@@ -161,53 +151,52 @@ HttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& f,
   return request;
 }
 
-HttpRequest::Pointer Dropbox::deleteItemRequest(
+IHttpRequest::Pointer Dropbox::deleteItemRequest(
     const IItem& item, std::ostream& input_stream) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.dropboxapi.com/2/files/delete", HttpRequest::Type::POST);
+  auto request =
+      http()->create("https://api.dropboxapi.com/2/files/delete", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = item.id();
   input_stream << parameter;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Dropbox::createDirectoryRequest(
+IHttpRequest::Pointer Dropbox::createDirectoryRequest(
     const IItem& item, const std::string& name, std::ostream& input) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.dropboxapi.com/2/files/create_folder",
-      HttpRequest::Type::POST);
+  auto request = http()->create(
+      "https://api.dropboxapi.com/2/files/create_folder", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = item.id() + "/" + name;
   input << parameter;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
-                                              const IItem& destination,
-                                              std::ostream& stream) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.dropboxapi.com/2/files/move", HttpRequest::Type::POST);
+IHttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
+                                               const IItem& destination,
+                                               std::ostream& stream) const {
+  auto request =
+      http()->create("https://api.dropboxapi.com/2/files/move", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["from_path"] = source.id();
   json["to_path"] = destination.id() + "/" + source.filename();
   stream << json;
-  return std::move(request);
+  return request;
 }
 
-HttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
-                                                const std::string& name,
-                                                std::ostream& stream) const {
-  auto request = make_unique<HttpRequest>(
-      "https://api.dropboxapi.com/2/files/move", HttpRequest::Type::POST);
+IHttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream& stream) const {
+  auto request =
+      http()->create("https://api.dropboxapi.com/2/files/move", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["from_path"] = item.id();
   json["to_path"] = getPath(item.id()) + "/" + name;
   stream << json;
-  return std::move(request);
+  return request;
 }
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
@@ -266,10 +255,10 @@ IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
   return token;
 }
 
-HttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
-  HttpRequest::Pointer request = make_unique<HttpRequest>(
-      "https://api.dropboxapi.com/oauth2/token", HttpRequest::Type::POST);
+  IHttpRequest::Pointer request =
+      http()->create("https://api.dropboxapi.com/oauth2/token", "POST");
   request->setParameter("grant_type", "authorization_code");
   request->setParameter("client_id", client_id());
   request->setParameter("client_secret", client_secret());
@@ -278,7 +267,7 @@ HttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
   return request;
 }
 
-HttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(std::ostream&) const {
+IHttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(std::ostream&) const {
   return nullptr;
 }
 

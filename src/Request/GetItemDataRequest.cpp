@@ -38,7 +38,7 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
           return provider()->getItemDataRequest(id_, input);
         },
         response_stream);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       auto i = provider()->getItemDataResponse(response_stream);
       callback_(i);
       return i;

@@ -24,7 +24,6 @@
 #ifndef AUTH_H
 #define AUTH_H
 
-#include "HttpRequest.h"
 #include "IAuth.h"
 
 namespace cloudstorage {
@@ -39,6 +38,8 @@ class Auth : public IAuth {
   static constexpr const char* SEPARATOR = "##";
 
   Auth();
+
+  void initialize(IHttp*);
 
   const std::string& authorization_code() const;
   void set_authorization_code(const std::string&);
@@ -57,6 +58,8 @@ class Auth : public IAuth {
   Token* access_token() const;
   void set_access_token(Token::Pointer);
 
+  IHttp* http() const;
+
   std::string awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
       std::function<void()> server_started = nullptr,
@@ -74,6 +77,7 @@ class Auth : public IAuth {
   std::string client_secret_;
   uint16_t redirect_uri_port_;
   Token::Pointer access_token_;
+  IHttp* http_;
 };
 
 }  // namespace cloudstorage

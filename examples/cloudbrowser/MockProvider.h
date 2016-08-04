@@ -130,8 +130,7 @@ class MockProvider : public ICloudProvider {
 
   MockProvider();
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer, const Hints& hints = Hints());
+  void initialize(InitData&&);
   std::string token() const;
   Hints hints() const;
   std::string name() const;

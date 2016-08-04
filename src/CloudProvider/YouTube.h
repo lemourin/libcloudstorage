@@ -34,19 +34,18 @@ class YouTube : public CloudProvider {
  public:
   YouTube();
 
-  void initialize(const std::string& token, ICallback::Pointer,
-                  ICrypto::Pointer crypto, const Hints& hints);
+  void initialize(InitData&&);
   Hints hints() const;
   std::string name() const;
 
  private:
-  HttpRequest::Pointer getItemDataRequest(const std::string&,
-                                          std::ostream&) const;
-  HttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                            const std::string& page_token,
+  IHttpRequest::Pointer getItemDataRequest(const std::string&,
+                                           std::ostream&) const;
+  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
+                                             const std::string& page_token,
+                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer downloadFileRequest(const IItem&,
                                             std::ostream& input_stream) const;
-  HttpRequest::Pointer downloadFileRequest(const IItem&,
-                                           std::ostream& input_stream) const;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const;
   std::vector<IItem::Pointer> listDirectoryResponse(

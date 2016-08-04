@@ -24,7 +24,6 @@
 #include "DeleteItemRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
-#include "Utility/HttpRequest.h"
 
 namespace cloudstorage {
 
@@ -39,7 +38,7 @@ DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
           return provider()->deleteItemRequest(*item_, stream);
         },
         output);
-    if (HttpRequest::isSuccess(code)) {
+    if (IHttpRequest::isSuccess(code)) {
       callback_(true);
       return true;
     } else {

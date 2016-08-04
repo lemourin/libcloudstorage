@@ -41,7 +41,7 @@ class DownloadStreamWrapper : public std::streambuf {
 class DownloadFileRequest : public Request<void> {
  public:
   using RequestFactory =
-      std::function<std::shared_ptr<HttpRequest>(const IItem&, std::ostream&)>;
+      std::function<IHttpRequest::Pointer(const IItem&, std::ostream&)>;
   using ICallback = IDownloadFileCallback;
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,

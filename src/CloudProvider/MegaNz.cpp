@@ -204,22 +204,22 @@ MegaNz::~MegaNz() {
   if (daemon_) MHD_stop_daemon(daemon_);
 }
 
-void MegaNz::initialize(const std::string& token,
-                        ICloudProvider::ICallback::Pointer callback,
-                        ICrypto::Pointer crypto,
-                        const ICloudProvider::Hints& hints) {
-  CloudProvider::initialize(token, std::move(callback), std::move(crypto),
-                            hints);
-
-  std::lock_guard<std::mutex> lock(auth_mutex());
-  if (auth()->client_id().empty())
-    mega_ = make_unique<MegaApi>("ZVhB0Czb");
-  else
-    mega_ = make_unique<MegaApi>(auth()->client_id().c_str());
-  setWithHint(hints, "daemon_port",
-              [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
-  daemon_ = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
-                             NULL, &httpRequestCallback, this, MHD_OPTION_END);
+void MegaNz::initialize(InitData&& data) {
+  {
+    std::lock_guard<std::mutex> lock(auth_mutex());
+    if (auth()->client_id().empty())
+      mega_ = make_unique<MegaApi>("ZVhB0Czb");
+    else
+      setWithHint(data.hints_, "client_id", [this](std::string v) {
+        mega_ = make_unique<MegaApi>(v.c_str());
+      });
+    setWithHint(data.hints_, "daemon_port",
+                [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
+    daemon_ =
+        MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
+                         NULL, &httpRequestCallback, this, MHD_OPTION_END);
+  }
+  CloudProvider::initialize(std::move(data));
 }
 
 std::string MegaNz::name() const { return "mega"; }
@@ -573,12 +573,12 @@ std::string MegaNz::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login";
 }
 
-HttpRequest::Pointer MegaNz::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer MegaNz::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
   return nullptr;
 }
 
-HttpRequest::Pointer MegaNz::Auth::refreshTokenRequest(std::ostream&) const {
+IHttpRequest::Pointer MegaNz::Auth::refreshTokenRequest(std::ostream&) const {
   return nullptr;
 }
 
