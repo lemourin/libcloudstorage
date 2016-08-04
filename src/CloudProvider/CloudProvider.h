@@ -130,11 +130,12 @@ class CloudProvider : public ICloudProvider,
    * Used by default implementation of getThumbnailAsync; tries to download
    * thumbnail from Item::thumnail_url.
    *
+   * @param item
    * @param input_stream request body
    * @return http request
    */
   virtual HttpRequest::Pointer getThumbnailRequest(
-      const IItem&, std::ostream& input_stream) const;
+      const IItem& item, std::ostream& input_stream) const;
 
   /**
    * Used by default implementation of deleteItemAsync.
