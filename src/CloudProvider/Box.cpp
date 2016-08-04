@@ -113,7 +113,7 @@ HttpRequest::Pointer Box::uploadFileRequest(const IItem& directory,
                 << json_data << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"file\"; filename=\""
-                << filename << "\"\r\n"
+                << HttpRequest::escapeHeader(filename) << "\"\r\n"
                 << "Content-Type: application/octet-stream\r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--";
   return request;

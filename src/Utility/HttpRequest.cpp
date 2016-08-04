@@ -23,6 +23,7 @@
 
 #include "HttpRequest.h"
 
+#include <json/json.h>
 #include <array>
 #include <sstream>
 
@@ -259,6 +260,10 @@ std::string HttpRequest::escape(const std::string& str) {
   free(data);
   curl_easy_cleanup(handle);
   return result;
+}
+
+std::string HttpRequest::escapeHeader(const std::string& str) {
+  return Json::valueToQuotedString(str.c_str());
 }
 
 std::string HttpRequest::toString(Type type) {

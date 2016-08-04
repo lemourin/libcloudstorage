@@ -105,6 +105,7 @@ class HttpRequest {
   static std::string unescape(const std::string&);
   static std::string escape(const std::string&);
 
+  static std::string escapeHeader(const std::string&);
   static std::string toString(Type);
 
   std::string parametersToString() const;
