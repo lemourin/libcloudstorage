@@ -42,8 +42,9 @@ Requirements:
 Platforms:
 ==========
 
-The library can be build on any platform which has a proper C++11 support.
-It was tested on the following operating systems:
+The library can be build on any platform which has a proper C++11 support. It
+was tested under the following operating systems:
+
 * Ubuntu 16.04
 * Windows 10
 * Android 5
@@ -53,28 +54,27 @@ Building:
 
 The generic way to build and install it is:
 
-  ./bootstrap.sh
-  ./configure
-  make
-  sudo make install
+* ./bootstrap.sh
+* ./configure
+* make
+* sudo make install
 
-Optionally, you can pass --with-cryptopp flag to ./configure;
-library then will use cryptopp's hashing functions, otherwise, user
-will have to provide ICrypto's interface implementation.
+Optionally, you can pass --with-cryptopp flag to ./configure; library then will
+use cryptopp's hashing functions, otherwise, user will have to provide
+ICrypto's interface implementation.
 
-If you don't have access to Mega SDK, use --with-mega=no to build
-the library without it.
+If you don't have access to Mega SDK, use --with-mega=no to build the library
+without it.
 
 Cloud browser:
 =============
 
-Optionally, you can build an example program which provides easy
-graphics user interface for all the features implemented in libcloudstorage.
-You just have to pass --with-examples flag to ./configure. Cloud browser also
-allows playing streams from cloud providers, by default it uses qml player as
-a multimedia player (--with-qmlplayer). You can choose libvlc as a
-player with --with-vlc or Qt5MultimediaWidgets based player with
---with-qtmultimediawidgets.
+Optionally, you can build an example program which provides easy graphics user
+interface for all the features implemented in libcloudstorage. You just have to
+pass --with-examples flag to ./configure. Cloud browser also allows playing
+streams from cloud providers, by default it uses qml player as a multimedia
+player (--with-qmlplayer). You can choose libvlc as a player with --with-vlc or
+Qt5MultimediaWidgets based player with --with-qtmultimediawidgets.
 
 It requires:
 * Qt5Core
