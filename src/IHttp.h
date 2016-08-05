@@ -146,12 +146,6 @@ class IHttpRequest {
                    std::ostream* error_stream = nullptr,
                    ICallback::Pointer = nullptr) const = 0;
 
-  /**
-   * @return string with concatenated parameters and their values, doesn't have
-   * to be url encoded
-   */
-  virtual std::string parametersToString() const = 0;
-
   static bool isSuccess(int code) { return code / 100 == 2; }
   static bool isRedirect(int code) { return code / 100 == 3; }
   static bool isClientError(int code) {

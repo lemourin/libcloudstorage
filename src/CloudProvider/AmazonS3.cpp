@@ -313,7 +313,10 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
                            ".amazonaws.com/" + escapePath(http(), data.second),
                        "GET");
     authorizeRequest(*request);
-    item->set_url(request->url() + "?" + request->parametersToString());
+    std::string parameters;
+    for (const auto& p : request->parameters())
+      parameters += p.first + "=" + p.second + "&";
+    item->set_url(request->url() + "?" + parameters);
     callback(item);
     return item;
   });
