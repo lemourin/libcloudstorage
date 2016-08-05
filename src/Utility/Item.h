@@ -37,19 +37,19 @@ class Item : public IItem {
 
   Item(std::string filename, std::string id, FileType);
 
-  std::string filename() const;
-  std::string id() const;
+  std::string filename() const override;
+  std::string id() const override;
 
-  std::string url() const;
+  std::string url() const override;
   void set_url(std::string);
 
   std::string thumbnail_url() const;
   void set_thumbnail_url(std::string);
 
-  bool is_hidden() const;
+  bool is_hidden() const override;
   void set_hidden(bool);
 
-  FileType type() const;
+  FileType type() const override;
   void set_type(FileType);
 
   const std::vector<std::string>& parents() const;

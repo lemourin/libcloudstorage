@@ -46,33 +46,33 @@ class MegaNz : public CloudProvider {
   MegaNz();
   ~MegaNz();
 
-  void initialize(InitData&&);
+  void initialize(InitData&&) override;
 
-  std::string name() const;
-  IItem::Pointer rootDirectory() const;
-  Hints hints() const;
+  std::string name() const override;
+  IItem::Pointer rootDirectory() const override;
+  Hints hints() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync();
-  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback callback);
+  AuthorizeRequest::Pointer authorizeAsync() override;
+  GetItemDataRequest::Pointer getItemDataAsync(
+      const std::string& id, GetItemDataCallback callback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer);
+      IItem::Pointer, IListDirectoryCallback::Pointer) override;
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
-                                             IUploadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string&,
+      IUploadFileCallback::Pointer) override;
   DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
-                                             DeleteItemCallback);
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer,
-                                                       const std::string&,
-                                                       CreateDirectoryCallback);
+                                             DeleteItemCallback) override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer, IItem::Pointer,
-                                         MoveItemCallback);
+                                         MoveItemCallback) override;
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
                                              const std::string& name,
-                                             RenameItemCallback);
+                                             RenameItemCallback) override;
 
   bool login(Request<bool>* r);
   std::string passwordHash(const std::string& password);
@@ -89,14 +89,16 @@ class MegaNz : public CloudProvider {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
   class Authorize : public cloudstorage::AuthorizeRequest {

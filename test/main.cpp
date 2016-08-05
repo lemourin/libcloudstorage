@@ -30,31 +30,33 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
   Callback(std::string drive_file) : drive_file_(drive_file) {}
 
-  Status userConsentRequired(const cloudstorage::ICloudProvider& provider) {
+  Status userConsentRequired(
+      const cloudstorage::ICloudProvider& provider) override {
     std::cout << "required consent at url: \n";
     std::cout << provider.authorizeLibraryUrl() << "\n";
     return Status::WaitForAuthorizationCode;
   }
 
-  void accepted(const cloudstorage::ICloudProvider& provider) {
+  void accepted(const cloudstorage::ICloudProvider& provider) override {
     std::fstream file(drive_file_, std::fstream::out);
     file << provider.token();
   }
 
-  void declined(const cloudstorage::ICloudProvider&) {
+  void declined(const cloudstorage::ICloudProvider&) override {
     std::cerr << "access denied ;_;\n";
   }
 
-  void error(const cloudstorage::ICloudProvider&, const std::string&) {}
+  void error(const cloudstorage::ICloudProvider&, const std::string&) override {
+  }
 
  private:
   std::string drive_file_;
 };
 
 class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
-  void receivedItem(cloudstorage::IItem::Pointer) {}
-  void done(const std::vector<cloudstorage::IItem::Pointer>&) {}
-  void error(const std::string&) {}
+  void receivedItem(cloudstorage::IItem::Pointer) override {}
+  void done(const std::vector<cloudstorage::IItem::Pointer>&) override {}
+  void error(const std::string&) override {}
 };
 
 void traverse_drive(cloudstorage::ICloudProvider& drive,

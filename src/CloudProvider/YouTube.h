@@ -34,28 +34,28 @@ class YouTube : public CloudProvider {
  public:
   YouTube();
 
-  void initialize(InitData&&);
-  Hints hints() const;
-  std::string name() const;
+  void initialize(InitData&&) override;
+  Hints hints() const override;
+  std::string name() const override;
 
  private:
   IHttpRequest::Pointer getItemDataRequest(const std::string&,
-                                           std::ostream&) const;
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
+                                           std::ostream&) const override;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
+      std::istream&, std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&, std::string kind) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
   };
 
   std::string youtube_dl_url_;

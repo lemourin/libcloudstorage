@@ -32,8 +32,8 @@ class CloudStorage : public ICloudStorage {
  public:
   CloudStorage();
 
-  std::vector<ICloudProvider::Pointer> providers() const;
-  ICloudProvider::Pointer provider(const std::string& name) const;
+  std::vector<ICloudProvider::Pointer> providers() const override;
+  ICloudProvider::Pointer provider(const std::string& name) const override;
 
  private:
   std::vector<ICloudProvider::Pointer> providers_;

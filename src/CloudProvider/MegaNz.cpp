@@ -60,7 +60,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
   using Listener::Listener;
 
-  void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) {
+  void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
     else
@@ -78,7 +78,8 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
   using Listener::Listener;
 
-  bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer, size_t size) {
+  bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
+                      size_t size) override {
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
@@ -87,13 +88,13 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     return !request_->is_cancelled();
   }
 
-  void onTransferUpdate(MegaApi* mega, MegaTransfer* t) {
+  void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
     if (request_->is_cancelled()) mega->cancelTransfer(t);
   }
 
-  void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) {
+  void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
     else
@@ -122,7 +123,7 @@ class DownloadFileCallback : public IDownloadFileCallback {
   DownloadFileCallback(HttpData* data) : data_(data) {}
   ~DownloadFileCallback() { data_->data_available_.notify(); }
 
-  virtual void receivedData(const char* data, uint32_t length) {
+  virtual void receivedData(const char* data, uint32_t length) override {
     std::lock_guard<std::mutex> lock(data_->mutex_);
     for (uint32_t i = 0; i < length; i++) data_->buffer_.push(data[i]);
     if (data_->waiting_ && !data_->buffer_.empty()) {
@@ -131,13 +132,13 @@ class DownloadFileCallback : public IDownloadFileCallback {
     }
   }
 
-  virtual void done() {
+  virtual void done() override {
     std::lock_guard<std::mutex> lock(data_->mutex_);
     data_->done_ = true;
   }
 
-  virtual void error(const std::string&) {}
-  virtual void progress(uint32_t, uint32_t) {}
+  virtual void error(const std::string&) override {}
+  virtual void progress(uint32_t, uint32_t) override {}
 
   HttpData* data_;
 };

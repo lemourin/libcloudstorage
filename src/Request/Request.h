@@ -54,9 +54,9 @@ class Request : public IRequest<ReturnValue> {
   void set_error_callback(ErrorCallback);
   void set_cancel_callback(CancelCallback);
 
-  void finish();
-  void cancel();
-  ReturnValue result();
+  void finish() override;
+  void cancel() override;
+  ReturnValue result() override;
 
   /**
    * If there is authorization in progress for the cloud provider, waits until

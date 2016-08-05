@@ -38,7 +38,7 @@ class ListDirectoryRequest : public Request<std::vector<IItem::Pointer>> {
   ~ListDirectoryRequest();
 
  protected:
-  void error(int code, const std::string& description);
+  void error(int code, const std::string& description) override;
 
  private:
   IItem::Pointer directory_;

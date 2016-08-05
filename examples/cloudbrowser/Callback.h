@@ -42,11 +42,11 @@ class ListDirectoryCallback : public IListDirectoryCallback {
  public:
   ListDirectoryCallback(Window* w);
 
-  void receivedItem(IItem::Pointer item);
+  void receivedItem(IItem::Pointer item) override;
 
-  void done(const std::vector<IItem::Pointer>&);
+  void done(const std::vector<IItem::Pointer>&) override;
 
-  void error(const std::string& str);
+  void error(const std::string& str) override;
 
  private:
   Window* window_;
@@ -56,13 +56,13 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
  public:
   DownloadThumbnailCallback(ItemModel* i);
 
-  void receivedData(const char* data, uint32_t length);
+  void receivedData(const char* data, uint32_t length) override;
 
-  void done();
+  void done() override;
 
-  void error(const std::string& error);
+  void error(const std::string& error) override;
 
-  void progress(uint32_t, uint32_t);
+  void progress(uint32_t, uint32_t) override;
 
  private:
   ItemModel* item_;
@@ -73,10 +73,10 @@ class DownloadFileCallback : public IDownloadFileCallback {
  public:
   DownloadFileCallback(Window*, std::string filename);
 
-  void receivedData(const char* data, uint32_t length);
-  void done();
-  void error(const std::string&);
-  void progress(uint32_t total, uint32_t now);
+  void receivedData(const char* data, uint32_t length) override;
+  void done() override;
+  void error(const std::string&) override;
+  void progress(uint32_t total, uint32_t now) override;
 
  private:
   Window* window_;
@@ -88,12 +88,12 @@ class UploadFileCallback : public IUploadFileCallback {
  public:
   UploadFileCallback(Window*, QUrl url);
 
-  void reset();
-  uint32_t putData(char* data, uint32_t maxlength);
-  uint64_t size();
-  void done();
-  void error(const std::string& description);
-  void progress(uint32_t total, uint32_t now);
+  void reset() override;
+  uint32_t putData(char* data, uint32_t maxlength) override;
+  uint64_t size() override;
+  void done() override;
+  void error(const std::string& description) override;
+  void progress(uint32_t total, uint32_t now) override;
 
  private:
   Window* window_;
@@ -105,10 +105,10 @@ class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
  public:
   CloudProviderCallback(Window*);
 
-  Status userConsentRequired(const cloudstorage::ICloudProvider&);
-  void accepted(const cloudstorage::ICloudProvider&);
-  void declined(const cloudstorage::ICloudProvider&);
-  void error(const cloudstorage::ICloudProvider&, const std::string&);
+  Status userConsentRequired(const cloudstorage::ICloudProvider&) override;
+  void accepted(const cloudstorage::ICloudProvider&) override;
+  void declined(const cloudstorage::ICloudProvider&) override;
+  void error(const cloudstorage::ICloudProvider&, const std::string&) override;
 
  private:
   Window* window_;

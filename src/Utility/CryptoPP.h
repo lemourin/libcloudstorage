@@ -30,9 +30,10 @@ namespace cloudstorage {
 
 class CryptoPP : public ICrypto {
  public:
-  std::string sha256(const std::string& message);
-  std::string hmac_sha256(const std::string& key, const std::string& message);
-  std::string hex(const std::string& hash);
+  std::string sha256(const std::string& message) override;
+  std::string hmac_sha256(const std::string& key,
+                          const std::string& message) override;
+  std::string hex(const std::string& hash) override;
 };
 
 }  // namespace cloudstroage

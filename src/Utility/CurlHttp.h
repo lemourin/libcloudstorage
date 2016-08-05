@@ -36,11 +36,11 @@ namespace cloudstorage {
 class CurlHttp : public IHttp {
  public:
   IHttpRequest::Pointer create(const std::string&, const std::string&,
-                               bool) const;
-  std::string unescape(const std::string&) const;
-  std::string escape(const std::string&) const;
-  std::string escapeHeader(const std::string&) const;
-  std::string error(int) const;
+                               bool) const override;
+  std::string unescape(const std::string&) const override;
+  std::string escape(const std::string&) const override;
+  std::string escapeHeader(const std::string&) const override;
+  std::string error(int) const override;
 };
 
 class CurlHttpRequest : public IHttpRequest {
@@ -48,20 +48,23 @@ class CurlHttpRequest : public IHttpRequest {
   CurlHttpRequest(const std::string& url, const std::string& method,
                   bool follow_redirect);
 
-  void setParameter(const std::string& parameter, const std::string& value);
+  void setParameter(const std::string& parameter,
+                    const std::string& value) override;
   void setHeaderParameter(const std::string& parameter,
-                          const std::string& value);
+                          const std::string& value) override;
 
-  const std::unordered_map<std::string, std::string>& parameters() const;
-  const std::unordered_map<std::string, std::string>& headerParameters() const;
+  const std::unordered_map<std::string, std::string>& parameters()
+      const override;
+  const std::unordered_map<std::string, std::string>& headerParameters()
+      const override;
 
-  const std::string& url() const;
-  const std::string& method() const;
-  bool follow_redirect() const;
+  const std::string& url() const override;
+  const std::string& method() const override;
+  bool follow_redirect() const override;
 
   int send(std::istream& data, std::ostream& response,
            std::ostream* error_stream = nullptr,
-           ICallback::Pointer = nullptr) const;
+           ICallback::Pointer = nullptr) const override;
 
   std::string parametersToString() const;
 

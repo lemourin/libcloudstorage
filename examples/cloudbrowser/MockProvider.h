@@ -35,11 +35,11 @@ class MockProvider : public ICloudProvider {
    public:
     MockItem(std::string filename, FileType type)
         : filename_(filename), type_(type) {}
-    std::string filename() const { return filename_; }
-    std::string id() const { return filename_; }
-    std::string url() const { return ""; }
-    bool is_hidden() const { return false; }
-    FileType type() const { return type_; }
+    std::string filename() const override { return filename_; }
+    std::string id() const override { return filename_; }
+    std::string url() const override { return ""; }
+    bool is_hidden() const override { return false; }
+    FileType type() const override { return type_; }
 
    private:
     std::string filename_;
@@ -51,12 +51,12 @@ class MockProvider : public ICloudProvider {
     MockListDirectoryRequest(IItem::Pointer directory,
                              IListDirectoryCallback::Pointer callback);
     ~MockListDirectoryRequest() { cancel(); }
-    void finish() { result_.wait(); }
-    void cancel() {
+    void finish() override { result_.wait(); }
+    void cancel() override {
       cancelled_ = true;
       result_.wait();
     }
-    std::vector<IItem::Pointer> result() { return result_.get(); }
+    std::vector<IItem::Pointer> result() override { return result_.get(); }
 
    private:
     IListDirectoryCallback::Pointer callback_;
@@ -67,9 +67,9 @@ class MockProvider : public ICloudProvider {
   class MockGetItemRequest : public GetItemRequest {
    public:
     MockGetItemRequest(const std::string& path, GetItemCallback);
-    void finish() {}
-    void cancel() {}
-    IItem::Pointer result() { return result_; }
+    void finish() override {}
+    void cancel() override {}
+    IItem::Pointer result() override { return result_; }
 
    private:
     IItem::Pointer result_;
@@ -79,9 +79,9 @@ class MockProvider : public ICloudProvider {
    public:
     MockDownloadFileRequest(IItem::Pointer item,
                             IDownloadFileCallback::Pointer);
-    void finish() { function_.wait(); }
-    void cancel() { function_.wait(); }
-    void result() { function_.get(); }
+    void finish() override { function_.wait(); }
+    void cancel() override { function_.wait(); }
+    void result() override { function_.get(); }
 
    private:
     IDownloadFileCallback::Pointer callback_;
@@ -90,16 +90,16 @@ class MockProvider : public ICloudProvider {
 
   class MockUploadFileRequest : public UploadFileRequest {
    public:
-    void finish() {}
-    void cancel() {}
+    void finish() override {}
+    void cancel() override {}
   };
 
   class MockGetItemDataRequest : public GetItemDataRequest {
    public:
     MockGetItemDataRequest(const std::string& id, GetItemDataCallback);
-    void finish() {}
-    void cancel() {}
-    IItem::Pointer result() { return result_; }
+    void finish() override {}
+    void cancel() override {}
+    IItem::Pointer result() override { return result_; }
 
    private:
     IItem::Pointer result_;
@@ -107,58 +107,57 @@ class MockProvider : public ICloudProvider {
 
   class MockDeleteItemRequest : public DeleteItemRequest {
    public:
-    void finish() {}
-    void cancel() {}
-    bool result() { return false; }
+    void finish() override {}
+    void cancel() override {}
+    bool result() override { return false; }
   };
 
   class MockCreateDirectoryRequest : public CreateDirectoryRequest {
    public:
     MockCreateDirectoryRequest(IItem::Pointer, const std::string& name,
                                CreateDirectoryCallback);
-    void finish() {}
-    void cancel() {}
-    IItem::Pointer result() { return nullptr; }
+    void finish() override {}
+    void cancel() override {}
+    IItem::Pointer result() override { return nullptr; }
   };
 
   class MockMoveItemRequest : public MoveItemRequest {
    public:
-    void finish() {}
-    void cancel() {}
-    bool result() { return false; }
+    void finish() override {}
+    void cancel() override {}
+    bool result() override { return false; }
   };
 
   MockProvider();
 
-  void initialize(InitData&&);
-  std::string token() const;
-  Hints hints() const;
-  std::string name() const;
-  std::string authorizeLibraryUrl() const;
-  IItem::Pointer rootDirectory() const;
+  void initialize(InitData&&) override;
+  std::string token() const override;
+  Hints hints() const override;
+  std::string name() const override;
+  std::string authorizeLibraryUrl() const override;
+  IItem::Pointer rootDirectory() const override;
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer);
+      IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
-                                       GetItemCallback);
+                                       GetItemCallback) override;
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer,
-                                             const std::string& filename,
-                                             IUploadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string& filename,
+      IUploadFileCallback::Pointer) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback);
+                                               GetItemDataCallback) override;
   DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer item, IDownloadFileCallback::Pointer);
+      IItem::Pointer item, IDownloadFileCallback::Pointer) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
-                                             DeleteItemCallback);
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer,
-                                                       const std::string&,
-                                                       CreateDirectoryCallback);
+                                             DeleteItemCallback) override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer, IItem::Pointer,
-                                         MoveItemCallback);
+                                         MoveItemCallback) override;
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer, const std::string&,
-                                             RenameItemCallback);
+                                             RenameItemCallback) override;
 };
 
 }  // namespace cloudstorage

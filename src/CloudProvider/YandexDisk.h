@@ -34,47 +34,49 @@ class YandexDisk : public CloudProvider {
  public:
   YandexDisk();
 
-  std::string name() const;
-  IItem::Pointer rootDirectory() const;
+  std::string name() const override;
+  IItem::Pointer rootDirectory() const override;
 
-  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback callback);
+  GetItemDataRequest::Pointer getItemDataAsync(
+      const std::string& id, GetItemDataCallback callback) override;
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
-                                             IUploadFileCallback::Pointer);
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer,
-                                                       const std::string&,
-                                                       CreateDirectoryCallback);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string&,
+      IUploadFileCallback::Pointer) override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
-  IHttpRequest::Pointer deleteItemRequest(const IItem&,
-                                          std::ostream& input_stream) const;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
+  IHttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                        std::ostream&) const;
+                                        std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                          std::ostream&) const;
+                                          std::ostream&) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
+      std::istream&, std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
-  void authorizeRequest(IHttpRequest&) const;
+  void authorizeRequest(IHttpRequest&) const override;
 
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 };
 

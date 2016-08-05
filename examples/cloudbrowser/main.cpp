@@ -53,13 +53,13 @@ class MainWidget : public QWidget {
   }
 
  protected:
-  void resizeEvent(QResizeEvent* e) {
+  void resizeEvent(QResizeEvent* e) override {
     QWidget::resizeEvent(e);
     media_player_->resize(e->size());
     container_->resize(e->size());
   }
 
-  void keyPressEvent(QKeyEvent* e) {
+  void keyPressEvent(QKeyEvent* e) override {
     QWidget::keyPressEvent(e);
     if (e->isAccepted()) return;
     if (e->key() == Qt::Key_Q) {

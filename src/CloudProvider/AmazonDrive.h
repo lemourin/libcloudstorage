@@ -35,40 +35,39 @@ class AmazonDrive : public CloudProvider {
  public:
   AmazonDrive();
 
-  void initialize(InitData&&);
+  void initialize(InitData&&) override;
 
-  Hints hints() const;
-  std::string name() const;
-  IItem::Pointer rootDirectory() const;
+  Hints hints() const override;
+  std::string name() const override;
+  IItem::Pointer rootDirectory() const override;
 
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
-                                         MoveItemCallback);
-
- protected:
-  cloudstorage::AuthorizeRequest::Pointer authorizeAsync();
+                                         MoveItemCallback) override;
+  cloudstorage::AuthorizeRequest::Pointer authorizeAsync() override;
 
  private:
-  IHttpRequest::Pointer getItemDataRequest(const std::string& id,
-                                           std::ostream& input_stream) const;
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer getItemDataRequest(
+      const std::string& id, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
   IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                           const std::string& filename,
-                                          std::ostream&, std::ostream&) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer deleteItemRequest(const IItem&,
-                                          std::ostream& input_stream) const;
+                                          std::ostream&,
+                                          std::ostream&) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer createDirectoryRequest(const IItem&, const std::string&,
-                                               std::ostream&) const;
+                                               std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                          std::ostream&) const;
+                                          std::ostream&) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& page_token) const;
+      std::istream&, std::string& page_token) const override;
 
   IItem::FileType type(const Json::Value&) const;
   IItem::Pointer toItem(const Json::Value&) const;
@@ -76,20 +75,22 @@ class AmazonDrive : public CloudProvider {
   std::string metadata_url() const;
   std::string content_url() const;
 
-  bool reauthorize(int code) const;
+  bool reauthorize(int code) const override;
 
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
   std::string metadata_url_;

@@ -32,7 +32,8 @@ namespace cloudstorage {
 class DownloadStreamWrapper : public std::streambuf {
  public:
   DownloadStreamWrapper(std::function<void(const char*, uint32_t)> callback);
-  std::streamsize xsputn(const char_type* data, std::streamsize length);
+  std::streamsize xsputn(const char_type* data,
+                         std::streamsize length) override;
 
  private:
   std::function<void(const char*, uint32_t)> callback_;
@@ -49,7 +50,7 @@ class DownloadFileRequest : public Request<void> {
   ~DownloadFileRequest();
 
  protected:
-  void error(int code, const std::string& description);
+  void error(int code, const std::string& description) override;
 
  private:
   IItem::Pointer file_;

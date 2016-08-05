@@ -34,37 +34,38 @@ class Dropbox : public CloudProvider {
  public:
   Dropbox();
 
-  std::string name() const;
-  IItem::Pointer rootDirectory() const;
-  bool reauthorize(int code) const;
+  std::string name() const override;
+  IItem::Pointer rootDirectory() const override;
+  bool reauthorize(int code) const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback);
+                                               GetItemDataCallback) override;
 
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
   IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                           const std::string& filename,
-                                          std::ostream&, std::ostream&) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer getThumbnailRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer deleteItemRequest(const IItem&,
-                                          std::ostream& input_stream) const;
+                                          std::ostream&,
+                                          std::ostream&) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer getThumbnailRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                const std::string& name,
-                                               std::ostream&) const;
+                                               std::ostream&) const override;
   IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                        std::ostream&) const;
+                                        std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem& item,
                                           const std::string& name,
-                                          std::ostream&) const;
+                                          std::ostream&) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
-  IItem::Pointer createDirectoryResponse(std::istream&) const;
+      std::istream&, std::string& next_page_token) const override;
+  IItem::Pointer createDirectoryResponse(std::istream&) const override;
 
  private:
   static IItem::Pointer toItem(const Json::Value&);
@@ -73,15 +74,17 @@ class Dropbox : public CloudProvider {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
-    Token::Pointer fromTokenString(const std::string&) const;
+    std::string authorizeLibraryUrl() const override;
+    Token::Pointer fromTokenString(const std::string&) const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 };
 

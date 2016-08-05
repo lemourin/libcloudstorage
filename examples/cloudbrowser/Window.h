@@ -42,7 +42,7 @@ class Window;
 class ImageProvider : public QQuickImageProvider {
  public:
   ImageProvider();
-  QImage requestImage(const QString&, QSize*, const QSize&);
+  QImage requestImage(const QString&, QSize*, const QSize&) override;
   void addImage(QString id, ImagePointer);
   bool hasImage(QString id);
 
@@ -81,8 +81,8 @@ class ItemModel : public QObject {
 
 class DirectoryModel : public QAbstractListModel {
  public:
-  int rowCount(const QModelIndex& parent = QModelIndex()) const;
-  QVariant data(const QModelIndex& index, int) const;
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int) const override;
 
   void addItem(IItem::Pointer, Window* w);
   ItemModel* get(int id) const;
@@ -156,7 +156,7 @@ class Window : public QQuickView {
   void hideWidgetPlayer();
 
  protected:
-  void keyPressEvent(QKeyEvent* e);
+  void keyPressEvent(QKeyEvent* e) override;
 
  private:
   friend class CloudProviderCallback;

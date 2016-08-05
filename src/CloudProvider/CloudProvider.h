@@ -43,15 +43,15 @@ class CloudProvider : public ICloudProvider,
 
   CloudProvider(IAuth::Pointer);
 
-  void initialize(InitData&&);
+  void initialize(InitData&&) override;
 
-  Hints hints() const;
+  Hints hints() const override;
   std::string access_token() const;
   IAuth* auth() const;
 
-  std::string authorizeLibraryUrl() const;
-  std::string token() const;
-  IItem::Pointer rootDirectory() const;
+  std::string authorizeLibraryUrl() const override;
+  std::string token() const override;
+  IItem::Pointer rootDirectory() const override;
   ICallback* callback() const;
   ICrypto* crypto() const;
   IHttp* http() const;
@@ -59,28 +59,29 @@ class CloudProvider : public ICloudProvider,
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer);
+      IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
-                                       GetItemCallback);
+                                       GetItemCallback) override;
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
-                                             IUploadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string&,
+      IUploadFileCallback::Pointer) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback f);
+                                               GetItemDataCallback f) override;
   DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer);
+      IItem::Pointer, IDownloadFileCallback::Pointer) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
-                                             DeleteItemCallback);
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer parent,
-                                                       const std::string& name,
-                                                       CreateDirectoryCallback);
+                                             DeleteItemCallback) override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer parent, const std::string& name,
+      CreateDirectoryCallback) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
-                                         MoveItemCallback);
+                                         MoveItemCallback) override;
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
                                              const std::string&,
-                                             RenameItemCallback);
+                                             RenameItemCallback) override;
 
   /**
    * Used by default implementation of getItemDataAsync.

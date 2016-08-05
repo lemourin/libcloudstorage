@@ -70,10 +70,10 @@ class VLCMediaPlayer : public MediaPlayer {
  public:
   VLCMediaPlayer(QWidget*);
 
-  void pause();
-  void play();
-  void stop();
-  void setMedia(const std::string&);
+  void pause() override;
+  void play() override;
+  void stop() override;
+  void setMedia(const std::string&) override;
 
  private:
   VLC::Instance vlc_instance_;
@@ -86,10 +86,10 @@ class QtMediaPlayer : public MediaPlayer {
  public:
   QtMediaPlayer(QWidget*);
 
-  void pause();
-  void play();
-  void stop();
-  void setMedia(const std::string&);
+  void pause() override;
+  void play() override;
+  void stop() override;
+  void setMedia(const std::string&) override;
 
  private:
   QMediaPlayer media_player_;

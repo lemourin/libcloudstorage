@@ -42,42 +42,41 @@ class AmazonS3 : public CloudProvider {
  public:
   AmazonS3();
 
-  void initialize(InitData&& data);
+  void initialize(InitData&& data) override;
 
-  std::string token() const;
-  std::string name() const;
-  Hints hints() const;
+  std::string token() const override;
+  std::string name() const override;
+  Hints hints() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync();
+  AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback f);
+                                               GetItemDataCallback f) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
-                                         MoveItemCallback);
+                                         MoveItemCallback) override;
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
                                              const std::string&,
-                                             RenameItemCallback);
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer parent,
-                                                       const std::string& name,
-                                                       CreateDirectoryCallback);
+                                             RenameItemCallback) override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer parent, const std::string& name,
+      CreateDirectoryCallback) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
-                                             DeleteItemCallback);
+                                             DeleteItemCallback) override;
 
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
-  IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                          const std::string& filename,
-                                          std::ostream& prefix_stream,
-                                          std::ostream& suffix_stream) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
+  IHttpRequest::Pointer uploadFileRequest(
+      const IItem& directory, const std::string& filename,
+      std::ostream& prefix_stream, std::ostream& suffix_stream) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
+      std::istream&, std::string& next_page_token) const override;
 
-  void authorizeRequest(IHttpRequest&) const;
-  bool reauthorize(int) const;
+  void authorizeRequest(IHttpRequest&) const override;
+  bool reauthorize(int) const override;
 
   std::string access_id() const;
   std::string secret() const;
@@ -88,14 +87,16 @@ class AmazonS3 : public CloudProvider {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
  private:

@@ -41,9 +41,11 @@ class ListDirectoryCallback : public IListDirectoryCallback {
   ListDirectoryCallback(Request<bool>::Semaphore* semaphore)
       : semaphore_(semaphore) {}
 
-  void receivedItem(IItem::Pointer) {}
-  void done(const std::vector<IItem::Pointer>&) { semaphore_->notify(); }
-  void error(const std::string&) { semaphore_->notify(); }
+  void receivedItem(IItem::Pointer) override {}
+  void done(const std::vector<IItem::Pointer>&) override {
+    semaphore_->notify();
+  }
+  void error(const std::string&) override { semaphore_->notify(); }
 
  private:
   Request<bool>::Semaphore* semaphore_;

@@ -35,15 +35,15 @@ class HttpCallback : public IHttpRequest::ICallback {
                std::function<void(uint32_t, uint32_t)> progress_download,
                std::function<void(uint32_t, uint32_t)> progress_upload);
 
-  bool abort();
+  bool abort() override;
 
-  void progressDownload(uint32_t total, uint32_t now);
+  void progressDownload(uint32_t total, uint32_t now) override;
 
-  void progressUpload(uint32_t, uint32_t);
+  void progressUpload(uint32_t, uint32_t) override;
 
-  void receivedHttpCode(int);
+  void receivedHttpCode(int) override;
 
-  void receivedContentLength(int);
+  void receivedContentLength(int) override;
 
  private:
   std::atomic_bool& is_cancelled_;

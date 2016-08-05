@@ -37,8 +37,9 @@ class UploadStreamWrapper : public std::streambuf {
                       uint64_t size);
   void reset();
 
-  pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
-  int_type underflow();
+  pos_type seekoff(off_type, std::ios_base::seekdir,
+                   std::ios_base::openmode) override;
+  int_type underflow() override;
 
   char buffer_[BUFFER_SIZE];
   std::function<uint32_t(char*, uint32_t)> callback_;
@@ -58,7 +59,7 @@ class UploadFileRequest : public Request<void> {
   ~UploadFileRequest();
 
  protected:
-  void error(int code, const std::string& description);
+  void error(int code, const std::string& description) override;
 
  private:
   IItem::Pointer directory_;

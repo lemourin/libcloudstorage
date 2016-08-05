@@ -34,36 +34,37 @@ class Box : public CloudProvider {
  public:
   Box();
 
-  IItem::Pointer rootDirectory() const;
-  std::string name() const;
-  bool reauthorize(int) const;
+  IItem::Pointer rootDirectory() const override;
+  std::string name() const override;
+  bool reauthorize(int) const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string&,
-                                               GetItemDataCallback);
+                                               GetItemDataCallback) override;
 
  private:
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
   IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                           const std::string& filename,
-                                          std::ostream&, std::ostream&) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer getThumbnailRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer deleteItemRequest(const IItem&,
-                                          std::ostream& input_stream) const;
+                                          std::ostream&,
+                                          std::ostream&) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer getThumbnailRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer createDirectoryRequest(const IItem&, const std::string&,
-                                               std::ostream&) const;
+                                               std::ostream&) const override;
   IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                        std::ostream&) const;
+                                        std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                          std::ostream&) const;
+                                          std::ostream&) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
+      std::istream&, std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
 
@@ -71,14 +72,16 @@ class Box : public CloudProvider {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 };
 

@@ -42,58 +42,60 @@ class OwnCloud : public CloudProvider {
  public:
   OwnCloud();
 
-  IItem::Pointer rootDirectory() const;
+  IItem::Pointer rootDirectory() const override;
 
-  void initialize(InitData&&);
+  void initialize(InitData&&) override;
 
-  std::string name() const;
-  std::string token() const;
+  std::string name() const override;
+  std::string token() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync();
-  CreateDirectoryRequest::Pointer createDirectoryAsync(IItem::Pointer,
-                                                       const std::string&,
-                                                       CreateDirectoryCallback);
+  AuthorizeRequest::Pointer authorizeAsync() override;
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 
-  IHttpRequest::Pointer getItemDataRequest(const std::string&,
-                                           std::ostream& input_stream) const;
-  IHttpRequest::Pointer listDirectoryRequest(const IItem&,
-                                             const std::string& page_token,
-                                             std::ostream& input_stream) const;
+  IHttpRequest::Pointer getItemDataRequest(
+      const std::string&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer listDirectoryRequest(
+      const IItem&, const std::string& page_token,
+      std::ostream& input_stream) const override;
   IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
                                           const std::string& filename,
-                                          std::ostream&, std::ostream&) const;
-  IHttpRequest::Pointer downloadFileRequest(const IItem&,
-                                            std::ostream& input_stream) const;
-  IHttpRequest::Pointer deleteItemRequest(const IItem&,
-                                          std::ostream& input_stream) const;
+                                          std::ostream&,
+                                          std::ostream&) const override;
+  IHttpRequest::Pointer downloadFileRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer deleteItemRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                        std::ostream&) const;
+                                        std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                          std::ostream&) const;
+                                          std::ostream&) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const;
+      std::istream&, std::string& next_page_token) const override;
 
   std::string api_url() const;
 
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 
-  bool reauthorize(int code) const;
-  void authorizeRequest(IHttpRequest&) const;
+  bool reauthorize(int code) const override;
+  void authorizeRequest(IHttpRequest&) const override;
 
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
 
-    std::string authorizeLibraryUrl() const;
+    std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const;
-    IHttpRequest::Pointer refreshTokenRequest(std::ostream& input_data) const;
+        std::ostream& input_data) const override;
+    IHttpRequest::Pointer refreshTokenRequest(
+        std::ostream& input_data) const override;
 
-    Token::Pointer exchangeAuthorizationCodeResponse(std::istream&) const;
-    Token::Pointer refreshTokenResponse(std::istream&) const;
+    Token::Pointer exchangeAuthorizationCodeResponse(
+        std::istream&) const override;
+    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
  private:
