@@ -84,8 +84,8 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_) http_ = make_unique<CurlHttp>();
 #endif
 
+  if (!http_) throw std::runtime_error("No http module specified.");
   auth()->initialize(http());
-  if (!http_) callback()->error(*this, "No http module specified.");
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
