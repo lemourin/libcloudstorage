@@ -28,10 +28,13 @@
 #include <QUrl>
 #include <fstream>
 
-using namespace cloudstorage;
-
 class Window;
 class ItemModel;
+
+using cloudstorage::IListDirectoryCallback;
+using cloudstorage::IDownloadFileCallback;
+using cloudstorage::IUploadFileCallback;
+using cloudstorage::IItem;
 
 template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {

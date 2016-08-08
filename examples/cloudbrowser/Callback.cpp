@@ -28,8 +28,6 @@
 
 #include "Window.h"
 
-using namespace cloudstorage;
-
 DownloadFileCallback::DownloadFileCallback(Window* window, std::string filename)
     : window_(window),
       file_(filename, std::ios_base::out | std::ios_base::binary),

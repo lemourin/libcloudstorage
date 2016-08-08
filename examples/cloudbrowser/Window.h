@@ -36,6 +36,7 @@
 
 using ItemPointer = cloudstorage::IItem::Pointer;
 using ImagePointer = std::shared_ptr<QImage>;
+using cloudstorage::ICloudProvider;
 
 class Window;
 

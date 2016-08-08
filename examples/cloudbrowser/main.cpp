@@ -41,9 +41,12 @@ class MainWidget : public QWidget {
       : media_player_(MediaPlayer::instance(this)),
         window_(media_player_.get()),
         container_(createWindowContainer(&window_, this)) {
+    const char* stylesheet = "background-color:black;";
+
+    setStyleSheet(stylesheet);
     container_->setFocus();
 
-    media_player_->setStyleSheet("background-color:black;");
+    media_player_->setStyleSheet(stylesheet);
     media_player_->show();
 
     connect(&window_, &Window::showWidgetPlayer, this,

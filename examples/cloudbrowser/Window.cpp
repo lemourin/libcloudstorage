@@ -36,7 +36,7 @@
 
 #include "MockProvider.h"
 
-using namespace cloudstorage;
+using cloudstorage::ICloudStorage;
 
 Window::Window(MediaPlayer* media_player)
     : image_provider_(new ImageProvider),
@@ -124,7 +124,7 @@ void Window::initializeCloud(QString name) {
   if (name != "mock")
     cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
   else
-    cloud_provider_ = make_unique<MockProvider>();
+    cloud_provider_ = make_unique<cloudstorage::MockProvider>();
   {
     std::unique_lock<std::mutex> lock(stream_mutex());
     std::cerr << "[DIAG] Trying to authorize with "
@@ -145,7 +145,7 @@ void Window::initializeCloud(QString name) {
 void Window::listDirectory() {
   clearCurrentDirectoryList();
   list_directory_request_ = cloud_provider_->listDirectoryAsync(
-      current_directory_, make_unique<ListDirectoryCallback>(this));
+      current_directory_, make_unique<::ListDirectoryCallback>(this));
 }
 
 void Window::changeCurrentDirectory(int directory_id) {
@@ -305,15 +305,15 @@ void Window::uploadFile(QString path) {
   QUrl url = path;
   upload_request_ = cloud_provider_->uploadFileAsync(
       current_directory_, url.fileName().toStdString(),
-      make_unique<UploadFileCallback>(this, url));
+      make_unique<::UploadFileCallback>(this, url));
 }
 
 void Window::downloadFile(int item_id, QUrl path) {
   ItemModel* i = directory_model_.get(item_id);
   download_request_ = cloud_provider_->downloadFileAsync(
-      i->item(),
-      make_unique<DownloadFileCallback>(this, path.toLocalFile().toStdString() +
-                                                  "/" + i->item()->filename()));
+      i->item(), make_unique<::DownloadFileCallback>(
+                     this, path.toLocalFile().toStdString() + "/" +
+                               i->item()->filename()));
 
   std::unique_lock<std::mutex> lock(stream_mutex());
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
