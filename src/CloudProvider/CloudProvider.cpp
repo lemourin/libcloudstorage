@@ -25,6 +25,7 @@
 
 #include <json/json.h>
 #include <cstring>
+#include <fstream>
 #include <sstream>
 
 #include "Utility/Item.h"
@@ -49,6 +50,90 @@
 #endif
 
 using namespace std::placeholders;
+
+namespace {
+
+class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
+ public:
+  ListDirectoryCallback(cloudstorage::ListDirectoryCallback callback)
+      : callback_(callback) {}
+
+  void receivedItem(cloudstorage::IItem::Pointer) override {}
+
+  void done(const std::vector<cloudstorage::IItem::Pointer>& result) override {
+    callback_(result);
+  }
+
+  void error(const std::string&) override { callback_({}); }
+
+ private:
+  cloudstorage::ListDirectoryCallback callback_;
+};
+
+class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
+ public:
+  DownloadFileCallback(const std::string& filename,
+                       cloudstorage::DownloadFileCallback callback)
+      : file_(filename, std::ios_base::out | std::ios_base::binary),
+        callback_(callback) {}
+
+  void receivedData(const char* data, uint32_t length) override {
+    file_.write(data, length);
+  }
+
+  void done() override {
+    file_.close();
+    callback_(true);
+  }
+
+  void error(const std::string&) override {
+    file_.close();
+    callback_(false);
+  }
+
+  void progress(uint32_t, uint32_t) override {}
+
+ private:
+  std::fstream file_;
+  cloudstorage::DownloadFileCallback callback_;
+};
+
+class UploadFileCallback : public cloudstorage::IUploadFileCallback {
+ public:
+  UploadFileCallback(const std::string& filename,
+                     cloudstorage::UploadFileCallback callback)
+      : file_(filename, std::ios_base::in | std::ios_base::binary),
+        callback_(callback) {
+    file_.seekg(0, std::ios::end);
+    size_ = file_.tellg();
+    file_.seekg(std::ios::beg);
+  }
+
+  void reset() override {
+    file_.clear();
+    file_.seekg(std::ios::beg);
+  }
+
+  uint32_t putData(char* data, uint32_t maxlength) override {
+    file_.read(data, maxlength);
+    return file_.gcount();
+  }
+
+  uint64_t size() override { return size_; }
+
+  void done() override { callback_(true); }
+
+  void error(const std::string&) override { callback_(false); }
+
+  void progress(uint32_t, uint32_t) override {}
+
+ private:
+  std::fstream file_;
+  cloudstorage::UploadFileCallback callback_;
+  uint64_t size_;
+};
+
+}  // namespace
 
 namespace cloudstorage {
 
@@ -255,6 +340,26 @@ ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   return make_unique<cloudstorage::RenameItemRequest>(shared_from_this(), item,
                                                       name, callback);
+}
+
+ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
+    IItem::Pointer item, ListDirectoryCallback callback) {
+  return listDirectoryAsync(item,
+                            make_unique<::ListDirectoryCallback>(callback));
+}
+
+ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
+    IItem::Pointer item, const std::string& filename,
+    DownloadFileCallback callback) {
+  return downloadFileAsync(
+      item, make_unique<::DownloadFileCallback>(filename, callback));
+}
+
+ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
+    IItem::Pointer parent, const std::string& filename,
+    UploadFileCallback callback) {
+  return uploadFileAsync(parent, filename,
+                         make_unique<::UploadFileCallback>(filename, callback));
 }
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,

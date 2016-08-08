@@ -309,6 +309,48 @@ class ICloudProvider {
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
       RenameItemCallback callback) = 0;
+
+  /**
+   * Simplified version of listDirectoryAsync.
+   *
+   * @param item directory to be listed
+   * @param callback called when the request is finished
+   * @return object representing the pending request
+   */
+  virtual ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer item, ListDirectoryCallback callback) = 0;
+
+  /**
+   * Simplified version of downloadFileAsync.
+   *
+   * @param item item to be downloaded
+   *
+   * @param filename name at which the downloaded file will be saved
+   *
+   * @param callback called when done; if successful, it gets true, otherwise
+   * false
+   *
+   * @return object representing the pending request
+   */
+  virtual DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer item, const std::string& filename,
+      DownloadFileCallback callback) = 0;
+
+  /**
+   * Simplified version of uploadFileAsync.
+   *
+   * @param parent parent of the uploaded file
+   *
+   * @param filename name of file to upload
+   *
+   * @param callback called when done, if successful, it gets true, otherwise
+   * false
+   *
+   * @return object representing the pending request
+   */
+  virtual UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer parent, const std::string& filename,
+      UploadFileCallback callback) = 0;
 };
 
 }  // namespace cloudstorage

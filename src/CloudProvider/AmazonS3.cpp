@@ -36,21 +36,6 @@ namespace cloudstorage {
 
 namespace {
 
-class ListDirectoryCallback : public IListDirectoryCallback {
- public:
-  ListDirectoryCallback(Request<bool>::Semaphore* semaphore)
-      : semaphore_(semaphore) {}
-
-  void receivedItem(IItem::Pointer) override {}
-  void done(const std::vector<IItem::Pointer>&) override {
-    semaphore_->notify();
-  }
-  void error(const std::string&) override { semaphore_->notify(); }
-
- private:
-  Request<bool>::Semaphore* semaphore_;
-};
-
 std::string escapePath(IHttp* http, const std::string& str) {
   std::string data = http->escape(str);
   std::string slash = http->escape("/");
@@ -92,7 +77,9 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
                          ->result();
     Request<bool>::Semaphore semaphore(r);
     auto children_request = r->provider()->listDirectoryAsync(
-        directory, make_unique<ListDirectoryCallback>(&semaphore));
+        directory, [&semaphore](const std::vector<IItem::Pointer>&) {
+          semaphore.notify();
+        });
     semaphore.wait();
     if (r->is_cancelled()) {
       children_request->cancel();
@@ -258,7 +245,9 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     if (item->type() == IItem::FileType::Directory) {
       Request<bool>::Semaphore semaphore(r);
       auto children_request = r->provider()->listDirectoryAsync(
-          item, make_unique<ListDirectoryCallback>(&semaphore));
+          item, [&semaphore](const std::vector<IItem::Pointer>&) {
+            semaphore.notify();
+          });
       semaphore.wait();
       if (r->is_cancelled()) {
         children_request->cancel();

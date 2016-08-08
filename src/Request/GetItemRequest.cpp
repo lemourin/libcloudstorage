@@ -46,8 +46,8 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
       {
         std::lock_guard<std::mutex> lock(mutex_);
         if (is_cancelled()) return nullptr;
-        current_request_ =
-            provider()->listDirectoryAsync(std::move(node), nullptr);
+        current_request_ = provider()->listDirectoryAsync(
+            std::move(node), [](const std::vector<IItem::Pointer>&) {});
       }
       node = getItem(current_request_->result(), token);
     }
