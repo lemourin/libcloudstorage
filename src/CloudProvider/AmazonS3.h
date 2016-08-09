@@ -46,6 +46,7 @@ class AmazonS3 : public CloudProvider {
 
   std::string token() const override;
   std::string name() const override;
+  std::string endpoint() const override;
   Hints hints() const override;
 
   AuthorizeRequest::Pointer authorizeAsync() override;

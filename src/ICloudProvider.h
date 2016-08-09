@@ -164,6 +164,11 @@ class ICloudProvider {
   virtual std::string name() const = 0;
 
   /**
+   * @return host address to which cloud provider api's requests are called
+   */
+  virtual std::string endpoint() const = 0;
+
+  /**
    * Returns the url to which user has to go in his web browser in order to give
    * consent to our library.
    *

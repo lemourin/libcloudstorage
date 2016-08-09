@@ -39,6 +39,7 @@ class AmazonDrive : public CloudProvider {
 
   Hints hints() const override;
   std::string name() const override;
+  std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
 
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,

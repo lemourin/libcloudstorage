@@ -35,6 +35,7 @@ class GoogleDrive : public CloudProvider {
  public:
   GoogleDrive();
   std::string name() const override;
+  std::string endpoint() const override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;

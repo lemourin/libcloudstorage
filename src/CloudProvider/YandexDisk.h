@@ -35,6 +35,7 @@ class YandexDisk : public CloudProvider {
   YandexDisk();
 
   std::string name() const override;
+  std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(

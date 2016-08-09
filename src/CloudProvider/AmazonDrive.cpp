@@ -55,6 +55,8 @@ ICloudProvider::Hints AmazonDrive::hints() const {
 
 std::string AmazonDrive::name() const { return "amazon"; }
 
+std::string AmazonDrive::endpoint() const { return content_url(); }
+
 IItem::Pointer AmazonDrive::rootDirectory() const {
   return make_unique<Item>("root", "root", IItem::FileType::Directory);
 }

@@ -37,6 +37,7 @@ class YouTube : public CloudProvider {
   void initialize(InitData&&) override;
   Hints hints() const override;
   std::string name() const override;
+  std::string endpoint() const override;
 
  private:
   IHttpRequest::Pointer getItemDataRequest(const std::string&,

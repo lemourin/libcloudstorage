@@ -156,6 +156,10 @@ std::string AmazonS3::token() const {
 
 std::string AmazonS3::name() const { return "amazons3"; }
 
+std::string AmazonS3::endpoint() const {
+  return "https://s3-" + region_ + ".amazonaws.com";
+}
+
 ICloudProvider::Hints AmazonS3::hints() const {
   Hints result = {{"aws_region", region_}};
   auto t = CloudProvider::hints();
@@ -317,7 +321,7 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
 IHttpRequest::Pointer AmazonS3::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (item.id() == rootDirectory()->id())
-    return http()->create("https://s3-" + region_ + ".amazonaws.com/", "GET");
+    return http()->create(endpoint() + "/", "GET");
   else {
     auto data = split(item.id());
     auto request = http()->create(

@@ -30,16 +30,19 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
+
 namespace cloudstorage {
 
 GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
+std::string GoogleDrive::endpoint() const { return GOOGLEAPI_ENDPOINT; }
+
 IHttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
                                                       std::ostream&) const {
-  auto request =
-      http()->create("https://www.googleapis.com/drive/v3/files/" + id, "GET");
+  auto request = http()->create(endpoint() + "/drive/v3/files/" + id, "GET");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
                         "mimeType,iconLink,parents");
@@ -49,7 +52,7 @@ IHttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
 IHttpRequest::Pointer GoogleDrive::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   IHttpRequest::Pointer request =
-      http()->create("https://www.googleapis.com/drive/v3/files", "GET");
+      http()->create(endpoint() + "/drive/v3/files", "GET");
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
   request->setParameter("fields",
                         "files(id,name,thumbnailLink,trashed,"
@@ -65,8 +68,7 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
   const Item& item = static_cast<const Item&>(f);
   IHttpRequest::Pointer request = http()->create(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-      "POST");
+      endpoint() + "/upload/drive/v3/files?uploadType=multipart", "POST");
   request->setHeaderParameter("Content-Type",
                               "multipart/related; boundary=" + separator);
   Json::Value request_data;
@@ -85,22 +87,20 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
 
 IHttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& item,
                                                        std::ostream&) const {
-  IHttpRequest::Pointer request = http()->create(
-      "https://www.googleapis.com/drive/v3/files/" + item.id(), "GET");
+  IHttpRequest::Pointer request =
+      http()->create(endpoint() + "/drive/v3/files/" + item.id(), "GET");
   request->setParameter("alt", "media");
   return request;
 }
 
 IHttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
                                                      std::ostream&) const {
-  return http()->create(
-      "https://www.googleapis.com/drive/v3/files/" + item.id(), "DELETE");
+  return http()->create(endpoint() + "/drive/v3/files/" + item.id(), "DELETE");
 }
 
 IHttpRequest::Pointer GoogleDrive::createDirectoryRequest(
     const IItem& item, const std::string& name, std::ostream& input) const {
-  auto request =
-      http()->create("https://www.googleapis.com/drive/v3/files", "POST");
+  auto request = http()->create(endpoint() + "/drive/v3/files", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
@@ -117,8 +117,8 @@ IHttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
                                                    const IItem& destination,
                                                    std::ostream& input) const {
   const Item& source = static_cast<const Item&>(s);
-  auto request = http()->create(
-      "https://www.googleapis.com/drive/v3/files/" + source.id(), "PATCH");
+  auto request =
+      http()->create(endpoint() + "/drive/v3/files/" + source.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   std::string current_parents;
   for (auto str : source.parents()) current_parents += str + ",";
@@ -131,8 +131,8 @@ IHttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
 
 IHttpRequest::Pointer GoogleDrive::renameItemRequest(
     const IItem& item, const std::string& name, std::ostream& input) const {
-  auto request = http()->create(
-      "https://www.googleapis.com/drive/v3/files/" + item.id(), "PATCH");
+  auto request =
+      http()->create(endpoint() + "/drive/v3/files/" + item.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
@@ -188,7 +188,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   else if (thumnail_url.empty())
     thumnail_url = v["iconLink"].asString();
   item->set_thumbnail_url(thumnail_url);
-  item->set_url("https://www.googleapis.com/drive/v3/files/" + item->id() +
+  item->set_url(endpoint() + "/drive/v3/files/" + item->id() +
                 "?alt=media&access_token=" + access_token());
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
@@ -205,7 +205,7 @@ GoogleDrive::Auth::Auth() {
 
 std::string GoogleDrive::Auth::authorizeLibraryUrl() const {
   std::string response_type = "code";
-  std::string scope = "https://www.googleapis.com/auth/drive";
+  std::string scope = GOOGLEAPI_ENDPOINT + "/auth/drive";
   std::string url = "https://accounts.google.com/o/oauth2/auth?";
   url += "response_type=" + response_type + "&";
   url += "client_id=" + client_id() + "&";

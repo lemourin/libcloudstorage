@@ -225,6 +225,8 @@ void MegaNz::initialize(InitData&& data) {
 
 std::string MegaNz::name() const { return "mega"; }
 
+std::string MegaNz::endpoint() const { return "http://localhost"; }
+
 IItem::Pointer MegaNz::rootDirectory() const {
   return make_unique<Item>("root", "/", IItem::FileType::Directory);
 }

@@ -36,6 +36,7 @@ class Box : public CloudProvider {
 
   IItem::Pointer rootDirectory() const override;
   std::string name() const override;
+  std::string endpoint() const override;
   bool reauthorize(int) const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string&,

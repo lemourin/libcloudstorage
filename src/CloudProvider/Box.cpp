@@ -29,6 +29,8 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+const std::string BOXAPI_ENDPOINT = "https://api.box.com";
+
 namespace cloudstorage {
 
 Box::Box() : CloudProvider(make_unique<Auth>()) {}
@@ -39,6 +41,8 @@ IItem::Pointer Box::rootDirectory() const {
 
 std::string Box::name() const { return "box"; }
 
+std::string Box::endpoint() const { return BOXAPI_ENDPOINT; }
+
 bool Box::reauthorize(int code) const {
   return IHttpRequest::isClientError(code) && code != 404;
 }
@@ -46,36 +50,36 @@ bool Box::reauthorize(int code) const {
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([id, callback,
-                   this](Request<IItem::Pointer>* r) -> IItem::Pointer {
-    std::stringstream output;
-    int code = r->sendRequest(
-        [this, id](std::ostream&) {
-          return http()->create("https://api.box.com/2.0/files/" + id, "GET");
-        },
-        output);
-    if (!IHttpRequest::isSuccess(code)) {
-      callback(nullptr);
-      return nullptr;
-    }
-    Json::Value response;
-    output >> response;
-    auto item = toItem(response);
-    code = r->sendRequest(
-        [this, id](std::ostream&) {
-          auto request = http()->create(
-              "https://api.box.com/2.0/files/" + id + "/content", "GET", false);
-          return request;
-        },
-        output);
-    if (IHttpRequest::isRedirect(code)) {
-      std::string redirect_url;
-      output >> redirect_url;
-      static_cast<Item*>(item.get())->set_url(redirect_url);
-    }
-    callback(item);
-    return item;
-  });
+  r->set_resolver(
+      [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
+        std::stringstream output;
+        int code = r->sendRequest(
+            [this, id](std::ostream&) {
+              return http()->create(endpoint() + "/2.0/files/" + id, "GET");
+            },
+            output);
+        if (!IHttpRequest::isSuccess(code)) {
+          callback(nullptr);
+          return nullptr;
+        }
+        Json::Value response;
+        output >> response;
+        auto item = toItem(response);
+        code = r->sendRequest(
+            [this, id](std::ostream&) {
+              auto request = http()->create(
+                  endpoint() + "/2.0/files/" + id + "/content", "GET", false);
+              return request;
+            },
+            output);
+        if (IHttpRequest::isRedirect(code)) {
+          std::string redirect_url;
+          output >> redirect_url;
+          static_cast<Item*>(item.get())->set_url(redirect_url);
+        }
+        callback(item);
+        return item;
+      });
   return std::move(r);
 }
 
@@ -83,7 +87,7 @@ IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
                                                 const std::string& page_token,
                                                 std::ostream&) const {
   auto request = http()->create(
-      "https://api.box.com/2.0/folders/" + item.id() + "/items/", "GET");
+      endpoint() + "/2.0/folders/" + item.id() + "/items/", "GET");
   if (!page_token.empty()) request->setParameter("offset", page_token);
   return request;
 }
@@ -116,31 +120,29 @@ IHttpRequest::Pointer Box::uploadFileRequest(
 
 IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
                                                std::ostream&) const {
-  return http()->create(
-      "https://api.box.com/2.0/files/" + item.id() + "/content", "GET");
+  return http()->create(endpoint() + "/2.0/files/" + item.id() + "/content",
+                        "GET");
 }
 
 IHttpRequest::Pointer Box::getThumbnailRequest(const IItem& item,
                                                std::ostream&) const {
   return http()->create(
-      "https://api.box.com/2.0/files/" + item.id() + "/thumbnail.png", "GET");
+      endpoint() + "/2.0/files/" + item.id() + "/thumbnail.png", "GET");
 }
 
 IHttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
                                              std::ostream&) const {
   if (item.type() == IItem::FileType::Directory)
     return http()->create(
-        "https://api.box.com/2.0/folders/" + item.id() + "?recursive=true",
-        "DELETE");
+        endpoint() + "/2.0/folders/" + item.id() + "?recursive=true", "DELETE");
   else
-    return http()->create("https://api.box.com/2.0/files/" + item.id(),
-                          "DELETE");
+    return http()->create(endpoint() + "/2.0/files/" + item.id(), "DELETE");
 }
 
 IHttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
                                                   const std::string& name,
                                                   std::ostream& stream) const {
-  auto request = http()->create("https://api.box.com/2.0/folders", "POST");
+  auto request = http()->create(endpoint() + "/2.0/folders", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
@@ -154,11 +156,9 @@ IHttpRequest::Pointer Box::moveItemRequest(const IItem& source,
                                            std::ostream& stream) const {
   IHttpRequest::Pointer request;
   if (source.type() == IItem::FileType::Directory)
-    request =
-        http()->create("https://api.box.com/2.0/folders/" + source.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/folders/" + source.id(), "PUT");
   else
-    request =
-        http()->create("https://api.box.com/2.0/files/" + source.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/files/" + source.id(), "PUT");
 
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
@@ -172,11 +172,9 @@ IHttpRequest::Pointer Box::renameItemRequest(const IItem& item,
                                              std::ostream& input) const {
   IHttpRequest::Pointer request;
   if (item.type() == IItem::FileType::Directory)
-    request =
-        http()->create("https://api.box.com/2.0/folders/" + item.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/folders/" + item.id(), "PUT");
   else
-    request =
-        http()->create("https://api.box.com/2.0/files/" + item.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/files/" + item.id(), "PUT");
   Json::Value json;
   json["name"] = name;
   input << json;
@@ -224,7 +222,7 @@ std::string Box::Auth::authorizeLibraryUrl() const {
 
 IHttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& input_data) const {
-  auto request = http()->create("https://api.box.com/oauth2/token", "POST");
+  auto request = http()->create(BOXAPI_ENDPOINT + "/oauth2/token", "POST");
   input_data << "grant_type=authorization_code&"
              << "code=" << authorization_code() << "&"
              << "client_id=" << client_id() << "&"
@@ -234,7 +232,7 @@ IHttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(
 
 IHttpRequest::Pointer Box::Auth::refreshTokenRequest(
     std::ostream& input_data) const {
-  auto request = http()->create("https://api.box.com/oauth2/token", "POST");
+  auto request = http()->create(BOXAPI_ENDPOINT + "/oauth2/token", "POST");
   input_data << "grant_type=refresh_token&"
              << "refresh_token=" << access_token()->refresh_token_ << "&"
              << "client_id=" << client_id() << "&"

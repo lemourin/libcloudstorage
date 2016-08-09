@@ -42,6 +42,8 @@ ICloudProvider::Hints MockProvider::hints() const { return Hints(); }
 
 std::string MockProvider::name() const { return "mock"; }
 
+std::string MockProvider::endpoint() const { return "http://localhost"; }
+
 std::string MockProvider::authorizeLibraryUrl() const { return ""; }
 
 IItem::Pointer MockProvider::rootDirectory() const {

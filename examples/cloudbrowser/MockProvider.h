@@ -134,6 +134,7 @@ class MockProvider : public ICloudProvider {
   std::string token() const override;
   Hints hints() const override;
   std::string name() const override;
+  std::string endpoint() const override;
   std::string authorizeLibraryUrl() const override;
   IItem::Pointer rootDirectory() const override;
 

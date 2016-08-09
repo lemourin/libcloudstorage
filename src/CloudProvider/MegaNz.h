@@ -49,6 +49,7 @@ class MegaNz : public CloudProvider {
   void initialize(InitData&&) override;
 
   std::string name() const override;
+  std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
   Hints hints() const override;
 

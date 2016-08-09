@@ -47,6 +47,7 @@ class OwnCloud : public CloudProvider {
   void initialize(InitData&&) override;
 
   std::string name() const override;
+  std::string endpoint() const override;
   std::string token() const override;
 
   AuthorizeRequest::Pointer authorizeAsync() override;

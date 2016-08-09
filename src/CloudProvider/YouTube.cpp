@@ -52,17 +52,18 @@ ICloudProvider::Hints YouTube::hints() const {
 
 std::string YouTube::name() const { return "youtube"; }
 
+std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
+
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& id,
                                                   std::ostream&) const {
   if (id.find(VIDEO_ID_PREFIX) != std::string::npos) {
-    auto request =
-        http()->create("https://www.googleapis.com/youtube/v3/videos", "GET");
+    auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
     return request;
   } else {
-    auto request = http()->create(
-        "https://www.googleapis.com/youtube/v3/playlistItems", "GET");
+    auto request =
+        http()->create(endpoint() + "/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id);
     return request;
@@ -74,23 +75,24 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
   if (item.id() == rootDirectory()->id()) {
     if (page_token.empty())
       return http()->create(
-          "https://www.googleapis.com/youtube/v3/"
-          "channels?mine=true&part=contentDetails,snippet",
+          endpoint() +
+              "/youtube/v3/"
+              "channels?mine=true&part=contentDetails,snippet",
           "GET");
     else if (page_token == "real_playlist")
-      return http()->create(
-          "https://www.googleapis.com/youtube/v3/"
-          "playlists?mine=true&part=snippet",
-          "GET");
+      return http()->create(endpoint() +
+                                "/youtube/v3/"
+                                "playlists?mine=true&part=snippet",
+                            "GET");
     else
-      return http()->create(
-          "https://www.googleapis.com/youtube/v3/"
-          "playlists?mine=true&part=snippet&pageToken=" +
-              page_token,
-          "GET");
+      return http()->create(endpoint() +
+                                "/youtube/v3/"
+                                "playlists?mine=true&part=snippet&pageToken=" +
+                                page_token,
+                            "GET");
   } else {
-    auto request = http()->create(
-        "https://www.googleapis.com/youtube/v3/playlistItems", "GET");
+    auto request =
+        http()->create(endpoint() + "/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "snippet");
     request->setParameter("playlistId", item.id());
     if (!page_token.empty()) request->setParameter("pageToken", page_token);

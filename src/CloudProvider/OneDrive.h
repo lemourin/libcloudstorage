@@ -36,6 +36,7 @@ class OneDrive : public CloudProvider {
   OneDrive();
 
   std::string name() const override;
+  std::string endpoint() const override;
 
  protected:
   UploadFileRequest::Pointer uploadFileAsync(

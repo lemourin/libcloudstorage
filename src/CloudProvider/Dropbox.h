@@ -35,6 +35,7 @@ class Dropbox : public CloudProvider {
   Dropbox();
 
   std::string name() const override;
+  std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
   bool reauthorize(int code) const override;
 

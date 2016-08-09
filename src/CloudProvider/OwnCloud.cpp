@@ -43,6 +43,8 @@ void OwnCloud::initialize(InitData&& data) {
 
 std::string OwnCloud::name() const { return "owncloud"; }
 
+std::string OwnCloud::endpoint() const { return api_url(); }
+
 std::string OwnCloud::token() const {
   std::lock_guard<std::mutex> lock(auth_mutex());
   return user_ + "@" + owncloud_base_url_ + Auth::SEPARATOR + password_;
