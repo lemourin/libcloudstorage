@@ -110,6 +110,11 @@ ICloudProvider::DownloadFileRequest::Pointer MockProvider::downloadFileAsync(
   return nullptr;
 }
 
+ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
+    IItem::Pointer, const std::string&, DownloadFileCallback) {
+  return nullptr;
+}
+
 ICloudProvider::UploadFileRequest::Pointer MockProvider::uploadFileAsync(
     IItem::Pointer, const std::string&, UploadFileCallback) {
   return nullptr;

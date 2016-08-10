@@ -179,6 +179,7 @@ using ListDirectoryCallback =
     std::function<void(const std::vector<IItem::Pointer>&)>;
 using DownloadFileCallback = std::function<void(bool)>;
 using UploadFileCallback = std::function<void(bool)>;
+using GetThumbnailCallback = std::function<void(bool)>;
 
 }  // namespace cloudstorage
 

@@ -202,8 +202,9 @@ class ICloudProvider {
    *
    * @return object representing the pending request
    */
-  virtual GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
-                                               GetItemCallback callback) = 0;
+  virtual GetItemRequest::Pointer getItemAsync(
+      const std::string& absolute_path,
+      GetItemCallback callback = GetItemCallback()) = 0;
 
   /**
    * Downloads the item, the file is provided by callback.
@@ -242,7 +243,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual GetItemDataRequest::Pointer getItemDataAsync(
-      const std::string& id, GetItemDataCallback callback) = 0;
+      const std::string& id,
+      GetItemDataCallback callback = GetItemDataCallback()) = 0;
 
   /**
    * Downloads thumbnail image, before calling the function, make sure provided
@@ -265,7 +267,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual DeleteItemRequest::Pointer deleteItemAsync(
-      IItem::Pointer item, DeleteItemCallback callback) = 0;
+      IItem::Pointer item,
+      DeleteItemCallback callback = DeleteItemCallback()) = 0;
 
   /**
    * Creates directory in cloud provider.
@@ -281,7 +284,7 @@ class ICloudProvider {
    */
   virtual CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer parent, const std::string& name,
-      CreateDirectoryCallback callback) = 0;
+      CreateDirectoryCallback callback = CreateDirectoryCallback()) = 0;
 
   /**
    * Moves item.
@@ -295,9 +298,9 @@ class ICloudProvider {
    *
    * @return object representing the pending request
    */
-  virtual MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
-                                                 IItem::Pointer destination,
-                                                 MoveItemCallback callback) = 0;
+  virtual MoveItemRequest::Pointer moveItemAsync(
+      IItem::Pointer source, IItem::Pointer destination,
+      MoveItemCallback callback = MoveItemCallback()) = 0;
 
   /**
    * Renames item.
@@ -313,7 +316,7 @@ class ICloudProvider {
    */
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
-      RenameItemCallback callback) = 0;
+      RenameItemCallback callback = RenameItemCallback()) = 0;
 
   /**
    * Simplified version of listDirectoryAsync.
@@ -323,7 +326,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer item, ListDirectoryCallback callback) = 0;
+      IItem::Pointer item,
+      ListDirectoryCallback callback = ListDirectoryCallback()) = 0;
 
   /**
    * Simplified version of downloadFileAsync.
@@ -339,7 +343,23 @@ class ICloudProvider {
    */
   virtual DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer item, const std::string& filename,
-      DownloadFileCallback callback) = 0;
+      DownloadFileCallback callback = DownloadFileCallback()) = 0;
+
+  /**
+   * Simplified version of getThumbnailAsync.
+   *
+   * @param item
+   *
+   * @param filename name at which thumbnail will be saved
+   *
+   * @param callback called when done; if successful, it gets true, otherwise
+   * false
+   *
+   * @return object representing pending request
+   */
+  virtual DownloadFileRequest::Pointer getThumbnailAsync(
+      IItem::Pointer item, const std::string& filename,
+      GetThumbnailCallback callback = GetThumbnailCallback()) = 0;
 
   /**
    * Simplified version of uploadFileAsync.
@@ -355,7 +375,7 @@ class ICloudProvider {
    */
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer parent, const std::string& filename,
-      UploadFileCallback callback) = 0;
+      UploadFileCallback callback = UploadFileCallback()) = 0;
 };
 
 }  // namespace cloudstorage

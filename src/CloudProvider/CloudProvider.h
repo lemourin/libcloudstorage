@@ -87,6 +87,9 @@ class CloudProvider : public ICloudProvider,
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer item,
                                                  const std::string& filename,
                                                  DownloadFileCallback) override;
+  DownloadFileRequest::Pointer getThumbnailAsync(IItem::Pointer item,
+                                                 const std::string& filename,
+                                                 GetThumbnailCallback) override;
   UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer parent,
                                              const std::string& filename,
                                              UploadFileCallback) override;

@@ -355,6 +355,13 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
       item, make_unique<::DownloadFileCallback>(filename, callback));
 }
 
+ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
+    IItem::Pointer item, const std::string& filename,
+    GetThumbnailCallback callback) {
+  return getThumbnailAsync(
+      item, make_unique<::DownloadFileCallback>(filename, callback));
+}
+
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     UploadFileCallback callback) {
