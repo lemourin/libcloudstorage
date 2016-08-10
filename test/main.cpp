@@ -53,21 +53,12 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
   std::string drive_file_;
 };
 
-class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
-  void receivedItem(cloudstorage::IItem::Pointer) override {}
-  void done(const std::vector<cloudstorage::IItem::Pointer>&) override {}
-  void error(const std::string&) override {}
-};
-
 void traverse_drive(cloudstorage::ICloudProvider& drive,
                     cloudstorage::IItem::Pointer f, std::string path) {
   std::cout << path << "\n";
   if (f->type() != cloudstorage::IItem::FileType::Directory) return;
   for (cloudstorage::IItem::Pointer& t :
-       drive
-           .listDirectoryAsync(f, std::unique_ptr<ListDirectoryCallback>(
-                                      new ListDirectoryCallback))
-           ->result()) {
+       drive.listDirectoryAsync(f)->result()) {
     traverse_drive(
         drive, std::move(t),
         path + t->filename() +
@@ -85,7 +76,7 @@ int main(int argc, char** argv) {
     std::cout << "Invalid drive backend.\n";
     return 1;
   }
-  std::string drive_file = drive_backend + ".json";
+  std::string drive_file = drive_backend + ".txt";
   std::string token;
   {
     std::fstream file(drive_file, std::fstream::in);
