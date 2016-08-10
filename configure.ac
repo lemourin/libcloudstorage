@@ -51,6 +51,7 @@ AC_CONFIG_FILES([
   test/Makefile
   examples/Makefile
   examples/cloudbrowser/Makefile
+  examples/commandlinebrowser/Makefile
 ])
 
 SOCKET_LIBS=""
