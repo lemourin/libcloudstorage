@@ -10,6 +10,12 @@ using cloudstorage::ICloudProvider;
 using cloudstorage::ICloudStorage;
 using cloudstorage::IItem;
 
+const std::string HELP_MESSAGE =
+    "ls: list directory\n"
+    "cd: change directory\n"
+    "url: get url to the file\n"
+    "help: this message\n";
+
 class Callback : public cloudstorage::ICloudProvider::ICallback {
  public:
   Callback(std::string drive_file) : drive_file_(drive_file) {}
@@ -47,6 +53,7 @@ IItem::Pointer getChild(ICloudProvider::Pointer provider, IItem::Pointer item,
 }
 
 int main(int, char**) {
+  std::cout << HELP_MESSAGE;
   std::string command_line;
   ICloudProvider::Pointer current_provider;
   IItem::Pointer current_directory;
@@ -55,7 +62,7 @@ int main(int, char**) {
   while (std::cout << prompt << ": " && std::getline(std::cin, command_line)) {
     std::stringstream line(command_line);
     std::string command;
-    line >> command;
+    line >> command >> std::ws;
     if (command == "ls") {
       if (current_directory == nullptr) {
         std::cout << "Select a provider: \n";
@@ -91,7 +98,7 @@ int main(int, char**) {
         }
       } else {
         std::string destination;
-        line >> destination;
+        std::getline(line, destination);
         if (destination != "..") {
           auto item =
               getChild(current_provider, current_directory, destination);
@@ -123,9 +130,7 @@ int main(int, char**) {
         std::cout << "No provider set\n";
       else {
         std::string file;
-        line >> std::ws;
         std::getline(line, file);
-        std::cerr << file << "\n";
         auto item = getChild(current_provider, current_directory, file);
         if (item) {
           auto data = current_provider->getItemDataAsync(item->id())->result();
@@ -133,10 +138,7 @@ int main(int, char**) {
         }
       }
     } else if (command == "help") {
-      std::cout << "ls: list directory\n"
-                << "cd: change directory\n"
-                << "url: get url to the file\n"
-                << "help: this message\n";
+      std::cout << HELP_MESSAGE;
     } else {
       std::cout << "Unknown command: " << command_line << "\n";
     }
