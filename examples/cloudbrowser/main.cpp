@@ -27,6 +27,8 @@
 #include <QApplication>
 #endif
 
+#include <QDebug>
+#include <QIcon>
 #include <QResizeEvent>
 #include <iostream>
 
@@ -91,6 +93,7 @@ int main(int argc, char* argv[]) {
 #endif
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
+    app.setWindowIcon(QPixmap(":/resources/cloud.png"));
 
     window.resize(800, 600);
     window.show();

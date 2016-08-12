@@ -63,7 +63,8 @@ DEPS_res = \
 	resources/file.png \
 	resources/image.png \
 	resources/video.png \
-	resources/audio.png
+	resources/audio.png \
+	resources/cloud.png
 
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<
