@@ -101,6 +101,8 @@ class AmazonS3 : public CloudProvider {
   };
 
  private:
+  std::string getUrl(const Item&) const;
+
   std::string access_id_;
   std::string secret_;
   std::string region_;

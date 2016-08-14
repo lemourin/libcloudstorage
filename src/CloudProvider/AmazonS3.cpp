@@ -303,15 +303,8 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
                                data.second.empty() || data.second.back() == '/'
                                    ? IItem::FileType::Directory
                                    : IItem::FileType::Unknown);
-    auto request =
-        http()->create("https://" + data.first + ".s3." + region_ +
-                           ".amazonaws.com/" + escapePath(http(), data.second),
-                       "GET");
-    authorizeRequest(*request);
-    std::string parameters;
-    for (const auto& p : request->parameters())
-      parameters += p.first + "=" + p.second + "&";
-    item->set_url(request->url() + "?" + parameters);
+    if (item->type() != IItem::FileType::Directory)
+      item->set_url(getUrl(*item));
     callback(item);
     return item;
   });
@@ -382,6 +375,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       auto item =
           make_unique<Item>(getFilename(id), bucket + Auth::SEPARATOR + id,
                             IItem::FileType::Unknown);
+      item->set_url(getUrl(*item));
       result.push_back(std::move(item));
     }
     for (auto child =
@@ -494,6 +488,19 @@ std::string AmazonS3::secret() const {
 
 std::pair<std::string, std::string> AmazonS3::split(const std::string& str) {
   return creditentialsFromString(str);
+}
+
+std::string AmazonS3::getUrl(const Item& item) const {
+  auto data = split(item.id());
+  auto request =
+      http()->create("https://" + data.first + ".s3." + region_ +
+                         ".amazonaws.com/" + escapePath(http(), data.second),
+                     "GET");
+  authorizeRequest(*request);
+  std::string parameters;
+  for (const auto& p : request->parameters())
+    parameters += p.first + "=" + p.second + "&";
+  return request->url() + "?" + parameters;
 }
 
 AmazonS3::Auth::Auth() {}
