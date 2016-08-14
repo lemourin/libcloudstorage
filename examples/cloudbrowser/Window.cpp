@@ -396,7 +396,7 @@ void Window::renameItem(int item_id, QString name) {
 
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
-  QString id = (p->name() + "/" + item_->id()).c_str();
+  QString id = (p->name() + "/" + item_->filename()).c_str();
   connect(this, &ItemModel::receivedImage, this,
           [this, id](ImagePointer image) {
             window_->imageProvider()->addImage(id, std::move(image));
@@ -408,7 +408,7 @@ ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
 
 void ItemModel::fetchThumbnail() {
   if (thumbnail_request_) return;
-  QString id = (provider_->name() + "/" + item_->id()).c_str();
+  QString id = (provider_->name() + "/" + item_->filename()).c_str();
   if (window_->imageProvider()->hasImage(id))
     thumbnail_ = "image://provider//" + id;
   else
