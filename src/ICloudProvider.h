@@ -33,6 +33,7 @@
 #include "IHttp.h"
 #include "IItem.h"
 #include "IRequest.h"
+#include "IThumbnailer.h"
 
 namespace cloudstorage {
 
@@ -112,6 +113,11 @@ class ICloudProvider {
      * Provides methods which are used for http communication.
      */
     IHttp::Pointer http_engine_;
+
+    /**
+     * Provides thumbnails when cloud provider doesn't have its own.
+     */
+    IThumbnailer::Pointer thumbnailer_;
 
     /**
     * Various hints which can be retrieved by some previous run with

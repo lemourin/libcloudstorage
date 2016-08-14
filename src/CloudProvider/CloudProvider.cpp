@@ -49,6 +49,10 @@
 #include "Utility/CurlHttp.h"
 #endif
 
+#ifdef WITH_THUMBNAILER
+#include "Utility/FFmpegThumbnailer.h"
+#endif
+
 using namespace std::placeholders;
 
 namespace {
@@ -169,6 +173,10 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_) http_ = make_unique<CurlHttp>();
 #endif
 
+#ifdef WITH_THUMBNAILER
+  if (!thumbnailer_) thumbnailer_ = make_unique<FFmpegThumbnailer>();
+#endif
+
   if (!http_) throw std::runtime_error("No http module specified.");
   auth()->initialize(http());
 }
@@ -206,6 +214,8 @@ ICloudProvider::ICallback* CloudProvider::callback() const {
 ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
 IHttp* CloudProvider::http() const { return http_.get(); }
+
+IThumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {

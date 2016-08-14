@@ -73,7 +73,8 @@ nobase_include_HEADERS = \
 	ICloudStorage.h \
 	IRequest.h \
 	ICrypto.h \
-	IHttp.h
+	IHttp.h \
+	IThumbnailer.h
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \
@@ -99,6 +100,13 @@ AM_CXXFLAGS += $(libcurl_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcurl_LIBS)
 libcloudstorage_la_SOURCES += Utility/CurlHttp.cpp
 noinst_HEADERS += Utility/CurlHttp.h
+endif
+
+if WITH_THUMBNAILER
+AM_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
+libcloudstorage_la_LIBADD += $(libffmpegthumbnailer_LIBS)
+libcloudstorage_la_SOURCES += Utility/FFmpegThumbnailer.cpp
+noinst_HEADERS += Utility/FFmpegThumbnailer.h
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig
