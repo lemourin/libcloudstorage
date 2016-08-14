@@ -40,6 +40,8 @@
 #include "Utility/FFmpegThumbnailer.h"
 #endif
 
+#include "Utility/Utility.h"
+
 using cloudstorage::ICloudStorage;
 using cloudstorage::make_unique;
 
