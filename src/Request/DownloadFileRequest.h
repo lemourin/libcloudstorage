@@ -46,7 +46,8 @@ class DownloadFileRequest : public Request<void> {
   using ICallback = IDownloadFileCallback;
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
-                      ICallback::Pointer, RequestFactory request_factory);
+                      ICallback::Pointer, RequestFactory request_factory,
+                      bool fallback_thumbnail = false);
   ~DownloadFileRequest();
 
  protected:
@@ -57,6 +58,7 @@ class DownloadFileRequest : public Request<void> {
   DownloadStreamWrapper stream_wrapper_;
   ICallback::Pointer callback_;
   RequestFactory request_factory_;
+  bool fallback_thumbnail_;
 };
 
 }  // namespace cloudstorage

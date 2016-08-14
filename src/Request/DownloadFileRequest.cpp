@@ -32,27 +32,54 @@ namespace cloudstorage {
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
                                          ICallback::Pointer callback,
-                                         RequestFactory request_factory)
+                                         RequestFactory request_factory,
+                                         bool fallback_thumbnail)
     : Request(p),
       file_(std::move(file)),
       stream_wrapper_(
           std::bind(&ICallback::receivedData, callback.get(), _1, _2)),
       callback_(std::move(callback)),
-      request_factory_(request_factory) {
-  set_resolver([this](Request*) {
+      request_factory_(request_factory),
+      fallback_thumbnail_(fallback_thumbnail) {
+  set_resolver([this](Request* r) {
     std::ostream response_stream(&stream_wrapper_);
     int code = sendRequest(
         [this](std::ostream& input) { return request_factory_(*file_, input); },
         response_stream, std::bind(&DownloadFileRequest::ICallback::progress,
                                    callback_.get(), _1, _2));
-    if (IHttpRequest::isSuccess(code)) callback_->done();
+    if (IHttpRequest::isSuccess(code))
+      callback_->done();
+    else if (fallback_thumbnail_ && !r->is_cancelled()) {
+      if (file_->type() == IItem::FileType::Video) {
+        if (provider()->thumbnailer()) {
+          Request<void>::Semaphore semaphore(r);
+          auto item_data = provider()->getItemDataAsync(
+              file_->id(),
+              [&semaphore](IItem::Pointer) { semaphore.notify(); });
+          semaphore.wait();
+          if (r->is_cancelled()) return item_data->cancel();
+          auto thumbnail_data = provider()->thumbnailer()->generateThumbnail(
+              provider(), item_data->result(),
+              [this, &semaphore](const std::vector<char>& data) {
+                if (!data.empty()) {
+                  callback_->receivedData(data.data(), data.size());
+                  callback_->done();
+                }
+                semaphore.notify();
+              });
+          semaphore.wait();
+          if (r->is_cancelled()) thumbnail_data->cancel();
+        }
+      }
+    }
   });
 }
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
 void DownloadFileRequest::error(int code, const std::string& description) {
-  if (callback_) callback_->error(error_string(code, description));
+  if (callback_ && !fallback_thumbnail_)
+    callback_->error(error_string(code, description));
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(

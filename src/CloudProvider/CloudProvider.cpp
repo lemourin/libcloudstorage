@@ -322,7 +322,7 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), item, std::move(callback),
-      std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2));
+      std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2), true);
 }
 
 ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
