@@ -90,6 +90,7 @@ int main(int, char**) {
                std::unique_ptr<Callback>(new Callback(filename)),
                nullptr,
                nullptr,
+               nullptr,
                {}});
           prompt += provider_name + "/";
           current_provider = provider;

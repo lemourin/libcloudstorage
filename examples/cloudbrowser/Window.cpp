@@ -36,7 +36,12 @@
 
 #include "MockProvider.h"
 
+#ifdef WITH_THUMBNAILER
+#include "Utility/FFmpegThumbnailer.h"
+#endif
+
 using cloudstorage::ICloudStorage;
+using cloudstorage::make_unique;
 
 Window::Window(MediaPlayer* media_player)
     : image_provider_(new ImageProvider),
@@ -44,6 +49,10 @@ Window::Window(MediaPlayer* media_player)
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
+
+#ifdef WITH_THUMBNAILER
+  thumbnailer_ = make_unique<cloudstorage::FFmpegThumbnailer>();
+#endif
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -119,6 +128,7 @@ Window::~Window() {
 
 void Window::initializeCloud(QString name) {
   saveCloudAccessToken();
+  cancelRequests();
 
   QSettings settings;
   if (name != "mock")
@@ -132,13 +142,12 @@ void Window::initializeCloud(QString name) {
   }
   QString json = settings.value(name + "_hints").toString();
   QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
-  cloud_provider_->initialize({settings.value(name).toString().toStdString(),
-                               make_unique<CloudProviderCallback>(this),
-                               nullptr, nullptr, fromJson(data)});
+  cloud_provider_->initialize(
+      {settings.value(name).toString().toStdString(),
+       make_unique<CloudProviderCallback>(this), nullptr, nullptr,
+       std::shared_ptr<cloudstorage::IThumbnailer>(thumbnailer_),
+       fromJson(data)});
   current_directory_ = cloud_provider_->rootDirectory();
-  list_directory_request_ = nullptr;
-  moved_file_ = nullptr;
-  emit movedItemChanged();
   emit runListDirectory();
 }
 
@@ -239,6 +248,19 @@ void Window::startDirectoryClear(std::function<void()> f) {
     }
     f();
   });
+}
+
+void Window::cancelRequests() {
+  list_directory_request_ = nullptr;
+  download_request_ = nullptr;
+  upload_request_ = nullptr;
+  item_data_request_ = nullptr;
+  delete_item_request_ = nullptr;
+  create_directory_request_ = nullptr;
+  move_item_request_ = nullptr;
+  rename_item_request_ = nullptr;
+  moved_file_ = nullptr;
+  emit movedItemChanged();
 }
 
 ICloudProvider::Hints Window::fromJson(const QJsonObject& json) const {

@@ -49,7 +49,6 @@ endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
-	Callback.moc.cpp \
 	MediaPlayer.moc.cpp \
 	resources.cpp
 

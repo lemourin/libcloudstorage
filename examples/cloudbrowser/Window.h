@@ -166,6 +166,7 @@ class Window : public QQuickView {
   void clearCurrentDirectoryList();
   void saveCloudAccessToken();
   void startDirectoryClear(std::function<void()>);
+  void cancelRequests();
 
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
   QJsonObject toJson(const ICloudProvider::Hints&) const;
@@ -189,6 +190,7 @@ class Window : public QQuickView {
   int last_played_;
   MediaPlayer* media_player_;
   QString current_media_;
+  cloudstorage::IThumbnailer::Pointer thumbnailer_;
 
   Q_OBJECT
 };

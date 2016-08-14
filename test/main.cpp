@@ -86,6 +86,7 @@ int main(int argc, char** argv) {
                      std::unique_ptr<Callback>(new Callback(drive_file)),
                      nullptr,
                      nullptr,
+                     nullptr,
                      {}});
   traverse_drive(*drive, drive->rootDirectory(), "/");
 
