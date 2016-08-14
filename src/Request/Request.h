@@ -48,6 +48,7 @@ class Request : public IRequest<ReturnValue> {
   using CancelCallback = std::function<void()>;
 
   Request(std::shared_ptr<CloudProvider>);
+  Request(std::weak_ptr<CloudProvider>);
   ~Request();
 
   void set_resolver(Resolver);
@@ -85,7 +86,7 @@ class Request : public IRequest<ReturnValue> {
            std::ostream* error, ProgressFunction download = nullptr,
            ProgressFunction upload = nullptr);
 
-  std::shared_ptr<CloudProvider> provider() const { return provider_; }
+  std::shared_ptr<CloudProvider> provider() const;
   virtual void error(int code, const std::string& description);
   std::string error_string(int code, const std::string& desc) const;
 
@@ -107,7 +108,8 @@ class Request : public IRequest<ReturnValue> {
       ProgressFunction progress_download = nullptr,
       ProgressFunction progress_upload = nullptr);
 
-  std::shared_ptr<CloudProvider> provider_;
+  std::shared_ptr<CloudProvider> provider_shared_;
+  std::weak_ptr<CloudProvider> provider_weak_;
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
   ErrorCallback error_callback_;

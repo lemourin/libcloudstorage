@@ -36,6 +36,7 @@ template class Request<void>;
 template class Request<bool>;
 template class Request<std::shared_ptr<cloudstorage::IItem>>;
 template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
+template class Request<std::vector<char>>;
 
 namespace {
 
@@ -49,7 +50,11 @@ bool isPrintable(const std::string& str) {
 
 template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider)
-    : provider_(provider), is_cancelled_(false) {}
+    : provider_shared_(provider), is_cancelled_(false) {}
+
+template <class T>
+Request<T>::Request(std::weak_ptr<CloudProvider> provider)
+    : provider_weak_(provider), is_cancelled_(false) {}
 
 template <class T>
 Request<T>::~Request() {
@@ -86,7 +91,7 @@ void Request<T>::cancel() {
     for (Semaphore* semaphore : semaphore_list_) semaphore->notify();
   }
   if (cancel_callback_) cancel_callback_();
-  provider()->authorized_condition().notify_all();
+  if (provider()) provider()->authorized_condition().notify_all();
   finish();
 }
 
@@ -106,7 +111,7 @@ std::unique_ptr<HttpCallback> Request<T>::httpCallback(
 
 template <class T>
 bool Request<T>::reauthorize() {
-  if (is_cancelled()) return false;
+  if (!provider() || is_cancelled()) return false;
   std::unique_lock<std::mutex> current_authorization(
       provider()->current_authorization_mutex());
   if (!provider()->current_authorization()) {
@@ -141,8 +146,8 @@ std::string Request<T>::error_string(int code, const std::string& desc) const {
   std::stringstream stream;
   if (code < 0) {
     code *= -1;
-    stream << "HTTP library error " << code << ": "
-           << provider()->http()->error(code);
+    stream << "HTTP library error " << code;
+    if (provider()) stream << ": " << provider()->http()->error(code);
   } else {
     stream << "HTTP code " << code;
     if (isPrintable(desc)) stream << ": " << desc;
@@ -154,6 +159,7 @@ template <class T>
 int Request<T>::sendRequest(
     std::function<IHttpRequest::Pointer(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
+  if (!provider()) return IHttpRequest::Unknown;
   std::stringstream input, error_stream;
   auto request = factory(input);
   if (request) provider()->authorizeRequest(*request);
@@ -188,6 +194,14 @@ int Request<T>::send(IHttpRequest* request, std::istream& input,
     return IHttpRequest::Aborted;
   }
   return request->send(input, output, error, httpCallback(download, upload));
+}
+
+template <class T>
+std::shared_ptr<CloudProvider> Request<T>::provider() const {
+  if (provider_shared_)
+    return provider_shared_;
+  else
+    return provider_weak_.lock();
 }
 
 template <class T>
