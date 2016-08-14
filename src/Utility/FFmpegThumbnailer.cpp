@@ -65,7 +65,7 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
   r->set_resolver([this, item, callback, semaphore](
                       Request<std::vector<char>>* r) -> std::vector<char> {
     if (item->type() != IItem::FileType::Image &&
-        item->type() != IItem::FileType::Video) {
+        item->type() != IItem::FileType::Video && !item->url().empty()) {
       callback({});
       return {};
     }
@@ -73,15 +73,15 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
     {
       std::lock_guard<std::mutex> lock(mutex_);
       auto it = thumbnail_threads_.find(item->id());
+      std::string url = item->url();
       if (it == std::end(thumbnail_threads_)) {
-        future = std::async(std::launch::async, [this, item, semaphore]() {
+        future = std::async(std::launch::async, [this, url, semaphore]() {
           std::vector<uint8_t> buffer;
           ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-          thumbnailer.generateThumbnail(item->url(), ThumbnailerImageType::Png,
-                                        buffer);
+          thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png, buffer);
           {
             std::lock_guard<std::mutex> lock(mutex_);
-            finished_.push_back(item->id());
+            finished_.push_back(url);
           }
           condition_.notify_one();
           semaphore->notify();
