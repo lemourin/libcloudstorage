@@ -38,7 +38,7 @@ FFmpegThumbnailer::FFmpegThumbnailer() : destroyed_(false) {
       while (finished_.size() > 0) {
         auto it = thumbnail_threads_.find(finished_.back());
         if (it != thumbnail_threads_.end()) {
-          it->second.wait();
+          it->second.future_.wait();
           thumbnail_threads_.erase(it);
         }
         finished_.pop_back();
@@ -49,7 +49,7 @@ FFmpegThumbnailer::FFmpegThumbnailer() : destroyed_(false) {
 }
 
 FFmpegThumbnailer::~FFmpegThumbnailer() {
-  for (auto t : thumbnail_threads_) t.second.wait();
+  for (const auto& t : thumbnail_threads_) t.second.future_.wait();
   destroyed_ = true;
   condition_.notify_one();
   cleanup_thread_.wait();
@@ -60,9 +60,7 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
     std::function<void(const std::vector<char>&)> callback) {
   auto r = make_unique<Request<std::vector<char>>>(
       std::static_pointer_cast<CloudProvider>(p));
-  auto semaphore = std::make_shared<Semaphore>();
-  r->set_cancel_callback([semaphore]() { semaphore->notify(); });
-  r->set_resolver([this, item, callback, semaphore](
+  r->set_resolver([this, item, callback](
                       Request<std::vector<char>>* r) -> std::vector<char> {
     if ((item->type() != IItem::FileType::Image &&
          item->type() != IItem::FileType::Video) ||
@@ -71,29 +69,46 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
       return {};
     }
     std::shared_future<std::vector<char>> future;
+    std::shared_ptr<std::condition_variable> done;
+    std::shared_ptr<bool> finished;
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      auto it = thumbnail_threads_.find(item->id());
+      auto it = thumbnail_threads_.find(item->url());
       std::string url = item->url();
       if (it == std::end(thumbnail_threads_)) {
-        future = std::async(std::launch::async, [this, url, semaphore]() {
-          std::vector<uint8_t> buffer;
-          ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-          thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png, buffer);
-          {
-            std::lock_guard<std::mutex> lock(mutex_);
-            finished_.push_back(url);
-          }
-          condition_.notify_one();
-          semaphore->notify();
-          auto ptr = reinterpret_cast<const char*>(buffer.data());
-          return std::vector<char>(ptr, ptr + buffer.size());
-        });
-        thumbnail_threads_[item->id()] = future;
-      } else
-        future = it->second;
+        done = std::make_shared<std::condition_variable>();
+        finished = std::make_shared<bool>(false);
+        future =
+            std::async(std::launch::async, [this, url, done, finished, item]() {
+              std::vector<uint8_t> buffer;
+              ffmpegthumbnailer::VideoThumbnailer thumbnailer;
+              try {
+                thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png,
+                                              buffer);
+              } catch (const std::exception&) {
+              }
+              {
+                std::lock_guard<std::mutex> lock(mutex_);
+                finished_.push_back(url);
+                *finished = true;
+              }
+              done->notify_all();
+              condition_.notify_one();
+              auto ptr = reinterpret_cast<const char*>(buffer.data());
+              return std::vector<char>(ptr, ptr + buffer.size());
+            });
+        thumbnail_threads_[url] = {future, done, finished};
+      } else {
+        future = it->second.future_;
+        done = it->second.done_;
+        finished = it->second.finished_;
+      }
     }
-    semaphore->wait();
+    r->set_cancel_callback([done]() { done->notify_all(); });
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      done->wait(lock, [=]() { return r->is_cancelled() || *finished; });
+    }
     if (r->is_cancelled()) {
       callback({});
       return {};

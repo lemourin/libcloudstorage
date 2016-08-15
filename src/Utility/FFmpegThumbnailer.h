@@ -43,10 +43,15 @@ class FFmpegThumbnailer : public IThumbnailer {
       std::function<void(const std::vector<char>&)>) override;
 
  private:
+  struct WorkerData {
+    std::shared_future<std::vector<char>> future_;
+    std::shared_ptr<std::condition_variable> done_;
+    std::shared_ptr<bool> finished_;
+  };
+
   std::mutex mutex_;
   std::condition_variable condition_;
-  std::unordered_map<std::string, std::shared_future<std::vector<char>>>
-      thumbnail_threads_;
+  std::unordered_map<std::string, WorkerData> thumbnail_threads_;
   std::vector<std::string> finished_;
   std::future<void> cleanup_thread_;
   std::atomic_bool destroyed_;
