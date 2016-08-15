@@ -26,7 +26,6 @@
 #include <tinyxml2.h>
 #include <algorithm>
 #include <iomanip>
-#include <iostream>
 
 const std::string DEFAULT_REGION = "eu-central-1";
 
@@ -292,17 +291,14 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>*) -> IItem::Pointer {
-    if (access_id().empty() || secret().empty()) {
-      callback(nullptr);
-      return nullptr;
-    }
+  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    if (access_id().empty() || secret().empty()) r->reauthorize();
     auto data = split(id);
-    auto item =
-        std::make_shared<Item>(getFilename(data.first), id,
-                               data.second.empty() || data.second.back() == '/'
-                                   ? IItem::FileType::Directory
-                                   : IItem::FileType::Unknown);
+    auto item = std::make_shared<Item>(
+        getFilename(data.second), id,
+        (data.second.empty() || data.second.back() == '/')
+            ? IItem::FileType::Directory
+            : IItem::FileType::Unknown);
     if (item->type() != IItem::FileType::Directory)
       item->set_url(getUrl(*item));
     callback(item);
