@@ -30,6 +30,7 @@
 #include <QQuickImageProvider>
 #include <QQuickView>
 #include <future>
+#include <unordered_set>
 
 #include "Callback.h"
 #include "MediaPlayer.h"
@@ -37,6 +38,7 @@
 using ItemPointer = cloudstorage::IItem::Pointer;
 using ImagePointer = std::shared_ptr<QImage>;
 using cloudstorage::ICloudProvider;
+using cloudstorage::ICloudStorage;
 
 class Window;
 
@@ -171,6 +173,7 @@ class Window : public QQuickView {
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
   QJsonObject toJson(const ICloudProvider::Hints&) const;
 
+  ICloudStorage::Pointer cloud_storage_;
   ICloudProvider::Pointer cloud_provider_;
   IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
@@ -191,6 +194,7 @@ class Window : public QQuickView {
   MediaPlayer* media_player_;
   QString current_media_;
   cloudstorage::IThumbnailer::Pointer thumbnailer_;
+  std::unordered_set<std::string> initialized_clouds_;
 
   Q_OBJECT
 };

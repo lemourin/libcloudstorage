@@ -42,11 +42,11 @@
 
 #include "Utility/Utility.h"
 
-using cloudstorage::ICloudStorage;
 using cloudstorage::make_unique;
 
 Window::Window(MediaPlayer* media_player)
-    : image_provider_(new ImageProvider),
+    : cloud_storage_(ICloudStorage::create()),
+      image_provider_(new ImageProvider),
       last_played_(-1),
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
@@ -131,23 +131,27 @@ Window::~Window() {
 void Window::initializeCloud(QString name) {
   saveCloudAccessToken();
   cancelRequests();
-
-  QSettings settings;
   if (name != "mock")
-    cloud_provider_ = ICloudStorage::create()->provider(name.toStdString());
+    cloud_provider_ = cloud_storage_->provider(name.toStdString());
   else
     cloud_provider_ = make_unique<cloudstorage::MockProvider>();
-  {
-    std::unique_lock<std::mutex> lock(stream_mutex());
-    std::cerr << "[DIAG] Trying to authorize with "
-              << settings.value(name).toString().toStdString() << std::endl;
-  }
-  QString json = settings.value(name + "_hints").toString();
-  QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
-  cloud_provider_->initialize({settings.value(name).toString().toStdString(),
-                               make_unique<CloudProviderCallback>(this),
-                               nullptr, nullptr, thumbnailer_, fromJson(data)});
   current_directory_ = cloud_provider_->rootDirectory();
+  if (initialized_clouds_.find(name.toStdString()) ==
+      std::end(initialized_clouds_)) {
+    QSettings settings;
+    {
+      std::unique_lock<std::mutex> lock(stream_mutex());
+      std::cerr << "[DIAG] Trying to authorize with "
+                << settings.value(name).toString().toStdString() << std::endl;
+    }
+    QString json = settings.value(name + "_hints").toString();
+    QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
+    cloud_provider_->initialize({settings.value(name).toString().toStdString(),
+                                 make_unique<CloudProviderCallback>(this),
+                                 nullptr, nullptr, thumbnailer_,
+                                 fromJson(data)});
+    initialized_clouds_.insert(name.toStdString());
+  }
   emit runListDirectory();
 }
 
