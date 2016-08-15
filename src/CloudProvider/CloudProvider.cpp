@@ -151,6 +151,7 @@ void CloudProvider::initialize(InitData&& data) {
   callback_ = std::move(data.callback_);
   crypto_ = std::move(data.crypto_engine_);
   http_ = std::move(data.http_engine_);
+  thumbnailer_ = std::move(data.thumbnailer_);
 
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
