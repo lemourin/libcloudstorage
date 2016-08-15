@@ -180,10 +180,6 @@ MegaNz::MegaNz()
       daemon_port_(DEFAULT_DAEMON_PORT),
       daemon_() {}
 
-MegaNz::~MegaNz() {
-  if (daemon_) MHD_stop_daemon(daemon_);
-}
-
 void MegaNz::initialize(InitData&& data) {
   {
     std::lock_guard<std::mutex> lock(auth_mutex());
@@ -195,9 +191,10 @@ void MegaNz::initialize(InitData&& data) {
       });
     setWithHint(data.hints_, "daemon_port",
                 [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
-    daemon_ =
+    daemon_ = std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>>(
         MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
-                         NULL, &httpRequestCallback, this, MHD_OPTION_END);
+                         NULL, &httpRequestCallback, this, MHD_OPTION_END),
+        [](MHD_Daemon* daemon) { MHD_stop_daemon(daemon); });
     if (!daemon_) data.callback_->error(*this, "Failed to start daemon.");
   }
   CloudProvider::initialize(std::move(data));

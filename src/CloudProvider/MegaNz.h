@@ -44,7 +44,6 @@ namespace cloudstorage {
 class MegaNz : public CloudProvider {
  public:
   MegaNz();
-  ~MegaNz();
 
   void initialize(InitData&&) override;
 
@@ -118,7 +117,7 @@ class MegaNz : public CloudProvider {
   std::default_random_engine engine_;
   mutable std::mutex mutex_;
   uint16_t daemon_port_;
-  MHD_Daemon* daemon_;
+  std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>> daemon_;
 };
 
 }  // namespace cloudstorage
