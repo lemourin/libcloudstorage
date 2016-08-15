@@ -64,8 +64,9 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
   r->set_cancel_callback([semaphore]() { semaphore->notify(); });
   r->set_resolver([this, item, callback, semaphore](
                       Request<std::vector<char>>* r) -> std::vector<char> {
-    if (item->type() != IItem::FileType::Image &&
-        item->type() != IItem::FileType::Video && !item->url().empty()) {
+    if ((item->type() != IItem::FileType::Image &&
+         item->type() != IItem::FileType::Video) ||
+        item->url().empty()) {
       callback({});
       return {};
     }
