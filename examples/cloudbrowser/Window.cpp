@@ -120,6 +120,10 @@ Window::Window(MediaPlayer* media_player)
             }
           },
           Qt::QueuedConnection);
+  connect(
+      this, &Window::consentRequired, this,
+      [this](QString name) { unauthorized_clouds_.insert(name.toStdString()); },
+      Qt::QueuedConnection);
 }
 
 Window::~Window() {
@@ -151,6 +155,9 @@ void Window::initializeCloud(QString name) {
                                  nullptr, nullptr, thumbnailer_,
                                  fromJson(data)});
     initialized_clouds_.insert(name.toStdString());
+  } else if (unauthorized_clouds_.find(name.toStdString()) !=
+             std::end(unauthorized_clouds_)) {
+    emit openBrowser(cloud_provider_->authorizeLibraryUrl().c_str());
   }
   emit runListDirectory();
 }
@@ -170,10 +177,13 @@ void Window::changeCurrentDirectory(int directory_id) {
   startDirectoryClear([this]() { emit runListDirectory(); });
 }
 
-void Window::onSuccessfullyAuthorized() {
-  std::unique_lock<std::mutex> lock(stream_mutex());
-  std::cerr << "[OK] Successfully authorized "
-            << cloud_provider_->name().c_str() << "\n";
+void Window::onSuccessfullyAuthorized(QString name) {
+  {
+    std::unique_lock<std::mutex> lock(stream_mutex());
+    std::cerr << "[OK] Successfully authorized " << name.toStdString() << "\n";
+  }
+  auto it = unauthorized_clouds_.find(name.toStdString());
+  if (it != std::end(unauthorized_clouds_)) unauthorized_clouds_.erase(it);
 }
 
 void Window::onAddedItem(ItemPointer i) { directory_model_.addItem(i, this); }

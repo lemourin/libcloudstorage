@@ -121,7 +121,7 @@ class Window : public QQuickView {
   Q_INVOKABLE void markMovedItem(int item);
   Q_INVOKABLE void renameItem(int, QString);
 
-  void onSuccessfullyAuthorized();
+  void onSuccessfullyAuthorized(QString);
   void onAddedItem(ItemPointer);
   void onPlayFileFromUrl(QString url);
 
@@ -133,9 +133,10 @@ class Window : public QQuickView {
   void setCurrentMedia(QString m);
 
  signals:
+  void consentRequired(QString cloud);
   void openBrowser(QString url);
   void closeBrowser();
-  void successfullyAuthorized();
+  void successfullyAuthorized(QString);
   void addedItem(ItemPointer);
   void runPlayer(QString file);
   void runPlayerFromUrl(QString url);
@@ -195,6 +196,7 @@ class Window : public QQuickView {
   QString current_media_;
   cloudstorage::IThumbnailer::Pointer thumbnailer_;
   std::unordered_set<std::string> initialized_clouds_;
+  std::unordered_set<std::string> unauthorized_clouds_;
 
   Q_OBJECT
 };

@@ -107,6 +107,7 @@ ICloudProvider::ICallback::Status CloudProviderCallback::userConsentRequired(
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[DIAG] User consent required: " << p.authorizeLibraryUrl()
             << "\n";
+  emit window_->consentRequired(p.name().c_str());
   emit window_->openBrowser(p.authorizeLibraryUrl().c_str());
   return Status::WaitForAuthorizationCode;
 }
@@ -115,7 +116,7 @@ void CloudProviderCallback::accepted(const ICloudProvider& drive) {
   QSettings settings;
   settings.setValue(drive.name().c_str(), drive.token().c_str());
   emit window_->closeBrowser();
-  emit window_->successfullyAuthorized();
+  emit window_->successfullyAuthorized(drive.name().c_str());
 }
 
 void CloudProviderCallback::declined(const ICloudProvider&) {
