@@ -194,7 +194,6 @@ class Window : public QQuickView {
   int last_played_;
   MediaPlayer* media_player_;
   QString current_media_;
-  cloudstorage::IThumbnailer::Pointer thumbnailer_;
   std::unordered_set<std::string> initialized_clouds_;
   std::unordered_set<std::string> unauthorized_clouds_;
 

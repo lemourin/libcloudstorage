@@ -36,10 +36,6 @@
 
 #include "MockProvider.h"
 
-#ifdef WITH_THUMBNAILER
-#include "Utility/FFmpegThumbnailer.h"
-#endif
-
 #include "Utility/Utility.h"
 
 using cloudstorage::make_unique;
@@ -51,10 +47,6 @@ Window::Window(MediaPlayer* media_player)
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
   qRegisterMetaType<ImagePointer>();
-
-#ifdef WITH_THUMBNAILER
-  thumbnailer_ = make_unique<cloudstorage::FFmpegThumbnailer>();
-#endif
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -152,8 +144,7 @@ void Window::initializeCloud(QString name) {
     QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
                                  make_unique<CloudProviderCallback>(this),
-                                 nullptr, nullptr, thumbnailer_,
-                                 fromJson(data)});
+                                 nullptr, nullptr, nullptr, fromJson(data)});
     initialized_clouds_.insert(name.toStdString());
   } else if (unauthorized_clouds_.find(name.toStdString()) !=
              std::end(unauthorized_clouds_)) {
