@@ -49,34 +49,39 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                    callback_.get(), _1, _2));
     if (IHttpRequest::isSuccess(code))
       callback_->done();
-    else if (fallback_thumbnail_ && !r->is_cancelled()) {
-      if (file_->type() == IItem::FileType::Image ||
-          file_->type() == IItem::FileType::Video) {
-        if (provider()->thumbnailer()) {
-          Request<void>::Semaphore semaphore(r);
-          auto item_data = provider()->getItemDataAsync(
-              file_->id(),
-              [&semaphore](IItem::Pointer) { semaphore.notify(); });
-          semaphore.wait();
-          if (r->is_cancelled()) return item_data->cancel();
-          auto thumbnail_data = provider()->thumbnailer()->generateThumbnail(
-              provider(), item_data->result(),
-              [this, &semaphore](const std::vector<char>& data) {
-                if (!data.empty()) {
-                  callback_->receivedData(data.data(), data.size());
-                  callback_->done();
-                }
-                semaphore.notify();
-              });
-          semaphore.wait();
-          if (r->is_cancelled()) thumbnail_data->cancel();
-        }
-      }
-    }
+    else if (fallback_thumbnail_)
+      generateThumbnail(r, file_, callback_);
   });
 }
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
+
+void DownloadFileRequest::generateThumbnail(
+    Request<void>* r, IItem::Pointer item,
+    IDownloadFileCallback::Pointer callback) {
+  if (!r->provider()->thumbnailer()) return;
+  Request<void>::Semaphore semaphore(r);
+  auto item_data = r->provider()->getItemDataAsync(
+      item->id(), [&semaphore](IItem::Pointer) { semaphore.notify(); });
+  semaphore.wait();
+  if (r->is_cancelled()) return item_data->cancel();
+  std::atomic_bool success(true);
+  auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
+      r->provider(), item_data->result(),
+      [&semaphore, &success, callback](const std::vector<char>& data) {
+        if (!data.empty()) {
+          callback->receivedData(data.data(), data.size());
+          callback->done();
+        } else
+          success = false;
+        semaphore.notify();
+      });
+  semaphore.wait();
+  if (r->is_cancelled())
+    thumbnail_data->cancel();
+  else if (!success)
+    callback->error("Couldn't generate thumbnail with the thumbnailer.");
+}
 
 void DownloadFileRequest::error(int code, const std::string& description) {
   if (callback_ && !fallback_thumbnail_)

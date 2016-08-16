@@ -25,6 +25,7 @@
 #define DOWNLOADFILEREQUEST_H
 
 #include "IItem.h"
+#include "IThumbnailer.h"
 #include "Request.h"
 
 namespace cloudstorage {
@@ -49,6 +50,9 @@ class DownloadFileRequest : public Request<void> {
                       ICallback::Pointer, RequestFactory request_factory,
                       bool fallback_thumbnail = false);
   ~DownloadFileRequest();
+
+  static void generateThumbnail(Request<void>*, IItem::Pointer,
+                                ICallback::Pointer);
 
  protected:
   void error(int code, const std::string& description) override;
