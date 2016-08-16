@@ -59,23 +59,27 @@ The generic way to build and install it is:
 * make
 * sudo make install
 
-Optionally, you can pass --with-cryptopp flag to ./configure; library then will
-use cryptopp's hashing functions, otherwise, user will have to provide
-ICrypto's interface implementation. You can also pass --with-curl flag, then
-libcloudstorage will do all http requestes with curl, without this flag you'll
-have to implement IHttp interface yourself.
+Optional flags: 
+* --with-cryptopp: library will use cryptopp's hashing functions, without this
+flag user will have to implement ICrypto's interface and pass it to 
+ICloudProvider's initialize method
+* --with-curl: library will use curl to make all http requests, without this
+user will have to implement IHttp interface
+* --with-thumbnailer: library will use ffmpegthumbnailer to generate thumbnails
+for files which don't have them provided by the cloud storage service, without
+this flag user may provide his own thumbnailer engine by implementing 
+IThumbnailer interface
+* --with-mega=no: if you don't have access to Mega SDK, pass this flag to build
+libcloudstorage without it
 
-If you don't have access to Mega SDK, use --with-mega=no to build the library
-without it.
-
-Cloud browser:
+Cloud Browser:
 =============
 
 Optionally, you can build an example program which provides easy graphics user
 interface for all the features implemented in libcloudstorage. You just have to
-pass --with-examples and --with-curl flag to ./configure. Cloud browser also allows
-playing streams from cloud providers, by default it uses qml player as a multimedia
-player (--with-qmlplayer). You can choose libvlc as a player with --with-vlc or
+pass --with-examples to ./configure. Cloud browser also allows playing streams 
+from cloud providers, by default it uses qml player as a multimedia player 
+(--with-qmlplayer). You can choose libvlc as a player with --with-vlc or
 Qt5MultimediaWidgets based player with --with-qtmultimediawidgets.
 
 It requires:
@@ -85,6 +89,7 @@ It requires:
 * Qt5Multimedia if --with-qmlplayer (default)
 * Qt5Widgets, Qt5Multimedia, Qt5MultimediaWidgets if --with-qtmultimediawidgets
 * libvlcpp, libvlc, Qt5Widgets if --with-vlc
+* libcloudstorage built with at least cURL
 
 TODO:
 =====
