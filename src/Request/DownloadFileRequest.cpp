@@ -50,7 +50,8 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
     if (IHttpRequest::isSuccess(code))
       callback_->done();
     else if (fallback_thumbnail_ && !r->is_cancelled()) {
-      if (file_->type() == IItem::FileType::Video) {
+      if (file_->type() == IItem::FileType::Image ||
+          file_->type() == IItem::FileType::Video) {
         if (provider()->thumbnailer()) {
           Request<void>::Semaphore semaphore(r);
           auto item_data = provider()->getItemDataAsync(
