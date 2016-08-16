@@ -24,6 +24,7 @@
 #include "MegaNz.h"
 
 #include "IAuth.h"
+#include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -372,26 +373,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       } while (cache_file.gcount() > 0);
       callback->done();
     } else {
-      if (!r->is_cancelled()) {
-        if (thumbnailer()) {
-          Request<void>::Semaphore semaphore(r);
-          auto t = thumbnailer()->generateThumbnail(
-              r->provider(), item,
-              [callback, &semaphore](const std::vector<char>& data) {
-                if (!data.empty()) {
-                  callback->receivedData(data.data(), data.size());
-                  callback->done();
-                }
-                semaphore.notify();
-              });
-          semaphore.wait();
-          if (r->is_cancelled())
-            t->cancel();
-          else
-            t->finish();
-        } else
-          callback->error("Failed to get thumbnail");
-      }
+      cloudstorage::DownloadFileRequest::generateThumbnail(r, item, callback);
     }
     std::remove(cache.c_str());
   });
@@ -402,6 +384,10 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   auto r = make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<bool>* r) {
+    if (!ensureAuthorized(r)) {
+      callback(false);
+      return false;
+    }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     Request<bool>::Semaphore semaphore(r);
@@ -425,6 +411,10 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     CreateDirectoryCallback callback) {
   auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    if (!ensureAuthorized(r)) {
+      callback(nullptr);
+      return nullptr;
+    }
     std::unique_ptr<mega::MegaNode> parent_node(
         mega_->getNodeByPath(parent->id().c_str()));
     if (!parent_node) {
@@ -455,6 +445,10 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     MoveItemCallback callback) {
   auto r = make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) {
+    if (!ensureAuthorized(r)) {
+      callback(false);
+      return false;
+    }
     std::unique_ptr<mega::MegaNode> source_node(
         mega_->getNodeByPath(source->id().c_str()));
     std::unique_ptr<mega::MegaNode> destination_node(
@@ -480,6 +474,10 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   auto r = make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) {
+    if (!ensureAuthorized(r)) {
+      callback(false);
+      return false;
+    }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     if (node) {
