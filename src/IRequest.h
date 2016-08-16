@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 
 #include "IItem.h"
 
