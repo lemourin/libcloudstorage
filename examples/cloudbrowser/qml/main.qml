@@ -316,7 +316,7 @@ Item {
             visible: !cloudView.focus
             anchors.bottom: parent.bottom
             anchors.right: downloadButton.left
-            text: "Upload file"
+            text: "Upload"
             FileDialog {
                 id: fileDialog
                 onAccepted: window.uploadFile(fileDialog.fileUrl)
