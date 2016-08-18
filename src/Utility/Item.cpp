@@ -58,10 +58,14 @@ Item::Item(std::string filename, std::string id, FileType type)
       thumbnail_url_(),
       type_(type),
       is_hidden_(false) {
-  if (type_ == IItem::FileType::Unknown) type_ = fromFileName(filename);
+  if (type_ == IItem::FileType::Unknown) type_ = fromExtension(extension());
 }
 
 std::string Item::filename() const { return filename_; }
+
+std::string Item::extension() const {
+  return filename_.substr(filename_.find_last_of('.') + 1, std::string::npos);
+}
 
 std::string Item::id() const { return id_; }
 
@@ -99,9 +103,7 @@ IItem::FileType Item::fromMimeType(const std::string& mime_type) {
     return IItem::FileType::Unknown;
 }
 
-IItem::FileType Item::fromFileName(const std::string& filename) {
-  std::string extension =
-      filename.substr(filename.find_last_of('.') + 1, std::string::npos);
+IItem::FileType Item::fromExtension(const std::string& extension) {
   if (find(VIDEO_EXTENSIONS, SIZE(VIDEO_EXTENSIONS), extension))
     return IItem::FileType::Video;
   else if (find(AUDIO_EXTENSIONS, SIZE(AUDIO_EXTENSIONS), extension))

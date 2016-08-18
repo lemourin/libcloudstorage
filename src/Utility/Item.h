@@ -38,6 +38,7 @@ class Item : public IItem {
   Item(std::string filename, std::string id, FileType);
 
   std::string filename() const override;
+  std::string extension() const override;
   std::string id() const override;
 
   std::string url() const override;
@@ -56,7 +57,7 @@ class Item : public IItem {
   void set_parents(const std::vector<std::string>&);
 
   static FileType fromMimeType(const std::string& mime_type);
-  static FileType fromFileName(const std::string& filename);
+  static FileType fromExtension(const std::string& filename);
 
  private:
   std::string filename_;

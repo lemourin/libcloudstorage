@@ -38,6 +38,7 @@ class IItem {
   virtual ~IItem() = default;
 
   virtual std::string filename() const = 0;
+  virtual std::string extension() const = 0;
   virtual std::string id() const = 0;
 
   /**
