@@ -36,6 +36,7 @@ class MockProvider : public ICloudProvider {
     MockItem(std::string filename, FileType type)
         : filename_(filename), type_(type) {}
     std::string filename() const override { return filename_; }
+    std::string extension() const override { return ""; }
     std::string id() const override { return filename_; }
     std::string url() const override { return ""; }
     bool is_hidden() const override { return false; }
