@@ -1,6 +1,7 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.0
 import QtQuick.Dialogs 1.2
+import QtQuick.Controls.Styles 1.4
 
 Item {
     property int padding: 5
@@ -73,44 +74,66 @@ Item {
             width: content.width + 2 * padding
             height: content.height + 2 * padding
 
-            Row {
+            Column {
                 id: content
                 x: padding
                 y: padding
 
-                Column {
-                    width: childrenRect.width + padding
-                    Row { Text { text: "D" } }
-                    Row { Text { text: "Q" } }
-                    Row { Text { text: "P" } }
-                    Row { Text { text: "DEL" } }
-                    Row { Text { text: "M" } }
-                    Row { Text { text: "F5" } }
+                Row {
+                    Column {
+                        width: childrenRect.width + padding
+                        Row { Text { text: "D" } }
+                        Row { Text { text: "Q" } }
+                        Row { Text { text: "P" } }
+                        Row { Text { text: "DEL" } }
+                        Row { Text { text: "M" } }
+                        Row { Text { text: "F5" } }
+                    }
+                    Column {
+                        Row { Text { text: "Download a file" } }
+                        Row { Text { text: "Quit a file" } }
+                        Row { Text { text: "Pause file" } }
+                        Row { Text { text: "Delete file" } }
+                        Row { Text { text: "Move file" } }
+                        Row { Text { text: "Refresh" } }
+                    }
                 }
-                Column {
-                    Row { Text { text: "Download a file" } }
-                    Row { Text { text: "Quit a file" } }
-                    Row { Text { text: "Pause file" } }
-                    Row { Text { text: "Delete file" } }
-                    Row { Text { text: "Move file" } }
-                    Row { Text { text: "Refresh" } }
+                Row {
+                    ProgressBar {
+                        id: downloadProgress
+                        visible: false
+                        width: content.width
+                        height: 0.05 * root.height
+                        style: ProgressBarStyle {
+                            background: Rectangle {
+                                color: "lightgray"
+                                border.color: "gray"
+                                border.width: 1
+                            }
+                            progress: Rectangle {
+                                color: "lightsteelblue"
+                                border.color: "steelblue"
+                            }
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Download"
+                        }
+                    }
+                }
+                Row {
+                    ProgressBar {
+                        id: uploadProgress
+                        visible: false
+                        width: content.width
+                        style: downloadProgress.style
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Upload"
+                        }
+                    }
                 }
             }
-        }
-        ProgressBar {
-            id: uploadProgress
-            visible: false
-            anchors.bottom: help.top
-            anchors.right: help.right
-            anchors.left: parent.left
-        }
-
-        ProgressBar {
-            id: downloadProgress
-            visible: false
-            anchors.bottom: uploadProgress.top
-            anchors.right: help.right
-            anchors.left: parent.left
         }
     }
 
@@ -253,6 +276,7 @@ Item {
             id: downloadFileDialog
             selectFolder: true
             onAccepted: window.downloadFile(file, fileUrl)
+            modality: Qt.NonModal
         }
     }
 
@@ -278,9 +302,11 @@ Item {
             anchors.right: parent.right
             text: "Download"
             onClicked: {
-                downloadFileDialog.visible = true;
-                downloadFileDialog.file = directory.currentIndex;
-                downloadFileDialog.open();
+                if (directory.currentIndex != -1) {
+                    downloadFileDialog.visible = true;
+                    downloadFileDialog.file = directory.currentIndex;
+                    downloadFileDialog.open();
+                }
             }
         }
 
