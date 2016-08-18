@@ -272,16 +272,15 @@ Item {
         anchors.bottom: parent.bottom
         Component.onCompleted: height = childrenRect.height
         ActionButton {
-            id: goBackButton
+            id: downloadButton
             visible: uploadButton.visible
             anchors.bottom: parent.bottom
             anchors.right: parent.right
-            text: "Go back"
+            text: "Download"
             onClicked: {
-                if (!window.goBack()) {
-                    directory.focus = false;
-                    cloudView.focus = true;
-                }
+                downloadFileDialog.visible = true;
+                downloadFileDialog.file = directory.currentIndex;
+                downloadFileDialog.open();
             }
         }
 
@@ -289,7 +288,7 @@ Item {
             id: uploadButton
             visible: !cloudView.focus
             anchors.bottom: parent.bottom
-            anchors.right: goBackButton.left
+            anchors.right: downloadButton.left
             text: "Upload file"
             FileDialog {
                 id: fileDialog
