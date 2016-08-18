@@ -21,7 +21,7 @@ Item {
 
     Item {
         id: leftSide
-        width: childrenRect.width
+        width: 0.3 * root.width
         height: parent.height
         ListView {
             id: cloudView
@@ -30,7 +30,7 @@ Item {
             anchors.bottom: help.top
             anchors.margins: padding
             anchors.left: parent.left
-            width: 0.3 * root.width
+            width: parent.width
             model: cloudModel
             clip: true
             delegate: Component {
@@ -126,6 +126,7 @@ Item {
                         id: uploadProgress
                         visible: false
                         width: content.width
+                        height: 0.05 * root.height
                         style: downloadProgress.style
                         Text {
                             anchors.centerIn: parent
