@@ -132,7 +132,6 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     for (const Json::Value& v : response["items"])
       result.push_back(toItem(v, response["kind"].asString()));
   }
-
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
   return result;
@@ -154,9 +153,8 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind) const {
       video_id = v["id"].asString();
     else
       return nullptr;
-
     auto item =
-        make_unique<Item>(v["snippet"]["title"].asString(),
+        make_unique<Item>(v["snippet"]["title"].asString() + ".mp4",
                           VIDEO_ID_PREFIX + video_id, IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
