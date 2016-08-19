@@ -289,6 +289,7 @@ bool Window::goBack() {
   if (list_directory_request_) list_directory_request_->cancel();
   if (directory_stack_.empty()) {
     moved_file_ = nullptr;
+    cloud_provider_ = nullptr;
     emit movedItemChanged();
     startDirectoryClear([this]() { emit runClearDirectory(); });
     return false;
