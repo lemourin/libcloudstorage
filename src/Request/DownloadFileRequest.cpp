@@ -65,6 +65,7 @@ void DownloadFileRequest::generateThumbnail(
       item->id(), [&semaphore](IItem::Pointer) { semaphore.notify(); });
   semaphore.wait();
   if (r->is_cancelled()) return item_data->cancel();
+  if (!item_data->result()) return callback->error("Couldn't get item url.");
   std::atomic_bool success(true);
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
       r->provider(), item_data->result(),
