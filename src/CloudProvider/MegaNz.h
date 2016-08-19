@@ -84,6 +84,7 @@ class MegaNz : public CloudProvider {
 
   IItem::Pointer toItem(mega::MegaNode*);
   std::string randomString(int length);
+  std::string temporaryFileName();
 
   template <class T>
   bool ensureAuthorized(Request<T>*);
@@ -118,6 +119,7 @@ class MegaNz : public CloudProvider {
   mutable std::mutex mutex_;
   uint16_t daemon_port_;
   std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>> daemon_;
+  std::string temporary_directory_;
 };
 
 }  // namespace cloudstorage

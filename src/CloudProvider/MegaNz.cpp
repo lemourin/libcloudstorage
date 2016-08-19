@@ -179,7 +179,8 @@ MegaNz::MegaNz()
       authorized_(),
       engine_(device_()),
       daemon_port_(DEFAULT_DAEMON_PORT),
-      daemon_() {}
+      daemon_(),
+      temporary_directory_(".") {}
 
 void MegaNz::initialize(InitData&& data) {
   {
@@ -192,6 +193,8 @@ void MegaNz::initialize(InitData&& data) {
       });
     setWithHint(data.hints_, "daemon_port",
                 [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
+    setWithHint(data.hints_, "temporary_directory",
+                [this](std::string v) { temporary_directory_ = v; });
     daemon_ = std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>>(
         MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
                          NULL, &httpRequestCallback, this, MHD_OPTION_END),
@@ -210,7 +213,8 @@ IItem::Pointer MegaNz::rootDirectory() const {
 }
 
 ICloudProvider::Hints MegaNz::hints() const {
-  Hints result = {{"daemon_port", std::to_string(daemon_port_)}};
+  Hints result = {{"daemon_port", std::to_string(daemon_port_)},
+                  {"temporary_directory", temporary_directory_}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
@@ -315,7 +319,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       if (!r->is_cancelled()) callback->error("Authorization failed.");
       return;
     }
-    std::string cache = randomString(CACHE_FILENAME_LENGTH);
+    std::string cache = temporaryFileName();
     {
       std::fstream mega_cache(cache.c_str(),
                               std::fstream::out | std::fstream::binary);
@@ -355,7 +359,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     }
     Request<void>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
-    std::string cache = randomString(CACHE_FILENAME_LENGTH);
+    std::string cache = temporaryFileName();
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     mega_->getThumbnail(node.get(), cache.c_str(), &listener);
@@ -559,6 +563,10 @@ std::string MegaNz::randomString(int length) {
   std::string result;
   for (int i = 0; i < length; i++) result += dist(engine_);
   return result;
+}
+
+std::string MegaNz::temporaryFileName() {
+  return temporary_directory_ + "/" + randomString(CACHE_FILENAME_LENGTH);
 }
 
 template <class T>
