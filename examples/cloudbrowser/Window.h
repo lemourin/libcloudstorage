@@ -118,6 +118,8 @@ class Window : public QQuickView {
   QString currentMedia() const { return current_media_; }
   void setCurrentMedia(QString m);
 
+  static std::string escapeFileName(std::string name);
+
  signals:
   void consentRequired(QString cloud);
   void openBrowser(QString url);

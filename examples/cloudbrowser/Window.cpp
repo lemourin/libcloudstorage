@@ -213,6 +213,16 @@ void Window::setCurrentMedia(QString m) {
   }
 }
 
+std::string Window::escapeFileName(std::string name) {
+  std::vector<char> problematic_chars = {'\\', '/', '<',  '>', '|', '"', ':',
+                                         '?',  '*', '\'', '(', ')', '#'};
+  for (char& c : name)
+    if (std::find(problematic_chars.begin(), problematic_chars.end(), c) !=
+        std::end(problematic_chars))
+      c = 'x';
+  return name;
+}
+
 void Window::keyPressEvent(QKeyEvent* e) {
   QQuickView::keyPressEvent(e);
   if (e->isAccepted() && contentItem()->hasFocus()) return;
@@ -412,8 +422,8 @@ ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
 }
 
 void ItemModel::fetchThumbnail() {
-  auto cache =
-      QDir::tempPath() + "/" + item_->filename().c_str() + ".thumbnail";
+  auto cache = QDir::tempPath() + "/" +
+               Window::escapeFileName(item_->filename()).c_str() + ".thumbnail";
   if (QFile::exists(cache)) {
     thumbnail_ = "file://" + cache;
   } else if (!thumbnail_request_)

@@ -158,7 +158,8 @@ void DownloadThumbnailCallback::done() {
                           data_.length()))
     emit item_->receivedImage(std::move(image));
   std::fstream file(QDir::tempPath().toStdString() + "/" +
-                        item_->item()->filename() + ".thumbnail",
+                        Window::escapeFileName(item_->item()->filename()) +
+                        ".thumbnail",
                     std::fstream::out | std::fstream::binary);
   file.write(data_.data(), data_.length());
 }
