@@ -42,18 +42,6 @@ using cloudstorage::ICloudStorage;
 
 class Window;
 
-class ImageProvider : public QQuickImageProvider {
- public:
-  ImageProvider();
-  QImage requestImage(const QString&, QSize*, const QSize&) override;
-  void addImage(QString id, ImagePointer);
-  bool hasImage(QString id);
-
- private:
-  std::mutex mutex_;
-  std::map<QString, ImagePointer> cache_;
-};
-
 class ItemModel : public QObject {
  public:
   using Pointer = std::unique_ptr<ItemModel>;
@@ -105,8 +93,6 @@ class Window : public QQuickView {
 
   Window(MediaPlayer* player_widget);
   ~Window();
-
-  ImageProvider* imageProvider() { return image_provider_; }
 
   Q_INVOKABLE void initializeCloud(QString name);
   Q_INVOKABLE void listDirectory();
@@ -187,7 +173,6 @@ class Window : public QQuickView {
   ICloudProvider::MoveItemRequest::Pointer move_item_request_;
   ICloudProvider::RenameItemRequest::Pointer rename_item_request_;
   IItem::Pointer moved_file_;
-  ImageProvider* image_provider_;
   std::future<void> clear_directory_;
   DirectoryModel directory_model_;
   mutable std::mutex stream_mutex_;

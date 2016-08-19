@@ -42,7 +42,6 @@ using cloudstorage::make_unique;
 
 Window::Window(MediaPlayer* media_player)
     : cloud_storage_(ICloudStorage::create()),
-      image_provider_(new ImageProvider),
       last_played_(-1),
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
@@ -55,7 +54,6 @@ Window::Window(MediaPlayer* media_player)
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
   rootContext()->setContextProperty("directoryModel", &directory_model_);
-  engine()->addImageProvider("provider", imageProvider());
 
   setSource(QUrl("qrc:/qml/main.qml"));
   setResizeMode(SizeRootObjectToView);
@@ -405,57 +403,22 @@ void Window::renameItem(int item_id, QString name) {
 
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
-  QString id = (p->name() + "/" + item_->filename()).c_str();
   connect(this, &ItemModel::receivedImage, this,
-          [this, id](ImagePointer image) {
-            window_->imageProvider()->addImage(id, std::move(image));
-            thumbnail_ = "image://provider//" + id;
+          [this, item](ImagePointer) {
+            fetchThumbnail();
             emit thumbnailChanged();
           },
           Qt::QueuedConnection);
 }
 
 void ItemModel::fetchThumbnail() {
-  if (thumbnail_request_) return;
-  QString id = (provider_->name() + "/" + item_->filename()).c_str();
-  if (window_->imageProvider()->hasImage(id))
-    thumbnail_ = "image://provider//" + id;
-  else {
-    auto cache =
-        QDir::tempPath() + "/" + item_->filename().c_str() + ".thumbnail";
-    if (QFile::exists(cache))
-      thumbnail_ = "file://" + cache;
-    else {
-      thumbnail_request_ = provider_->getThumbnailAsync(
-          item_, make_unique<DownloadThumbnailCallback>(this));
-    }
-  }
-}
-
-ImageProvider::ImageProvider() : QQuickImageProvider(Image) {}
-
-QImage ImageProvider::requestImage(const QString& id, QSize* size,
-                                   const QSize& requested_size) {
-  QImage img;
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (cache_.find(id) == cache_.end()) return QImage();
-    img = *cache_[id];
-  }
-  if (requested_size.isValid())
-    img = img.scaled(requested_size.width(), requested_size.height());
-  *size = requested_size;
-  return img;
-}
-
-void ImageProvider::addImage(QString id, ImagePointer img) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  cache_["/" + id] = std::move(img);
-}
-
-bool ImageProvider::hasImage(QString id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  return cache_.find("/" + id) != cache_.end();
+  auto cache =
+      QDir::tempPath() + "/" + item_->filename().c_str() + ".thumbnail";
+  if (QFile::exists(cache)) {
+    thumbnail_ = "file://" + cache;
+  } else if (!thumbnail_request_)
+    thumbnail_request_ = provider_->getThumbnailAsync(
+        item_, make_unique<DownloadThumbnailCallback>(this));
 }
 
 int DirectoryModel::rowCount(const QModelIndex&) const { return list_.size(); }
