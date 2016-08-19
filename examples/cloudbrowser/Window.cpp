@@ -125,6 +125,7 @@ Window::~Window() {
 }
 
 void Window::initializeCloud(QString name) {
+  if (cloud_provider_ && cloud_provider_->name() == name.toStdString()) return;
   saveCloudAccessToken();
   cancelRequests();
   if (name != "mock")
