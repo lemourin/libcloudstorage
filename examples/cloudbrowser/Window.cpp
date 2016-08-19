@@ -141,7 +141,8 @@ void Window::initializeCloud(QString name) {
     QString json = settings.value(name + "_hints").toString();
     QJsonObject data = QJsonDocument::fromJson(json.toLocal8Bit()).object();
     auto hints = fromJson(data);
-    hints["temporary_directory"] = QDir::tempPath().toStdString();
+    hints["temporary_directory"] =
+        QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
                                  make_unique<CloudProviderCallback>(this),
                                  nullptr, nullptr, nullptr, hints});
@@ -424,7 +425,7 @@ void ItemModel::fetchThumbnail() {
   auto cache = QDir::tempPath() + "/" +
                Window::escapeFileName(item_->filename()).c_str() + ".thumbnail";
   if (QFile::exists(cache)) {
-    thumbnail_ = "file://" + cache;
+    thumbnail_ = QUrl::fromLocalFile(cache).toString();
   } else if (!thumbnail_request_)
     thumbnail_request_ = provider_->getThumbnailAsync(
         item_, make_unique<DownloadThumbnailCallback>(this));

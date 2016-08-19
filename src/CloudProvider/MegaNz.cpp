@@ -98,14 +98,17 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
-    else
+    else {
+      error_ = e->getErrorString();
       status_ = FAILURE;
+    }
     semaphore_->notify();
   }
 
   IDownloadFileCallback::Pointer download_callback_;
   IUploadFileCallback::Pointer upload_callback_;
   Request<void>* request_;
+  std::string error_;
 };
 
 struct HttpData {
@@ -323,6 +326,8 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     {
       std::fstream mega_cache(cache.c_str(),
                               std::fstream::out | std::fstream::binary);
+      if (!mega_cache)
+        return callback->error("Couldn't open cache file " + cache);
       std::array<char, BUFFER_SIZE> buffer;
       while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
         if (r->is_cancelled()) return;
@@ -341,7 +346,8 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
     mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS) {
-      if (!r->is_cancelled()) callback->error("Failed to upload");
+      if (!r->is_cancelled())
+        callback->error("Upload error: " + listener.error_);
     } else
       callback->done();
     std::remove(cache.c_str());
@@ -370,6 +376,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     if (listener.status_ == Listener::SUCCESS) {
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
+      if (!cache_file)
+        return callback->error("Couldn't open cache file " + cache);
       std::array<char, BUFFER_SIZE> buffer;
       do {
         cache_file.read(buffer.data(), BUFFER_SIZE);
@@ -566,7 +574,7 @@ std::string MegaNz::randomString(int length) {
 }
 
 std::string MegaNz::temporaryFileName() {
-  return temporary_directory_ + "/" + randomString(CACHE_FILENAME_LENGTH);
+  return temporary_directory_ + randomString(CACHE_FILENAME_LENGTH);
 }
 
 template <class T>

@@ -131,7 +131,8 @@ class ICloudProvider {
     *  - metadata_url, content_url(amazon drive's endpoints)
     *  - youtube_dl_url(url to youtube-dl-server)
     *  - aws_region(region used by amazon s3)
-    *  - temporary_directory(used by mega.nz)
+    *  - temporary_directory(used by mega.nz, has to use native path separators
+    *    i.e. \ for windows and / for others; has to end with a separator)
     */
     Hints hints_;
   };
