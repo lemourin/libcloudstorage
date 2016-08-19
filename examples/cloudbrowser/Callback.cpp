@@ -153,15 +153,14 @@ void DownloadThumbnailCallback::receivedData(const char* data,
 }
 
 void DownloadThumbnailCallback::done() {
-  ImagePointer image = make_unique<QImage>();
-  if (image->loadFromData(reinterpret_cast<const uchar*>(data_.data()),
-                          data_.length()))
-    emit item_->receivedImage(std::move(image));
-  std::fstream file(QDir::tempPath().toStdString() + "/" +
-                        Window::escapeFileName(item_->item()->filename()) +
-                        ".thumbnail",
-                    std::fstream::out | std::fstream::binary);
-  file.write(data_.data(), data_.length());
+  {
+    std::fstream file(QDir::tempPath().toStdString() + "/" +
+                          Window::escapeFileName(item_->item()->filename()) +
+                          ".thumbnail",
+                      std::fstream::out | std::fstream::binary);
+    file.write(data_.data(), data_.length());
+  }
+  emit item_->receivedImage();
 }
 
 void DownloadThumbnailCallback::error(const std::string& error) {

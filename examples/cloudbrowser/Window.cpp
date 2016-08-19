@@ -45,7 +45,6 @@ Window::Window(MediaPlayer* media_player)
       last_played_(-1),
       media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
-  qRegisterMetaType<ImagePointer>();
 
   QStringList clouds;
   for (auto p : ICloudStorage::create()->providers())
@@ -414,7 +413,7 @@ void Window::renameItem(int item_id, QString name) {
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item), provider_(p), window_(w) {
   connect(this, &ItemModel::receivedImage, this,
-          [this, item](ImagePointer) {
+          [this]() {
             fetchThumbnail();
             emit thumbnailChanged();
           },

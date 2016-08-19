@@ -27,7 +27,6 @@
 #include <ICloudProvider.h>
 #include <IItem.h>
 #include <QAbstractListModel>
-#include <QQuickImageProvider>
 #include <QQuickView>
 #include <future>
 #include <unordered_set>
@@ -36,7 +35,6 @@
 #include "MediaPlayer.h"
 
 using ItemPointer = cloudstorage::IItem::Pointer;
-using ImagePointer = std::shared_ptr<QImage>;
 using cloudstorage::ICloudProvider;
 using cloudstorage::ICloudStorage;
 
@@ -55,7 +53,7 @@ class ItemModel : public QObject {
 
  signals:
   void thumbnailChanged();
-  void receivedImage(ImagePointer);
+  void receivedImage();
 
  private:
   friend class Window;
@@ -188,6 +186,5 @@ class Window : public QQuickView {
 };
 
 Q_DECLARE_METATYPE(ItemPointer)
-Q_DECLARE_METATYPE(ImagePointer)
 
 #endif  // WINDOW_H
