@@ -59,6 +59,18 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
             },
             output);
         if (!IHttpRequest::isSuccess(code)) {
+          int code = r->sendRequest(
+              [this, id](std::ostream&) {
+                return http()->create(endpoint() + "/2.0/folders/" + id, "GET");
+              },
+              output);
+          if (IHttpRequest::isSuccess(code)) {
+            Json::Value response;
+            output >> response;
+            auto item = toItem(response);
+            callback(item);
+            return item;
+          }
           callback(nullptr);
           return nullptr;
         }
