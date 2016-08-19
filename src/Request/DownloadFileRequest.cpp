@@ -75,12 +75,12 @@ void DownloadFileRequest::generateThumbnail(
         } else
           success = false;
         semaphore.notify();
+      },
+      [callback](const std::string& error) {
+        callback->error("Thumbnailer error: " + error);
       });
   semaphore.wait();
-  if (r->is_cancelled())
-    thumbnail_data->cancel();
-  else if (!success)
-    callback->error("Couldn't generate thumbnail with the thumbnailer.");
+  if (r->is_cancelled()) thumbnail_data->cancel();
 }
 
 void DownloadFileRequest::error(int code, const std::string& description) {

@@ -40,7 +40,7 @@ class FFmpegThumbnailer : public IThumbnailer {
 
   IRequest<std::vector<char>>::Pointer generateThumbnail(
       std::shared_ptr<ICloudProvider> provider, IItem::Pointer item,
-      std::function<void(const std::vector<char>&)>) override;
+      Callback, ErrorCallback) override;
 
  private:
   struct WorkerData {

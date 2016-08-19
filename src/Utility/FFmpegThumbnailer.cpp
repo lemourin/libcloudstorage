@@ -56,15 +56,16 @@ FFmpegThumbnailer::~FFmpegThumbnailer() {
 }
 
 IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
-    std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
-    std::function<void(const std::vector<char>&)> callback) {
+    std::shared_ptr<ICloudProvider> p, IItem::Pointer item, Callback callback,
+    ErrorCallback error_callback) {
   auto r = make_unique<Request<std::vector<char>>>(
       std::static_pointer_cast<CloudProvider>(p));
-  r->set_resolver([this, item, callback](
+  r->set_resolver([this, item, callback, error_callback](
                       Request<std::vector<char>>* r) -> std::vector<char> {
     if ((item->type() != IItem::FileType::Image &&
          item->type() != IItem::FileType::Video) ||
         item->url().empty()) {
+      error_callback("Can generate thumbnails only for images and videos.");
       callback({});
       return {};
     }
@@ -78,25 +79,26 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
       if (it == std::end(thumbnail_threads_)) {
         done = std::make_shared<std::condition_variable>();
         finished = std::make_shared<bool>(false);
-        future =
-            std::async(std::launch::async, [this, url, done, finished, item]() {
-              std::vector<uint8_t> buffer;
-              ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-              try {
-                thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png,
-                                              buffer);
-              } catch (const std::exception&) {
-              }
-              {
-                std::lock_guard<std::mutex> lock(mutex_);
-                finished_.push_back(url);
-                *finished = true;
-              }
-              done->notify_all();
-              condition_.notify_one();
-              auto ptr = reinterpret_cast<const char*>(buffer.data());
-              return std::vector<char>(ptr, ptr + buffer.size());
-            });
+        future = std::async(std::launch::async, [this, url, done, finished,
+                                                 item, error_callback]() {
+          std::vector<uint8_t> buffer;
+          ffmpegthumbnailer::VideoThumbnailer thumbnailer;
+          try {
+            thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png,
+                                          buffer);
+          } catch (const std::exception& e) {
+            error_callback(e.what());
+          }
+          {
+            std::lock_guard<std::mutex> lock(mutex_);
+            finished_.push_back(url);
+            *finished = true;
+          }
+          done->notify_all();
+          condition_.notify_one();
+          auto ptr = reinterpret_cast<const char*>(buffer.data());
+          return std::vector<char>(ptr, ptr + buffer.size());
+        });
         thumbnail_threads_[url] = {future, done, finished};
       } else {
         future = it->second.future_;
