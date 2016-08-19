@@ -23,6 +23,7 @@
 
 #include "Callback.h"
 
+#include <QDir>
 #include <QSettings>
 #include <iostream>
 
@@ -156,6 +157,10 @@ void DownloadThumbnailCallback::done() {
   if (image->loadFromData(reinterpret_cast<const uchar*>(data_.data()),
                           data_.length()))
     emit item_->receivedImage(std::move(image));
+  std::fstream file(QDir::tempPath().toStdString() + "/" +
+                        item_->item()->filename() + ".thumbnail",
+                    std::fstream::out | std::fstream::binary);
+  file.write(data_.data(), data_.length());
 }
 
 void DownloadThumbnailCallback::error(const std::string& error) {
