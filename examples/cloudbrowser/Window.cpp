@@ -350,10 +350,9 @@ void Window::uploadFile(QString path) {
 void Window::downloadFile(int item_id, QUrl path) {
   ItemModel* i = directory_model_.get(item_id);
   download_request_ = cloud_provider_->downloadFileAsync(
-      i->item(),
-      make_unique<::DownloadFileCallback>(
-          this, Window::escapeFileName(path.toLocalFile().toStdString() + "/" +
-                                       i->item()->filename())));
+      i->item(), make_unique<::DownloadFileCallback>(
+                     this, path.toLocalFile().toStdString() + "/" +
+                               escapeFileName(i->item()->filename())));
 
   std::unique_lock<std::mutex> lock(stream_mutex());
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
