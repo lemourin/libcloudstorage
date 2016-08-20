@@ -33,9 +33,9 @@
 using cloudstorage::make_unique;
 
 DownloadFileCallback::DownloadFileCallback(Window* window, std::string filename)
-    : window_(window),
-      file_(filename, std::ios_base::out | std::ios_base::binary),
-      filename_(filename) {}
+    : window_(window), file_(filename.c_str()), filename_(filename) {
+  file_.open(QFile::WriteOnly);
+}
 
 void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
   file_.write(data, length);
@@ -61,12 +61,8 @@ void DownloadFileCallback::progress(uint32_t total, uint32_t now) {
 }
 
 UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
-    : window_(window),
-      file_(url.toLocalFile().toStdString(),
-            std::ios_base::in | std::ios_base::binary) {
-  file_.seekg(0, std::ios::end);
-  size_ = file_.tellg();
-  file_.seekg(std::ios::beg);
+    : window_(window), file_(url.toLocalFile()) {
+  file_.open(QFile::ReadOnly);
 }
 
 void UploadFileCallback::reset() {
@@ -74,16 +70,14 @@ void UploadFileCallback::reset() {
     std::unique_lock<std::mutex> lock(window_->stream_mutex());
     std::cerr << "[DIAG] Starting transmission\n";
   }
-  file_.clear();
-  file_.seekg(std::ios::beg);
+  file_.reset();
 }
 
 uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
-  file_.read(data, maxlength);
-  return file_.gcount();
+  return file_.read(data, maxlength);
 }
 
-uint64_t UploadFileCallback::size() { return size_; }
+uint64_t UploadFileCallback::size() { return file_.size(); }
 
 void UploadFileCallback::done() {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
@@ -154,10 +148,10 @@ void DownloadThumbnailCallback::receivedData(const char* data,
 
 void DownloadThumbnailCallback::done() {
   {
-    std::fstream file(QDir::tempPath().toStdString() + "/" +
-                          Window::escapeFileName(item_->item()->filename()) +
-                          ".thumbnail",
-                      std::fstream::out | std::fstream::binary);
+    QFile file(QDir::tempPath() + "/" +
+               Window::escapeFileName(item_->item()->filename()).c_str() +
+               ".thumbnail");
+    file.open(QFile::WriteOnly);
     file.write(data_.data(), data_.length());
   }
   emit item_->receivedImage();

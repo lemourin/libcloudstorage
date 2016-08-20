@@ -116,7 +116,7 @@ class Window : public QQuickView {
   QString currentMedia() const { return current_media_; }
   void setCurrentMedia(QString m);
 
-  static std::string escapeFileName(std::string name);
+  static std::string escapeFileName(std::string);
 
  signals:
   void consentRequired(QString cloud);

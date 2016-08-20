@@ -25,8 +25,8 @@
 #define CALLBACK_H
 
 #include <ICloudStorage.h>
+#include <QFile>
 #include <QUrl>
-#include <fstream>
 
 class Window;
 class ItemModel;
@@ -78,7 +78,7 @@ class DownloadFileCallback : public IDownloadFileCallback {
 
  private:
   Window* window_;
-  std::fstream file_;
+  QFile file_;
   std::string filename_;
 };
 
@@ -95,8 +95,7 @@ class UploadFileCallback : public IUploadFileCallback {
 
  private:
   Window* window_;
-  std::fstream file_;
-  uint64_t size_;
+  QFile file_;
 };
 
 class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
