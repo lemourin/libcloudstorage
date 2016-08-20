@@ -72,6 +72,7 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
     std::shared_future<std::vector<char>> future;
     std::shared_ptr<std::condition_variable> done;
     std::shared_ptr<bool> finished;
+    std::shared_ptr<std::string> error_description;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       auto it = thumbnail_threads_.find(item->url());
@@ -79,15 +80,17 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
       if (it == std::end(thumbnail_threads_)) {
         done = std::make_shared<std::condition_variable>();
         finished = std::make_shared<bool>(false);
+        error_description = std::make_shared<std::string>("");
         future = std::async(std::launch::async, [this, url, done, finished,
-                                                 item, error_callback]() {
+                                                 error_description]() {
           std::vector<uint8_t> buffer;
           ffmpegthumbnailer::VideoThumbnailer thumbnailer;
           try {
             thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png,
                                           buffer);
           } catch (const std::exception& e) {
-            error_callback(e.what());
+            std::lock_guard<std::mutex> lock(mutex_);
+            *error_description = e.what();
           }
           {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -99,11 +102,12 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
           auto ptr = reinterpret_cast<const char*>(buffer.data());
           return std::vector<char>(ptr, ptr + buffer.size());
         });
-        thumbnail_threads_[url] = {future, done, finished};
+        thumbnail_threads_[url] = {future, done, finished, error_description};
       } else {
         future = it->second.future_;
         done = it->second.done_;
         finished = it->second.finished_;
+        error_description = it->second.error_description_;
       }
     }
     r->set_cancel_callback([done]() { done->notify_all(); });
@@ -116,6 +120,7 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
       return {};
     }
     auto result = future.get();
+    if (!error_description->empty()) error_callback(*error_description);
     callback(result);
     return result;
   });

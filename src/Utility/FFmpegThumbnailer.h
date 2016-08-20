@@ -47,6 +47,7 @@ class FFmpegThumbnailer : public IThumbnailer {
     std::shared_future<std::vector<char>> future_;
     std::shared_ptr<std::condition_variable> done_;
     std::shared_ptr<bool> finished_;
+    std::shared_ptr<std::string> error_description_;
   };
 
   std::mutex mutex_;
