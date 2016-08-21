@@ -164,7 +164,8 @@ int CurlHttpRequest::send(std::istream& data, std::ostream& response,
     curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(data)));
   } else if (method_ != "GET") {
-    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
+    if (stream_length(data) > 0)
+      curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, method_.c_str());
   }
   status = curl_easy_perform(handle_.get());
