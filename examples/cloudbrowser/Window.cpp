@@ -155,6 +155,7 @@ void Window::initializeCloud(QString name) {
 }
 
 void Window::listDirectory() {
+  if (!cloud_provider_ || !current_directory_) return;
   clearCurrentDirectoryList();
   list_directory_request_ = cloud_provider_->listDirectoryAsync(
       current_directory_, make_unique<::ListDirectoryCallback>(this));
