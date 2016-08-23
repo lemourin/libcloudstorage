@@ -12,6 +12,7 @@ Supported cloud providers:
 * AmazonDrive
 * box.com
 * YandexDisk
+* OwnCloud
 * mega.nz
 * AmazonS3
 * YouTube (partial)
