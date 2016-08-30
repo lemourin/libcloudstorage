@@ -104,9 +104,9 @@ class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
 
 class UploadFileCallback : public cloudstorage::IUploadFileCallback {
  public:
-  UploadFileCallback(const std::string& filename,
+  UploadFileCallback(const std::string& path,
                      cloudstorage::UploadFileCallback callback)
-      : file_(filename, std::ios_base::in | std::ios_base::binary),
+      : file_(path, std::ios_base::in | std::ios_base::binary),
         callback_(callback) {
     file_.seekg(0, std::ios::end);
     size_ = file_.tellg();
@@ -374,10 +374,10 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
 }
 
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
-    IItem::Pointer parent, const std::string& filename,
+    IItem::Pointer parent, const std::string& path, const std::string& filename,
     UploadFileCallback callback) {
   return uploadFileAsync(parent, filename,
-                         make_unique<::UploadFileCallback>(filename, callback));
+                         make_unique<::UploadFileCallback>(path, callback));
 }
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,

@@ -169,6 +169,7 @@ class MockProvider : public ICloudProvider {
                                                  const std::string&,
                                                  DownloadFileCallback) override;
   UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer, const std::string&,
+                                             const std::string&,
                                              UploadFileCallback) override;
 };
 

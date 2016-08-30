@@ -374,7 +374,10 @@ class ICloudProvider {
    *
    * @param parent parent of the uploaded file
    *
-   * @param filename name of file to upload
+   * @param path path to the file which will be uploaded
+   *
+   * @param filename name at which the file will be saved in the cloud
+   * provider
    *
    * @param callback called when done, if successful, it gets true, otherwise
    * false
@@ -382,7 +385,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual UploadFileRequest::Pointer uploadFileAsync(
-      IItem::Pointer parent, const std::string& filename,
+      IItem::Pointer parent, const std::string& path,
+      const std::string& filename,
       UploadFileCallback callback = [](bool) {}) = 0;
 };
 
