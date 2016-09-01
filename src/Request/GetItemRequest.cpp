@@ -32,7 +32,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), path_(path), callback_(callback) {
   set_resolver([this](Request*) -> IItem::Pointer {
     if (path_.empty() || path_.front() != '/') {
-      if (callback_) callback_(nullptr);
+      callback_(nullptr);
       return nullptr;
     }
     IItem::Pointer node = provider()->rootDirectory();
@@ -51,7 +51,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
       }
       node = getItem(current_request_->result(), token);
     }
-    if (callback_) callback_(node);
+    callback_(node);
     return node;
   });
   set_cancel_callback([this]() {

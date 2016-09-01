@@ -52,13 +52,13 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
         page_token = "";
         for (auto& t :
              provider()->listDirectoryResponse(output_stream, page_token)) {
-          if (callback_) callback_->receivedItem(t);
+          callback_->receivedItem(t);
           result.push_back(t);
         }
       } else
         failure = true;
     } while (!page_token.empty() && !failure);
-    if (!failure && callback_) callback_->done(result);
+    if (!failure) callback_->done(result);
     return result;
   });
 }
@@ -66,7 +66,7 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
 void ListDirectoryRequest::error(int code, const std::string& description) {
-  if (callback_) callback_->error(error_string(code, description));
+  callback_->error(error_string(code, description));
 }
 
 }  // namespace cloudstorage

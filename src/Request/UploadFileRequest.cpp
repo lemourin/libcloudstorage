@@ -62,7 +62,7 @@ UploadFileRequest::UploadFileRequest(
 UploadFileRequest::~UploadFileRequest() { cancel(); }
 
 void UploadFileRequest::error(int code, const std::string& description) {
-  if (callback_) callback_->error(error_string(code, description));
+  callback_->error(error_string(code, description));
 }
 
 UploadStreamWrapper::UploadStreamWrapper(
