@@ -39,6 +39,11 @@ class YouTube : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
+  ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer, IListDirectoryCallback::Pointer) override;
+  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
+                                               GetItemDataCallback f) override;
+
  private:
   IHttpRequest::Pointer getItemDataRequest(const std::string&,
                                            std::ostream&) const override;
@@ -48,11 +53,13 @@ class YouTube : public CloudProvider {
   IHttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const override;
+  IItem::Pointer getItemDataResponse(std::istream& response, bool audio) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const override;
+      IItem::Pointer directory, std::istream&,
+      std::string& next_page_token) const;
 
-  IItem::Pointer toItem(const Json::Value&, std::string kind) const;
+  IItem::Pointer toItem(const Json::Value&, std::string kind, bool audio) const;
+  std::string extractId(const std::string& full_id) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:
