@@ -26,6 +26,7 @@
 #include <json/json.h>
 #include <cstring>
 
+#include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -33,6 +34,8 @@
 const std::string VIDEO_ID_PREFIX = "video###";
 const std::string AUDIO_ID_PREFIX = "audio###";
 const std::string AUDIO_DIRECTORY = "audio";
+
+using namespace std::placeholders;
 
 namespace cloudstorage {
 
@@ -139,6 +142,37 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
   return std::move(r);
 }
 
+ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+  auto r = std::make_shared<Request<void>>(shared_from_this());
+  r->set_error_callback([this, callback, r](int code, const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([this, item, callback](Request<void>* r) -> void {
+    std::string url = item->url();
+    if (item->type() == IItem::FileType::Audio) {
+      Request<void>::Semaphore semaphore(r);
+      r->set_cancel_callback([&semaphore]() { semaphore.notify(); });
+      auto t = getItemDataAsync(
+          item->id(), [&semaphore](IItem::Pointer) { semaphore.notify(); });
+      semaphore.wait();
+      if (r->is_cancelled())
+        t->cancel();
+      else
+        url = t->result()->url();
+    }
+    DownloadStreamWrapper wrapper(std::bind(
+        &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
+    std::ostream stream(&wrapper);
+    int code = r->sendRequest(
+        [this, url](std::ostream&) { return http()->create(url, "GET"); },
+        stream,
+        std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
+    if (IHttpRequest::isSuccess(code)) callback->done();
+  });
+  return r;
+}
+
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
                                                   std::ostream&) const {
   std::string id = extractId(full_id);
@@ -184,11 +218,6 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
     return request;
   }
-}
-
-IHttpRequest::Pointer YouTube::downloadFileRequest(const IItem& item,
-                                                   std::ostream&) const {
-  return http()->create(item.url(), "GET");
 }
 
 IItem::Pointer YouTube::getItemDataResponse(std::istream& stream,
