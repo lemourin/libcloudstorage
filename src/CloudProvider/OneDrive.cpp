@@ -45,9 +45,10 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = make_unique<Request<void>>(shared_from_this());
-  r->set_error_callback([=](int code, const std::string& desc) {
-    callback->error(std::to_string(code) + ": " + desc);
-  });
+  r->set_error_callback(
+      [callback](Request<void>* r, int code, const std::string& desc) {
+        callback->error(r->error_string(code, desc));
+      });
   r->set_resolver([=](Request<void>* r) {
     std::stringstream output;
     int code = r->sendRequest(

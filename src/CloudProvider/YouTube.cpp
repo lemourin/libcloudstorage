@@ -62,9 +62,10 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
 ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r = std::make_shared<Request<std::vector<IItem::Pointer>>>(
-      shared_from_this());
-  r->set_error_callback([callback, r](int code, const std::string& error) {
+  auto r =
+      make_unique<Request<std::vector<IItem::Pointer>>>(shared_from_this());
+  r->set_error_callback([callback](Request<std::vector<IItem::Pointer>>* r,
+                                   int code, const std::string& error) {
     callback->error(r->error_string(code, error));
   });
   r->set_resolver([item, callback, this](Request<std::vector<IItem::Pointer>>*
@@ -91,7 +92,7 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     if (!failure) callback->done(result);
     return result;
   });
-  return r;
+  return std::move(r);
 }
 
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
@@ -144,10 +145,11 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = std::make_shared<Request<void>>(shared_from_this());
-  r->set_error_callback([this, callback, r](int code, const std::string& desc) {
-    callback->error(r->error_string(code, desc));
-  });
+  auto r = make_unique<Request<void>>(shared_from_this());
+  r->set_error_callback(
+      [this, callback](Request<void>* r, int code, const std::string& desc) {
+        callback->error(r->error_string(code, desc));
+      });
   r->set_resolver([this, item, callback](Request<void>* r) -> void {
     std::string url = item->url();
     if (item->type() == IItem::FileType::Audio) {
@@ -170,7 +172,7 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
         std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
     if (IHttpRequest::isSuccess(code)) callback->done();
   });
-  return r;
+  return std::move(r);
 }
 
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
