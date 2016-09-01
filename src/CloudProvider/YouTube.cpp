@@ -285,7 +285,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     else
       return nullptr;
     auto item = make_unique<Item>(
-        v["snippet"]["title"].asString() + (audio ? ".mp3" : ".mp4"),
+        v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
         id_prefix + VIDEO_ID_PREFIX + video_id,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
