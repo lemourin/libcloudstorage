@@ -32,12 +32,6 @@
 
 namespace cloudstorage {
 
-template class Request<void>;
-template class Request<bool>;
-template class Request<std::shared_ptr<cloudstorage::IItem>>;
-template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
-template class Request<std::vector<char>>;
-
 namespace {
 
 bool isPrintable(const std::string& str) {
@@ -217,5 +211,11 @@ Request<T>::Semaphore::~Semaphore() {
   const auto& list = request_->semaphore_list_;
   request_->semaphore_list_.erase(std::find(list.begin(), list.end(), this));
 }
+
+template class Request<void>;
+template class Request<bool>;
+template class Request<std::shared_ptr<cloudstorage::IItem>>;
+template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
+template class Request<std::vector<char>>;
 
 }  // namespace cloudstorage
