@@ -30,7 +30,7 @@
 #include "Utility/Utility.h"
 #include "Window.h"
 
-using cloudstorage::make_unique;
+using cloudstorage::util::make_unique;
 
 DownloadFileCallback::DownloadFileCallback(Window* window, std::string filename)
     : window_(window), file_(filename.c_str()), filename_(filename) {

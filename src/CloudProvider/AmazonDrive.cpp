@@ -32,7 +32,7 @@ const int THUMBNAIL_SIZE = 64;
 
 namespace cloudstorage {
 
-AmazonDrive::AmazonDrive() : CloudProvider(make_unique<Auth>()) {}
+AmazonDrive::AmazonDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonDrive::initialize(InitData&& data) {
   {
@@ -58,12 +58,12 @@ std::string AmazonDrive::name() const { return "amazon"; }
 std::string AmazonDrive::endpoint() const { return content_url(); }
 
 IItem::Pointer AmazonDrive::rootDirectory() const {
-  return make_unique<Item>("root", "root", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "root", IItem::FileType::Directory);
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer s, IItem::Pointer d, MoveItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) -> bool {
     Item* source = static_cast<Item*>(s.get());
     Item* destination = static_cast<Item*>(d.get());
@@ -94,7 +94,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
 }
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
-  auto r = make_unique<AuthorizeRequest>(
+  auto r = util::make_unique<AuthorizeRequest>(
       shared_from_this(), [this](AuthorizeRequest* r) -> bool {
         if (!r->oauth2Authorization()) return false;
         auto request = http()->create(
@@ -234,7 +234,7 @@ IItem::FileType AmazonDrive::type(const Json::Value& v) const {
 
 IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-  auto item = make_unique<Item>(name, v["id"].asString(), type(v));
+  auto item = util::make_unique<Item>(name, v["id"].asString(), type(v));
   item->set_url(v["tempLink"].asString());
   if (item->type() == IItem::FileType::Image)
     item->set_thumbnail_url(item->url() + "?viewBox=" +
@@ -306,7 +306,7 @@ IAuth::Token::Pointer AmazonDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  auto token = make_unique<Token>();
+  auto token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
@@ -317,7 +317,7 @@ IAuth::Token::Pointer AmazonDrive::Auth::refreshTokenResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  auto token = make_unique<Token>();
+  auto token = util::make_unique<Token>();
   token->refresh_token_ = access_token()->refresh_token_;
   token->token_ = response["access_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();

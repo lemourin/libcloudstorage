@@ -35,7 +35,7 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
-YandexDisk::YandexDisk() : CloudProvider(make_unique<Auth>()) {}
+YandexDisk::YandexDisk() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string YandexDisk::name() const { return "yandex"; }
 
@@ -44,12 +44,12 @@ std::string YandexDisk::endpoint() const {
 }
 
 IItem::Pointer YandexDisk::rootDirectory() const {
-  return make_unique<Item>("disk", "disk:/", IItem::FileType::Directory);
+  return util::make_unique<Item>("disk", "disk:/", IItem::FileType::Directory);
 }
 
 ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver(
       [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
         std::stringstream output;
@@ -90,7 +90,7 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_error_callback(
       [this, callback](Request<void>* r, int code, const std::string& desc) {
         callback->error(r->error_string(code, desc));
@@ -127,7 +127,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_error_callback(
       [callback](Request<void>* r, int code, const std::string& desc) {
         callback->error(r->error_string(code, desc));
@@ -172,7 +172,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer
 YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
                                  CreateDirectoryCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
     std::stringstream output;
     int code = r->sendRequest(
@@ -263,7 +263,7 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
                              ? IItem::FileType::Directory
                              : Item::fromMimeType(v["mime_type"].asString());
   auto item =
-      make_unique<Item>(v["name"].asString(), v["path"].asString(), type);
+      util::make_unique<Item>(v["name"].asString(), v["path"].asString(), type);
   item->set_thumbnail_url(v["preview"].asString());
   return std::move(item);
 }
@@ -301,7 +301,7 @@ IAuth::Token::Pointer YandexDisk::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  auto token = make_unique<Token>();
+  auto token = util::make_unique<Token>();
   token->expires_in_ = -1;
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = token->token_;

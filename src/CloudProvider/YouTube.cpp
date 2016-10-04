@@ -40,7 +40,7 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 YouTube::YouTube()
-    : CloudProvider(make_unique<Auth>()),
+    : CloudProvider(util::make_unique<Auth>()),
       youtube_dl_url_("http://youtube-dl.appspot.com") {}
 
 void YouTube::initialize(InitData&& data) {
@@ -62,8 +62,8 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
 ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r =
-      make_unique<Request<std::vector<IItem::Pointer>>>(shared_from_this());
+  auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
+      shared_from_this());
   r->set_error_callback([callback](Request<std::vector<IItem::Pointer>>* r,
                                    int code, const std::string& error) {
     callback->error(r->error_string(code, error));
@@ -97,7 +97,7 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
 
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([this, id,
                    callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
     std::stringstream response_stream;
@@ -126,9 +126,9 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
           response_stream >> response;
           for (const Json::Value& v : response["info"]["formats"])
             if (v["format_id"] == response["info"]["format_id"]) {
-              auto item =
-                  make_unique<Item>(i->filename() + "." + v["ext"].asString(),
-                                    i->id(), i->type());
+              auto item = util::make_unique<Item>(
+                  i->filename() + "." + v["ext"].asString(), i->id(),
+                  i->type());
               item->set_url(v["url"].asString());
               i = std::move(item);
             }
@@ -145,7 +145,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_error_callback(
       [this, callback](Request<void>* r, int code, const std::string& desc) {
         callback->error(r->error_string(code, desc));
@@ -245,7 +245,7 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     Json::Value related_playlits =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
     for (const std::string& name : related_playlits.getMemberNames()) {
-      auto item = make_unique<Item>(
+      auto item = util::make_unique<Item>(
           name_prefix + name, id_prefix + related_playlits[name].asString(),
           IItem::FileType::Directory);
       item->set_thumbnail_url(response["items"][0]["snippet"]["thumbnails"]
@@ -262,8 +262,8 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
   else if (directory->id() == rootDirectory()->id() && next_page_token.empty())
-    result.push_back(make_unique<Item>(AUDIO_DIRECTORY, AUDIO_DIRECTORY,
-                                       IItem::FileType::Directory));
+    result.push_back(util::make_unique<Item>(AUDIO_DIRECTORY, AUDIO_DIRECTORY,
+                                             IItem::FileType::Directory));
   return result;
 }
 
@@ -272,7 +272,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
   std::string id_prefix = audio ? AUDIO_ID_PREFIX : "";
   std::string name_prefix = audio ? AUDIO_DIRECTORY + " " : "";
   if (kind == "youtube#playlistListResponse") {
-    auto item = make_unique<Item>(
+    auto item = util::make_unique<Item>(
         name_prefix + v["snippet"]["title"].asString(),
         id_prefix + v["id"].asString(), IItem::FileType::Directory);
     item->set_thumbnail_url(
@@ -286,7 +286,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
       video_id = v["id"].asString();
     else
       return nullptr;
-    auto item = make_unique<Item>(
+    auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
         id_prefix + VIDEO_ID_PREFIX + video_id,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);

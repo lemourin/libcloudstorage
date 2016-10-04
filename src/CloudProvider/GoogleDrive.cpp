@@ -34,7 +34,7 @@ const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
 
 namespace cloudstorage {
 
-GoogleDrive::GoogleDrive() : CloudProvider(make_unique<Auth>()) {}
+GoogleDrive::GoogleDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
 
@@ -179,8 +179,8 @@ IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
 }
 
 IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
-  auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(),
-                                toFileType(v["mimeType"].asString()));
+  auto item = util::make_unique<Item>(v["name"].asString(), v["id"].asString(),
+                                      toFileType(v["mimeType"].asString()));
   item->set_hidden(v["trashed"].asBool());
   std::string thumnail_url = v["thumbnailLink"].asString();
   if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))
@@ -243,7 +243,7 @@ IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
   Json::Value response;
   data >> response;
 
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
@@ -254,7 +254,7 @@ IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
     std::istream& data) const {
   Json::Value response;
   data >> response;
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = access_token()->refresh_token_;
   token->expires_in_ = response["expires_in"].asInt();

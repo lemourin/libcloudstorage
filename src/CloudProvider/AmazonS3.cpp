@@ -135,7 +135,7 @@ std::string currentDateAndTime() {
 }  // namespace
 
 AmazonS3::AmazonS3()
-    : CloudProvider(make_unique<Auth>()), region_(DEFAULT_REGION) {}
+    : CloudProvider(util::make_unique<Auth>()), region_(DEFAULT_REGION) {}
 
 void AmazonS3::initialize(InitData&& init_data) {
   {
@@ -167,7 +167,7 @@ ICloudProvider::Hints AmazonS3::hints() const {
 }
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
-  return make_unique<AuthorizeRequest>(
+  return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest* r) -> bool {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
@@ -183,7 +183,7 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) -> bool {
     bool success = rename(r, destination->id() + source->filename(),
                           source->id(), region_, http());
@@ -195,7 +195,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
 
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) -> bool {
     std::string path = split(item->id()).second;
     if (!path.empty() && path.back() == '/') path.pop_back();
@@ -213,7 +213,7 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
     std::stringstream output;
     int code = r->sendRequest(
@@ -243,7 +243,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) -> bool {
     if (item->type() == IItem::FileType::Directory) {
       Request<bool>::Semaphore semaphore(r);
@@ -290,7 +290,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
     if (access_id().empty() || secret().empty()) r->reauthorize();
     auto data = split(id);
@@ -356,8 +356,8 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
     for (auto child = buckets->FirstChild(); child;
          child = child->NextSibling()) {
       std::string name = child->FirstChildElement("Name")->GetText();
-      auto item = make_unique<Item>(name, name + Auth::SEPARATOR,
-                                    IItem::FileType::Directory);
+      auto item = util::make_unique<Item>(name, name + Auth::SEPARATOR,
+                                          IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
   } else if (document.RootElement()->FirstChildElement("Name")) {
@@ -368,9 +368,9 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       if (child->FirstChildElement("Size")->GetText() == std::string("0"))
         continue;
       std::string id = child->FirstChildElement("Key")->GetText();
-      auto item =
-          make_unique<Item>(getFilename(id), bucket + Auth::SEPARATOR + id,
-                            IItem::FileType::Unknown);
+      auto item = util::make_unique<Item>(getFilename(id),
+                                          bucket + Auth::SEPARATOR + id,
+                                          IItem::FileType::Unknown);
       item->set_url(getUrl(*item));
       result.push_back(std::move(item));
     }
@@ -378,9 +378,9 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
              document.RootElement()->FirstChildElement("CommonPrefixes");
          child; child = child->NextSiblingElement("CommonPrefixes")) {
       std::string id = child->FirstChildElement("Prefix")->GetText();
-      auto item =
-          make_unique<Item>(getFilename(id), bucket + Auth::SEPARATOR + id,
-                            IItem::FileType::Directory);
+      auto item = util::make_unique<Item>(getFilename(id),
+                                          bucket + Auth::SEPARATOR + id,
+                                          IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
     if (document.RootElement()->FirstChildElement("IsTruncated")->GetText() ==

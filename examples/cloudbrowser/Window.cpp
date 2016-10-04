@@ -38,7 +38,7 @@
 
 #include "Utility/Utility.h"
 
-using cloudstorage::make_unique;
+using namespace cloudstorage;
 
 Window::Window(MediaPlayer* media_player)
     : cloud_storage_(ICloudStorage::create()),
@@ -128,7 +128,7 @@ void Window::initializeCloud(QString name) {
   if (name != "mock")
     cloud_provider_ = cloud_storage_->provider(name.toStdString());
   else
-    cloud_provider_ = make_unique<cloudstorage::MockProvider>();
+    cloud_provider_ = util::make_unique<cloudstorage::MockProvider>();
   current_directory_ = cloud_provider_->rootDirectory();
   if (initialized_clouds_.find(name.toStdString()) ==
       std::end(initialized_clouds_)) {
@@ -144,7 +144,7 @@ void Window::initializeCloud(QString name) {
     hints["temporary_directory"] =
         QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
-                                 make_unique<CloudProviderCallback>(this),
+                                 util::make_unique<CloudProviderCallback>(this),
                                  nullptr, nullptr, nullptr, hints});
     initialized_clouds_.insert(name.toStdString());
   } else if (unauthorized_clouds_.find(name.toStdString()) !=
@@ -158,7 +158,7 @@ void Window::listDirectory() {
   if (!cloud_provider_ || !current_directory_) return;
   clearCurrentDirectoryList();
   list_directory_request_ = cloud_provider_->listDirectoryAsync(
-      current_directory_, make_unique<::ListDirectoryCallback>(this));
+      current_directory_, util::make_unique<::ListDirectoryCallback>(this));
 }
 
 void Window::changeCurrentDirectory(int directory_id) {
@@ -345,13 +345,13 @@ void Window::uploadFile(QString path) {
   QUrl url = path;
   upload_request_ = cloud_provider_->uploadFileAsync(
       current_directory_, url.fileName().toStdString(),
-      make_unique<::UploadFileCallback>(this, url));
+      util::make_unique<::UploadFileCallback>(this, url));
 }
 
 void Window::downloadFile(int item_id, QUrl path) {
   ItemModel* i = directory_model_.get(item_id);
   download_request_ = cloud_provider_->downloadFileAsync(
-      i->item(), make_unique<::DownloadFileCallback>(
+      i->item(), util::make_unique<::DownloadFileCallback>(
                      this, path.toLocalFile().toStdString() + "/" +
                                escapeFileName(i->item()->filename())));
 
@@ -429,7 +429,7 @@ void ItemModel::fetchThumbnail() {
     thumbnail_ = QUrl::fromLocalFile(cache).toString();
   } else if (!thumbnail_request_)
     thumbnail_request_ = provider_->getThumbnailAsync(
-        item_, make_unique<DownloadThumbnailCallback>(this));
+        item_, util::make_unique<DownloadThumbnailCallback>(this));
 }
 
 int DirectoryModel::rowCount(const QModelIndex&) const { return list_.size(); }
@@ -449,7 +449,7 @@ QVariant DirectoryModel::data(const QModelIndex& id, int) const {
 
 void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
-  auto model = make_unique<ItemModel>(item, w->cloud_provider_, w);
+  auto model = util::make_unique<ItemModel>(item, w->cloud_provider_, w);
   list_.push_back(std::move(model));
   endInsertRows();
   int idx = rowCount() - 1;

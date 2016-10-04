@@ -99,8 +99,8 @@ template <class T>
 std::unique_ptr<HttpCallback> Request<T>::httpCallback(
     std::function<void(uint32_t, uint32_t)> progress_download,
     std::function<void(uint32_t, uint32_t)> progress_upload) {
-  return make_unique<HttpCallback>(is_cancelled_, progress_download,
-                                   progress_upload);
+  return util::make_unique<HttpCallback>(is_cancelled_, progress_download,
+                                         progress_upload);
 }
 
 template <class T>

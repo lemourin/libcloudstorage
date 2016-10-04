@@ -63,7 +63,7 @@ ICloudProvider::Pointer CloudStorage::provider(const std::string& name) const {
 }
 
 ICloudStorage::Pointer ICloudStorage::create() {
-  return make_unique<CloudStorage>();
+  return util::make_unique<CloudStorage>();
 }
 
 }  // namespace cloudstorage

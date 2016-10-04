@@ -161,10 +161,11 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
     delete data;
   };
   HttpData* data = new HttpData;
-  auto request = make_unique<Request<void>>(
+  auto request = util::make_unique<Request<void>>(
       std::weak_ptr<CloudProvider>(provider->shared_from_this()));
   request->set_resolver(provider->downloadResolver(
-      provider->toItem(node.get()), make_unique<DownloadFileCallback>(data)));
+      provider->toItem(node.get()),
+      util::make_unique<DownloadFileCallback>(data)));
   data->request_ = std::move(request);
   MHD_Response* response = MHD_create_response_from_callback(
       node->getSize(), BUFFER_SIZE, data_provider, data, release_data);
@@ -177,7 +178,7 @@ int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
 }  // namespace
 
 MegaNz::MegaNz()
-    : CloudProvider(make_unique<Auth>()),
+    : CloudProvider(util::make_unique<Auth>()),
       mega_(),
       authorized_(),
       engine_(device_()),
@@ -189,10 +190,10 @@ void MegaNz::initialize(InitData&& data) {
   {
     std::lock_guard<std::mutex> lock(auth_mutex());
     if (data.hints_.find("client_id") == std::end(data.hints_))
-      mega_ = make_unique<MegaApi>("ZVhB0Czb");
+      mega_ = util::make_unique<MegaApi>("ZVhB0Czb");
     else
       setWithHint(data.hints_, "client_id", [this](std::string v) {
-        mega_ = make_unique<MegaApi>(v.c_str());
+        mega_ = util::make_unique<MegaApi>(v.c_str());
       });
     setWithHint(data.hints_, "daemon_port",
                 [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
@@ -212,7 +213,7 @@ std::string MegaNz::name() const { return "mega"; }
 std::string MegaNz::endpoint() const { return "http://localhost"; }
 
 IItem::Pointer MegaNz::rootDirectory() const {
-  return make_unique<Item>("root", "/", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
 }
 
 ICloudProvider::Hints MegaNz::hints() const {
@@ -224,7 +225,7 @@ ICloudProvider::Hints MegaNz::hints() const {
 }
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
-  return make_unique<Authorize>(
+  return util::make_unique<Authorize>(
       shared_from_this(), [this](AuthorizeRequest* r) {
         if (!login(r)) {
           if (r->is_cancelled()) return false;
@@ -234,7 +235,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
             auto data = creditentialsFromString(code);
             {
               std::lock_guard<std::mutex> mutex(auth_mutex());
-              IAuth::Token::Pointer token = make_unique<IAuth::Token>();
+              IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
               token->token_ =
                   data.first + Auth::SEPARATOR + passwordHash(data.second);
               token->refresh_token_ = token->token_;
@@ -258,7 +259,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
 
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver(
       [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
         if (!ensureAuthorized(r)) {
@@ -279,8 +280,8 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
 
 ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r =
-      make_unique<Request<std::vector<IItem::Pointer>>>(shared_from_this());
+  auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
+      shared_from_this());
   r->set_resolver([this, item, callback](Request<std::vector<IItem::Pointer>>*
                                              r) -> std::vector<IItem::Pointer> {
     if (!ensureAuthorized(r)) {
@@ -308,7 +309,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_resolver(downloadResolver(item, callback));
   return std::move(r);
 }
@@ -316,7 +317,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback, filename](Request<void>* r) {
     if (!ensureAuthorized(r)) {
       if (!r->is_cancelled()) callback->error("Authorization failed.");
@@ -357,7 +358,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<void>* r) {
     if (!ensureAuthorized(r)) {
       if (!r->is_cancelled()) callback->error("Authorization failed.");
@@ -394,7 +395,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([this, item, callback](Request<bool>* r) {
     if (!ensureAuthorized(r)) {
       callback(false);
@@ -421,7 +422,7 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
     if (!ensureAuthorized(r)) {
       callback(nullptr);
@@ -455,7 +456,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) {
     if (!ensureAuthorized(r)) {
       callback(false);
@@ -484,7 +485,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = make_unique<Request<bool>>(shared_from_this());
+  auto r = util::make_unique<Request<bool>>(shared_from_this());
   r->set_resolver([=](Request<bool>* r) {
     if (!ensureAuthorized(r)) {
       callback(false);
@@ -556,7 +557,7 @@ std::string MegaNz::passwordHash(const std::string& password) {
 
 IItem::Pointer MegaNz::toItem(MegaNode* node) {
   std::unique_ptr<char[]> path(mega_->getNodePath(node));
-  auto item = make_unique<Item>(
+  auto item = util::make_unique<Item>(
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());

@@ -213,7 +213,7 @@ void CurlHttpRequest::CurlDeleter::operator()(CURL* handle) const {
 IHttpRequest::Pointer CurlHttp::create(const std::string& url,
                                        const std::string& method,
                                        bool follow_redirect) const {
-  return make_unique<CurlHttpRequest>(url, method, follow_redirect);
+  return util::make_unique<CurlHttpRequest>(url, method, follow_redirect);
 }
 
 std::string CurlHttp::unescape(const std::string& str) const {

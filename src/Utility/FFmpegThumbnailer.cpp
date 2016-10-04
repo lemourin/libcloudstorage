@@ -58,7 +58,7 @@ FFmpegThumbnailer::~FFmpegThumbnailer() {
 IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
     std::shared_ptr<ICloudProvider> p, IItem::Pointer item, Callback callback,
     ErrorCallback error_callback) {
-  auto r = make_unique<Request<std::vector<char>>>(
+  auto r = util::make_unique<Request<std::vector<char>>>(
       std::static_pointer_cast<CloudProvider>(p));
   r->set_resolver([this, item, callback, error_callback](
                       Request<std::vector<char>>* r) -> std::vector<char> {

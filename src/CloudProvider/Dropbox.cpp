@@ -35,21 +35,21 @@ const std::string DROPBOXAPI_ENDPOINT = "https://api.dropboxapi.com";
 
 namespace cloudstorage {
 
-Dropbox::Dropbox() : CloudProvider(make_unique<Auth>()) {}
+Dropbox::Dropbox() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string Dropbox::name() const { return "dropbox"; }
 
 std::string Dropbox::endpoint() const { return DROPBOXAPI_ENDPOINT; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
-  return make_unique<Item>("/", "", IItem::FileType::Directory);
+  return util::make_unique<Item>("/", "", IItem::FileType::Directory);
 }
 
 bool Dropbox::reauthorize(int code) const { return code == 400 || code == 401; }
 
 ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto f = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto f = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   f->set_resolver([this, id,
                    callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
     auto item_data = [this, r, id](std::ostream& input) {
@@ -228,8 +228,8 @@ IItem::Pointer Dropbox::toItem(const Json::Value& v) {
     else if (file_type == "photo")
       type = IItem::FileType::Image;
   }
-  return make_unique<Item>(v["name"].asString(), v["path_display"].asString(),
-                           type);
+  return util::make_unique<Item>(v["name"].asString(),
+                                 v["path_display"].asString(), type);
 }
 
 Dropbox::Auth::Auth() {
@@ -247,7 +247,7 @@ std::string Dropbox::Auth::authorizeLibraryUrl() const {
 
 IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
     const std::string& str) const {
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = str;
   token->refresh_token_ = str;
   token->expires_in_ = -1;
@@ -275,7 +275,7 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
   Json::Value response;
   stream >> response;
 
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = token->token_;
   token->expires_in_ = -1;

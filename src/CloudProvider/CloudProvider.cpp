@@ -167,15 +167,15 @@ void CloudProvider::initialize(InitData&& data) {
   });
 
 #ifdef WITH_CRYPTOPP
-  if (!crypto_) crypto_ = make_unique<CryptoPP>();
+  if (!crypto_) crypto_ = util::make_unique<CryptoPP>();
 #endif
 
 #ifdef WITH_CURL
-  if (!http_) http_ = make_unique<CurlHttp>();
+  if (!http_) http_ = util::make_unique<CurlHttp>();
 #endif
 
 #ifdef WITH_THUMBNAILER
-  if (!thumbnailer_) thumbnailer_ = make_unique<FFmpegThumbnailer>();
+  if (!thumbnailer_) thumbnailer_ = util::make_unique<FFmpegThumbnailer>();
 #endif
 
   if (!http_) throw std::runtime_error("No http module specified.");
@@ -205,7 +205,7 @@ std::string CloudProvider::token() const {
 }
 
 IItem::Pointer CloudProvider::rootDirectory() const {
-  return make_unique<Item>("/", "root", IItem::FileType::Directory);
+  return util::make_unique<Item>("/", "root", IItem::FileType::Directory);
 }
 
 ICloudProvider::ICallback* CloudProvider::callback() const {
@@ -220,19 +220,19 @@ IThumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  return make_unique<cloudstorage::ListDirectoryRequest>(
+  return util::make_unique<cloudstorage::ListDirectoryRequest>(
       shared_from_this(), std::move(item), std::move(callback));
 }
 
 ICloudProvider::GetItemRequest::Pointer CloudProvider::getItemAsync(
     const std::string& absolute_path, GetItemCallback callback) {
-  return make_unique<cloudstorage::GetItemRequest>(shared_from_this(),
-                                                   absolute_path, callback);
+  return util::make_unique<cloudstorage::GetItemRequest>(
+      shared_from_this(), absolute_path, callback);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer file, IDownloadFileCallback::Pointer callback) {
-  return make_unique<cloudstorage::DownloadFileRequest>(
+  return util::make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), std::move(file), std::move(callback),
       std::bind(&CloudProvider::downloadFileRequest, this, _1, _2));
 }
@@ -240,14 +240,14 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  return make_unique<cloudstorage::UploadFileRequest>(
+  return util::make_unique<cloudstorage::UploadFileRequest>(
       shared_from_this(), std::move(directory), filename, std::move(callback));
 }
 
 ICloudProvider::GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
     const std::string& id, GetItemDataCallback f) {
-  return make_unique<cloudstorage::GetItemDataRequest>(shared_from_this(), id,
-                                                       f);
+  return util::make_unique<cloudstorage::GetItemDataRequest>(shared_from_this(),
+                                                             id, f);
 }
 
 void CloudProvider::authorizeRequest(IHttpRequest& r) const {
@@ -259,7 +259,7 @@ bool CloudProvider::reauthorize(int code) const {
 }
 
 AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
-  return make_unique<AuthorizeRequest>(shared_from_this());
+  return util::make_unique<AuthorizeRequest>(shared_from_this());
 }
 
 std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
@@ -321,63 +321,64 @@ std::pair<std::string, std::string> CloudProvider::creditentialsFromString(
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return make_unique<cloudstorage::DownloadFileRequest>(
+  return util::make_unique<cloudstorage::DownloadFileRequest>(
       shared_from_this(), item, std::move(callback),
       std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2), true);
 }
 
 ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  return make_unique<cloudstorage::DeleteItemRequest>(shared_from_this(), item,
-                                                      callback);
+  return util::make_unique<cloudstorage::DeleteItemRequest>(shared_from_this(),
+                                                            item, callback);
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer
 CloudProvider::createDirectoryAsync(IItem::Pointer parent,
                                     const std::string& name,
                                     CreateDirectoryCallback callback) {
-  return make_unique<cloudstorage::CreateDirectoryRequest>(
+  return util::make_unique<cloudstorage::CreateDirectoryRequest>(
       shared_from_this(), parent, name, callback);
 }
 
 ICloudProvider::MoveItemRequest::Pointer CloudProvider::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  return make_unique<cloudstorage::MoveItemRequest>(shared_from_this(), source,
-                                                    destination, callback);
+  return util::make_unique<cloudstorage::MoveItemRequest>(
+      shared_from_this(), source, destination, callback);
 }
 
 ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  return make_unique<cloudstorage::RenameItemRequest>(shared_from_this(), item,
-                                                      name, callback);
+  return util::make_unique<cloudstorage::RenameItemRequest>(
+      shared_from_this(), item, name, callback);
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, ListDirectoryCallback callback) {
-  return listDirectoryAsync(item,
-                            make_unique<::ListDirectoryCallback>(callback));
+  return listDirectoryAsync(
+      item, util::make_unique<::ListDirectoryCallback>(callback));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer item, const std::string& filename,
     DownloadFileCallback callback) {
   return downloadFileAsync(
-      item, make_unique<::DownloadFileCallback>(filename, callback));
+      item, util::make_unique<::DownloadFileCallback>(filename, callback));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, const std::string& filename,
     GetThumbnailCallback callback) {
   return getThumbnailAsync(
-      item, make_unique<::DownloadFileCallback>(filename, callback));
+      item, util::make_unique<::DownloadFileCallback>(filename, callback));
 }
 
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer parent, const std::string& path, const std::string& filename,
     UploadFileCallback callback) {
-  return uploadFileAsync(parent, filename,
-                         make_unique<::UploadFileCallback>(path, callback));
+  return uploadFileAsync(
+      parent, filename,
+      util::make_unique<::UploadFileCallback>(path, callback));
 }
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,

@@ -33,10 +33,10 @@ const std::string BOXAPI_ENDPOINT = "https://api.box.com";
 
 namespace cloudstorage {
 
-Box::Box() : CloudProvider(make_unique<Auth>()) {}
+Box::Box() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer Box::rootDirectory() const {
-  return make_unique<Item>("root", "0", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "0", IItem::FileType::Directory);
 }
 
 std::string Box::name() const { return "box"; }
@@ -49,7 +49,7 @@ bool Box::reauthorize(int code) const {
 
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver(
       [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
         std::stringstream output;
@@ -217,7 +217,8 @@ std::vector<IItem::Pointer> Box::listDirectoryResponse(
 IItem::Pointer Box::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v["type"].asString() == "folder") type = IItem::FileType::Directory;
-  auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+  auto item =
+      util::make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
   return std::move(item);
 }
 
@@ -257,16 +258,18 @@ IAuth::Token::Pointer Box::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  return make_unique<Token>(Token{response["access_token"].asString(),
-                                  response["refresh_token"].asString(), -1});
+  return util::make_unique<Token>(Token{response["access_token"].asString(),
+                                        response["refresh_token"].asString(),
+                                        -1});
 }
 
 IAuth::Token::Pointer Box::Auth::refreshTokenResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  return make_unique<Token>(Token{response["access_token"].asString(),
-                                  response["refresh_token"].asString(), -1});
+  return util::make_unique<Token>(Token{response["access_token"].asString(),
+                                        response["refresh_token"].asString(),
+                                        -1});
 }
 
 }  // namespace cloudstorage

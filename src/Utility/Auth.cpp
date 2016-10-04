@@ -201,7 +201,7 @@ std::string Auth::requestAuthorizationCode(
 
 IAuth::Token::Pointer Auth::fromTokenString(
     const std::string& refresh_token) const {
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->refresh_token_ = refresh_token;
   token->expires_in_ = -1;
   return token;

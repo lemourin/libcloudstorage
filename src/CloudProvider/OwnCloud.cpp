@@ -30,10 +30,10 @@
 
 namespace cloudstorage {
 
-OwnCloud::OwnCloud() : CloudProvider(make_unique<Auth>()) {}
+OwnCloud::OwnCloud() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer OwnCloud::rootDirectory() const {
-  return make_unique<Item>("root", "/", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
 }
 
 void OwnCloud::initialize(InitData&& data) {
@@ -51,7 +51,7 @@ std::string OwnCloud::token() const {
 }
 
 AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
-  return make_unique<AuthorizeRequest>(
+  return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest* r) -> bool {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
@@ -64,7 +64,7 @@ AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
 ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = make_unique<Request<IItem::Pointer>>(shared_from_this());
+  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
     std::stringstream response;
     int code = r->sendRequest(
@@ -75,8 +75,8 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
         },
         response);
     if (IHttpRequest::isSuccess(code)) {
-      IItem::Pointer item = make_unique<Item>(name, parent->id() + name + "/",
-                                              IItem::FileType::Directory);
+      IItem::Pointer item = util::make_unique<Item>(
+          name, parent->id() + name + "/", IItem::FileType::Directory);
       callback(item);
       return item;
     } else {
@@ -188,7 +188,7 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto item = make_unique<Item>(http()->unescape(filename), id, type);
+  auto item = util::make_unique<Item>(http()->unescape(filename), id, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return std::move(item);
 }

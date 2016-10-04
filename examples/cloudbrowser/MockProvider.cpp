@@ -23,14 +23,11 @@
 
 #include "MockProvider.h"
 
+#include "Utility/Utility.h"
+
 #include <QFile>
 
 namespace cloudstorage {
-
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 MockProvider::MockProvider() {}
 
@@ -52,17 +49,18 @@ IItem::Pointer MockProvider::rootDirectory() const {
 
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
     IItem::Pointer directory, IListDirectoryCallback::Pointer callback) {
-  return make_unique<MockListDirectoryRequest>(directory, std::move(callback));
+  return util::make_unique<MockListDirectoryRequest>(directory,
+                                                     std::move(callback));
 }
 
 ICloudProvider::GetItemRequest::Pointer MockProvider::getItemAsync(
     const std::string& absolute_path, GetItemCallback callback) {
-  return make_unique<MockGetItemRequest>(absolute_path, callback);
+  return util::make_unique<MockGetItemRequest>(absolute_path, callback);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return make_unique<MockDownloadFileRequest>(item, std::move(callback));
+  return util::make_unique<MockDownloadFileRequest>(item, std::move(callback));
 }
 
 ICloudProvider::UploadFileRequest::Pointer MockProvider::uploadFileAsync(
@@ -72,32 +70,32 @@ ICloudProvider::UploadFileRequest::Pointer MockProvider::uploadFileAsync(
 
 ICloudProvider::GetItemDataRequest::Pointer MockProvider::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  return make_unique<MockGetItemDataRequest>(id, callback);
+  return util::make_unique<MockGetItemDataRequest>(id, callback);
 }
 
 ICloudProvider::DeleteItemRequest::Pointer MockProvider::deleteItemAsync(
     IItem::Pointer, DeleteItemCallback callback) {
   callback(false);
-  return make_unique<MockDeleteItemRequest>();
+  return util::make_unique<MockDeleteItemRequest>();
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer
 MockProvider::createDirectoryAsync(IItem::Pointer parent,
                                    const std::string& name,
                                    CreateDirectoryCallback callback) {
-  return make_unique<MockCreateDirectoryRequest>(parent, name, callback);
+  return util::make_unique<MockCreateDirectoryRequest>(parent, name, callback);
 }
 
 ICloudProvider::MoveItemRequest::Pointer MockProvider::moveItemAsync(
     IItem::Pointer, IItem::Pointer, MoveItemCallback callback) {
   callback(false);
-  return make_unique<MockMoveItemRequest>();
+  return util::make_unique<MockMoveItemRequest>();
 }
 
 ICloudProvider::RenameItemRequest::Pointer MockProvider::renameItemAsync(
     IItem::Pointer, const std::string&, RenameItemCallback callback) {
   callback(false);
-  return make_unique<MockMoveItemRequest>();
+  return util::make_unique<MockMoveItemRequest>();
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
@@ -123,7 +121,7 @@ ICloudProvider::UploadFileRequest::Pointer MockProvider::uploadFileAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return make_unique<MockDownloadFileRequest>(item, std::move(callback));
+  return util::make_unique<MockDownloadFileRequest>(item, std::move(callback));
 }
 
 MockProvider::MockListDirectoryRequest::MockListDirectoryRequest(
@@ -136,11 +134,11 @@ MockProvider::MockListDirectoryRequest::MockListDirectoryRequest(
       if (cancelled_) break;
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       if (i % 2 == 0)
-        result.push_back(make_unique<MockItem>(
+        result.push_back(util::make_unique<MockItem>(
             directory->filename() + "_directory_" + std::to_string(i),
             IItem::FileType::Directory));
       else
-        result.push_back(make_unique<MockItem>(
+        result.push_back(util::make_unique<MockItem>(
             directory->filename() + "_file_" + std::to_string(i),
             IItem::FileType::Unknown));
       callback_->receivedItem(result.back());
@@ -153,18 +151,18 @@ MockProvider::MockListDirectoryRequest::MockListDirectoryRequest(
 MockProvider::MockGetItemRequest::MockGetItemRequest(const std::string& path,
                                                      GetItemCallback callback) {
   if (path.length() % 2 == 0)
-    result_ = make_unique<MockItem>(path, IItem::FileType::Directory);
+    result_ = util::make_unique<MockItem>(path, IItem::FileType::Directory);
   else
-    result_ = make_unique<MockItem>(path, IItem::FileType::Unknown);
+    result_ = util::make_unique<MockItem>(path, IItem::FileType::Unknown);
   callback(result_);
 }
 
 MockProvider::MockGetItemDataRequest::MockGetItemDataRequest(
     const std::string& id, GetItemDataCallback callback) {
   if (id.length() % 2 == 0)
-    result_ = make_unique<MockItem>(id, IItem::FileType::Directory);
+    result_ = util::make_unique<MockItem>(id, IItem::FileType::Directory);
   else
-    result_ = make_unique<MockItem>(id, IItem::FileType::Unknown);
+    result_ = util::make_unique<MockItem>(id, IItem::FileType::Unknown);
   callback(result_);
 }
 

@@ -35,7 +35,7 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
-OneDrive::OneDrive() : CloudProvider(make_unique<Auth>()) {}
+OneDrive::OneDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
@@ -44,7 +44,7 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<void>>(shared_from_this());
   r->set_error_callback(
       [callback](Request<void>* r, int code, const std::string& desc) {
         callback->error(r->error_string(code, desc));
@@ -184,7 +184,8 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
     type = IItem::FileType::Video;
   else if (v.isMember("audio"))
     type = IItem::FileType::Audio;
-  auto item = make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+  auto item =
+      util::make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
   item->set_url(v["@content.downloadUrl"].asString());
   item->set_thumbnail_url(endpoint() + "/v1.0/drive/items/" + item->id() +
                           "/thumbnails/0/small/content?access_token=" +
@@ -248,7 +249,7 @@ IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
   Json::Value response;
   stream >> response;
 
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
@@ -259,7 +260,7 @@ IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
     std::istream& stream) const {
   Json::Value response;
   stream >> response;
-  Token::Pointer token = make_unique<Token>();
+  Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
