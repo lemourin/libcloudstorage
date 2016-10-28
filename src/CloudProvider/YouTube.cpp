@@ -154,7 +154,6 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     std::string url = item->url();
     if (item->type() == IItem::FileType::Audio) {
       Request<void>::Semaphore semaphore(r);
-      r->set_cancel_callback([&semaphore]() { semaphore.notify(); });
       auto t = getItemDataAsync(
           item->id(), [&semaphore](IItem::Pointer) { semaphore.notify(); });
       semaphore.wait();
