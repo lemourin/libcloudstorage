@@ -9,6 +9,7 @@ AM_LDFLAGS = \
 	-no-undefined \
 	$(SOCKET_LIBS)
 
+libcloudstorage_ladir = $(includedir)/cloudstorage
 lib_LTLIBRARIES = libcloudstorage.la
 
 libcloudstorage_la_SOURCES = \
@@ -67,7 +68,7 @@ noinst_HEADERS = \
 	Request/MoveItemRequest.h \
 	Request/RenameItemRequest.h
 
-nobase_include_HEADERS = \
+libcloudstorage_la_HEADERS = \
 	IItem.h \
 	ICloudProvider.h \
 	ICloudStorage.h \
