@@ -100,6 +100,13 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
   auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
   r->set_resolver([this, id,
                    callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
+    if (id == AUDIO_DIRECTORY) {
+      IItem::Pointer r = util::make_unique<Item>(AUDIO_DIRECTORY,
+                                                 AUDIO_DIRECTORY,
+                                                 IItem::FileType::Directory);
+      callback(r);
+      return r;
+    }
     std::stringstream response_stream;
     int code = r->sendRequest(
         [this, id](std::ostream& input) {
