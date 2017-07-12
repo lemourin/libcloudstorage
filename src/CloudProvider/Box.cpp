@@ -230,7 +230,7 @@ Box::Auth::Auth() {
 std::string Box::Auth::authorizeLibraryUrl() const {
   return "https://account.box.com/api/oauth2/"
          "authorize?response_type=code&client_id=" +
-         client_id() + "&redirect_uri=" + redirect_uri() + "&state=whatever";
+         client_id() + "&redirect_uri=" + redirect_uri() + "&state=" + state();
 }
 
 IHttpRequest::Pointer Box::Auth::exchangeAuthorizationCodeRequest(

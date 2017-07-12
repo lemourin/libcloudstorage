@@ -242,6 +242,7 @@ std::string Dropbox::Auth::authorizeLibraryUrl() const {
   url += "response_type=code&";
   url += "client_id=" + client_id() + "&";
   url += "redirect_uri=" + redirect_uri() + "&";
+  url += "state=" + state();
   return url;
 }
 

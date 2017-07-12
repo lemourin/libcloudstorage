@@ -143,6 +143,10 @@ uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }
 
 void Auth::set_redirect_uri_port(uint16_t port) { redirect_uri_port_ = port; }
 
+std::string Auth::state() const { return state_; }
+
+void Auth::set_state(const std::string& state) { state_ = state; }
+
 Auth::Token* Auth::access_token() const { return access_token_.get(); }
 
 void Auth::set_access_token(Token::Pointer token) {

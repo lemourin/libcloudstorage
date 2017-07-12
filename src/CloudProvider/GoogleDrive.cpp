@@ -210,7 +210,8 @@ std::string GoogleDrive::Auth::authorizeLibraryUrl() const {
   url += "response_type=" + response_type + "&";
   url += "client_id=" + client_id() + "&";
   url += "redirect_uri=" + redirect_uri() + "&";
-  url += "scope=" + scope;
+  url += "scope=" + scope + "&";
+  url += "state=" + state();
   return url;
 }
 

@@ -187,9 +187,9 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
   auto item =
       util::make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
   item->set_url(v["@content.downloadUrl"].asString());
-  item->set_thumbnail_url(endpoint() + "/v1.0/drive/items/" + item->id() +
-                          "/thumbnails/0/small/content?access_token=" +
-                          access_token());
+  item->set_thumbnail_url(
+      endpoint() + "/v1.0/drive/items/" + item->id() +
+      "/thumbnails/0/small/content?access_token=" + access_token());
   return std::move(item);
 }
 
@@ -218,6 +218,7 @@ std::string OneDrive::Auth::authorizeLibraryUrl() const {
   result += "scope=" + scope + "&";
   result += "response_type=" + response_type + "&";
   result += "redirect_uri=" + redirect_uri() + "&";
+  result += "state=" + state();
   return result;
 }
 

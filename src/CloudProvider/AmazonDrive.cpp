@@ -237,12 +237,12 @@ IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(name, v["id"].asString(), type(v));
   item->set_url(v["tempLink"].asString());
   if (item->type() == IItem::FileType::Image)
-    item->set_thumbnail_url(item->url() + "?viewBox=" +
-                            std::to_string(THUMBNAIL_SIZE));
+    item->set_thumbnail_url(item->url() +
+                            "?viewBox=" + std::to_string(THUMBNAIL_SIZE));
   for (const Json::Value& asset : v["assets"])
     if (type(asset) == IItem::FileType::Image)
-      item->set_thumbnail_url(asset["tempLink"].asString() + "?viewBox=" +
-                              std::to_string(THUMBNAIL_SIZE));
+      item->set_thumbnail_url(asset["tempLink"].asString() +
+                              "?viewBox=" + std::to_string(THUMBNAIL_SIZE));
   std::vector<std::string> parents;
   for (const Json::Value& p : v["parents"]) parents.push_back(p.asString());
   item->set_parents(parents);
@@ -275,7 +275,8 @@ std::string AmazonDrive::Auth::authorizeLibraryUrl() const {
   std::string url =
       "https://www.amazon.com/ap/oa?client_id=" + client_id() +
       "&redirect_uri=" + redirect_uri() +
-      "&response_type=code&scope=clouddrive:write+clouddrive:read_all";
+      "&response_type=code&scope=clouddrive:write+clouddrive:read_all&state=" +
+      state();
   return url;
 }
 

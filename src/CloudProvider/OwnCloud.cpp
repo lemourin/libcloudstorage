@@ -130,9 +130,10 @@ IHttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
                                                 std::ostream&) const {
   auto request =
       http()->create(api_url() + "/remote.php/webdav" + source.id(), "MOVE");
-  request->setHeaderParameter(
-      "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
-                         destination.id() + "/" + source.filename());
+  request->setHeaderParameter("Destination",
+                              "https://" + owncloud_base_url_ +
+                                  "/remote.php/webdav" + destination.id() +
+                                  "/" + source.filename());
   return request;
 }
 
@@ -141,9 +142,10 @@ IHttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
                                                   std::ostream&) const {
   auto request =
       http()->create(api_url() + "/remote.php/webdav" + item.id(), "MOVE");
-  request->setHeaderParameter(
-      "Destination", "https://" + owncloud_base_url_ + "/remote.php/webdav" +
-                         getPath(item.id()) + "/" + name);
+  request->setHeaderParameter("Destination",
+                              "https://" + owncloud_base_url_ +
+                                  "/remote.php/webdav" + getPath(item.id()) +
+                                  "/" + name);
   return request;
 }
 
@@ -214,7 +216,7 @@ void OwnCloud::unpackCreditentials(const std::string& code) {
 OwnCloud::Auth::Auth() {}
 
 std::string OwnCloud::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login";
+  return redirect_uri() + "/login?state=" + state();
 }
 
 IHttpRequest::Pointer OwnCloud::Auth::exchangeAuthorizationCodeRequest(

@@ -228,9 +228,10 @@ IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
                                                   std::ostream&) const {
   auto request = http()->create(endpoint() + "/v1/disk/resources/move", "POST");
   request->setParameter("from", source.id());
-  request->setParameter(
-      "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
-                  source.filename());
+  request->setParameter("path",
+                        destination.id() +
+                            (destination.id().back() == '/' ? "" : "/") +
+                            source.filename());
   return request;
 }
 
@@ -279,7 +280,7 @@ YandexDisk::Auth::Auth() {
 
 std::string YandexDisk::Auth::authorizeLibraryUrl() const {
   return "https://oauth.yandex.com/authorize?response_type=code&client_id=" +
-         client_id();
+         client_id() + "&state=" + state();
 }
 
 IHttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(

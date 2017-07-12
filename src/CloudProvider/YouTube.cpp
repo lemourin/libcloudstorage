@@ -68,8 +68,9 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
                                    int code, const std::string& error) {
     callback->error(r->error_string(code, error));
   });
-  r->set_resolver([item, callback, this](Request<std::vector<IItem::Pointer>>*
-                                             r) -> std::vector<IItem::Pointer> {
+  r->set_resolver([item, callback,
+                   this](Request<std::vector<IItem::Pointer>>* r)
+                      -> std::vector<IItem::Pointer> {
     std::string page_token;
     std::vector<IItem::Pointer> result;
     bool failure = false;
@@ -98,55 +99,55 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([this, id,
-                   callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
-    if (id == AUDIO_DIRECTORY) {
-      IItem::Pointer r = util::make_unique<Item>(AUDIO_DIRECTORY,
-                                                 AUDIO_DIRECTORY,
-                                                 IItem::FileType::Directory);
-      callback(r);
-      return r;
-    }
-    std::stringstream response_stream;
-    int code = r->sendRequest(
-        [this, id](std::ostream& input) {
-          return getItemDataRequest(id, input);
-        },
-        response_stream);
-    if (IHttpRequest::isSuccess(code)) {
-      auto i = getItemDataResponse(
-          response_stream, id.find(AUDIO_ID_PREFIX) != std::string::npos);
-      if (i->type() == IItem::FileType::Audio) {
-        code = r->sendRequest(
-            [this, id](std::ostream&) {
-              auto request =
-                  http()->create(youtube_dl_url_ + "/api/info", "GET");
-              request->setParameter("format", "bestaudio");
-              request->setParameter(
-                  "url", "http://youtube.com/watch?v=" +
-                             extractId(id).substr(VIDEO_ID_PREFIX.length()));
-              return request;
+  r->set_resolver(
+      [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
+        if (id == AUDIO_DIRECTORY) {
+          IItem::Pointer r = util::make_unique<Item>(
+              AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::FileType::Directory);
+          callback(r);
+          return r;
+        }
+        std::stringstream response_stream;
+        int code = r->sendRequest(
+            [this, id](std::ostream& input) {
+              return getItemDataRequest(id, input);
             },
             response_stream);
         if (IHttpRequest::isSuccess(code)) {
-          Json::Value response;
-          response_stream >> response;
-          for (const Json::Value& v : response["info"]["formats"])
-            if (v["format_id"] == response["info"]["format_id"]) {
-              auto item = util::make_unique<Item>(
-                  i->filename() + "." + v["ext"].asString(), i->id(),
-                  i->type());
-              item->set_url(v["url"].asString());
-              i = std::move(item);
+          auto i = getItemDataResponse(
+              response_stream, id.find(AUDIO_ID_PREFIX) != std::string::npos);
+          if (i->type() == IItem::FileType::Audio) {
+            code = r->sendRequest(
+                [this, id](std::ostream&) {
+                  auto request =
+                      http()->create(youtube_dl_url_ + "/api/info", "GET");
+                  request->setParameter("format", "bestaudio");
+                  request->setParameter(
+                      "url",
+                      "http://youtube.com/watch?v=" +
+                          extractId(id).substr(VIDEO_ID_PREFIX.length()));
+                  return request;
+                },
+                response_stream);
+            if (IHttpRequest::isSuccess(code)) {
+              Json::Value response;
+              response_stream >> response;
+              for (const Json::Value& v : response["info"]["formats"])
+                if (v["format_id"] == response["info"]["format_id"]) {
+                  auto item = util::make_unique<Item>(
+                      i->filename() + "." + v["ext"].asString(), i->id(),
+                      i->type());
+                  item->set_url(v["url"].asString());
+                  i = std::move(item);
+                }
             }
+          }
+          callback(i);
+          return i;
         }
-      }
-      callback(i);
-      return i;
-    }
-    callback(nullptr);
-    return nullptr;
-  });
+        callback(nullptr);
+        return nullptr;
+      });
   return std::move(r);
 }
 
@@ -254,9 +255,9 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
       auto item = util::make_unique<Item>(
           name_prefix + name, id_prefix + related_playlits[name].asString(),
           IItem::FileType::Directory);
-      item->set_thumbnail_url(response["items"][0]["snippet"]["thumbnails"]
-                                      ["default"]["url"]
-                                          .asString());
+      item->set_thumbnail_url(
+          response["items"][0]["snippet"]["thumbnails"]["default"]["url"]
+              .asString());
       result.push_back(std::move(item));
     }
     next_page_token = "real_playlist";
@@ -317,7 +318,8 @@ std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
          "&scope=https://www.googleapis.com/auth/"
-         "youtube&response_type=code&access_type=offline";
+         "youtube&response_type=code&access_type=offline&state=" +
+         state();
 }
 
 }  // namespace cloudstorage

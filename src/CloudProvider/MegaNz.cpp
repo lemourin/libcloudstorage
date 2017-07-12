@@ -577,7 +577,7 @@ bool MegaNz::ensureAuthorized(Request<T>* r) {
 MegaNz::Auth::Auth() {}
 
 std::string MegaNz::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login";
+  return redirect_uri() + "/login?state=" + state();
 }
 
 IHttpRequest::Pointer MegaNz::Auth::exchangeAuthorizationCodeRequest(
