@@ -11,7 +11,6 @@ AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
 
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
-PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
 PKG_CHECK_MODULES([libtinyxml2], [tinyxml2])
 
 AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
@@ -40,6 +39,13 @@ AM_CONDITIONAL([WITH_THUMBNAILER], [test "x$with_thumbnailer" = "xyes"])
 AS_IF([test "x$with_thumbnailer" = "xyes"], [
   PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer])
   AC_DEFINE(WITH_THUMBNAILER)
+])
+
+AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
+AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_microhttpd" = "xyes"])
+AS_IF([test "x$with_microhttpd" = "xyes"], [
+  PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
+  AC_DEFINE(WITH_MICROHTTPD)
 ])
 
 case "${host_os}" in

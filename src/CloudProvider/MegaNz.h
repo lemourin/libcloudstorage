@@ -27,7 +27,6 @@
 #include "CloudProvider.h"
 
 #include <megaapi.h>
-#include <microhttpd.h>
 #include <random>
 
 namespace cloudstorage {
@@ -43,6 +42,16 @@ namespace cloudstorage {
  */
 class MegaNz : public CloudProvider {
  public:
+  class HttpServerCallback : public IHttpServer::ICallback {
+   public:
+    HttpServerCallback(MegaNz*);
+    IHttpServer::IResponse::Pointer receivedConnection(
+        const IHttpServer&, const IHttpServer::IConnection&) override;
+
+   private:
+    MegaNz* provider_;
+  };
+
   MegaNz();
 
   void initialize(InitData&&) override;
@@ -118,7 +127,7 @@ class MegaNz : public CloudProvider {
   std::default_random_engine engine_;
   mutable std::mutex mutex_;
   uint16_t daemon_port_;
-  std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>> daemon_;
+  IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
 };
 

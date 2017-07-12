@@ -33,9 +33,9 @@ Supported operations on files:
 Requirements:
 =============
 
-* `libmicrohttpd`
 * `jsoncpp`
 * `tinyxml2`
+* `libmicrohttpd` (optional)
 * `cURL` (with `OpenSSL`/`c-ares`, optional)
 * `libcryptopp` (optional)
 * `mega` (optional, required for `mega.nz`)
@@ -70,6 +70,9 @@ The generic way to build and install it is:
   thumbnails for files which don't have them provided by the cloud storage  
   service, without this flag user may provide his own thumbnailer engine by  
   implementing `IThumbnailer` interface
+* `--with-microhttpd`: library will use `libmicrohttpd` as a http server,  
+  it's required for retrieving the oauth authorization code; without this flag  
+  user will have to implement `IHttpServer` interface
 * `--with-mega=no`: if you don't have access to `Mega SDK`, pass this flag to  
   build `libcloudstorage` without it
 

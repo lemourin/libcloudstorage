@@ -111,17 +111,26 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   std::string error_;
 };
 
-struct HttpData {
-  HttpData() {}
+class HttpData : public IHttpServer::IResponse::ICallback {
+ public:
+  int putData(char* buf, size_t max) override {
+    std::lock_guard<std::mutex> lock(mutex_);
+    size_t cnt = std::min(buffer_.size(), max);
+    for (size_t i = 0; i < cnt; i++) {
+      buf[i] = buffer_.front();
+      buffer_.pop();
+    }
+    return cnt;
+  }
 
   std::mutex mutex_;
   std::queue<char> buffer_;
   ICloudProvider::DownloadFileRequest::Pointer request_;
 };
 
-class DownloadFileCallback : public IDownloadFileCallback {
+class HttpDataCallback : public IDownloadFileCallback {
  public:
-  DownloadFileCallback(HttpData* data) : data_(data) {}
+  HttpDataCallback(HttpData* data) : data_(data) {}
 
   void receivedData(const char* data, uint32_t length) override {
     std::lock_guard<std::mutex> lock(data_->mutex_);
@@ -135,47 +144,27 @@ class DownloadFileCallback : public IDownloadFileCallback {
   HttpData* data_;
 };
 
-int httpRequestCallback(void* cls, MHD_Connection* connection, const char*,
-                        const char* /*method*/, const char* /*version*/,
-                        const char* /*upload_data*/,
-                        size_t* /*upload_data_size*/, void** /*ptr*/) {
-  MegaNz* provider = static_cast<MegaNz*>(cls);
-  const char* file =
-      MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "file");
-  std::unique_ptr<mega::MegaNode> node(provider->mega()->getNodeByHandle(
-      provider->mega()->base64ToHandle(file)));
-  if (!node) return MHD_NO;
-  auto data_provider = [](void* cls, uint64_t, char* buf,
-                          size_t max) -> ssize_t {
-    HttpData* data = static_cast<HttpData*>(cls);
-    std::lock_guard<std::mutex> lock(data->mutex_);
-    size_t cnt = std::min(data->buffer_.size(), max);
-    for (size_t i = 0; i < cnt; i++) {
-      buf[i] = data->buffer_.front();
-      data->buffer_.pop();
-    }
-    return cnt;
-  };
-  auto release_data = [](void* cls) {
-    HttpData* data = static_cast<HttpData*>(cls);
-    delete data;
-  };
-  HttpData* data = new HttpData;
-  auto request = util::make_unique<Request<void>>(
-      std::weak_ptr<CloudProvider>(provider->shared_from_this()));
-  request->set_resolver(provider->downloadResolver(
-      provider->toItem(node.get()),
-      util::make_unique<DownloadFileCallback>(data)));
-  data->request_ = std::move(request);
-  MHD_Response* response = MHD_create_response_from_callback(
-      node->getSize(), BUFFER_SIZE, data_provider, data, release_data);
-  MHD_add_response_header(response, "Content-Type", "application/octet-stream");
-  int ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-  MHD_destroy_response(response);
-  return ret;
-}
-
 }  // namespace
+
+MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
+
+IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
+    const IHttpServer& server, const IHttpServer::IConnection& connection) {
+  const char* file = connection.getParameter("file");
+  std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByHandle(
+      provider_->mega()->base64ToHandle(file)));
+  if (!node) return server.createResponse(404, {}, "file not found");
+  auto data = util::make_unique<HttpData>();
+  auto request = util::make_unique<Request<void>>(
+      std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
+  request->set_resolver(provider_->downloadResolver(
+      provider_->toItem(node.get()),
+      util::make_unique<HttpDataCallback>(data.get())));
+  data->request_ = std::move(request);
+  return server.createResponse(200,
+                               {{"Content-Type", "application/octet-stream"}},
+                               node->getSize(), BUFFER_SIZE, std::move(data));
+}
 
 MegaNz::MegaNz()
     : CloudProvider(util::make_unique<Auth>()),
@@ -199,13 +188,11 @@ void MegaNz::initialize(InitData&& data) {
                 [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
     setWithHint(data.hints_, "temporary_directory",
                 [this](std::string v) { temporary_directory_ = v; });
-    daemon_ = std::unique_ptr<MHD_Daemon, std::function<void(MHD_Daemon*)>>(
-        MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, daemon_port_, NULL,
-                         NULL, &httpRequestCallback, this, MHD_OPTION_END),
-        [](MHD_Daemon* daemon) { MHD_stop_daemon(daemon); });
-    if (!daemon_) data.callback_->error(*this, "Failed to start daemon.");
   }
   CloudProvider::initialize(std::move(data));
+  daemon_ =
+      http_server()->create(util::make_unique<HttpServerCallback>(this),
+                            IHttpServer::Type::MultiThreaded, daemon_port_);
 }
 
 std::string MegaNz::name() const { return "mega"; }
@@ -282,8 +269,9 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
       shared_from_this());
-  r->set_resolver([this, item, callback](Request<std::vector<IItem::Pointer>>*
-                                             r) -> std::vector<IItem::Pointer> {
+  r->set_resolver([this, item,
+                   callback](Request<std::vector<IItem::Pointer>>* r)
+                      -> std::vector<IItem::Pointer> {
     if (!ensureAuthorized(r)) {
       if (!r->is_cancelled()) callback->error("Authorization failed.");
       return {};
@@ -561,8 +549,8 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
-  item->set_url("http://localhost:" + std::to_string(daemon_port_) + "/?file=" +
-                handle.get());
+  item->set_url("http://localhost:" + std::to_string(daemon_port_) +
+                "/?file=" + handle.get());
   return std::move(item);
 }
 

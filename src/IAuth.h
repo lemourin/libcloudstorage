@@ -28,6 +28,7 @@
 #include <string>
 
 #include "ICloudProvider.h"
+#include "IHttpServer.h"
 
 namespace cloudstorage {
 
@@ -45,7 +46,7 @@ class IAuth {
 
   virtual ~IAuth() = default;
 
-  virtual void initialize(IHttp*) = 0;
+  virtual void initialize(IHttp*, IHttpServerFactory*) = 0;
   virtual IHttp* http() const = 0;
 
   virtual const std::string& authorization_code() const = 0;

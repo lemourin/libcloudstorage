@@ -31,6 +31,7 @@
 
 #include "ICrypto.h"
 #include "IHttp.h"
+#include "IHttpServer.h"
 #include "IItem.h"
 #include "IRequest.h"
 #include "IThumbnailer.h"
@@ -118,6 +119,11 @@ class ICloudProvider {
      * Provides thumbnails when cloud provider doesn't have its own.
      */
     IThumbnailer::Pointer thumbnailer_;
+
+    /**
+     * Provides interface for creating http server.
+     */
+    IHttpServerFactory::Pointer http_server_;
 
     /**
     * Various hints which can be retrieved by some previous run with
@@ -334,8 +340,9 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer item, ListDirectoryCallback callback =
-                               [](const std::vector<IItem::Pointer>&) {}) = 0;
+      IItem::Pointer item,
+      ListDirectoryCallback callback = [](const std::vector<IItem::Pointer>&) {
+      }) = 0;
 
   /**
    * Simplified version of downloadFileAsync.

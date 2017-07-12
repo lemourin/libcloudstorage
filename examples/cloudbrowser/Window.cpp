@@ -145,7 +145,7 @@ void Window::initializeCloud(QString name) {
         QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
                                  util::make_unique<CloudProviderCallback>(this),
-                                 nullptr, nullptr, nullptr, hints});
+                                 nullptr, nullptr, nullptr, nullptr, hints});
     initialized_clouds_.insert(name.toStdString());
   } else if (unauthorized_clouds_.find(name.toStdString()) !=
              std::end(unauthorized_clouds_)) {
@@ -352,8 +352,9 @@ void Window::downloadFile(int item_id, QUrl path) {
   ItemModel* i = directory_model_.get(item_id);
   download_request_ = cloud_provider_->downloadFileAsync(
       i->item(), util::make_unique<::DownloadFileCallback>(
-                     this, path.toLocalFile().toStdString() + "/" +
-                               escapeFileName(i->item()->filename())));
+                     this,
+                     path.toLocalFile().toStdString() + "/" +
+                         escapeFileName(i->item()->filename())));
 
   std::unique_lock<std::mutex> lock(stream_mutex());
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()

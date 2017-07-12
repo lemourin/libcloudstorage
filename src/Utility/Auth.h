@@ -28,13 +28,30 @@
 
 namespace cloudstorage {
 
+class Semaphore;
+
 class Auth : public IAuth {
  public:
   static constexpr const char* SEPARATOR = "##";
 
+  class HttpServerCallback : public IHttpServer::ICallback {
+   public:
+    IHttpServer::IResponse::Pointer receivedConnection(
+        const IHttpServer&, const IHttpServer::IConnection&) override;
+
+    struct HttpServerData {
+      std::string code_;
+      std::string code_parameter_name_;
+      std::string error_parameter_name_;
+      uint16_t port_;
+      enum { Awaiting, Accepted, Denied } state_;
+      Semaphore* semaphore_;
+    } data_;
+  };
+
   Auth();
 
-  void initialize(IHttp*) override;
+  void initialize(IHttp*, IHttpServerFactory*) override;
 
   const std::string& authorization_code() const override;
   void set_authorization_code(const std::string&) override;
@@ -73,6 +90,7 @@ class Auth : public IAuth {
   uint16_t redirect_uri_port_;
   Token::Pointer access_token_;
   IHttp* http_;
+  IHttpServerFactory* http_server_;
 };
 
 }  // namespace cloudstorage

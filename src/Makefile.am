@@ -2,7 +2,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
 	$(libjsoncpp_CFLAGS) \
-	$(libmicrohttpd_CFLAGS) \
 	$(libtinyxml2_CFLAGS)
 
 AM_LDFLAGS = \
@@ -75,11 +74,11 @@ libcloudstorage_la_HEADERS = \
 	IRequest.h \
 	ICrypto.h \
 	IHttp.h \
-	IThumbnailer.h
+	IThumbnailer.h \
+	IHttpServer.h
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \
-	$(libmicrohttpd_LIBS) \
 	$(libtinyxml2_LIBS)
 
 if WITH_MEGA
@@ -108,6 +107,13 @@ AM_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
 libcloudstorage_la_LIBADD += $(libffmpegthumbnailer_LIBS)
 libcloudstorage_la_SOURCES += Utility/FFmpegThumbnailer.cpp
 noinst_HEADERS += Utility/FFmpegThumbnailer.h
+endif
+
+if WITH_MICROHTTPD
+AM_CXXFLAGS += $(libmicrohttpd_CFLAGS)
+libcloudstorage_la_LIBADD += $(libmicrohttpd_LIBS)
+libcloudstorage_la_SOURCES += Utility/MicroHttpdServer.cpp
+noinst_HEADERS += Utility/MicroHttpdServer.h
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

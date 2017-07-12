@@ -56,6 +56,7 @@ class CloudProvider : public ICloudProvider,
   ICrypto* crypto() const;
   IHttp* http() const;
   IThumbnailer* thumbnailer() const;
+  IHttpServerFactory* http_server() const;
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
@@ -265,6 +266,7 @@ class CloudProvider : public ICloudProvider,
   ICrypto::Pointer crypto_;
   IHttp::Pointer http_;
   IThumbnailer::Pointer thumbnailer_;
+  IHttpServerFactory::Pointer http_server_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
   mutable std::mutex auth_mutex_;

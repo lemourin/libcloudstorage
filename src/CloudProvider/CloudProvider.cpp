@@ -53,6 +53,10 @@
 #include "Utility/FFmpegThumbnailer.h"
 #endif
 
+#ifdef WITH_MICROHTTPD
+#include "Utility/MicroHttpdServer.h"
+#endif
+
 using namespace std::placeholders;
 
 namespace {
@@ -152,6 +156,7 @@ void CloudProvider::initialize(InitData&& data) {
   crypto_ = std::move(data.crypto_engine_);
   http_ = std::move(data.http_engine_);
   thumbnailer_ = std::move(data.thumbnailer_);
+  http_server_ = std::move(data.http_server_);
 
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
@@ -178,8 +183,15 @@ void CloudProvider::initialize(InitData&& data) {
   if (!thumbnailer_) thumbnailer_ = util::make_unique<FFmpegThumbnailer>();
 #endif
 
+#ifdef WITH_MICROHTTPD
+  if (!http_server_)
+    http_server_ = util::make_unique<MicroHttpdServerFactory>();
+#endif
+
   if (!http_) throw std::runtime_error("No http module specified.");
-  auth()->initialize(http());
+  if (!http_server_)
+    throw std::runtime_error("No http server module specified.");
+  auth()->initialize(http(), http_server());
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
@@ -217,6 +229,10 @@ ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 IHttp* CloudProvider::http() const { return http_.get(); }
 
 IThumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
+
+IHttpServerFactory* CloudProvider::http_server() const {
+  return http_server_.get();
+}
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
