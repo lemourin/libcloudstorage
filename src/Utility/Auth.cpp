@@ -81,12 +81,9 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     const IHttpServer& server, const IHttpServer::IConnection& connection) {
   std::string page = JQUERY;
 
-  if (connection.url() == "/login") {
-    if (auth_->login_page().empty())
-      page += DEFAULT_LOGIN_PAGE;
-    else
-      page += auth_->login_page();
-  }
+  if (connection.url() == "/login")
+    page +=
+        auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page();
 
   const char* state = connection.getParameter(data_.state_parameter_name_);
   if (!state || state != auth_->state()) {
@@ -100,10 +97,8 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     data_.code_ = code;
     Json::Value json;
     json["data"]["accepted"] = "true";
-    if (auth_->success_page().empty())
-      page += DEFAULT_SUCCESS_PAGE;
-    else
-      page += auth_->success_page();
+    page += auth_->success_page().empty() ? DEFAULT_SUCCESS_PAGE
+                                          : auth_->success_page();
     page += sendHttpRequestFromJavaScript(json);
   }
 
@@ -111,10 +106,8 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   if (error) {
     Json::Value json;
     json["data"]["accepted"] = "false";
-    if (auth_->error_page().empty())
-      page += DEFAULT_ERROR_PAGE;
-    else
-      page += auth_->error_page();
+    page +=
+        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page();
     page += sendHttpRequestFromJavaScript(json);
   }
 
