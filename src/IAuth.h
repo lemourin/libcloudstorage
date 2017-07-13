@@ -86,12 +86,14 @@ class IAuth {
    *
    * @param code_parameter_name usually "code"
    * @param error_parameter_name usually "error"
+   * @param state_parameter_name usually "state"
    * @param server_started called when server started
    * @param server_stopped called when server stopped
    * @return authorization code
    */
   virtual std::string awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
+      std::string state_parameter_name,
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const = 0;
 

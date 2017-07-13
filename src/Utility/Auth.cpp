@@ -182,7 +182,7 @@ IHttp* Auth::http() const { return http_; }
 
 std::string Auth::awaitAuthorizationCode(
     std::string code_parameter_name, std::string error_parameter_name,
-    std::function<void()> server_started,
+    std::string state_parameter_name, std::function<void()> server_started,
     std::function<void()> server_stopped) const {
   uint16_t http_server_port = redirect_uri_port();
   Semaphore semaphore;
@@ -190,6 +190,7 @@ std::string Auth::awaitAuthorizationCode(
   callback->data_ = {"",
                      code_parameter_name,
                      error_parameter_name,
+                     state_parameter_name,
                      http_server_port,
                      HttpServerCallback::HttpServerData::Awaiting,
                      &semaphore};
@@ -210,7 +211,7 @@ std::string Auth::awaitAuthorizationCode(
 std::string Auth::requestAuthorizationCode(
     std::function<void()> server_started,
     std::function<void()> server_stopped) const {
-  return awaitAuthorizationCode("code", "error", server_started,
+  return awaitAuthorizationCode("code", "error", "state", server_started,
                                 server_stopped);
 }
 

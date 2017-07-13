@@ -43,6 +43,7 @@ class Auth : public IAuth {
       std::string code_;
       std::string code_parameter_name_;
       std::string error_parameter_name_;
+      std::string state_parameter_name_;
       uint16_t port_;
       enum { Awaiting, Accepted, Denied } state_;
       Semaphore* semaphore_;
@@ -87,6 +88,7 @@ class Auth : public IAuth {
 
   std::string awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
+      std::string state_parameter_name,
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const override;
 
