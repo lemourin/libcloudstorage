@@ -88,6 +88,13 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
       page += auth_->login_page();
   }
 
+  const char* state = connection.getParameter(data_.state_parameter_name_);
+  if (!state || state != auth_->state()) {
+    page +=
+        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page();
+    return server.createResponse(200, {}, page);
+  }
+
   const char* code = connection.getParameter(data_.code_parameter_name_);
   if (code) {
     data_.code_ = code;
