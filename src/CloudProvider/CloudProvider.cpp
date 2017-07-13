@@ -59,6 +59,8 @@
 
 using namespace std::placeholders;
 
+const std::string DEFAULT_STATE = "DEFAULT_STATE";
+
 namespace {
 
 class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
@@ -199,6 +201,7 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_) throw std::runtime_error("No http module specified.");
   if (!http_server_)
     throw std::runtime_error("No http server module specified.");
+  if (auth()->state().empty()) auth()->set_state(DEFAULT_STATE);
   auth()->initialize(http(), http_server());
 }
 
