@@ -48,6 +48,8 @@ class IHttpServer {
      public:
       using Pointer = std::unique_ptr<ICallback>;
 
+      virtual ~ICallback() = default;
+
       virtual int putData(char* buffer, size_t size) = 0;
     };
 
