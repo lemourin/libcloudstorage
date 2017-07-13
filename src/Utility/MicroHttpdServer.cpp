@@ -54,7 +54,9 @@ MicroHttpdServer::Response::Response(int code,
     MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
 }
 
-MicroHttpdServer::Response::~Response() { MHD_destroy_response(response_); }
+MicroHttpdServer::Response::~Response() {
+  if (response_) MHD_destroy_response(response_);
+}
 
 void MicroHttpdServer::Response::send(const IConnection& c) {
   MHD_Connection* connection = static_cast<const Connection&>(c).connection();
@@ -64,6 +66,7 @@ void MicroHttpdServer::Response::send(const IConnection& c) {
 MicroHttpdServer::CallbackResponse::CallbackResponse(
     int code, const IResponse::Headers& headers, int size, int chunk_size,
     IResponse::ICallback::Pointer callback) {
+  code_ = code;
   auto data_provider = [](void* cls, uint64_t, char* buf,
                           size_t max) -> ssize_t {
     auto callback = static_cast<IResponse::ICallback*>(cls);
