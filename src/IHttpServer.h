@@ -91,6 +91,7 @@ class IHttpServerFactory {
   virtual ~IHttpServerFactory() = default;
 
   virtual IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
+                                      const std::string& session_id,
                                       IHttpServer::Type, int port) = 0;
 };
 

@@ -87,7 +87,8 @@ class MicroHttpdServer : public IHttpServer {
 class MicroHttpdServerFactory : public IHttpServerFactory {
  public:
   IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
-                              IHttpServer::Type, int port) override;
+                              const std::string& session_id, IHttpServer::Type,
+                              int port) override;
 };
 
 }  // namespace cloudstorage

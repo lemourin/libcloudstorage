@@ -190,9 +190,9 @@ void MegaNz::initialize(InitData&& data) {
                 [this](std::string v) { temporary_directory_ = v; });
   }
   CloudProvider::initialize(std::move(data));
-  daemon_ =
-      http_server()->create(util::make_unique<HttpServerCallback>(this),
-                            IHttpServer::Type::MultiThreaded, daemon_port_);
+  daemon_ = http_server()->create(
+      util::make_unique<HttpServerCallback>(this), auth()->state(),
+      IHttpServer::Type::MultiThreaded, daemon_port_);
 }
 
 std::string MegaNz::name() const { return "mega"; }

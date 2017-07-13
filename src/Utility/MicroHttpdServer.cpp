@@ -115,7 +115,8 @@ MicroHttpdServer::IResponse::Pointer MicroHttpdServer::createResponse(
 }
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(
-    IHttpServer::ICallback::Pointer cb, IHttpServer::Type type, int port) {
+    IHttpServer::ICallback::Pointer cb, const std::string&,
+    IHttpServer::Type type, int port) {
   return util::make_unique<MicroHttpdServer>(cb, type, port);
 }
 

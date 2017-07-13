@@ -205,7 +205,7 @@ std::string Auth::awaitAuthorizationCode(
   callback->auth_ = this;
   {
     auto http_server = http_server_->create(
-        callback, IHttpServer::Type::SingleThreaded, http_server_port);
+        callback, state(), IHttpServer::Type::SingleThreaded, http_server_port);
     if (server_started) server_started();
     semaphore.wait();
   }
