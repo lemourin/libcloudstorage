@@ -36,7 +36,7 @@ const std::string JQUERY =
     "integrity=\"sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=\""
     "crossorigin=\"anonymous\"></script>";
 
-const std::string LOGIN_PAGE =
+const std::string DEFAULT_LOGIN_PAGE =
     "<body>"
     "libcloudstorage login page"
     "<table>"
@@ -62,6 +62,10 @@ const std::string LOGIN_PAGE =
     "</table>"
     "</body>";
 
+const std::string DEFAULT_SUCCESS_PAGE = "<body>Success.</body>";
+
+const std::string DEFAULT_ERROR_PAGE = "<body>Error.</body>";
+
 namespace cloudstorage {
 namespace {
 
@@ -77,22 +81,34 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     const IHttpServer& server, const IHttpServer::IConnection& connection) {
   std::string page = JQUERY;
 
-  if (connection.url() == "/login") page += LOGIN_PAGE;
+  if (connection.url() == "/login") {
+    if (auth_->login_page().empty())
+      page += DEFAULT_LOGIN_PAGE;
+    else
+      page += auth_->login_page();
+  }
 
   const char* code = connection.getParameter(data_.code_parameter_name_);
   if (code) {
     data_.code_ = code;
     Json::Value json;
     json["data"]["accepted"] = "true";
-    page += "<body>Success.</body>" + sendHttpRequestFromJavaScript(json);
+    if (auth_->success_page().empty())
+      page += DEFAULT_SUCCESS_PAGE;
+    else
+      page += auth_->success_page();
+    page += sendHttpRequestFromJavaScript(json);
   }
 
   const char* error = connection.getParameter(data_.error_parameter_name_);
   if (error) {
     Json::Value json;
     json["data"]["accepted"] = "false";
-    page +=
-        "<body>Error occurred.</body>" + sendHttpRequestFromJavaScript(json);
+    if (auth_->error_page().empty())
+      page += DEFAULT_ERROR_PAGE;
+    else
+      page += auth_->error_page();
+    page += sendHttpRequestFromJavaScript(json);
   }
 
   const char* accepted = connection.getParameter("accepted");
@@ -147,6 +163,15 @@ std::string Auth::state() const { return state_; }
 
 void Auth::set_state(const std::string& state) { state_ = state; }
 
+std::string Auth::login_page() const { return login_page_; }
+void Auth::set_login_page(const std::string& page) { login_page_ = page; }
+
+std::string Auth::success_page() const { return success_page_; }
+void Auth::set_success_page(const std::string& page) { success_page_ = page; }
+
+std::string Auth::error_page() const { return error_page_; }
+void Auth::set_error_page(const std::string& page) { error_page_ = page; }
+
 Auth::Token* Auth::access_token() const { return access_token_.get(); }
 
 void Auth::set_access_token(Token::Pointer token) {
@@ -168,6 +193,7 @@ std::string Auth::awaitAuthorizationCode(
                      http_server_port,
                      HttpServerCallback::HttpServerData::Awaiting,
                      &semaphore};
+  callback->auth_ = this;
   {
     auto http_server = http_server_->create(
         callback, IHttpServer::Type::SingleThreaded, http_server_port);

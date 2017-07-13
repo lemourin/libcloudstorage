@@ -134,12 +134,19 @@ class ICloudProvider {
     *  - redirect_uri_port
     *  - state
     *  - access_token
-    *  - daemon_port(used by mega.nz url provider)
-    *  - metadata_url, content_url(amazon drive's endpoints)
-    *  - youtube_dl_url(url to youtube-dl-server)
-    *  - aws_region(region used by amazon s3)
-    *  - temporary_directory(used by mega.nz, has to use native path separators
+    *  - daemon_port (used by mega.nz url provider)
+    *  - metadata_url, content_url (amazon drive's endpoints)
+    *  - youtube_dl_url (url to youtube-dl-server)
+    *  - aws_region (region used by amazon s3)
+    *  - temporary_directory (used by mega.nz, has to use native path separators
     *    i.e. \ for windows and / for others; has to end with a separator)
+    *  - login_page (html code of login page to be displayed when cloud provider
+    *    doesn't use oauth; check for DEFAULT_LOGIN_PAGE to see what is the
+    *    expected layout of the page)
+    *  - success_page (html code of page to be displayed when library was
+    *    authorized successfully)
+    *  - error_page (html code of page to be displayed when library library
+    *    authorization failed)
     */
     Hints hints_;
   };

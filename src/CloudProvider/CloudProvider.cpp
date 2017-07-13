@@ -172,6 +172,12 @@ void CloudProvider::initialize(InitData&& data) {
   });
   setWithHint(data.hints_, "state",
               [this](std::string v) { auth()->set_state(v); });
+  setWithHint(data.hints_, "login_page",
+              [this](std::string v) { auth()->set_login_page(v); });
+  setWithHint(data.hints_, "success_page",
+              [this](std::string v) { auth()->set_success_page(v); });
+  setWithHint(data.hints_, "error_page",
+              [this](std::string v) { auth()->set_error_page(v); });
 
 #ifdef WITH_CRYPTOPP
   if (!crypto_) crypto_ = util::make_unique<CryptoPP>();

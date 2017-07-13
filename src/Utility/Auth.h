@@ -47,6 +47,7 @@ class Auth : public IAuth {
       enum { Awaiting, Accepted, Denied } state_;
       Semaphore* semaphore_;
     } data_;
+    const Auth* auth_;
   };
 
   Auth();
@@ -70,6 +71,15 @@ class Auth : public IAuth {
   std::string state() const override;
   void set_state(const std::string&) override;
 
+  std::string login_page() const override;
+  void set_login_page(const std::string&) override;
+
+  std::string success_page() const override;
+  void set_success_page(const std::string&) override;
+
+  std::string error_page() const override;
+  void set_error_page(const std::string&) override;
+
   Token* access_token() const override;
   void set_access_token(Token::Pointer) override;
 
@@ -92,6 +102,9 @@ class Auth : public IAuth {
   std::string client_secret_;
   uint16_t redirect_uri_port_;
   std::string state_;
+  std::string login_page_;
+  std::string success_page_;
+  std::string error_page_;
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;

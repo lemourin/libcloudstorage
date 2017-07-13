@@ -66,6 +66,15 @@ class IAuth {
   virtual std::string state() const = 0;
   virtual void set_state(const std::string&) = 0;
 
+  virtual std::string login_page() const = 0;
+  virtual void set_login_page(const std::string&) = 0;
+
+  virtual std::string success_page() const = 0;
+  virtual void set_success_page(const std::string&) = 0;
+
+  virtual std::string error_page() const = 0;
+  virtual void set_error_page(const std::string&) = 0;
+
   virtual Token* access_token() const = 0;
   virtual void set_access_token(Token::Pointer) = 0;
 
