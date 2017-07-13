@@ -145,7 +145,7 @@ class ICloudProvider {
     *    expected layout of the page)
     *  - success_page (html code of page to be displayed when library was
     *    authorized successfully)
-    *  - error_page (html code of page to be displayed when library library
+    *  - error_page (html code of page to be displayed when library
     *    authorization failed)
     */
     Hints hints_;
