@@ -42,29 +42,35 @@ const std::string DEFAULT_LOGIN_PAGE =
     "<table>"
     "<tr><td>Login:</td><td><input id='login'></td></tr>"
     "<tr><td>Password:</td><td><input id='password' type='password'></td></tr>"
-    "<tr><td><input id='submit' type='button' value='Login'></td></tr>"
+    "<tr><td>"
+    "  <a id='link'><input id='submit' type='button' value='Login'></a>"
+    "</td></tr>"
+    "<script "
+    "  src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
+    "</script>"
     "<script>"
     " $(function() {"
-    "   $('#submit').click(function() {"
-    "     $.ajax({"
-    "       url: '/',"
-    "       method: 'GET',"
-    "       data: {"
-    "         'code' : $('#login').val() + '" +
+    "   var func = function() {"
+    "     var str = $('#login').val() + '" +
     std::string(cloudstorage::Auth::SEPARATOR) +
-    "' + $('#password').val(),"
-    "         'accepted' : 'true'"
-    "       }"
-    "     });"
-    "   })"
+    "' + $('#password').val();"
+    "     $('#link').attr('href', '/?code=' + encodeURIComponent(str) + "
+    "                     '&accepted=true&state=' +  url('?').state);"
+    "   };"
+    "   $('#login').change(func);"
+    "   $('#password').change(func);"
     " });"
     "</script>"
     "</table>"
     "</body>";
 
-const std::string DEFAULT_SUCCESS_PAGE = "<body>Success.</body>";
+const std::string DEFAULT_SUCCESS_PAGE =
+    "<body>Success.</body>"
+    "<script>history.replaceState({}, null, 'success');</script>";
 
-const std::string DEFAULT_ERROR_PAGE = "<body>Error.</body>";
+const std::string DEFAULT_ERROR_PAGE =
+    "<body>Error.</body>"
+    "<script>history.replaceState({}, null, 'error');</script>";
 
 namespace cloudstorage {
 namespace {
@@ -97,6 +103,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     data_.code_ = code;
     Json::Value json;
     json["data"]["accepted"] = "true";
+    json["data"]["state"] = auth_->state();
     page += auth_->success_page().empty() ? DEFAULT_SUCCESS_PAGE
                                           : auth_->success_page();
     page += sendHttpRequestFromJavaScript(json);
@@ -106,6 +113,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   if (error) {
     Json::Value json;
     json["data"]["accepted"] = "false";
+    json["data"]["state"] = auth_->state();
     page +=
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page();
     page += sendHttpRequestFromJavaScript(json);
