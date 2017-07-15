@@ -150,7 +150,8 @@ namespace cloudstorage {
 CloudProvider::CloudProvider(IAuth::Pointer auth)
     : auth_(std::move(auth)),
       http_(),
-      current_authorization_status_(AuthorizationStatus::None) {}
+      current_authorization_status_(AuthorizationStatus::None),
+      authorization_request_count_() {}
 
 void CloudProvider::initialize(InitData&& data) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
@@ -316,6 +317,14 @@ AuthorizeRequest::Pointer CloudProvider::current_authorization() const {
 
 void CloudProvider::set_current_authorization(AuthorizeRequest::Pointer r) {
   current_authorization_ = r;
+}
+
+int CloudProvider::authorization_request_count() const {
+  return authorization_request_count_;
+}
+
+void CloudProvider::set_authorization_request_count(int cnt) {
+  authorization_request_count_ = cnt;
 }
 
 void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,

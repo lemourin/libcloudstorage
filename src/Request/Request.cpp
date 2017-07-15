@@ -113,20 +113,26 @@ bool Request<T>::reauthorize() {
         CloudProvider::AuthorizationStatus::InProgress);
     provider()->set_current_authorization(provider()->authorizeAsync());
   }
+  provider()->set_authorization_request_count(
+      provider()->authorization_request_count() + 1);
   provider()->authorized_condition().wait(current_authorization, [this] {
     return provider()->authorization_status() !=
                CloudProvider::AuthorizationStatus::InProgress ||
            is_cancelled();
   });
+  provider()->set_authorization_request_count(
+      provider()->authorization_request_count() - 1);
   if (is_cancelled() &&
       provider()->authorization_status() ==
           CloudProvider::AuthorizationStatus::InProgress)
     return false;
   bool ret = provider()->authorization_status() ==
              CloudProvider::AuthorizationStatus::Success;
-  provider()->set_current_authorization(nullptr);
-  provider()->set_authorization_status(
-      CloudProvider::AuthorizationStatus::None);
+  if (provider()->authorization_request_count() == 0) {
+    provider()->set_current_authorization(nullptr);
+    provider()->set_authorization_status(
+        CloudProvider::AuthorizationStatus::None);
+  }
   return ret;
 }
 

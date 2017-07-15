@@ -251,6 +251,9 @@ class CloudProvider : public ICloudProvider,
   AuthorizeRequest::Pointer current_authorization() const;
   void set_current_authorization(AuthorizeRequest::Pointer);
 
+  int authorization_request_count() const;
+  void set_authorization_request_count(int);
+
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
   static std::pair<std::string, std::string> creditentialsFromString(
@@ -269,6 +272,7 @@ class CloudProvider : public ICloudProvider,
   IHttpServerFactory::Pointer http_server_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
+  int authorization_request_count_;
   mutable std::mutex auth_mutex_;
   mutable std::mutex current_authorization_mutex_;
   mutable std::mutex authorization_status_mutex_;
