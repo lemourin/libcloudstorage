@@ -85,6 +85,8 @@ AM_CONDITIONAL([WITH_QTMULTIMEDIAWIDGETS], [test "x$with_qtmultimediawidgets" = 
 AC_ARG_WITH([qmlplayer], AS_HELP_STRING([--with-qmlplayer]))
 AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
 
+HAVE_QTWEBENGINE=0
+
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
     QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
