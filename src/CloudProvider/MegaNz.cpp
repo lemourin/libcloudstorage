@@ -219,7 +219,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
           if (callback()->userConsentRequired(*this) ==
               ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
             std::string code = r->getAuthorizationCode();
-            auto data = creditentialsFromString(code);
+            auto data = credentialsFromString(code);
             {
               std::lock_guard<std::mutex> mutex(auth_mutex());
               IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
@@ -526,7 +526,7 @@ std::function<void(Request<void>*)> MegaNz::downloadResolver(
 bool MegaNz::login(Request<bool>* r) {
   Authorize::Semaphore semaphore(r);
   RequestListener auth_listener(&semaphore);
-  auto data = creditentialsFromString(token());
+  auto data = credentialsFromString(token());
   std::string mail = data.first;
   std::string private_key = data.second;
   std::unique_ptr<char[]> hash(

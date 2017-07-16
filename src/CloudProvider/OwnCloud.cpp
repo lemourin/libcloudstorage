@@ -37,7 +37,7 @@ IItem::Pointer OwnCloud::rootDirectory() const {
 }
 
 void OwnCloud::initialize(InitData&& data) {
-  unpackCreditentials(data.token_);
+  unpackCredentials(data.token_);
   CloudProvider::initialize(std::move(data));
 }
 
@@ -56,7 +56,7 @@ AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
           return false;
-        unpackCreditentials(r->getAuthorizationCode());
+        unpackCredentials(r->getAuthorizationCode());
         return true;
       });
 }
@@ -201,7 +201,7 @@ bool OwnCloud::reauthorize(int code) const {
 
 void OwnCloud::authorizeRequest(IHttpRequest&) const {}
 
-void OwnCloud::unpackCreditentials(const std::string& code) {
+void OwnCloud::unpackCredentials(const std::string& code) {
   std::unique_lock<std::mutex> lock(auth_mutex());
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);

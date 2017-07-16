@@ -33,7 +33,7 @@ namespace cloudstorage {
 
 /**
  * MegaNz doesn't use oauth, token in this case is the following:
- * username##hash(password). When creditentials are required, user is delegated
+ * username##hash(password). When credentials are required, user is delegated
  * to library's webpage at http://localhost:redirect_url()/login.
  * MegaNz doesn't provide direct urls to their files, because everything they
  * have is encrypted. Here is implemented a mechanism which downloads the file

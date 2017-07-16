@@ -256,7 +256,7 @@ class CloudProvider : public ICloudProvider,
 
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
-  static std::pair<std::string, std::string> creditentialsFromString(
+  static std::pair<std::string, std::string> credentialsFromString(
       const std::string&);
 
  protected:

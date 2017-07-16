@@ -346,7 +346,7 @@ std::string CloudProvider::getFilename(const std::string& path) {
   return result.substr(result.find_last_of('/') + 1);
 }
 
-std::pair<std::string, std::string> CloudProvider::creditentialsFromString(
+std::pair<std::string, std::string> CloudProvider::credentialsFromString(
     const std::string& str) {
   auto it = str.find(Auth::SEPARATOR);
   if (it == std::string::npos) return {};
