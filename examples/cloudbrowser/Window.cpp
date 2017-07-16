@@ -61,9 +61,9 @@ Window::Window(MediaPlayer* media_player)
     clouds.append(p->name().c_str());
   clouds.append("mock");
 #ifdef WITH_QTWEBENGINE
-  rootContext()->setContextProperty("qtwebengine", true);
+  rootContext()->setContextProperty("qtwebengine", QVariant(true));
 #else
-  rootContext()->setContextProperty("qtwebengine", false);
+  rootContext()->setContextProperty("qtwebengine", QVariant(false));
 #endif
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
