@@ -63,7 +63,15 @@ DEPS_res = \
 	resources/image.png \
 	resources/video.png \
 	resources/audio.png \
-	resources/cloud.png
+	resources/cloud.png \
+	resources/amazons3_login.html \
+	resources/amazons3_success.html \
+	resources/default_error.html \
+	resources/default_success.html \
+	resources/mega_login.html \
+	resources/mega_success.html \
+	resources/owncloud_login.html \
+	resources/owncloud_success.html
 
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<

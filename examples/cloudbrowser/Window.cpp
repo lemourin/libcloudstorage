@@ -40,6 +40,16 @@
 
 using namespace cloudstorage;
 
+namespace {
+
+std::string read_file(const std::string& path) {
+  QFile file(path.c_str());
+  file.open(QFile::ReadOnly);
+  return file.readAll().constData();
+}
+
+}  // namespace
+
 Window::Window(MediaPlayer* media_player)
     : cloud_storage_(ICloudStorage::create()),
       last_played_(-1),
@@ -143,6 +153,15 @@ void Window::initializeCloud(QString name) {
     auto hints = fromJson(data);
     hints["temporary_directory"] =
         QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
+    if (name == "amazons3" || name == "mega" || name == "owncloud") {
+      hints["login_page"] =
+          read_file(":/resources/" + name.toStdString() + "_login.html");
+      hints["success_page"] =
+          read_file(":/resources/" + name.toStdString() + "_success.html");
+    } else {
+      hints["success_page"] = read_file(":/resources/default_success.html");
+    }
+    hints["error_page"] = read_file(":/resources/default_error.html");
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
                                  util::make_unique<CloudProviderCallback>(this),
                                  nullptr, nullptr, nullptr, nullptr, hints});

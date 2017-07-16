@@ -11,5 +11,13 @@
         <file>resources/video.png</file>
         <file>resources/audio.png</file>
         <file>resources/cloud.png</file>
+        <file>resources/amazons3_login.html</file>
+        <file>resources/amazons3_success.html</file>
+        <file>resources/default_error.html</file>
+        <file>resources/default_success.html</file>
+        <file>resources/mega_login.html</file>
+        <file>resources/mega_success.html</file>
+        <file>resources/owncloud_login.html</file>
+        <file>resources/owncloud_success.html</file>
     </qresource>
 </RCC>
