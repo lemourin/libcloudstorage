@@ -1,4 +1,4 @@
-import QtWebKit 3.0 as WebKit
+import QtWebEngine 1.1
 
-WebKit.WebView {
+WebEngineView {
 }

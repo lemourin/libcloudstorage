@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/WebView.qml</file>
+        <file>qml/WebKit.qml</file>
         <file>qml/MediaPlayer.qml</file>
         <file>qml/ActionButton.qml</file>
         <file>qml/ActionTextButton.qml</file>

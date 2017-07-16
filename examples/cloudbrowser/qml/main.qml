@@ -142,6 +142,7 @@ Item {
         target: window
         onOpenBrowser: {
             browser.visible = true;
+            browser.url = "";
             browser.url = url;
         }
         onCloseBrowser: {
@@ -379,7 +380,7 @@ Item {
         }
         Loader {
             id: webview
-            source: "WebView.qml"
+            source: qtwebengine ? "WebView.qml" : "WebKit.qml"
             anchors.fill: parent
         }
     }

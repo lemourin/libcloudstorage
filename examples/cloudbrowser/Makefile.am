@@ -46,6 +46,12 @@ libcloudbrowser_la_CXXFLAGS += \
 libcloudbrowser_la_LIBADD += \
 	$(qtmultimedia_LIBS)
 endif
+if WITH_QTWEBENGINE
+libcloudbrowser_la_CXXFLAGS += \
+	$(qtwebengine_CFLAGS)
+libcloudbrowser_la_LIBADD += \
+	$(qtwebengine_LIBS)
+endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
@@ -55,6 +61,7 @@ nodist_libcloudbrowser_la_SOURCES = \
 DEPS_res = \
 	qml/main.qml \
 	qml/WebView.qml \
+	qml/WebKit.qml \
 	qml/MediaPlayer.qml \
 	qml/ActionButton.qml \
 	qml/ActionTextButton.qml \

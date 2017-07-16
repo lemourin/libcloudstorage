@@ -93,6 +93,11 @@ AS_IF([test "x$with_examples" = "xyes"], [
     AC_PATH_PROGS(RCC, [rcc-qt5 rcc], rcc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
     AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
   ])
+  PKG_CHECK_MODULES([qtwebengine], [Qt5WebEngine], [
+    HAVE_QTWEBENGINE=1
+    AC_DEFINE(WITH_QTWEBENGINE)
+  ], [HAVE_QTWEBENGINE=0])
+  AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
   AS_IF([test "x$with_vlc" = "xyes"], [
     PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
     PKG_CHECK_MODULES([libvlc], [libvlc])

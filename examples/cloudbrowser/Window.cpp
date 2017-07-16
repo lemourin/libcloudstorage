@@ -60,6 +60,11 @@ Window::Window(MediaPlayer* media_player)
   for (auto p : ICloudStorage::create()->providers())
     clouds.append(p->name().c_str());
   clouds.append("mock");
+#ifdef WITH_QTWEBENGINE
+  rootContext()->setContextProperty("qtwebengine", true);
+#else
+  rootContext()->setContextProperty("qtwebengine", false);
+#endif
   rootContext()->setContextProperty("cloudModel", clouds);
   rootContext()->setContextProperty("window", this);
   rootContext()->setContextProperty("directoryModel", &directory_model_);

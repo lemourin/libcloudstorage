@@ -27,6 +27,10 @@
 #include <QApplication>
 #endif
 
+#ifdef WITH_QTWEBENGINE
+#include <QtWebEngine>
+#endif
+
 #include <QDebug>
 #include <QIcon>
 #include <QResizeEvent>
@@ -86,9 +90,15 @@ int main(int argc, char* argv[]) {
   try {
 #ifdef WITH_QMLPLAYER
     QGuiApplication app(argc, argv);
-    Window window(nullptr);
 #else
     QApplication app(argc, argv);
+#endif
+#ifdef WITH_QTWEBENGINE
+    QtWebEngine::initialize();
+#endif
+#ifdef WITH_QMLPLAYER
+    Window window(nullptr);
+#else
     MainWidget window;
 #endif
     app.setOrganizationName("VideoLAN");
