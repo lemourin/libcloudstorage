@@ -50,6 +50,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
       auto request =
           provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
       request->setParameter("accepted", "false");
+      request->setParameter("state", provider()->auth()->state());
       std::stringstream input, output;
       request->send(input, output);
     }

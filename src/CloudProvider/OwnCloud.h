@@ -100,7 +100,7 @@ class OwnCloud : public CloudProvider {
   };
 
  private:
-  void unpackCredentials(const std::string& code);
+  bool unpackCredentials(const std::string& code);
 
   std::string owncloud_base_url_;
   std::string user_;

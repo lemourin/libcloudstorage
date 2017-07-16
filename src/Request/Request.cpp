@@ -122,10 +122,6 @@ bool Request<T>::reauthorize() {
   });
   provider()->set_authorization_request_count(
       provider()->authorization_request_count() - 1);
-  if (is_cancelled() &&
-      provider()->authorization_status() ==
-          CloudProvider::AuthorizationStatus::InProgress)
-    return false;
   bool ret = provider()->authorization_status() ==
              CloudProvider::AuthorizationStatus::Success;
   if (provider()->authorization_request_count() == 0) {

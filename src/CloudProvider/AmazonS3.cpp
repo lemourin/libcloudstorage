@@ -155,8 +155,7 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
           return false;
-        unpackCredentials(r->getAuthorizationCode());
-        return true;
+        return unpackCredentials(r->getAuthorizationCode());
       });
 }
 
@@ -471,15 +470,16 @@ std::pair<std::string, std::string> AmazonS3::split(const std::string& str) {
   return credentialsFromString(str);
 }
 
-void AmazonS3::unpackCredentials(const std::string& code) {
+bool AmazonS3::unpackCredentials(const std::string& code) {
   std::lock_guard<std::mutex> lock(auth_mutex());
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
   if (at_position == std::string::npos || separator == std::string::npos)
-    return;
+    return false;
   access_id_ = code.substr(0, at_position);
   region_ = code.substr(at_position + 1, separator - at_position - 1);
   secret_ = code.substr(separator + strlen(Auth::SEPARATOR));
+  return true;
 }
 
 std::string AmazonS3::getUrl(const Item& item) const {
