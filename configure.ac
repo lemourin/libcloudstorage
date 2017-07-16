@@ -97,7 +97,6 @@ AS_IF([test "x$with_examples" = "xyes"], [
     HAVE_QTWEBENGINE=1
     AC_DEFINE(WITH_QTWEBENGINE)
   ], [HAVE_QTWEBENGINE=0])
-  AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
   AS_IF([test "x$with_vlc" = "xyes"], [
     PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
     PKG_CHECK_MODULES([libvlc], [libvlc])
@@ -111,5 +110,7 @@ AS_IF([test "x$with_examples" = "xyes"], [
     AC_DEFINE(WITH_QMLPLAYER)
   ])
 ])
+
+AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
 
 AC_OUTPUT
