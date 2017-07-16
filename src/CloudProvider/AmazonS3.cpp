@@ -135,14 +135,7 @@ std::string currentDateAndTime() {
 AmazonS3::AmazonS3() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonS3::initialize(InitData&& init_data) {
-  {
-    std::unique_lock<std::mutex> lock(auth_mutex());
-    auto data = credentialsFromString(init_data.token_);
-    access_id_ = data.first;
-    secret_ = data.second;
-    setWithHint(init_data.hints_, "aws_region",
-                [this](std::string str) { region_ = str; });
-  }
+  unpackCredentials(init_data.token_);
   CloudProvider::initialize(std::move(init_data));
 }
 
