@@ -35,8 +35,7 @@ namespace cloudstorage {
  * ICrypto implementation. Be careful about renaming and moving directories,
  * because there has to be an http request per each of its subelement. Buckets
  * are listed as root directory's children, renaming and moving them doesn't
- * work. Also, only buckets created with specified region(aws_region hint) are
- * working.
+ * work. Access token is of shape: access_id@region##secret.
  */
 class AmazonS3 : public CloudProvider {
  public:
@@ -47,7 +46,6 @@ class AmazonS3 : public CloudProvider {
   std::string token() const override;
   std::string name() const override;
   std::string endpoint() const override;
-  Hints hints() const override;
 
   AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
@@ -81,6 +79,9 @@ class AmazonS3 : public CloudProvider {
 
   std::string access_id() const;
   std::string secret() const;
+  std::string region() const;
+
+  void unpackCredentials(const std::string&);
 
   static std::pair<std::string, std::string> split(const std::string&);
 

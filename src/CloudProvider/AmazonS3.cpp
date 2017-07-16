@@ -27,8 +27,6 @@
 #include <algorithm>
 #include <iomanip>
 
-const std::string DEFAULT_REGION = "eu-central-1";
-
 using namespace std::placeholders;
 
 namespace cloudstorage {
@@ -134,13 +132,12 @@ std::string currentDateAndTime() {
 
 }  // namespace
 
-AmazonS3::AmazonS3()
-    : CloudProvider(util::make_unique<Auth>()), region_(DEFAULT_REGION) {}
+AmazonS3::AmazonS3() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonS3::initialize(InitData&& init_data) {
   {
     std::unique_lock<std::mutex> lock(auth_mutex());
-    auto data = creditentialsFromString(init_data.token_);
+    auto data = credentialsFromString(init_data.token_);
     access_id_ = data.first;
     secret_ = data.second;
     setWithHint(init_data.hints_, "aws_region",
@@ -150,7 +147,7 @@ void AmazonS3::initialize(InitData&& init_data) {
 }
 
 std::string AmazonS3::token() const {
-  return access_id() + Auth::SEPARATOR + secret();
+  return access_id() + "@" + region() + Auth::SEPARATOR + secret();
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }
@@ -159,23 +156,13 @@ std::string AmazonS3::endpoint() const {
   return "https://s3-" + region_ + ".amazonaws.com";
 }
 
-ICloudProvider::Hints AmazonS3::hints() const {
-  Hints result = {{"aws_region", region_}};
-  auto t = CloudProvider::hints();
-  result.insert(t.begin(), t.end());
-  return result;
-}
-
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest* r) -> bool {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
           return false;
-        auto data = creditentialsFromString(r->getAuthorizationCode());
-        std::unique_lock<std::mutex> lock(auth_mutex());
-        access_id_ = data.first;
-        secret_ = data.second;
+        unpackCredentials(r->getAuthorizationCode());
         return true;
       });
 }
@@ -482,8 +469,24 @@ std::string AmazonS3::secret() const {
   return secret_;
 }
 
+std::string AmazonS3::region() const {
+  std::lock_guard<std::mutex> lock(auth_mutex());
+  return region_;
+}
+
 std::pair<std::string, std::string> AmazonS3::split(const std::string& str) {
-  return creditentialsFromString(str);
+  return credentialsFromString(str);
+}
+
+void AmazonS3::unpackCredentials(const std::string& code) {
+  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto separator = code.find_first_of(Auth::SEPARATOR);
+  auto at_position = code.find_last_of('@', separator);
+  if (at_position == std::string::npos || separator == std::string::npos)
+    return;
+  access_id_ = code.substr(0, at_position);
+  region_ = code.substr(at_position + 1, separator - at_position - 1);
+  secret_ = code.substr(separator + strlen(Auth::SEPARATOR));
 }
 
 std::string AmazonS3::getUrl(const Item& item) const {
