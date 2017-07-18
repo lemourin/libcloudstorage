@@ -150,6 +150,9 @@ MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
 
 IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     const IHttpServer& server, const IHttpServer::IConnection& connection) {
+  const char* state = connection.getParameter("state");
+  if (!state || state != provider_->auth()->state())
+    return server.createResponse(403, {}, "state parameter missing / invalid");
   const char* file = connection.getParameter("file");
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByHandle(
       provider_->mega()->base64ToHandle(file)));
@@ -550,7 +553,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
   item->set_url("http://localhost:" + std::to_string(daemon_port_) +
-                "/?file=" + handle.get());
+                "/?file=" + handle.get() + "&state=" + auth()->state());
   return std::move(item);
 }
 
