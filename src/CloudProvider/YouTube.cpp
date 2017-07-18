@@ -191,8 +191,7 @@ IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
     request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
     return request;
   } else {
-    auto request =
-        http()->create(endpoint() + "/youtube/v3/playlistItems", "GET");
+    auto request = http()->create(endpoint() + "/youtube/v3/playlists", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id);
     return request;
@@ -249,11 +248,11 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
           : "";
   std::string name_prefix = id_prefix.empty() ? "" : AUDIO_DIRECTORY + " ";
   if (response["kind"].asString() == "youtube#channelListResponse") {
-    Json::Value related_playlits =
+    Json::Value related_playlists =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
-    for (const std::string& name : related_playlits.getMemberNames()) {
+    for (const std::string& name : related_playlists.getMemberNames()) {
       auto item = util::make_unique<Item>(
-          name_prefix + name, id_prefix + related_playlits[name].asString(),
+          name_prefix + name, id_prefix + related_playlists[name].asString(),
           IItem::FileType::Directory);
       item->set_thumbnail_url(
           response["items"][0]["snippet"]["thumbnails"]["default"]["url"]
