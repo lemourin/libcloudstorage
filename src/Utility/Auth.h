@@ -66,6 +66,9 @@ class Auth : public IAuth {
 
   std::string redirect_uri() const override;
 
+  std::string redirect_uri_host() const override;
+  void set_redirect_uri_host(const std::string&) override;
+
   uint16_t redirect_uri_port() const override;
   void set_redirect_uri_port(uint16_t) override;
 
@@ -102,6 +105,7 @@ class Auth : public IAuth {
   std::string authorization_code_;
   std::string client_id_;
   std::string client_secret_;
+  std::string redirect_uri_host_;
   uint16_t redirect_uri_port_;
   std::string state_;
   std::string login_page_;

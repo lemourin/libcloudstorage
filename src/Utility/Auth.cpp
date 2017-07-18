@@ -29,6 +29,7 @@
 
 #include "Utility.h"
 
+const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
 
 const std::string JQUERY =
@@ -132,7 +133,10 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
 }
 
 Auth::Auth()
-    : redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT), http_(), http_server_() {}
+    : redirect_uri_host_(DEFAULT_REDIRECT_URI_HOST),
+      redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT),
+      http_(),
+      http_server_() {}
 
 void Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
   http_ = http;
@@ -160,7 +164,13 @@ void Auth::set_client_secret(const std::string& client_secret) {
 }
 
 std::string Auth::redirect_uri() const {
-  return "http://localhost:" + std::to_string(redirect_uri_port());
+  return redirect_uri_host() + ":" + std::to_string(redirect_uri_port());
+}
+
+std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }
+
+void Auth::set_redirect_uri_host(const std::string& uri) {
+  redirect_uri_host_ = uri;
 }
 
 uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }

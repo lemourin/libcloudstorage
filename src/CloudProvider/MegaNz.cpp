@@ -200,7 +200,7 @@ void MegaNz::initialize(InitData&& data) {
 
 std::string MegaNz::name() const { return "mega"; }
 
-std::string MegaNz::endpoint() const { return "http://localhost"; }
+std::string MegaNz::endpoint() const { return auth()->redirect_uri_host(); }
 
 IItem::Pointer MegaNz::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
@@ -552,8 +552,9 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
-  item->set_url("http://localhost:" + std::to_string(daemon_port_) +
-                "/?file=" + handle.get() + "&state=" + auth()->state());
+  item->set_url(auth()->redirect_uri_host() + ":" +
+                std::to_string(daemon_port_) + "/?file=" + handle.get() +
+                "&state=" + auth()->state());
   return std::move(item);
 }
 

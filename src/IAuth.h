@@ -60,6 +60,9 @@ class IAuth {
 
   virtual std::string redirect_uri() const = 0;
 
+  virtual std::string redirect_uri_host() const = 0;
+  virtual void set_redirect_uri_host(const std::string&) = 0;
+
   virtual uint16_t redirect_uri_port() const = 0;
   virtual void set_redirect_uri_port(uint16_t) = 0;
 

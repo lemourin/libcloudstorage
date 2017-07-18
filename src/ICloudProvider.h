@@ -131,6 +131,7 @@ class ICloudProvider {
     * process; may contain the following:
     *  - client_id
     *  - client_secret
+    *  - redirect_uri_host
     *  - redirect_uri_port
     *  - state
     *  - access_token
