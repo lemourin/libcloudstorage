@@ -208,20 +208,23 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
               "channels?mine=true&part=contentDetails,snippet",
           "GET");
     else if (page_token == "real_playlist")
-      return http()->create(endpoint() +
-                                "/youtube/v3/"
-                                "playlists?mine=true&part=snippet",
-                            "GET");
+      return http()->create(
+          endpoint() +
+              "/youtube/v3/"
+              "playlists?mine=true&maxResults=50&part=snippet",
+          "GET");
     else
-      return http()->create(endpoint() +
-                                "/youtube/v3/"
-                                "playlists?mine=true&part=snippet&pageToken=" +
-                                page_token,
-                            "GET");
+      return http()->create(
+          endpoint() +
+              "/youtube/v3/"
+              "playlists?mine=true&maxResults=50&part=snippet&pageToken=" +
+              page_token,
+          "GET");
   } else {
     auto request =
         http()->create(endpoint() + "/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "snippet");
+    request->setParameter("maxResults", "50");
     request->setParameter("playlistId", extractId(item.id()));
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
     return request;
