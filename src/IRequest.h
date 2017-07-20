@@ -24,9 +24,9 @@
 #ifndef IREQUEST_H
 #define IREQUEST_H
 
+#include <functional>
 #include <memory>
 #include <vector>
-#include <functional>
 
 #include "IItem.h"
 
@@ -170,6 +170,7 @@ class IUploadFileCallback {
   virtual void progress(uint32_t total, uint32_t now) = 0;
 };
 
+using ExchangeCodeCallback = std::function<void(const std::string&)>;
 using GetItemCallback = std::function<void(IItem::Pointer)>;
 using GetItemDataCallback = std::function<void(IItem::Pointer)>;
 using DeleteItemCallback = std::function<void(bool)>;

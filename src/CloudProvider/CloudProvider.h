@@ -60,6 +60,8 @@ class CloudProvider : public ICloudProvider,
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
+  ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
+                                                 ExchangeCodeCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,

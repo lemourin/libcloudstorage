@@ -219,5 +219,6 @@ template class Request<bool>;
 template class Request<std::shared_ptr<cloudstorage::IItem>>;
 template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
 template class Request<std::vector<char>>;
+template class Request<std::string>;
 
 }  // namespace cloudstorage

@@ -34,6 +34,7 @@
 #include "Request/CreateDirectoryRequest.h"
 #include "Request/DeleteItemRequest.h"
 #include "Request/DownloadFileRequest.h"
+#include "Request/ExchangeCodeRequest.h"
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
 #include "Request/ListDirectoryRequest.h"
@@ -246,6 +247,12 @@ IThumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
 
 IHttpServerFactory* CloudProvider::http_server() const {
   return http_server_.get();
+}
+
+ExchangeCodeRequest::Pointer CloudProvider::exchangeCodeAsync(
+    const std::string& code, ExchangeCodeCallback callback) {
+  return util::make_unique<cloudstorage::ExchangeCodeRequest>(
+      shared_from_this(), code, callback);
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(

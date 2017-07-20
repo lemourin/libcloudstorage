@@ -47,6 +47,11 @@ IItem::Pointer MockProvider::rootDirectory() const {
   return std::make_shared<MockItem>("root", IItem::FileType::Directory);
 }
 
+ICloudProvider::ExchangeCodeRequest::Pointer MockProvider::exchangeCodeAsync(
+    const std::string&, ExchangeCodeCallback) {
+  return nullptr;
+}
+
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
     IItem::Pointer directory, IListDirectoryCallback::Pointer callback) {
   return util::make_unique<MockListDirectoryRequest>(directory,
