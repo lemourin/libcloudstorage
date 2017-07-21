@@ -270,7 +270,7 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
 }
 
 void YandexDisk::authorizeRequest(IHttpRequest& request) const {
-  request.setHeaderParameter("Authorization", "OAuth " + access_token());
+  request.setHeaderParameter("Authorization", "OAuth " + token());
 }
 
 YandexDisk::Auth::Auth() {
