@@ -117,6 +117,10 @@ IHttpRequest::Pointer Dropbox::listDirectoryRequest(
   return request;
 }
 
+void Dropbox::authorizeRequest(IHttpRequest& r) const {
+  r.setHeaderParameter("Authorization", "Bearer " + token());
+}
+
 IHttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& item,
                                                  const std::string& filename,
                                                  std::ostream&,

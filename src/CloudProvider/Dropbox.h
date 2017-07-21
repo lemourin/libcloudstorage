@@ -68,6 +68,8 @@ class Dropbox : public CloudProvider {
       std::istream&, std::string& next_page_token) const override;
   IItem::Pointer createDirectoryResponse(std::istream&) const override;
 
+  void authorizeRequest(IHttpRequest&) const override;
+
  private:
   static IItem::Pointer toItem(const Json::Value&);
 
