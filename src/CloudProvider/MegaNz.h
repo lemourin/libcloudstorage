@@ -62,6 +62,8 @@ class MegaNz : public CloudProvider {
   IItem::Pointer rootDirectory() const override;
   Hints hints() const override;
 
+  ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
+                                                 ExchangeCodeCallback) override;
   AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id, GetItemDataCallback callback) override;
@@ -88,7 +90,7 @@ class MegaNz : public CloudProvider {
       IItem::Pointer item, IDownloadFileCallback::Pointer);
 
   bool login(Request<bool>* r);
-  std::string passwordHash(const std::string& password);
+  std::string passwordHash(const std::string& password) const;
 
   mega::MegaApi* mega() const { return mega_.get(); }
 
@@ -98,6 +100,8 @@ class MegaNz : public CloudProvider {
 
   template <class T>
   bool ensureAuthorized(Request<T>*);
+
+  IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
   class Auth : public cloudstorage::Auth {
    public:

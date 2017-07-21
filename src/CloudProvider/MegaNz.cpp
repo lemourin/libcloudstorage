@@ -214,6 +214,17 @@ ICloudProvider::Hints MegaNz::hints() const {
   return result;
 }
 
+ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
+    const std::string& code, ExchangeCodeCallback callback) {
+  auto r = util::make_unique<Request<std::string>>(shared_from_this());
+  r->set_resolver([this, code, callback](Request<std::string>*) {
+    auto token = authorizationCodeToToken(code);
+    callback(token->token_);
+    return token->token_;
+  });
+  return r;
+}
+
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return util::make_unique<Authorize>(
       shared_from_this(), [this](AuthorizeRequest* r) {
@@ -221,15 +232,10 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
           if (r->is_cancelled()) return false;
           if (callback()->userConsentRequired(*this) ==
               ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
-            std::string code = r->getAuthorizationCode();
-            auto data = credentialsFromString(code);
             {
               std::lock_guard<std::mutex> mutex(auth_mutex());
-              IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
-              token->token_ =
-                  data.first + Auth::SEPARATOR + passwordHash(data.second);
-              token->refresh_token_ = token->token_;
-              auth()->set_access_token(std::move(token));
+              auth()->set_access_token(
+                  authorizationCodeToToken(r->getAuthorizationCode()));
             }
             if (!login(r)) return false;
           }
@@ -541,7 +547,7 @@ bool MegaNz::login(Request<bool>* r) {
   return auth_listener.status_ == Listener::SUCCESS;
 }
 
-std::string MegaNz::passwordHash(const std::string& password) {
+std::string MegaNz::passwordHash(const std::string& password) const {
   std::unique_ptr<char[]> hash(mega_->getBase64PwKey(password.c_str()));
   return std::string(hash.get());
 }
@@ -576,6 +582,15 @@ bool MegaNz::ensureAuthorized(Request<T>* r) {
     return r->reauthorize();
   else
     return true;
+}
+
+IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
+    const std::string& code) const {
+  auto data = credentialsFromString(code);
+  IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
+  token->token_ = data.first + Auth::SEPARATOR + passwordHash(data.second);
+  token->refresh_token_ = token->token_;
+  return token;
 }
 
 MegaNz::Auth::Auth() {}
