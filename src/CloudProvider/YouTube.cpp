@@ -319,8 +319,9 @@ std::string YouTube::extractId(const std::string& full_id) const {
 std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/"
-         "youtube&response_type=code&access_type=offline&state=" +
+         "&scope=https://www.googleapis.com/auth/youtube"
+         "&response_type=code&access_type=offline&prompt=consent"
+         "&state=" +
          state();
 }
 

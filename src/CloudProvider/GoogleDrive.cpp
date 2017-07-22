@@ -211,6 +211,7 @@ std::string GoogleDrive::Auth::authorizeLibraryUrl() const {
   url += "client_id=" + client_id() + "&";
   url += "redirect_uri=" + redirect_uri() + "&";
   url += "scope=" + scope + "&";
+  url += "access_type=offline&prompt=consent&";
   url += "state=" + state();
   return url;
 }
