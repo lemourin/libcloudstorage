@@ -179,14 +179,28 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   auto data = util::make_unique<HttpData>(buffer);
   auto request = std::make_shared<Request<void>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
-  request->set_resolver(
-      provider_->downloadResolver(provider_->toItem(node.get()),
-                                  util::make_unique<HttpDataCallback>(buffer)));
   data->request_ = request;
   provider_->addStreamRequest(request);
-  return server.createResponse(200,
-                               {{"Content-Type", "application/octet-stream"}},
-                               node->getSize(), BUFFER_SIZE, std::move(data));
+  int code = 200;
+  std::unordered_map<std::string, std::string> headers = {
+      {"Content-Type", "application/octet-stream"}, {"Accept-Ranges", "bytes"}};
+  util::range range = {0, node->getSize()};
+  if (const char* range_str = connection.header("Range")) {
+    range = util::parse_range(range_str);
+    if (range.size == -1) range.size = node->getSize() - range.start;
+    if (range.start + range.size > node->getSize() || range.start == -1)
+      return server.createResponse(416, {}, "invalid range");
+    std::stringstream stream;
+    stream << "bytes " << range.start << "-" << range.start + range.size - 1
+           << "/" << node->getSize();
+    headers["Content-Range"] = stream.str();
+    code = 216;
+  }
+  request->set_resolver(provider_->downloadResolver(
+      provider_->toItem(node.get()),
+      util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
+  return server.createResponse(code, headers, range.size, BUFFER_SIZE,
+                               std::move(data));
 }
 
 MegaNz::MegaNz()
@@ -550,8 +564,9 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
 }
 
 std::function<void(Request<void>*)> MegaNz::downloadResolver(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return [this, item, callback](Request<void>* r) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
+    int64_t size) {
+  return [this, item, callback, start, size](Request<void>* r) {
     if (!ensureAuthorized(r)) {
       if (!r->is_cancelled()) callback->error("Authorization failed.");
       return;
@@ -562,7 +577,9 @@ std::function<void(Request<void>*)> MegaNz::downloadResolver(
     TransferListener listener(&semaphore);
     listener.download_callback_ = callback;
     listener.request_ = r;
-    mega_->startStreaming(node.get(), 0, node->getSize(), &listener);
+    mega_->startStreaming(node.get(), start,
+                          size == -1 ? node->getSize() - start : size,
+                          &listener);
     semaphore.wait();
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
