@@ -278,7 +278,7 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     callback(token->token_);
     return token->token_;
   });
-  return r;
+  return std::move(r);
 }
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
