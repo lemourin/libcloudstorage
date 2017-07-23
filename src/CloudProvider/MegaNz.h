@@ -28,6 +28,7 @@
 
 #include <megaapi.h>
 #include <random>
+#include <unordered_set>
 
 namespace cloudstorage {
 
@@ -38,7 +39,7 @@ namespace cloudstorage {
  * MegaNz doesn't provide direct urls to their files, because everything they
  * have is encrypted. Here is implemented a mechanism which downloads the file
  * with mega's sdk and forwards it to url
- * http://redirect_uri_host():daemon_url/?file=id&state=some_state.
+ * http://redirect_uri_host():daemon_port/?file=id&state=some_state.
  * This url isn't seekable which may be problematic for some media players.
  */
 class MegaNz : public CloudProvider {
@@ -54,6 +55,7 @@ class MegaNz : public CloudProvider {
   };
 
   MegaNz();
+  ~MegaNz();
 
   void initialize(InitData&&) override;
 
@@ -103,6 +105,9 @@ class MegaNz : public CloudProvider {
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
+  void addStreamRequest(DownloadFileRequest::Pointer);
+  void removeStreamRequest(DownloadFileRequest::Pointer);
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -134,6 +139,7 @@ class MegaNz : public CloudProvider {
   uint16_t daemon_port_;
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
+  std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
 };
 
 }  // namespace cloudstorage
