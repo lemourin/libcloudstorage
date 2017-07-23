@@ -146,7 +146,7 @@ std::string AmazonS3::token() const {
 std::string AmazonS3::name() const { return "amazons3"; }
 
 std::string AmazonS3::endpoint() const {
-  return "https://s3-" + region_ + ".amazonaws.com";
+  return "https://s3-" + region() + ".amazonaws.com";
 }
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
