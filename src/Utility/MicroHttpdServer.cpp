@@ -91,6 +91,12 @@ const char* MicroHttpdServer::Connection::getParameter(
                                      name.c_str());
 }
 
+const char* MicroHttpdServer::Connection::header(
+    const std::string& name) const {
+  return MHD_lookup_connection_value(connection_, MHD_HEADER_KIND,
+                                     name.c_str());
+}
+
 std::string MicroHttpdServer::Connection::url() const { return url_; }
 
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb,

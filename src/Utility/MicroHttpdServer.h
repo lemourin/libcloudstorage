@@ -64,6 +64,7 @@ class MicroHttpdServer : public IHttpServer {
     MHD_Connection* connection() const { return connection_; }
 
     const char* getParameter(const std::string& name) const override;
+    const char* header(const std::string&) const override;
     std::string url() const override;
 
    private:

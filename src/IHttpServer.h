@@ -63,6 +63,7 @@ class IHttpServer {
     virtual ~IConnection() = default;
 
     virtual const char* getParameter(const std::string& name) const = 0;
+    virtual const char* header(const std::string& name) const = 0;
     virtual std::string url() const = 0;
   };
 
