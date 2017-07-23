@@ -15,6 +15,7 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
+	Utility/Utility.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \

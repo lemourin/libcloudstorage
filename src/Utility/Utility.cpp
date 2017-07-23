@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Utility.h : prototypes for utility functions
+ * Utility.cpp
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,53 +21,36 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef UTILITY_H
-#define UTILITY_H
+#include "Utility.h"
 
-#include <condition_variable>
-#include <memory>
-#include <mutex>
-#include <string>
+#include <cstdlib>
+#include <cstring>
 
 namespace cloudstorage {
 
 namespace util {
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+
+std::string remove_whitespace(const std::string& str) {
+  std::string result;
+  for (char c : str)
+    if (!isspace(c)) result += c;
+  return result;
 }
 
-struct range {
-  int64_t start, size;
-};
-
-std::string remove_whitespace(const std::string& str);
-range parse_range(const std::string& str);
+range parse_range(const std::string& r) {
+  std::string str = remove_whitespace(r);
+  int l = strlen("bytes=");
+  if (str.substr(0, l) != "bytes=") return {-1, -1};
+  std::string n1, n2;
+  int it = l;
+  while (it < r.length() && str[it] != '-') n1 += str[it++];
+  it++;
+  while (it < r.length()) n2 += str[it++];
+  int begin = n1.empty() ? -1 : atoi(n1.c_str());
+  int end = n2.empty() ? -1 : atoi(n2.c_str());
+  return {begin, end == -1 ? -1 : (end - begin + 1)};
+}
 
 }  // namespace util
 
-class Semaphore {
- public:
-  Semaphore() : count_() {}
-
-  void notify() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    count_++;
-    condition_.notify_one();
-  }
-
-  void wait() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    while (count_ == 0) condition_.wait(lock);
-    count_--;
-  }
-
- private:
-  std::mutex mutex_;
-  std::condition_variable condition_;
-  uint32_t count_;
-};
-
 }  // namespace cloudstorage
-
-#endif  // UTILITY_H
