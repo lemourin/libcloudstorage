@@ -85,7 +85,8 @@ void Request<T>::cancel() {
     for (Semaphore* semaphore : semaphore_list_) semaphore->notify();
   }
   if (cancel_callback_) cancel_callback_();
-  if (provider()) provider()->authorized_condition().notify_all();
+  auto p = provider();
+  if (p) p->authorized_condition().notify_all();
   finish();
 }
 
@@ -105,29 +106,26 @@ std::unique_ptr<HttpCallback> Request<T>::httpCallback(
 
 template <class T>
 bool Request<T>::reauthorize() {
-  if (!provider() || is_cancelled()) return false;
+  auto p = provider();
+  if (!p || is_cancelled()) return false;
   std::unique_lock<std::mutex> current_authorization(
-      provider()->current_authorization_mutex());
-  if (!provider()->current_authorization()) {
-    provider()->set_authorization_status(
-        CloudProvider::AuthorizationStatus::InProgress);
-    provider()->set_current_authorization(provider()->authorizeAsync());
+      p->current_authorization_mutex());
+  if (!p->current_authorization()) {
+    p->set_authorization_status(CloudProvider::AuthorizationStatus::InProgress);
+    p->set_current_authorization(p->authorizeAsync());
   }
-  provider()->set_authorization_request_count(
-      provider()->authorization_request_count() + 1);
-  provider()->authorized_condition().wait(current_authorization, [this] {
-    return provider()->authorization_status() !=
+  p->set_authorization_request_count(p->authorization_request_count() + 1);
+  p->authorized_condition().wait(current_authorization, [this, p] {
+    return p->authorization_status() !=
                CloudProvider::AuthorizationStatus::InProgress ||
            is_cancelled();
   });
-  provider()->set_authorization_request_count(
-      provider()->authorization_request_count() - 1);
-  bool ret = provider()->authorization_status() ==
-             CloudProvider::AuthorizationStatus::Success;
-  if (provider()->authorization_request_count() == 0) {
-    provider()->set_current_authorization(nullptr);
-    provider()->set_authorization_status(
-        CloudProvider::AuthorizationStatus::None);
+  p->set_authorization_request_count(p->authorization_request_count() - 1);
+  bool ret =
+      p->authorization_status() == CloudProvider::AuthorizationStatus::Success;
+  if (p->authorization_request_count() == 0) {
+    p->set_current_authorization(nullptr);
+    p->set_authorization_status(CloudProvider::AuthorizationStatus::None);
   }
   return ret;
 }
@@ -143,7 +141,8 @@ std::string Request<T>::error_string(int code, const std::string& desc) const {
   if (code < 0) {
     code *= -1;
     stream << "HTTP library error " << code;
-    if (provider()) stream << ": " << provider()->http()->error(code);
+    auto p = provider();
+    if (p) stream << ": " << p->http()->error(code);
   } else {
     stream << "HTTP code " << code;
     if (isPrintable(desc)) stream << ": " << desc;
@@ -155,20 +154,21 @@ template <class T>
 int Request<T>::sendRequest(
     std::function<IHttpRequest::Pointer(std::ostream&)> factory,
     std::ostream& output, ProgressFunction download, ProgressFunction upload) {
-  if (!provider()) return IHttpRequest::Unknown;
+  auto p = provider();
+  if (!p) return IHttpRequest::Unknown;
   std::stringstream input, error_stream;
   auto request = factory(input);
-  if (request) provider()->authorizeRequest(*request);
+  if (request) p->authorizeRequest(*request);
   int code =
       send(request.get(), input, output, &error_stream, download, upload);
   if (IHttpRequest::isSuccess(code)) return code;
-  if (provider()->reauthorize(code)) {
+  if (p->reauthorize(code)) {
     if (!reauthorize()) {
       if (!is_cancelled()) this->error(code, error_stream.str());
     } else {
       std::stringstream input, error_stream;
       request = factory(input);
-      if (request) provider()->authorizeRequest(*request);
+      if (request) p->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
       if (!is_cancelled() && !IHttpRequest::isSuccess(code))
