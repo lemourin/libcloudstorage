@@ -40,7 +40,6 @@ namespace cloudstorage {
  * have is encrypted. Here is implemented a mechanism which downloads the file
  * with mega's sdk and forwards it to url
  * http://redirect_uri_host():daemon_port/?file=id&state=some_state.
- * This url isn't seekable which may be problematic for some media players.
  */
 class MegaNz : public CloudProvider {
  public:
