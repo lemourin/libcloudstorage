@@ -194,7 +194,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     stream << "bytes " << range.start << "-" << range.start + range.size - 1
            << "/" << node->getSize();
     headers["Content-Range"] = stream.str();
-    code = 216;
+    code = 206;
   }
   request->set_resolver(provider_->downloadResolver(
       provider_->toItem(node.get()),
