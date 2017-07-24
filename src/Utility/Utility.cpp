@@ -46,8 +46,8 @@ range parse_range(const std::string& r) {
   while (it < r.length() && str[it] != '-') n1 += str[it++];
   it++;
   while (it < r.length()) n2 += str[it++];
-  int begin = n1.empty() ? -1 : atoi(n1.c_str());
-  int end = n2.empty() ? -1 : atoi(n2.c_str());
+  auto begin = n1.empty() ? -1 : atoll(n1.c_str());
+  auto end = n2.empty() ? -1 : atoll(n2.c_str());
   return {begin, end == -1 ? -1 : (end - begin + 1)};
 }
 
