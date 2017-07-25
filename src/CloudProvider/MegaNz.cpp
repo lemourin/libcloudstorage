@@ -247,8 +247,11 @@ void MegaNz::initialize(InitData&& data) {
                 [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
     setWithHint(data.hints_, "temporary_directory",
                 [this](std::string v) { temporary_directory_ = v; });
+    setWithHint(data.hints_, "file_url",
+                [this](std::string v) { file_url_ = v; });
   }
   CloudProvider::initialize(std::move(data));
+  if (file_url_.empty()) file_url_ = auth()->redirect_uri_host();
   daemon_ = http_server()->create(
       util::make_unique<HttpServerCallback>(this), auth()->state(),
       IHttpServer::Type::MultiThreaded, daemon_port_);
@@ -256,7 +259,9 @@ void MegaNz::initialize(InitData&& data) {
 
 std::string MegaNz::name() const { return "mega"; }
 
-std::string MegaNz::endpoint() const { return auth()->redirect_uri_host(); }
+std::string MegaNz::endpoint() const {
+  return util::address(file_url_, daemon_port_);
+}
 
 IItem::Pointer MegaNz::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
@@ -617,8 +622,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   std::unique_ptr<char[]> handle(node->getBase64Handle());
-  item->set_url(auth()->redirect_uri_host() + ":" +
-                std::to_string(daemon_port_) + "/?file=" + handle.get() +
+  item->set_url(endpoint() + "/?file=" + handle.get() +
                 "&state=" + auth()->state());
   return std::move(item);
 }

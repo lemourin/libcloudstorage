@@ -137,6 +137,7 @@ class ICloudProvider {
     *  - state
     *  - access_token
     *  - daemon_port (used by mega.nz url provider)
+    *  - file_url (used by mega.nz, url provider's base url)
     *  - metadata_url, content_url (amazon drive's endpoints)
     *  - youtube_dl_url (url to youtube-dl-server)
     *  - temporary_directory (used by mega.nz, has to use native path separators

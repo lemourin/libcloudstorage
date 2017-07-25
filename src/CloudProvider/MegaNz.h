@@ -39,7 +39,7 @@ namespace cloudstorage {
  * MegaNz doesn't provide direct urls to their files, because everything they
  * have is encrypted. Here is implemented a mechanism which downloads the file
  * with mega's sdk and forwards it to url
- * http://redirect_uri_host():daemon_port/?file=id&state=some_state.
+ * file_url:daemon_port/?file=id&state=some_state.
  */
 class MegaNz : public CloudProvider {
  public:
@@ -139,6 +139,7 @@ class MegaNz : public CloudProvider {
   uint16_t daemon_port_;
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
+  std::string file_url_;
   std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
 };
 
