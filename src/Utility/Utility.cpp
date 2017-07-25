@@ -51,6 +51,16 @@ range parse_range(const std::string& r) {
   return {begin, end == -1 ? -1 : (end - begin + 1)};
 }
 
+std::string address(const std::string& url, uint16_t port) {
+  const auto https = "https://";
+  const auto http = "http://";
+  std::string result = url;
+  if ((url.substr(0, strlen(https)) == https && port != 443) ||
+      (url.substr(0, strlen(http)) == http && port != 80))
+    result += ":" + std::to_string(port);
+  return result;
+}
+
 }  // namespace util
 
 }  // namespace cloudstorage

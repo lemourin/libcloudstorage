@@ -24,6 +24,7 @@
 #include "Auth.h"
 
 #include <json/json.h>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 
@@ -164,7 +165,7 @@ void Auth::set_client_secret(const std::string& client_secret) {
 }
 
 std::string Auth::redirect_uri() const {
-  return redirect_uri_host() + ":" + std::to_string(redirect_uri_port());
+  return util::address(redirect_uri_host(), redirect_uri_port());
 }
 
 std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }

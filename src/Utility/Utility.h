@@ -43,6 +43,7 @@ struct range {
 
 std::string remove_whitespace(const std::string& str);
 range parse_range(const std::string& str);
+std::string address(const std::string& url, uint16_t port);
 
 }  // namespace util
 
