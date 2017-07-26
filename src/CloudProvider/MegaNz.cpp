@@ -182,8 +182,13 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   data->request_ = request;
   provider_->addStreamRequest(request);
   int code = 200;
+  auto extension =
+      static_cast<Item*>(provider_->toItem(node.get()).get())->extension();
   std::unordered_map<std::string, std::string> headers = {
-      {"Content-Type", "application/octet-stream"}, {"Accept-Ranges", "bytes"}};
+      {"Content-Type", util::to_mime_type(extension)},
+      {"Accept-Ranges", "bytes"},
+      {"Content-Disposition",
+       "inline; filename=\"" + std::string(node->getName()) + "\""}};
   util::range range = {0, node->getSize()};
   if (const char* range_str = connection.header("Range")) {
     range = util::parse_range(range_str);
