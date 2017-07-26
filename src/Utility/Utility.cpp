@@ -25,10 +25,32 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 
 namespace cloudstorage {
 
+const std::unordered_map<std::string, std::string> MIME_TYPE = {
+    {"aac", "audio/aac"},   {"avi", "video/x-msvideo"},
+    {"gif", "image/gif"},   {"jpeg", "image/jpeg"},
+    {"jpg", "image/jpeg"},  {"mpeg", "video/mpeg"},
+    {"oga", "audio/ogg"},   {"ogv", "video/ogg"},
+    {"png", "image/png"},   {"svg", "image/svg+xml"},
+    {"tif", "image/tiff"},  {"tiff", "image/tiff"},
+    {"wav", "audio-x/wav"}, {"weba", "audio/webm"},
+    {"webm", "video/webm"}, {"webp", "image/webp"},
+    {"3gp", "video/3gpp"},  {"3g2", "video/3gpp2"},
+    {"mp4", "video/mp4"},   {"mkv", "video/webm"}};
+
 namespace util {
+
+namespace {
+
+std::string to_lower(std::string str) {
+  for (char& c : str) c = tolower(c);
+  return str;
+}
+
+}  // namespace
 
 std::string remove_whitespace(const std::string& str) {
   std::string result;
@@ -59,6 +81,14 @@ std::string address(const std::string& url, uint16_t port) {
       (url.substr(0, strlen(http)) == http && port != 80))
     result += ":" + std::to_string(port);
   return result;
+}
+
+std::string to_mime_type(const std::string& extension) {
+  auto it = MIME_TYPE.find(to_lower(extension));
+  if (it == std::end(MIME_TYPE))
+    return "application/octet-stream";
+  else
+    return it->second;
 }
 
 }  // namespace util
