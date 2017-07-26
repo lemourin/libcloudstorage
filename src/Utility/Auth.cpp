@@ -33,12 +33,16 @@
 const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
 
-const std::string JQUERY =
-    "<script src=\"https://code.jquery.com/jquery-3.1.0.min.js\""
-    "integrity=\"sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=\""
-    "crossorigin=\"anonymous\"></script>";
+const std::string CDN =
+    "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
+    "integrity='sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s='"
+    "crossorigin='anonymous'></script>"
+    "<script "
+    "src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
+    "</script>";
 
 const std::string DEFAULT_LOGIN_PAGE =
+    "<html>" + CDN +
     "<body>"
     "libcloudstorage login page"
     "<table>"
@@ -47,9 +51,6 @@ const std::string DEFAULT_LOGIN_PAGE =
     "<tr><td>"
     "  <a id='link'><input id='submit' type='button' value='Login'></a>"
     "</td></tr>"
-    "<script "
-    "  src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
-    "</script>"
     "<script>"
     " $(function() {"
     "   var func = function() {"
@@ -57,80 +58,75 @@ const std::string DEFAULT_LOGIN_PAGE =
     std::string(cloudstorage::Auth::SEPARATOR) +
     "' + $('#password').val();"
     "     $('#link').attr('href', '/?code=' + encodeURIComponent(str) + "
-    "                     '&accepted=true&state=' +  url('?').state);"
+    "                     '&state=' + url('?').state);"
     "   };"
     "   $('#login').change(func);"
     "   $('#password').change(func);"
     " });"
     "</script>"
     "</table>"
-    "</body>";
+    "</body>"
+    "</html>";
 
 const std::string DEFAULT_SUCCESS_PAGE =
+    "<html>" + CDN +
     "<body>Success.</body>"
-    "<script>history.replaceState({}, null, 'success');</script>";
+    "<script>"
+    "  $.ajax({ 'data': { 'accepted': 'true' } });"
+    "  history.replaceState({}, null, 'success');"
+    "</script>"
+    "</html>";
 
 const std::string DEFAULT_ERROR_PAGE =
+    "<html>" + CDN +
     "<body>Error.</body>"
-    "<script>history.replaceState({}, null, 'error');</script>";
+    "<script>"
+    "  $.ajax({ 'data': { 'accepted': 'false' } });"
+    "  history.replaceState({}, null, 'error');"
+    "</script>"
+    "</html>";
 
 namespace cloudstorage {
-namespace {
-
-std::string sendHttpRequestFromJavaScript(const Json::Value& json) {
-  std::stringstream stream;
-  stream << "<script>$.ajax(" << json << ")</script>";
-  return stream.str();
-}
-
-}  // namespace
 
 IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     const IHttpServer& server, const IHttpServer::IConnection& connection) {
-  std::string page = JQUERY;
-
-  if (connection.url() == "/login")
-    page +=
-        auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page();
-
   const char* state = connection.getParameter(data_.state_parameter_name_);
-  if (!state || state != auth_->state()) {
-    page +=
-        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page();
-    return server.createResponse(200, {}, page);
-  }
-
-  const char* code = connection.getParameter(data_.code_parameter_name_);
-  if (code) {
-    data_.code_ = code;
-    Json::Value json;
-    json["data"]["accepted"] = "true";
-    json["data"]["state"] = auth_->state();
-    page += auth_->success_page().empty() ? DEFAULT_SUCCESS_PAGE
-                                          : auth_->success_page();
-    page += sendHttpRequestFromJavaScript(json);
-  }
-
-  const char* error = connection.getParameter(data_.error_parameter_name_);
-  if (error) {
-    Json::Value json;
-    json["data"]["accepted"] = "false";
-    json["data"]["state"] = auth_->state();
-    page +=
-        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page();
-    page += sendHttpRequestFromJavaScript(json);
-  }
+  if (!state || state != auth_->state())
+    return server.createResponse(
+        401, {},
+        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
   const char* accepted = connection.getParameter("accepted");
+  const char* code = connection.getParameter(data_.code_parameter_name_);
   if (accepted) {
-    if (std::string(accepted) == "true") {
+    if (std::string(accepted) == "true" && code) {
+      data_.code_ = code;
       data_.state_ = HttpServerData::Accepted;
     } else
       data_.state_ = HttpServerData::Denied;
     data_.semaphore_->notify();
   }
 
-  return server.createResponse(200, {}, page);
+  if (code)
+    return server.createResponse(200, {},
+                                 auth_->success_page().empty()
+                                     ? DEFAULT_SUCCESS_PAGE
+                                     : auth_->success_page());
+
+  const char* error = connection.getParameter(data_.error_parameter_name_);
+  if (error)
+    return server.createResponse(
+        400, {},
+        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
+
+  if (connection.url() == "/login")
+    return server.createResponse(
+        200, {},
+        auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
+
+  return server.createResponse(
+      404, {},
+      auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 }
 
 Auth::Auth()
