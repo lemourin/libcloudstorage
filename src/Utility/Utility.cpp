@@ -23,6 +23,7 @@
 
 #include "Utility.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -76,11 +77,20 @@ range parse_range(const std::string& r) {
 std::string address(const std::string& url, uint16_t port) {
   const auto https = "https://";
   const auto http = "http://";
-  std::string result = url;
-  if ((url.substr(0, strlen(https)) == https && port != 443) ||
-      (url.substr(0, strlen(http)) == http && port != 80))
-    result += ":" + std::to_string(port);
-  return result;
+  int cnt = std::count(http, http + strlen(http), '/') + 1;
+  std::string hostname = url, path;
+  for (int i = 0; i < url.length(); i++) {
+    if (url[i] == '/') cnt--;
+    if (cnt == 0) {
+      hostname = std::string(url.begin(), url.begin() + i);
+      path = std::string(url.begin() + i, url.end());
+      break;
+    }
+  }
+  if ((hostname.substr(0, strlen(https)) == https && port != 443) ||
+      (hostname.substr(0, strlen(http)) == http && port != 80))
+    hostname += ":" + std::to_string(port);
+  return hostname + path;
 }
 
 std::string to_mime_type(const std::string& extension) {
