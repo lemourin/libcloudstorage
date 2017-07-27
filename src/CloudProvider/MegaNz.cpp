@@ -298,10 +298,10 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
           if (r->is_cancelled()) return false;
           if (callback()->userConsentRequired(*this) ==
               ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
+            auto code = r->getAuthorizationCode();
             {
               std::lock_guard<std::mutex> mutex(auth_mutex());
-              auth()->set_access_token(
-                  authorizationCodeToToken(r->getAuthorizationCode()));
+              auth()->set_access_token(authorizationCodeToToken(code));
             }
             if (!login(r)) return false;
           }
