@@ -64,13 +64,23 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
       shared_from_this());
-  r->set_error_callback([callback](Request<std::vector<IItem::Pointer>>* r,
-                                   int code, const std::string& error) {
-    if (code != 404) callback->error(r->error_string(code, error));
-  });
-  r->set_resolver([item, callback,
+  auto is_fine = [item, this](int code) {
+    return (item->id() == AUDIO_DIRECTORY ||
+            item->id() == rootDirectory()->id()) &&
+           code == 404;
+  };
+  r->set_error_callback(
+      [callback, is_fine](Request<std::vector<IItem::Pointer>>* r, int code,
+                          const std::string& error) {
+        if (!is_fine(code)) callback->error(r->error_string(code, error));
+      });
+  r->set_resolver([item, callback, is_fine,
                    this](Request<std::vector<IItem::Pointer>>* r)
                       -> std::vector<IItem::Pointer> {
+    if (item->type() != IItem::FileType::Directory) {
+      callback->error("Trying to list non-directory.");
+      return {};
+    }
     std::string page_token;
     std::vector<IItem::Pointer> result;
     bool failure = false;
@@ -81,9 +91,9 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
             return listDirectoryRequest(*item, page_token, i);
           },
           output_stream);
-      if (IHttpRequest::isSuccess(code) || code == 404) {
+      if (IHttpRequest::isSuccess(code) || is_fine(code)) {
         page_token = "";
-        if (code == 404) output_stream << "{}";
+        if (is_fine(code)) output_stream << "{}";
         for (auto& t : listDirectoryResponse(item, output_stream, page_token)) {
           callback->receivedItem(t);
           result.push_back(t);
