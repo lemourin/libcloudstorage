@@ -66,7 +66,7 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
       shared_from_this());
   r->set_error_callback([callback](Request<std::vector<IItem::Pointer>>* r,
                                    int code, const std::string& error) {
-    callback->error(r->error_string(code, error));
+    if (code != 404) callback->error(r->error_string(code, error));
   });
   r->set_resolver([item, callback,
                    this](Request<std::vector<IItem::Pointer>>* r)
@@ -81,8 +81,9 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
             return listDirectoryRequest(*item, page_token, i);
           },
           output_stream);
-      if (IHttpRequest::isSuccess(code)) {
+      if (IHttpRequest::isSuccess(code) || code == 404) {
         page_token = "";
+        if (code == 404) output_stream << "{}";
         for (auto& t : listDirectoryResponse(item, output_stream, page_token)) {
           callback->receivedItem(t);
           result.push_back(t);
