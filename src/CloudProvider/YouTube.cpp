@@ -64,11 +64,7 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
       shared_from_this());
-  auto is_fine = [item, this](int code) {
-    return (item->id() == AUDIO_DIRECTORY ||
-            item->id() == rootDirectory()->id()) &&
-           code == 404;
-  };
+  auto is_fine = [item, this](int code) { return code == 404; };
   r->set_error_callback(
       [callback, is_fine](Request<std::vector<IItem::Pointer>>* r, int code,
                           const std::string& error) {
