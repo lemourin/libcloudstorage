@@ -49,10 +49,9 @@ IItem::Pointer YandexDisk::rootDirectory() const {
 
 ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(
-      shared_from_this());
-  r->set_resolver([this, id, callback](Request<EitherError<IItem>>* r)
-                      -> EitherError<IItem> {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([this, id, callback](
+                      Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     std::stringstream output;
     Error error;
     int code = r->sendRequest(
@@ -92,12 +91,13 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_error_callback(
-      [this, callback](Request<void>* r, int code, const std::string& desc) {
-        callback->error(r->error_string(code, desc));
-      });
-  r->set_resolver([this, item, callback](Request<void>* r) -> void {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_error_callback([this, callback](Request<EitherError<void>>* r,
+                                         int code, const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([this, item, callback](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
     int code = r->sendRequest(
         [this, item](std::ostream&) {
@@ -129,13 +129,15 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_error_callback(
-      [callback](Request<void>* r, int code, const std::string& desc) {
-        callback->error(r->error_string(code, desc));
-      });
-  r->set_resolver([this, directory, filename, callback](Request<void>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_error_callback([callback](Request<EitherError<void>>* r, int code,
+                                   const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([this, directory, filename,
+                   callback](Request<EitherError<void>>* r) {
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [this, directory, filename](std::ostream&) {
           auto request =
@@ -146,7 +148,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           request->setParameter("path", path);
           return request;
         },
-        output);
+        output, &error);
     if (IHttpRequest::isSuccess(code)) {
       Json::Value response;
       output >> response;
@@ -162,11 +164,16 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
             input.rdbuf(&wrapper);
             return request;
           },
-          output, nullptr,
+          output, &error,
           std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
-      if (IHttpRequest::isSuccess(code)) callback->done();
-    } else
+      if (IHttpRequest::isSuccess(code))
+        callback->done();
+      else
+        return error;
+    } else {
       callback->error("Couldn't get upload url.");
+      return error;
+    }
   });
   return std::move(r);
 }

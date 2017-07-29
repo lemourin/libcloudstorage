@@ -219,9 +219,9 @@ using MoveItemCallback = std::function<void(EitherError<void>)>;
 using RenameItemCallback = std::function<void(EitherError<void>)>;
 using ListDirectoryCallback =
     std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
-using DownloadFileCallback = std::function<void(bool)>;
-using UploadFileCallback = std::function<void(bool)>;
-using GetThumbnailCallback = std::function<void(bool)>;
+using DownloadFileCallback = std::function<void(EitherError<void>)>;
+using UploadFileCallback = std::function<void(EitherError<void>)>;
+using GetThumbnailCallback = std::function<void(EitherError<void>)>;
 
 }  // namespace cloudstorage
 

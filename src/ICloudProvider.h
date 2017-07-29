@@ -47,8 +47,8 @@ class ICloudProvider {
   using ListDirectoryRequest =
       IRequest<EitherError<std::vector<IItem::Pointer>>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
-  using DownloadFileRequest = IRequest<void>;
-  using UploadFileRequest = IRequest<void>;
+  using DownloadFileRequest = IRequest<EitherError<void>>;
+  using UploadFileRequest = IRequest<EitherError<void>>;
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
@@ -379,7 +379,7 @@ class ICloudProvider {
    */
   virtual DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer item, const std::string& filename,
-      DownloadFileCallback callback = [](bool) {}) = 0;
+      DownloadFileCallback callback = [](EitherError<void>) {}) = 0;
 
   /**
    * Simplified version of getThumbnailAsync.
@@ -395,7 +395,7 @@ class ICloudProvider {
    */
   virtual DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer item, const std::string& filename,
-      GetThumbnailCallback callback = [](bool) {}) = 0;
+      GetThumbnailCallback callback = [](EitherError<void>) {}) = 0;
 
   /**
    * Simplified version of uploadFileAsync.
@@ -415,7 +415,7 @@ class ICloudProvider {
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer parent, const std::string& path,
       const std::string& filename,
-      UploadFileCallback callback = [](bool) {}) = 0;
+      UploadFileCallback callback = [](EitherError<void>) {}) = 0;
 };
 
 }  // namespace cloudstorage

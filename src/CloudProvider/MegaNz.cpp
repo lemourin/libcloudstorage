@@ -108,7 +108,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
 
   IDownloadFileCallback::Pointer download_callback_;
   IUploadFileCallback::Pointer upload_callback_;
-  Request<void>* request_;
+  Request<EitherError<void>>* request_;
   std::string error_;
 };
 
@@ -143,7 +143,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   }
 
   Buffer::Pointer buffer_;
-  std::shared_ptr<Request<void>> request_;
+  std::shared_ptr<Request<EitherError<void>>> request_;
 };
 
 class HttpDataCallback : public IDownloadFileCallback {
@@ -177,7 +177,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   if (!node) return server.createResponse(404, {}, "file not found");
   auto buffer = std::make_shared<Buffer>();
   auto data = util::make_unique<HttpData>(buffer);
-  auto request = std::make_shared<Request<void>>(
+  auto request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
   data->request_ = request;
   provider_->addStreamRequest(request);
@@ -352,10 +352,10 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
                       -> EitherError<std::vector<IItem::Pointer>> {
     if (!ensureAuthorized(r)) {
       Error e = {401, "authorization failed"};
-      if (!r->is_cancelled()) {
-        e = {IHttpRequest::Aborted, ""};
+      if (!r->is_cancelled())
         callback->error("Authorization failed.");
-      }
+      else
+        e = {IHttpRequest::Aborted, ""};
       return e;
     }
     std::unique_ptr<mega::MegaNode> node(
@@ -379,7 +379,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver(downloadResolver(item, callback));
   return std::move(r);
 }
@@ -387,25 +387,35 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_resolver([this, item, callback, filename](Request<void>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([this, item, callback, filename](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      if (!r->is_cancelled()) callback->error("Authorization failed.");
-      return;
+      Error e = {401, "authorization failed"};
+      if (!r->is_cancelled())
+        callback->error("Authorization failed.");
+      else
+        e = {IHttpRequest::Aborted, ""};
+      return e;
     }
     std::string cache = temporaryFileName();
     {
       std::fstream mega_cache(cache.c_str(),
                               std::fstream::out | std::fstream::binary);
-      if (!mega_cache)
-        return callback->error("Couldn't open cache file " + cache);
+      if (!mega_cache) {
+        callback->error("Couldn't open cache file " + cache);
+        return Error{403, "couldn't open cache file" + cache};
+      }
       std::array<char, BUFFER_SIZE> buffer;
       while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
-        if (r->is_cancelled()) return;
+        if (r->is_cancelled()) {
+          std::remove(cache.c_str());
+          return Error{IHttpRequest::Aborted, ""};
+        }
         mega_cache.write(buffer.data(), length);
       }
     }
-    Request<void>::Semaphore semaphore(r);
+    Request<EitherError<void>>::Semaphore semaphore(r);
     TransferListener listener(&semaphore);
     listener.upload_callback_ = callback;
     listener.request_ = r;
@@ -415,26 +425,36 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     semaphore.wait();
     if (r->is_cancelled())
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
+    std::remove(cache.c_str());
     mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS) {
-      if (!r->is_cancelled())
+      if (!r->is_cancelled()) {
         callback->error("Upload error: " + listener.error_);
-    } else
+        return Error{500, listener.error_};
+      } else
+        return Error{IHttpRequest::Aborted, ""};
+    } else {
       callback->done();
-    std::remove(cache.c_str());
+      return nullptr;
+    }
   });
   return std::move(r);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_resolver([this, item, callback](Request<void>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([this, item, callback](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      if (!r->is_cancelled()) callback->error("Authorization failed.");
-      return;
+      Error e = {401, "authorization failed"};
+      if (!r->is_cancelled())
+        callback->error("Authorization failed.");
+      else
+        e = {IHttpRequest::Aborted, ""};
+      return e;
     }
-    Request<void>::Semaphore semaphore(r);
+    Request<EitherError<void>>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     std::string cache = temporaryFileName();
     std::unique_ptr<mega::MegaNode> node(
@@ -447,8 +467,10 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     if (listener.status_ == Listener::SUCCESS) {
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
-      if (!cache_file)
-        return callback->error("Couldn't open cache file " + cache);
+      if (!cache_file) {
+        callback->error("Couldn't open cache file " + cache);
+        return Error{500, "couldn't open cache file " + cache};
+      }
       std::array<char, BUFFER_SIZE> buffer;
       do {
         cache_file.read(buffer.data(), BUFFER_SIZE);
@@ -459,6 +481,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       cloudstorage::DownloadFileRequest::generateThumbnail(r, item, callback);
     }
     std::remove(cache.c_str());
+    return nullptr;
   });
   return std::move(r);
 }
@@ -589,17 +612,23 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
   return std::move(r);
 }
 
-std::function<void(Request<void>*)> MegaNz::downloadResolver(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
-    int64_t size) {
-  return [this, item, callback, start, size](Request<void>* r) {
+std::function<EitherError<void>(Request<EitherError<void>>*)>
+MegaNz::downloadResolver(IItem::Pointer item,
+                         IDownloadFileCallback::Pointer callback, int64_t start,
+                         int64_t size) {
+  return [this, item, callback, start,
+          size](Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      if (!r->is_cancelled()) callback->error("Authorization failed.");
-      return;
+      Error e = {401, "authorization failed"};
+      if (!r->is_cancelled())
+        callback->error("Authorization failed.");
+      else
+        e = {IHttpRequest::Aborted, ""};
+      return e;
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    Request<void>::Semaphore semaphore(r);
+    Request<EitherError<void>>::Semaphore semaphore(r);
     TransferListener listener(&semaphore);
     listener.download_callback_ = callback;
     listener.request_ = r;
@@ -611,9 +640,15 @@ std::function<void(Request<void>*)> MegaNz::downloadResolver(
       while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
     mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS) {
-      if (!r->is_cancelled()) callback->error("Failed to download");
-    } else
+      if (!r->is_cancelled()) {
+        callback->error("Failed to download");
+        return Error{500, "failed to download"};
+      } else
+        return Error{IHttpRequest::Aborted, ""};
+    } else {
       callback->done();
+      return nullptr;
+    }
   };
 }
 

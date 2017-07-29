@@ -41,27 +41,33 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)),
       request_factory_(request_factory),
       fallback_thumbnail_(fallback_thumbnail) {
-  set_resolver([this](Request* r) {
+  set_resolver([this](Request* r) -> EitherError<void> {
     std::ostream response_stream(&stream_wrapper_);
+    Error error;
     int code = sendRequest(
         [this](std::ostream& input) { return request_factory_(*file_, input); },
-        response_stream, nullptr,
+        response_stream, &error,
         std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
                   _1, _2));
-    if (IHttpRequest::isSuccess(code))
+    if (IHttpRequest::isSuccess(code)) {
       callback_->done();
-    else if (fallback_thumbnail_)
+      return nullptr;
+    } else if (fallback_thumbnail_) {
       generateThumbnail(r, file_, callback_);
+      return nullptr;
+    } else {
+      return error;
+    }
   });
 }
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
 void DownloadFileRequest::generateThumbnail(
-    Request<void>* r, IItem::Pointer item,
+    Request<EitherError<void>>* r, IItem::Pointer item,
     IDownloadFileCallback::Pointer callback) {
   if (!r->provider()->thumbnailer()) return;
-  Request<void>::Semaphore semaphore(r);
+  Request<EitherError<void>>::Semaphore semaphore(r);
   auto item_data = r->provider()->getItemDataAsync(
       item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
   semaphore.wait();

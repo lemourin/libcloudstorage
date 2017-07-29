@@ -84,7 +84,10 @@ class MockProvider : public ICloudProvider {
                             IDownloadFileCallback::Pointer);
     void finish() override { function_.wait(); }
     void cancel() override { function_.wait(); }
-    void result() override { function_.get(); }
+    EitherError<void> result() override {
+      function_.get();
+      return nullptr;
+    }
 
    private:
     IDownloadFileCallback::Pointer callback_;

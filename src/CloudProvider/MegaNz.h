@@ -87,9 +87,9 @@ class MegaNz : public CloudProvider {
                                              const std::string& name,
                                              RenameItemCallback) override;
 
-  std::function<void(Request<void>*)> downloadResolver(
-      IItem::Pointer item, IDownloadFileCallback::Pointer, int64_t start = 0,
-      int64_t size = -1);
+  std::function<EitherError<void>(Request<EitherError<void>>*)>
+  downloadResolver(IItem::Pointer item, IDownloadFileCallback::Pointer,
+                   int64_t start = 0, int64_t size = -1);
 
   bool login(Request<bool>* r);
   std::string passwordHash(const std::string& password) const;

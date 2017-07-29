@@ -44,13 +44,14 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_error_callback(
-      [callback](Request<void>* r, int code, const std::string& desc) {
-        callback->error(r->error_string(code, desc));
-      });
-  r->set_resolver([=](Request<void>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_error_callback([callback](Request<EitherError<void>>* r, int code,
+                                   const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           return http()->create(
@@ -58,10 +59,10 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                   http()->escape(filename) + ":/upload.createSession",
               "POST");
         },
-        output);
+        output, &error);
     if (!IHttpRequest::isSuccess(code)) {
       callback->error("Failed to create upload session.");
-      return;
+      return error;
     }
     Json::Value response;
     output >> response;
@@ -70,6 +71,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     std::vector<char> buffer(CHUNK_SIZE);
     while (sent < size) {
       uint32_t length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
+      Error error;
       code = r->sendRequest(
           [=](std::ostream& stream) {
             auto request =
@@ -81,17 +83,18 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             stream.write(buffer.data(), length);
             return request;
           },
-          output, nullptr,
+          output, &error,
           [=](uint32_t, uint32_t now) {
             callback->progress(size, sent + now);
           });
       if (!IHttpRequest::isSuccess(code)) {
         callback->error("Failed to upload chunk.");
-        return;
+        return error;
       }
       sent += length;
     }
     callback->done();
+    return nullptr;
   });
   return std::move(r);
 }

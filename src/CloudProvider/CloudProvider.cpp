@@ -96,12 +96,12 @@ class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
 
   void done() override {
     file_.close();
-    callback_(true);
+    callback_(nullptr);
   }
 
-  void error(const std::string&) override {
+  void error(const std::string& error) override {
     file_.close();
-    callback_(false);
+    callback_(cloudstorage::Error{400, error});
   }
 
   void progress(uint32_t, uint32_t) override {}
@@ -134,9 +134,11 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
 
   uint64_t size() override { return size_; }
 
-  void done() override { callback_(true); }
+  void done() override { callback_(nullptr); }
 
-  void error(const std::string&) override { callback_(false); }
+  void error(const std::string& d) override {
+    callback_(cloudstorage::Error{400, d});
+  }
 
   void progress(uint32_t, uint32_t) override {}
 

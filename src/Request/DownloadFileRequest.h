@@ -40,7 +40,7 @@ class DownloadStreamWrapper : public std::streambuf {
   std::function<void(const char*, uint32_t)> callback_;
 };
 
-class DownloadFileRequest : public Request<void> {
+class DownloadFileRequest : public Request<EitherError<void>> {
  public:
   using RequestFactory =
       std::function<IHttpRequest::Pointer(const IItem&, std::ostream&)>;
@@ -51,7 +51,7 @@ class DownloadFileRequest : public Request<void> {
                       bool fallback_thumbnail = false);
   ~DownloadFileRequest();
 
-  static void generateThumbnail(Request<void>*, IItem::Pointer,
+  static void generateThumbnail(Request<EitherError<void>>*, IItem::Pointer,
                                 ICallback::Pointer);
 
  protected:

@@ -161,15 +161,16 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<void>>(shared_from_this());
-  r->set_error_callback(
-      [this, callback](Request<void>* r, int code, const std::string& desc) {
-        callback->error(r->error_string(code, desc));
-      });
-  r->set_resolver([this, item, callback](Request<void>* r) -> void {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_error_callback([this, callback](Request<EitherError<void>>* r,
+                                         int code, const std::string& desc) {
+    callback->error(r->error_string(code, desc));
+  });
+  r->set_resolver([this, item, callback](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     std::string url = item->url();
     if (item->type() == IItem::FileType::Audio) {
-      Request<void>::Semaphore semaphore(r);
+      Request<EitherError<void>>::Semaphore semaphore(r);
       auto t = getItemDataAsync(
           item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
       semaphore.wait();
@@ -181,11 +182,17 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     DownloadStreamWrapper wrapper(std::bind(
         &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
     std::ostream stream(&wrapper);
+    Error error;
     int code = r->sendRequest(
         [this, url](std::ostream&) { return http()->create(url, "GET"); },
-        stream, nullptr,
+        stream, &error,
         std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
-    if (IHttpRequest::isSuccess(code)) callback->done();
+    if (IHttpRequest::isSuccess(code)) {
+      callback->done();
+      return nullptr;
+    } else {
+      return error;
+    }
   });
   return std::move(r);
 }
