@@ -76,15 +76,14 @@ void DownloadFileRequest::generateThumbnail(
     return callback->error("Couldn't get item url.");
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
       r->provider(), item_data->result().right(),
-      [&semaphore, callback](const std::vector<char>& data) {
-        if (!data.empty()) {
-          callback->receivedData(data.data(), data.size());
+      [&semaphore, callback](EitherError<std::vector<char>> data) {
+        if (data.right()) {
+          callback->receivedData(data.right()->data(), data.right()->size());
           callback->done();
+        } else {
+          callback->error(data.left()->description_);
         }
         semaphore.notify();
-      },
-      [callback](const std::string& error) {
-        callback->error("Thumbnailer error: " + error);
       });
   semaphore.wait();
   if (r->is_cancelled()) thumbnail_data->cancel();

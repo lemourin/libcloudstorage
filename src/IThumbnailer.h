@@ -36,8 +36,7 @@ class ICloudProvider;
 class IThumbnailer {
  public:
   using Pointer = std::shared_ptr<IThumbnailer>;
-  using Callback = std::function<void(const std::vector<char>&)>;
-  using ErrorCallback = std::function<void(const std::string&)>;
+  using Callback = std::function<void(EitherError<std::vector<char>>)>;
 
   virtual ~IThumbnailer() = default;
 
@@ -48,14 +47,12 @@ class IThumbnailer {
    *
    * @param callback function to be called when the thumbnail generation is
    * finished
-   *
-   * @param error_callback called when an error occurs
-   *
+   *   *
    * @return object representing pending request
    */
-  virtual IRequest<std::vector<char>>::Pointer generateThumbnail(
-      std::shared_ptr<ICloudProvider>, IItem::Pointer item, Callback callback,
-      ErrorCallback error_callback = [](const std::string&) {}) = 0;
+  virtual IRequest<EitherError<std::vector<char>>>::Pointer generateThumbnail(
+      std::shared_ptr<ICloudProvider>, IItem::Pointer item,
+      Callback callback) = 0;
 };
 
 }  // namespace cloudstorage

@@ -55,19 +55,20 @@ FFmpegThumbnailer::~FFmpegThumbnailer() {
   cleanup_thread_.wait();
 }
 
-IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
-    std::shared_ptr<ICloudProvider> p, IItem::Pointer item, Callback callback,
-    ErrorCallback error_callback) {
-  auto r = util::make_unique<Request<std::vector<char>>>(
+IRequest<EitherError<std::vector<char>>>::Pointer
+FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
+                                     IItem::Pointer item, Callback callback) {
+  auto r = util::make_unique<Request<EitherError<std::vector<char>>>>(
       std::static_pointer_cast<CloudProvider>(p));
-  r->set_resolver([this, item, callback, error_callback](
-                      Request<std::vector<char>>* r) -> std::vector<char> {
+  r->set_resolver([this, item,
+                   callback](Request<EitherError<std::vector<char>>>* r)
+                      -> EitherError<std::vector<char>> {
     if ((item->type() != IItem::FileType::Image &&
          item->type() != IItem::FileType::Video) ||
         item->url().empty()) {
-      error_callback("Can generate thumbnails only for images and videos.");
-      callback({});
-      return {};
+      Error e{500, "can generate thumbnails only for images and videos"};
+      callback(e);
+      return e;
     }
     std::shared_future<std::vector<char>> future;
     std::shared_ptr<std::condition_variable> done;
@@ -116,13 +117,18 @@ IRequest<std::vector<char>>::Pointer FFmpegThumbnailer::generateThumbnail(
       done->wait(lock, [=]() { return r->is_cancelled() || *finished; });
     }
     if (r->is_cancelled()) {
-      callback({});
-      return {};
+      callback(Error{IHttpRequest::Aborted, ""});
+      return Error{IHttpRequest::Aborted, ""};
     }
     auto result = future.get();
-    if (!error_description->empty()) error_callback(*error_description);
-    callback(result);
-    return result;
+    if (!error_description->empty()) {
+      Error e{500, *error_description};
+      callback(e);
+      return e;
+    } else {
+      callback(result);
+      return result;
+    }
   });
   return std::move(r);
 }
