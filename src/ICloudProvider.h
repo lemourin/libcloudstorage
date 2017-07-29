@@ -43,7 +43,7 @@ class ICloudProvider {
   using Pointer = std::shared_ptr<ICloudProvider>;
   using Hints = std::unordered_map<std::string, std::string>;
 
-  using ExchangeCodeRequest = IRequest<std::string>;
+  using ExchangeCodeRequest = IRequest<EitherError<std::string>>;
   using ListDirectoryRequest = IRequest<std::vector<IItem::Pointer>>;
   using GetItemRequest = IRequest<IItem::Pointer>;
   using DownloadFileRequest = IRequest<void>;
@@ -215,7 +215,7 @@ class ICloudProvider {
    */
   virtual ExchangeCodeRequest::Pointer exchangeCodeAsync(
       const std::string& code,
-      ExchangeCodeCallback = [](const std::string&) {}) = 0;
+      ExchangeCodeCallback = [](EitherError<std::string>) {}) = 0;
 
   /**
    * Lists directory.

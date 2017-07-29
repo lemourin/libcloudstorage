@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class ExchangeCodeRequest : public Request<std::string> {
+class ExchangeCodeRequest : public Request<EitherError<std::string>> {
  public:
   ExchangeCodeRequest(std::shared_ptr<CloudProvider>, const std::string& code,
                       ExchangeCodeCallback);

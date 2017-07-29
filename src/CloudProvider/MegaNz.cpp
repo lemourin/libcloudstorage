@@ -282,8 +282,9 @@ ICloudProvider::Hints MegaNz::hints() const {
 
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
-  auto r = util::make_unique<Request<std::string>>(shared_from_this());
-  r->set_resolver([this, code, callback](Request<std::string>*) {
+  auto r =
+      util::make_unique<Request<EitherError<std::string>>>(shared_from_this());
+  r->set_resolver([this, code, callback](Request<EitherError<std::string>>*) {
     auto token = authorizationCodeToToken(code);
     callback(token->token_);
     return token->token_;

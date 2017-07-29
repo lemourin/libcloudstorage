@@ -220,5 +220,6 @@ template class Request<std::shared_ptr<cloudstorage::IItem>>;
 template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
 template class Request<std::vector<char>>;
 template class Request<std::string>;
+template class Request<EitherError<std::string>>;
 
 }  // namespace cloudstorage

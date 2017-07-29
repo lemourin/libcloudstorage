@@ -195,7 +195,7 @@ class Either {
 template <class T>
 using EitherError = Either<Error, T>;
 
-using ExchangeCodeCallback = std::function<void(const std::string&)>;
+using ExchangeCodeCallback = std::function<void(EitherError<std::string>)>;
 using GetItemCallback = std::function<void(IItem::Pointer)>;
 using GetItemDataCallback = std::function<void(IItem::Pointer)>;
 using DeleteItemCallback = std::function<void(bool)>;
