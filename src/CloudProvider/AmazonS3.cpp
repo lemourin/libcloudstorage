@@ -158,11 +158,13 @@ std::string AmazonS3::endpoint() const {
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest* r) -> bool {
+      shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
-          return false;
-        return unpackCredentials(r->getAuthorizationCode());
+          return Error{500, ""};
+        return unpackCredentials(r->getAuthorizationCode())
+                   ? EitherError<void>(nullptr)
+                   : EitherError<void>(Error{500, "invalid code"});
       });
 }
 

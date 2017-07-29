@@ -32,17 +32,17 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), awaiting_authorization_code_(), callback_(callback) {
   if (!provider()->callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
-  set_resolver([this](Request*) {
-    bool success = callback_ ? callback_(this) : oauth2Authorization();
+  set_resolver([this](Request*) -> EitherError<void> {
+    auto result = callback_ ? callback_(this) : oauth2Authorization();
     provider()->set_authorization_status(
-        success ? CloudProvider::AuthorizationStatus::Success
-                : CloudProvider::AuthorizationStatus::Fail);
+        !result.left() ? CloudProvider::AuthorizationStatus::Success
+                       : CloudProvider::AuthorizationStatus::Fail);
     provider()->authorized_condition().notify_all();
-    if (success)
+    if (!result.left())
       provider()->callback()->accepted(*provider());
     else
       provider()->callback()->declined(*provider());
-    return success;
+    return result;
   });
   set_cancel_callback([this]() {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -59,7 +59,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
 
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
-bool AuthorizeRequest::oauth2Authorization() {
+EitherError<void> AuthorizeRequest::oauth2Authorization() {
   IAuth* auth = provider()->auth();
   std::stringstream input, output, error_stream;
   IHttpRequest::Pointer r = auth->refreshTokenRequest(input);
@@ -67,19 +67,20 @@ bool AuthorizeRequest::oauth2Authorization() {
   if (IHttpRequest::isSuccess(code)) {
     std::unique_lock<std::mutex> lock(provider()->auth_mutex());
     auth->set_access_token(auth->refreshTokenResponse(output));
-    return true;
+    return nullptr;
   } else if (r && !IHttpRequest::isClientError(code)) {
     if (!is_cancelled())
       provider()->callback()->error(*provider(),
                                     error_string(code, error_stream.str()));
-    return false;
+    return Error{code, error_stream.str()};
   }
 
-  if (is_cancelled()) return false;
+  if (is_cancelled()) return Error{IHttpRequest::Aborted, ""};
   if (provider()->callback()->userConsentRequired(*provider()) ==
       ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
     std::string authorization_code = getAuthorizationCode();
-    if (authorization_code.empty()) return false;
+    if (authorization_code.empty())
+      return Error{500, "failed to get authorization code"};
     auth->set_authorization_code(authorization_code);
     std::stringstream input, output;
     std::stringstream error_stream;
@@ -87,13 +88,13 @@ bool AuthorizeRequest::oauth2Authorization() {
     if (IHttpRequest::isSuccess(send(r.get(), input, output, &error_stream))) {
       std::unique_lock<std::mutex> lock(provider()->auth_mutex());
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
-      return true;
+      return nullptr;
     } else if (!is_cancelled()) {
       provider()->callback()->error(*provider(),
                                     error_string(code, error_stream.str()));
     }
   }
-  return false;
+  return Error{code, error_stream.str()};
 }
 
 std::string AuthorizeRequest::getAuthorizationCode() {

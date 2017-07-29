@@ -28,15 +28,15 @@
 
 namespace cloudstorage {
 
-class AuthorizeRequest : public Request<bool> {
+class AuthorizeRequest : public Request<EitherError<void>> {
  public:
   using Pointer = std::shared_ptr<AuthorizeRequest>;
-  using AuthorizationFlow = std::function<bool(AuthorizeRequest*)>;
+  using AuthorizationFlow = std::function<EitherError<void>(AuthorizeRequest*)>;
 
   AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizationFlow = nullptr);
   ~AuthorizeRequest();
 
-  bool oauth2Authorization();
+  EitherError<void> oauth2Authorization();
 
   std::string getAuthorizationCode();
 

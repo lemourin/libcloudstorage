@@ -216,7 +216,6 @@ Request<T>::Semaphore::~Semaphore() {
   request_->semaphore_list_.erase(std::find(list.begin(), list.end(), this));
 }
 
-template class Request<bool>;
 template class Request<EitherError<std::vector<char>>>;
 template class Request<EitherError<std::string>>;
 template class Request<EitherError<IItem>>;

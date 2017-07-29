@@ -294,9 +294,9 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return util::make_unique<Authorize>(
-      shared_from_this(), [this](AuthorizeRequest* r) {
+      shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
         if (!login(r)) {
-          if (r->is_cancelled()) return false;
+          if (r->is_cancelled()) return Error{IHttpRequest::Aborted, ""};
           if (callback()->userConsentRequired(*this) ==
               ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
             auto code = r->getAuthorizationCode();
@@ -304,7 +304,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               std::lock_guard<std::mutex> mutex(auth_mutex());
               auth()->set_access_token(authorizationCodeToToken(code));
             }
-            if (!login(r)) return false;
+            if (!login(r)) return Error{401, "invalid credentials"};
           }
         }
         Authorize::Semaphore semaphore(r);
@@ -313,10 +313,10 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
         semaphore.wait();
         mega_->removeRequestListener(&fetch_nodes_listener_);
         if (fetch_nodes_listener_.status_ != RequestListener::SUCCESS) {
-          return false;
+          return Error{500, "couldn't fetch nodes"};
         }
         authorized_ = true;
-        return true;
+        return nullptr;
       });
 }
 
@@ -652,7 +652,7 @@ MegaNz::downloadResolver(IItem::Pointer item,
   };
 }
 
-bool MegaNz::login(Request<bool>* r) {
+bool MegaNz::login(Request<EitherError<void>>* r) {
   Authorize::Semaphore semaphore(r);
   RequestListener auth_listener(&semaphore);
   auto data = credentialsFromString(token());

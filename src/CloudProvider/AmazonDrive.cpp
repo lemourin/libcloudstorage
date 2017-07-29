@@ -96,17 +96,18 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   auto r = util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [this](AuthorizeRequest* r) -> bool {
-        if (!r->oauth2Authorization()) return false;
+      shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
+        auto auth_status = r->oauth2Authorization();
+        if (auth_status.left()) return auth_status;
         auto request = http()->create(
             "https://drive.amazonaws.com/drive/v1/account/endpoint", "GET");
         authorizeRequest(*request);
-        std::stringstream input, output;
-        int code = r->send(request.get(), input, output, nullptr);
+        std::stringstream input, output, error;
+        int code = r->send(request.get(), input, output, &error);
         if (!IHttpRequest::isSuccess(code)) {
           if (!r->is_cancelled())
             callback()->error(*this, "Couldn't obtain endpoints.");
-          return false;
+          return Error{code, error.str()};
         }
         Json::Value response;
         output >> response;
@@ -115,7 +116,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
           metadata_url_ = response["metadataUrl"].asString();
           content_url_ = response["contentUrl"].asString();
         }
-        return true;
+        return nullptr;
       });
   return std::move(r);
 }
