@@ -173,6 +173,28 @@ class IUploadFileCallback {
   virtual void progress(uint32_t total, uint32_t now) = 0;
 };
 
+struct Error {
+  int code_;
+  std::string description_;
+};
+
+template <class Left, class Right>
+class Either {
+ public:
+  Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
+  Either(const Right& right) : right_(std::make_shared<Right>(right)) {}
+
+  std::shared_ptr<Left> left() const { return left_; }
+  std::shared_ptr<Right> right() const { return right_; }
+
+ private:
+  std::shared_ptr<Left> left_;
+  std::shared_ptr<Right> right_;
+};
+
+template <class T>
+using EitherError = Either<Error, T>;
+
 using ExchangeCodeCallback = std::function<void(const std::string&)>;
 using GetItemCallback = std::function<void(IItem::Pointer)>;
 using GetItemDataCallback = std::function<void(IItem::Pointer)>;
