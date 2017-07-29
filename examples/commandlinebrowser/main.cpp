@@ -93,6 +93,7 @@ int main(int, char**) {
                nullptr,
                nullptr,
                nullptr,
+               nullptr,
                {}});
           prompt += provider_name + "/";
           current_provider = provider;

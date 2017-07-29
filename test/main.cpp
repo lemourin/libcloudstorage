@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
                      nullptr,
                      nullptr,
                      nullptr,
+                     nullptr,
                      {}});
   traverse_drive(*drive, drive->rootDirectory(), "/");
 

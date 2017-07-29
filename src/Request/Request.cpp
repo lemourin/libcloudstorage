@@ -32,16 +32,6 @@
 
 namespace cloudstorage {
 
-namespace {
-
-bool isPrintable(const std::string& str) {
-  for (char c : str)
-    if (!isprint(c) && !isspace(c)) return false;
-  return true;
-}
-
-}  // namespace
-
 template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider)
     : provider_shared_(provider), is_cancelled_(false) {}

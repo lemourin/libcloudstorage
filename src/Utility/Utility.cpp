@@ -62,10 +62,10 @@ std::string remove_whitespace(const std::string& str) {
 
 range parse_range(const std::string& r) {
   std::string str = remove_whitespace(r);
-  int l = strlen("bytes=");
+  size_t l = strlen("bytes=");
   if (str.substr(0, l) != "bytes=") return {-1, -1};
   std::string n1, n2;
-  int it = l;
+  size_t it = l;
   while (it < r.length() && str[it] != '-') n1 += str[it++];
   it++;
   while (it < r.length()) n2 += str[it++];
@@ -79,7 +79,7 @@ std::string address(const std::string& url, uint16_t port) {
   const auto http = "http://";
   int cnt = std::count(http, http + strlen(http), '/') + 1;
   std::string hostname = url, path;
-  for (int i = 0; i < url.length(); i++) {
+  for (size_t i = 0; i < url.length(); i++) {
     if (url[i] == '/') cnt--;
     if (cnt == 0) {
       hostname = std::string(url.begin(), url.begin() + i);

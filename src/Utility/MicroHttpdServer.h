@@ -68,8 +68,8 @@ class MicroHttpdServer : public IHttpServer {
     std::string url() const override;
 
    private:
-    std::string url_;
     MHD_Connection* connection_;
+    std::string url_;
   };
 
   IResponse::Pointer createResponse(int code, const IResponse::Headers&,
