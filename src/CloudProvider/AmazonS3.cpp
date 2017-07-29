@@ -69,9 +69,12 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
         output);
     if (!IHttpRequest::isSuccess(code)) return false;
   } else {
-    auto directory = r->provider()
-                         ->getItemDataAsync(source_id, [](IItem::Pointer) {})
-                         ->result();
+    auto directory =
+        r->provider()
+            ->getItemDataAsync(source_id, [](EitherError<IItem>) {})
+            ->result()
+            .right();
+    if (!directory) return false;
     Request<bool>::Semaphore semaphore(r);
     auto children_request = r->provider()->listDirectoryAsync(
         directory, [&semaphore](const std::vector<IItem::Pointer>&) {
@@ -269,8 +272,8 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     if (access_id().empty() || secret().empty()) r->reauthorize();
     auto data = split(id);
     auto item = std::make_shared<Item>(
@@ -280,8 +283,8 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
             : IItem::FileType::Unknown);
     if (item->type() != IItem::FileType::Directory)
       item->set_url(getUrl(*item));
-    callback(item);
-    return item;
+    callback(EitherError<IItem>(item));
+    return EitherError<IItem>(item);
   });
   return std::move(r);
 }

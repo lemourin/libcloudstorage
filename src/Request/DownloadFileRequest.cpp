@@ -45,8 +45,9 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
     std::ostream response_stream(&stream_wrapper_);
     int code = sendRequest(
         [this](std::ostream& input) { return request_factory_(*file_, input); },
-        response_stream, std::bind(&DownloadFileRequest::ICallback::progress,
-                                   callback_.get(), _1, _2));
+        response_stream, nullptr,
+        std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
+                  _1, _2));
     if (IHttpRequest::isSuccess(code))
       callback_->done();
     else if (fallback_thumbnail_)
@@ -62,12 +63,13 @@ void DownloadFileRequest::generateThumbnail(
   if (!r->provider()->thumbnailer()) return;
   Request<void>::Semaphore semaphore(r);
   auto item_data = r->provider()->getItemDataAsync(
-      item->id(), [&semaphore](IItem::Pointer) { semaphore.notify(); });
+      item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
   semaphore.wait();
   if (r->is_cancelled()) return item_data->cancel();
-  if (!item_data->result()) return callback->error("Couldn't get item url.");
+  if (!item_data->result().right())
+    return callback->error("Couldn't get item url.");
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
-      r->provider(), item_data->result(),
+      r->provider(), item_data->result().right(),
       [&semaphore, callback](const std::vector<char>& data) {
         if (!data.empty()) {
           callback->receivedData(data.data(), data.size());

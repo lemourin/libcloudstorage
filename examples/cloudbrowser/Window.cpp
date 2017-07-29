@@ -339,8 +339,8 @@ void Window::play(int item_id) {
     contentItem()->setFocus(false);
   last_played_ = item_id;
   item_data_request_ = cloud_provider_->getItemDataAsync(
-      item->item()->id(), [this](IItem::Pointer i) {
-        if (i) emit runPlayerFromUrl(i->url().c_str());
+      item->item()->id(), [this](EitherError<IItem> i) {
+        if (i.right()) emit runPlayerFromUrl(i.right()->url().c_str());
       });
 }
 

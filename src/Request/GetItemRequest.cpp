@@ -30,10 +30,11 @@ namespace cloudstorage {
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
     : Request(p), path_(path), callback_(callback) {
-  set_resolver([this](Request*) -> IItem::Pointer {
+  set_resolver([this](Request*) -> EitherError<IItem> {
     if (path_.empty() || path_.front() != '/') {
-      callback_(nullptr);
-      return nullptr;
+      Error e{403, "invalid path"};
+      callback_(e);
+      return e;
     }
     IItem::Pointer node = provider()->rootDirectory();
     std::stringstream stream(path_.substr(1));
@@ -45,7 +46,10 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
       }
       {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (is_cancelled()) return nullptr;
+        if (is_cancelled()) {
+          Error e{IHttpRequest::Aborted, ""};
+          return e;
+        }
         current_request_ = provider()->listDirectoryAsync(
             std::move(node), [](const std::vector<IItem::Pointer>&) {});
       }

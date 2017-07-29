@@ -49,42 +49,44 @@ IItem::Pointer YandexDisk::rootDirectory() const {
 
 ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver(
-      [this, id, callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
-        std::stringstream output;
-        int code = r->sendRequest(
-            [this, id](std::ostream&) {
-              auto request =
-                  http()->create(endpoint() + "/v1/disk/resources", "GET");
-              request->setParameter("path", id);
-              return request;
-            },
-            output);
-        if (!IHttpRequest::isSuccess(code)) {
-          callback(nullptr);
-          return nullptr;
-        }
-        Json::Value json;
+  auto r = util::make_unique<Request<EitherError<IItem>>>(
+      shared_from_this());
+  r->set_resolver([this, id, callback](Request<EitherError<IItem>>* r)
+                      -> EitherError<IItem> {
+    std::stringstream output;
+    Error error;
+    int code = r->sendRequest(
+        [this, id](std::ostream&) {
+          auto request =
+              http()->create(endpoint() + "/v1/disk/resources", "GET");
+          request->setParameter("path", id);
+          return request;
+        },
+        output, &error);
+    if (!IHttpRequest::isSuccess(code)) {
+      callback(error);
+      return error;
+    }
+    Json::Value json;
+    output >> json;
+    auto item = toItem(json);
+    if (item->type() != IItem::FileType::Directory) {
+      code = r->sendRequest(
+          [this, id](std::ostream&) {
+            auto request = http()->create(
+                endpoint() + "/v1/disk/resources/download", "GET");
+            request->setParameter("path", id);
+            return request;
+          },
+          output);
+      if (IHttpRequest::isSuccess(code)) {
         output >> json;
-        auto item = toItem(json);
-        if (item->type() != IItem::FileType::Directory) {
-          code = r->sendRequest(
-              [this, id](std::ostream&) {
-                auto request = http()->create(
-                    endpoint() + "/v1/disk/resources/download", "GET");
-                request->setParameter("path", id);
-                return request;
-              },
-              output);
-          if (IHttpRequest::isSuccess(code)) {
-            output >> json;
-            static_cast<Item*>(item.get())->set_url(json["href"].asString());
-          }
-        }
-        callback(item);
-        return item;
-      });
+        static_cast<Item*>(item.get())->set_url(json["href"].asString());
+      }
+    }
+    callback(item);
+    return item;
+  });
   return std::move(r);
 }
 
@@ -116,7 +118,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
       std::string url = json["href"].asString();
       code = r->sendRequest(
           [this, url](std::ostream&) { return http()->create(url, "GET"); },
-          stream,
+          stream, nullptr,
           std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
       if (IHttpRequest::isSuccess(code)) callback->done();
     }

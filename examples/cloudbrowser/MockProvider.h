@@ -70,7 +70,7 @@ class MockProvider : public ICloudProvider {
     MockGetItemRequest(const std::string& path, GetItemCallback);
     void finish() override {}
     void cancel() override {}
-    IItem::Pointer result() override { return result_; }
+    EitherError<IItem> result() override { return result_; }
 
    private:
     IItem::Pointer result_;
@@ -100,7 +100,7 @@ class MockProvider : public ICloudProvider {
     MockGetItemDataRequest(const std::string& id, GetItemDataCallback);
     void finish() override {}
     void cancel() override {}
-    IItem::Pointer result() override { return result_; }
+    EitherError<IItem> result() override { return result_; }
 
    private:
     IItem::Pointer result_;

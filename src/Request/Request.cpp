@@ -153,7 +153,8 @@ std::string Request<T>::error_string(int code, const std::string& desc) const {
 template <class T>
 int Request<T>::sendRequest(
     std::function<IHttpRequest::Pointer(std::ostream&)> factory,
-    std::ostream& output, ProgressFunction download, ProgressFunction upload) {
+    std::ostream& output, Error* error, ProgressFunction download,
+    ProgressFunction upload) {
   auto p = provider();
   if (!p) return IHttpRequest::Unknown;
   std::stringstream input, error_stream;
@@ -178,6 +179,7 @@ int Request<T>::sendRequest(
     if (!is_cancelled() && code != IHttpRequest::Aborted)
       this->error(code, error_stream.str());
   }
+  if (error) *error = {code, error_stream.str()};
   return code;
 }
 
@@ -221,5 +223,6 @@ template class Request<std::vector<std::shared_ptr<cloudstorage::IItem>>>;
 template class Request<std::vector<char>>;
 template class Request<std::string>;
 template class Request<EitherError<std::string>>;
+template class Request<EitherError<IItem>>;
 
 }  // namespace cloudstorage

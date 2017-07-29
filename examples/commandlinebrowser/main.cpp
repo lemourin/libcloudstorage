@@ -134,7 +134,8 @@ int main(int, char**) {
         std::getline(line, file);
         auto item = getChild(current_provider, current_directory, file);
         if (item) {
-          auto data = current_provider->getItemDataAsync(item->id())->result();
+          auto data =
+              current_provider->getItemDataAsync(item->id())->result().right();
           if (data) std::cout << "Url: " << data->url() << "\n";
         }
       }

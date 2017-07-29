@@ -74,12 +74,14 @@ class Request : public IRequest<ReturnValue> {
    *
    * @param factory function which should create request to perform
    * @param output output stream
+   * @param error_stream error stream
    * @param download download progress callback
    * @param upload upload progress callback
    * @return http code or curl error code
    */
   int sendRequest(std::function<IHttpRequest::Pointer(std::ostream&)> factory,
-                  std::ostream& output, ProgressFunction download = nullptr,
+                  std::ostream& output, Error* error_stream = nullptr,
+                  ProgressFunction download = nullptr,
                   ProgressFunction upload = nullptr);
 
   int send(IHttpRequest*, std::istream& input, std::ostream& output,

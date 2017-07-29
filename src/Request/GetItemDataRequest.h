@@ -30,7 +30,7 @@
 
 namespace cloudstorage {
 
-class GetItemDataRequest : public Request<IItem::Pointer> {
+class GetItemDataRequest : public Request<EitherError<IItem>> {
  public:
   using Callback = GetItemDataCallback;
 

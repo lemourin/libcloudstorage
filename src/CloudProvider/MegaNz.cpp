@@ -322,22 +322,24 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
 
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver(
-      [id, callback, this](Request<IItem::Pointer>* r) -> IItem::Pointer {
-        if (!ensureAuthorized(r)) {
-          callback(nullptr);
-          return nullptr;
-        }
-        std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
-        if (!node) {
-          callback(nullptr);
-          return nullptr;
-        }
-        auto item = toItem(node.get());
-        callback(item);
-        return item;
-      });
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([id, callback,
+                   this](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
+    if (!ensureAuthorized(r)) {
+      Error e{401, "unauthorized"};
+      callback(e);
+      return e;
+    }
+    std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
+    if (!node) {
+      Error e{404, "not found"};
+      callback(e);
+      return e;
+    }
+    auto item = toItem(node.get());
+    callback(item);
+    return item;
+  });
   return std::move(r);
 }
 

@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class GetItemRequest : public Request<IItem::Pointer> {
+class GetItemRequest : public Request<EitherError<IItem>> {
  public:
   using Callback = GetItemCallback;
 

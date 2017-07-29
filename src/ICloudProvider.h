@@ -45,10 +45,10 @@ class ICloudProvider {
 
   using ExchangeCodeRequest = IRequest<EitherError<std::string>>;
   using ListDirectoryRequest = IRequest<std::vector<IItem::Pointer>>;
-  using GetItemRequest = IRequest<IItem::Pointer>;
+  using GetItemRequest = IRequest<EitherError<IItem>>;
   using DownloadFileRequest = IRequest<void>;
   using UploadFileRequest = IRequest<void>;
-  using GetItemDataRequest = IRequest<IItem::Pointer>;
+  using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<bool>;
   using CreateDirectoryRequest = IRequest<IItem::Pointer>;
   using MoveItemRequest = IRequest<bool>;
@@ -236,9 +236,9 @@ class ICloudProvider {
    *
    * @return object representing the pending request
    */
-  virtual GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
-                                               GetItemCallback callback =
-                                                   [](IItem::Pointer) {}) = 0;
+  virtual GetItemRequest::Pointer getItemAsync(
+      const std::string& absolute_path,
+      GetItemCallback callback = [](EitherError<IItem>) {}) = 0;
 
   /**
    * Downloads the item, the file is provided by callback.
@@ -278,7 +278,7 @@ class ICloudProvider {
    */
   virtual GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id,
-      GetItemDataCallback callback = [](IItem::Pointer) {}) = 0;
+      GetItemDataCallback callback = [](EitherError<IItem>) {}) = 0;
 
   /**
    * Downloads thumbnail image, before calling the function, make sure provided

@@ -49,9 +49,9 @@ bool Dropbox::reauthorize(int code) const { return code == 400 || code == 401; }
 
 ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto f = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  f->set_resolver([this, id,
-                   callback](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto f = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  f->set_resolver([this, id, callback](
+                      Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     auto item_data = [this, r, id](std::ostream& input) {
       auto request =
           http()->create(endpoint() + "/2/files/get_metadata", "POST");
@@ -63,9 +63,10 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
       return request;
     };
     std::stringstream output;
-    if (!IHttpRequest::isSuccess(r->sendRequest(item_data, output))) {
-      callback(nullptr);
-      return nullptr;
+    Error error;
+    if (!IHttpRequest::isSuccess(r->sendRequest(item_data, output, &error))) {
+      callback(error);
+      return error;
     }
     Json::Value response;
     output >> response;
