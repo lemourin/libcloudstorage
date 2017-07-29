@@ -398,14 +398,17 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       std::fstream mega_cache(cache.c_str(),
                               std::fstream::out | std::fstream::binary);
       if (!mega_cache) {
-        callback->done(Error{403, "Couldn't open cache file " + cache});
-        return Error{403, "couldn't open cache file" + cache};
+        Error e{403, "couldn't open cache file" + cache};
+        callback->done(e);
+        return e;
       }
       std::array<char, BUFFER_SIZE> buffer;
       while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
         if (r->is_cancelled()) {
           std::remove(cache.c_str());
-          return Error{IHttpRequest::Aborted, ""};
+          Error e{IHttpRequest::Aborted, ""};
+          callback->done(e);
+          return e;
         }
         mega_cache.write(buffer.data(), length);
       }
@@ -423,11 +426,11 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     std::remove(cache.c_str());
     mega_->removeTransferListener(&listener);
     if (listener.status_ != Listener::SUCCESS) {
-      if (!r->is_cancelled()) {
-        callback->done(Error{500, "Upload error: " + listener.error_});
-        return Error{500, listener.error_};
-      } else
-        return Error{IHttpRequest::Aborted, ""};
+      Error e = r->is_cancelled()
+                    ? Error{IHttpRequest::Aborted, ""}
+                    : Error{500, "Upload error: " + listener.error_};
+      callback->done(e);
+      return e;
     } else {
       callback->done(nullptr);
       return nullptr;
@@ -461,8 +464,9 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
       if (!cache_file) {
-        callback->done(Error{500, "couldn't open cache file " + cache});
-        return Error{500, "couldn't open cache file " + cache};
+        Error e{500, "couldn't open cache file " + cache};
+        callback->done(e);
+        return e;
       }
       std::array<char, BUFFER_SIZE> buffer;
       do {

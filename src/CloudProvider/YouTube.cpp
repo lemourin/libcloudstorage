@@ -69,19 +69,21 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
                    this](Request<EitherError<std::vector<IItem::Pointer>>>* r)
                       -> EitherError<std::vector<IItem::Pointer>> {
     if (item->type() != IItem::FileType::Directory) {
-      callback->done(Error{403, "Trying to list non-directory."});
-      return Error{403, "trying to list non-directory"};
+      Error e{403, "trying to list non-directory"};
+      callback->done(e);
+      return e;
     }
     std::string page_token;
     std::vector<IItem::Pointer> result;
     bool failure = false;
+    Error error;
     do {
       std::stringstream output_stream;
       int code = r->sendRequest(
           [this, item, &page_token](std::ostream& i) {
             return listDirectoryRequest(*item, page_token, i);
           },
-          output_stream);
+          output_stream, &error);
       if (IHttpRequest::isSuccess(code) || is_fine(code)) {
         page_token = "";
         if (is_fine(code)) output_stream << "{}";
@@ -92,7 +94,10 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
       } else
         failure = true;
     } while (!page_token.empty() && !failure);
-    if (!failure) callback->done(result);
+    if (!failure)
+      callback->done(result);
+    else
+      callback->done(error);
     return result;
   });
   return std::move(r);

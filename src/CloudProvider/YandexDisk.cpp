@@ -122,6 +122,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
         callback->done(nullptr);
         return nullptr;
       } else {
+        callback->done(error);
         return error;
       }
     }
