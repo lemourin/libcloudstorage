@@ -53,8 +53,15 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
       callback_->done(nullptr);
       return nullptr;
     } else if (fallback_thumbnail_) {
-      generateThumbnail(r, file_, callback_);
-      return nullptr;
+      auto data = generateThumbnail(r, file_);
+      if (data.right()) {
+        callback_->receivedData(data.right()->data(), data.right()->size());
+        callback_->done(nullptr);
+        return nullptr;
+      } else {
+        callback_->done(data.left());
+        return data.left();
+      }
     } else {
       return error;
     }
@@ -63,30 +70,24 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
-void DownloadFileRequest::generateThumbnail(
-    Request<EitherError<void>>* r, IItem::Pointer item,
-    IDownloadFileCallback::Pointer callback) {
-  if (!r->provider()->thumbnailer()) return;
+EitherError<std::vector<char>> DownloadFileRequest::generateThumbnail(
+    Request<EitherError<void>>* r, IItem::Pointer item) {
+  if (!r->provider()->thumbnailer()) return Error{500, "missing thumbnailer"};
   Request<EitherError<void>>::Semaphore semaphore(r);
   auto item_data = r->provider()->getItemDataAsync(
       item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
   semaphore.wait();
-  if (r->is_cancelled()) return item_data->cancel();
-  if (!item_data->result().right())
-    return callback->done(item_data->result().left());
+  if (r->is_cancelled()) {
+    item_data->cancel();
+    return Error{IHttpRequest::Aborted, ""};
+  }
+  if (!item_data->result().right()) return item_data->result().left();
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
       r->provider(), item_data->result().right(),
-      [&semaphore, callback](EitherError<std::vector<char>> data) {
-        if (data.right()) {
-          callback->receivedData(data.right()->data(), data.right()->size());
-          callback->done(nullptr);
-        } else {
-          callback->done(data.left());
-        }
-        semaphore.notify();
-      });
+      [&semaphore](EitherError<std::vector<char>>) { semaphore.notify(); });
   semaphore.wait();
   if (r->is_cancelled()) thumbnail_data->cancel();
+  return thumbnail_data->result();
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(

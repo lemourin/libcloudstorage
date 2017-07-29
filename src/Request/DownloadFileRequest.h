@@ -51,8 +51,8 @@ class DownloadFileRequest : public Request<EitherError<void>> {
                       bool fallback_thumbnail = false);
   ~DownloadFileRequest();
 
-  static void generateThumbnail(Request<EitherError<void>>*, IItem::Pointer,
-                                ICallback::Pointer);
+  static EitherError<std::vector<char>> generateThumbnail(
+      Request<EitherError<void>>*, IItem::Pointer);
 
  private:
   IItem::Pointer file_;

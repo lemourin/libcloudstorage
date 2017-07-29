@@ -473,12 +473,19 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
         cache_file.read(buffer.data(), BUFFER_SIZE);
         callback->receivedData(buffer.data(), cache_file.gcount());
       } while (cache_file.gcount() > 0);
+      std::remove(cache.c_str());
       callback->done(nullptr);
+      return nullptr;
     } else {
-      cloudstorage::DownloadFileRequest::generateThumbnail(r, item, callback);
+      auto data = cloudstorage::DownloadFileRequest::generateThumbnail(r, item);
+      if (data.right()) {
+        callback->receivedData(data.right()->data(), data.right()->size());
+        callback->done(nullptr);
+        return nullptr;
+      } else {
+        return data.left();
+      }
     }
-    std::remove(cache.c_str());
-    return nullptr;
   });
   return std::move(r);
 }
