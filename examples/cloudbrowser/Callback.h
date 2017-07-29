@@ -35,6 +35,7 @@ using cloudstorage::IListDirectoryCallback;
 using cloudstorage::IDownloadFileCallback;
 using cloudstorage::IUploadFileCallback;
 using cloudstorage::IItem;
+using cloudstorage::Error;
 
 class ListDirectoryCallback : public IListDirectoryCallback {
  public:
@@ -44,7 +45,7 @@ class ListDirectoryCallback : public IListDirectoryCallback {
 
   void done(const std::vector<IItem::Pointer>&) override;
 
-  void error(const std::string& str) override;
+  void error(Error) override;
 
  private:
   Window* window_;
@@ -58,7 +59,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
 
   void done() override;
 
-  void error(const std::string& error) override;
+  void error(Error) override;
 
   void progress(uint32_t, uint32_t) override;
 
@@ -73,7 +74,7 @@ class DownloadFileCallback : public IDownloadFileCallback {
 
   void receivedData(const char* data, uint32_t length) override;
   void done() override;
-  void error(const std::string&) override;
+  void error(Error) override;
   void progress(uint32_t total, uint32_t now) override;
 
  private:
@@ -90,7 +91,7 @@ class UploadFileCallback : public IUploadFileCallback {
   uint32_t putData(char* data, uint32_t maxlength) override;
   uint64_t size() override;
   void done() override;
-  void error(const std::string& description) override;
+  void error(Error) override;
   void progress(uint32_t total, uint32_t now) override;
 
  private:
@@ -105,7 +106,7 @@ class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
   Status userConsentRequired(const cloudstorage::ICloudProvider&) override;
   void accepted(const cloudstorage::ICloudProvider&) override;
   void declined(const cloudstorage::ICloudProvider&) override;
-  void error(const cloudstorage::ICloudProvider&, const std::string&) override;
+  void error(const cloudstorage::ICloudProvider&, Error) override;
 
  private:
   Window* window_;

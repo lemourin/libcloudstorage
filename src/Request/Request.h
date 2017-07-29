@@ -44,7 +44,7 @@ class Request : public IRequest<ReturnValue> {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using Resolver = std::function<ReturnValue(Request*)>;
-  using ErrorCallback = std::function<void(Request*, int, const std::string&)>;
+  using ErrorCallback = std::function<void(Request*, Error)>;
   using CancelCallback = std::function<void()>;
 
   Request(std::shared_ptr<CloudProvider>);

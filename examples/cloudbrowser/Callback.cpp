@@ -50,9 +50,9 @@ void DownloadFileCallback::done() {
   emit window_->downloadProgressChanged(0, 0);
 }
 
-void DownloadFileCallback::error(const std::string& desc) {
+void DownloadFileCallback::error(Error e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Download: " << desc << "\n";
+  std::cerr << "[FAIL] Download: " << e.description_ << "\n";
   emit window_->downloadProgressChanged(0, 0);
 }
 
@@ -85,9 +85,9 @@ void UploadFileCallback::done() {
   emit window_->uploadProgressChanged(0, 0);
 }
 
-void UploadFileCallback::error(const std::string& description) {
+void UploadFileCallback::error(Error e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Upload: " << description << "\n";
+  std::cerr << "[FAIL] Upload: " << e.description_ << "\n";
   emit window_->uploadProgressChanged(0, 0);
 }
 
@@ -118,10 +118,9 @@ void CloudProviderCallback::declined(const ICloudProvider&) {
   emit window_->closeBrowser();
 }
 
-void CloudProviderCallback::error(const ICloudProvider&,
-                                  const std::string& desc) {
+void CloudProviderCallback::error(const ICloudProvider&, Error e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Authorize " << desc.c_str() << "\n";
+  std::cerr << "[FAIL] Authorize " << e.description_ << "\n";
   emit window_->closeBrowser();
 }
 
@@ -133,9 +132,9 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
 
 void ListDirectoryCallback::done(const std::vector<IItem::Pointer>&) {}
 
-void ListDirectoryCallback::error(const std::string& str) {
+void ListDirectoryCallback::error(Error e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] ListDirectory: " << str << "\n";
+  std::cerr << "[FAIL] ListDirectory: " << e.description_ << "\n";
   emit window_->closeBrowser();
 }
 
@@ -157,9 +156,9 @@ void DownloadThumbnailCallback::done() {
   emit item_->receivedImage();
 }
 
-void DownloadThumbnailCallback::error(const std::string& error) {
+void DownloadThumbnailCallback::error(Error e) {
   std::unique_lock<std::mutex> lock(item_->window_->stream_mutex());
-  std::cerr << "[FAIL] Thumbnail: " << error << "\n";
+  std::cerr << "[FAIL] Thumbnail: " << e.description_ << "\n";
 }
 
 void DownloadThumbnailCallback::progress(uint32_t, uint32_t) {}

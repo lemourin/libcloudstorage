@@ -45,9 +45,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_error_callback([callback](Request<EitherError<void>>* r, int code,
-                                   const std::string& desc) {
-    callback->error(r->error_string(code, desc));
+  r->set_error_callback([callback](Request<EitherError<void>>* r, Error e) {
+    callback->error(e);
   });
   r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
@@ -61,7 +60,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
         },
         output, &error);
     if (!IHttpRequest::isSuccess(code)) {
-      callback->error("Failed to create upload session.");
+      callback->error(error);
       return error;
     }
     Json::Value response;
@@ -88,7 +87,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             callback->progress(size, sent + now);
           });
       if (!IHttpRequest::isSuccess(code)) {
-        callback->error("Failed to upload chunk.");
+        callback->error(error);
         return error;
       }
       sent += length;

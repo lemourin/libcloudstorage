@@ -73,7 +73,7 @@ void DownloadFileRequest::generateThumbnail(
   semaphore.wait();
   if (r->is_cancelled()) return item_data->cancel();
   if (!item_data->result().right())
-    return callback->error("Couldn't get item url.");
+    return callback->error(*item_data->result().left());
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
       r->provider(), item_data->result().right(),
       [&semaphore, callback](EitherError<std::vector<char>> data) {
@@ -81,7 +81,7 @@ void DownloadFileRequest::generateThumbnail(
           callback->receivedData(data.right()->data(), data.right()->size());
           callback->done();
         } else {
-          callback->error(data.left()->description_);
+          callback->error(*data.left());
         }
         semaphore.notify();
       });
@@ -90,7 +90,7 @@ void DownloadFileRequest::generateThumbnail(
 }
 
 void DownloadFileRequest::error(int code, const std::string& description) {
-  if (!fallback_thumbnail_) callback_->error(error_string(code, description));
+  if (!fallback_thumbnail_) callback_->error(Error{code, description});
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(

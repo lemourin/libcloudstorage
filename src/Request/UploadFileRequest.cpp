@@ -40,7 +40,7 @@ UploadFileRequest::UploadFileRequest(
       callback_(callback) {
   set_resolver([this](Request*) -> EitherError<void> {
     if (directory_->type() != IItem::FileType::Directory) {
-      callback_->error("Can't upload into non-directory.");
+      callback_->error({403, "Can't upload into non-directory."});
       return Error{403, "can't upload into non-directory"};
     }
     std::stringstream response_stream;
@@ -68,7 +68,7 @@ UploadFileRequest::UploadFileRequest(
 UploadFileRequest::~UploadFileRequest() { cancel(); }
 
 void UploadFileRequest::error(int code, const std::string& description) {
-  callback_->error(error_string(code, description));
+  callback_->error(Error{code, description});
 }
 
 UploadStreamWrapper::UploadStreamWrapper(

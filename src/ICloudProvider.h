@@ -84,11 +84,8 @@ class ICloudProvider {
 
     /**
      * Called when an error occurred.
-     *
-     * @param description error's description
      */
-    virtual void error(const ICloudProvider&,
-                       const std::string& description) = 0;
+    virtual void error(const ICloudProvider&, Error) = 0;
   };
 
   /**

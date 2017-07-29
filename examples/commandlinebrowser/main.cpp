@@ -37,8 +37,8 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
   }
 
   void error(const cloudstorage::ICloudProvider&,
-             const std::string& description) override {
-    std::cout << "Error: " << description << "\n";
+             cloudstorage::Error e) override {
+    std::cout << "Error: " << e.description_ << "\n";
   }
 
  private:

@@ -65,16 +65,15 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
   auto r = util::make_unique<Request<EitherError<std::vector<IItem::Pointer>>>>(
       shared_from_this());
   auto is_fine = [](int code) { return code == 404; };
-  r->set_error_callback(
-      [callback, is_fine](Request<EitherError<std::vector<IItem::Pointer>>>* r,
-                          int code, const std::string& error) {
-        if (!is_fine(code)) callback->error(r->error_string(code, error));
-      });
+  r->set_error_callback([callback, is_fine](
+      Request<EitherError<std::vector<IItem::Pointer>>>* r, Error e) {
+    if (!is_fine(e.code_)) callback->error(e);
+  });
   r->set_resolver([item, callback, is_fine,
                    this](Request<EitherError<std::vector<IItem::Pointer>>>* r)
                       -> EitherError<std::vector<IItem::Pointer>> {
     if (item->type() != IItem::FileType::Directory) {
-      callback->error("Trying to list non-directory.");
+      callback->error(Error{403, "Trying to list non-directory."});
       return Error{403, "trying to list non-directory"};
     }
     std::string page_token;
@@ -163,9 +162,7 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_error_callback([this, callback](Request<EitherError<void>>* r,
-                                         int code, const std::string& desc) {
-    callback->error(r->error_string(code, desc));
-  });
+                                         Error e) { callback->error(e); });
   r->set_resolver([this, item, callback](
                       Request<EitherError<void>>* r) -> EitherError<void> {
     std::string url = item->url();

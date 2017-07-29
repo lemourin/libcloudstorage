@@ -32,6 +32,11 @@
 
 namespace cloudstorage {
 
+struct Error {
+  int code_;
+  std::string description_;
+};
+
 /**
  * Class representing pending request. When there is no reference to the
  * request, it's immediately cancelled.
@@ -86,10 +91,8 @@ class IListDirectoryCallback {
 
   /**
    * Called when error occurred.
-   *
-   * @param description error description
    */
-  virtual void error(const std::string& description) = 0;
+  virtual void error(Error) = 0;
 };
 
 class IDownloadFileCallback {
@@ -113,10 +116,8 @@ class IDownloadFileCallback {
 
   /**
    * Called when error occurred.
-   *
-   * @param description error description
    */
-  virtual void error(const std::string& description) = 0;
+  virtual void error(Error) = 0;
 
   /**
    * Called when progress has changed.
@@ -160,9 +161,8 @@ class IUploadFileCallback {
 
   /**
    * Called when error occurred.
-   * @param description
    */
-  virtual void error(const std::string& description) = 0;
+  virtual void error(Error) = 0;
 
   /**
    * Called when upload progress changed.
@@ -171,11 +171,6 @@ class IUploadFileCallback {
    * @param now count of bytes already uploaded
    */
   virtual void progress(uint32_t total, uint32_t now) = 0;
-};
-
-struct Error {
-  int code_;
-  std::string description_;
 };
 
 template <class Left, class Right>

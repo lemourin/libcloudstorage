@@ -33,21 +33,22 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
     : Request(p),
       directory_(std::move(directory)),
       callback_(std::move(callback)) {
-  set_resolver([this](Request*) -> std::vector<IItem::Pointer> {
+  set_resolver([this](Request*) -> EitherError<std::vector<IItem::Pointer>> {
     if (directory_->type() != IItem::FileType::Directory) {
-      callback_->error("Trying to list non-directory.");
-      return {};
+      callback_->error({403, "Trying to list non-directory."});
+      return Error{403, "trying to list non directory"};
     }
     std::string page_token;
     std::vector<IItem::Pointer> result;
     bool failure = false;
+    Error error;
     do {
       std::stringstream output_stream;
       int code = sendRequest(
           [this, &page_token](std::ostream& i) {
             return provider()->listDirectoryRequest(*directory_, page_token, i);
           },
-          output_stream);
+          output_stream, &error);
       if (IHttpRequest::isSuccess(code)) {
         page_token = "";
         for (auto& t :
@@ -58,15 +59,19 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       } else
         failure = true;
     } while (!page_token.empty() && !failure);
-    if (!failure) callback_->done(result);
-    return result;
+    if (!failure) {
+      callback_->done(result);
+      return result;
+    } else {
+      return error;
+    }
   });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
 void ListDirectoryRequest::error(int code, const std::string& description) {
-  callback_->error(error_string(code, description));
+  callback_->error(Error{code, description});
 }
 
 }  // namespace cloudstorage

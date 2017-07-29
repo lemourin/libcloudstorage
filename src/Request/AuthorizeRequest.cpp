@@ -71,7 +71,7 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
   } else if (r && !IHttpRequest::isClientError(code)) {
     if (!is_cancelled())
       provider()->callback()->error(*provider(),
-                                    error_string(code, error_stream.str()));
+                                    Error{code, error_stream.str()});
     return Error{code, error_stream.str()};
   }
 
@@ -91,7 +91,7 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
       return nullptr;
     } else if (!is_cancelled()) {
       provider()->callback()->error(*provider(),
-                                    error_string(code, error_stream.str()));
+                                    Error{code, error_stream.str()});
     }
   }
   return Error{code, error_stream.str()};

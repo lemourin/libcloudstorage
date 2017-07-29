@@ -132,7 +132,7 @@ bool Request<T>::reauthorize() {
 
 template <class T>
 void Request<T>::error(int code, const std::string& desc) {
-  if (error_callback_) error_callback_(this, code, desc);
+  if (error_callback_) error_callback_(this, Error{code, desc});
 }
 
 template <class T>

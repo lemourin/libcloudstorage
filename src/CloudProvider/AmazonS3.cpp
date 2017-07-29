@@ -386,7 +386,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
 
 void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   if (!crypto()) {
-    callback()->error(*this, "No crypto functions provided.");
+    callback()->error(*this, {500, "No crypto functions provided."});
     return;
   }
   std::string current_date = currentDate();
