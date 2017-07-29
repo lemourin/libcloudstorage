@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class DeleteItemRequest : public Request<bool> {
+class DeleteItemRequest : public Request<EitherError<void>> {
  public:
   DeleteItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer item,
                     DeleteItemCallback);

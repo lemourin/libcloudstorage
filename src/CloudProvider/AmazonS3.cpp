@@ -225,10 +225,10 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) -> bool {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (item->type() == IItem::FileType::Directory) {
-      Request<bool>::Semaphore semaphore(r);
+      Request<EitherError<void>>::Semaphore semaphore(r);
       auto children_request = r->provider()->listDirectoryAsync(
           item, [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
             semaphore.notify();
@@ -236,21 +236,24 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
       semaphore.wait();
       if (r->is_cancelled()) {
         children_request->cancel();
-        callback(false);
-        return false;
+        Error e{IHttpRequest::Aborted, ""};
+        callback(e);
+        return e;
       }
       for (auto child : *children_request->result().right()) {
-        auto delete_request =
-            deleteItemAsync(child, [&](bool) { semaphore.notify(); });
+        auto delete_request = deleteItemAsync(
+            child, [&](EitherError<void>) { semaphore.notify(); });
         semaphore.wait();
         if (r->is_cancelled()) {
           delete_request->cancel();
-          callback(false);
-          return false;
+          Error e{IHttpRequest::Aborted, ""};
+          callback(e);
+          return e;
         }
       }
     }
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto data = split(item->id());
@@ -259,13 +262,13 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
                                     escapePath(http(), data.second),
                                 "DELETE");
         },
-        output);
+        output, &error);
     if (!IHttpRequest::isSuccess(code)) {
-      callback(false);
-      return false;
+      callback(error);
+      return error;
     }
-    callback(true);
-    return true;
+    callback(nullptr);
+    return nullptr;
   });
   return std::move(r);
 }

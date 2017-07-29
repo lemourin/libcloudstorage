@@ -50,7 +50,7 @@ class ICloudProvider {
   using DownloadFileRequest = IRequest<void>;
   using UploadFileRequest = IRequest<void>;
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
-  using DeleteItemRequest = IRequest<bool>;
+  using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
   using MoveItemRequest = IRequest<bool>;
   using RenameItemRequest = IRequest<bool>;
@@ -302,7 +302,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual DeleteItemRequest::Pointer deleteItemAsync(
-      IItem::Pointer item, DeleteItemCallback callback = [](bool) {}) = 0;
+      IItem::Pointer item,
+      DeleteItemCallback callback = [](EitherError<void>) {}) = 0;
 
   /**
    * Creates directory in cloud provider.

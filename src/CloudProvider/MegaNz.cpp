@@ -465,25 +465,28 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([this, item, callback](Request<bool>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([this, item, callback](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      callback(false);
-      return false;
+      Error e{401, "authrization failed"};
+      callback(e);
+      return e;
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    Request<bool>::Semaphore semaphore(r);
+    Request<EitherError<void>>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     mega_->remove(node.get(), &listener);
     semaphore.wait();
     mega_->removeRequestListener(&listener);
     if (listener.status_ == Listener::SUCCESS) {
-      callback(true);
-      return true;
+      callback(nullptr);
+      return nullptr;
     } else {
-      callback(false);
-      return false;
+      Error e{500, ""};
+      callback(e);
+      return e;
     }
   });
   return std::move(r);

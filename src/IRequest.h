@@ -194,13 +194,26 @@ class Either {
   std::shared_ptr<Right> right_;
 };
 
+template <class Left>
+class Either<Left, void> {
+ public:
+  Either(std::nullptr_t) {}
+  Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
+  Either(std::shared_ptr<Left> left) : left_(left) {}
+
+  std::shared_ptr<Left> left() const { return left_; }
+
+ private:
+  std::shared_ptr<Left> left_;
+};
+
 template <class T>
 using EitherError = Either<Error, T>;
 
 using ExchangeCodeCallback = std::function<void(EitherError<std::string>)>;
 using GetItemCallback = std::function<void(EitherError<IItem>)>;
 using GetItemDataCallback = std::function<void(EitherError<IItem>)>;
-using DeleteItemCallback = std::function<void(bool)>;
+using DeleteItemCallback = std::function<void(EitherError<void>)>;
 using CreateDirectoryCallback = std::function<void(EitherError<IItem>)>;
 using MoveItemCallback = std::function<void(bool)>;
 using RenameItemCallback = std::function<void(bool)>;

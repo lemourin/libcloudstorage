@@ -80,7 +80,7 @@ ICloudProvider::GetItemDataRequest::Pointer MockProvider::getItemDataAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer MockProvider::deleteItemAsync(
     IItem::Pointer, DeleteItemCallback callback) {
-  callback(false);
+  callback(Error{500, ""});
   return util::make_unique<MockDeleteItemRequest>();
 }
 

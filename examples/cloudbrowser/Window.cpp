@@ -388,9 +388,9 @@ void Window::downloadFile(int item_id, QUrl path) {
 void Window::deleteItem(int item_id) {
   ItemModel* i = directory_model_.get(item_id);
   delete_item_request_ =
-      cloud_provider_->deleteItemAsync(i->item(), [this](bool e) {
+      cloud_provider_->deleteItemAsync(i->item(), [this](EitherError<void> e) {
         std::unique_lock<std::mutex> lock(stream_mutex());
-        if (e)
+        if (!e.left())
           std::cerr << "[DIAG] Successfully deleted file\n";
         else
           std::cerr << "[FAIL] Failed to delete file.\n";
