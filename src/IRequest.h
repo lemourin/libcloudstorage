@@ -36,12 +36,9 @@ namespace cloudstorage {
  * Class representing pending request. When there is no reference to the
  * request, it's immediately cancelled.
  */
-template <class ReturnValue>
-class IRequest {
+class IGenericRequest {
  public:
-  using Pointer = std::shared_ptr<IRequest>;
-
-  virtual ~IRequest() = default;
+  virtual ~IGenericRequest() = default;
 
   /**
    * Blocks until request finishes.
@@ -53,6 +50,12 @@ class IRequest {
    * long if curl was compiled without asynchronous name resolver(c-ares).
    */
   virtual void cancel() = 0;
+};
+
+template <class ReturnValue>
+class IRequest : public IGenericRequest {
+ public:
+  using Pointer = std::shared_ptr<IRequest>;
 
   /**
    * Retrieves the result, blocks if it wasn't computed just yet.
