@@ -399,9 +399,9 @@ void Window::deleteItem(int item_id) {
 
 void Window::createDirectory(QString name) {
   create_directory_request_ = cloud_provider_->createDirectoryAsync(
-      current_directory_, name.toStdString(), [this](IItem::Pointer item) {
+      current_directory_, name.toStdString(), [this](EitherError<IItem> item) {
         std::unique_lock<std::mutex> lock(stream_mutex());
-        if (item)
+        if (item.right())
           std::cerr << "[DIAG] Successfully created directory\n";
         else
           std::cerr << "[FAIL] Failed to create directory\n";

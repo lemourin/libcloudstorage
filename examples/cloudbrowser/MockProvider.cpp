@@ -194,7 +194,7 @@ MockProvider::MockDownloadFileRequest::MockDownloadFileRequest(
 
 MockProvider::MockCreateDirectoryRequest::MockCreateDirectoryRequest(
     IItem::Pointer, const std::string&, CreateDirectoryCallback callback) {
-  callback(nullptr);
+  callback(Error{500, "unimplemented"});
 }
 
 }  // namespace cloudstorage

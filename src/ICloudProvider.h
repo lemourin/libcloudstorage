@@ -51,7 +51,7 @@ class ICloudProvider {
   using UploadFileRequest = IRequest<void>;
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<bool>;
-  using CreateDirectoryRequest = IRequest<IItem::Pointer>;
+  using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
   using MoveItemRequest = IRequest<bool>;
   using RenameItemRequest = IRequest<bool>;
 
@@ -318,7 +318,7 @@ class ICloudProvider {
    */
   virtual CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer parent, const std::string& name,
-      CreateDirectoryCallback callback = [](IItem::Pointer) {}) = 0;
+      CreateDirectoryCallback callback = [](EitherError<IItem>) {}) = 0;
 
   /**
    * Moves item.

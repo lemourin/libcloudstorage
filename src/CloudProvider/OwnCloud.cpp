@@ -63,24 +63,25 @@ AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
 ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     std::stringstream response;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           return http()->create(
               api_url() + "/remote.php/webdav" + parent->id() + name + "/",
               "MKCOL");
         },
-        response);
+        response, &error);
     if (IHttpRequest::isSuccess(code)) {
       IItem::Pointer item = util::make_unique<Item>(
           name, parent->id() + name + "/", IItem::FileType::Directory);
       callback(item);
       return item;
     } else {
-      callback(nullptr);
-      return nullptr;
+      callback(error);
+      return error;
     }
   });
   return std::move(r);

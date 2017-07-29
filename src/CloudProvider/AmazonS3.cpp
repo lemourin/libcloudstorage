@@ -195,9 +195,10 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto data = split(parent->id());
@@ -206,19 +207,18 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
                   escapePath(http(), data.second + name + "/"),
               "PUT");
         },
-        output);
+        output, &error);
     if (!IHttpRequest::isSuccess(code)) {
-      callback(nullptr);
-      return nullptr;
+      callback(error);
+      return error;
     } else {
       auto path = getPath(parent->id());
       if (!split(path).second.empty()) path += "/";
       auto item = std::make_shared<Item>(name, path + name + "/",
                                          IItem::FileType::Directory);
-      callback(item);
-      return item;
+      callback(EitherError<IItem>(item));
+      return EitherError<IItem>(item);
     }
-
   });
   return std::move(r);
 }

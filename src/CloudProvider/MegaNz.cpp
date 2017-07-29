@@ -492,19 +492,21 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     if (!ensureAuthorized(r)) {
-      callback(nullptr);
-      return nullptr;
+      Error e{401, "authorization error"};
+      callback(e);
+      return e;
     }
     std::unique_ptr<mega::MegaNode> parent_node(
         mega_->getNodeByPath(parent->id().c_str()));
     if (!parent_node) {
-      callback(nullptr);
-      return nullptr;
+      Error e{404, "parent not found"};
+      callback(e);
+      return e;
     }
-    Request<IItem::Pointer>::Semaphore semaphore(r);
+    Request<EitherError<IItem>>::Semaphore semaphore(r);
     RequestListener listener(&semaphore);
     mega_->createFolder(name.c_str(), parent_node.get(), &listener);
     semaphore.wait();
@@ -516,8 +518,9 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
       callback(item);
       return item;
     } else {
-      callback(nullptr);
-      return nullptr;
+      Error e{500, "couldn't create folder"};
+      callback(e);
+      return e;
     }
   });
   return std::move(r);

@@ -174,9 +174,10 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer
 YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
                                  CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<IItem::Pointer>>(shared_from_this());
-  r->set_resolver([=](Request<IItem::Pointer>* r) -> IItem::Pointer {
+  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto request =
@@ -186,7 +187,7 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
               parent->id() + (parent->id().back() == '/' ? "" : "/") + name);
           return request;
         },
-        output);
+        output, &error);
     if (IHttpRequest::isSuccess(code)) {
       Json::Value json;
       output >> json;
@@ -195,7 +196,7 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
             auto request = http()->create(json["href"].asString(), "GET");
             return request;
           },
-          output);
+          output, &error);
       if (IHttpRequest::isSuccess(code)) {
         output >> json;
         auto item = toItem(json);
@@ -203,8 +204,8 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
         return item;
       }
     }
-    callback(nullptr);
-    return nullptr;
+    callback(error);
+    return error;
   });
   return std::move(r);
 }

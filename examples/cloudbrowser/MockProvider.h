@@ -121,7 +121,7 @@ class MockProvider : public ICloudProvider {
                                CreateDirectoryCallback);
     void finish() override {}
     void cancel() override {}
-    IItem::Pointer result() override { return nullptr; }
+    EitherError<IItem> result() override { return Error{500, "unimplemented"}; }
   };
 
   class MockMoveItemRequest : public MoveItemRequest {

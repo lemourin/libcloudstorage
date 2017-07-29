@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class CreateDirectoryRequest : public Request<IItem::Pointer> {
+class CreateDirectoryRequest : public Request<EitherError<IItem>> {
  public:
   CreateDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
                          const std::string&, CreateDirectoryCallback);
