@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class RenameItemRequest : public Request<bool> {
+class RenameItemRequest : public Request<EitherError<void>> {
  public:
   RenameItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
                     const std::string&, RenameItemCallback);

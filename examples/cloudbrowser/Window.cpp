@@ -411,9 +411,9 @@ void Window::createDirectory(QString name) {
 void Window::markMovedItem(int item_id) {
   if (moved_file_) {
     move_item_request_ = cloud_provider_->moveItemAsync(
-        moved_file_, current_directory_, [this](bool e) {
+        moved_file_, current_directory_, [this](EitherError<void> e) {
           std::unique_lock<std::mutex> lock(stream_mutex());
-          if (e)
+          if (!e.left())
             std::cerr << "[DIAG] Successfully moved file\n";
           else
             std::cerr << "[FAIL] Failed to move file.\n";
@@ -428,9 +428,9 @@ void Window::markMovedItem(int item_id) {
 void Window::renameItem(int item_id, QString name) {
   auto item = directory_model_.get(item_id)->item();
   rename_item_request_ = cloud_provider_->renameItemAsync(
-      item, name.toStdString(), [this](bool e) {
+      item, name.toStdString(), [this](EitherError<void> e) {
         std::unique_lock<std::mutex> lock(stream_mutex());
-        if (e)
+        if (!e.left())
           std::cerr << "[DIAG] Successfully renamed file\n";
         else
           std::cerr << "[FAIL] Failed to rename file.\n";

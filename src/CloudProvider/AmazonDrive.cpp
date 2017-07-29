@@ -63,12 +63,13 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
 
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer s, IItem::Pointer d, MoveItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) -> bool {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     Item* source = static_cast<Item*>(s.get());
     Item* destination = static_cast<Item*>(d.get());
     for (const std::string& parent : source->parents()) {
       std::stringstream output;
+      Error error;
       int code = r->sendRequest(
           [=](std::ostream& stream) {
             auto request = http()->create(
@@ -81,14 +82,14 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
             stream << json;
             return request;
           },
-          output);
+          output, &error);
       if (!IHttpRequest::isSuccess(code)) {
-        callback(false);
-        return false;
+        callback(error);
+        return error;
       }
     }
-    callback(true);
-    return true;
+    callback(nullptr);
+    return nullptr;
   });
   return std::move(r);
 }

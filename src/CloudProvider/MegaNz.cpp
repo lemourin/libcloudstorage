@@ -532,56 +532,59 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      callback(false);
-      return false;
+      Error error{401, "authorization error"};
+      callback(error);
+      return error;
     }
     std::unique_ptr<mega::MegaNode> source_node(
         mega_->getNodeByPath(source->id().c_str()));
     std::unique_ptr<mega::MegaNode> destination_node(
         mega_->getNodeByPath(destination->id().c_str()));
     if (source_node && destination_node) {
-      Request<bool>::Semaphore semaphore(r);
+      Request<EitherError<void>>::Semaphore semaphore(r);
       RequestListener listener(&semaphore);
       mega_->moveNode(source_node.get(), destination_node.get(), &listener);
       semaphore.wait();
       mega_->removeRequestListener(&listener);
       if (listener.status_ == Listener::SUCCESS) {
-        callback(true);
-        return true;
+        callback(nullptr);
+        return nullptr;
       }
     }
-    callback(false);
-    return false;
+    Error error{500, ""};
+    callback(error);
+    return error;
   });
   return std::move(r);
 }
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (!ensureAuthorized(r)) {
-      callback(false);
-      return false;
+      Error error{401, "authorization error"};
+      callback(error);
+      return error;
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     if (node) {
-      Request<bool>::Semaphore semaphore(r);
+      Request<EitherError<void>>::Semaphore semaphore(r);
       RequestListener listener(&semaphore);
       mega_->renameNode(node.get(), name.c_str(), &listener);
       semaphore.wait();
       mega_->removeRequestListener(&listener);
       if (listener.status_ == Listener::SUCCESS) {
-        callback(true);
-        return true;
+        callback(nullptr);
+        return nullptr;
       }
     }
-    callback(false);
-    return false;
+    callback(Error{500, ""});
+    return Error{500, ""};
   });
   return std::move(r);
 }

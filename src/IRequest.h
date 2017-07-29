@@ -215,8 +215,8 @@ using GetItemCallback = std::function<void(EitherError<IItem>)>;
 using GetItemDataCallback = std::function<void(EitherError<IItem>)>;
 using DeleteItemCallback = std::function<void(EitherError<void>)>;
 using CreateDirectoryCallback = std::function<void(EitherError<IItem>)>;
-using MoveItemCallback = std::function<void(bool)>;
-using RenameItemCallback = std::function<void(bool)>;
+using MoveItemCallback = std::function<void(EitherError<void>)>;
+using RenameItemCallback = std::function<void(EitherError<void>)>;
 using ListDirectoryCallback =
     std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
 using DownloadFileCallback = std::function<void(bool)>;

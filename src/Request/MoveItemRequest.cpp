@@ -32,19 +32,26 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
                                  IItem::Pointer destination,
                                  MoveItemCallback callback)
     : Request(p) {
-  set_resolver([=](Request<bool>* r) {
+  set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (destination->type() != IItem::FileType::Directory) {
-      callback(false);
-      return false;
+      Error e{403, "destination not a directory"};
+      callback(e);
+      return e;
     }
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream& stream) {
           return p->moveItemRequest(*source, *destination, stream);
         },
-        output);
-    callback(IHttpRequest::isSuccess(code));
-    return IHttpRequest::isSuccess(code);
+        output, &error);
+    if (IHttpRequest::isSuccess(code)) {
+      callback(nullptr);
+      return nullptr;
+    } else {
+      callback(error);
+      return error;
+    }
   });
 }
 

@@ -93,13 +93,13 @@ MockProvider::createDirectoryAsync(IItem::Pointer parent,
 
 ICloudProvider::MoveItemRequest::Pointer MockProvider::moveItemAsync(
     IItem::Pointer, IItem::Pointer, MoveItemCallback callback) {
-  callback(false);
+  callback(Error{500, ""});
   return util::make_unique<MockMoveItemRequest>();
 }
 
 ICloudProvider::RenameItemRequest::Pointer MockProvider::renameItemAsync(
     IItem::Pointer, const std::string&, RenameItemCallback callback) {
-  callback(false);
+  callback(Error{500, ""});
   return util::make_unique<MockMoveItemRequest>();
 }
 

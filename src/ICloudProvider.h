@@ -52,8 +52,8 @@ class ICloudProvider {
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
-  using MoveItemRequest = IRequest<bool>;
-  using RenameItemRequest = IRequest<bool>;
+  using MoveItemRequest = IRequest<EitherError<void>>;
+  using RenameItemRequest = IRequest<EitherError<void>>;
 
   class ICallback {
    public:
@@ -333,10 +333,9 @@ class ICloudProvider {
    *
    * @return object representing the pending request
    */
-  virtual MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
-                                                 IItem::Pointer destination,
-                                                 MoveItemCallback callback =
-                                                     [](bool) {}) = 0;
+  virtual MoveItemRequest::Pointer moveItemAsync(
+      IItem::Pointer source, IItem::Pointer destination,
+      MoveItemCallback callback = [](EitherError<void>) {}) = 0;
 
   /**
    * Renames item.
@@ -352,7 +351,7 @@ class ICloudProvider {
    */
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
-      RenameItemCallback callback = [](bool) {}) = 0;
+      RenameItemCallback callback = [](EitherError<void>) {}) = 0;
 
   /**
    * Simplified version of listDirectoryAsync.

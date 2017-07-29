@@ -48,10 +48,12 @@ std::string escapePath(IHttp* http, const std::string& str) {
   return result;
 }
 
-bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
-            std::string region, IHttp* http) {
+EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
+                         std::string source_id, std::string region,
+                         IHttp* http) {
   if (!source_id.empty() && source_id.back() != '/') {
     std::stringstream output;
+    Error error;
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto dest_data = AmazonS3::split(dest_id);
@@ -66,31 +68,33 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
                          "/" + source_data.first + "/" + source_data.second));
           return request;
         },
-        output);
-    if (!IHttpRequest::isSuccess(code)) return false;
+        output, &error);
+    if (!IHttpRequest::isSuccess(code)) return error;
   } else {
     auto directory =
         r->provider()
             ->getItemDataAsync(source_id, [](EitherError<IItem>) {})
-            ->result()
-            .right();
-    if (!directory) return false;
-    Request<bool>::Semaphore semaphore(r);
+            ->result();
+    if (directory.left()) return directory.left();
+    Request<EitherError<void>>::Semaphore semaphore(r);
     auto children_request = r->provider()->listDirectoryAsync(
-        directory, [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
+        directory.right(),
+        [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
           semaphore.notify();
         });
     semaphore.wait();
     if (r->is_cancelled()) {
       children_request->cancel();
-      return false;
+      return Error{IHttpRequest::Aborted, ""};
     }
-    for (auto item : *children_request->result().right())
-      if (!rename(r, dest_id + "/" + item->filename(), item->id(), region,
-                  http))
-        return false;
+    for (auto item : *children_request->result().right()) {
+      auto p =
+          rename(r, dest_id + "/" + item->filename(), item->id(), region, http);
+      if (p.left()) return p;
+    }
   }
   std::stringstream output;
+  Error error;
   int code = r->sendRequest(
       [=](std::ostream&) {
         auto data = AmazonS3::split(source_id);
@@ -99,9 +103,9 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
                                 escapePath(http, data.second),
                             "DELETE");
       },
-      output);
-  if (!IHttpRequest::isSuccess(code)) return false;
-  return true;
+      output, &error);
+  if (!IHttpRequest::isSuccess(code)) return error;
+  return nullptr;
 }
 
 std::string host(std::string url) {
@@ -165,29 +169,29 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) -> bool {
-    bool success = rename(r, destination->id() + source->filename(),
-                          source->id(), region_, http());
-    callback(success);
-    return success;
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
+    auto p = rename(r, destination->id() + source->filename(), source->id(),
+                    region_, http());
+    callback(p);
+    return p;
   });
   return std::move(r);
 }
 
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = util::make_unique<Request<bool>>(shared_from_this());
-  r->set_resolver([=](Request<bool>* r) -> bool {
+  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
+  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     std::string path = split(item->id()).second;
     if (!path.empty() && path.back() == '/') path.pop_back();
     if (path.find_first_of('/') == std::string::npos)
       path = split(item->id()).first + Auth::SEPARATOR;
     else
       path = split(item->id()).first + Auth::SEPARATOR + getPath(path) + "/";
-    bool success = rename(r, path + name, item->id(), region_, http());
-    callback(success);
-    return success;
+    auto p = rename(r, path + name, item->id(), region_, http());
+    callback(p);
+    return p;
   });
   return std::move(r);
 }

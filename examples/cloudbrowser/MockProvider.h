@@ -128,7 +128,7 @@ class MockProvider : public ICloudProvider {
    public:
     void finish() override {}
     void cancel() override {}
-    bool result() override { return false; }
+    EitherError<void> result() override { return Error{500, "unimplemented"}; }
   };
 
   MockProvider();
