@@ -75,7 +75,9 @@ class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
     callback_(result);
   }
 
-  void error(const std::string&) override { callback_({}); }
+  void error(const std::string& d) override {
+    callback_(cloudstorage::Error{0, d});
+  }
 
  private:
   cloudstorage::ListDirectoryCallback callback_;

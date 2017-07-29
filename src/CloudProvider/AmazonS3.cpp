@@ -77,7 +77,7 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
     if (!directory) return false;
     Request<bool>::Semaphore semaphore(r);
     auto children_request = r->provider()->listDirectoryAsync(
-        directory, [&semaphore](const std::vector<IItem::Pointer>&) {
+        directory, [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
           semaphore.notify();
         });
     semaphore.wait();
@@ -85,7 +85,7 @@ bool rename(Request<bool>* r, std::string dest_id, std::string source_id,
       children_request->cancel();
       return false;
     }
-    for (auto item : children_request->result())
+    for (auto item : *children_request->result().right())
       if (!rename(r, dest_id + "/" + item->filename(), item->id(), region,
                   http))
         return false;
@@ -230,7 +230,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     if (item->type() == IItem::FileType::Directory) {
       Request<bool>::Semaphore semaphore(r);
       auto children_request = r->provider()->listDirectoryAsync(
-          item, [&semaphore](const std::vector<IItem::Pointer>&) {
+          item, [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
             semaphore.notify();
           });
       semaphore.wait();
@@ -239,7 +239,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
         callback(false);
         return false;
       }
-      for (auto child : children_request->result()) {
+      for (auto child : *children_request->result().right()) {
         auto delete_request =
             deleteItemAsync(child, [&](bool) { semaphore.notify(); });
         semaphore.wait();

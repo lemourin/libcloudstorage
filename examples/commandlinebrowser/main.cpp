@@ -47,7 +47,7 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
 
 IItem::Pointer getChild(ICloudProvider::Pointer provider, IItem::Pointer item,
                         const std::string& filename) {
-  for (auto i : provider->listDirectoryAsync(item)->result())
+  for (auto i : *provider->listDirectoryAsync(item)->result().right())
     if (i->filename() == filename) return i;
   return nullptr;
 }
@@ -69,8 +69,10 @@ int main(int, char**) {
         for (auto p : ICloudStorage::create()->providers())
           std::cout << p->name() << "\n";
       } else {
-        for (auto item : current_provider->listDirectoryAsync(current_directory)
-                             ->result()) {
+        for (auto item :
+             *current_provider->listDirectoryAsync(current_directory)
+                  ->result()
+                  .right()) {
           std::cout << item->filename() << "\n";
         }
       }

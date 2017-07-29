@@ -58,7 +58,7 @@ void traverse_drive(cloudstorage::ICloudProvider& drive,
   std::cout << path << "\n";
   if (f->type() != cloudstorage::IItem::FileType::Directory) return;
   for (cloudstorage::IItem::Pointer& t :
-       drive.listDirectoryAsync(f)->result()) {
+       *drive.listDirectoryAsync(f)->result().right()) {
     traverse_drive(
         drive, std::move(t),
         path + t->filename() +

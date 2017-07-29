@@ -345,14 +345,18 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
 
 ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
+  auto r = util::make_unique<Request<EitherError<std::vector<IItem::Pointer>>>>(
       shared_from_this());
-  r->set_resolver([this, item,
-                   callback](Request<std::vector<IItem::Pointer>>* r)
-                      -> std::vector<IItem::Pointer> {
+  r->set_resolver([this, item, callback](
+                      Request<EitherError<std::vector<IItem::Pointer>>>* r)
+                      -> EitherError<std::vector<IItem::Pointer>> {
     if (!ensureAuthorized(r)) {
-      if (!r->is_cancelled()) callback->error("Authorization failed.");
-      return {};
+      Error e = {401, "authorization failed"};
+      if (!r->is_cancelled()) {
+        e = {IHttpRequest::Aborted, ""};
+        callback->error("Authorization failed.");
+      }
+      return e;
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));

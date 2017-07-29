@@ -29,7 +29,8 @@
 
 namespace cloudstorage {
 
-class ListDirectoryRequest : public Request<std::vector<IItem::Pointer>> {
+class ListDirectoryRequest
+    : public Request<EitherError<std::vector<IItem::Pointer>>> {
  public:
   using ICallback = IListDirectoryCallback;
 

@@ -44,7 +44,8 @@ class ICloudProvider {
   using Hints = std::unordered_map<std::string, std::string>;
 
   using ExchangeCodeRequest = IRequest<EitherError<std::string>>;
-  using ListDirectoryRequest = IRequest<std::vector<IItem::Pointer>>;
+  using ListDirectoryRequest =
+      IRequest<EitherError<std::vector<IItem::Pointer>>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
   using DownloadFileRequest = IRequest<void>;
   using UploadFileRequest = IRequest<void>;
@@ -361,8 +362,8 @@ class ICloudProvider {
    */
   virtual ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer item,
-      ListDirectoryCallback callback = [](const std::vector<IItem::Pointer>&) {
-      }) = 0;
+      ListDirectoryCallback callback =
+          [](EitherError<std::vector<IItem::Pointer>>) {}) = 0;
 
   /**
    * Simplified version of downloadFileAsync.

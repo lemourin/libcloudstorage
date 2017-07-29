@@ -224,5 +224,6 @@ template class Request<std::vector<char>>;
 template class Request<std::string>;
 template class Request<EitherError<std::string>>;
 template class Request<EitherError<IItem>>;
+template class Request<EitherError<std::vector<IItem::Pointer>>>;
 
 }  // namespace cloudstorage

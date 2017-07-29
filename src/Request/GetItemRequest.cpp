@@ -51,9 +51,9 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
           return e;
         }
         current_request_ = provider()->listDirectoryAsync(
-            std::move(node), [](const std::vector<IItem::Pointer>&) {});
+            std::move(node), [](EitherError<std::vector<IItem::Pointer>>) {});
       }
-      node = getItem(current_request_->result(), token);
+      node = getItem(*current_request_->result().right(), token);
     }
     callback_(node);
     return node;

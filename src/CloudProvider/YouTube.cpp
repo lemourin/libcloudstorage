@@ -62,20 +62,20 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
 ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r = util::make_unique<Request<std::vector<IItem::Pointer>>>(
+  auto r = util::make_unique<Request<EitherError<std::vector<IItem::Pointer>>>>(
       shared_from_this());
   auto is_fine = [](int code) { return code == 404; };
   r->set_error_callback(
-      [callback, is_fine](Request<std::vector<IItem::Pointer>>* r, int code,
-                          const std::string& error) {
+      [callback, is_fine](Request<EitherError<std::vector<IItem::Pointer>>>* r,
+                          int code, const std::string& error) {
         if (!is_fine(code)) callback->error(r->error_string(code, error));
       });
   r->set_resolver([item, callback, is_fine,
-                   this](Request<std::vector<IItem::Pointer>>* r)
-                      -> std::vector<IItem::Pointer> {
+                   this](Request<EitherError<std::vector<IItem::Pointer>>>* r)
+                      -> EitherError<std::vector<IItem::Pointer>> {
     if (item->type() != IItem::FileType::Directory) {
       callback->error("Trying to list non-directory.");
-      return {};
+      return Error{403, "trying to list non-directory"};
     }
     std::string page_token;
     std::vector<IItem::Pointer> result;

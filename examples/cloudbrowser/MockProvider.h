@@ -57,7 +57,9 @@ class MockProvider : public ICloudProvider {
       cancelled_ = true;
       result_.wait();
     }
-    std::vector<IItem::Pointer> result() override { return result_.get(); }
+    EitherError<std::vector<IItem::Pointer>> result() override {
+      return result_.get();
+    }
 
    private:
     IListDirectoryCallback::Pointer callback_;

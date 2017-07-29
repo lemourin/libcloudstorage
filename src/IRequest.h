@@ -205,7 +205,7 @@ using CreateDirectoryCallback = std::function<void(IItem::Pointer)>;
 using MoveItemCallback = std::function<void(bool)>;
 using RenameItemCallback = std::function<void(bool)>;
 using ListDirectoryCallback =
-    std::function<void(const std::vector<IItem::Pointer>&)>;
+    std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
 using DownloadFileCallback = std::function<void(bool)>;
 using UploadFileCallback = std::function<void(bool)>;
 using GetThumbnailCallback = std::function<void(bool)>;
