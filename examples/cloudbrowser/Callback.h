@@ -36,6 +36,7 @@ using cloudstorage::IDownloadFileCallback;
 using cloudstorage::IUploadFileCallback;
 using cloudstorage::IItem;
 using cloudstorage::Error;
+using cloudstorage::EitherError;
 
 class ListDirectoryCallback : public IListDirectoryCallback {
  public:
@@ -43,9 +44,7 @@ class ListDirectoryCallback : public IListDirectoryCallback {
 
   void receivedItem(IItem::Pointer item) override;
 
-  void done(const std::vector<IItem::Pointer>&) override;
-
-  void error(Error) override;
+  void done(EitherError<std::vector<IItem::Pointer>>) override;
 
  private:
   Window* window_;
@@ -57,9 +56,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
 
   void receivedData(const char* data, uint32_t length) override;
 
-  void done() override;
-
-  void error(Error) override;
+  void done(EitherError<void>) override;
 
   void progress(uint32_t, uint32_t) override;
 
@@ -73,8 +70,7 @@ class DownloadFileCallback : public IDownloadFileCallback {
   DownloadFileCallback(Window*, std::string filename);
 
   void receivedData(const char* data, uint32_t length) override;
-  void done() override;
-  void error(Error) override;
+  void done(EitherError<void>) override;
   void progress(uint32_t total, uint32_t now) override;
 
  private:
@@ -90,8 +86,7 @@ class UploadFileCallback : public IUploadFileCallback {
   void reset() override;
   uint32_t putData(char* data, uint32_t maxlength) override;
   uint64_t size() override;
-  void done() override;
-  void error(Error) override;
+  void done(EitherError<void>) override;
   void progress(uint32_t total, uint32_t now) override;
 
  private:

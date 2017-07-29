@@ -38,9 +38,6 @@ class ListDirectoryRequest
                        ICallback::Pointer);
   ~ListDirectoryRequest();
 
- protected:
-  void error(int code, const std::string& description) override;
-
  private:
   IItem::Pointer directory_;
   ICallback::Pointer callback_;

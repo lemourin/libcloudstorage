@@ -58,9 +58,6 @@ class UploadFileRequest : public Request<EitherError<void>> {
                     const std::string& filename, ICallback::Pointer);
   ~UploadFileRequest();
 
- protected:
-  void error(int code, const std::string& description) override;
-
  private:
   IItem::Pointer directory_;
   std::string filename_;

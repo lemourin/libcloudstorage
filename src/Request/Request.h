@@ -44,7 +44,6 @@ class Request : public IRequest<ReturnValue> {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using Resolver = std::function<ReturnValue(Request*)>;
-  using ErrorCallback = std::function<void(Request*, Error)>;
   using CancelCallback = std::function<void()>;
 
   Request(std::shared_ptr<CloudProvider>);
@@ -52,7 +51,6 @@ class Request : public IRequest<ReturnValue> {
   ~Request();
 
   void set_resolver(Resolver);
-  void set_error_callback(ErrorCallback);
   void set_cancel_callback(CancelCallback);
 
   void finish() override;
@@ -89,7 +87,6 @@ class Request : public IRequest<ReturnValue> {
            ProgressFunction upload = nullptr);
 
   std::shared_ptr<CloudProvider> provider() const;
-  virtual void error(int code, const std::string& description);
   std::string error_string(int code, const std::string& desc) const;
 
   bool is_cancelled() { return is_cancelled_; }
@@ -114,7 +111,6 @@ class Request : public IRequest<ReturnValue> {
   std::weak_ptr<CloudProvider> provider_weak_;
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
-  ErrorCallback error_callback_;
   CancelCallback cancel_callback_;
   std::mutex semaphore_list_mutex_;
   std::vector<Semaphore*> semaphore_list_;

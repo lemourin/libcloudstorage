@@ -54,9 +54,6 @@ class DownloadFileRequest : public Request<EitherError<void>> {
   static void generateThumbnail(Request<EitherError<void>>*, IItem::Pointer,
                                 ICallback::Pointer);
 
- protected:
-  void error(int code, const std::string& description) override;
-
  private:
   IItem::Pointer file_;
   DownloadStreamWrapper stream_wrapper_;

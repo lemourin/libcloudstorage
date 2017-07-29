@@ -92,8 +92,6 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_error_callback([this, callback](Request<EitherError<void>>* r,
-                                         Error e) { callback->error(e); });
   r->set_resolver([this, item, callback](
                       Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
@@ -107,7 +105,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
         },
         output, &error);
     if (!IHttpRequest::isSuccess(code)) {
-      callback->error(error);
+      callback->done(error);
       return error;
     } else {
       Json::Value json;
@@ -121,7 +119,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
           stream, &error,
           std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
       if (IHttpRequest::isSuccess(code)) {
-        callback->done();
+        callback->done(nullptr);
         return nullptr;
       } else {
         return error;
@@ -135,11 +133,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_error_callback([callback](Request<EitherError<void>>* r, Error e) {
-    callback->error(e);
-  });
-  r->set_resolver([this, directory, filename,
-                   callback](Request<EitherError<void>>* r) {
+  r->set_resolver([this, directory, filename, callback](
+                      Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
     Error error;
     int code = r->sendRequest(
@@ -170,14 +165,13 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           },
           output, &error,
           std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
-      if (IHttpRequest::isSuccess(code))
-        callback->done();
-      else
-        return error;
-    } else {
-      callback->error(error);
-      return error;
+      if (IHttpRequest::isSuccess(code)) {
+        callback->done(nullptr);
+        return nullptr;
+      }
     }
+    callback->done(error);
+    return error;
   });
   return std::move(r);
 }

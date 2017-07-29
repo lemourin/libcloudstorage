@@ -61,11 +61,6 @@ void Request<T>::set_resolver(Resolver resolver) {
 }
 
 template <class T>
-void Request<T>::set_error_callback(ErrorCallback f) {
-  error_callback_ = f;
-}
-
-template <class T>
 void Request<T>::set_cancel_callback(CancelCallback f) {
   cancel_callback_ = f;
 }
@@ -131,26 +126,6 @@ bool Request<T>::reauthorize() {
 }
 
 template <class T>
-void Request<T>::error(int code, const std::string& desc) {
-  if (error_callback_) error_callback_(this, Error{code, desc});
-}
-
-template <class T>
-std::string Request<T>::error_string(int code, const std::string& desc) const {
-  std::stringstream stream;
-  if (code < 0) {
-    code *= -1;
-    stream << "HTTP library error " << code;
-    auto p = provider();
-    if (p) stream << ": " << p->http()->error(code);
-  } else {
-    stream << "HTTP code " << code;
-    if (isPrintable(desc)) stream << ": " << desc;
-  }
-  return stream.str();
-}
-
-template <class T>
 int Request<T>::sendRequest(
     std::function<IHttpRequest::Pointer(std::ostream&)> factory,
     std::ostream& output, Error* error, ProgressFunction download,
@@ -164,20 +139,13 @@ int Request<T>::sendRequest(
       send(request.get(), input, output, &error_stream, download, upload);
   if (IHttpRequest::isSuccess(code)) return code;
   if (p->reauthorize(code)) {
-    if (!reauthorize()) {
-      if (!is_cancelled()) this->error(code, error_stream.str());
-    } else {
+    if (reauthorize()) {
       std::stringstream input, error_stream;
       request = factory(input);
       if (request) p->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
-      if (!is_cancelled() && !IHttpRequest::isSuccess(code))
-        this->error(code, error_stream.str());
     }
-  } else {
-    if (!is_cancelled() && code != IHttpRequest::Aborted)
-      this->error(code, error_stream.str());
   }
   if (error) *error = {code, error_stream.str()};
   return code;
@@ -187,10 +155,7 @@ template <class T>
 int Request<T>::send(IHttpRequest* request, std::istream& input,
                      std::ostream& output, std::ostream* error,
                      ProgressFunction download, ProgressFunction upload) {
-  if (!request) {
-    this->error(IHttpRequest::Aborted, "Not available.");
-    return IHttpRequest::Aborted;
-  }
+  if (!request) return IHttpRequest::Aborted;
   return request->send(input, output, error, httpCallback(download, upload));
 }
 

@@ -182,13 +182,13 @@ MockProvider::MockDownloadFileRequest::MockDownloadFileRequest(
                                : ":/resources/file.png";
     QFile file(filename.c_str());
     if (!file.open(QFile::ReadOnly)) {
-      callback_->error({404, "Not found file: " + filename});
+      callback_->done(Error{404, "Not found file: " + filename});
     }
     while (file.bytesAvailable()) {
       callback_->receivedData(buffer.data(),
                               file.read(buffer.data(), buffer_size));
     }
-    callback_->done();
+    callback_->done(nullptr);
   });
 }
 

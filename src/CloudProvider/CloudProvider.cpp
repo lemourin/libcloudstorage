@@ -71,11 +71,9 @@ class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
 
   void receivedItem(cloudstorage::IItem::Pointer) override {}
 
-  void done(const std::vector<cloudstorage::IItem::Pointer>& result) override {
+  void done(cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>> result) override {
     callback_(result);
   }
-
-  void error(cloudstorage::Error e) override { callback_(e); }
 
  private:
   cloudstorage::ListDirectoryCallback callback_;
@@ -92,12 +90,7 @@ class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
     file_.write(data, length);
   }
 
-  void done() override {
-    file_.close();
-    callback_(nullptr);
-  }
-
-  void error(cloudstorage::Error e) override {
+  void done(cloudstorage::EitherError<void> e) override {
     file_.close();
     callback_(e);
   }
@@ -132,9 +125,7 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
 
   uint64_t size() override { return size_; }
 
-  void done() override { callback_(nullptr); }
-
-  void error(cloudstorage::Error e) override { callback_(e); }
+  void done(cloudstorage::EitherError<void> e) override { callback_(e); }
 
   void progress(uint32_t, uint32_t) override {}
 

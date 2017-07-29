@@ -45,9 +45,6 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_error_callback([callback](Request<EitherError<void>>* r, Error e) {
-    callback->error(e);
-  });
   r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     std::stringstream output;
     Error error;
@@ -60,7 +57,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
         },
         output, &error);
     if (!IHttpRequest::isSuccess(code)) {
-      callback->error(error);
+      callback->done(error);
       return error;
     }
     Json::Value response;
@@ -87,12 +84,12 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             callback->progress(size, sent + now);
           });
       if (!IHttpRequest::isSuccess(code)) {
-        callback->error(error);
+        callback->done(error);
         return error;
       }
       sent += length;
     }
-    callback->done();
+    callback->done(nullptr);
     return nullptr;
   });
   return std::move(r);

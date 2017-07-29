@@ -41,18 +41,15 @@ void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
   file_.write(data, length);
 }
 
-void DownloadFileCallback::done() {
-  {
-    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+void DownloadFileCallback::done(EitherError<void> e) {
+  std::unique_lock<std::mutex> lock(window_->stream_mutex());
+
+  if (e.left()) {
+    std::cerr << "[FAIL] Download: " << e.left()->description_ << "\n";
+  } else {
     std::cerr << "[OK] Finished download.\n";
   }
   file_.close();
-  emit window_->downloadProgressChanged(0, 0);
-}
-
-void DownloadFileCallback::error(Error e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Download: " << e.description_ << "\n";
   emit window_->downloadProgressChanged(0, 0);
 }
 
@@ -79,15 +76,13 @@ uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
 
 uint64_t UploadFileCallback::size() { return file_.size(); }
 
-void UploadFileCallback::done() {
+void UploadFileCallback::done(EitherError<void> e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[OK] Successfuly uploaded\n";
-  emit window_->uploadProgressChanged(0, 0);
-}
-
-void UploadFileCallback::error(Error e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Upload: " << e.description_ << "\n";
+  if (e.left()) {
+    std::cerr << "[FAIL] Upload: " << e.left()->description_ << "\n";
+  } else {
+    std::cerr << "[OK] Successfuly uploaded\n";
+  }
   emit window_->uploadProgressChanged(0, 0);
 }
 
@@ -130,12 +125,12 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
   emit window_->addedItem(item);
 }
 
-void ListDirectoryCallback::done(const std::vector<IItem::Pointer>&) {}
-
-void ListDirectoryCallback::error(Error e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] ListDirectory: " << e.description_ << "\n";
-  emit window_->closeBrowser();
+void ListDirectoryCallback::done(EitherError<std::vector<IItem::Pointer>> e) {
+  if (e.left()) {
+    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    std::cerr << "[FAIL] ListDirectory: " << e.left()->description_ << "\n";
+    emit window_->closeBrowser();
+  }
 }
 
 DownloadThumbnailCallback::DownloadThumbnailCallback(ItemModel* i) : item_(i) {}
@@ -145,7 +140,8 @@ void DownloadThumbnailCallback::receivedData(const char* data,
   data_ += std::string(data, data + length);
 }
 
-void DownloadThumbnailCallback::done() {
+void DownloadThumbnailCallback::done(EitherError<void> e) {
+  if (e.left()) return;
   {
     QFile file(QDir::tempPath() + "/" +
                Window::escapeFileName(item_->item()->filename()).c_str() +
@@ -154,11 +150,6 @@ void DownloadThumbnailCallback::done() {
     file.write(data_.data(), data_.length());
   }
   emit item_->receivedImage();
-}
-
-void DownloadThumbnailCallback::error(Error e) {
-  std::unique_lock<std::mutex> lock(item_->window_->stream_mutex());
-  std::cerr << "[FAIL] Thumbnail: " << e.description_ << "\n";
 }
 
 void DownloadThumbnailCallback::progress(uint32_t, uint32_t) {}

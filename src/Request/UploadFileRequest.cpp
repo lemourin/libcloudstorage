@@ -40,8 +40,9 @@ UploadFileRequest::UploadFileRequest(
       callback_(callback) {
   set_resolver([this](Request*) -> EitherError<void> {
     if (directory_->type() != IItem::FileType::Directory) {
-      callback_->error({403, "Can't upload into non-directory."});
-      return Error{403, "can't upload into non-directory"};
+      Error e{403, "can't upload into non-directory"};
+      callback_->done(e);
+      return e;
     }
     std::stringstream response_stream;
     Error error;
@@ -57,19 +58,16 @@ UploadFileRequest::UploadFileRequest(
         response_stream, &error,
         std::bind(&ICallback::progress, callback_.get(), _1, _2));
     if (IHttpRequest::isSuccess(code)) {
-      callback_->done();
+      callback_->done(nullptr);
       return nullptr;
     } else {
+      callback_->done(error);
       return error;
     }
   });
 }
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }
-
-void UploadFileRequest::error(int code, const std::string& description) {
-  callback_->error(Error{code, description});
-}
 
 UploadStreamWrapper::UploadStreamWrapper(
     std::function<uint32_t(char*, uint32_t)> callback, uint64_t size)

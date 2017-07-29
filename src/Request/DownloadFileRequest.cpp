@@ -50,7 +50,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
         std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
                   _1, _2));
     if (IHttpRequest::isSuccess(code)) {
-      callback_->done();
+      callback_->done(nullptr);
       return nullptr;
     } else if (fallback_thumbnail_) {
       generateThumbnail(r, file_, callback_);
@@ -73,24 +73,20 @@ void DownloadFileRequest::generateThumbnail(
   semaphore.wait();
   if (r->is_cancelled()) return item_data->cancel();
   if (!item_data->result().right())
-    return callback->error(*item_data->result().left());
+    return callback->done(item_data->result().left());
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
       r->provider(), item_data->result().right(),
       [&semaphore, callback](EitherError<std::vector<char>> data) {
         if (data.right()) {
           callback->receivedData(data.right()->data(), data.right()->size());
-          callback->done();
+          callback->done(nullptr);
         } else {
-          callback->error(*data.left());
+          callback->done(data.left());
         }
         semaphore.notify();
       });
   semaphore.wait();
   if (r->is_cancelled()) thumbnail_data->cancel();
-}
-
-void DownloadFileRequest::error(int code, const std::string& description) {
-  if (!fallback_thumbnail_) callback_->error(Error{code, description});
 }
 
 DownloadStreamWrapper::DownloadStreamWrapper(

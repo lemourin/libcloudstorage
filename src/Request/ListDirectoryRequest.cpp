@@ -35,8 +35,9 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)) {
   set_resolver([this](Request*) -> EitherError<std::vector<IItem::Pointer>> {
     if (directory_->type() != IItem::FileType::Directory) {
-      callback_->error({403, "Trying to list non-directory."});
-      return Error{403, "trying to list non directory"};
+      Error e{403, "trying to list non directory"};
+      callback_->done(e);
+      return e;
     }
     std::string page_token;
     std::vector<IItem::Pointer> result;
@@ -63,15 +64,12 @@ ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
       callback_->done(result);
       return result;
     } else {
+      callback_->done(error);
       return error;
     }
   });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
-
-void ListDirectoryRequest::error(int code, const std::string& description) {
-  callback_->error(Error{code, description});
-}
 
 }  // namespace cloudstorage
