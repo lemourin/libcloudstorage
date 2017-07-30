@@ -51,11 +51,6 @@ void Request<T>::set_resolver(Resolver resolver) {
 }
 
 template <class T>
-void Request<T>::set_cancel_callback(CancelCallback f) {
-  cancel_callback_ = f;
-}
-
-template <class T>
 void Request<T>::finish() {
   std::shared_future<T> future = function_;
   if (future.valid()) future.wait();
@@ -69,7 +64,6 @@ void Request<T>::cancel() {
     std::lock_guard<std::mutex> lock(subrequest_mutex_);
     for (auto r : subrequests_) r->cancel();
   }
-  if (cancel_callback_) cancel_callback_();
   auto p = provider();
   if (p) p->authorized_condition().notify_all();
   finish();

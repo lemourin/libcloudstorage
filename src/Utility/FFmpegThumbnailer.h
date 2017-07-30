@@ -43,6 +43,18 @@ class FFmpegThumbnailer : public IThumbnailer {
       Callback) override;
 
  private:
+  class ThumbnailRequest : public Request<EitherError<std::vector<char>>> {
+   public:
+    using Request::Request;
+
+    void set_cancel_callback(std::function<void()>);
+    void cancel() override;
+
+   private:
+    std::mutex mutex_;
+    std::function<void()> cancel_callback_;
+  };
+
   struct WorkerData {
     std::shared_future<std::vector<char>> future_;
     std::shared_ptr<std::condition_variable> done_;

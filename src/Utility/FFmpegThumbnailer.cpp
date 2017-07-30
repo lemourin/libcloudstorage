@@ -58,7 +58,7 @@ FFmpegThumbnailer::~FFmpegThumbnailer() {
 IRequest<EitherError<std::vector<char>>>::Pointer
 FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
                                      IItem::Pointer item, Callback callback) {
-  auto r = util::make_unique<Request<EitherError<std::vector<char>>>>(
+  auto r = util::make_unique<ThumbnailRequest>(
       std::static_pointer_cast<CloudProvider>(p));
   r->set_resolver([this, item,
                    callback](Request<EitherError<std::vector<char>>>* r)
@@ -111,7 +111,8 @@ FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
         error_description = it->second.error_description_;
       }
     }
-    r->set_cancel_callback([done]() { done->notify_all(); });
+    static_cast<ThumbnailRequest*>(r)->set_cancel_callback(
+        [done]() { done->notify_all(); });
     {
       std::unique_lock<std::mutex> lock(mutex_);
       done->wait(lock, [=]() { return r->is_cancelled() || *finished; });
@@ -131,6 +132,21 @@ FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
     }
   });
   return std::move(r);
+}
+
+void FFmpegThumbnailer::ThumbnailRequest::set_cancel_callback(
+    std::function<void()> f) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  cancel_callback_ = f;
+}
+
+void FFmpegThumbnailer::ThumbnailRequest::cancel() {
+  if (is_cancelled()) return;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (cancel_callback_) cancel_callback_();
+  }
+  Request::cancel();
 }
 
 }  // namespace cloudstorage

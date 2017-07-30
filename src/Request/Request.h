@@ -44,14 +44,12 @@ class Request : public IRequest<ReturnValue> {
  public:
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using Resolver = std::function<ReturnValue(Request*)>;
-  using CancelCallback = std::function<void()>;
 
   Request(std::shared_ptr<CloudProvider>);
   Request(std::weak_ptr<CloudProvider>);
   ~Request();
 
   void set_resolver(Resolver);
-  void set_cancel_callback(CancelCallback);
 
   void finish() override;
   void cancel() override;
@@ -103,7 +101,6 @@ class Request : public IRequest<ReturnValue> {
   std::weak_ptr<CloudProvider> provider_weak_;
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
-  CancelCallback cancel_callback_;
   std::mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };
