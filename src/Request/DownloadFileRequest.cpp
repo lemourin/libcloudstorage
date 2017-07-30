@@ -72,7 +72,8 @@ DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
 EitherError<std::vector<char>> DownloadFileRequest::generateThumbnail(
     Request<EitherError<void>>* r, IItem::Pointer item) {
-  if (!r->provider()->thumbnailer()) return Error{500, "missing thumbnailer"};
+  if (!r->provider()->thumbnailer())
+    return Error{IHttpRequest::Failure, "missing thumbnailer"};
   auto item_data = static_cast<ICloudProvider*>(r->provider().get())
                        ->getItemDataAsync(item->id());
   r->subrequest(item_data);

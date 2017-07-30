@@ -216,7 +216,8 @@ EitherError<std::string> Auth::awaitAuthorizationCode(
   {
     auto http_server = http_server_->create(
         callback, state(), IHttpServer::Type::SingleThreaded, http_server_port);
-    if (!http_server) return Error{500, "couldn't start http server"};
+    if (!http_server)
+      return Error{IHttpRequest::Failure, "couldn't start http server"};
     if (server_started) server_started();
     semaphore.wait();
   }
@@ -224,7 +225,7 @@ EitherError<std::string> Auth::awaitAuthorizationCode(
   if (callback->data_.state_ == HttpServerCallback::HttpServerData::Accepted)
     return callback->data_.code_;
   else
-    return Error{500, callback->data_.error_};
+    return Error{IHttpRequest::Failure, callback->data_.error_};
 }
 
 EitherError<std::string> Auth::requestAuthorizationCode(

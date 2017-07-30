@@ -322,7 +322,8 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     auto token = authorizationCodeToToken(code);
     EitherError<std::string> ret =
         token->token_.empty()
-            ? EitherError<std::string>(Error{500, "invalid authorization code"})
+            ? EitherError<std::string>(
+                  Error{IHttpRequest::Failure, "invalid authorization code"})
             : EitherError<std::string>(token->token_);
     callback(ret);
     return ret;
@@ -491,7 +492,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
       if (!cache_file) {
-        Error e{500, "couldn't open cache file " + cache};
+        Error e{IHttpRequest::Failure, "couldn't open cache file " + cache};
         callback->done(e);
         return e;
       }
@@ -601,7 +602,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
       callback(result);
       return result;
     }
-    Error error{500, "no source node / destination node"};
+    Error error{IHttpRequest::Failure, "no source node / destination node"};
     callback(error);
     return error;
   });
@@ -628,7 +629,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
       callback(result);
       return result;
     }
-    Error e{500, "node not found"};
+    Error e{404, "node not found"};
     callback(e);
     return e;
   });

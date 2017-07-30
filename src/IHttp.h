@@ -36,6 +36,7 @@ class IHttpRequest {
 
   static constexpr int Aborted = 600;
   static constexpr int Unknown = 700;
+  static constexpr int Failure = 800;
 
   class ICallback {
    public:

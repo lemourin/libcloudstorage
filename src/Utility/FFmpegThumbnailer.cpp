@@ -66,7 +66,8 @@ FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
     if ((item->type() != IItem::FileType::Image &&
          item->type() != IItem::FileType::Video) ||
         item->url().empty()) {
-      Error e{500, "can generate thumbnails only for images and videos"};
+      Error e{IHttpRequest::Failure,
+              "can generate thumbnails only for images and videos"};
       callback(e);
       return e;
     }
@@ -123,7 +124,7 @@ FFmpegThumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
     }
     auto result = future.get();
     if (!error_description->empty()) {
-      Error e{500, *error_description};
+      Error e{IHttpRequest::Failure, *error_description};
       callback(e);
       return e;
     } else {

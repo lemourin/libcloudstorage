@@ -155,12 +155,13 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
-          return Error{500, "not waiting for code"};
+          return Error{IHttpRequest::Failure, "not waiting for code"};
         auto code = r->getAuthorizationCode();
         if (code.left()) return code.left();
         return unpackCredentials(*code.right())
                    ? EitherError<void>(nullptr)
-                   : EitherError<void>(Error{500, "invalid code"});
+                   : EitherError<void>(
+                         Error{IHttpRequest::Failure, "invalid code"});
       });
 }
 
@@ -377,7 +378,8 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
 
 void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   if (!crypto()) {
-    callback()->error(*this, {500, "No crypto functions provided."});
+    callback()->error(*this,
+                      {IHttpRequest::Failure, "No crypto functions provided."});
     return;
   }
   std::string current_date = currentDate();
