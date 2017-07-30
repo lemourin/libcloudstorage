@@ -57,6 +57,7 @@ void AuthorizeRequest::cancel() {
           provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
       request->setParameter("accepted", "false");
       request->setParameter("state", provider()->auth()->state());
+      request->setParameter("error", "cancelled");
       std::stringstream input, output;
       request->send(input, output);
     }
@@ -81,10 +82,9 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
   if (is_cancelled()) return Error{IHttpRequest::Aborted, ""};
   if (provider()->callback()->userConsentRequired(*provider()) ==
       ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
-    std::string authorization_code = getAuthorizationCode();
-    if (authorization_code.empty())
-      return Error{500, "failed to get authorization code"};
-    auth->set_authorization_code(authorization_code);
+    auto authorization_code = getAuthorizationCode();
+    if (authorization_code.left()) return authorization_code.left();
+    auth->set_authorization_code(*authorization_code.right());
     std::stringstream input, output;
     std::stringstream error_stream;
     IHttpRequest::Pointer r = auth->exchangeAuthorizationCodeRequest(input);
@@ -100,10 +100,10 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
   return Error{code, error_stream.str()};
 }
 
-std::string AuthorizeRequest::getAuthorizationCode() {
+EitherError<std::string> AuthorizeRequest::getAuthorizationCode() {
+  if (is_cancelled()) return Error{IHttpRequest::Aborted, ""};
   std::unique_lock<std::mutex> lock(mutex_);
-  if (is_cancelled()) return "";
-  std::string authorization_code = provider()->auth()->requestAuthorizationCode(
+  return provider()->auth()->requestAuthorizationCode(
       [this, &lock]() {
         awaiting_authorization_code_ = true;
         lock.unlock();
@@ -112,7 +112,6 @@ std::string AuthorizeRequest::getAuthorizationCode() {
         lock.lock();
         awaiting_authorization_code_ = false;
       });
-  return authorization_code;
 }
 
 }  // namespace cloudstorage

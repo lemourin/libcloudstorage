@@ -94,7 +94,7 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual std::string awaitAuthorizationCode(
+  virtual EitherError<std::string> awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
       std::string state_parameter_name,
       std::function<void()> server_started = nullptr,
@@ -108,7 +108,7 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual std::string requestAuthorizationCode(
+  virtual EitherError<std::string> requestAuthorizationCode(
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const = 0;
 

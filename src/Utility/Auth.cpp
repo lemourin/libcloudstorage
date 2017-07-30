@@ -98,12 +98,15 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
 
   const char* accepted = connection.getParameter("accepted");
   const char* code = connection.getParameter(data_.code_parameter_name_);
+  const char* error = connection.getParameter(data_.error_parameter_name_);
   if (accepted) {
     if (std::string(accepted) == "true" && code) {
       data_.code_ = code;
       data_.state_ = HttpServerData::Accepted;
-    } else
+    } else {
+      if (error) data_.error_ = error;
       data_.state_ = HttpServerData::Denied;
+    }
     data_.semaphore_->notify();
   }
 
@@ -113,7 +116,6 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
                                      ? DEFAULT_SUCCESS_PAGE
                                      : auth_->success_page());
 
-  const char* error = connection.getParameter(data_.error_parameter_name_);
   if (error)
     return server.createResponse(
         400, {},
@@ -195,7 +197,7 @@ void Auth::set_access_token(Token::Pointer token) {
 
 IHttp* Auth::http() const { return http_; }
 
-std::string Auth::awaitAuthorizationCode(
+EitherError<std::string> Auth::awaitAuthorizationCode(
     std::string code_parameter_name, std::string error_parameter_name,
     std::string state_parameter_name, std::function<void()> server_started,
     std::function<void()> server_stopped) const {
@@ -203,6 +205,7 @@ std::string Auth::awaitAuthorizationCode(
   Semaphore semaphore;
   auto callback = std::make_shared<HttpServerCallback>();
   callback->data_ = {"",
+                     "",
                      code_parameter_name,
                      error_parameter_name,
                      state_parameter_name,
@@ -213,6 +216,7 @@ std::string Auth::awaitAuthorizationCode(
   {
     auto http_server = http_server_->create(
         callback, state(), IHttpServer::Type::SingleThreaded, http_server_port);
+    if (!http_server) return Error{500, "couldn't start http server"};
     if (server_started) server_started();
     semaphore.wait();
   }
@@ -220,10 +224,10 @@ std::string Auth::awaitAuthorizationCode(
   if (callback->data_.state_ == HttpServerCallback::HttpServerData::Accepted)
     return callback->data_.code_;
   else
-    return "";
+    return Error{500, callback->data_.error_};
 }
 
-std::string Auth::requestAuthorizationCode(
+EitherError<std::string> Auth::requestAuthorizationCode(
     std::function<void()> server_started,
     std::function<void()> server_stopped) const {
   return awaitAuthorizationCode("code", "error", "state", server_started,

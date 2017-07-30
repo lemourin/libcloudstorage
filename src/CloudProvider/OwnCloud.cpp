@@ -55,8 +55,10 @@ AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
         if (callback()->userConsentRequired(*this) !=
             ICallback::Status::WaitForAuthorizationCode)
-          return Error{500, ""};
-        return unpackCredentials(r->getAuthorizationCode())
+          return Error{500, "not waiting for code"};
+        auto code = r->getAuthorizationCode();
+        if (code.left()) return code.left();
+        return unpackCredentials(*code.right())
                    ? EitherError<void>(nullptr)
                    : EitherError<void>(Error{500, "invalid code"});
       });

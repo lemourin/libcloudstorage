@@ -41,6 +41,7 @@ class Auth : public IAuth {
 
     struct HttpServerData {
       std::string code_;
+      std::string error_;
       std::string code_parameter_name_;
       std::string error_parameter_name_;
       std::string state_parameter_name_;
@@ -89,13 +90,13 @@ class Auth : public IAuth {
 
   IHttp* http() const override;
 
-  std::string awaitAuthorizationCode(
+  EitherError<std::string> awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
       std::string state_parameter_name,
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const override;
 
-  std::string requestAuthorizationCode(
+  EitherError<std::string> requestAuthorizationCode(
       std::function<void()> server_started = nullptr,
       std::function<void()> server_stopped = nullptr) const override;
 

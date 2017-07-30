@@ -38,7 +38,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
 
   EitherError<void> oauth2Authorization();
 
-  std::string getAuthorizationCode();
+  EitherError<std::string> getAuthorizationCode();
 
   void cancel() override;
 
