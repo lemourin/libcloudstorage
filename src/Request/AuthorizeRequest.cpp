@@ -74,9 +74,7 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
     auth->set_access_token(auth->refreshTokenResponse(output));
     return nullptr;
   } else if (r && !IHttpRequest::isClientError(code)) {
-    if (!is_cancelled())
-      provider()->callback()->error(*provider(),
-                                    Error{code, error_stream.str()});
+    provider()->callback()->error(*provider(), Error{code, error_stream.str()});
     return Error{code, error_stream.str()};
   }
 
@@ -94,7 +92,7 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
       std::unique_lock<std::mutex> lock(provider()->auth_mutex());
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return nullptr;
-    } else if (!is_cancelled()) {
+    } else {
       provider()->callback()->error(*provider(),
                                     Error{code, error_stream.str()});
     }
