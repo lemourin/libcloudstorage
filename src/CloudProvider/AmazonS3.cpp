@@ -71,10 +71,10 @@ EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
         output, &error);
     if (!IHttpRequest::isSuccess(code)) return error;
   } else {
-    auto directory =
-        r->provider()
-            ->getItemDataAsync(source_id, [](EitherError<IItem>) {})
-            ->result();
+    auto directory_request = static_cast<ICloudProvider*>(r->provider().get())
+                                 ->getItemDataAsync(source_id);
+    r->subrequest(directory_request);
+    auto directory = directory_request->result();
     if (directory.left()) return directory.left();
     auto children_request = static_cast<ICloudProvider*>(r->provider().get())
                                 ->listDirectoryAsync(directory.right());

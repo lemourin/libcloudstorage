@@ -105,7 +105,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
         std::stringstream input, output, error;
         int code = r->send(request.get(), input, output, &error);
         if (!IHttpRequest::isSuccess(code)) {
-          if (!r->is_cancelled()) callback()->error(*this, {code, error.str()});
+          callback()->error(*this, {code, error.str()});
           return Error{code, error.str()};
         }
         Json::Value response;

@@ -51,42 +51,46 @@ class Listener : public IRequest<EitherError<void>> {
   static constexpr int SUCCESS = 1;
   static constexpr int CANCELLED = 2;
 
-  Listener() : status_(IN_PROGRESS) {}
+  Listener() : status_(IN_PROGRESS), code_(IHttpRequest::Unknown) {}
 
   void cancel() override {
-    if (status_ != CANCELLED) return;
+    if (status_ == CANCELLED) return;
     status_ = CANCELLED;
+    code_ = IHttpRequest::Aborted;
     semaphore_.notify();
     finish();
   }
 
-  void finish() override {
-    while (status_ == IN_PROGRESS || status_ == CANCELLED) semaphore_.wait();
-  }
-
   EitherError<void> result() override {
     finish();
-    if (status_ == FAILURE)
-      return Error{500, error_};
+    if (status_ != SUCCESS)
+      return Error{code_, error_};
     else
       return nullptr;
   }
 
+  std::atomic_int status_;
+
  protected:
   Semaphore semaphore_;
+  int code_;
   std::string error_;
-
- public:
-  std::atomic_int status_;
 };
 
 class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
+  void finish() override {
+    while (status_ == IN_PROGRESS) semaphore_.wait();
+  }
+
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
-    else
+    else {
       status_ = FAILURE;
+      code_ = e->getErrorCode();
+      error_ = e->getErrorString();
+    }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
     semaphore_.notify();
@@ -98,6 +102,10 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
 
 class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
+  void finish() override {
+    while (status_ == IN_PROGRESS || status_ == CANCELLED) semaphore_.wait();
+  }
+
   bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
                       size_t size) override {
     if (status_ == CANCELLED) return false;
@@ -119,6 +127,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
     else {
+      code_ = e->getErrorCode();
       error_ = e->getErrorString();
       status_ = FAILURE;
     }
@@ -302,8 +311,12 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
       util::make_unique<Request<EitherError<std::string>>>(shared_from_this());
   r->set_resolver([this, code, callback](Request<EitherError<std::string>>*) {
     auto token = authorizationCodeToToken(code);
-    callback(token->token_);
-    return token->token_;
+    EitherError<std::string> ret =
+        token->token_.empty()
+            ? EitherError<std::string>(Error{500, "invalid authorization code"})
+            : EitherError<std::string>(token->token_);
+    callback(ret);
+    return ret;
   });
   return std::move(r);
 }
@@ -383,6 +396,10 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
           callback->receivedItem(item);
         }
       }
+    } else {
+      Error e{404, "node not found"};
+      callback->done(e);
+      return e;
     }
     callback->done(result);
     return result;
@@ -487,6 +504,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
         callback->done(nullptr);
         return nullptr;
       } else {
+        callback->done(data.left());
         return data.left();
       }
     }

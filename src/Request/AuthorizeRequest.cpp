@@ -50,14 +50,16 @@ AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
 void AuthorizeRequest::cancel() {
   if (is_cancelled()) return;
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (awaiting_authorization_code_) {
-    auto request =
-        provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
-    request->setParameter("accepted", "false");
-    request->setParameter("state", provider()->auth()->state());
-    std::stringstream input, output;
-    request->send(input, output);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (awaiting_authorization_code_) {
+      auto request =
+          provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
+      request->setParameter("accepted", "false");
+      request->setParameter("state", provider()->auth()->state());
+      std::stringstream input, output;
+      request->send(input, output);
+    }
   }
   Request::cancel();
 }
