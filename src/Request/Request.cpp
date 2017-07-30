@@ -84,9 +84,9 @@ std::unique_ptr<HttpCallback> Request<T>::httpCallback(
 }
 
 template <class T>
-bool Request<T>::reauthorize() {
+EitherError<void> Request<T>::reauthorize() {
   auto p = provider();
-  if (!p || is_cancelled()) return false;
+  if (!p || is_cancelled()) return Error{IHttpRequest::Aborted, ""};
   std::unique_lock<std::mutex> current_authorization(
       p->current_authorization_mutex());
   if (!p->current_authorization()) {
@@ -100,13 +100,9 @@ bool Request<T>::reauthorize() {
            is_cancelled();
   });
   p->set_authorization_request_count(p->authorization_request_count() - 1);
-  bool ret =
-      p->authorization_status() == CloudProvider::AuthorizationStatus::Success;
-  if (p->authorization_request_count() == 0) {
+  if (p->authorization_request_count() == 0)
     p->set_current_authorization(nullptr);
-    p->set_authorization_status(CloudProvider::AuthorizationStatus::None);
-  }
-  return ret;
+  return p->authorization_result();
 }
 
 template <class T>
@@ -121,17 +117,25 @@ int Request<T>::sendRequest(
   if (request) p->authorizeRequest(*request);
   int code =
       send(request.get(), input, output, &error_stream, download, upload);
-  if (IHttpRequest::isSuccess(code)) return code;
+  if (IHttpRequest::isSuccess(code))
+    return code;
+  else if (error)
+    *error = {code, error_stream.str()};
   if (p->reauthorize(code)) {
-    if (reauthorize()) {
+    auto r = reauthorize();
+    if (!r.left()) {
       std::stringstream input, error_stream;
       request = factory(input);
       if (request) p->authorizeRequest(*request);
       code =
           send(request.get(), input, output, &error_stream, download, upload);
+      if (!IHttpRequest::isSuccess(code) && error)
+        *error = {code, error_stream.str()};
+    } else {
+      if (error) *error = *r.left();
     }
   }
-  if (error) *error = {code, error_stream.str()};
+
   return code;
 }
 

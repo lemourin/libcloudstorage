@@ -143,7 +143,8 @@ namespace cloudstorage {
 CloudProvider::CloudProvider(IAuth::Pointer auth)
     : auth_(std::move(auth)),
       http_(),
-      current_authorization_status_(AuthorizationStatus::None),
+      current_authorization_status_(AuthorizationStatus::Done),
+      authorization_result_(nullptr),
       authorization_request_count_() {}
 
 void CloudProvider::initialize(InitData&& data) {
@@ -318,6 +319,14 @@ AuthorizeRequest::Pointer CloudProvider::current_authorization() const {
 
 void CloudProvider::set_current_authorization(AuthorizeRequest::Pointer r) {
   current_authorization_ = r;
+}
+
+EitherError<void> CloudProvider::authorization_result() const {
+  return authorization_result_;
+}
+
+void CloudProvider::set_authorization_result(EitherError<void> e) {
+  authorization_result_ = e;
 }
 
 int CloudProvider::authorization_request_count() const {

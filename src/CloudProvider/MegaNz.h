@@ -101,7 +101,7 @@ class MegaNz : public CloudProvider {
   std::string temporaryFileName();
 
   template <class T>
-  bool ensureAuthorized(Request<T>*);
+  EitherError<void> ensureAuthorized(Request<T>*);
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
@@ -122,12 +122,6 @@ class MegaNz : public CloudProvider {
     Token::Pointer exchangeAuthorizationCodeResponse(
         std::istream&) const override;
     Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
-
-  class Authorize : public cloudstorage::AuthorizeRequest {
-   public:
-    using AuthorizeRequest::AuthorizeRequest;
-    ~Authorize();
   };
 
  private:

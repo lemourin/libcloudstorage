@@ -34,9 +34,9 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) -> EitherError<void> {
     auto result = callback_ ? callback_(this) : oauth2Authorization();
+    provider()->set_authorization_result(result);
     provider()->set_authorization_status(
-        !result.left() ? CloudProvider::AuthorizationStatus::Success
-                       : CloudProvider::AuthorizationStatus::Fail);
+        CloudProvider::AuthorizationStatus::Done);
     provider()->authorized_condition().notify_all();
     if (!result.left())
       provider()->callback()->accepted(*provider());

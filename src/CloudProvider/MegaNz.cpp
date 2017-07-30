@@ -331,7 +331,7 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
 }
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
-  return util::make_unique<Authorize>(
+  return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
         if (login(r).left()) {
           if (r->is_cancelled()) return Error{IHttpRequest::Aborted, ""};
@@ -361,10 +361,10 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
   auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
   r->set_resolver([id, callback,
                    this](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    if (!ensureAuthorized(r)) {
-      Error e{401, "unauthorized"};
-      callback(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
     if (!node) {
@@ -386,11 +386,10 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
   r->set_resolver([this, item, callback](
                       Request<EitherError<std::vector<IItem::Pointer>>>* r)
                       -> EitherError<std::vector<IItem::Pointer>> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback->done(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback->done(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
@@ -428,11 +427,10 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([this, item, callback, filename](
                       Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback->done(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback->done(ret.left());
+      return ret.left();
     }
     std::string cache = temporaryFileName();
     {
@@ -475,11 +473,10 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([this, item, callback](
                       Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback->done(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback->done(ret.left());
+      return ret.left();
     }
     auto listener = std::make_shared<RequestListener>();
     r->subrequest(listener);
@@ -525,11 +522,10 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([this, item, callback](
                       Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
@@ -549,11 +545,10 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     CreateDirectoryCallback callback) {
   auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
   r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> parent_node(
         mega_->getNodeByPath(parent->id().c_str()));
@@ -586,11 +581,10 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     MoveItemCallback callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> source_node(
         mega_->getNodeByPath(source->id().c_str()));
@@ -617,11 +611,10 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
@@ -647,11 +640,10 @@ MegaNz::downloadResolver(IItem::Pointer item,
                          int64_t size) {
   return [this, item, callback, start,
           size](Request<EitherError<void>>* r) -> EitherError<void> {
-    if (!ensureAuthorized(r)) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{401, "authorization failed"};
-      callback->done(e);
-      return e;
+    auto ret = ensureAuthorized(r);
+    if (ret.left()) {
+      callback->done(ret.left());
+      return ret.left();
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
@@ -712,11 +704,11 @@ std::string MegaNz::temporaryFileName() {
 }
 
 template <class T>
-bool MegaNz::ensureAuthorized(Request<T>* r) {
+EitherError<void> MegaNz::ensureAuthorized(Request<T>* r) {
   if (!authorized_)
     return r->reauthorize();
   else
-    return true;
+    return nullptr;
 }
 
 IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
@@ -751,7 +743,5 @@ IAuth::Token::Pointer MegaNz::Auth::exchangeAuthorizationCodeResponse(
 IAuth::Token::Pointer MegaNz::Auth::refreshTokenResponse(std::istream&) const {
   return nullptr;
 }
-
-MegaNz::Authorize::~Authorize() { cancel(); }
 
 }  // namespace cloudstorage

@@ -39,7 +39,7 @@ class CloudProvider : public ICloudProvider,
  public:
   using Pointer = std::shared_ptr<CloudProvider>;
 
-  enum class AuthorizationStatus { None, InProgress, Fail, Success };
+  enum class AuthorizationStatus { Done, InProgress };
 
   CloudProvider(IAuth::Pointer);
 
@@ -250,6 +250,9 @@ class CloudProvider : public ICloudProvider,
   AuthorizationStatus authorization_status() const;
   void set_authorization_status(AuthorizationStatus);
 
+  EitherError<void> authorization_result() const;
+  void set_authorization_result(EitherError<void>);
+
   AuthorizeRequest::Pointer current_authorization() const;
   void set_current_authorization(AuthorizeRequest::Pointer);
 
@@ -274,6 +277,7 @@ class CloudProvider : public ICloudProvider,
   IHttpServerFactory::Pointer http_server_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;
+  EitherError<void> authorization_result_;
   int authorization_request_count_;
   mutable std::mutex auth_mutex_;
   mutable std::mutex current_authorization_mutex_;

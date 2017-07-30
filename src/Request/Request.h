@@ -62,7 +62,7 @@ class Request : public IRequest<ReturnValue> {
    *
    * @return whether the authorization was successful
    */
-  bool reauthorize();
+  EitherError<void> reauthorize();
 
   /**
    * Sends a request created by factory function; if request failed, tries to do
