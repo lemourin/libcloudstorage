@@ -71,7 +71,8 @@ class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
 
   void receivedItem(cloudstorage::IItem::Pointer) override {}
 
-  void done(cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>> result) override {
+  void done(cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>
+                result) override {
     callback_(result);
   }
 
