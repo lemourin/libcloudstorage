@@ -64,12 +64,12 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   auto r = util::make_unique<Request<EitherError<std::vector<IItem::Pointer>>>>(
       shared_from_this());
-  auto is_fine = [](int code) { return code == 404; };
+  auto is_fine = [](int code) { return code == IHttpRequest::NotFound; };
   r->set_resolver([item, callback, is_fine,
                    this](Request<EitherError<std::vector<IItem::Pointer>>>* r)
                       -> EitherError<std::vector<IItem::Pointer>> {
     if (item->type() != IItem::FileType::Directory) {
-      Error e{403, "trying to list non-directory"};
+      Error e{IHttpRequest::Forbidden, "trying to list non-directory"};
       callback->done(e);
       return e;
     }

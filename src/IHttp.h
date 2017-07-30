@@ -34,6 +34,13 @@ class IHttpRequest {
  public:
   using Pointer = std::shared_ptr<IHttpRequest>;
 
+  static constexpr int Ok = 200;
+  static constexpr int Partial = 206;
+  static constexpr int Bad = 400;
+  static constexpr int Unauthorized = 401;
+  static constexpr int Forbidden = 403;
+  static constexpr int NotFound = 404;
+  static constexpr int RangeInvalid = 416;
   static constexpr int Aborted = 600;
   static constexpr int Unknown = 700;
   static constexpr int Failure = 800;

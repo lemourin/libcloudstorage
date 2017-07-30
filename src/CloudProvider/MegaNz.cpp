@@ -204,18 +204,20 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     const IHttpServer& server, const IHttpServer::IConnection& connection) {
   const char* state = connection.getParameter("state");
   if (!state || state != provider_->auth()->state())
-    return server.createResponse(403, {}, "state parameter missing / invalid");
+    return server.createResponse(IHttpRequest::Forbidden, {},
+                                 "state parameter missing / invalid");
   const char* file = connection.getParameter("file");
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByHandle(
       provider_->mega()->base64ToHandle(file)));
-  if (!node) return server.createResponse(404, {}, "file not found");
+  if (!node)
+    return server.createResponse(IHttpRequest::NotFound, {}, "file not found");
   auto buffer = std::make_shared<Buffer>();
   auto data = util::make_unique<HttpData>(buffer);
   auto request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
   data->request_ = request;
   provider_->addStreamRequest(request);
-  int code = 200;
+  int code = IHttpRequest::Ok;
   auto extension =
       static_cast<Item*>(provider_->toItem(node.get()).get())->extension();
   std::unordered_map<std::string, std::string> headers = {
@@ -228,12 +230,13 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     range = util::parse_range(range_str);
     if (range.size == -1) range.size = node->getSize() - range.start;
     if (range.start + range.size > node->getSize() || range.start == -1)
-      return server.createResponse(416, {}, "invalid range");
+      return server.createResponse(IHttpRequest::RangeInvalid, {},
+                                   "invalid range");
     std::stringstream stream;
     stream << "bytes " << range.start << "-" << range.start + range.size - 1
            << "/" << node->getSize();
     headers["Content-Range"] = stream.str();
-    code = 206;
+    code = IHttpRequest::Partial;
   }
   request->set_resolver(provider_->downloadResolver(
       provider_->toItem(node.get()),
@@ -370,7 +373,7 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     }
     std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
     if (!node) {
-      Error e{404, "not found"};
+      Error e{IHttpRequest::NotFound, "not found"};
       callback(e);
       return e;
     }
@@ -406,7 +409,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
         }
       }
     } else {
-      Error e{404, "node not found"};
+      Error e{IHttpRequest::NotFound, "node not found"};
       callback->done(e);
       return e;
     }
@@ -439,7 +442,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       std::fstream mega_cache(cache.c_str(),
                               std::fstream::out | std::fstream::binary);
       if (!mega_cache) {
-        Error e{403, "couldn't open cache file" + cache};
+        Error e{IHttpRequest::Forbidden, "couldn't open cache file" + cache};
         callback->done(e);
         return e;
       }
@@ -555,7 +558,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     std::unique_ptr<mega::MegaNode> parent_node(
         mega_->getNodeByPath(parent->id().c_str()));
     if (!parent_node) {
-      Error e{404, "parent not found"};
+      Error e{IHttpRequest::NotFound, "parent not found"};
       callback(e);
       return e;
     }
@@ -629,7 +632,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
       callback(result);
       return result;
     }
-    Error e{404, "node not found"};
+    Error e{IHttpRequest::NotFound, "node not found"};
     callback(e);
     return e;
   });

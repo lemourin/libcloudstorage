@@ -93,7 +93,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   const char* state = connection.getParameter(data_.state_parameter_name_);
   if (!state || state != auth_->state())
     return server.createResponse(
-        401, {},
+        IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
   const char* accepted = connection.getParameter("accepted");
@@ -111,23 +111,23 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   }
 
   if (code)
-    return server.createResponse(200, {},
+    return server.createResponse(IHttpRequest::Ok, {},
                                  auth_->success_page().empty()
                                      ? DEFAULT_SUCCESS_PAGE
                                      : auth_->success_page());
 
   if (error)
     return server.createResponse(
-        400, {},
+        IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
   if (connection.url() == "/login")
     return server.createResponse(
-        200, {},
+        IHttpRequest::Ok, {},
         auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
 
   return server.createResponse(
-      404, {},
+      IHttpRequest::NotFound, {},
       auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 }
 

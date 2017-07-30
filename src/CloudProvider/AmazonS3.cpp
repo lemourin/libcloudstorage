@@ -452,7 +452,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
 }
 
 bool AmazonS3::reauthorize(int code) const {
-  return CloudProvider::reauthorize(code) || code == 403 ||
+  return CloudProvider::reauthorize(code) || code == IHttpRequest::Forbidden ||
          access_id().empty() || secret().empty();
 }
 

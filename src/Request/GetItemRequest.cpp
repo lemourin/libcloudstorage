@@ -32,7 +32,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), path_(path), callback_(callback) {
   set_resolver([this](Request*) -> EitherError<IItem> {
     if (path_.empty() || path_.front() != '/') {
-      Error e{403, "invalid path"};
+      Error e{IHttpRequest::Forbidden, "invalid path"};
       callback_(e);
       return e;
     }

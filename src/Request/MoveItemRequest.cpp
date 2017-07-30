@@ -34,7 +34,7 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(p) {
   set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (destination->type() != IItem::FileType::Directory) {
-      Error e{403, "destination not a directory"};
+      Error e{IHttpRequest::Forbidden, "destination not a directory"};
       callback(e);
       return e;
     }

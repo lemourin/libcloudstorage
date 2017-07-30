@@ -40,7 +40,7 @@ UploadFileRequest::UploadFileRequest(
       callback_(callback) {
   set_resolver([this](Request*) -> EitherError<void> {
     if (directory_->type() != IItem::FileType::Directory) {
-      Error e{403, "can't upload into non-directory"};
+      Error e{IHttpRequest::Forbidden, "can't upload into non-directory"};
       callback_->done(e);
       return e;
     }

@@ -34,7 +34,7 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), parent_(parent), name_(name), callback_(callback) {
   set_resolver([this](Request* r) -> EitherError<IItem> {
     if (parent_->type() != IItem::FileType::Directory) {
-      Error e{403, "parent not a directory"};
+      Error e{IHttpRequest::Forbidden, "parent not a directory"};
       callback_(e);
       return e;
     }
