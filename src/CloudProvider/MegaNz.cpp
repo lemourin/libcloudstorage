@@ -30,6 +30,7 @@
 #include "Utility/Utility.h"
 
 #include <array>
+#include <condition_variable>
 #include <cstring>
 #include <fstream>
 #include <queue>
@@ -54,25 +55,29 @@ class Listener : public IRequest<EitherError<void>> {
   Listener() : status_(IN_PROGRESS), code_(IHttpRequest::Unknown) {}
 
   void cancel() override {
-    if (status_ == CANCELLED) return;
-    status_ = CANCELLED;
-    code_ = IHttpRequest::Aborted;
-    semaphore_.notify();
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (status_ == CANCELLED) return;
+      status_ = CANCELLED;
+      code_ = IHttpRequest::Aborted;
+    }
+    condition_.notify_all();
     finish();
   }
 
   EitherError<void> result() override {
     finish();
+    std::lock_guard<std::mutex> lock(mutex_);
     if (status_ != SUCCESS)
       return Error{code_, error_};
     else
       return nullptr;
   }
 
-  std::atomic_int status_;
-
  protected:
-  Semaphore semaphore_;
+  int status_;
+  std::mutex mutex_;
+  std::condition_variable condition_;
   int code_;
   std::string error_;
 };
@@ -80,7 +85,8 @@ class Listener : public IRequest<EitherError<void>> {
 class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
   void finish() override {
-    while (status_ == IN_PROGRESS) semaphore_.wait();
+    std::unique_lock<std::mutex> lock(mutex_);
+    condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
   }
 
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
@@ -93,7 +99,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
-    semaphore_.notify();
+    condition_.notify_all();
   }
 
   std::string link_;
@@ -103,7 +109,10 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
 class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
   void finish() override {
-    while (status_ == IN_PROGRESS || status_ == CANCELLED) semaphore_.wait();
+    std::unique_lock<std::mutex> lock(mutex_);
+    condition_.wait(lock, [this]() {
+      return status_ != IN_PROGRESS && status_ != CANCELLED;
+    });
   }
 
   bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
@@ -131,7 +140,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       error_ = e->getErrorString();
       status_ = FAILURE;
     }
-    semaphore_.notify();
+    condition_.notify_all();
   }
 
   IDownloadFileCallback::Pointer download_callback_;
@@ -342,8 +351,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
         mega_->fetchNodes(fetch_nodes_listener.get());
         auto result = fetch_nodes_listener->result();
         mega_->removeRequestListener(fetch_nodes_listener.get());
-        if (fetch_nodes_listener->status_ == RequestListener::SUCCESS)
-          authorized_ = true;
+        if (!result.left()) authorized_ = true;
         return result;
       });
 }
@@ -481,7 +489,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
     auto result = listener->result();
     mega_->removeRequestListener(listener.get());
-    if (listener->status_ == Listener::SUCCESS) {
+    if (!result.left()) {
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
       if (!cache_file) {
