@@ -94,11 +94,13 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
       } else
         failure = true;
     } while (!page_token.empty() && !failure);
-    if (!failure)
+    if (!failure) {
       callback->done(result);
-    else
+      return result;
+    } else {
       callback->done(error);
-    return result;
+      return error;
+    }
   });
   return std::move(r);
 }
