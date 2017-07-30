@@ -52,7 +52,7 @@ class IThumbnailer {
    */
   virtual IRequest<EitherError<std::vector<char>>>::Pointer generateThumbnail(
       std::shared_ptr<ICloudProvider>, IItem::Pointer item,
-      Callback callback) = 0;
+      Callback callback = [](EitherError<std::vector<char>>) {}) = 0;
 };
 
 }  // namespace cloudstorage

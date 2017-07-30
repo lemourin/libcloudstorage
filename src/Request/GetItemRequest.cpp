@@ -44,23 +44,17 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
         node = nullptr;
         break;
       }
-      {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (is_cancelled()) {
-          Error e{IHttpRequest::Aborted, ""};
-          return e;
-        }
-        current_request_ = provider()->listDirectoryAsync(
-            std::move(node), [](EitherError<std::vector<IItem::Pointer>>) {});
+      auto current_request = static_cast<ICloudProvider*>(provider().get())
+                                 ->listDirectoryAsync(std::move(node));
+      subrequest(current_request);
+      if (current_request->result().left()) {
+        callback_(current_request->result().left());
+        return current_request->result().left();
       }
-      node = getItem(*current_request_->result().right(), token);
+      node = getItem(*current_request->result().right(), token);
     }
     callback_(node);
     return node;
-  });
-  set_cancel_callback([this]() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (current_request_) current_request_->cancel();
   });
 }
 

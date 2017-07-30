@@ -66,8 +66,8 @@ void Request<T>::cancel() {
   if (is_cancelled()) return;
   set_cancelled(true);
   {
-    std::lock_guard<std::mutex> lock(semaphore_list_mutex_);
-    for (Semaphore* semaphore : semaphore_list_) semaphore->notify();
+    std::lock_guard<std::mutex> lock(subrequest_mutex_);
+    for (auto r : subrequests_) r->cancel();
   }
   if (cancel_callback_) cancel_callback_();
   auto p = provider();
@@ -158,17 +158,13 @@ std::shared_ptr<CloudProvider> Request<T>::provider() const {
 }
 
 template <class T>
-Request<T>::Semaphore::Semaphore(Request* request) : request_(request) {
-  std::lock_guard<std::mutex> lock(request_->semaphore_list_mutex_);
-  request_->semaphore_list_.push_back(this);
-  if (request_->is_cancelled()) notify();
-}
-
-template <class T>
-Request<T>::Semaphore::~Semaphore() {
-  std::lock_guard<std::mutex> lock(request_->semaphore_list_mutex_);
-  const auto& list = request_->semaphore_list_;
-  request_->semaphore_list_.erase(std::find(list.begin(), list.end(), this));
+void Request<T>::subrequest(std::shared_ptr<IGenericRequest> request) {
+  if (is_cancelled())
+    request->cancel();
+  else {
+    std::lock_guard<std::mutex> lock(subrequest_mutex_);
+    subrequests_.push_back(request);
+  }
 }
 
 template class Request<EitherError<std::vector<char>>>;

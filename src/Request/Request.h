@@ -87,18 +87,10 @@ class Request : public IRequest<ReturnValue> {
            ProgressFunction upload = nullptr);
 
   std::shared_ptr<CloudProvider> provider() const;
-  std::string error_string(int code, const std::string& desc) const;
 
   bool is_cancelled() { return is_cancelled_; }
 
-  class Semaphore : public cloudstorage::Semaphore {
-   public:
-    Semaphore(Request*);
-    ~Semaphore();
-
-   private:
-    Request<ReturnValue>* request_;
-  };
+  void subrequest(std::shared_ptr<IGenericRequest>);
 
  private:
   void set_cancelled(bool e) { is_cancelled_ = e; }
@@ -112,8 +104,8 @@ class Request : public IRequest<ReturnValue> {
   std::atomic_bool is_cancelled_;
   std::shared_future<ReturnValue> function_;
   CancelCallback cancel_callback_;
-  std::mutex semaphore_list_mutex_;
-  std::vector<Semaphore*> semaphore_list_;
+  std::mutex subrequest_mutex_;
+  std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };
 
 }  // namespace cloudstorage

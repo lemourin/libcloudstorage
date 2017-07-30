@@ -40,6 +40,8 @@ class AuthorizeRequest : public Request<EitherError<void>> {
 
   std::string getAuthorizationCode();
 
+  void cancel() override;
+
  private:
   std::mutex mutex_;
   bool awaiting_authorization_code_;

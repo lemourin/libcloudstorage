@@ -40,8 +40,6 @@ class GetItemRequest : public Request<EitherError<IItem>> {
   IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
                          const std::string& name) const;
 
-  std::mutex mutex_;
-  ListDirectoryRequest::Pointer current_request_;
   std::string path_;
   Callback callback_;
 };

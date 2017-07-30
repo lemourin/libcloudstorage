@@ -44,23 +44,44 @@ namespace cloudstorage {
 
 namespace {
 
-class Listener {
+class Listener : public IRequest<EitherError<void>> {
  public:
   static constexpr int IN_PROGRESS = -1;
   static constexpr int FAILURE = 0;
   static constexpr int SUCCESS = 1;
+  static constexpr int CANCELLED = 2;
 
-  Listener(Semaphore* semaphore)
-      : semaphore_(semaphore), status_(IN_PROGRESS) {}
+  Listener() : status_(IN_PROGRESS) {}
 
-  Semaphore* semaphore_;
+  void cancel() override {
+    if (status_ != CANCELLED) return;
+    status_ = CANCELLED;
+    semaphore_.notify();
+    finish();
+  }
+
+  void finish() override {
+    while (status_ == IN_PROGRESS || status_ == CANCELLED) semaphore_.wait();
+  }
+
+  EitherError<void> result() override {
+    finish();
+    if (status_ == FAILURE)
+      return Error{500, error_};
+    else
+      return nullptr;
+  }
+
+ protected:
+  Semaphore semaphore_;
+  std::string error_;
+
+ public:
   std::atomic_int status_;
 };
 
 class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
-  using Listener::Listener;
-
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
@@ -68,7 +89,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
       status_ = FAILURE;
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
-    semaphore_->notify();
+    semaphore_.notify();
   }
 
   std::string link_;
@@ -77,11 +98,9 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
 
 class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
-  using Listener::Listener;
-
   bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
                       size_t size) override {
-    if (request_->is_cancelled()) return false;
+    if (status_ == CANCELLED) return false;
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
@@ -93,7 +112,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
-    if (request_->is_cancelled()) mega->cancelTransfer(t);
+    if (status_ == CANCELLED) mega->cancelTransfer(t);
   }
 
   void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
@@ -103,13 +122,11 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       error_ = e->getErrorString();
       status_ = FAILURE;
     }
-    semaphore_->notify();
+    semaphore_.notify();
   }
 
   IDownloadFileCallback::Pointer download_callback_;
   IUploadFileCallback::Pointer upload_callback_;
-  Request<EitherError<void>>* request_;
-  std::string error_;
 };
 
 struct Buffer {
@@ -294,7 +311,7 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return util::make_unique<Authorize>(
       shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
-        if (!login(r)) {
+        if (login(r).left()) {
           if (r->is_cancelled()) return Error{IHttpRequest::Aborted, ""};
           if (callback()->userConsentRequired(*this) ==
               ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
@@ -303,19 +320,18 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               std::lock_guard<std::mutex> mutex(auth_mutex());
               auth()->set_access_token(authorizationCodeToToken(code));
             }
-            if (!login(r)) return Error{401, "invalid credentials"};
+            auto result = login(r);
+            if (result.left()) return result.left();
           }
         }
-        Authorize::Semaphore semaphore(r);
-        RequestListener fetch_nodes_listener_(&semaphore);
-        mega_->fetchNodes(&fetch_nodes_listener_);
-        semaphore.wait();
-        mega_->removeRequestListener(&fetch_nodes_listener_);
-        if (fetch_nodes_listener_.status_ != RequestListener::SUCCESS) {
-          return Error{500, "couldn't fetch nodes"};
-        }
-        authorized_ = true;
-        return nullptr;
+        auto fetch_nodes_listener = std::make_shared<RequestListener>();
+        r->subrequest(fetch_nodes_listener);
+        mega_->fetchNodes(fetch_nodes_listener.get());
+        auto result = fetch_nodes_listener->result();
+        mega_->removeRequestListener(fetch_nodes_listener.get());
+        if (fetch_nodes_listener->status_ == RequestListener::SUCCESS)
+          authorized_ = true;
+        return result;
       });
 }
 
@@ -413,28 +429,18 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         mega_cache.write(buffer.data(), length);
       }
     }
-    Request<EitherError<void>>::Semaphore semaphore(r);
-    TransferListener listener(&semaphore);
-    listener.upload_callback_ = callback;
-    listener.request_ = r;
+    auto listener = std::make_shared<TransferListener>();
+    listener->upload_callback_ = callback;
+    r->subrequest(listener);
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    mega_->startUpload(cache.c_str(), node.get(), filename.c_str(), &listener);
-    semaphore.wait();
-    if (r->is_cancelled())
-      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
+    mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
+                       listener.get());
+    auto result = listener->result();
     std::remove(cache.c_str());
-    mega_->removeTransferListener(&listener);
-    if (listener.status_ != Listener::SUCCESS) {
-      Error e = r->is_cancelled()
-                    ? Error{IHttpRequest::Aborted, ""}
-                    : Error{500, "Upload error: " + listener.error_};
-      callback->done(e);
-      return e;
-    } else {
-      callback->done(nullptr);
-      return nullptr;
-    }
+    mega_->removeTransferListener(listener.get());
+    callback->done(result);
+    return result;
   });
   return std::move(r);
 }
@@ -450,17 +456,15 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       callback->done(e);
       return e;
     }
-    Request<EitherError<void>>::Semaphore semaphore(r);
-    RequestListener listener(&semaphore);
+    auto listener = std::make_shared<RequestListener>();
+    r->subrequest(listener);
     std::string cache = temporaryFileName();
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    mega_->getThumbnail(node.get(), cache.c_str(), &listener);
-    semaphore.wait();
-    if (r->is_cancelled())
-      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
-    mega_->removeRequestListener(&listener);
-    if (listener.status_ == Listener::SUCCESS) {
+    mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
+    auto result = listener->result();
+    mega_->removeRequestListener(listener.get());
+    if (listener->status_ == Listener::SUCCESS) {
       std::fstream cache_file(cache.c_str(),
                               std::fstream::in | std::fstream::binary);
       if (!cache_file) {
@@ -503,19 +507,13 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    Request<EitherError<void>>::Semaphore semaphore(r);
-    RequestListener listener(&semaphore);
-    mega_->remove(node.get(), &listener);
-    semaphore.wait();
-    mega_->removeRequestListener(&listener);
-    if (listener.status_ == Listener::SUCCESS) {
-      callback(nullptr);
-      return nullptr;
-    } else {
-      Error e{500, ""};
-      callback(e);
-      return e;
-    }
+    auto listener = std::make_shared<RequestListener>();
+    r->subrequest(listener);
+    mega_->remove(node.get(), listener.get());
+    auto result = listener->result();
+    mega_->removeRequestListener(listener.get());
+    callback(result);
+    return result;
   });
   return std::move(r);
 }
@@ -538,21 +536,20 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
       callback(e);
       return e;
     }
-    Request<EitherError<IItem>>::Semaphore semaphore(r);
-    RequestListener listener(&semaphore);
-    mega_->createFolder(name.c_str(), parent_node.get(), &listener);
-    semaphore.wait();
-    mega_->removeRequestListener(&listener);
-    if (listener.status_ == Listener::SUCCESS) {
+    auto listener = std::make_shared<RequestListener>();
+    r->subrequest(listener);
+    mega_->createFolder(name.c_str(), parent_node.get(), listener.get());
+    auto result = listener->result();
+    mega_->removeRequestListener(listener.get());
+    if (!result.left()) {
       std::unique_ptr<mega::MegaNode> node(
-          mega_->getNodeByHandle(listener.node_));
+          mega_->getNodeByHandle(listener->node_));
       auto item = toItem(node.get());
       callback(item);
       return item;
     } else {
-      Error e{500, "couldn't create folder"};
-      callback(e);
-      return e;
+      callback(result.left());
+      return result.left();
     }
   });
   return std::move(r);
@@ -574,17 +571,16 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     std::unique_ptr<mega::MegaNode> destination_node(
         mega_->getNodeByPath(destination->id().c_str()));
     if (source_node && destination_node) {
-      Request<EitherError<void>>::Semaphore semaphore(r);
-      RequestListener listener(&semaphore);
-      mega_->moveNode(source_node.get(), destination_node.get(), &listener);
-      semaphore.wait();
-      mega_->removeRequestListener(&listener);
-      if (listener.status_ == Listener::SUCCESS) {
-        callback(nullptr);
-        return nullptr;
-      }
+      auto listener = std::make_shared<RequestListener>();
+      r->subrequest(listener);
+      mega_->moveNode(source_node.get(), destination_node.get(),
+                      listener.get());
+      auto result = listener->result();
+      mega_->removeRequestListener(listener.get());
+      callback(result);
+      return result;
     }
-    Error error{500, ""};
+    Error error{500, "no source node / destination node"};
     callback(error);
     return error;
   });
@@ -604,18 +600,17 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
     if (node) {
-      Request<EitherError<void>>::Semaphore semaphore(r);
-      RequestListener listener(&semaphore);
-      mega_->renameNode(node.get(), name.c_str(), &listener);
-      semaphore.wait();
-      mega_->removeRequestListener(&listener);
-      if (listener.status_ == Listener::SUCCESS) {
-        callback(nullptr);
-        return nullptr;
-      }
+      auto listener = std::make_shared<RequestListener>();
+      r->subrequest(listener);
+      mega_->renameNode(node.get(), name.c_str(), listener.get());
+      auto result = listener->result();
+      mega_->removeRequestListener(listener.get());
+      callback(result);
+      return result;
     }
-    callback(Error{500, ""});
-    return Error{500, ""};
+    Error e{500, "node not found"};
+    callback(e);
+    return e;
   });
   return std::move(r);
 }
@@ -634,42 +629,32 @@ MegaNz::downloadResolver(IItem::Pointer item,
     }
     std::unique_ptr<mega::MegaNode> node(
         mega_->getNodeByPath(item->id().c_str()));
-    Request<EitherError<void>>::Semaphore semaphore(r);
-    TransferListener listener(&semaphore);
-    listener.download_callback_ = callback;
-    listener.request_ = r;
+    auto listener = std::make_shared<TransferListener>();
+    listener->download_callback_ = callback;
+    r->subrequest(listener);
     mega_->startStreaming(node.get(), start,
                           size == -1 ? node->getSize() - start : size,
-                          &listener);
-    semaphore.wait();
-    if (r->is_cancelled())
-      while (listener.status_ == Listener::IN_PROGRESS) semaphore.wait();
-    mega_->removeTransferListener(&listener);
-    if (listener.status_ != Listener::SUCCESS) {
-      Error e = r->is_cancelled() ? Error{IHttpRequest::Aborted, ""}
-                                  : Error{500, "failed to download"};
-      callback->done(e);
-      return e;
-    } else {
-      callback->done(nullptr);
-      return nullptr;
-    }
+                          listener.get());
+    auto result = listener->result();
+    mega_->removeTransferListener(listener.get());
+    callback->done(result);
+    return result;
   };
 }
 
-bool MegaNz::login(Request<EitherError<void>>* r) {
-  Authorize::Semaphore semaphore(r);
-  RequestListener auth_listener(&semaphore);
+EitherError<void> MegaNz::login(Request<EitherError<void>>* r) {
+  auto auth_listener = std::make_shared<RequestListener>();
+  r->subrequest(auth_listener);
   auto data = credentialsFromString(token());
   std::string mail = data.first;
   std::string private_key = data.second;
   std::unique_ptr<char[]> hash(
       mega_->getStringHash(private_key.c_str(), mail.c_str()));
   mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
-                   &auth_listener);
-  semaphore.wait();
-  mega_->removeRequestListener(&auth_listener);
-  return auth_listener.status_ == Listener::SUCCESS;
+                   auth_listener.get());
+  auto result = auth_listener->result();
+  mega_->removeRequestListener(auth_listener.get());
+  return result;
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {

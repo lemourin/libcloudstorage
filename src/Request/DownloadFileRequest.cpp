@@ -73,20 +73,14 @@ DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 EitherError<std::vector<char>> DownloadFileRequest::generateThumbnail(
     Request<EitherError<void>>* r, IItem::Pointer item) {
   if (!r->provider()->thumbnailer()) return Error{500, "missing thumbnailer"};
-  Request<EitherError<void>>::Semaphore semaphore(r);
-  auto item_data = r->provider()->getItemDataAsync(
-      item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
-  semaphore.wait();
-  if (r->is_cancelled()) {
-    item_data->cancel();
-    return Error{IHttpRequest::Aborted, ""};
-  }
+  auto item_data = static_cast<ICloudProvider*>(r->provider().get())
+                       ->getItemDataAsync(item->id());
+  r->subrequest(item_data);
+  if (item_data->result().left()) return item_data->result().left();
   if (!item_data->result().right()) return item_data->result().left();
   auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
-      r->provider(), item_data->result().right(),
-      [&semaphore](EitherError<std::vector<char>>) { semaphore.notify(); });
-  semaphore.wait();
-  if (r->is_cancelled()) thumbnail_data->cancel();
+      r->provider(), item_data->result().right());
+  r->subrequest(thumbnail_data);
   return thumbnail_data->result();
 }
 

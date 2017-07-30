@@ -76,17 +76,11 @@ EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
             ->getItemDataAsync(source_id, [](EitherError<IItem>) {})
             ->result();
     if (directory.left()) return directory.left();
-    Request<EitherError<void>>::Semaphore semaphore(r);
-    auto children_request = r->provider()->listDirectoryAsync(
-        directory.right(),
-        [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
-          semaphore.notify();
-        });
-    semaphore.wait();
-    if (r->is_cancelled()) {
-      children_request->cancel();
-      return Error{IHttpRequest::Aborted, ""};
-    }
+    auto children_request = static_cast<ICloudProvider*>(r->provider().get())
+                                ->listDirectoryAsync(directory.right());
+    r->subrequest(children_request);
+    if (children_request->result().left())
+      return children_request->result().left();
     for (auto item : *children_request->result().right()) {
       auto p =
           rename(r, dest_id + "/" + item->filename(), item->id(), region, http);
@@ -234,25 +228,20 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
   auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
   r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
     if (item->type() == IItem::FileType::Directory) {
-      Request<EitherError<void>>::Semaphore semaphore(r);
-      auto children_request = r->provider()->listDirectoryAsync(
-          item, [&semaphore](EitherError<std::vector<IItem::Pointer>>) {
-            semaphore.notify();
-          });
-      semaphore.wait();
-      if (r->is_cancelled()) {
-        children_request->cancel();
-        Error e{IHttpRequest::Aborted, ""};
+      auto children_request = static_cast<ICloudProvider*>(r->provider().get())
+                                  ->listDirectoryAsync(item);
+      r->subrequest(children_request);
+      if (children_request->result().left()) {
+        Error e = *children_request->result().left();
         callback(e);
         return e;
       }
       for (auto child : *children_request->result().right()) {
-        auto delete_request = deleteItemAsync(
-            child, [&](EitherError<void>) { semaphore.notify(); });
-        semaphore.wait();
-        if (r->is_cancelled()) {
-          delete_request->cancel();
-          Error e{IHttpRequest::Aborted, ""};
+        auto delete_request =
+            static_cast<ICloudProvider*>(this)->deleteItemAsync(child);
+        r->subrequest(delete_request);
+        if (delete_request->result().left()) {
+          Error e = *delete_request->result().left();
           callback(e);
           return e;
         }

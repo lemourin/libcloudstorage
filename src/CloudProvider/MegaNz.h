@@ -91,7 +91,7 @@ class MegaNz : public CloudProvider {
   downloadResolver(IItem::Pointer item, IDownloadFileCallback::Pointer,
                    int64_t start = 0, int64_t size = -1);
 
-  bool login(Request<EitherError<void>>* r);
+  EitherError<void> login(Request<EitherError<void>>* r);
   std::string passwordHash(const std::string& password) const;
 
   mega::MegaApi* mega() const { return mega_.get(); }

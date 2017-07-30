@@ -166,13 +166,12 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
                       Request<EitherError<void>>* r) -> EitherError<void> {
     std::string url = item->url();
     if (item->type() == IItem::FileType::Audio) {
-      Request<EitherError<void>>::Semaphore semaphore(r);
-      auto t = getItemDataAsync(
-          item->id(), [&semaphore](EitherError<IItem>) { semaphore.notify(); });
-      semaphore.wait();
-      if (r->is_cancelled())
-        t->cancel();
-      else if (t->result().right())
+      auto t = static_cast<ICloudProvider*>(this)->getItemDataAsync(item->id());
+      r->subrequest(t);
+      if (t->result().left()) {
+        callback->done(t->result().left());
+        return t->result().left();
+      } else
         url = t->result().right()->url();
     }
     DownloadStreamWrapper wrapper(std::bind(
