@@ -117,10 +117,13 @@ int Request<T>::sendRequest(
   if (request) p->authorizeRequest(*request);
   int code =
       send(request.get(), input, output, &error_stream, download, upload);
+  bool error_set = false;
   if (IHttpRequest::isSuccess(code))
     return code;
-  else if (error)
+  else if (error) {
+    error_set = true;
     *error = {code, error_stream.str()};
+  }
   if (p->reauthorize(code)) {
     auto r = reauthorize();
     if (!r.left()) {
@@ -132,7 +135,9 @@ int Request<T>::sendRequest(
       if (!IHttpRequest::isSuccess(code) && error)
         *error = {code, error_stream.str()};
     } else {
-      if (error) *error = *r.left();
+      if (error && (!error_set || (r.left()->code_ != IHttpRequest::Aborted &&
+                                   r.left()->code_ != IHttpRequest::Unknown)))
+        *error = *r.left();
     }
   }
 
