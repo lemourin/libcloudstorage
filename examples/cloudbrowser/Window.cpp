@@ -393,7 +393,8 @@ void Window::deleteItem(int item_id) {
         if (!e.left())
           std::cerr << "[DIAG] Successfully deleted file\n";
         else
-          std::cerr << "[FAIL] Failed to delete file.\n";
+          std::cerr << "[FAIL] Failed to delete file " << e.left()->code_
+                    << ": " << e.left()->description_ << "\n";
       });
 }
 
@@ -404,7 +405,9 @@ void Window::createDirectory(QString name) {
         if (item.right())
           std::cerr << "[DIAG] Successfully created directory\n";
         else
-          std::cerr << "[FAIL] Failed to create directory\n";
+          std::cerr << "[FAIL] Failed to create directory "
+                    << item.left()->code_ << ": " << item.left()->description_
+                    << "\n";
       });
 }
 
@@ -416,7 +419,8 @@ void Window::markMovedItem(int item_id) {
           if (!e.left())
             std::cerr << "[DIAG] Successfully moved file\n";
           else
-            std::cerr << "[FAIL] Failed to move file.\n";
+            std::cerr << "[FAIL] Failed to move file " << e.left()->code_
+                      << ": " << e.left()->description_ << "\n";
         });
     moved_file_ = nullptr;
   } else if (item_id != -1) {
@@ -433,7 +437,8 @@ void Window::renameItem(int item_id, QString name) {
         if (!e.left())
           std::cerr << "[DIAG] Successfully renamed file\n";
         else
-          std::cerr << "[FAIL] Failed to rename file.\n";
+          std::cerr << "[FAIL] Failed to rename file " << e.left()->code_
+                    << ": " << e.left()->description_ << "\n";
       });
 }
 

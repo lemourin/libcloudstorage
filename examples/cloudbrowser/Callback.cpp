@@ -45,7 +45,8 @@ void DownloadFileCallback::done(EitherError<void> e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
 
   if (e.left()) {
-    std::cerr << "[FAIL] Download: " << e.left()->description_ << "\n";
+    std::cerr << "[FAIL] Download: " << e.left()->code_ << " "
+              << e.left()->description_ << "\n";
   } else {
     std::cerr << "[OK] Finished download.\n";
   }
@@ -79,7 +80,8 @@ uint64_t UploadFileCallback::size() { return file_.size(); }
 void UploadFileCallback::done(EitherError<void> e) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
   if (e.left()) {
-    std::cerr << "[FAIL] Upload: " << e.left()->description_ << "\n";
+    std::cerr << "[FAIL] Upload: " << e.left()->code_ << " "
+              << e.left()->description_ << "\n";
   } else {
     std::cerr << "[OK] Successfuly uploaded\n";
   }
@@ -128,7 +130,8 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
 void ListDirectoryCallback::done(EitherError<std::vector<IItem::Pointer>> e) {
   if (e.left()) {
     std::unique_lock<std::mutex> lock(window_->stream_mutex());
-    std::cerr << "[FAIL] ListDirectory: " << e.left()->description_ << "\n";
+    std::cerr << "[FAIL] ListDirectory: " << e.left()->code_ << " "
+              << e.left()->description_ << "\n";
     emit window_->closeBrowser();
   }
 }
