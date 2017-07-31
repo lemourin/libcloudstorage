@@ -29,10 +29,10 @@ namespace cloudstorage {
 
 namespace {
 
-int httpRequestCallback(void* cls, MHD_Connection* c, const char* url,
-                        const char* /*method*/, const char* /*version*/,
-                        const char* /*upload_data*/,
-                        size_t* /*upload_data_size*/, void** /*ptr*/) {
+int http_request_callback(void* cls, MHD_Connection* c, const char* url,
+                          const char* /*method*/, const char* /*version*/,
+                          const char* /*upload_data*/,
+                          size_t* /*upload_data_size*/, void** /*ptr*/) {
   MicroHttpdServer* server = static_cast<MicroHttpdServer*>(cls);
   MicroHttpdServer::Connection connection(c, url);
   auto response = server->callback()->receivedConnection(*server, connection);
@@ -104,7 +104,7 @@ MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb,
     : http_server_(MHD_start_daemon(type == IHttpServer::Type::Authorization
                                         ? MHD_USE_POLL_INTERNALLY
                                         : MHD_USE_THREAD_PER_CONNECTION,
-                                    port, NULL, NULL, &httpRequestCallback,
+                                    port, NULL, NULL, http_request_callback,
                                     this, MHD_OPTION_END)),
       callback_(cb) {}
 
