@@ -151,7 +151,9 @@ struct Buffer {
   using Pointer = std::shared_ptr<Buffer>;
 
   std::mutex mutex_;
+  std::condition_variable condition_;
   std::queue<char> data_;
+  bool done_ = false;
 };
 
 class HttpData : public IHttpServer::IResponse::ICallback {
@@ -167,8 +169,10 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   }
 
   int putData(char* buf, size_t max) override {
+    std::unique_lock<std::mutex> lock(buffer_->mutex_);
+    buffer_->condition_.wait(
+        lock, [this]() { return !buffer_->data_.empty() || buffer_->done_; });
     if (request_->is_cancelled()) return -1;
-    std::lock_guard<std::mutex> lock(buffer_->mutex_);
     size_t cnt = std::min(buffer_->data_.size(), max);
     for (size_t i = 0; i < cnt; i++) {
       buf[i] = buffer_->data_.front();
@@ -186,11 +190,21 @@ class HttpDataCallback : public IDownloadFileCallback {
   HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
 
   void receivedData(const char* data, uint32_t length) override {
-    std::lock_guard<std::mutex> lock(buffer_->mutex_);
-    for (uint32_t i = 0; i < length; i++) buffer_->data_.push(data[i]);
+    {
+      std::lock_guard<std::mutex> lock(buffer_->mutex_);
+      for (uint32_t i = 0; i < length; i++) buffer_->data_.push(data[i]);
+    }
+    buffer_->condition_.notify_one();
   }
 
-  void done(EitherError<void>) override {}
+  void done(EitherError<void>) override {
+    {
+      std::lock_guard<std::mutex> lock(buffer_->mutex_);
+      buffer_->done_ = true;
+    }
+    buffer_->condition_.notify_one();
+  }
+  
   void progress(uint32_t, uint32_t) override {}
 
   Buffer::Pointer buffer_;
