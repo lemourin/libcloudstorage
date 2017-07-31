@@ -101,7 +101,7 @@ std::string MicroHttpdServer::Connection::url() const { return url_; }
 
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb,
                                    IHttpServer::Type type, int port)
-    : http_server_(MHD_start_daemon(type == IHttpServer::Type::SingleThreaded
+    : http_server_(MHD_start_daemon(type == IHttpServer::Type::Authorization
                                         ? MHD_USE_POLL_INTERNALLY
                                         : MHD_USE_THREAD_PER_CONNECTION,
                                     port, NULL, NULL, &httpRequestCallback,

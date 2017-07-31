@@ -296,7 +296,7 @@ void MegaNz::initialize(InitData&& data) {
   if (file_url_.empty()) file_url_ = auth()->redirect_uri_host();
   daemon_ = http_server()->create(
       util::make_unique<HttpServerCallback>(this), auth()->state(),
-      IHttpServer::Type::MultiThreaded, daemon_port_);
+      IHttpServer::Type::FileProvider, daemon_port_);
 }
 
 std::string MegaNz::name() const { return "mega"; }

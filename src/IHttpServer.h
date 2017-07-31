@@ -33,7 +33,7 @@ class IHttpServer {
  public:
   using Pointer = std::unique_ptr<IHttpServer>;
 
-  enum class Type { MultiThreaded, SingleThreaded };
+  enum class Type { Authorization, FileProvider };
 
   class IConnection;
 

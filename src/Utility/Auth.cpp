@@ -215,7 +215,7 @@ EitherError<std::string> Auth::awaitAuthorizationCode(
   callback->auth_ = this;
   {
     auto http_server = http_server_->create(
-        callback, state(), IHttpServer::Type::SingleThreaded, http_server_port);
+        callback, state(), IHttpServer::Type::Authorization, http_server_port);
     if (!http_server)
       return Error{IHttpRequest::Failure, "couldn't start http server"};
     if (server_started) server_started();
