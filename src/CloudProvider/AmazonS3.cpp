@@ -153,8 +153,8 @@ std::string AmazonS3::endpoint() const {
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
-        if (callback()->userConsentRequired(*this) !=
-            ICallback::Status::WaitForAuthorizationCode)
+        if (auth_callback()->userConsentRequired(*this) !=
+            IAuthCallback::Status::WaitForAuthorizationCode)
           return Error{IHttpRequest::Failure, "not waiting for code"};
         auto code = r->getAuthorizationCode();
         if (code.left()) return code.left();
@@ -377,11 +377,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
 }
 
 void AmazonS3::authorizeRequest(IHttpRequest& request) const {
-  if (!crypto()) {
-    callback()->error(*this,
-                      {IHttpRequest::Failure, "No crypto functions provided."});
-    return;
-  }
+  if (!crypto()) throw std::runtime_error("no crypto functions provided");
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
   std::string scope = current_date + "/" + region_ + "/s3/aws4_request";

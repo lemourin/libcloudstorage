@@ -30,7 +30,7 @@ namespace cloudstorage {
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
                                    AuthorizationFlow callback)
     : Request(p), awaiting_authorization_code_(), callback_(callback) {
-  if (!provider()->callback())
+  if (!provider()->auth_callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
   set_resolver([this](Request*) -> EitherError<void> {
     auto result = callback_ ? callback_(this) : oauth2Authorization();
@@ -38,10 +38,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
     provider()->set_authorization_status(
         CloudProvider::AuthorizationStatus::Done);
     provider()->authorized_condition().notify_all();
-    if (!result.left())
-      provider()->callback()->accepted(*provider());
-    else
-      provider()->callback()->declined(*provider());
+    provider()->auth_callback()->done(*provider(), result);
     return result;
   });
 }
@@ -74,14 +71,12 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
     std::unique_lock<std::mutex> lock(provider()->auth_mutex());
     auth->set_access_token(auth->refreshTokenResponse(output));
     return nullptr;
-  } else if (r && !IHttpRequest::isClientError(code)) {
-    provider()->callback()->error(*provider(), Error{code, error_stream.str()});
+  } else if (r && !IHttpRequest::isClientError(code))
     return Error{code, error_stream.str()};
-  }
 
   if (is_cancelled()) return Error{IHttpRequest::Aborted, ""};
-  if (provider()->callback()->userConsentRequired(*provider()) ==
-      ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
+  if (provider()->auth_callback()->userConsentRequired(*provider()) ==
+      ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
     auto authorization_code = getAuthorizationCode();
     if (authorization_code.left()) return authorization_code.left();
     auth->set_authorization_code(*authorization_code.right());
@@ -92,9 +87,6 @@ EitherError<void> AuthorizeRequest::oauth2Authorization() {
       std::unique_lock<std::mutex> lock(provider()->auth_mutex());
       auth->set_access_token(auth->exchangeAuthorizationCodeResponse(output));
       return nullptr;
-    } else {
-      provider()->callback()->error(*provider(),
-                                    Error{code, error_stream.str()});
     }
   }
   return Error{code, error_stream.str()};

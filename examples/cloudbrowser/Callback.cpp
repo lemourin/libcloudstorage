@@ -94,8 +94,8 @@ void UploadFileCallback::progress(uint32_t total, uint32_t now) {
 
 CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}
 
-ICloudProvider::ICallback::Status CloudProviderCallback::userConsentRequired(
-    const ICloudProvider& p) {
+ICloudProvider::IAuthCallback::Status
+CloudProviderCallback::userConsentRequired(const ICloudProvider& p) {
   std::unique_lock<std::mutex> lock(window_->stream_mutex());
   std::cerr << "[DIAG] User consent required: " << p.authorizeLibraryUrl()
             << "\n";
@@ -104,21 +104,19 @@ ICloudProvider::ICallback::Status CloudProviderCallback::userConsentRequired(
   return Status::WaitForAuthorizationCode;
 }
 
-void CloudProviderCallback::accepted(const ICloudProvider& drive) {
-  QSettings settings;
-  settings.setValue(drive.name().c_str(), drive.token().c_str());
-  emit window_->closeBrowser();
-  emit window_->successfullyAuthorized(drive.name().c_str());
-}
-
-void CloudProviderCallback::declined(const ICloudProvider&) {
-  emit window_->closeBrowser();
-}
-
-void CloudProviderCallback::error(const ICloudProvider&, Error e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
-  std::cerr << "[FAIL] Authorize " << e.description_ << "\n";
-  emit window_->closeBrowser();
+void CloudProviderCallback::done(const ICloudProvider& drive,
+                                 EitherError<void> e) {
+  if (e.left()) {
+    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    std::cerr << "[FAIL] Authorize error: " << e.left()->code_ << " "
+              << e.left()->description_ << "\n";
+    emit window_->closeBrowser();
+  } else {
+    QSettings settings;
+    settings.setValue(drive.name().c_str(), drive.token().c_str());
+    emit window_->closeBrowser();
+    emit window_->successfullyAuthorized(drive.name().c_str());
+  }
 }
 
 ListDirectoryCallback::ListDirectoryCallback(Window* w) : window_(w) {}

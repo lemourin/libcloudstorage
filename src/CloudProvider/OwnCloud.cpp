@@ -53,8 +53,8 @@ std::string OwnCloud::token() const {
 AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
-        if (callback()->userConsentRequired(*this) !=
-            ICallback::Status::WaitForAuthorizationCode)
+        if (auth_callback()->userConsentRequired(*this) !=
+            IAuthCallback::Status::WaitForAuthorizationCode)
           return Error{IHttpRequest::Failure, "not waiting for code"};
         auto code = r->getAuthorizationCode();
         if (code.left()) return code.left();

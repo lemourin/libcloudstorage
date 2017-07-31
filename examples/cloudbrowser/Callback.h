@@ -94,14 +94,13 @@ class UploadFileCallback : public IUploadFileCallback {
   QFile file_;
 };
 
-class CloudProviderCallback : public cloudstorage::ICloudProvider::ICallback {
+class CloudProviderCallback
+    : public cloudstorage::ICloudProvider::IAuthCallback {
  public:
   CloudProviderCallback(Window*);
 
   Status userConsentRequired(const cloudstorage::ICloudProvider&) override;
-  void accepted(const cloudstorage::ICloudProvider&) override;
-  void declined(const cloudstorage::ICloudProvider&) override;
-  void error(const cloudstorage::ICloudProvider&, Error) override;
+  void done(const cloudstorage::ICloudProvider&, EitherError<void>) override;
 
  private:
   Window* window_;

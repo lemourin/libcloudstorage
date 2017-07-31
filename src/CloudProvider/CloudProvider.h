@@ -52,11 +52,11 @@ class CloudProvider : public ICloudProvider,
   std::string authorizeLibraryUrl() const override;
   std::string token() const override;
   IItem::Pointer rootDirectory() const override;
-  ICallback* callback() const;
   ICrypto* crypto() const;
   IHttp* http() const;
   IThumbnailer* thumbnailer() const;
   IHttpServerFactory* http_server() const;
+  IAuthCallback* auth_callback() const;
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
@@ -270,7 +270,7 @@ class CloudProvider : public ICloudProvider,
 
  private:
   IAuth::Pointer auth_;
-  ICloudProvider::ICallback::Pointer callback_;
+  IAuthCallback::Pointer callback_;
   ICrypto::Pointer crypto_;
   IHttp::Pointer http_;
   IThumbnailer::Pointer thumbnailer_;

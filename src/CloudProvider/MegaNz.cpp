@@ -339,8 +339,8 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
       shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
         if (login(r).left()) {
           if (r->is_cancelled()) return Error{IHttpRequest::Aborted, ""};
-          if (callback()->userConsentRequired(*this) ==
-              ICloudProvider::ICallback::Status::WaitForAuthorizationCode) {
+          if (auth_callback()->userConsentRequired(*this) ==
+              ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
             auto code = r->getAuthorizationCode();
             if (code.left()) return code.left();
             {

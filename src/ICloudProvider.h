@@ -55,13 +55,13 @@ class ICloudProvider {
   using MoveItemRequest = IRequest<EitherError<void>>;
   using RenameItemRequest = IRequest<EitherError<void>>;
 
-  class ICallback {
+  class IAuthCallback {
    public:
-    using Pointer = std::shared_ptr<ICallback>;
+    using Pointer = std::shared_ptr<IAuthCallback>;
 
     enum class Status { WaitForAuthorizationCode, None };
 
-    virtual ~ICallback() = default;
+    virtual ~IAuthCallback() = default;
 
     /**
      * Determines whether library should try to obtain authorization code or
@@ -73,19 +73,9 @@ class ICloudProvider {
     virtual Status userConsentRequired(const ICloudProvider&) = 0;
 
     /**
-     * Called when user gave his consent to our library.
+     * Called when authorization is finished.
      */
-    virtual void accepted(const ICloudProvider&) = 0;
-
-    /**
-     * Called when user declined consent to our library.
-     */
-    virtual void declined(const ICloudProvider&) = 0;
-
-    /**
-     * Called when an error occurred.
-     */
-    virtual void error(const ICloudProvider&, Error) = 0;
+    virtual void done(const ICloudProvider&, EitherError<void>) = 0;
   };
 
   /**
@@ -102,7 +92,7 @@ class ICloudProvider {
     /**
      * Callback which will manage future authorization process.
      */
-    ICallback::Pointer callback_;
+    IAuthCallback::Pointer callback_;
 
     /**
      * Provides hashing methods which may be used by the cloud provider.

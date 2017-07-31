@@ -228,7 +228,7 @@ IItem::Pointer CloudProvider::rootDirectory() const {
   return util::make_unique<Item>("/", "root", IItem::FileType::Directory);
 }
 
-ICloudProvider::ICallback* CloudProvider::callback() const {
+ICloudProvider::IAuthCallback* CloudProvider::auth_callback() const {
   return callback_.get();
 }
 
