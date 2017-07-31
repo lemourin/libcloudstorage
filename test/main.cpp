@@ -26,7 +26,7 @@
 #include <fstream>
 #include <iostream>
 
-class Callback : public cloudstorage::ICloudProvider::ICallback {
+class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
  public:
   Callback(std::string drive_file) : drive_file_(drive_file) {}
 
@@ -37,17 +37,16 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
     return Status::WaitForAuthorizationCode;
   }
 
-  void accepted(const cloudstorage::ICloudProvider& provider) override {
-    std::fstream file(drive_file_, std::fstream::out);
-    file << provider.token();
+  void done(const cloudstorage::ICloudProvider& provider,
+            cloudstorage::EitherError<void> e) override {
+    if (!e.left()) {
+      std::fstream file(drive_file_, std::fstream::out);
+      file << provider.token();
+    } else {
+      std::cout << "authorization error " << e.left()->code_ << ": "
+                << e.left()->description_;
+    }
   }
-
-  void declined(const cloudstorage::ICloudProvider&) override {
-    std::cerr << "access denied ;_;\n";
-  }
-
-  void error(const cloudstorage::ICloudProvider&,
-             cloudstorage::Error) override {}
 
  private:
   std::string drive_file_;
@@ -57,8 +56,12 @@ void traverse_drive(cloudstorage::ICloudProvider& drive,
                     cloudstorage::IItem::Pointer f, std::string path) {
   std::cout << path << "\n";
   if (f->type() != cloudstorage::IItem::FileType::Directory) return;
-  for (cloudstorage::IItem::Pointer& t :
-       *drive.listDirectoryAsync(f)->result().right()) {
+  auto lst = drive.listDirectoryAsync(f)->result();
+  if (lst.left()) {
+    std::cout << "error " << lst.left()->code_ << "\n";
+    return;
+  }
+  for (cloudstorage::IItem::Pointer& t : *lst.right()) {
     traverse_drive(
         drive, std::move(t),
         path + t->filename() +

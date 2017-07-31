@@ -16,7 +16,7 @@ const std::string HELP_MESSAGE =
     "url: get url to the file\n"
     "help: this message\n";
 
-class Callback : public cloudstorage::ICloudProvider::ICallback {
+class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
  public:
   Callback(std::string drive_file) : drive_file_(drive_file) {}
 
@@ -27,18 +27,15 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
     return Status::WaitForAuthorizationCode;
   }
 
-  void accepted(const cloudstorage::ICloudProvider& provider) override {
-    std::fstream file(drive_file_, std::fstream::out);
-    file << provider.token();
-  }
-
-  void declined(const cloudstorage::ICloudProvider&) override {
-    std::cout << "You denied access ;_;\n";
-  }
-
-  void error(const cloudstorage::ICloudProvider&,
-             cloudstorage::Error e) override {
-    std::cout << "Error: " << e.description_ << "\n";
+  void done(const cloudstorage::ICloudProvider& provider,
+            cloudstorage::EitherError<void> e) override {
+    if (e.left()) {
+      std::cout << "authorization error " << e.left()->code_ << ": "
+                << e.left()->description_ << "\n";
+    } else {
+      std::fstream file(drive_file_, std::fstream::out);
+      file << provider.token();
+    }
   }
 
  private:
@@ -47,7 +44,9 @@ class Callback : public cloudstorage::ICloudProvider::ICallback {
 
 IItem::Pointer getChild(ICloudProvider::Pointer provider, IItem::Pointer item,
                         const std::string& filename) {
-  for (auto i : *provider->listDirectoryAsync(item)->result().right())
+  auto lst = provider->listDirectoryAsync(item)->result().right();
+  if (!lst) return nullptr;
+  for (auto i : *lst)
     if (i->filename() == filename) return i;
   return nullptr;
 }
@@ -69,12 +68,13 @@ int main(int, char**) {
         for (auto p : ICloudStorage::create()->providers())
           std::cout << p->name() << "\n";
       } else {
-        for (auto item :
-             *current_provider->listDirectoryAsync(current_directory)
-                  ->result()
-                  .right()) {
-          std::cout << item->filename() << "\n";
-        }
+        auto lst = current_provider->listDirectoryAsync(current_directory)
+                       ->result()
+                       .right();
+        if (lst)
+          for (auto item : *lst) {
+            std::cout << item->filename() << "\n";
+          }
       }
     } else if (command == "cd") {
       if (current_provider == nullptr) {
