@@ -54,17 +54,21 @@ class IHttpServer {
     };
 
     virtual ~IResponse() = default;
-
-    virtual void send(const IConnection&) = 0;
   };
 
   class IConnection {
    public:
+    using Pointer = IConnection*;
+    using CompletedCallback = std::function<void()>;
+
     virtual ~IConnection() = default;
 
     virtual const char* getParameter(const std::string& name) const = 0;
     virtual const char* header(const std::string& name) const = 0;
     virtual std::string url() const = 0;
+    virtual void onCompleted(CompletedCallback) = 0;
+    virtual void suspend() = 0;
+    virtual void resume() = 0;
   };
 
   class ICallback {
@@ -74,7 +78,7 @@ class IHttpServer {
     virtual ~ICallback() = default;
 
     virtual IResponse::Pointer receivedConnection(const IHttpServer&,
-                                                  const IConnection&) = 0;
+                                                  IConnection::Pointer) = 0;
   };
 
   virtual IResponse::Pointer createResponse(int code, const IResponse::Headers&,

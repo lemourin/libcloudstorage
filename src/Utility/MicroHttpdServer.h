@@ -42,12 +42,11 @@ class MicroHttpdServer : public IHttpServer {
     Response(int code, const IResponse::Headers&, const std::string& body);
     ~Response();
 
-    void send(const IConnection&) override;
-    int result() const { return result_; }
+    MHD_Response* response() const { return response_; }
+    int code() const { return code_; }
 
    protected:
     MHD_Response* response_;
-    int result_;
     int code_;
   };
 
@@ -62,14 +61,19 @@ class MicroHttpdServer : public IHttpServer {
     Connection(MHD_Connection*, const char* url);
 
     MHD_Connection* connection() const { return connection_; }
+    CompletedCallback callback() const { return callback_; }
 
     const char* getParameter(const std::string& name) const override;
     const char* header(const std::string&) const override;
     std::string url() const override;
+    void onCompleted(CompletedCallback) override;
+    void suspend() override;
+    void resume() override;
 
    private:
     MHD_Connection* connection_;
     std::string url_;
+    CompletedCallback callback_;
   };
 
   IResponse::Pointer createResponse(int code, const IResponse::Headers&,

@@ -32,13 +32,22 @@ namespace {
 int http_request_callback(void* cls, MHD_Connection* c, const char* url,
                           const char* /*method*/, const char* /*version*/,
                           const char* /*upload_data*/,
-                          size_t* /*upload_data_size*/, void** /*ptr*/) {
+                          size_t* /*upload_data_size*/, void** con_cls) {
   MicroHttpdServer* server = static_cast<MicroHttpdServer*>(cls);
-  MicroHttpdServer::Connection connection(c, url);
-  auto response = server->callback()->receivedConnection(*server, connection);
-  response->send(connection);
-  return static_cast<const MicroHttpdServer::Response*>(response.get())
-      ->result();
+  auto connection = util::make_unique<MicroHttpdServer::Connection>(c, url);
+  auto response =
+      server->callback()->receivedConnection(*server, connection.get());
+  auto p = static_cast<MicroHttpdServer::Response*>(response.get());
+  int ret = MHD_queue_response(c, p->code(), p->response());
+  *con_cls = connection.release();
+  return ret;
+}
+
+void http_request_completed(void*, MHD_Connection*, void** con_cls,
+                            MHD_RequestTerminationCode) {
+  auto p = static_cast<MicroHttpdServer::Connection*>(*con_cls);
+  if (p->callback()) p->callback()();
+  delete p;
 }
 
 }  // namespace
@@ -48,7 +57,6 @@ MicroHttpdServer::Response::Response(int code,
                                      const std::string& body)
     : response_(MHD_create_response_from_buffer(
           body.length(), (void*)body.c_str(), MHD_RESPMEM_MUST_COPY)),
-      result_(),
       code_(code) {
   for (auto it : headers)
     MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
@@ -58,11 +66,6 @@ MicroHttpdServer::Response::~Response() {
   if (response_) MHD_destroy_response(response_);
 }
 
-void MicroHttpdServer::Response::send(const IConnection& c) {
-  MHD_Connection* connection = static_cast<const Connection&>(c).connection();
-  result_ = MHD_queue_response(connection, code_, response_);
-}
-
 MicroHttpdServer::CallbackResponse::CallbackResponse(
     int code, const IResponse::Headers& headers, int size, int chunk_size,
     IResponse::ICallback::Pointer callback) {
@@ -70,7 +73,8 @@ MicroHttpdServer::CallbackResponse::CallbackResponse(
   auto data_provider = [](void* cls, uint64_t, char* buf,
                           size_t max) -> ssize_t {
     auto callback = static_cast<IResponse::ICallback*>(cls);
-    return callback->putData(buf, max);
+    auto r = callback->putData(buf, max);
+    return r;
   };
   auto release_data = [](void* cls) {
     auto callback = static_cast<IResponse::ICallback*>(cls);
@@ -99,13 +103,24 @@ const char* MicroHttpdServer::Connection::header(
 
 std::string MicroHttpdServer::Connection::url() const { return url_; }
 
+void MicroHttpdServer::Connection::onCompleted(CompletedCallback f) {
+  callback_ = f;
+}
+
+void MicroHttpdServer::Connection::suspend() {
+  MHD_suspend_connection(connection_);
+}
+
+void MicroHttpdServer::Connection::resume() {
+  MHD_resume_connection(connection_);
+}
+
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb,
-                                   IHttpServer::Type type, int port)
-    : http_server_(MHD_start_daemon(type == IHttpServer::Type::Authorization
-                                        ? MHD_USE_POLL_INTERNALLY
-                                        : MHD_USE_THREAD_PER_CONNECTION,
-                                    port, NULL, NULL, http_request_callback,
-                                    this, MHD_OPTION_END)),
+                                   IHttpServer::Type, int port)
+    : http_server_(MHD_start_daemon(
+          MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, NULL, NULL,
+          http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
+          http_request_completed, this, MHD_OPTION_END)),
       callback_(cb) {}
 
 MicroHttpdServer::~MicroHttpdServer() { MHD_stop_daemon(http_server_); }

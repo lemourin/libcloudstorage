@@ -89,16 +89,16 @@ const std::string DEFAULT_ERROR_PAGE =
 namespace cloudstorage {
 
 IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
-    const IHttpServer& server, const IHttpServer::IConnection& connection) {
-  const char* state = connection.getParameter(data_.state_parameter_name_);
+    const IHttpServer& server, IHttpServer::IConnection::Pointer connection) {
+  const char* state = connection->getParameter(data_.state_parameter_name_);
   if (!state || state != auth_->state())
     return server.createResponse(
         IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
-  const char* accepted = connection.getParameter("accepted");
-  const char* code = connection.getParameter(data_.code_parameter_name_);
-  const char* error = connection.getParameter(data_.error_parameter_name_);
+  const char* accepted = connection->getParameter("accepted");
+  const char* code = connection->getParameter(data_.code_parameter_name_);
+  const char* error = connection->getParameter(data_.error_parameter_name_);
   if (accepted) {
     if (std::string(accepted) == "true" && code) {
       data_.code_ = code;
@@ -121,7 +121,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
         IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
-  if (connection.url() == "/login")
+  if (connection->url() == "/login")
     return server.createResponse(
         IHttpRequest::Ok, {},
         auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
