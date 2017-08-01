@@ -31,6 +31,7 @@
 #include "ICloudProvider.h"
 #include "Request/AuthorizeRequest.h"
 #include "Utility/Auth.h"
+#include "Utility/Thumbnailer.h"
 
 namespace cloudstorage {
 
@@ -54,7 +55,7 @@ class CloudProvider : public ICloudProvider,
   IItem::Pointer rootDirectory() const override;
   ICrypto* crypto() const;
   IHttp* http() const;
-  IThumbnailer* thumbnailer() const;
+  Thumbnailer* thumbnailer() const;
   IHttpServerFactory* http_server() const;
   IAuthCallback* auth_callback() const;
 
@@ -273,7 +274,7 @@ class CloudProvider : public ICloudProvider,
   IAuthCallback::Pointer callback_;
   ICrypto::Pointer crypto_;
   IHttp::Pointer http_;
-  IThumbnailer::Pointer thumbnailer_;
+  std::unique_ptr<Thumbnailer> thumbnailer_;
   IHttpServerFactory::Pointer http_server_;
   AuthorizeRequest::Pointer current_authorization_;
   AuthorizationStatus current_authorization_status_;

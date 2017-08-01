@@ -15,6 +15,7 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
+	Utility/Thumbnailer.cpp \
 	Utility/Utility.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
@@ -45,6 +46,7 @@ noinst_HEADERS = \
 	Utility/CloudStorage.h \
 	Utility/Auth.h \
 	Utility/Item.h \
+	Utility/Thumbnailer.h \
 	Utility/Utility.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \

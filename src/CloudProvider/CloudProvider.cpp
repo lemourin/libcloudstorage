@@ -152,8 +152,10 @@ void CloudProvider::initialize(InitData&& data) {
   callback_ = std::move(data.callback_);
   crypto_ = std::move(data.crypto_engine_);
   http_ = std::move(data.http_engine_);
-  thumbnailer_ = std::move(data.thumbnailer_);
   http_server_ = std::move(data.http_server_);
+
+  if (data.thumbnailer_)
+    thumbnailer_ = util::make_unique<Thumbnailer>(std::move(data.thumbnailer_));
 
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
@@ -187,7 +189,9 @@ void CloudProvider::initialize(InitData&& data) {
 #endif
 
 #ifdef WITH_THUMBNAILER
-  if (!thumbnailer_) thumbnailer_ = util::make_unique<FFmpegThumbnailer>();
+  if (!thumbnailer_)
+    thumbnailer_ =
+        util::make_unique<Thumbnailer>(util::make_unique<FFmpegThumbnailer>());
 #endif
 
 #ifdef WITH_MICROHTTPD
@@ -236,7 +240,7 @@ ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
 IHttp* CloudProvider::http() const { return http_.get(); }
 
-IThumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
+Thumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
 
 IHttpServerFactory* CloudProvider::http_server() const {
   return http_server_.get();
