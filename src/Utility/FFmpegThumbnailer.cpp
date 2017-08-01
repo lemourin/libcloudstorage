@@ -31,6 +31,13 @@ namespace cloudstorage {
 
 EitherError<std::vector<char>> FFmpegThumbnailer::generateThumbnail(
     IItem::Pointer item) {
+  if ((item->type() != IItem::FileType::Image &&
+       item->type() != IItem::FileType::Video) ||
+      item->url().empty()) {
+    Error e{IHttpRequest::Failure,
+            "can generate thumbnails only for images and videos"};
+    return e;
+  }
   std::vector<uint8_t> buffer;
   ffmpegthumbnailer::VideoThumbnailer thumbnailer;
   try {

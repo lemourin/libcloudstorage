@@ -61,13 +61,6 @@ Thumbnailer::generateThumbnail(std::shared_ptr<ICloudProvider> p,
       std::static_pointer_cast<CloudProvider>(p));
   r->set_resolver([this, item](Request<EitherError<std::vector<char>>>* r)
                       -> EitherError<std::vector<char>> {
-    if ((item->type() != IItem::FileType::Image &&
-         item->type() != IItem::FileType::Video) ||
-        item->url().empty()) {
-      Error e{IHttpRequest::Failure,
-              "can generate thumbnails only for images and videos"};
-      return e;
-    }
     std::shared_future<EitherError<std::vector<char>>> future;
     std::shared_ptr<std::condition_variable> done;
     std::shared_ptr<bool> finished;
