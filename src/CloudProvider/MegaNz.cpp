@@ -57,7 +57,7 @@ class Listener : public IRequest<EitherError<void>> {
   void cancel() override {
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if (status_ == CANCELLED) return;
+      if (status_ != IN_PROGRESS) return;
       status_ = CANCELLED;
       code_ = IHttpRequest::Aborted;
     }
@@ -72,6 +72,11 @@ class Listener : public IRequest<EitherError<void>> {
       return Error{code_, error_};
     else
       return nullptr;
+  }
+
+  int status() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return status_;
   }
 
  protected:
@@ -90,12 +95,15 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
   }
 
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
-    if (e->getErrorCode() == 0)
-      status_ = SUCCESS;
-    else {
-      status_ = FAILURE;
-      code_ = e->getErrorCode();
-      error_ = e->getErrorString();
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (e->getErrorCode() == 0)
+        status_ = SUCCESS;
+      else {
+        status_ = FAILURE;
+        code_ = e->getErrorCode();
+        error_ = e->getErrorString();
+      }
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
@@ -115,9 +123,34 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     });
   }
 
+  void cancel() override {
+    MegaApi* mega;
+    int transfer;
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      mega = mega_;
+      transfer = transfer_;
+    }
+    if (mega) {
+      std::unique_ptr<MegaTransfer> t(mega_->getTransferByTag(transfer));
+      if (t) mega_->cancelTransfer(t.get());
+    }
+    Listener::cancel();
+  }
+
+  void onTransferStart(MegaApi* mega, MegaTransfer* transfer) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (status_ == CANCELLED) {
+      mega->cancelTransfer(transfer);
+    } else {
+      mega_ = mega;
+      transfer_ = transfer->getTag();
+    }
+  }
+
   bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
                       size_t size) override {
-    if (status_ == CANCELLED) return false;
+    if (status() == CANCELLED) return false;
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
@@ -129,31 +162,52 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
-    if (status_ == CANCELLED) mega->cancelTransfer(t);
+    if (status() == CANCELLED) mega->cancelTransfer(t);
   }
 
   void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
-    if (e->getErrorCode() == 0)
-      status_ = SUCCESS;
-    else {
-      code_ = e->getErrorCode();
-      error_ = e->getErrorString();
-      status_ = FAILURE;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (e->getErrorCode() == 0)
+        status_ = SUCCESS;
+      else {
+        code_ = e->getErrorCode();
+        error_ = e->getErrorString();
+        status_ = FAILURE;
+      }
     }
     condition_.notify_all();
   }
 
   IDownloadFileCallback::Pointer download_callback_;
   IUploadFileCallback::Pointer upload_callback_;
+  MegaApi* mega_ = nullptr;
+  int transfer_ = 0;
 };
 
 struct Buffer {
   using Pointer = std::shared_ptr<Buffer>;
 
+  Buffer(IHttpServer::IConnection::Pointer c) : connection_(c) {}
+
+  void resume() {
+    if (connection_ && suspended_) {
+      suspended_ = false;
+      connection_->resume();
+    }
+  }
+
+  void suspend() {
+    if (connection_ && !suspended_) {
+      suspended_ = true;
+      connection_->suspend();
+    }
+  }
+
   std::mutex mutex_;
-  std::condition_variable condition_;
   std::queue<char> data_;
-  bool done_ = false;
+  IHttpServer::IConnection::Pointer connection_;
+  bool suspended_ = false;
 };
 
 class HttpData : public IHttpServer::IResponse::ICallback {
@@ -170,9 +224,11 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   int putData(char* buf, size_t max) override {
     std::unique_lock<std::mutex> lock(buffer_->mutex_);
-    buffer_->condition_.wait(
-        lock, [this]() { return !buffer_->data_.empty() || buffer_->done_; });
     if (request_->is_cancelled()) return -1;
+    if (buffer_->data_.empty()) {
+      buffer_->suspend();
+      return 0;
+    }
     size_t cnt = std::min(buffer_->data_.size(), max);
     for (size_t i = 0; i < cnt; i++) {
       buf[i] = buffer_->data_.front();
@@ -190,21 +246,13 @@ class HttpDataCallback : public IDownloadFileCallback {
   HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
 
   void receivedData(const char* data, uint32_t length) override {
-    {
-      std::lock_guard<std::mutex> lock(buffer_->mutex_);
-      for (uint32_t i = 0; i < length; i++) buffer_->data_.push(data[i]);
-    }
-    buffer_->condition_.notify_one();
+    std::lock_guard<std::mutex> lock(buffer_->mutex_);
+    for (uint32_t i = 0; i < length; i++) buffer_->data_.push(data[i]);
+    buffer_->resume();
   }
 
-  void done(EitherError<void>) override {
-    {
-      std::lock_guard<std::mutex> lock(buffer_->mutex_);
-      buffer_->done_ = true;
-    }
-    buffer_->condition_.notify_one();
-  }
-  
+  void done(EitherError<void>) override { buffer_->resume(); }
+
   void progress(uint32_t, uint32_t) override {}
 
   Buffer::Pointer buffer_;
@@ -215,17 +263,22 @@ class HttpDataCallback : public IDownloadFileCallback {
 MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
 
 IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
-    const IHttpServer& server, const IHttpServer::IConnection& connection) {
-  const char* state = connection.getParameter("state");
+    const IHttpServer& server, IHttpServer::IConnection::Pointer connection) {
+  {
+    std::lock_guard<std::mutex> lock(provider_->mutex_);
+    if (provider_->deleted_)
+      return server.createResponse(IHttpRequest::Bad, {}, "");
+  }
+  const char* state = connection->getParameter("state");
   if (!state || state != provider_->auth()->state())
     return server.createResponse(IHttpRequest::Forbidden, {},
                                  "state parameter missing / invalid");
-  const char* file = connection.getParameter("file");
+  const char* file = connection->getParameter("file");
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByHandle(
       provider_->mega()->base64ToHandle(file)));
   if (!node)
     return server.createResponse(IHttpRequest::NotFound, {}, "file not found");
-  auto buffer = std::make_shared<Buffer>();
+  auto buffer = std::make_shared<Buffer>(connection);
   auto data = util::make_unique<HttpData>(buffer);
   auto request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
@@ -240,7 +293,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
       {"Content-Disposition",
        "inline; filename=\"" + std::string(node->getName()) + "\""}};
   util::range range = {0, node->getSize()};
-  if (const char* range_str = connection.header("Range")) {
+  if (const char* range_str = connection->header("Range")) {
     range = util::parse_range(range_str);
     if (range.size == -1) range.size = node->getSize() - range.start;
     if (range.start + range.size > node->getSize() || range.start == -1)
@@ -255,6 +308,10 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   request->set_resolver(provider_->downloadResolver(
       provider_->toItem(node.get()),
       util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
+  connection->onCompleted([buffer]() {
+    std::unique_lock<std::mutex> lock(buffer->mutex_);
+    buffer->connection_ = nullptr;
+  });
   return server.createResponse(code, headers, range.size, BUFFER_SIZE,
                                std::move(data));
 }
@@ -266,17 +323,20 @@ MegaNz::MegaNz()
       engine_(device_()),
       daemon_port_(DEFAULT_DAEMON_PORT),
       daemon_(),
-      temporary_directory_(".") {}
+      temporary_directory_("."),
+      deleted_(false) {}
 
 MegaNz::~MegaNz() {
-  daemon_ = nullptr;
-  std::unordered_set<DownloadFileRequest::Pointer> requests;
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    requests = stream_requests_;
-    stream_requests_.clear();
+    deleted_ = true;
+    for (auto r : stream_requests_) {
+      lock.unlock();
+      r->cancel();
+      lock.lock();
+    }
   }
-  for (auto r : requests) r->cancel();
+  daemon_ = nullptr;
 }
 
 void MegaNz::addStreamRequest(DownloadFileRequest::Pointer r) {

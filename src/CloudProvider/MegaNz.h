@@ -47,7 +47,7 @@ class MegaNz : public CloudProvider {
    public:
     HttpServerCallback(MegaNz*);
     IHttpServer::IResponse::Pointer receivedConnection(
-        const IHttpServer&, const IHttpServer::IConnection&) override;
+        const IHttpServer&, IHttpServer::IConnection::Pointer) override;
 
    private:
     MegaNz* provider_;
@@ -135,6 +135,7 @@ class MegaNz : public CloudProvider {
   std::string temporary_directory_;
   std::string file_url_;
   std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
+  bool deleted_;
 };
 
 }  // namespace cloudstorage
