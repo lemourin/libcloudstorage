@@ -81,8 +81,6 @@ class AmazonS3 : public CloudProvider {
   std::string secret() const;
   std::string region() const;
 
-  bool unpackCredentials(const std::string&);
-
   static std::pair<std::string, std::string> split(const std::string&);
 
   class Auth : public cloudstorage::Auth {
@@ -102,6 +100,7 @@ class AmazonS3 : public CloudProvider {
   };
 
  private:
+  bool unpackCredentials(const std::string&);
   std::string getUrl(const Item&) const;
 
   std::string access_id_;
