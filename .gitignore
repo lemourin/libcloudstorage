@@ -1,0 +1,30 @@
+*~
+*.dylib
+*.lo
+*.lo?
+*.la
+*.o
+*.so
+*.dll
+.DS_Store
+.deps
+.libs
+.dirstamp
+
+# Auto*
+Makefile.in
+Makefile
+aclocal.m4
+autom4te.cache/
+compile
+config.guess
+config.sub
+configure
+depcomp
+install-sh
+ltmain.sh
+missing
+m4/
+
+# Ignore build dirs
+build*
