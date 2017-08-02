@@ -1,7 +1,8 @@
 # libcloudstorage
 
-`C++` library providing access to files located in cloud services  
+A `C++` library providing access to files located in various cloud services  
 licensed under `GNU LGPLv2.1`.
+It is focused on the basic operations on those services.
 
 Supported cloud providers:
 ==========================
@@ -101,6 +102,7 @@ TODO:
 =====
 
 Implement following cloud providers:
+* `Apple ICloud`
 * `Asus WebStorage`
 * `Baidu Cloud`
 * `CloudMe`
@@ -108,8 +110,6 @@ Implement following cloud providers:
 * `Fileserve`
 * `Handy Backup`
 * `IBM Connections`
-* `Apple ICloud`
-* `Infinit`
 * `Jumpshare`
 * `MagicVortex`
 * `MediaFire`
@@ -120,3 +120,16 @@ Implement following cloud providers:
 * `TitanFile`
 * `Tresorit`
 * `XXL Box`
+
+Implement bindings to various languages, notably script languages:
+* Obj-C
+* python
+* ruby
+* JS/node
+* Java
+
+Integrate in various desktops
+* KIO slave
+* gvfs implementation
+* fuse
+* Dokan fuse
