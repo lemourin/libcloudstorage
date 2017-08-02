@@ -227,18 +227,19 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
                                         std::string& token, Hints& hints) {
   std::string token_tmp;
   Hints hints_tmp;
+  Json::Reader reader;
+  Json::Value unserialized_json;
+  
+  if (!reader.parse(serialized_data, unserialized_json))
+    return false;
   try {
-    Json::Reader reader;
-    Json::Value unserialized_json;
-    reader.parse(serialized_data, unserialized_json);
-
     for (const auto& key : unserialized_json["hints"]) {
       std::string hint_key = key.asString();
       hints_tmp[hint_key] =
         unserialized_json["hints"][hint_key].asString();
     }
     token_tmp = unserialized_json["token"].asString();
-  } catch (...) {
+  } catch (const std::runtime_error&) {
     return false;
   }
   token = token_tmp;
