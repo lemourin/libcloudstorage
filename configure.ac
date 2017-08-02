@@ -91,6 +91,7 @@ AC_ARG_WITH([qmlplayer], AS_HELP_STRING([--with-qmlplayer]))
 AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
 
 HAVE_QTWEBENGINE=0
+HAVE_CRYPTO=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
@@ -104,6 +105,10 @@ AS_IF([test "x$with_examples" = "xyes"], [
     HAVE_QTWEBENGINE=1
     AC_DEFINE(WITH_QTWEBENGINE)
   ], [HAVE_QTWEBENGINE=0])
+  PKG_CHECK_MODULES([libcrypto], [libcrypto], [
+    HAVE_CRYPTO=1
+    AC_DEFINE(WITH_CRYPTO)
+  ], [HAVE_CRYPTO=0])
   AS_IF([test "x$with_vlc" = "xyes"], [
     PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
     PKG_CHECK_MODULES([libvlc], [libvlc])
@@ -119,5 +124,6 @@ AS_IF([test "x$with_examples" = "xyes"], [
 ])
 
 AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
+AM_CONDITIONAL([WITH_CRYPTO], [test "$HAVE_CRYPTO" -eq 1])
 
 AC_OUTPUT

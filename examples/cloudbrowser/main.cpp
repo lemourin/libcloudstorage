@@ -39,6 +39,27 @@
 #include "MediaPlayer.h"
 #include "Window.h"
 
+#ifdef WITH_CRYPTO
+
+#include <openssl/err.h>
+
+std::unique_ptr<std::mutex[]> crypto_locks;
+
+struct crypto_lock {
+  crypto_lock() {
+    crypto_locks = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
+    CRYPTO_set_locking_callback([](int mode, int n, const char*, int) {
+      if (mode & CRYPTO_LOCK)
+        crypto_locks[n].lock();
+      else
+        crypto_locks[n].unlock();
+
+    });
+  }
+};
+
+#endif
+
 #ifndef WITH_QMLPLAYER
 
 class MainWidget : public QWidget {
@@ -88,6 +109,9 @@ class MainWidget : public QWidget {
 
 int main(int argc, char* argv[]) {
   try {
+#ifdef WITH_CRYPTO
+    crypto_lock crypto;
+#endif
 #ifdef WITH_QMLPLAYER
     QGuiApplication app(argc, argv);
 #else

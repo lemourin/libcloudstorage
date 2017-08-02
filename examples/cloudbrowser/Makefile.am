@@ -52,6 +52,12 @@ libcloudbrowser_la_CXXFLAGS += \
 libcloudbrowser_la_LIBADD += \
 	$(qtwebengine_LIBS)
 endif
+if WITH_CRYPTO
+libcloudbrowser_la_CXXFLAGS += \
+	$(libcrypto_CFLAGS)
+libcloudbrowser_la_LIBADD += \
+	$(libcrypto_CFLAGS)
+endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
