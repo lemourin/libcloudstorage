@@ -107,7 +107,7 @@ std::string to_mime_type(const std::string& extension) {
 std::string Url::unescape(const std::string& value) {
   std::ostringstream unescaped;
   int hex_extract;
-  for (int i = 0; i < value.length(); i++) {
+  for (size_t i = 0; i < value.length(); i++) {
     if (value[i] == '%') {
       // Failed to unescape (there is not enough digits with the %
       if (i >= value.length() - 2) return "";

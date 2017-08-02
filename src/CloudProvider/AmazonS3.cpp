@@ -33,7 +33,7 @@ namespace cloudstorage {
 
 namespace {
 
-std::string escapePath(IHttp*, const std::string& str) {
+std::string escapePath(const std::string& str) {
   std::string data = util::Url::escape(str);
   std::string slash = util::Url::escape("/");
   std::string result;
@@ -57,15 +57,14 @@ EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto dest_data = AmazonS3::split(dest_id);
-          auto request = http->create("https://" + dest_data.first + ".s3." +
-                                          region + ".amazonaws.com/" +
-                                          escapePath(http, dest_data.second),
-                                      "PUT");
+          auto request =
+              http->create("https://" + dest_data.first + ".s3." + region +
+                               ".amazonaws.com/" + escapePath(dest_data.second),
+                           "PUT");
           auto source_data = AmazonS3::split(source_id);
           request->setHeaderParameter(
               "x-amz-copy-source",
-              escapePath(http,
-                         "/" + source_data.first + "/" + source_data.second));
+              escapePath("/" + source_data.first + "/" + source_data.second));
           return request;
         },
         output, &error);
@@ -93,8 +92,7 @@ EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
       [=](std::ostream&) {
         auto data = AmazonS3::split(source_id);
         return http->create("https://" + data.first + ".s3." + region +
-                                ".amazonaws.com/" +
-                                escapePath(http, data.second),
+                                ".amazonaws.com/" + escapePath(data.second),
                             "DELETE");
       },
       output, &error);
@@ -205,10 +203,10 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
     int code = r->sendRequest(
         [=](std::ostream&) {
           auto data = split(parent->id());
-          return http()->create(
-              "https://" + data.first + ".s3." + region_ + ".amazonaws.com/" +
-                  escapePath(http(), data.second + name + "/"),
-              "PUT");
+          return http()->create("https://" + data.first + ".s3." + region_ +
+                                    ".amazonaws.com/" +
+                                    escapePath(data.second + name + "/"),
+                                "PUT");
         },
         output, &error);
     if (!IHttpRequest::isSuccess(code)) {
@@ -256,8 +254,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
         [=](std::ostream&) {
           auto data = split(item->id());
           return http()->create("https://" + data.first + ".s3." + region_ +
-                                    ".amazonaws.com/" +
-                                    escapePath(http(), data.second),
+                                    ".amazonaws.com/" + escapePath(data.second),
                                 "DELETE");
         },
         output, &error);
@@ -314,7 +311,7 @@ IHttpRequest::Pointer AmazonS3::uploadFileRequest(const IItem& directory,
   auto data = split(directory.id());
   return http()->create("https://" + data.first + ".s3." + region_ +
                             ".amazonaws.com/" +
-                            escapePath(http(), data.second + filename),
+                            escapePath(data.second + filename),
                         "PUT");
 }
 
@@ -322,7 +319,7 @@ IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
                                                     std::ostream&) const {
   auto data = split(item.id());
   return http()->create("https://" + data.first + ".s3." + region_ +
-                            ".amazonaws.com/" + escapePath(http(), data.second),
+                            ".amazonaws.com/" + escapePath(data.second),
                         "GET");
 }
 
@@ -486,10 +483,9 @@ bool AmazonS3::unpackCredentials(const std::string& code) {
 
 std::string AmazonS3::getUrl(const Item& item) const {
   auto data = split(item.id());
-  auto request =
-      http()->create("https://" + data.first + ".s3." + region_ +
-                         ".amazonaws.com/" + escapePath(http(), data.second),
-                     "GET");
+  auto request = http()->create("https://" + data.first + ".s3." + region_ +
+                                    ".amazonaws.com/" + escapePath(data.second),
+                                "GET");
   authorizeRequest(*request);
   std::string parameters;
   for (const auto& p : request->parameters())
