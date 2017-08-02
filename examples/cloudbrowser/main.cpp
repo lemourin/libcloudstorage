@@ -55,6 +55,7 @@ struct crypto_lock {
         crypto_locks[n].unlock();
     });
   }
+  ~crypto_lock() { CRYPTO_set_locking_callback(nullptr); }
 };
 
 #endif
