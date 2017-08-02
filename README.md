@@ -67,10 +67,6 @@ The generic way to build and install it is:
   `ICloudProvider`'s initialize method
 * `--with-curl`: library will use `curl` to make all `http` requests, without  
   this user will have to implement `IHttp` interface
-* `--with-thumbnailer`: library will use `ffmpegthumbnailer` to generate  
-  thumbnails for files which don't have them provided by the cloud storage  
-  service, without this flag user may provide his own thumbnailer engine by  
-  implementing `IThumbnailer` interface
 * `--with-microhttpd`: library will use `libmicrohttpd` as a http server,  
   it's required for retrieving the oauth authorization code; without this flag  
   user will have to implement `IHttpServer` interface
