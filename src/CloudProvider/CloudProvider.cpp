@@ -206,6 +206,44 @@ void CloudProvider::initialize(InitData&& data) {
   auth()->initialize(http(), http_server());
 }
 
+std::string ICloudProvider::serializeSession(const std::string& token,
+                                             const Hints& hints) {
+  Json::Value root_json;
+  Json::Value hints_json;
+  for (const auto& hint : hints) {
+    hints_json[hint.first] = hint.second;
+  }
+  root_json["hints"] = hints_json;
+  root_json["token"] = token;
+
+  Json::FastWriter fastWriter;
+  fastWriter.omitEndingLineFeed();
+  return fastWriter.write(root_json);
+}
+
+bool ICloudProvider::deserializeSession(const std::string& serialized_data,
+                                        std::string& token, Hints& hints) {
+  std::string token_tmp;
+  Hints hints_tmp;
+  try {
+    Json::Reader reader;
+    Json::Value unserialized_json;
+    reader.parse(serialized_data, unserialized_json);
+
+    for (const auto& key : unserialized_json["hints"]) {
+      std::string hint_key = key.asString();
+      hints_tmp[hint_key] =
+        unserialized_json["hints"][hint_key].asString();
+    }
+    token_tmp = unserialized_json["token"].asString();
+  } catch (...) {
+    return false;
+  }
+  token = token_tmp;
+  hints = hints_tmp;
+  return true;
+}
+
 ICloudProvider::Hints CloudProvider::hints() const {
   return {{"access_token", access_token()}};
 }

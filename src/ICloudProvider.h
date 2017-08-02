@@ -152,6 +152,31 @@ class ICloudProvider {
   virtual void initialize(InitData&& init_data) = 0;
 
   /**
+   * Serializes token and hints in a json compact that are useful to be
+   * restored in the following session. They might include refresh token, access
+   * token or even custom provider configurations
+   *
+   * @param hints provider hints to be serialized
+   * @param token token used to be serialized
+   * @return serialized data with compact json
+   */
+  static std::string serializeSession(const std::string& token,
+                                      const Hints& hints);
+
+  /**
+   * Deserializes token and hints from a json compact that were previously
+   * serialized with serializeSession. They might include refresh token, access
+   * token or even custom provider configurations
+   *
+   * @param serialized_data serialized session from previous session
+   * @param hints pointer to the hints unserialized
+   * @param token pointer to the token unserialized
+   * @return returns false if fails to unserialized
+   */
+  static bool deserializeSession(const std::string& serialized_data,
+                                 std::string& token, Hints& hints);
+
+  /**
    * Token which should be saved and reused as a parameter to
    * ICloudProvider::initialize. Usually it's oauth2 refresh token.
    *
