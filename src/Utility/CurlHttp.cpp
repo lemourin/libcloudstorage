@@ -216,29 +216,6 @@ IHttpRequest::Pointer CurlHttp::create(const std::string& url,
   return util::make_unique<CurlHttpRequest>(url, method, follow_redirect);
 }
 
-std::string CurlHttp::unescape(const std::string& str) const {
-  auto handle = curl_easy_init();
-  int length = 0;
-  char* data = curl_easy_unescape(handle, str.c_str(), str.length(), &length);
-  std::string result(data, length);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
-
-std::string CurlHttp::escape(const std::string& str) const {
-  auto handle = curl_easy_init();
-  char* data = curl_easy_escape(handle, str.begin().base(), str.length());
-  std::string result(data);
-  free(data);
-  curl_easy_cleanup(handle);
-  return result;
-}
-
-std::string CurlHttp::escapeHeader(const std::string& str) const {
-  return Json::valueToQuotedString(str.c_str());
-}
-
 std::string CurlHttp::error(int code) const {
   return curl_easy_strerror(static_cast<CURLcode>(code));
 }

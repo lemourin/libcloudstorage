@@ -114,7 +114,7 @@ IHttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
                                                   std::ostream&,
                                                   std::ostream&) const {
   return http()->create(api_url() + "/remote.php/webdav" + directory.id() +
-                            http()->escape(filename),
+                            util::Url::escape(filename),
                         "PUT");
 }
 
@@ -195,7 +195,7 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto item = util::make_unique<Item>(http()->unescape(filename), id, type);
+  auto item = util::make_unique<Item>(util::Url::unescape(filename), id, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return std::move(item);
 }

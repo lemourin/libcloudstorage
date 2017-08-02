@@ -179,28 +179,6 @@ class IHttp {
                                        bool follow_redirect = true) const = 0;
 
   /**
-   * Decodes url-encoded string.
-   *
-   * @return decoded string
-   */
-  virtual std::string unescape(const std::string&) const = 0;
-
-  /**
-   * Url-encodes given string.
-   *
-   * @return encoded string
-   */
-  virtual std::string escape(const std::string&) const = 0;
-
-  /**
-   * Removes all dangerous characters from a string which will appear in http
-   * header.
-   *
-   * @return escaped header
-   */
-  virtual std::string escapeHeader(const std::string&) const = 0;
-
-  /**
    * Gives description of http library's error code.
    *
    * @param code error code

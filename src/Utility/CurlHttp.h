@@ -37,9 +37,6 @@ class CurlHttp : public IHttp {
  public:
   IHttpRequest::Pointer create(const std::string&, const std::string&,
                                bool) const override;
-  std::string unescape(const std::string&) const override;
-  std::string escape(const std::string&) const override;
-  std::string escapeHeader(const std::string&) const override;
   std::string error(int) const override;
 };
 

@@ -52,7 +52,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
         [=](std::ostream&) {
           return http()->create(
               endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +
-                  http()->escape(filename) + ":/upload.createSession",
+                  util::Url::escape(filename) + ":/upload.createSession",
               "POST");
         },
         output, &error);

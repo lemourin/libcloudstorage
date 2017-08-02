@@ -34,8 +34,8 @@ namespace cloudstorage {
 namespace {
 
 std::string escapePath(IHttp* http, const std::string& str) {
-  std::string data = http->escape(str);
-  std::string slash = http->escape("/");
+  std::string data = util::Url::escape(str);
+  std::string slash = util::Url::escape("/");
   std::string result;
   for (uint32_t i = 0; i < data.size();)
     if (data.substr(i, slash.length()) == slash) {
@@ -420,12 +420,12 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
     else
       first = true;
     canonical_request +=
-        http()->escape(q.first) + "=" + http()->escape(q.second);
+        util::Url::escape(q.first) + "=" + util::Url::escape(q.second);
   }
   canonical_request += "\n";
 
   for (auto q : header_parameters)
-    canonical_request += http()->escape(q.first) + ":" + q.second + "\n";
+    canonical_request += util::Url::escape(q.first) + ":" + q.second + "\n";
   canonical_request += "\n";
   canonical_request += signed_headers + "\n";
   canonical_request += "UNSIGNED-PAYLOAD";
@@ -444,7 +444,8 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   request.setParameter("X-Amz-Signature", signature);
 
   auto params = request.parameters();
-  for (auto p : params) request.setParameter(p.first, http()->escape(p.second));
+  for (auto p : params) request.setParameter(p.first,
+          util::Url::escape(p.second));
 }
 
 bool AmazonS3::reauthorize(int code) const {

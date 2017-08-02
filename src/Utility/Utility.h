@@ -46,6 +46,12 @@ range parse_range(const std::string& str);
 std::string address(const std::string& url, uint16_t port);
 std::string to_mime_type(const std::string& extension);
 
+class Url {
+public:
+  static std::string unescape(const std::string&);
+  static std::string escape(const std::string&);
+  static std::string escapeHeader(const std::string&);
+};
 }  // namespace util
 
 class Semaphore {

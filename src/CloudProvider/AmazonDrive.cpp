@@ -165,7 +165,7 @@ IHttpRequest::Pointer AmazonDrive::uploadFileRequest(
       << json_data << "\r\n"
       << "--" << separator << "\r\n"
       << "Content-Disposition: form-data; name=\"content\"; filename=\""
-      << http()->escapeHeader(filename) << "\"\r\n"
+      << util::Url::escapeHeader(filename) << "\"\r\n"
       << "Content-Type: application/octet-stream\r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--";
   return request;
