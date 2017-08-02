@@ -92,7 +92,10 @@ It requires:
 * `Qt5Widgets`, `Qt5Multimedia`, `Qt5MultimediaWidgets` if  
   `--with-qtmultimediawidgets`
 * `libvlcpp`, `libvlc`, `Qt5Widgets` if `--with-vlc`
-* `libcloudstorage` built with at least `cURL`
+* `libcloudstorage` built with at least `cURL`, `cURL` built with  
+  `OpenSSL` version 1.0.\*
+* `libffmpegthumbnailer` (optional; if found, cloud browser will generate  
+  fallback thumbnails if cloud provider doesn't provide any)
 
 TODO:
 =====
