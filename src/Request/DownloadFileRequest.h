@@ -25,7 +25,6 @@
 #define DOWNLOADFILEREQUEST_H
 
 #include "IItem.h"
-#include "IThumbnailer.h"
 #include "Request.h"
 
 namespace cloudstorage {
@@ -50,9 +49,6 @@ class DownloadFileRequest : public Request<EitherError<void>> {
                       ICallback::Pointer, RequestFactory request_factory,
                       bool fallback_thumbnail = false);
   ~DownloadFileRequest();
-
-  static EitherError<std::vector<char>> generateThumbnail(
-      Request<EitherError<void>>*, IItem::Pointer);
 
  private:
   IItem::Pointer file_;

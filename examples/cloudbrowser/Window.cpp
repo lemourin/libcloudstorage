@@ -169,7 +169,7 @@ void Window::initializeCloud(QString name) {
     hints["error_page"] = read_file(":/resources/default_error.html");
     cloud_provider_->initialize({settings.value(name).toString().toStdString(),
                                  util::make_unique<CloudProviderCallback>(this),
-                                 nullptr, nullptr, nullptr, nullptr, hints});
+                                 nullptr, nullptr, nullptr, hints});
     initialized_clouds_.insert(name.toStdString());
   } else if (unauthorized_clouds_.find(name.toStdString()) !=
              std::end(unauthorized_clouds_)) {

@@ -33,7 +33,7 @@ namespace cloudstorage {
 
 namespace {
 
-std::string escapePath(IHttp* http, const std::string& str) {
+std::string escapePath(IHttp*, const std::string& str) {
   std::string data = util::Url::escape(str);
   std::string slash = util::Url::escape("/");
   std::string result;
@@ -444,8 +444,8 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   request.setParameter("X-Amz-Signature", signature);
 
   auto params = request.parameters();
-  for (auto p : params) request.setParameter(p.first,
-          util::Url::escape(p.second));
+  for (auto p : params)
+    request.setParameter(p.first, util::Url::escape(p.second));
 }
 
 bool AmazonS3::reauthorize(int code) const {

@@ -50,10 +50,6 @@
 #include "Utility/CurlHttp.h"
 #endif
 
-#ifdef WITH_THUMBNAILER
-#include "Utility/FFmpegThumbnailer.h"
-#endif
-
 #ifdef WITH_MICROHTTPD
 #include "Utility/MicroHttpdServer.h"
 #endif
@@ -154,9 +150,6 @@ void CloudProvider::initialize(InitData&& data) {
   http_ = std::move(data.http_engine_);
   http_server_ = std::move(data.http_server_);
 
-  if (data.thumbnailer_)
-    thumbnailer_ = util::make_unique<Thumbnailer>(std::move(data.thumbnailer_));
-
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
               [&t](std::string v) { t->token_ = v; });
@@ -171,8 +164,8 @@ void CloudProvider::initialize(InitData&& data) {
   setWithHint(data.hints_, "redirect_uri_port", [this](std::string v) {
     auth()->set_redirect_uri_port(std::atoi(v.c_str()));
   });
-  setWithHint(data.hints_, "redirect_uri_path", [this](std::string v) {
-    auth()->set_redirect_uri_path(v); });
+  setWithHint(data.hints_, "redirect_uri_path",
+              [this](std::string v) { auth()->set_redirect_uri_path(v); });
   setWithHint(data.hints_, "state",
               [this](std::string v) { auth()->set_state(v); });
   setWithHint(data.hints_, "login_page",
@@ -188,12 +181,6 @@ void CloudProvider::initialize(InitData&& data) {
 
 #ifdef WITH_CURL
   if (!http_) http_ = util::make_unique<CurlHttp>();
-#endif
-
-#ifdef WITH_THUMBNAILER
-  if (!thumbnailer_)
-    thumbnailer_ =
-        util::make_unique<Thumbnailer>(util::make_unique<FFmpegThumbnailer>());
 #endif
 
 #ifdef WITH_MICROHTTPD
@@ -229,14 +216,12 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
   Hints hints_tmp;
   Json::Reader reader;
   Json::Value unserialized_json;
-  
-  if (!reader.parse(serialized_data, unserialized_json))
-    return false;
+
+  if (!reader.parse(serialized_data, unserialized_json)) return false;
   try {
     for (const auto& key : unserialized_json["hints"]) {
       std::string hint_key = key.asString();
-      hints_tmp[hint_key] =
-        unserialized_json["hints"][hint_key].asString();
+      hints_tmp[hint_key] = unserialized_json["hints"][hint_key].asString();
     }
     token_tmp = unserialized_json["token"].asString();
   } catch (const std::runtime_error&) {
@@ -280,8 +265,6 @@ ICloudProvider::IAuthCallback* CloudProvider::auth_callback() const {
 ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
 IHttp* CloudProvider::http() const { return http_.get(); }
-
-Thumbnailer* CloudProvider::thumbnailer() const { return thumbnailer_.get(); }
 
 IHttpServerFactory* CloudProvider::http_server() const {
   return http_server_.get();

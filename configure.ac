@@ -39,13 +39,6 @@ AS_IF([test "x$with_curl" = "xyes"], [
   AC_DEFINE(WITH_CURL)
 ])
 
-AC_ARG_WITH([thumbnailer], AS_HELP_STRING([--with-thumbnailer]))
-AM_CONDITIONAL([WITH_THUMBNAILER], [test "x$with_thumbnailer" = "xyes"])
-AS_IF([test "x$with_thumbnailer" = "xyes"], [
-  PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer])
-  AC_DEFINE(WITH_THUMBNAILER)
-])
-
 AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_microhttpd" = "xyes"])
 AS_IF([test "x$with_microhttpd" = "xyes"], [

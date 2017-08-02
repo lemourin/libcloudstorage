@@ -582,15 +582,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       callback->done(nullptr);
       return nullptr;
     } else {
-      auto data = cloudstorage::DownloadFileRequest::generateThumbnail(r, item);
-      if (data.right()) {
-        callback->receivedData(data.right()->data(), data.right()->size());
-        callback->done(nullptr);
-        return nullptr;
-      } else {
-        callback->done(data.left());
-        return data.left();
-      }
+      callback->done(*result.left());
+      return result;
     }
   });
   return std::move(r);

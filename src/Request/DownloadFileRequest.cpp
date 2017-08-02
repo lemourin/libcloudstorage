@@ -41,7 +41,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
       callback_(std::move(callback)),
       request_factory_(request_factory),
       fallback_thumbnail_(fallback_thumbnail) {
-  set_resolver([this](Request* r) -> EitherError<void> {
+  set_resolver([this](Request*) -> EitherError<void> {
     std::ostream response_stream(&stream_wrapper_);
     Error error;
     int code = sendRequest(
@@ -52,38 +52,14 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
     if (IHttpRequest::isSuccess(code)) {
       callback_->done(nullptr);
       return nullptr;
-    } else if (fallback_thumbnail_) {
-      auto data = generateThumbnail(r, file_);
-      if (data.right()) {
-        callback_->receivedData(data.right()->data(), data.right()->size());
-        callback_->done(nullptr);
-        return nullptr;
-      } else {
-        callback_->done(data.left());
-        return data.left();
-      }
     } else {
+      callback_->done(error);
       return error;
     }
   });
 }
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
-
-EitherError<std::vector<char>> DownloadFileRequest::generateThumbnail(
-    Request<EitherError<void>>* r, IItem::Pointer item) {
-  if (!r->provider()->thumbnailer())
-    return Error{IHttpRequest::Failure, "missing thumbnailer"};
-  auto item_data = static_cast<ICloudProvider*>(r->provider().get())
-                       ->getItemDataAsync(item->id());
-  r->subrequest(item_data);
-  if (item_data->result().left()) return item_data->result().left();
-  if (!item_data->result().right()) return item_data->result().left();
-  auto thumbnail_data = r->provider()->thumbnailer()->generateThumbnail(
-      r->provider(), item_data->result().right());
-  r->subrequest(thumbnail_data);
-  return thumbnail_data->result();
-}
 
 DownloadStreamWrapper::DownloadStreamWrapper(
     std::function<void(const char*, uint32_t)> callback)

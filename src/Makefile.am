@@ -15,7 +15,6 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
-	Utility/Thumbnailer.cpp \
 	Utility/Utility.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
@@ -46,7 +45,6 @@ noinst_HEADERS = \
 	Utility/CloudStorage.h \
 	Utility/Auth.h \
 	Utility/Item.h \
-	Utility/Thumbnailer.h \
 	Utility/Utility.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
@@ -79,7 +77,6 @@ libcloudstorage_la_HEADERS = \
 	IRequest.h \
 	ICrypto.h \
 	IHttp.h \
-	IThumbnailer.h \
 	IHttpServer.h
 
 libcloudstorage_la_LIBADD = \
@@ -105,13 +102,6 @@ AM_CXXFLAGS += $(libcurl_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcurl_LIBS)
 libcloudstorage_la_SOURCES += Utility/CurlHttp.cpp
 noinst_HEADERS += Utility/CurlHttp.h
-endif
-
-if WITH_THUMBNAILER
-AM_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
-libcloudstorage_la_LIBADD += $(libffmpegthumbnailer_LIBS)
-libcloudstorage_la_SOURCES += Utility/FFmpegThumbnailer.cpp
-noinst_HEADERS += Utility/FFmpegThumbnailer.h
 endif
 
 if WITH_MICROHTTPD
