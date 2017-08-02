@@ -32,7 +32,7 @@
 
 const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
-const std::string DEFAULT_REDIRECT_URI_PREFIX = "";
+const std::string DEFAULT_REDIRECT_URI_PATH = "";
 
 const std::string CDN =
     "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
@@ -127,7 +127,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
         IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
-  if (connection->url() == auth_->redirect_uri_prefix() + "/login")
+  if (connection->url() == auth_->redirect_uri_path() + "/login")
     return server.createResponse(
         IHttpRequest::Ok, {},
         auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
@@ -140,7 +140,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
 Auth::Auth()
     : redirect_uri_host_(DEFAULT_REDIRECT_URI_HOST),
       redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT),
-      redirect_uri_prefix_(DEFAULT_REDIRECT_URI_PREFIX),
+      redirect_uri_path_(DEFAULT_REDIRECT_URI_PATH),
       http_(),
       http_server_() {}
 
@@ -171,7 +171,7 @@ void Auth::set_client_secret(const std::string& client_secret) {
 
 std::string Auth::redirect_uri() const {
   return util::address(redirect_uri_host(), redirect_uri_port()) +
-          redirect_uri_prefix();
+          redirect_uri_path();
 }
 
 std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }
@@ -184,10 +184,10 @@ uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }
 
 void Auth::set_redirect_uri_port(uint16_t port) { redirect_uri_port_ = port; }
 
-std::string Auth::redirect_uri_prefix() const { return redirect_uri_prefix_; }
+std::string Auth::redirect_uri_path() const { return redirect_uri_path_; }
 
-void Auth::set_redirect_uri_prefix(const std::string& prefix) {
-    redirect_uri_prefix_ = prefix;
+void Auth::set_redirect_uri_path(const std::string& path) {
+    redirect_uri_path_ = path;
 }
 
 std::string Auth::state() const { return state_; }
