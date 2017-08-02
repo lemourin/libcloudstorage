@@ -53,7 +53,6 @@ struct crypto_lock {
         crypto_locks[n].lock();
       else
         crypto_locks[n].unlock();
-
     });
   }
 };

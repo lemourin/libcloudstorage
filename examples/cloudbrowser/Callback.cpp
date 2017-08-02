@@ -31,7 +31,7 @@
 #include "Window.h"
 
 #ifdef WITH_THUMBNAILER
-#include <libffmpegthumbnailer/videothumbnailer.h>
+#include "GenerateThumbnail.h"
 #endif
 
 using cloudstorage::util::make_unique;
@@ -147,24 +147,10 @@ void DownloadThumbnailCallback::receivedData(const char* data,
 
 void DownloadThumbnailCallback::done(EitherError<void> e) {
   if (e.left()) {
-#ifdef WITH_THUMBNAILER
-    auto item = item_->item();
     data_ = "";
-    if ((item->type() == IItem::FileType::Image ||
-         item->type() == IItem::FileType::Video) &&
-        !item->url().empty()) {
-      try {
-        std::vector<uint8_t> buffer;
-        ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-        thumbnailer.generateThumbnail(item->url(), ThumbnailerImageType::Png,
-                                      buffer);
-        auto ptr = reinterpret_cast<const char*>(buffer.data());
-        data_ = std::string(ptr, ptr + buffer.size());
-      } catch (const std::exception& e) {
-        std::cerr << "couldn't generate thumbnail: " << e.what() << "\n";
-        return;
-      }
-    }
+#ifdef WITH_THUMBNAILER
+    auto thumbnail = cloudstorage::generate_thumbnail(item_->item());
+    if (thumbnail.right()) data_ = *thumbnail.right();
 #endif
     if (data_.empty()) return;
   }
