@@ -2,6 +2,10 @@ AC_INIT([libcloudstorage], [1.1])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_USE_SYSTEM_EXTENSIONS
+
+AM_SILENT_RULES([yes])
+AM_MAINTAINER_MODE([enable])
+
 AC_LANG(C++)
 
 LT_INIT([win32-dll shared disable-static])
