@@ -25,6 +25,7 @@
 #define HTTPCALLBACK_H
 
 #include <atomic>
+#include <functional>
 
 #include "IHttp.h"
 
