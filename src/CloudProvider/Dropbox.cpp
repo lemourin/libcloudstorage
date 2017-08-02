@@ -129,7 +129,7 @@ IHttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& item,
                                                  std::ostream&,
                                                  std::ostream&) const {
   auto request = http()->create(
-      "https://content.dropboxapi.com/1/files_put/auto/" + item.id() + filename,
+      "https://content.dropboxapi.com/1/files_put/auto" + item.id() + "/" + filename,
       "PUT");
   return request;
 }
