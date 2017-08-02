@@ -14,11 +14,12 @@ PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
 PKG_CHECK_MODULES([libtinyxml2], [tinyxml2])
 
 AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
-AM_CONDITIONAL([WITH_MEGA], [test "x$with_mega" != "xno"])
 AS_IF([test "x$with_mega" != "xno"], [
-  PKG_CHECK_MODULES([libmega], [libmega])
-  AC_DEFINE(WITH_MEGA)
+  PKG_CHECK_MODULES([libmega], [libmega],
+                    [ AC_DEFINE(WITH_MEGA) ],
+                    [ AS_IF([test "x$with_mega" = "xyes" ], [AC_MSG_ERROR([libmega not found]) ]) ])
 ])
+AM_CONDITIONAL([WITH_MEGA], [test "${has_libmega}" = "yes"])
 
 AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
 AM_CONDITIONAL([WITH_CRYPTOPP], [test "x$with_cryptopp" = "xyes"])
