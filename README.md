@@ -38,7 +38,7 @@ Requirements:
 * `tinyxml2`
 * `libmicrohttpd` (optional)
 * `cURL` (with `OpenSSL`/`c-ares`, optional)
-* `libcryptopp` (optional)
+* `libcryptopp` (optional, required for `AmazonS3`)
 * `mega` (optional, required for `mega.nz`)
 
 Platforms:
