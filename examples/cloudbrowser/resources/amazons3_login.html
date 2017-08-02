@@ -28,7 +28,7 @@
       <script>
         function submitData() {
           var code = encodeURIComponent($('#inputAccessKey').val() + '@' + $('#inputRegion').val() + '##' + $('#inputSecretKey').val());
-          window.location.href = "/auth?code=" + code + "&state=" + url('?').state;
+          window.location.href = location.pathname.split("/").slice(0,-1).join("/") + "?code=" + code + "&state=" + url('?').state;
           return false;
         };
       </script>

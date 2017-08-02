@@ -27,7 +27,7 @@
       <h2 class="text-center">Your login has been sent to <a href="https://aws.amazon.com/s3/">Amazon S3</a> server successfully</h2>
       <script>
         $.ajax({ "data": { "accepted": "true" } });
-        history.replaceState({}, null, 'success');
+        history.replaceState({}, null, location.pathname + '/success');
       </script>
     </div>
   </div>

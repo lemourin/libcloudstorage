@@ -27,7 +27,7 @@
       <h1 class="text-center">An error occurred</h1>
       <script>
         $.ajax({ "data": { "accepted": "false" } });
-        history.replaceState({}, null, 'error');
+        history.replaceState({}, null, location.pathname + '/error');
       </script>
     </div>
   </div>
