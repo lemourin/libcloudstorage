@@ -39,13 +39,6 @@ AS_IF([test "x$with_curl" = "xyes"], [
   AC_DEFINE(WITH_CURL)
 ])
 
-AC_ARG_WITH([thumbnailer], AS_HELP_STRING([--with-thumbnailer]))
-AM_CONDITIONAL([WITH_THUMBNAILER], [test "x$with_thumbnailer" = "xyes"])
-AS_IF([test "x$with_thumbnailer" = "xyes"], [
-  PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer])
-  AC_DEFINE(WITH_THUMBNAILER)
-])
-
 AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_microhttpd" = "xyes"])
 AS_IF([test "x$with_microhttpd" = "xyes"], [
@@ -92,6 +85,7 @@ AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
 
 HAVE_QTWEBENGINE=0
 HAVE_CRYPTO=0
+HAVE_THUMBNAILER=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
@@ -109,6 +103,10 @@ AS_IF([test "x$with_examples" = "xyes"], [
     HAVE_CRYPTO=1
     AC_DEFINE(WITH_CRYPTO)
   ], [HAVE_CRYPTO=0])
+  PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer], [
+    HAVE_THUMBNAILER=1
+    AC_DEFINE(WITH_THUMBNAILER)
+  ], [HAVE_THUMBNAILER=0])
   AS_IF([test "x$with_vlc" = "xyes"], [
     PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
     PKG_CHECK_MODULES([libvlc], [libvlc])
@@ -125,5 +123,6 @@ AS_IF([test "x$with_examples" = "xyes"], [
 
 AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
 AM_CONDITIONAL([WITH_CRYPTO], [test "$HAVE_CRYPTO" -eq 1])
+AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 
 AC_OUTPUT
