@@ -32,6 +32,7 @@
 
 const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
 const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
+const std::string DEFAULT_REDIRECT_URI_PREFIX = "";
 
 const std::string CDN =
     "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
@@ -57,8 +58,9 @@ const std::string DEFAULT_LOGIN_PAGE =
     "     var str = $('#login').val() + '" +
     std::string(cloudstorage::Auth::SEPARATOR) +
     "' + $('#password').val();"
-    "     $('#link').attr('href', '/?code=' + encodeURIComponent(str) + "
-    "                     '&state=' + url('?').state);"
+    "     $('#link').attr('href', location.pathname + '?code='"
+    "                     + encodeURIComponent(str) + "
+    "                     '&state=' +  url('?').state);"
     "   };"
     "   $('#login').change(func);"
     "   $('#password').change(func);"
@@ -73,7 +75,9 @@ const std::string DEFAULT_SUCCESS_PAGE =
     "<body>Success.</body>"
     "<script>"
     "  $.ajax({ 'data': { 'accepted': 'true' } });"
-    "  history.replaceState({}, null, 'success');"
+    "  history.replaceState({}, null, "
+        "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+        "'/success');"
     "</script>"
     "</html>";
 
@@ -82,7 +86,9 @@ const std::string DEFAULT_ERROR_PAGE =
     "<body>Error.</body>"
     "<script>"
     "  $.ajax({ 'data': { 'accepted': 'false' } });"
-    "  history.replaceState({}, null, 'error');"
+    "  history.replaceState({}, null,"
+        "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+        "'/error');"
     "</script>"
     "</html>";
 
@@ -121,7 +127,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
         IHttpRequest::Unauthorized, {},
         auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 
-  if (connection->url() == "/login")
+  if (connection->url() == auth_->redirect_uri_prefix() + "/login")
     return server.createResponse(
         IHttpRequest::Ok, {},
         auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
@@ -134,6 +140,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
 Auth::Auth()
     : redirect_uri_host_(DEFAULT_REDIRECT_URI_HOST),
       redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT),
+      redirect_uri_prefix_(DEFAULT_REDIRECT_URI_PREFIX),
       http_(),
       http_server_() {}
 
@@ -163,7 +170,8 @@ void Auth::set_client_secret(const std::string& client_secret) {
 }
 
 std::string Auth::redirect_uri() const {
-  return util::address(redirect_uri_host(), redirect_uri_port());
+  return util::address(redirect_uri_host(), redirect_uri_port()) +
+          redirect_uri_prefix();
 }
 
 std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }
@@ -175,6 +183,12 @@ void Auth::set_redirect_uri_host(const std::string& uri) {
 uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }
 
 void Auth::set_redirect_uri_port(uint16_t port) { redirect_uri_port_ = port; }
+
+std::string Auth::redirect_uri_prefix() const { return redirect_uri_prefix_; }
+
+void Auth::set_redirect_uri_prefix(const std::string& prefix) {
+    redirect_uri_prefix_ = prefix;
+}
 
 std::string Auth::state() const { return state_; }
 

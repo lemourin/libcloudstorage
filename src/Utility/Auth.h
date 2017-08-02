@@ -73,6 +73,9 @@ class Auth : public IAuth {
   uint16_t redirect_uri_port() const override;
   void set_redirect_uri_port(uint16_t) override;
 
+  std::string redirect_uri_prefix() const override;
+  void set_redirect_uri_prefix(const std::string&) override;
+
   std::string state() const override;
   void set_state(const std::string&) override;
 
@@ -112,6 +115,7 @@ class Auth : public IAuth {
   std::string login_page_;
   std::string success_page_;
   std::string error_page_;
+  std::string redirect_uri_prefix_;
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;
