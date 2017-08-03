@@ -10,6 +10,7 @@
 .deps
 .libs
 .dirstamp
+*.moc.cpp
 
 # Auto*
 Makefile.in
@@ -28,3 +29,9 @@ m4/
 
 # Ignore build dirs
 build*
+
+examples/cloudbrowser/android
+libcloudstorage*
+.clang_complete
+.vscode
+resources.cpp
