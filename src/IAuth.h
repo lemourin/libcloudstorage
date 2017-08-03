@@ -59,12 +59,7 @@ class IAuth {
   virtual void set_client_secret(const std::string&) = 0;
 
   virtual std::string redirect_uri() const = 0;
-
-  virtual std::string redirect_uri_host() const = 0;
-  virtual void set_redirect_uri_host(const std::string&) = 0;
-
-  virtual std::string redirect_uri_path() const = 0;
-  virtual void set_redirect_uri_path(const std::string&) = 0;
+  virtual void set_redirect_uri(const std::string&) = 0;
 
   virtual std::string state() const = 0;
   virtual void set_state(const std::string&) = 0;

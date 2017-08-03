@@ -24,14 +24,14 @@
 #include "Auth.h"
 
 #include <json/json.h>
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 
 #include "Utility.h"
 
-const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
-const std::string DEFAULT_REDIRECT_URI_PATH = "";
+const char* DEFAULT_REDIRECT_URI = "http://localhost:12345";
 
 const std::string CDN =
     "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
@@ -136,11 +136,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
       auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
 }
 
-Auth::Auth()
-    : redirect_uri_host_(DEFAULT_REDIRECT_URI_HOST),
-      redirect_uri_path_(DEFAULT_REDIRECT_URI_PATH),
-      http_(),
-      http_server_() {}
+Auth::Auth() : redirect_uri_(DEFAULT_REDIRECT_URI), http_(), http_server_() {}
 
 void Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
   http_ = http;
@@ -167,20 +163,19 @@ void Auth::set_client_secret(const std::string& client_secret) {
   client_secret_ = client_secret;
 }
 
-std::string Auth::redirect_uri() const {
-  return redirect_uri_host() + redirect_uri_path();
-}
+std::string Auth::redirect_uri() const { return redirect_uri_; }
 
-std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }
+void Auth::set_redirect_uri(const std::string& uri) { redirect_uri_ = uri; }
 
-void Auth::set_redirect_uri_host(const std::string& uri) {
-  redirect_uri_host_ = uri;
-}
-
-std::string Auth::redirect_uri_path() const { return redirect_uri_path_; }
-
-void Auth::set_redirect_uri_path(const std::string& path) {
-  redirect_uri_path_ = path;
+std::string Auth::redirect_uri_path() const {
+  const char* http = "http://";
+  int cnt = std::count(http, http + strlen(http), '/') + 1;
+  std::string str = redirect_uri();
+  for (size_t i = 0; i < str.length(); i++) {
+    if (str[i] == '/') cnt--;
+    if (cnt == 0) return std::string(str.begin() + i, str.end());
+  }
+  return "";
 }
 
 std::string Auth::state() const { return state_; }

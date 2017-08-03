@@ -65,12 +65,7 @@ class Auth : public IAuth {
   void set_client_secret(const std::string&) override;
 
   std::string redirect_uri() const override;
-
-  std::string redirect_uri_host() const override;
-  void set_redirect_uri_host(const std::string&) override;
-
-  std::string redirect_uri_path() const override;
-  void set_redirect_uri_path(const std::string&) override;
+  void set_redirect_uri(const std::string&) override;
 
   std::string state() const override;
   void set_state(const std::string&) override;
@@ -101,16 +96,17 @@ class Auth : public IAuth {
 
   Token::Pointer fromTokenString(const std::string&) const override;
 
+  std::string redirect_uri_path() const;
+
  private:
   std::string authorization_code_;
   std::string client_id_;
   std::string client_secret_;
-  std::string redirect_uri_host_;
+  std::string redirect_uri_;
   std::string state_;
   std::string login_page_;
   std::string success_page_;
   std::string error_page_;
-  std::string redirect_uri_path_;
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;

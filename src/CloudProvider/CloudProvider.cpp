@@ -159,10 +159,8 @@ void CloudProvider::initialize(InitData&& data) {
               [this](std::string v) { auth()->set_client_id(v); });
   setWithHint(data.hints_, "client_secret",
               [this](std::string v) { auth()->set_client_secret(v); });
-  setWithHint(data.hints_, "redirect_uri_host",
-              [this](std::string v) { auth()->set_redirect_uri_host(v); });
-  setWithHint(data.hints_, "redirect_uri_path",
-              [this](std::string v) { auth()->set_redirect_uri_path(v); });
+  setWithHint(data.hints_, "redirect_uri",
+              [this](std::string v) { auth()->set_redirect_uri(v); });
   setWithHint(data.hints_, "state",
               [this](std::string v) { auth()->set_state(v); });
   setWithHint(data.hints_, "login_page",
