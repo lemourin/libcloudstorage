@@ -115,10 +115,9 @@ class ICloudProvider {
     *  - client_id
     *  - client_secret
     *  - redirect_uri_host
-    *  - redirect_uri_port
+    *  - redirect_uri_path
     *  - state
     *  - access_token
-    *  - daemon_port (used by mega.nz url provider)
     *  - file_url (used by mega.nz, url provider's base url)
     *  - metadata_url, content_url (amazon drive's endpoints)
     *  - youtube_dl_url (url to youtube-dl-server)

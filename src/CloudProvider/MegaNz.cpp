@@ -39,7 +39,7 @@ using namespace mega;
 
 const int BUFFER_SIZE = 1024;
 const int CACHE_FILENAME_LENGTH = 12;
-const int DEFAULT_DAEMON_PORT = 12346;
+const std::string DEFAULT_FILE_URL = "http://localhost:12346";
 
 namespace cloudstorage {
 
@@ -321,7 +321,6 @@ MegaNz::MegaNz()
       mega_(),
       authorized_(),
       engine_(device_()),
-      daemon_port_(DEFAULT_DAEMON_PORT),
       daemon_(),
       temporary_directory_("."),
       deleted_(false) {}
@@ -359,33 +358,28 @@ void MegaNz::initialize(InitData&& data) {
       setWithHint(data.hints_, "client_id", [this](std::string v) {
         mega_ = util::make_unique<MegaApi>(v.c_str());
       });
-    setWithHint(data.hints_, "daemon_port",
-                [this](std::string v) { daemon_port_ = std::atoi(v.c_str()); });
     setWithHint(data.hints_, "temporary_directory",
                 [this](std::string v) { temporary_directory_ = v; });
     setWithHint(data.hints_, "file_url",
                 [this](std::string v) { file_url_ = v; });
+    if (file_url_.empty()) file_url_ = DEFAULT_FILE_URL;
   }
   CloudProvider::initialize(std::move(data));
-  if (file_url_.empty()) file_url_ = auth()->redirect_uri_host();
-  daemon_ = http_server()->create(
-      util::make_unique<HttpServerCallback>(this), auth()->state(),
-      IHttpServer::Type::FileProvider, daemon_port_);
+  daemon_ =
+      http_server()->create(util::make_unique<HttpServerCallback>(this),
+                            auth()->state(), IHttpServer::Type::FileProvider);
 }
 
 std::string MegaNz::name() const { return "mega"; }
 
-std::string MegaNz::endpoint() const {
-  return util::address(file_url_, daemon_port_);
-}
+std::string MegaNz::endpoint() const { return file_url_; }
 
 IItem::Pointer MegaNz::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
 }
 
 ICloudProvider::Hints MegaNz::hints() const {
-  Hints result = {{"daemon_port", std::to_string(daemon_port_)},
-                  {"temporary_directory", temporary_directory_}};
+  Hints result = {{"temporary_directory", temporary_directory_}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;

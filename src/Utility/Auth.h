@@ -45,7 +45,6 @@ class Auth : public IAuth {
       std::string code_parameter_name_;
       std::string error_parameter_name_;
       std::string state_parameter_name_;
-      uint16_t port_;
       enum { Awaiting, Accepted, Denied } state_;
       Semaphore* semaphore_;
     } data_;
@@ -69,9 +68,6 @@ class Auth : public IAuth {
 
   std::string redirect_uri_host() const override;
   void set_redirect_uri_host(const std::string&) override;
-
-  uint16_t redirect_uri_port() const override;
-  void set_redirect_uri_port(uint16_t) override;
 
   std::string redirect_uri_path() const override;
   void set_redirect_uri_path(const std::string&) override;
@@ -110,7 +106,6 @@ class Auth : public IAuth {
   std::string client_id_;
   std::string client_secret_;
   std::string redirect_uri_host_;
-  uint16_t redirect_uri_port_;
   std::string state_;
   std::string login_page_;
   std::string success_page_;

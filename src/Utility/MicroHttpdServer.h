@@ -32,8 +32,7 @@ namespace cloudstorage {
 
 class MicroHttpdServer : public IHttpServer {
  public:
-  MicroHttpdServer(IHttpServer::ICallback::Pointer cb, IHttpServer::Type type,
-                   int port);
+  MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port);
   ~MicroHttpdServer();
 
   class Response : public IResponse {
@@ -92,8 +91,8 @@ class MicroHttpdServer : public IHttpServer {
 class MicroHttpdServerFactory : public IHttpServerFactory {
  public:
   IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
-                              const std::string& session_id, IHttpServer::Type,
-                              int port) override;
+                              const std::string& session_id,
+                              IHttpServer::Type) override;
 };
 
 }  // namespace cloudstorage

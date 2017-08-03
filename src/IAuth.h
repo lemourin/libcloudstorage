@@ -63,9 +63,6 @@ class IAuth {
   virtual std::string redirect_uri_host() const = 0;
   virtual void set_redirect_uri_host(const std::string&) = 0;
 
-  virtual uint16_t redirect_uri_port() const = 0;
-  virtual void set_redirect_uri_port(uint16_t) = 0;
-
   virtual std::string redirect_uri_path() const = 0;
   virtual void set_redirect_uri_path(const std::string&) = 0;
 
@@ -87,7 +84,7 @@ class IAuth {
   virtual std::string authorizeLibraryUrl() const = 0;
 
   /**
-   * Runs a web server at redirect_uri_port and waits until it receives http
+   * Runs a web server and waits until it receives http
    * get request with either code_parameter_name or error_parameter_name.
    *
    * @param code_parameter_name usually "code"

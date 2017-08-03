@@ -31,7 +31,6 @@
 #include "Utility.h"
 
 const char* DEFAULT_REDIRECT_URI_HOST = "http://localhost";
-const uint16_t DEFAULT_REDIRECT_URI_PORT = 12345;
 const std::string DEFAULT_REDIRECT_URI_PATH = "";
 
 const std::string CDN =
@@ -76,8 +75,8 @@ const std::string DEFAULT_SUCCESS_PAGE =
     "<script>"
     "  $.ajax({ 'data': { 'accepted': 'true' } });"
     "  history.replaceState({}, null, "
-        "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-        "'/success');"
+    "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+    "'/success');"
     "</script>"
     "</html>";
 
@@ -87,8 +86,8 @@ const std::string DEFAULT_ERROR_PAGE =
     "<script>"
     "  $.ajax({ 'data': { 'accepted': 'false' } });"
     "  history.replaceState({}, null,"
-        "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-        "'/error');"
+    "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+    "'/error');"
     "</script>"
     "</html>";
 
@@ -139,7 +138,6 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
 
 Auth::Auth()
     : redirect_uri_host_(DEFAULT_REDIRECT_URI_HOST),
-      redirect_uri_port_(DEFAULT_REDIRECT_URI_PORT),
       redirect_uri_path_(DEFAULT_REDIRECT_URI_PATH),
       http_(),
       http_server_() {}
@@ -170,8 +168,7 @@ void Auth::set_client_secret(const std::string& client_secret) {
 }
 
 std::string Auth::redirect_uri() const {
-  return util::address(redirect_uri_host(), redirect_uri_port()) +
-          redirect_uri_path();
+  return redirect_uri_host() + redirect_uri_path();
 }
 
 std::string Auth::redirect_uri_host() const { return redirect_uri_host_; }
@@ -180,14 +177,10 @@ void Auth::set_redirect_uri_host(const std::string& uri) {
   redirect_uri_host_ = uri;
 }
 
-uint16_t Auth::redirect_uri_port() const { return redirect_uri_port_; }
-
-void Auth::set_redirect_uri_port(uint16_t port) { redirect_uri_port_ = port; }
-
 std::string Auth::redirect_uri_path() const { return redirect_uri_path_; }
 
 void Auth::set_redirect_uri_path(const std::string& path) {
-    redirect_uri_path_ = path;
+  redirect_uri_path_ = path;
 }
 
 std::string Auth::state() const { return state_; }
@@ -215,7 +208,6 @@ EitherError<std::string> Auth::awaitAuthorizationCode(
     std::string code_parameter_name, std::string error_parameter_name,
     std::string state_parameter_name, std::function<void()> server_started,
     std::function<void()> server_stopped) const {
-  uint16_t http_server_port = redirect_uri_port();
   Semaphore semaphore;
   auto callback = std::make_shared<HttpServerCallback>();
   callback->data_ = {"",
@@ -223,13 +215,12 @@ EitherError<std::string> Auth::awaitAuthorizationCode(
                      code_parameter_name,
                      error_parameter_name,
                      state_parameter_name,
-                     http_server_port,
                      HttpServerCallback::HttpServerData::Awaiting,
                      &semaphore};
   callback->auth_ = this;
   {
-    auto http_server = http_server_->create(
-        callback, state(), IHttpServer::Type::Authorization, http_server_port);
+    auto http_server = http_server_->create(callback, state(),
+                                            IHttpServer::Type::Authorization);
     if (!http_server)
       return Error{IHttpRequest::Failure, "couldn't start http server"};
     if (server_started) server_started();

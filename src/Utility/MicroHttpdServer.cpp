@@ -27,6 +27,9 @@
 
 namespace cloudstorage {
 
+const int AUTHORIZATION_PORT = 12345;
+const int FILE_PROVIDER_PORT = 12346;
+
 namespace {
 
 int http_request_callback(void* cls, MHD_Connection* c, const char* url,
@@ -115,8 +118,7 @@ void MicroHttpdServer::Connection::resume() {
   MHD_resume_connection(connection_);
 }
 
-MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb,
-                                   IHttpServer::Type, int port)
+MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
     : http_server_(MHD_start_daemon(
           MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, NULL, NULL,
           http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
@@ -140,8 +142,11 @@ MicroHttpdServer::IResponse::Pointer MicroHttpdServer::createResponse(
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, const std::string&,
-    IHttpServer::Type type, int port) {
-  return util::make_unique<MicroHttpdServer>(cb, type, port);
+    IHttpServer::Type type) {
+  return util::make_unique<MicroHttpdServer>(
+      cb,
+      type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
+                                               : FILE_PROVIDER_PORT);
 }
 
 }  // namespace cloudstorage
