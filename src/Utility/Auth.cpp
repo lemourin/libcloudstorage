@@ -106,13 +106,13 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   const char* error = connection->getParameter(data_.error_parameter_name_);
   if (accepted) {
     if (std::string(accepted) == "true" && code) {
-      data_.code_ = code;
-      data_.state_ = HttpServerData::Accepted;
+      data_.callback_(std::string(code));
     } else {
-      if (error) data_.error_ = error;
-      data_.state_ = HttpServerData::Denied;
+      if (error)
+        data_.callback_(Error{IHttpRequest::Bad, error});
+      else
+        data_.callback_(Error{IHttpRequest::Bad, ""});
     }
-    data_.semaphore_->notify();
   }
 
   if (code)
@@ -199,40 +199,22 @@ void Auth::set_access_token(Token::Pointer token) {
 
 IHttp* Auth::http() const { return http_; }
 
-EitherError<std::string> Auth::awaitAuthorizationCode(
-    std::string code_parameter_name, std::string error_parameter_name,
-    std::string state_parameter_name, std::function<void()> server_started,
-    std::function<void()> server_stopped) const {
-  Semaphore semaphore;
+void Auth::awaitAuthorizationCode(std::string code_parameter_name,
+                                  std::string error_parameter_name,
+                                  std::string state_parameter_name,
+                                  CodeReceived complete) {
   auto callback = std::make_shared<HttpServerCallback>();
-  callback->data_ = {"",
-                     "",
-                     code_parameter_name,
-                     error_parameter_name,
-                     state_parameter_name,
-                     HttpServerCallback::HttpServerData::Awaiting,
-                     &semaphore};
+  callback->data_ = {code_parameter_name, error_parameter_name,
+                     state_parameter_name, complete};
   callback->auth_ = this;
-  {
-    auto http_server = http_server_->create(callback, state(),
-                                            IHttpServer::Type::Authorization);
-    if (!http_server)
-      return Error{IHttpRequest::Failure, "couldn't start http server"};
-    if (server_started) server_started();
-    semaphore.wait();
-  }
-  if (server_stopped) server_stopped();
-  if (callback->data_.state_ == HttpServerCallback::HttpServerData::Accepted)
-    return callback->data_.code_;
-  else
-    return Error{IHttpRequest::Failure, callback->data_.error_};
+  current_server_ =
+      http_server_->create(callback, state(), IHttpServer::Type::Authorization);
+  if (!current_server_)
+    complete(Error{IHttpRequest::Failure, "couldn't start http server"});
 }
 
-EitherError<std::string> Auth::requestAuthorizationCode(
-    std::function<void()> server_started,
-    std::function<void()> server_stopped) const {
-  return awaitAuthorizationCode("code", "error", "state", server_started,
-                                server_stopped);
+void Auth::requestAuthorizationCode(CodeReceived c) {
+  awaitAuthorizationCode("code", "error", "state", c);
 }
 
 IAuth::Token::Pointer Auth::fromTokenString(

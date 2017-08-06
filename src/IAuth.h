@@ -35,6 +35,7 @@ namespace cloudstorage {
 class IAuth {
  public:
   using Pointer = std::unique_ptr<IAuth>;
+  using CodeReceived = std::function<void(EitherError<std::string>)>;
 
   struct Token {
     using Pointer = std::unique_ptr<Token>;
@@ -89,11 +90,10 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual EitherError<std::string> awaitAuthorizationCode(
-      std::string code_parameter_name, std::string error_parameter_name,
-      std::string state_parameter_name,
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const = 0;
+  virtual void awaitAuthorizationCode(std::string code_parameter_name,
+                                      std::string error_parameter_name,
+                                      std::string state_parameter_name,
+                                      CodeReceived) = 0;
 
   /**
    * Shortcut for awaitAuthorizationCode, usually calls
@@ -103,9 +103,7 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual EitherError<std::string> requestAuthorizationCode(
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const = 0;
+  virtual void requestAuthorizationCode(CodeReceived) = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 

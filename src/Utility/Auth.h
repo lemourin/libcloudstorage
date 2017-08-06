@@ -26,9 +26,9 @@
 
 #include "IAuth.h"
 
-namespace cloudstorage {
+#include <mutex>
 
-class Semaphore;
+namespace cloudstorage {
 
 class Auth : public IAuth {
  public:
@@ -40,13 +40,10 @@ class Auth : public IAuth {
         const IHttpServer&, IHttpServer::IConnection::Pointer) override;
 
     struct HttpServerData {
-      std::string code_;
-      std::string error_;
       std::string code_parameter_name_;
       std::string error_parameter_name_;
       std::string state_parameter_name_;
-      enum { Awaiting, Accepted, Denied } state_;
-      Semaphore* semaphore_;
+      CodeReceived callback_;
     } data_;
     const Auth* auth_;
   };
@@ -84,15 +81,12 @@ class Auth : public IAuth {
 
   IHttp* http() const override;
 
-  EitherError<std::string> awaitAuthorizationCode(
-      std::string code_parameter_name, std::string error_parameter_name,
-      std::string state_parameter_name,
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const override;
+  void awaitAuthorizationCode(std::string code_parameter_name,
+                              std::string error_parameter_name,
+                              std::string state_parameter_name,
+                              CodeReceived) override;
 
-  EitherError<std::string> requestAuthorizationCode(
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const override;
+  void requestAuthorizationCode(CodeReceived) override;
 
   Token::Pointer fromTokenString(const std::string&) const override;
 
@@ -110,6 +104,7 @@ class Auth : public IAuth {
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;
+  IHttpServer::Pointer current_server_;
 };
 
 }  // namespace cloudstorage
