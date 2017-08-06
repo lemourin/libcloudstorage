@@ -49,6 +49,18 @@ namespace util {
 
 namespace {
 
+unsigned char from_hex(unsigned char ch) {
+  if (ch <= '9' && ch >= '0')
+    ch -= '0';
+  else if (ch <= 'f' && ch >= 'a')
+    ch -= 'a' - 10;
+  else if (ch <= 'F' && ch >= 'A')
+    ch -= 'A' - 10;
+  else
+    ch = 0;
+  return ch;
+}
+
 std::string to_lower(std::string str) {
   for (char& c : str) c = tolower(c);
   return str;
@@ -104,21 +116,22 @@ std::string to_mime_type(const std::string& extension) {
     return it->second;
 }
 
-std::string Url::unescape(const std::string& value) {
-  std::ostringstream unescaped;
-  int hex_extract;
-  for (size_t i = 0; i < value.length(); i++) {
-    if (value[i] == '%') {
-      // Failed to unescape (there is not enough digits with the %
-      if (i >= value.length() - 2) return "";
-      sscanf(value.substr(i + 1, 2).c_str(), "%x", &hex_extract);
-      unescaped << hex_extract;
-      i += 2;  // Skip the two elements that were read
+std::string Url::unescape(const std::string& str) {
+  std::string result;
+  for (auto i = 0; i < str.size(); ++i) {
+    if (str[i] == '+') {
+      result += ' ';
+    } else if (str[i] == '%' && str.size() > i + 2) {
+      auto ch1 = from_hex(str[i + 1]);
+      auto ch2 = from_hex(str[i + 2]);
+      auto ch = (ch1 << 4) | ch2;
+      result += ch;
+      i += 2;
     } else {
-      unescaped << value[i];
+      result += str[i];
     }
   }
-  return unescaped.str();
+  return result;
 }
 
 std::string Url::escape(const std::string& value) {
