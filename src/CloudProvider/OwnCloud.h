@@ -50,7 +50,8 @@ class OwnCloud : public CloudProvider {
   std::string endpoint() const override;
   std::string token() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync() override;
+  AuthorizeRequest::Pointer authorizeAsync(
+      AuthorizeRequest::AuthorizeCompleted) override;
   CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 
@@ -74,7 +75,7 @@ class OwnCloud : public CloudProvider {
 
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const override;
+      const IItem&, std::istream&, std::string& next_page_token) const override;
 
   std::string api_url() const;
 
@@ -100,7 +101,7 @@ class OwnCloud : public CloudProvider {
   };
 
  private:
-  bool unpackCredentials(const std::string& code);
+  bool unpackCredentials(const std::string& code) override;
 
   std::string owncloud_base_url_;
   std::string user_;
