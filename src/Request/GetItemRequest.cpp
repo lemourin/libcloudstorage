@@ -29,32 +29,14 @@ namespace cloudstorage {
 
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
-    : Request(p), path_(path), callback_(callback) {
-  set_resolver([this](Request*) -> EitherError<IItem> {
-    if (path_.empty() || path_.front() != '/') {
+    : Request(p) {
+  set([=](Request::Ptr) {
+    if (path.empty() || path.front() != '/') {
       Error e{IHttpRequest::Forbidden, "invalid path"};
-      callback_(e);
-      return e;
+      callback(e);
+      return done(e);
     }
-    IItem::Pointer node = provider()->rootDirectory();
-    std::stringstream stream(path_.substr(1));
-    std::string token;
-    while (std::getline(stream, token, '/')) {
-      if (!node || node->type() != IItem::FileType::Directory) {
-        node = nullptr;
-        break;
-      }
-      auto current_request = static_cast<ICloudProvider*>(provider().get())
-                                 ->listDirectoryAsync(std::move(node));
-      subrequest(current_request);
-      if (current_request->result().left()) {
-        callback_(current_request->result().left());
-        return current_request->result().left();
-      }
-      node = getItem(*current_request->result().right(), token);
-    }
-    callback_(node);
-    return node;
+    work(provider()->rootDirectory(), path, callback);
   });
 }
 
@@ -65,6 +47,28 @@ IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
   for (const IItem::Pointer& i : items)
     if (i->filename() == name) return i;
   return nullptr;
+}
+
+void GetItemRequest::work(IItem::Pointer item, std::string p,
+                          Callback complete) {
+  if (p.empty() || p.size() == 1) {
+    complete(item);
+    return done(item);
+  }
+  auto path = p.substr(1);
+  auto it = path.find_first_of('/');
+  std::string name = std::string(path.begin(), path.begin() + it),
+              rest = std::string(path.begin() + it, path.end());
+  auto request = this->shared_from_this();
+  subrequest(provider()->listDirectoryAsync(
+      item, [=](EitherError<std::vector<IItem::Pointer>> e) {
+        if (e.left()) {
+          complete(e.left());
+          request->done(e.left());
+        } else {
+          work(getItem(*e.right(), name), rest, complete);
+        }
+      }));
 }
 
 }  // namespace cloudstorage

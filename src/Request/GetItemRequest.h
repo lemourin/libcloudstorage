@@ -39,9 +39,7 @@ class GetItemRequest : public Request<EitherError<IItem>> {
  private:
   IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
                          const std::string& name) const;
-
-  std::string path_;
-  Callback callback_;
+  void work(IItem::Pointer item, std::string path, Callback);
 };
 
 }  // namespace cloudstorage
