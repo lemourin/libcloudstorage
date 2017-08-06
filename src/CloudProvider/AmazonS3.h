@@ -47,7 +47,8 @@ class AmazonS3 : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync() override;
+  AuthorizeRequest::Pointer authorizeAsync(
+      AuthorizeRequest::AuthorizeCompleted) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
@@ -72,7 +73,7 @@ class AmazonS3 : public CloudProvider {
       const IItem&, std::ostream& input_stream) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const override;
+      const IItem&, std::istream&, std::string& next_page_token) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
   bool reauthorize(int) const override;
@@ -100,7 +101,7 @@ class AmazonS3 : public CloudProvider {
   };
 
  private:
-  bool unpackCredentials(const std::string&);
+  bool unpackCredentials(const std::string&) override;
   std::string getUrl(const Item&) const;
 
   std::string access_id_;

@@ -33,6 +33,10 @@ namespace cloudstorage {
 
 namespace {
 
+void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
+            std::string source_id,
+            std::function<void(EitherError<void>)> complete);
+
 std::string escapePath(const std::string& str) {
   std::string data = util::Url::escape(str);
   std::string slash = util::Url::escape("/");
@@ -48,56 +52,109 @@ std::string escapePath(const std::string& str) {
   return result;
 }
 
-EitherError<void> rename(Request<EitherError<void>>* r, std::string dest_id,
-                         std::string source_id, std::string region,
-                         IHttp* http) {
+void remove(Request<EitherError<void>>::Ptr r,
+            std::shared_ptr<std::vector<IItem::Pointer>> lst,
+            std::function<void(EitherError<void>)> complete) {
+  if (lst->empty()) return complete(nullptr);
+  auto item = lst->back();
+  lst->pop_back();
+  r->subrequest(r->provider()->deleteItemAsync(item, [=](EitherError<void> e) {
+    if (e.left())
+      complete(e.left());
+    else
+      remove(r, lst, complete);
+  }));
+}
+
+void rename(Request<EitherError<void>>::Ptr r,
+            std::shared_ptr<std::vector<IItem::Pointer>> lst,
+            std::string dest_id, std::string source_id,
+            std::function<void(EitherError<void>)> complete) {
+  if (lst->empty()) return complete(nullptr);
+  auto item = lst->back();
+  lst->pop_back();
+  rename(r, lst, dest_id, source_id, [=](EitherError<void> e) {
+    if (e.left())
+      complete(e.left());
+    else
+      rename(r, dest_id + "/" + item->filename(), item->id(), complete);
+  });
+}
+
+void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
+            std::string source_id,
+            std::function<void(EitherError<void>)> complete) {
+  auto p = r->provider();
+  auto region = static_cast<AmazonS3*>(p.get())->region();
+  auto finalize = [=]() {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
+          auto data = AmazonS3::split(source_id);
+          return p->http()->create("https://" + data.first + ".s3." + region +
+                                       ".amazonaws.com/" +
+                                       escapePath(data.second),
+                                   "DELETE");
+        },
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            complete(e.left());
+            r->done(e.left());
+          } else {
+            complete(nullptr);
+            r->done(nullptr);
+          }
+        },
+        output);
+  };
   if (!source_id.empty() && source_id.back() != '/') {
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [=](std::ostream&) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
           auto dest_data = AmazonS3::split(dest_id);
-          auto request =
-              http->create("https://" + dest_data.first + ".s3." + region +
-                               ".amazonaws.com/" + escapePath(dest_data.second),
-                           "PUT");
+          auto request = p->http()->create(
+              "https://" + dest_data.first + ".s3." + region +
+                  ".amazonaws.com/" + escapePath(dest_data.second),
+              "PUT");
           auto source_data = AmazonS3::split(source_id);
           request->setHeaderParameter(
               "x-amz-copy-source",
               escapePath("/" + source_data.first + "/" + source_data.second));
           return request;
         },
-        output, &error);
-    if (!IHttpRequest::isSuccess(code)) return error;
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            complete(e.left());
+            r->done(e.left());
+          } else {
+            finalize();
+          }
+        },
+        output);
   } else {
-    auto directory_request = static_cast<ICloudProvider*>(r->provider().get())
-                                 ->getItemDataAsync(source_id);
-    r->subrequest(directory_request);
-    auto directory = directory_request->result();
-    if (directory.left()) return directory.left();
-    auto children_request = static_cast<ICloudProvider*>(r->provider().get())
-                                ->listDirectoryAsync(directory.right());
-    r->subrequest(children_request);
-    if (children_request->result().left())
-      return children_request->result().left();
-    for (auto item : *children_request->result().right()) {
-      auto p =
-          rename(r, dest_id + "/" + item->filename(), item->id(), region, http);
-      if (p.left()) return p;
-    }
+    r->subrequest(
+        r->provider()->getItemDataAsync(source_id, [=](EitherError<IItem> e) {
+          if (e.left()) {
+            complete(e.left());
+            return r->done(e.left());
+          }
+          r->subrequest(r->provider()->listDirectoryAsync(
+              e.right(), [=](EitherError<std::vector<IItem::Pointer>> e) {
+                if (e.left()) {
+                  complete(e.left());
+                  return r->done(e.left());
+                }
+                rename(r, e.right(), dest_id, source_id,
+                       [=](EitherError<void> e) {
+                         if (e.left()) {
+                           complete(e.left());
+                           return r->done(e.left());
+                         }
+                         finalize();
+                       });
+              }));
+        }));
   }
-  std::stringstream output;
-  Error error;
-  int code = r->sendRequest(
-      [=](std::ostream&) {
-        auto data = AmazonS3::split(source_id);
-        return http->create("https://" + data.first + ".s3." + region +
-                                ".amazonaws.com/" + escapePath(data.second),
-                            "DELETE");
-      },
-      output, &error);
-  if (!IHttpRequest::isSuccess(code)) return error;
-  return nullptr;
 }
 
 std::string host(std::string url) {
@@ -148,143 +205,144 @@ std::string AmazonS3::endpoint() const {
   return "https://s3-" + region() + ".amazonaws.com";
 }
 
-AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
-  return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
-        if (auth_callback()->userConsentRequired(*this) !=
-            IAuthCallback::Status::WaitForAuthorizationCode)
-          return Error{IHttpRequest::Failure, "not waiting for code"};
-        auto code = r->getAuthorizationCode();
-        if (code.left()) return code.left();
-        return unpackCredentials(*code.right())
-                   ? EitherError<void>(nullptr)
-                   : EitherError<void>(
-                         Error{IHttpRequest::Failure, "invalid code"});
-      });
+AuthorizeRequest::Pointer AmazonS3::authorizeAsync(
+    AuthorizeRequest::AuthorizeCompleted complete) {
+  return std::make_shared<SimpleAuthorization>(shared_from_this(), complete)
+      ->run();
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    auto p = rename(r, destination->id() + source->filename(), source->id(),
-                    region_, http());
-    callback(p);
-    return p;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    rename(r, destination->id() + source->filename(), source->id(), callback);
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
     std::string path = split(item->id()).second;
     if (!path.empty() && path.back() == '/') path.pop_back();
     if (path.find_first_of('/') == std::string::npos)
       path = split(item->id()).first + Auth::SEPARATOR;
     else
       path = split(item->id()).first + Auth::SEPARATOR + getPath(path) + "/";
-    auto p = rename(r, path + name, item->id(), region_, http());
-    callback(p);
-    return p;
+    rename(r, path + name, item->id(), callback);
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [=](std::ostream&) {
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
           auto data = split(parent->id());
-          return http()->create("https://" + data.first + ".s3." + region_ +
+          return http()->create("https://" + data.first + ".s3." + region() +
                                     ".amazonaws.com/" +
                                     escapePath(data.second + name + "/"),
                                 "PUT");
         },
-        output, &error);
-    if (!IHttpRequest::isSuccess(code)) {
-      callback(error);
-      return error;
-    } else {
-      auto path = getPath(parent->id());
-      if (!split(path).second.empty()) path += "/";
-      auto item = std::make_shared<Item>(name, path + name + "/",
-                                         IItem::FileType::Directory);
-      callback(EitherError<IItem>(item));
-      return EitherError<IItem>(item);
-    }
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback(e.left());
+            r->done(e.left());
+          } else {
+            auto path = getPath(parent->id());
+            if (!split(path).second.empty()) path += "/";
+            auto item = std::make_shared<Item>(name, path + name + "/",
+                                               IItem::FileType::Directory);
+            callback(EitherError<IItem>(item));
+            r->done(EitherError<IItem>(item));
+          }
+        },
+        output);
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    auto release = [=] {
+      auto output = std::make_shared<std::stringstream>();
+      r->sendRequest(
+          [=](util::Output) {
+            auto data = split(item->id());
+            return http()->create("https://" + data.first + ".s3." + region() +
+                                      ".amazonaws.com/" +
+                                      escapePath(data.second),
+                                  "DELETE");
+          },
+          [=](EitherError<util::Output> e) {
+            if (e.left()) {
+              callback(e.left());
+              r->done(e.left());
+            } else {
+              callback(nullptr);
+              r->done(nullptr);
+            }
+          },
+          output);
+    };
     if (item->type() == IItem::FileType::Directory) {
-      auto children_request = static_cast<ICloudProvider*>(r->provider().get())
-                                  ->listDirectoryAsync(item);
-      r->subrequest(children_request);
-      if (children_request->result().left()) {
-        Error e = *children_request->result().left();
-        callback(e);
-        return e;
-      }
-      for (auto child : *children_request->result().right()) {
-        auto delete_request =
-            static_cast<ICloudProvider*>(this)->deleteItemAsync(child);
-        r->subrequest(delete_request);
-        if (delete_request->result().left()) {
-          Error e = *delete_request->result().left();
-          callback(e);
-          return e;
-        }
-      }
-    }
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [=](std::ostream&) {
-          auto data = split(item->id());
-          return http()->create("https://" + data.first + ".s3." + region_ +
-                                    ".amazonaws.com/" + escapePath(data.second),
-                                "DELETE");
-        },
-        output, &error);
-    if (!IHttpRequest::isSuccess(code)) {
-      callback(error);
-      return error;
-    }
-    callback(nullptr);
-    return nullptr;
+      r->subrequest(r->provider()->listDirectoryAsync(
+          item, [=](EitherError<std::vector<IItem::Pointer>> e) {
+            if (e.left()) {
+              callback(e.left());
+              return r->done(e.left());
+            }
+            remove(r, e.right(), [=](EitherError<void> e) {
+              if (e.left()) {
+                callback(e.left());
+                return r->done(e.left());
+              }
+              release();
+            });
+          }));
+    } else
+      release();
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    if (access_id().empty() || secret().empty()) r->reauthorize();
-    auto data = split(id);
-    auto item = std::make_shared<Item>(
-        getFilename(data.second), id,
-        (data.second.empty() || data.second.back() == '/')
-            ? IItem::FileType::Directory
-            : IItem::FileType::Unknown);
-    if (item->type() != IItem::FileType::Directory)
-      item->set_url(getUrl(*item));
-    callback(EitherError<IItem>(item));
-    return EitherError<IItem>(item);
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    auto work = [=]() {
+      auto data = split(id);
+      auto item = std::make_shared<Item>(
+          getFilename(data.second), id,
+          (data.second.empty() || data.second.back() == '/')
+              ? IItem::FileType::Directory
+              : IItem::FileType::Unknown);
+      if (item->type() != IItem::FileType::Directory)
+        item->set_url(getUrl(*item));
+      callback(EitherError<IItem>(item));
+      r->done(EitherError<IItem>(item));
+    };
+    if (access_id().empty() || secret().empty())
+      r->reauthorize([=](EitherError<void> e) {
+        if (e.left()) {
+          callback(e.left());
+          r->done(e.left());
+        } else {
+          work();
+        }
+      });
+    else
+      work();
   });
-  return std::move(r);
+  return r->run();
 }
 
 IHttpRequest::Pointer AmazonS3::listDirectoryRequest(
@@ -294,7 +352,7 @@ IHttpRequest::Pointer AmazonS3::listDirectoryRequest(
   else {
     auto data = split(item.id());
     auto request = http()->create(
-        "https://" + data.first + ".s3." + region_ + ".amazonaws.com/", "GET");
+        "https://" + data.first + ".s3." + region() + ".amazonaws.com/", "GET");
     request->setParameter("list-type", "2");
     request->setParameter("prefix", data.second);
     request->setParameter("delimiter", "/");
@@ -309,7 +367,7 @@ IHttpRequest::Pointer AmazonS3::uploadFileRequest(const IItem& directory,
                                                   std::ostream&,
                                                   std::ostream&) const {
   auto data = split(directory.id());
-  return http()->create("https://" + data.first + ".s3." + region_ +
+  return http()->create("https://" + data.first + ".s3." + region() +
                             ".amazonaws.com/" +
                             escapePath(data.second + filename),
                         "PUT");
@@ -318,13 +376,13 @@ IHttpRequest::Pointer AmazonS3::uploadFileRequest(const IItem& directory,
 IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
                                                     std::ostream&) const {
   auto data = split(item.id());
-  return http()->create("https://" + data.first + ".s3." + region_ +
+  return http()->create("https://" + data.first + ".s3." + region() +
                             ".amazonaws.com/" + escapePath(data.second),
                         "GET");
 }
 
 std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    const IItem&, std::istream& stream, std::string& next_page_token) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -377,7 +435,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   if (!crypto()) throw std::runtime_error("no crypto functions provided");
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
-  std::string scope = current_date + "/" + region_ + "/s3/aws4_request";
+  std::string scope = current_date + "/" + region() + "/s3/aws4_request";
   request.setParameter("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
   request.setParameter("X-Amz-Credential", access_id() + "/" + scope);
   request.setParameter("X-Amz-Date", time);
@@ -434,7 +492,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   std::string string_to_sign = "AWS4-HMAC-SHA256\n" + time + "\n" + scope +
                                "\n" + hex(hash(canonical_request));
   std::string key =
-      sign(sign(sign(sign("AWS4" + secret(), current_date), region_), "s3"),
+      sign(sign(sign(sign("AWS4" + secret(), current_date), region()), "s3"),
            "aws4_request");
   std::string signature = hex(sign(key, string_to_sign));
 
@@ -483,7 +541,7 @@ bool AmazonS3::unpackCredentials(const std::string& code) {
 
 std::string AmazonS3::getUrl(const Item& item) const {
   auto data = split(item.id());
-  auto request = http()->create("https://" + data.first + ".s3." + region_ +
+  auto request = http()->create("https://" + data.first + ".s3." + region() +
                                     ".amazonaws.com/" + escapePath(data.second),
                                 "GET");
   authorizeRequest(*request);
