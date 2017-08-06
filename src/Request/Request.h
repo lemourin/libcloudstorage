@@ -40,20 +40,28 @@ class HttpCallback;
 class IItem;
 
 template <class ReturnValue>
-class Request : public IRequest<ReturnValue> {
+class Request : public IRequest<ReturnValue>,
+                public std::enable_shared_from_this<Request<ReturnValue>> {
  public:
+  using Ptr = std::shared_ptr<Request<ReturnValue>>;
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
-  using Resolver = std::function<ReturnValue(Request*)>;
+  using RequestFactory =
+      std::function<IHttpRequest::Pointer(std::shared_ptr<std::ostream>)>;
+  using Resolver = std::function<void(std::shared_ptr<Request>)>;
+  using AuthorizeCompleted = std::function<void(EitherError<void>)>;
+  using RequestCompleted = std::function<void(EitherError<util::Output>)>;
 
   Request(std::shared_ptr<CloudProvider>);
   Request(std::weak_ptr<CloudProvider>);
   ~Request();
 
-  void set_resolver(Resolver);
-
   void finish() override;
   void cancel() override;
   ReturnValue result() override;
+
+  void set(Resolver);
+  Ptr run();
+  void done(const ReturnValue&);
 
   /**
    * If there is authorization in progress for the cloud provider, waits until
@@ -62,7 +70,7 @@ class Request : public IRequest<ReturnValue> {
    *
    * @return whether the authorization was successful
    */
-  EitherError<void> reauthorize();
+  void reauthorize(AuthorizeCompleted);
 
   /**
    * Sends a request created by factory function; if request failed, tries to do
@@ -75,14 +83,17 @@ class Request : public IRequest<ReturnValue> {
    * @param upload upload progress callback
    * @return http code or curl error code
    */
-  int sendRequest(std::function<IHttpRequest::Pointer(std::ostream&)> factory,
-                  std::ostream& output, Error* error_stream = nullptr,
-                  ProgressFunction download = nullptr,
-                  ProgressFunction upload = nullptr);
+  void sendRequest(RequestFactory factory, RequestCompleted,
+                   std::shared_ptr<std::ostream> output,
+                   ProgressFunction download = nullptr,
+                   ProgressFunction upload = nullptr);
 
-  int send(IHttpRequest*, std::istream& input, std::ostream& output,
-           std::ostream* error, ProgressFunction download = nullptr,
-           ProgressFunction upload = nullptr);
+  void send(IHttpRequest*, IHttpRequest::CompleteCallback complete,
+            std::shared_ptr<std::istream> input,
+            std::shared_ptr<std::ostream> output,
+            std::shared_ptr<std::ostream> error,
+            ProgressFunction download = nullptr,
+            ProgressFunction upload = nullptr);
 
   std::shared_ptr<CloudProvider> provider() const;
 
@@ -97,10 +108,12 @@ class Request : public IRequest<ReturnValue> {
       ProgressFunction progress_download = nullptr,
       ProgressFunction progress_upload = nullptr);
 
+  std::promise<ReturnValue> value_;
+  std::shared_future<ReturnValue> future_;
+  Resolver resolver_;
   std::shared_ptr<CloudProvider> provider_shared_;
   std::weak_ptr<CloudProvider> provider_weak_;
   std::atomic_bool is_cancelled_;
-  std::shared_future<ReturnValue> function_;
   std::mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };

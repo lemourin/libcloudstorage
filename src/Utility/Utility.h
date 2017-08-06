@@ -32,6 +32,10 @@
 namespace cloudstorage {
 
 namespace util {
+
+using Output = std::shared_ptr<std::ostream>;
+using Input = std::shared_ptr<std::istream>;
+
 template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
