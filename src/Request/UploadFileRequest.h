@@ -59,10 +59,7 @@ class UploadFileRequest : public Request<EitherError<void>> {
   ~UploadFileRequest();
 
  private:
-  IItem::Pointer directory_;
-  std::string filename_;
   UploadStreamWrapper stream_wrapper_;
-  ICallback::Pointer callback_;
 };
 
 }  // namespace cloudstorage
