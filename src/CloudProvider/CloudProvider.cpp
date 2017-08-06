@@ -137,11 +137,7 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
 namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
-    : auth_(std::move(auth)),
-      http_(),
-      current_authorization_status_(AuthorizationStatus::Done),
-      authorization_result_(nullptr),
-      authorization_request_count_() {}
+    : auth_(std::move(auth)), http_() {}
 
 void CloudProvider::initialize(InitData&& data) {
   std::lock_guard<std::mutex> lock(auth_mutex_);
@@ -267,40 +263,47 @@ IHttpServerFactory* CloudProvider::http_server() const {
 
 ExchangeCodeRequest::Pointer CloudProvider::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
-  return util::make_unique<cloudstorage::ExchangeCodeRequest>(
-      shared_from_this(), code, callback);
+  return std::make_shared<cloudstorage::ExchangeCodeRequest>(shared_from_this(),
+                                                             code, callback)
+      ->run();
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  return util::make_unique<cloudstorage::ListDirectoryRequest>(
-      shared_from_this(), std::move(item), std::move(callback));
+  return std::make_shared<cloudstorage::ListDirectoryRequest>(
+             shared_from_this(), std::move(item), std::move(callback))
+      ->run();
 }
 
 ICloudProvider::GetItemRequest::Pointer CloudProvider::getItemAsync(
     const std::string& absolute_path, GetItemCallback callback) {
-  return util::make_unique<cloudstorage::GetItemRequest>(
-      shared_from_this(), absolute_path, callback);
+  return std::make_shared<cloudstorage::GetItemRequest>(shared_from_this(),
+                                                        absolute_path, callback)
+      ->run();
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer file, IDownloadFileCallback::Pointer callback) {
-  return util::make_unique<cloudstorage::DownloadFileRequest>(
-      shared_from_this(), std::move(file), std::move(callback),
-      std::bind(&CloudProvider::downloadFileRequest, this, _1, _2));
+  return std::make_shared<cloudstorage::DownloadFileRequest>(
+             shared_from_this(), std::move(file), std::move(callback),
+             std::bind(&CloudProvider::downloadFileRequest, this, _1, _2))
+      ->run();
 }
 
 ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  return util::make_unique<cloudstorage::UploadFileRequest>(
-      shared_from_this(), std::move(directory), filename, std::move(callback));
+  return std::make_shared<cloudstorage::UploadFileRequest>(
+             shared_from_this(), std::move(directory), filename,
+             std::move(callback))
+      ->run();
 }
 
 ICloudProvider::GetItemDataRequest::Pointer CloudProvider::getItemDataAsync(
     const std::string& id, GetItemDataCallback f) {
-  return util::make_unique<cloudstorage::GetItemDataRequest>(shared_from_this(),
-                                                             id, f);
+  return std::make_shared<cloudstorage::GetItemDataRequest>(shared_from_this(),
+                                                            id, f)
+      ->run();
 }
 
 void CloudProvider::authorizeRequest(IHttpRequest& r) const {
@@ -311,54 +314,14 @@ bool CloudProvider::reauthorize(int code) const {
   return IHttpRequest::isAuthorizationError(code);
 }
 
-AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
-  return util::make_unique<AuthorizeRequest>(shared_from_this());
+bool CloudProvider::unpackCredentials(const std::string&) { return false; }
+
+AuthorizeRequest::Pointer CloudProvider::authorizeAsync(
+    AuthorizeRequest::AuthorizeCompleted c) {
+  return std::make_shared<AuthorizeRequest>(shared_from_this(), c)->run();
 }
 
 std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
-
-std::mutex& CloudProvider::current_authorization_mutex() const {
-  return current_authorization_mutex_;
-}
-
-std::condition_variable& CloudProvider::authorized_condition() const {
-  return authorized_;
-}
-
-CloudProvider::AuthorizationStatus CloudProvider::authorization_status() const {
-  std::unique_lock<std::mutex> lock(authorization_status_mutex_);
-  return current_authorization_status_;
-}
-
-void CloudProvider::set_authorization_status(
-    CloudProvider::AuthorizationStatus status) {
-  std::unique_lock<std::mutex> lock(authorization_status_mutex_);
-  current_authorization_status_ = status;
-}
-
-AuthorizeRequest::Pointer CloudProvider::current_authorization() const {
-  return current_authorization_;
-}
-
-void CloudProvider::set_current_authorization(AuthorizeRequest::Pointer r) {
-  current_authorization_ = r;
-}
-
-EitherError<void> CloudProvider::authorization_result() const {
-  return authorization_result_;
-}
-
-void CloudProvider::set_authorization_result(EitherError<void> e) {
-  authorization_result_ = e;
-}
-
-int CloudProvider::authorization_request_count() const {
-  return authorization_request_count_;
-}
-
-void CloudProvider::set_authorization_request_count(int cnt) {
-  authorization_request_count_ = cnt;
-}
 
 void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
                                 const std::string& name,
@@ -390,36 +353,41 @@ std::pair<std::string, std::string> CloudProvider::credentialsFromString(
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return util::make_unique<cloudstorage::DownloadFileRequest>(
-      shared_from_this(), item, std::move(callback),
-      std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2), true);
+  return std::make_shared<cloudstorage::DownloadFileRequest>(
+             shared_from_this(), item, std::move(callback),
+             std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2))
+      ->run();
 }
 
 ICloudProvider::DeleteItemRequest::Pointer CloudProvider::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  return util::make_unique<cloudstorage::DeleteItemRequest>(shared_from_this(),
-                                                            item, callback);
+  return std::make_shared<cloudstorage::DeleteItemRequest>(shared_from_this(),
+                                                           item, callback)
+      ->run();
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer
 CloudProvider::createDirectoryAsync(IItem::Pointer parent,
                                     const std::string& name,
                                     CreateDirectoryCallback callback) {
-  return util::make_unique<cloudstorage::CreateDirectoryRequest>(
-      shared_from_this(), parent, name, callback);
+  return std::make_shared<cloudstorage::CreateDirectoryRequest>(
+             shared_from_this(), parent, name, callback)
+      ->run();
 }
 
 ICloudProvider::MoveItemRequest::Pointer CloudProvider::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  return util::make_unique<cloudstorage::MoveItemRequest>(
-      shared_from_this(), source, destination, callback);
+  return std::make_shared<cloudstorage::MoveItemRequest>(
+             shared_from_this(), source, destination, callback)
+      ->run();
 }
 
 ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  return util::make_unique<cloudstorage::RenameItemRequest>(
-      shared_from_this(), item, name, callback);
+  return std::make_shared<cloudstorage::RenameItemRequest>(shared_from_this(),
+                                                           item, name, callback)
+      ->run();
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
@@ -506,7 +474,7 @@ IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
 }
 
 std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
-    std::istream&, std::string&) const {
+    const IItem&, std::istream&, std::string&) const {
   return {};
 }
 
