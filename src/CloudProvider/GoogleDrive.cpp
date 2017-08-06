@@ -147,7 +147,7 @@ IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    const IItem&, std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
