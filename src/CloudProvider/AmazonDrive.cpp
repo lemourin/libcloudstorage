@@ -32,6 +32,39 @@ const int THUMBNAIL_SIZE = 64;
 
 namespace cloudstorage {
 
+namespace {
+
+void move(Request<EitherError<void>>::Ptr r,
+          std::shared_ptr<std::vector<std::string>> lst, IItem::Pointer source,
+          IItem::Pointer destination,
+          std::function<void(EitherError<void>)> complete) {
+  if (lst->empty()) return complete(nullptr);
+  auto parent = lst->back();
+  auto p = static_cast<AmazonDrive*>(r->provider().get());
+  lst->pop_back();
+  r->sendRequest(
+      [=](util::Output stream) {
+        auto request = p->http()->create(
+            p->metadata_url() + "/nodes/" + destination->id() + "/children",
+            "POST");
+        request->setHeaderParameter("Content-Type", "application/json");
+        Json::Value json;
+        json["fromParent"] = parent;
+        json["childId"] = source->id();
+        *stream << json;
+        return request;
+      },
+      [=](EitherError<util::Output> e) {
+        if (e.left())
+          complete(e.left());
+        else
+          move(r, lst, source, destination, complete);
+      },
+      std::make_shared<std::stringstream>());
+}
+
+}  // namespace
+
 AmazonDrive::AmazonDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonDrive::initialize(InitData&& data) {
@@ -62,63 +95,52 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
-    IItem::Pointer s, IItem::Pointer d, MoveItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    Item* source = static_cast<Item*>(s.get());
-    Item* destination = static_cast<Item*>(d.get());
-    for (const std::string& parent : source->parents()) {
-      std::stringstream output;
-      Error error;
-      int code = r->sendRequest(
-          [=](std::ostream& stream) {
-            auto request = http()->create(
-                metadata_url() + "/nodes/" + destination->id() + "/children",
-                "POST");
-            request->setHeaderParameter("Content-Type", "application/json");
-            Json::Value json;
-            json["fromParent"] = parent;
-            json["childId"] = source->id();
-            stream << json;
-            return request;
-          },
-          output, &error);
-      if (!IHttpRequest::isSuccess(code)) {
-        callback(error);
-        return error;
-      }
-    }
-    callback(nullptr);
-    return nullptr;
+    IItem::Pointer source, IItem::Pointer destination,
+    MoveItemCallback callback) {
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    move(r, std::make_shared<std::vector<std::string>>(
+                static_cast<Item*>(source.get())->parents()),
+         source, destination, callback);
   });
-  return std::move(r);
+  return r->run();
 }
 
-AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
-  auto r = util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
-        auto auth_status = r->oauth2Authorization();
-        if (auth_status.left()) return auth_status;
-        auto request = http()->create(
-            "https://drive.amazonaws.com/drive/v1/account/endpoint", "GET");
-        authorizeRequest(*request);
-        std::stringstream input, output, error;
-        int code = r->send(request.get(), input, output, &error);
-        if (!IHttpRequest::isSuccess(code)) {
-          Error e{code, error.str()};
-          auth_callback()->done(*this, e);
-          return e;
-        }
-        Json::Value response;
-        output >> response;
-        {
-          std::unique_lock<std::mutex> lock(auth_mutex());
-          metadata_url_ = response["metadataUrl"].asString();
-          content_url_ = response["contentUrl"].asString();
-        }
-        return nullptr;
-      });
-  return std::move(r);
+AuthorizeRequest::Pointer AmazonDrive::authorizeAsync(
+    AuthorizeRequest::AuthorizeCompleted complete) {
+  return std::make_shared<AuthorizeRequest>(
+             shared_from_this(), complete,
+             [this](AuthorizeRequest::Ptr r,
+                    AuthorizeRequest::AuthorizeCompleted complete) {
+               r->oauth2Authorization([=](EitherError<void> auth_status) {
+                 if (auth_status.left()) return complete(auth_status.left());
+                 auto request = http()->create(
+                     "https://drive.amazonaws.com/drive/v1/account/endpoint",
+                     "GET");
+                 authorizeRequest(*request);
+                 auto input = std::make_shared<std::stringstream>(),
+                      output = std::make_shared<std::stringstream>(),
+                      error = std::make_shared<std::stringstream>();
+                 r->send(request.get(),
+                         [=](int code, util::Output, util::Output) {
+                           r;
+                           if (!IHttpRequest::isSuccess(code))
+                             return complete(Error{code, error->str()});
+
+                           Json::Value response;
+                           *output >> response;
+                           {
+                             std::unique_lock<std::mutex> lock(auth_mutex());
+                             metadata_url_ = response["metadataUrl"].asString();
+                             content_url_ = response["contentUrl"].asString();
+                           }
+                           complete(nullptr);
+                         },
+                         input, output, error);
+               });
+
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,
@@ -212,7 +234,7 @@ IItem::Pointer AmazonDrive::getItemDataResponse(std::istream& response) const {
 }
 
 std::vector<IItem::Pointer> AmazonDrive::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    const IItem&, std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
 
