@@ -33,6 +33,8 @@ namespace cloudstorage {
 class IHttpRequest {
  public:
   using Pointer = std::shared_ptr<IHttpRequest>;
+  using CompleteCallback = std::function<void(
+      int, std::shared_ptr<std::ostream>, std::shared_ptr<std::ostream>)>;
 
   static constexpr int Ok = 200;
   static constexpr int Partial = 206;
@@ -47,7 +49,7 @@ class IHttpRequest {
 
   class ICallback {
    public:
-    using Pointer = std::unique_ptr<ICallback>;
+    using Pointer = std::shared_ptr<ICallback>;
 
     virtual ~ICallback() = default;
 
@@ -150,9 +152,11 @@ class IHttpRequest {
    * value), otherwise http code of the response is returned, or one of values:
    * Unknown, Aborted
    */
-  virtual int send(std::istream& data, std::ostream& response,
-                   std::ostream* error_stream = nullptr,
-                   ICallback::Pointer = nullptr) const = 0;
+  virtual void send(CompleteCallback on_completed,
+                    std::shared_ptr<std::istream> data,
+                    std::shared_ptr<std::ostream> response,
+                    std::shared_ptr<std::ostream> error_stream = nullptr,
+                    ICallback::Pointer = nullptr) const = 0;
 
   static bool isSuccess(int code) { return code / 100 == 2; }
   static bool isRedirect(int code) { return code / 100 == 3; }

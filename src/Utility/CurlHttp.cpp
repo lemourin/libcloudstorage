@@ -25,6 +25,7 @@
 
 #include <json/json.h>
 #include <array>
+#include <future>
 #include <sstream>
 
 #include "Utility.h"
@@ -34,6 +35,21 @@ const uint32_t MAX_URL_LENGTH = 1024;
 namespace cloudstorage {
 
 namespace {
+
+struct pool {
+  ~pool() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (!threads_.empty()) {
+      auto thread = std::move(threads_.back());
+      threads_.pop_back();
+      lock.unlock();
+      thread->wait();
+      lock.lock();
+    }
+  }
+  std::mutex mutex_;
+  std::vector<std::unique_ptr<std::future<void>>> threads_;
+} thread_pool;
 
 struct write_callback_data {
   CURL* handle_;
@@ -100,18 +116,20 @@ std::ios::pos_type stream_length(std::istream& data) {
 CurlHttpRequest::CurlHttpRequest(const std::string& url,
                                  const std::string& method,
                                  bool follow_redirect)
-    : handle_(curl_easy_init()),
-      url_(url),
-      method_(method),
-      follow_redirect_(follow_redirect) {
-  curl_easy_setopt(handle_.get(), CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt(handle_.get(), CURLOPT_READFUNCTION, read_callback);
-  curl_easy_setopt(handle_.get(), CURLOPT_SSL_VERIFYPEER,
+    : url_(url), method_(method), follow_redirect_(follow_redirect) {}
+
+std::unique_ptr<CURL, CurlHttpRequest::CurlDeleter> CurlHttpRequest::init()
+    const {
+  std::unique_ptr<CURL, CurlDeleter> handle(curl_easy_init());
+  curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, write_callback);
+  curl_easy_setopt(handle.get(), CURLOPT_READFUNCTION, read_callback);
+  curl_easy_setopt(handle.get(), CURLOPT_SSL_VERIFYPEER,
                    static_cast<long>(false));
-  curl_easy_setopt(handle_.get(), CURLOPT_FOLLOWLOCATION,
-                   static_cast<long>(follow_redirect));
-  curl_easy_setopt(handle_.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
-  curl_easy_setopt(handle_.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
+  curl_easy_setopt(handle.get(), CURLOPT_FOLLOWLOCATION,
+                   static_cast<long>(follow_redirect_));
+  curl_easy_setopt(handle.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
+  curl_easy_setopt(handle.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
+  return handle;
 }
 
 void CurlHttpRequest::setParameter(const std::string& parameter,
@@ -140,50 +158,66 @@ const std::string& CurlHttpRequest::url() const { return url_; }
 
 const std::string& CurlHttpRequest::method() const { return method_; }
 
-int CurlHttpRequest::send(std::istream& data, std::ostream& response,
-                          std::ostream* error_stream,
+int CurlHttpRequest::send(std::shared_ptr<std::istream> data,
+                          std::shared_ptr<std::ostream> response,
+                          std::shared_ptr<std::ostream> error_stream,
                           ICallback::Pointer p) const {
+  auto handle = init();
   std::shared_ptr<ICallback> callback(std::move(p));
-  write_callback_data cb_data = {handle_.get(), &response, error_stream,
-                                 callback,      true,      false};
-  curl_easy_setopt(handle_.get(), CURLOPT_WRITEDATA, &cb_data);
+  write_callback_data cb_data = {
+      handle.get(), response.get(), error_stream.get(), callback, true, false};
+  curl_easy_setopt(handle.get(), CURLOPT_WRITEDATA, &cb_data);
   curl_slist* header_list = headerParametersToList();
-  curl_easy_setopt(handle_.get(), CURLOPT_HTTPHEADER, header_list);
+  curl_easy_setopt(handle.get(), CURLOPT_HTTPHEADER, header_list);
   std::string parameters = parametersToString();
   std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
-  curl_easy_setopt(handle_.get(), CURLOPT_URL, url.c_str());
-  curl_easy_setopt(handle_.get(), CURLOPT_XFERINFODATA, callback.get());
-  curl_easy_setopt(handle_.get(), CURLOPT_READDATA, &data);
+  curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
+  curl_easy_setopt(handle.get(), CURLOPT_XFERINFODATA, callback.get());
+  curl_easy_setopt(handle.get(), CURLOPT_READDATA, data.get());
   CURLcode status = CURLE_OK;
   if (method_ == "POST") {
-    curl_easy_setopt(handle_.get(), CURLOPT_POST, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_POSTFIELDSIZE,
-                     static_cast<long>(stream_length(data)));
+    curl_easy_setopt(handle.get(), CURLOPT_POST, static_cast<long>(true));
+    curl_easy_setopt(handle.get(), CURLOPT_POSTFIELDSIZE,
+                     static_cast<long>(stream_length(*data)));
   } else if (method_ == "PUT") {
-    curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_INFILESIZE,
-                     static_cast<long>(stream_length(data)));
+    curl_easy_setopt(handle.get(), CURLOPT_UPLOAD, static_cast<long>(true));
+    curl_easy_setopt(handle.get(), CURLOPT_INFILESIZE,
+                     static_cast<long>(stream_length(*data)));
   } else if (method_ != "GET") {
-    if (stream_length(data) > 0)
-      curl_easy_setopt(handle_.get(), CURLOPT_UPLOAD, static_cast<long>(true));
-    curl_easy_setopt(handle_.get(), CURLOPT_CUSTOMREQUEST, method_.c_str());
+    if (stream_length(*data) > 0)
+      curl_easy_setopt(handle.get(), CURLOPT_UPLOAD, static_cast<long>(true));
+    curl_easy_setopt(handle.get(), CURLOPT_CUSTOMREQUEST, method_.c_str());
   }
-  status = curl_easy_perform(handle_.get());
+  status = curl_easy_perform(handle.get());
   curl_slist_free_all(header_list);
   if (status == CURLE_ABORTED_BY_CALLBACK)
     return Aborted;
   else if (status == CURLE_OK) {
     long http_code = static_cast<long>(Unknown);
-    curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
+    curl_easy_getinfo(handle.get(), CURLINFO_RESPONSE_CODE, &http_code);
     if (!follow_redirect() && isRedirect(http_code)) {
       std::array<char, MAX_URL_LENGTH> redirect_url;
       char* data = redirect_url.data();
-      curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
-      response << data;
+      curl_easy_getinfo(handle.get(), CURLINFO_REDIRECT_URL, &data);
+      *error_stream << data;
     }
     return static_cast<int>(http_code);
   } else
     return -status;
+}
+
+void CurlHttpRequest::send(CompleteCallback c,
+                           std::shared_ptr<std::istream> data,
+                           std::shared_ptr<std::ostream> response,
+                           std::shared_ptr<std::ostream> error_stream,
+                           ICallback::Pointer cb) const {
+  std::lock_guard<std::mutex> lock(thread_pool.mutex_);
+  auto p = shared_from_this();
+  thread_pool.threads_.push_back(
+      std::make_unique<std::future<void>>(std::async(std::launch::async, [=]() {
+        int ret = p->send(data, response, error_stream, cb);
+        c(ret, response, error_stream);
+      })));
 }
 
 std::string CurlHttpRequest::parametersToString() const {

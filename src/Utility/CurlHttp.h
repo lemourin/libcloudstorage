@@ -40,10 +40,16 @@ class CurlHttp : public IHttp {
   std::string error(int) const override;
 };
 
-class CurlHttpRequest : public IHttpRequest {
+class CurlHttpRequest : public IHttpRequest,
+                        public std::enable_shared_from_this<CurlHttpRequest> {
  public:
+  struct CurlDeleter {
+    void operator()(CURL*) const;
+  };
+
   CurlHttpRequest(const std::string& url, const std::string& method,
                   bool follow_redirect);
+  std::unique_ptr<CURL, CurlDeleter> init() const;
 
   void setParameter(const std::string& parameter,
                     const std::string& value) override;
@@ -59,20 +65,21 @@ class CurlHttpRequest : public IHttpRequest {
   const std::string& method() const override;
   bool follow_redirect() const override;
 
-  int send(std::istream& data, std::ostream& response,
-           std::ostream* error_stream = nullptr,
-           ICallback::Pointer = nullptr) const override;
+  int send(std::shared_ptr<std::istream> data,
+           std::shared_ptr<std::ostream> response,
+           std::shared_ptr<std::ostream> error_stream,
+           ICallback::Pointer = nullptr) const;
+
+  void send(CompleteCallback, std::shared_ptr<std::istream> data,
+            std::shared_ptr<std::ostream> response,
+            std::shared_ptr<std::ostream> error_stream,
+            ICallback::Pointer = nullptr) const override;
 
   std::string parametersToString() const;
 
  private:
-  struct CurlDeleter {
-    void operator()(CURL*) const;
-  };
-
   curl_slist* headerParametersToList() const;
 
-  std::unique_ptr<CURL, CurlDeleter> handle_;
   std::string url_;
   std::unordered_map<std::string, std::string> parameters_;
   std::unordered_map<std::string, std::string> header_parameters_;
