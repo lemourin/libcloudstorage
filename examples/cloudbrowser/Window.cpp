@@ -131,6 +131,7 @@ Window::Window(MediaPlayer* media_player)
 }
 
 Window::~Window() {
+  cancelRequests();
   if (clear_directory_.valid()) clear_directory_.get();
   clearCurrentDirectoryList();
   saveCloudAccessToken();
@@ -292,14 +293,14 @@ void Window::startDirectoryClear(std::function<void()> f) {
 }
 
 void Window::cancelRequests() {
-  list_directory_request_ = nullptr;
-  download_request_ = nullptr;
-  upload_request_ = nullptr;
-  item_data_request_ = nullptr;
-  delete_item_request_ = nullptr;
-  create_directory_request_ = nullptr;
-  move_item_request_ = nullptr;
-  rename_item_request_ = nullptr;
+  if (list_directory_request_) list_directory_request_->cancel();
+  if (download_request_) download_request_->cancel();
+  if (upload_request_) upload_request_->cancel();
+  if (item_data_request_) item_data_request_->cancel();
+  if (delete_item_request_) delete_item_request_->cancel();
+  if (create_directory_request_) create_directory_request_->cancel();
+  if (move_item_request_) move_item_request_->cancel();
+  if (rename_item_request_) rename_item_request_->cancel();
   moved_file_ = nullptr;
   emit movedItemChanged();
 }
@@ -450,6 +451,10 @@ ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
             emit thumbnailChanged();
           },
           Qt::QueuedConnection);
+}
+
+ItemModel::~ItemModel() {
+  if (thumbnail_request_) thumbnail_request_->cancel();
 }
 
 void ItemModel::fetchThumbnail() {

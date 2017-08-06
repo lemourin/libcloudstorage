@@ -45,6 +45,7 @@ class ItemModel : public QObject {
   using Pointer = std::unique_ptr<ItemModel>;
 
   ItemModel(IItem::Pointer item, ICloudProvider::Pointer, Window*);
+  ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
