@@ -49,51 +49,59 @@ bool Box::reauthorize(int code) const {
 
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([id, callback,
-                   this](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [this, id](std::ostream&) {
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [this, id](util::Output) {
           return http()->create(endpoint() + "/2.0/files/" + id, "GET");
         },
-        output, &error);
-    if (!IHttpRequest::isSuccess(code)) {
-      int code = r->sendRequest(
-          [this, id](std::ostream&) {
-            return http()->create(endpoint() + "/2.0/folders/" + id, "GET");
-          },
-          output, &error);
-      if (IHttpRequest::isSuccess(code)) {
-        Json::Value response;
-        output >> response;
-        auto item = toItem(response);
-        callback(item);
-        return item;
-      }
-      callback(error);
-      return error;
-    }
-    Json::Value response;
-    output >> response;
-    auto item = toItem(response);
-    code = r->sendRequest(
-        [this, id](std::ostream&) {
-          auto request = http()->create(
-              endpoint() + "/2.0/files/" + id + "/content", "GET", false);
-          return request;
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            r->sendRequest(
+                [this, id](util::Output) {
+                  return http()->create(endpoint() + "/2.0/folders/" + id,
+                                        "GET");
+                },
+                [=](EitherError<util::Output> e) {
+                  if (e.left()) {
+                    callback(e.left());
+                    r->done(e.left());
+                  } else {
+                    Json::Value response;
+                    *output >> response;
+                    auto item = toItem(response);
+                    callback(item);
+                    r->done(item);
+                  }
+                },
+                output);
+          } else {
+            Json::Value response;
+            *output >> response;
+            auto item = toItem(response);
+            r->sendRequest(
+                [this, id](util::Output) {
+                  auto request = http()->create(
+                      endpoint() + "/2.0/files/" + id + "/content", "GET",
+                      false);
+                  return request;
+                },
+                [=](EitherError<util::Output> e) {
+                  if (e.left() && IHttpRequest::isRedirect(e.left()->code_)) {
+                    static_cast<Item*>(item.get())
+                        ->set_url(e.left()->description_);
+                  }
+                  callback(item);
+                  r->done(item);
+                },
+                output);
+          }
         },
         output);
-    if (IHttpRequest::isRedirect(code)) {
-      std::string redirect_url;
-      output >> redirect_url;
-      static_cast<Item*>(item.get())->set_url(redirect_url);
-    }
-    callback(item);
-    return item;
+
   });
-  return std::move(r);
+  return r->run();
 }
 
 IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
@@ -202,7 +210,7 @@ IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
 }
 
 std::vector<IItem::Pointer> Box::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    const IItem&, std::istream& stream, std::string& next_page_token) const {
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
