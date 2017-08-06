@@ -35,6 +35,42 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
+namespace {
+void upload(Request<EitherError<void>>::Ptr r, int sent,
+            IUploadFileCallback::Pointer callback, Json::Value response) {
+  auto output = std::make_shared<std::stringstream>();
+  int size = callback->size();
+  auto length = std::make_shared<int>(0);
+  if (sent >= size) {
+    callback->done(nullptr);
+    return r->done(nullptr);
+  }
+  r->sendRequest(
+      [=](util::Output stream) {
+        std::vector<char> buffer(CHUNK_SIZE);
+        *length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
+        auto request = r->provider()->http()->create(
+            response["uploadUrl"].asString(), "PUT");
+        std::stringstream content_range;
+        content_range << "bytes " << sent << "-" << sent + *length - 1 << "/"
+                      << size;
+        request->setHeaderParameter("Content-Range", content_range.str());
+        stream->write(buffer.data(), *length);
+        return request;
+      },
+      [=](EitherError<util::Output> e) {
+        if (e.left()) {
+          callback->done(e.left());
+          r->done(e.left());
+        } else {
+          upload(r, sent + *length, callback, response);
+        }
+      },
+      output, nullptr,
+      [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
+};
+}  // namespace
+
 OneDrive::OneDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
@@ -44,55 +80,28 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [=](std::ostream&) {
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
           return http()->create(
               endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +
                   util::Url::escape(filename) + ":/upload.createSession",
               "POST");
         },
-        output, &error);
-    if (!IHttpRequest::isSuccess(code)) {
-      callback->done(error);
-      return error;
-    }
-    Json::Value response;
-    output >> response;
-
-    uint32_t sent = 0, size = callback->size();
-    std::vector<char> buffer(CHUNK_SIZE);
-    while (sent < size) {
-      uint32_t length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
-      Error error;
-      code = r->sendRequest(
-          [=](std::ostream& stream) {
-            auto request =
-                http()->create(response["uploadUrl"].asString(), "PUT");
-            std::stringstream content_range;
-            content_range << "bytes " << sent << "-" << sent + length - 1 << "/"
-                          << size;
-            request->setHeaderParameter("Content-Range", content_range.str());
-            stream.write(buffer.data(), length);
-            return request;
-          },
-          output, &error,
-          [=](uint32_t, uint32_t now) {
-            callback->progress(size, sent + now);
-          });
-      if (!IHttpRequest::isSuccess(code)) {
-        callback->done(error);
-        return error;
-      }
-      sent += length;
-    }
-    callback->done(nullptr);
-    return nullptr;
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback->done(e.left());
+            return r->done(e.left());
+          }
+          Json::Value response;
+          *output >> response;
+          upload(r, 0, callback, response);
+        },
+        output);
   });
-  return std::move(r);
+  return r->run();
 }
 
 IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
@@ -193,7 +202,7 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
 }
 
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
-    std::istream& stream, std::string& next_page_token) const {
+    const IItem&, std::istream& stream, std::string& next_page_token) const {
   std::vector<IItem::Pointer> result;
   Json::Value response;
   stream >> response;
