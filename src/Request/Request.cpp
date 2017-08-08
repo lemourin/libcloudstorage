@@ -132,7 +132,7 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
          auto error_stream = static_cast<std::stringstream*>(error.get());
          if (IHttpRequest::isSuccess(code)) return complete(output);
          if (p->reauthorize(code)) {
-           reauthorize([=](EitherError<void> e) {
+           this->reauthorize([=](EitherError<void> e) {
              request;
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
@@ -144,15 +144,15 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
                   error_stream = std::make_shared<std::stringstream>();
              auto r = factory(input);
              if (r) p->authorizeRequest(*r);
-             send(r.get(),
-                  [=](int code, util::Output output, util::Output) {
-                    request;
-                    if (IHttpRequest::isSuccess(code))
-                      complete(output);
-                    else
-                      complete(Error{code, error_stream->str()});
-                  },
-                  input, output, error_stream, download, upload);
+             this->send(r.get(),
+                        [=](int code, util::Output output, util::Output) {
+                          request;
+                          if (IHttpRequest::isSuccess(code))
+                            complete(output);
+                          else
+                            complete(Error{code, error_stream->str()});
+                        },
+                        input, output, error_stream, download, upload);
            });
          } else {
            complete(Error{code, error_stream->str()});

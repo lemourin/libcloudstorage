@@ -213,8 +213,8 @@ void CurlHttpRequest::send(CompleteCallback c,
                            ICallback::Pointer cb) const {
   std::lock_guard<std::mutex> lock(thread_pool.mutex_);
   auto p = shared_from_this();
-  thread_pool.threads_.push_back(
-      std::make_unique<std::future<void>>(std::async(std::launch::async, [=]() {
+  thread_pool.threads_.push_back(util::make_unique<std::future<void>>(
+      std::async(std::launch::async, [=]() {
         int ret = p->send(data, response, error_stream, cb);
         c(ret, response, error_stream);
       })));
