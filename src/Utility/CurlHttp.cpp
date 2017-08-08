@@ -25,6 +25,8 @@
 
 #include <json/json.h>
 #include <array>
+#include <atomic>
+#include <condition_variable>
 #include <future>
 #include <sstream>
 
@@ -36,20 +38,40 @@ namespace cloudstorage {
 
 namespace {
 
-struct pool {
-  ~pool() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    while (!threads_.empty()) {
-      auto thread = std::move(threads_.back());
-      threads_.pop_back();
-      lock.unlock();
-      thread->wait();
-      lock.lock();
-    }
+struct Worker {
+  Worker()
+      : done_(false), thread_([=] {
+          while (!done_) {
+            std::unique_lock<std::mutex> lock(mutex_);
+            nonempty_.wait(lock, [=] { return !tasks_.empty() || done_; });
+            while (!tasks_.empty()) {
+              auto task = tasks_.back();
+              tasks_.pop_back();
+              lock.unlock();
+              task();
+              lock.lock();
+            }
+          }
+        }) {}
+
+  ~Worker() {
+    done_ = true;
+    nonempty_.notify_one();
+    thread_.join();
   }
+
+  void add(std::function<void()> task) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (tasks_.empty()) nonempty_.notify_one();
+    tasks_.push_back(task);
+  }
+
   std::mutex mutex_;
-  std::vector<std::unique_ptr<std::future<void>>> threads_;
-} thread_pool;
+  std::vector<std::function<void()>> tasks_;
+  std::condition_variable nonempty_;
+  std::atomic_bool done_;
+  std::thread thread_;
+} worker;
 
 struct write_callback_data {
   CURL* handle_;
@@ -211,13 +233,11 @@ void CurlHttpRequest::send(CompleteCallback c,
                            std::shared_ptr<std::ostream> response,
                            std::shared_ptr<std::ostream> error_stream,
                            ICallback::Pointer cb) const {
-  std::lock_guard<std::mutex> lock(thread_pool.mutex_);
   auto p = shared_from_this();
-  thread_pool.threads_.push_back(util::make_unique<std::future<void>>(
-      std::async(std::launch::async, [=]() {
-        int ret = p->send(data, response, error_stream, cb);
-        c(ret, response, error_stream);
-      })));
+  worker.add([=]() {
+    int ret = p->send(data, response, error_stream, cb);
+    c(ret, response, error_stream);
+  });
 }
 
 std::string CurlHttpRequest::parametersToString() const {
