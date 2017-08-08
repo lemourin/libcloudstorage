@@ -120,7 +120,7 @@ SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p,
         }
         r->provider()->auth()->requestAuthorizationCode(
             [=](EitherError<std::string> code) {
-              r;
+              (void)r;
               if (code.left())
                 complete(code.left());
               else

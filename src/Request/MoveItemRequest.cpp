@@ -36,7 +36,7 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
     if (destination->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Forbidden, "destination not a directory"};
       callback(e);
-      return e;
+      return request->done(e);
     }
     auto output = std::make_shared<std::stringstream>();
     sendRequest(

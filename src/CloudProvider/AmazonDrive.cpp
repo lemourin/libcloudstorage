@@ -123,7 +123,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync(
                       error = std::make_shared<std::stringstream>();
                  r->send(request.get(),
                          [=](int code, util::Output, util::Output) {
-                           r;
+                           (void)r;
                            if (!IHttpRequest::isSuccess(code))
                              return complete(Error{code, error->str()});
 

@@ -124,7 +124,7 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
           r->sendRequest(
               [=](util::Output) { return http()->create(url, "GET"); },
               [=](EitherError<util::Output> e) {
-                wrapper;
+                (void)wrapper;
                 if (e.left()) {
                   callback->done(e.left());
                   r->done(e.left());
@@ -145,7 +145,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) -> EitherError<void> {
+  r->set([=](Request<EitherError<void>>::Ptr r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
@@ -177,7 +177,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
                 return request;
               },
               [=](EitherError<util::Output> e) {
-                wrapper;
+                (void)wrapper;
                 if (e.left()) {
                   callback->done(e.left());
                   r->done(e.left());

@@ -128,12 +128,10 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   if (r) p->authorizeRequest(*r);
   send(r.get(),
        [=](int code, util::Output output, util::Output error) {
-         request;
          auto error_stream = static_cast<std::stringstream*>(error.get());
          if (IHttpRequest::isSuccess(code)) return complete(output);
          if (p->reauthorize(code)) {
            this->reauthorize([=](EitherError<void> e) {
-             request;
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
                  return complete(e.left());
@@ -146,7 +144,7 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
              if (r) p->authorizeRequest(*r);
              this->send(r.get(),
                         [=](int code, util::Output output, util::Output) {
-                          request;
+                          (void)request;
                           if (IHttpRequest::isSuccess(code))
                             complete(output);
                           else

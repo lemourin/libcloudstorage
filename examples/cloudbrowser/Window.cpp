@@ -450,8 +450,8 @@ void Window::renameItem(int item_id, QString name) {
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
     : item_(item),
       provider_(p),
-      window_(w),
-      thread_info_(std::make_shared<ThreadInfo>()) {
+      thread_info_(std::make_shared<ThreadInfo>()),
+      window_(w) {
   connect(this, &ItemModel::receivedImage, this,
           [this]() {
             fetchThumbnail();

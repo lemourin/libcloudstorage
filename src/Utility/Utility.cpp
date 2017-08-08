@@ -118,7 +118,7 @@ std::string to_mime_type(const std::string& extension) {
 
 std::string Url::unescape(const std::string& str) {
   std::string result;
-  for (auto i = 0; i < str.size(); ++i) {
+  for (size_t i = 0; i < str.size(); ++i) {
     if (str[i] == '+') {
       result += ' ';
     } else if (str[i] == '%' && str.size() > i + 2) {

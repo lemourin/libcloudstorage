@@ -68,7 +68,7 @@ void upload(Request<EitherError<void>>::Ptr r, int sent,
       },
       output, nullptr,
       [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
-};
+}
 }  // namespace
 
 OneDrive::OneDrive() : CloudProvider(util::make_unique<Auth>()) {}

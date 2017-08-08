@@ -143,7 +143,7 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       auto stream = std::make_shared<std::ostream>(wrapper.get());
       r->sendRequest([=](util::Output) { return http()->create(url, "GET"); },
                      [=](EitherError<util::Output> e) {
-                       wrapper;
+                       (void)wrapper;
                        if (e.left()) {
                          callback->done(e.left());
                          r->done(e.left());
