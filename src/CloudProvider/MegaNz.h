@@ -65,7 +65,8 @@ class MegaNz : public CloudProvider {
 
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;
-  AuthorizeRequest::Pointer authorizeAsync() override;
+  AuthorizeRequest::Pointer authorizeAsync(
+      AuthorizeRequest::AuthorizeCompleted) override;
   GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id, GetItemDataCallback callback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
@@ -87,11 +88,12 @@ class MegaNz : public CloudProvider {
                                              const std::string& name,
                                              RenameItemCallback) override;
 
-  std::function<EitherError<void>(Request<EitherError<void>>*)>
-  downloadResolver(IItem::Pointer item, IDownloadFileCallback::Pointer,
-                   int64_t start = 0, int64_t size = -1);
+  std::function<void(Request<EitherError<void>>::Ptr)> downloadResolver(
+      IItem::Pointer item, IDownloadFileCallback::Pointer, int64_t start = 0,
+      int64_t size = -1);
 
-  EitherError<void> login(Request<EitherError<void>>* r);
+  void login(Request<EitherError<void>>::Ptr,
+             AuthorizeRequest::AuthorizeCompleted);
   std::string passwordHash(const std::string& password) const;
 
   mega::MegaApi* mega() const { return mega_.get(); }
@@ -101,7 +103,8 @@ class MegaNz : public CloudProvider {
   std::string temporaryFileName();
 
   template <class T>
-  EitherError<void> ensureAuthorized(Request<T>*);
+  void ensureAuthorized(typename Request<T>::Ptr,
+                        AuthorizeRequest::AuthorizeCompleted);
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 

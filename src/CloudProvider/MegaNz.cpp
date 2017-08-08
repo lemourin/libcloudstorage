@@ -47,12 +47,17 @@ namespace {
 
 class Listener : public IRequest<EitherError<void>> {
  public:
+  using Callback = std::function<void(EitherError<void>, Listener*)>;
+
   static constexpr int IN_PROGRESS = -1;
   static constexpr int FAILURE = 0;
   static constexpr int SUCCESS = 1;
   static constexpr int CANCELLED = 2;
 
-  Listener() : status_(IN_PROGRESS), code_(IHttpRequest::Unknown) {}
+  Listener(Callback cb)
+      : status_(IN_PROGRESS), code_(IHttpRequest::Unknown), callback_(cb) {}
+
+  ~Listener() { cancel(); }
 
   void cancel() override {
     {
@@ -79,16 +84,21 @@ class Listener : public IRequest<EitherError<void>> {
     return status_;
   }
 
+  Callback callback() const { return callback_; }
+
  protected:
   int status_;
   std::mutex mutex_;
   std::condition_variable condition_;
   int code_;
   std::string error_;
+  Callback callback_;
 };
 
 class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
+  using Listener::Listener;
+
   void finish() override {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
@@ -107,6 +117,10 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
+    if (e->getErrorCode() == 0)
+      callback_(nullptr, this);
+    else
+      callback_(Error{code_, error_}, this);
     condition_.notify_all();
   }
 
@@ -116,6 +130,8 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
 
 class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
+  using Listener::Listener;
+
   void finish() override {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this]() {
@@ -176,6 +192,10 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
         status_ = FAILURE;
       }
     }
+    if (e->getErrorCode() == 0)
+      callback_(nullptr, this);
+    else
+      callback_(Error{code_, error_}, this);
     condition_.notify_all();
   }
 
@@ -305,9 +325,10 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     headers["Content-Range"] = stream.str();
     code = IHttpRequest::Partial;
   }
-  request->set_resolver(provider_->downloadResolver(
+  request->set(provider_->downloadResolver(
       provider_->toItem(node.get()),
       util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
+  request->run();
   connection->onCompleted([buffer]() {
     std::unique_lock<std::mutex> lock(buffer->mutex_);
     buffer->connection_ = nullptr;
@@ -388,8 +409,8 @@ ICloudProvider::Hints MegaNz::hints() const {
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
   auto r =
-      util::make_unique<Request<EitherError<std::string>>>(shared_from_this());
-  r->set_resolver([this, code, callback](Request<EitherError<std::string>>*) {
+      std::make_shared<Request<EitherError<std::string>>>(shared_from_this());
+  r->set([=](Request<EitherError<std::string>>::Ptr r) {
     auto token = authorizationCodeToToken(code);
     EitherError<std::string> ret =
         token->token_.empty()
@@ -397,337 +418,364 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
                   Error{IHttpRequest::Failure, "invalid authorization code"})
             : EitherError<std::string>(token->token_);
     callback(ret);
-    return ret;
+    r->done(ret);
   });
-  return std::move(r);
+  return r->run();
 }
 
-AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
-  return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [this](AuthorizeRequest* r) -> EitherError<void> {
-        if (login(r).left()) {
-          if (r->is_cancelled()) return Error{IHttpRequest::Aborted, ""};
-          if (auth_callback()->userConsentRequired(*this) ==
-              ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
-            auto code = r->getAuthorizationCode();
-            if (code.left()) return code.left();
-            {
-              std::lock_guard<std::mutex> mutex(auth_mutex());
-              auth()->set_access_token(authorizationCodeToToken(*code.right()));
-            }
-            auto result = login(r);
-            if (result.left()) return result.left();
-          }
-        }
-        auto fetch_nodes_listener = std::make_shared<RequestListener>();
-        r->subrequest(fetch_nodes_listener);
-        mega_->fetchNodes(fetch_nodes_listener.get());
-        auto result = fetch_nodes_listener->result();
-        mega_->removeRequestListener(fetch_nodes_listener.get());
-        if (!result.left()) authorized_ = true;
-        return result;
-      });
+AuthorizeRequest::Pointer MegaNz::authorizeAsync(
+    AuthorizeRequest::AuthorizeCompleted complete) {
+  return std::make_shared<AuthorizeRequest>(
+             shared_from_this(), complete,
+             [=](AuthorizeRequest::Ptr r,
+                 AuthorizeRequest::AuthorizeCompleted complete) {
+               auto fetch = [=]() {
+                 auto fetch_nodes_listener = std::make_shared<RequestListener>(
+                     [=](EitherError<void> e, Listener*) {
+                       if (!e.left()) authorized_ = true;
+                       complete(e);
+                     });
+                 r->subrequest(fetch_nodes_listener);
+                 mega_->fetchNodes(fetch_nodes_listener.get());
+               };
+               login(r, [=](EitherError<void> e) {
+                 if (!e.left()) return fetch();
+                 if (auth_callback()->userConsentRequired(*this) ==
+                     ICloudProvider::IAuthCallback::Status::
+                         WaitForAuthorizationCode) {
+                   auth()->requestAuthorizationCode(
+                       [=](EitherError<std::string> e) {
+                         if (e.left()) return complete(e.left());
+                         {
+                           std::lock_guard<std::mutex> mutex(auth_mutex());
+                           auth()->set_access_token(
+                               authorizationCodeToToken(*e.right()));
+                         }
+                         login(r, [=](EitherError<void> e) {
+                           if (e.left())
+                             complete(e.left());
+                           else
+                             fetch();
+                         });
+                       });
+                 } else {
+                   complete(
+                       Error{IHttpRequest::Aborted, "not waiting for code"});
+                 }
+               });
+             })
+      ->run();
 }
 
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([id, callback,
-                   this](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
-    if (!node) {
-      Error e{IHttpRequest::NotFound, "not found"};
-      callback(e);
-      return e;
-    }
-    auto item = toItem(node.get());
-    callback(item);
-    return item;
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback(e.left());
+        return r->done(e.left());
+      }
+      std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
+      if (!node) {
+        Error e{IHttpRequest::NotFound, "not found"};
+        callback(e);
+        return r->done(e);
+      }
+      auto item = toItem(node.get());
+      callback(item);
+      return r->done(item);
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  auto r = util::make_unique<Request<EitherError<std::vector<IItem::Pointer>>>>(
-      shared_from_this());
-  r->set_resolver([this, item, callback](
-                      Request<EitherError<std::vector<IItem::Pointer>>>* r)
-                      -> EitherError<std::vector<IItem::Pointer>> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback->done(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    std::vector<IItem::Pointer> result;
-    if (node) {
-      std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
-      if (lst) {
-        for (int i = 0; i < lst->size(); i++) {
-          auto item = toItem(lst->get(i));
-          result.push_back(item);
-          callback->receivedItem(item);
-        }
+  using ItemList = EitherError<std::vector<IItem::Pointer>>;
+  auto r = std::make_shared<Request<ItemList>>(shared_from_this());
+  r->set([=](Request<ItemList>::Ptr r) {
+    ensureAuthorized<ItemList>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback->done(e.left());
+        return r->done(e.left());
       }
-    } else {
-      Error e{IHttpRequest::NotFound, "node not found"};
-      callback->done(e);
-      return e;
-    }
-    callback->done(result);
-    return result;
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (node) {
+        std::vector<IItem::Pointer> result;
+        std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
+        if (lst) {
+          for (int i = 0; i < lst->size(); i++) {
+            auto item = toItem(lst->get(i));
+            result.push_back(item);
+            callback->receivedItem(item);
+          }
+        }
+        callback->done(result);
+        r->done(result);
+      } else {
+        Error e{IHttpRequest::NotFound, "node not found"};
+        callback->done(e);
+        r->done(e);
+      }
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver(downloadResolver(item, callback));
-  return std::move(r);
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set(downloadResolver(item, callback));
+  return r->run();
 }
 
 ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([this, item, callback, filename](
-                      Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback->done(ret.left());
-      return ret.left();
-    }
-    std::string cache = temporaryFileName();
-    {
-      std::fstream mega_cache(cache.c_str(),
-                              std::fstream::out | std::fstream::binary);
-      if (!mega_cache) {
-        Error e{IHttpRequest::Forbidden, "couldn't open cache file" + cache};
-        callback->done(e);
-        return e;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback->done(e.left());
+        return r->done(e.left());
       }
-      std::array<char, BUFFER_SIZE> buffer;
-      while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
-        if (r->is_cancelled()) {
-          std::remove(cache.c_str());
-          Error e{IHttpRequest::Aborted, ""};
+      std::string cache = temporaryFileName();
+      {
+        std::fstream mega_cache(cache.c_str(),
+                                std::fstream::out | std::fstream::binary);
+        if (!mega_cache) {
+          Error e{IHttpRequest::Forbidden, "couldn't open cache file" + cache};
           callback->done(e);
-          return e;
+          return r->done(e);
         }
-        mega_cache.write(buffer.data(), length);
+        std::array<char, BUFFER_SIZE> buffer;
+        while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
+          if (r->is_cancelled()) {
+            std::remove(cache.c_str());
+            Error e{IHttpRequest::Aborted, ""};
+            callback->done(e);
+            return r->done(e);
+          }
+          mega_cache.write(buffer.data(), length);
+        }
       }
-    }
-    auto listener = std::make_shared<TransferListener>();
-    listener->upload_callback_ = callback;
-    r->subrequest(listener);
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
-                       listener.get());
-    auto result = listener->result();
-    std::remove(cache.c_str());
-    mega_->removeTransferListener(listener.get());
-    callback->done(result);
-    return result;
+      auto listener = std::make_shared<TransferListener>(
+          [=](EitherError<void> e, Listener*) {
+            std::remove(cache.c_str());
+            callback->done(e);
+            return r->done(e);
+          });
+      listener->upload_callback_ = callback;
+      r->subrequest(listener);
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
+                         listener.get());
+
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([this, item, callback](
-                      Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback->done(ret.left());
-      return ret.left();
-    }
-    auto listener = std::make_shared<RequestListener>();
-    r->subrequest(listener);
-    std::string cache = temporaryFileName();
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
-    auto result = listener->result();
-    mega_->removeRequestListener(listener.get());
-    if (!result.left()) {
-      std::fstream cache_file(cache.c_str(),
-                              std::fstream::in | std::fstream::binary);
-      if (!cache_file) {
-        Error e{IHttpRequest::Failure, "couldn't open cache file " + cache};
-        callback->done(e);
-        return e;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback->done(e.left());
+        return r->done(e.left());
       }
-      std::array<char, BUFFER_SIZE> buffer;
-      do {
-        cache_file.read(buffer.data(), BUFFER_SIZE);
-        callback->receivedData(buffer.data(), cache_file.gcount());
-      } while (cache_file.gcount() > 0);
-      std::remove(cache.c_str());
-      callback->done(nullptr);
-      return nullptr;
-    } else {
-      callback->done(*result.left());
-      return result;
-    }
+      std::string cache = temporaryFileName();
+      auto listener = std::make_shared<RequestListener>([=](EitherError<void> e,
+                                                            Listener*) {
+        if (e.left()) {
+          callback->done(e.left());
+          return r->done(e.left());
+        }
+        std::fstream cache_file(cache.c_str(),
+                                std::fstream::in | std::fstream::binary);
+        if (!cache_file) {
+          Error e{IHttpRequest::Failure, "couldn't open cache file " + cache};
+          callback->done(e);
+          return r->done(e);
+        }
+        std::array<char, BUFFER_SIZE> buffer;
+        do {
+          cache_file.read(buffer.data(), BUFFER_SIZE);
+          callback->receivedData(buffer.data(), cache_file.gcount());
+        } while (cache_file.gcount() > 0);
+        std::remove(cache.c_str());
+        callback->done(nullptr);
+        r->done(nullptr);
+      });
+      r->subrequest(listener);
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([this, item, callback](
-                      Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    auto listener = std::make_shared<RequestListener>();
-    r->subrequest(listener);
-    mega_->remove(node.get(), listener.get());
-    auto result = listener->result();
-    mega_->removeRequestListener(listener.get());
-    callback(result);
-    return result;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback(e.left());
+        return r->done(e);
+      }
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (!node) {
+        Error e{IHttpRequest::NotFound, "file not found"};
+        callback(e);
+        r->done(e);
+      } else {
+        auto listener = std::make_shared<RequestListener>(
+            [=](EitherError<void> e, Listener*) {
+              callback(e);
+              return r->done(e);
+            });
+        r->subrequest(listener);
+        mega_->remove(node.get(), listener.get());
+      }
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> parent_node(
-        mega_->getNodeByPath(parent->id().c_str()));
-    if (!parent_node) {
-      Error e{IHttpRequest::NotFound, "parent not found"};
-      callback(e);
-      return e;
-    }
-    auto listener = std::make_shared<RequestListener>();
-    r->subrequest(listener);
-    mega_->createFolder(name.c_str(), parent_node.get(), listener.get());
-    auto result = listener->result();
-    mega_->removeRequestListener(listener.get());
-    if (!result.left()) {
-      std::unique_ptr<mega::MegaNode> node(
-          mega_->getNodeByHandle(listener->node_));
-      auto item = toItem(node.get());
-      callback(item);
-      return item;
-    } else {
-      callback(result.left());
-      return result.left();
-    }
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback(e.left());
+        return r->done(e.left());
+      }
+      std::unique_ptr<mega::MegaNode> parent_node(
+          mega_->getNodeByPath(parent->id().c_str()));
+      if (!parent_node) {
+        Error e{IHttpRequest::NotFound, "parent not found"};
+        callback(e);
+        return r->done(e);
+      }
+      auto listener = std::make_shared<RequestListener>(
+          [=](EitherError<void> e, Listener* listener) {
+            if (e.left()) {
+              callback(e.left());
+              return r->done(e.left());
+            }
+            std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
+                static_cast<RequestListener*>(listener)->node_));
+            auto item = toItem(node.get());
+            callback(item);
+            r->done(item);
+          });
+      r->subrequest(listener);
+      mega_->createFolder(name.c_str(), parent_node.get(), listener.get());
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> source_node(
-        mega_->getNodeByPath(source->id().c_str()));
-    std::unique_ptr<mega::MegaNode> destination_node(
-        mega_->getNodeByPath(destination->id().c_str()));
-    if (source_node && destination_node) {
-      auto listener = std::make_shared<RequestListener>();
-      r->subrequest(listener);
-      mega_->moveNode(source_node.get(), destination_node.get(),
-                      listener.get());
-      auto result = listener->result();
-      mega_->removeRequestListener(listener.get());
-      callback(result);
-      return result;
-    }
-    Error error{IHttpRequest::Failure, "no source node / destination node"};
-    callback(error);
-    return error;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback(e.left());
+        return r->done(e.left());
+      }
+      std::unique_ptr<mega::MegaNode> source_node(
+          mega_->getNodeByPath(source->id().c_str()));
+      std::unique_ptr<mega::MegaNode> destination_node(
+          mega_->getNodeByPath(destination->id().c_str()));
+      if (source_node && destination_node) {
+        auto listener = std::make_shared<RequestListener>(
+            [=](EitherError<void> e, Listener*) {
+              callback(e);
+              r->done(e);
+            });
+        r->subrequest(listener);
+        mega_->moveNode(source_node.get(), destination_node.get(),
+                        listener.get());
+      } else {
+        Error error{IHttpRequest::Failure, "no source node / destination node"};
+        callback(error);
+        r->done(error);
+      }
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = util::make_unique<Request<EitherError<void>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    if (node) {
-      auto listener = std::make_shared<RequestListener>();
-      r->subrequest(listener);
-      mega_->renameNode(node.get(), name.c_str(), listener.get());
-      auto result = listener->result();
-      mega_->removeRequestListener(listener.get());
-      callback(result);
-      return result;
-    }
-    Error e{IHttpRequest::NotFound, "node not found"};
-    callback(e);
-    return e;
+  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  r->set([=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback(e.left());
+        return r->done(e.left());
+      }
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (node) {
+        auto listener = std::make_shared<RequestListener>(
+            [=](EitherError<void> e, Listener*) {
+              callback(e);
+              r->done(e);
+            });
+        r->subrequest(listener);
+        mega_->renameNode(node.get(), name.c_str(), listener.get());
+      } else {
+        Error e{IHttpRequest::NotFound, "node not found"};
+        callback(e);
+        r->done(e);
+      }
+    });
   });
-  return std::move(r);
+  return r->run();
 }
 
-std::function<EitherError<void>(Request<EitherError<void>>*)>
-MegaNz::downloadResolver(IItem::Pointer item,
-                         IDownloadFileCallback::Pointer callback, int64_t start,
-                         int64_t size) {
-  return [this, item, callback, start,
-          size](Request<EitherError<void>>* r) -> EitherError<void> {
-    auto ret = ensureAuthorized(r);
-    if (ret.left()) {
-      callback->done(ret.left());
-      return ret.left();
-    }
-    std::unique_ptr<mega::MegaNode> node(
-        mega_->getNodeByPath(item->id().c_str()));
-    auto listener = std::make_shared<TransferListener>();
-    listener->download_callback_ = callback;
-    r->subrequest(listener);
-    mega_->startStreaming(node.get(), start,
-                          size == -1 ? node->getSize() - start : size,
-                          listener.get());
-    auto result = listener->result();
-    mega_->removeTransferListener(listener.get());
-    callback->done(result);
-    return result;
+std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
+    int64_t size) {
+  return [=](Request<EitherError<void>>::Ptr r) {
+    ensureAuthorized<EitherError<void>>(r, [=](EitherError<void> e) {
+      if (e.left()) {
+        callback->done(e.left());
+        return r->done(e.left());
+      }
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      auto listener = std::make_shared<TransferListener>(
+          [=](EitherError<void> e, Listener*) {
+            callback->done(e);
+            r->done(e);
+          });
+      listener->download_callback_ = callback;
+      r->subrequest(listener);
+      mega_->startStreaming(node.get(), start,
+                            size == -1 ? node->getSize() - start : size,
+                            listener.get());
+    });
   };
 }
 
-EitherError<void> MegaNz::login(Request<EitherError<void>>* r) {
-  auto auth_listener = std::make_shared<RequestListener>();
+void MegaNz::login(Request<EitherError<void>>::Ptr r,
+                   AuthorizeRequest::AuthorizeCompleted complete) {
+  auto auth_listener = std::make_shared<RequestListener>(
+      [=](EitherError<void> e, Listener*) { complete(e); });
   r->subrequest(auth_listener);
   auto data = credentialsFromString(token());
   std::string mail = data.first;
@@ -736,9 +784,6 @@ EitherError<void> MegaNz::login(Request<EitherError<void>>* r) {
       mega_->getStringHash(private_key.c_str(), mail.c_str()));
   mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
                    auth_listener.get());
-  auto result = auth_listener->result();
-  mega_->removeRequestListener(auth_listener.get());
-  return result;
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {
@@ -770,11 +815,12 @@ std::string MegaNz::temporaryFileName() {
 }
 
 template <class T>
-EitherError<void> MegaNz::ensureAuthorized(Request<T>* r) {
+void MegaNz::ensureAuthorized(typename Request<T>::Ptr r,
+                              AuthorizeRequest::AuthorizeCompleted complete) {
   if (!authorized_)
-    return r->reauthorize();
+    return r->reauthorize(complete);
   else
-    return nullptr;
+    return complete(nullptr);
 }
 
 IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
