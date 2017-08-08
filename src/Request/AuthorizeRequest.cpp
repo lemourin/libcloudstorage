@@ -102,6 +102,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                       },
                       input, output, error_stream);
                });
+         } else {
+           complete(Error{code, error_stream->str()});
          }
        },
        input, output, error_stream);
