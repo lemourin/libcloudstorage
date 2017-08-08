@@ -38,6 +38,10 @@
 
 #include "Utility/Utility.h"
 
+#ifdef WITH_THUMBNAILER
+#include "GenerateThumbnail.h"
+#endif
+
 using namespace cloudstorage;
 
 namespace {
@@ -444,17 +448,46 @@ void Window::renameItem(int item_id, QString name) {
 }
 
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
-    : item_(item), provider_(p), window_(w) {
+    : item_(item),
+      provider_(p),
+      window_(w),
+      thread_info_(std::make_shared<ThreadInfo>()) {
   connect(this, &ItemModel::receivedImage, this,
           [this]() {
             fetchThumbnail();
             emit thumbnailChanged();
           },
           Qt::QueuedConnection);
+#ifdef WITH_THUMBNAILER
+  connect(this, &ItemModel::failedImage, this,
+          [=]() {
+            auto tinfo = thread_info_;
+            thumbnail_thread_ = std::thread([=] {
+              auto thumbnail = cloudstorage::generate_thumbnail(item_);
+              std::lock_guard<std::mutex> lock(tinfo->lock_);
+              if (!tinfo->nuked_ && thumbnail.right()) {
+                auto data = *thumbnail.right();
+                QFile file(QDir::tempPath() + "/" +
+                           Window::escapeFileName(item_->filename()).c_str() +
+                           ".thumbnail");
+                file.open(QFile::WriteOnly);
+                file.write(data.data(), data.length());
+                emit receivedImage();
+              }
+            });
+          },
+          Qt::QueuedConnection);
+#endif
 }
 
 ItemModel::~ItemModel() {
   if (thumbnail_request_) thumbnail_request_->cancel();
+  std::lock_guard<std::mutex> lock(thread_info_->lock_);
+  thread_info_->nuked_ = true;
+  try {
+    thumbnail_thread_.detach();
+  } catch (const std::exception&) {
+  }
 }
 
 void ItemModel::fetchThumbnail() {

@@ -30,10 +30,6 @@
 #include "Utility/Utility.h"
 #include "Window.h"
 
-#ifdef WITH_THUMBNAILER
-#include "GenerateThumbnail.h"
-#endif
-
 using cloudstorage::util::make_unique;
 
 DownloadFileCallback::DownloadFileCallback(Window* window, std::string filename)
@@ -147,12 +143,8 @@ void DownloadThumbnailCallback::receivedData(const char* data,
 
 void DownloadThumbnailCallback::done(EitherError<void> e) {
   if (e.left()) {
-    data_ = "";
-#ifdef WITH_THUMBNAILER
-    auto thumbnail = cloudstorage::generate_thumbnail(item_->item());
-    if (thumbnail.right()) data_ = *thumbnail.right();
-#endif
-    if (data_.empty()) return;
+    emit item_->failedImage();
+    return;
   }
   QFile file(QDir::tempPath() + "/" +
              Window::escapeFileName(item_->item()->filename()).c_str() +

@@ -55,15 +55,23 @@ class ItemModel : public QObject {
  signals:
   void thumbnailChanged();
   void receivedImage();
+  void failedImage();
 
  private:
   friend class Window;
   friend class DownloadThumbnailCallback;
 
+  struct ThreadInfo {
+    std::mutex lock_;
+    bool nuked_ = false;
+  };
+
   QString thumbnail_;
   IItem::Pointer item_;
   ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
   ICloudProvider::Pointer provider_;
+  std::thread thumbnail_thread_;
+  std::shared_ptr<ThreadInfo> thread_info_;
   Window* window_;
 
   Q_OBJECT
