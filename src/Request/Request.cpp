@@ -71,6 +71,12 @@ void Request<T>::cancel() {
       for (auto&& c : it->second) c(Error{IHttpRequest::Aborted, ""});
       p->auth_callbacks_.erase(it);
     }
+    if (p->auth_callbacks_.empty() && p->current_authorization_) {
+      auto auth = p->current_authorization_;
+      p->current_authorization_ = nullptr;
+      lock.unlock();
+      auth->cancel();
+    }
   }
   finish();
 }
@@ -127,8 +133,7 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   auto r = factory(input);
   if (r) p->authorizeRequest(*r);
   send(r.get(),
-       [=](int code, util::Output output, util::Output error) {
-         auto error_stream = static_cast<std::stringstream*>(error.get());
+       [=](int code, util::Output, util::Output) {
          if (IHttpRequest::isSuccess(code)) return complete(output);
          if (p->reauthorize(code)) {
            this->reauthorize([=](EitherError<void> e) {
