@@ -90,10 +90,9 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual void awaitAuthorizationCode(std::string code_parameter_name,
-                                      std::string error_parameter_name,
-                                      std::string state_parameter_name,
-                                      CodeReceived) = 0;
+  virtual IHttpServer::Pointer awaitAuthorizationCode(
+      std::string code_parameter_name, std::string error_parameter_name,
+      std::string state_parameter_name, CodeReceived) const = 0;
 
   /**
    * Shortcut for awaitAuthorizationCode, usually calls
@@ -103,7 +102,7 @@ class IAuth {
    * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual void requestAuthorizationCode(CodeReceived) = 0;
+  virtual IHttpServer::Pointer requestAuthorizationCode(CodeReceived) const = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 

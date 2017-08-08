@@ -43,9 +43,13 @@ class Auth : public IAuth {
       std::string code_parameter_name_;
       std::string error_parameter_name_;
       std::string state_parameter_name_;
+      std::string redirect_uri_path_;
+      std::string state_;
+      std::string login_page_;
+      std::string success_page_;
+      std::string error_page_;
       CodeReceived callback_;
     } data_;
-    const Auth* auth_;
   };
 
   Auth();
@@ -81,12 +85,12 @@ class Auth : public IAuth {
 
   IHttp* http() const override;
 
-  void awaitAuthorizationCode(std::string code_parameter_name,
-                              std::string error_parameter_name,
-                              std::string state_parameter_name,
-                              CodeReceived) override;
+  IHttpServer::Pointer awaitAuthorizationCode(std::string code_parameter_name,
+                                              std::string error_parameter_name,
+                                              std::string state_parameter_name,
+                                              CodeReceived) const override;
 
-  void requestAuthorizationCode(CodeReceived) override;
+  IHttpServer::Pointer requestAuthorizationCode(CodeReceived) const override;
 
   Token::Pointer fromTokenString(const std::string&) const override;
 
@@ -104,7 +108,6 @@ class Auth : public IAuth {
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;
-  IHttpServer::Pointer current_server_;
 };
 
 }  // namespace cloudstorage

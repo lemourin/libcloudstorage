@@ -96,15 +96,15 @@ namespace cloudstorage {
 IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
     const IHttpServer& server, IHttpServer::IConnection::Pointer connection) {
   const char* state = connection->getParameter(data_.state_parameter_name_);
-  if (!state || state != auth_->state())
+  if (!state || state != data_.state_)
     return server.createResponse(
         IHttpRequest::Unauthorized, {},
-        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
+        data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 
   const char* accepted = connection->getParameter("accepted");
   const char* code = connection->getParameter(data_.code_parameter_name_);
   const char* error = connection->getParameter(data_.error_parameter_name_);
-  if (accepted) {
+  if (accepted && data_.callback_) {
     if (std::string(accepted) == "true" && code) {
       data_.callback_(std::string(code));
     } else {
@@ -113,27 +113,28 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
       else
         data_.callback_(Error{IHttpRequest::Bad, ""});
     }
+    data_.callback_ = nullptr;
   }
 
   if (code)
     return server.createResponse(IHttpRequest::Ok, {},
-                                 auth_->success_page().empty()
+                                 data_.success_page_.empty()
                                      ? DEFAULT_SUCCESS_PAGE
-                                     : auth_->success_page());
+                                     : data_.success_page_);
 
   if (error)
     return server.createResponse(
         IHttpRequest::Unauthorized, {},
-        auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
+        data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 
-  if (connection->url() == auth_->redirect_uri_path() + "/login")
+  if (connection->url() == data_.redirect_uri_path_ + "/login")
     return server.createResponse(
         IHttpRequest::Ok, {},
-        auth_->login_page().empty() ? DEFAULT_LOGIN_PAGE : auth_->login_page());
+        data_.login_page_.empty() ? DEFAULT_LOGIN_PAGE : data_.login_page_);
 
   return server.createResponse(
       IHttpRequest::NotFound, {},
-      auth_->error_page().empty() ? DEFAULT_ERROR_PAGE : auth_->error_page());
+      data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 }
 
 Auth::Auth() : redirect_uri_(DEFAULT_REDIRECT_URI), http_(), http_server_() {}
@@ -199,22 +200,28 @@ void Auth::set_access_token(Token::Pointer token) {
 
 IHttp* Auth::http() const { return http_; }
 
-void Auth::awaitAuthorizationCode(std::string code_parameter_name,
-                                  std::string error_parameter_name,
-                                  std::string state_parameter_name,
-                                  CodeReceived complete) {
+IHttpServer::Pointer Auth::awaitAuthorizationCode(
+    std::string code_parameter_name, std::string error_parameter_name,
+    std::string state_parameter_name, CodeReceived complete) const {
   auto callback = std::make_shared<HttpServerCallback>();
-  callback->data_ = {code_parameter_name, error_parameter_name,
-                     state_parameter_name, complete};
-  callback->auth_ = this;
-  current_server_ =
+  callback->data_ = {code_parameter_name,
+                     error_parameter_name,
+                     state_parameter_name,
+                     redirect_uri_path(),
+                     state(),
+                     login_page(),
+                     success_page(),
+                     error_page(),
+                     complete};
+  auto current_server =
       http_server_->create(callback, state(), IHttpServer::Type::Authorization);
-  if (!current_server_)
+  if (!current_server)
     complete(Error{IHttpRequest::Failure, "couldn't start http server"});
+  return current_server;
 }
 
-void Auth::requestAuthorizationCode(CodeReceived c) {
-  awaitAuthorizationCode("code", "error", "state", c);
+IHttpServer::Pointer Auth::requestAuthorizationCode(CodeReceived c) const {
+  return awaitAuthorizationCode("code", "error", "state", c);
 }
 
 IAuth::Token::Pointer Auth::fromTokenString(
