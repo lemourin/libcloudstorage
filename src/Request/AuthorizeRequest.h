@@ -42,6 +42,13 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   ~AuthorizeRequest();
 
   void oauth2Authorization(AuthorizeCompleted);
+  void sendCancel();
+  void cancel();
+  void set_server(std::shared_ptr<IHttpServer>, AuthorizeCompleted);
+
+ private:
+  std::mutex lock_;
+  std::shared_ptr<IHttpServer> auth_server_;
 };
 
 class SimpleAuthorization : public AuthorizeRequest {

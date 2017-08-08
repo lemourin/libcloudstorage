@@ -53,6 +53,49 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
 
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
+void AuthorizeRequest::sendCancel() {
+  auto request =
+      provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
+  request->setParameter("accepted", "false");
+  request->setParameter("state", provider()->auth()->state());
+  request->setParameter("error", "cancelled");
+  std::shared_ptr<IHttpServer> auth_server;
+  {
+    std::lock_guard<std::mutex> lock(lock_);
+    auth_server = auth_server_;
+  }
+  if (auth_server) {
+    auto output = std::make_shared<std::stringstream>(),
+         error = std::make_shared<std::stringstream>();
+    request->send(
+        [=](int code, util::Output, util::Output) {
+          (void)auth_server;
+          if (code != IHttpRequest::Unauthorized)
+            throw std::runtime_error("couldn't cancel authorize request");
+        },
+        output, error);
+  }
+}
+
+void AuthorizeRequest::cancel() {
+  if (is_cancelled()) return;
+  sendCancel();
+  Request::cancel();
+}
+
+void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p,
+                                  AuthorizeCompleted complete) {
+  {
+    std::lock_guard<std::mutex> lock(lock_);
+    auth_server_ = p;
+  }
+  if (p) {
+    if (is_cancelled()) sendCancel();
+  } else {
+    complete(Error{IHttpRequest::Failure, "can't start http server"});
+  }
+}
+
 void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
   auto p = provider();
   auto input = std::make_shared<std::stringstream>(),
@@ -61,10 +104,6 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
   auto r = p->auth()->refreshTokenRequest(*input);
   send(r.get(),
        [=](int code, util::Output, util::Output) {
-         if (is_cancelled()) {
-           Error e{IHttpRequest::Aborted, ""};
-           return complete(e);
-         }
          if (IHttpRequest::isSuccess(code)) {
            {
              std::unique_lock<std::mutex> lock(p->auth_mutex());
@@ -77,31 +116,31 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
          }
          if (p->auth_callback()->userConsentRequired(*provider()) ==
              ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
-           p->auth()->requestAuthorizationCode(
-               [=](EitherError<std::string> authorization_code) {
-                 if (authorization_code.left())
-                   return complete(authorization_code.left());
-                 p->auth()->set_authorization_code(*authorization_code.right());
-                 auto input = std::make_shared<std::stringstream>(),
-                      output = std::make_shared<std::stringstream>(),
-                      error_stream = std::make_shared<std::stringstream>();
-                 auto r = p->auth()->exchangeAuthorizationCodeRequest(*input);
-                 send(r.get(),
-                      [=](int code, util::Output, util::Output) {
-                        if (IHttpRequest::isSuccess(code)) {
-                          {
-                            std::unique_lock<std::mutex> lock(p->auth_mutex());
-                            p->auth()->set_access_token(
-                                p->auth()->exchangeAuthorizationCodeResponse(
-                                    *output));
-                          }
-                          complete(nullptr);
-                        } else {
-                          complete(Error{code, error_stream->str()});
-                        }
-                      },
-                      input, output, error_stream);
-               });
+           auto code = [=](EitherError<std::string> authorization_code) {
+             if (authorization_code.left())
+               return complete(authorization_code.left());
+             p->auth()->set_authorization_code(*authorization_code.right());
+             auto input = std::make_shared<std::stringstream>(),
+                  output = std::make_shared<std::stringstream>(),
+                  error_stream = std::make_shared<std::stringstream>();
+             auto r = p->auth()->exchangeAuthorizationCodeRequest(*input);
+             send(r.get(),
+                  [=](int code, util::Output, util::Output) {
+                    if (IHttpRequest::isSuccess(code)) {
+                      {
+                        std::unique_lock<std::mutex> lock(p->auth_mutex());
+                        p->auth()->set_access_token(
+                            p->auth()->exchangeAuthorizationCodeResponse(
+                                *output));
+                      }
+                      complete(nullptr);
+                    } else {
+                      complete(Error{code, error_stream->str()});
+                    }
+                  },
+                  input, output, error_stream);
+           };
+           set_server(p->auth()->requestAuthorizationCode(code), complete);
          } else {
            complete(Error{code, error_stream->str()});
          }
@@ -118,17 +157,18 @@ SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p,
             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
           return complete(Error{IHttpRequest::Failure, "not waiting for code"});
         }
-        r->provider()->auth()->requestAuthorizationCode(
-            [=](EitherError<std::string> code) {
-              (void)r;
-              if (code.left())
-                complete(code.left());
-              else
-                complete(p->unpackCredentials(*code.right())
-                             ? EitherError<void>(nullptr)
-                             : EitherError<void>(Error{IHttpRequest::Failure,
-                                                       "invalid code"}));
-            });
+        auto code = [=](EitherError<std::string> code) {
+          (void)r;
+          if (code.left())
+            complete(code.left());
+          else
+            complete(p->unpackCredentials(*code.right())
+                         ? EitherError<void>(nullptr)
+                         : EitherError<void>(
+                               Error{IHttpRequest::Failure, "invalid code"}));
+        };
+        set_server(r->provider()->auth()->requestAuthorizationCode(code),
+                   complete);
       }) {}
 
 }  // namespace cloudstorage
