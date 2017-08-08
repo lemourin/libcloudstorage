@@ -79,6 +79,13 @@ class Listener : public IRequest<EitherError<void>> {
       return nullptr;
   }
 
+  void finish() override {
+    std::unique_lock<std::mutex> lock(mutex_);
+    condition_.wait(lock, [this]() {
+      return status_ != IN_PROGRESS && status_ != CANCELLED;
+    });
+  }
+
   int status() {
     std::lock_guard<std::mutex> lock(mutex_);
     return status_;
@@ -99,28 +106,26 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
   using Listener::Listener;
 
-  void finish() override {
-    std::unique_lock<std::mutex> lock(mutex_);
-    condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
-  }
-
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      if (e->getErrorCode() == 0)
-        status_ = SUCCESS;
-      else {
-        status_ = FAILURE;
-        code_ = e->getErrorCode();
-        error_ = e->getErrorString();
-      }
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (e->getErrorCode() == 0)
+      status_ = SUCCESS;
+    else {
+      status_ = FAILURE;
+      code_ = e->getErrorCode();
+      error_ = e->getErrorString();
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
-    if (e->getErrorCode() == 0)
-      callback_(nullptr, this);
-    else
-      callback_(Error{code_, error_}, this);
+    auto callback = callback_;
+    callback_ = nullptr;
+    lock.unlock();
+    if (callback) {
+      if (e->getErrorCode() == 0)
+        callback(nullptr, this);
+      else
+        callback(Error{code_, error_}, this);
+    }
     condition_.notify_all();
   }
 
@@ -131,13 +136,6 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
 class TransferListener : public mega::MegaTransferListener, public Listener {
  public:
   using Listener::Listener;
-
-  void finish() override {
-    std::unique_lock<std::mutex> lock(mutex_);
-    condition_.wait(lock, [this]() {
-      return status_ != IN_PROGRESS && status_ != CANCELLED;
-    });
-  }
 
   void cancel() override {
     MegaApi* mega;
@@ -196,6 +194,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       callback_(nullptr, this);
     else
       callback_(Error{code_, error_}, this);
+    callback_ = nullptr;
     condition_.notify_all();
   }
 
@@ -443,21 +442,23 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync(
                  if (auth_callback()->userConsentRequired(*this) ==
                      ICloudProvider::IAuthCallback::Status::
                          WaitForAuthorizationCode) {
-                   auth()->requestAuthorizationCode(
-                       [=](EitherError<std::string> e) {
-                         if (e.left()) return complete(e.left());
-                         {
-                           std::lock_guard<std::mutex> mutex(auth_mutex());
-                           auth()->set_access_token(
-                               authorizationCodeToToken(*e.right()));
-                         }
-                         login(r, [=](EitherError<void> e) {
-                           if (e.left())
-                             complete(e.left());
-                           else
-                             fetch();
-                         });
-                       });
+                   auto code = [=](EitherError<std::string> e) {
+                     if (e.left()) return complete(e.left());
+                     {
+                       std::lock_guard<std::mutex> mutex(auth_mutex());
+                       auth()->set_access_token(
+                           authorizationCodeToToken(*e.right()));
+                     }
+                     login(r, [=](EitherError<void> e) {
+                       if (e.left())
+                         complete(e.left());
+                       else
+                         fetch();
+                     });
+                   };
+                   r->set_server(
+                       r->provider()->auth()->requestAuthorizationCode(code),
+                       complete);
                  } else {
                    complete(
                        Error{IHttpRequest::Aborted, "not waiting for code"});
