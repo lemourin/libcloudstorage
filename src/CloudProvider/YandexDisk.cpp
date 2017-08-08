@@ -168,6 +168,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           auto wrapper = std::make_shared<UploadStreamWrapper>(
               std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
               callback->size());
+          auto output = std::make_shared<std::stringstream>();
           r->sendRequest(
               [=](util::Output input) {
                 auto request = http()->create(url, "PUT");
@@ -186,7 +187,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
                   r->done(nullptr);
                 }
               },
-              std::make_shared<std::stringstream>(), nullptr,
+              output, nullptr,
               std::bind(&IUploadFileCallback::progress, callback.get(), _1,
                         _2));
         },

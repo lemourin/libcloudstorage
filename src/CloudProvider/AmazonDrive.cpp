@@ -41,6 +41,7 @@ void move(Request<EitherError<void>>::Ptr r,
   if (lst->empty()) return complete(nullptr);
   auto parent = lst->back();
   auto p = static_cast<AmazonDrive*>(r->provider().get());
+  auto output = std::make_shared<std::stringstream>();
   lst->pop_back();
   r->sendRequest(
       [=](util::Output stream) {
@@ -60,7 +61,7 @@ void move(Request<EitherError<void>>::Ptr r,
         else
           move(r, lst, source, destination, complete);
       },
-      std::make_shared<std::stringstream>());
+      output);
 }
 
 }  // namespace
