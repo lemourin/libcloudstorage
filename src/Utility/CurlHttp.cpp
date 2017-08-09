@@ -33,6 +33,7 @@
 #include "Utility.h"
 
 const uint32_t MAX_URL_LENGTH = 1024;
+const uint32_t WORKER_CNT = 8;
 
 namespace cloudstorage {
 
@@ -66,12 +67,17 @@ struct Worker {
     tasks_.push_back(task);
   }
 
+  int task_cnt() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return tasks_.size();
+  }
+
   std::mutex mutex_;
   std::vector<std::function<void()>> tasks_;
   std::condition_variable nonempty_;
   std::atomic_bool done_;
   std::thread thread_;
-} worker;
+} worker[WORKER_CNT];
 
 struct write_callback_data {
   CURL* handle_;
@@ -234,7 +240,10 @@ void CurlHttpRequest::send(CompleteCallback c,
                            std::shared_ptr<std::ostream> error_stream,
                            ICallback::Pointer cb) const {
   auto p = shared_from_this();
-  worker.add([=]() {
+  auto best = &worker[0];
+  for (size_t i = 1; i < WORKER_CNT; i++)
+    if (best->task_cnt() > worker[i].task_cnt()) best = &worker[i];
+  best->add([=]() {
     int ret = p->send(data, response, error_stream, cb);
     c(ret, response, error_stream);
   });
