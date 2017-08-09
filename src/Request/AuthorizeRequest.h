@@ -37,8 +37,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   using AuthorizationFlow = std::function<void(
       std::shared_ptr<AuthorizeRequest>, AuthorizeCompleted)>;
 
-  AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizeCompleted,
-                   AuthorizationFlow = nullptr);
+  AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizationFlow = nullptr);
   ~AuthorizeRequest();
 
   void oauth2Authorization(AuthorizeCompleted);
@@ -53,7 +52,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
 
 class SimpleAuthorization : public AuthorizeRequest {
  public:
-  SimpleAuthorization(std::shared_ptr<CloudProvider>, AuthorizeCompleted);
+  SimpleAuthorization(std::shared_ptr<CloudProvider>);
 };
 
 }  // namespace cloudstorage

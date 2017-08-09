@@ -65,8 +65,7 @@ class MegaNz : public CloudProvider {
 
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;
-  AuthorizeRequest::Pointer authorizeAsync(
-      AuthorizeRequest::AuthorizeCompleted) override;
+  AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id, GetItemDataCallback callback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(

@@ -316,9 +316,8 @@ bool CloudProvider::reauthorize(int code) const {
 
 bool CloudProvider::unpackCredentials(const std::string&) { return false; }
 
-AuthorizeRequest::Pointer CloudProvider::authorizeAsync(
-    AuthorizeRequest::AuthorizeCompleted c) {
-  return std::make_shared<AuthorizeRequest>(shared_from_this(), c)->run();
+AuthorizeRequest::Pointer CloudProvider::authorizeAsync() {
+  return std::make_shared<AuthorizeRequest>(shared_from_this())->run();
 }
 
 std::unique_lock<std::mutex> CloudProvider::auth_lock() const {

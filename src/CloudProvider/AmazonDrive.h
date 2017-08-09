@@ -45,8 +45,7 @@ class AmazonDrive : public CloudProvider {
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
                                          MoveItemCallback) override;
-  cloudstorage::AuthorizeRequest::Pointer authorizeAsync(
-      AuthorizeRequest::AuthorizeCompleted) override;
+  cloudstorage::AuthorizeRequest::Pointer authorizeAsync() override;
 
   std::string metadata_url() const;
   std::string content_url() const;

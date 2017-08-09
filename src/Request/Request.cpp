@@ -68,12 +68,19 @@ void Request<T>::cancel() {
     std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
     auto it = p->auth_callbacks_.find(this);
     if (it != std::end(p->auth_callbacks_)) {
-      for (auto&& c : it->second) c(Error{IHttpRequest::Aborted, ""});
+      while (!it->second.empty()) {
+        {
+          auto c = it->second.back();
+          it->second.pop_back();
+          lock.unlock();
+          c(Error{IHttpRequest::Aborted, ""});
+        }
+        lock.lock();
+      }
       p->auth_callbacks_.erase(it);
     }
     if (p->auth_callbacks_.empty() && p->current_authorization_) {
-      auto auth = p->current_authorization_;
-      p->current_authorization_ = nullptr;
+      auto auth = std::move(p->current_authorization_);
       lock.unlock();
       auth->cancel();
     }
@@ -116,7 +123,7 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   if (!p->current_authorization_)
-    p->current_authorization_ = p->authorizeAsync([](EitherError<void>) {});
+    p->current_authorization_ = p->authorizeAsync();
   p->auth_callbacks_[this].push_back(c);
 }
 

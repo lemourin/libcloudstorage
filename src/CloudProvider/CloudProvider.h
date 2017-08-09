@@ -55,8 +55,7 @@ class CloudProvider : public ICloudProvider,
   IHttpServerFactory* http_server() const;
   IAuthCallback* auth_callback() const;
 
-  virtual AuthorizeRequest::Pointer authorizeAsync(
-      AuthorizeRequest::AuthorizeCompleted);
+  virtual AuthorizeRequest::Pointer authorizeAsync();
 
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;

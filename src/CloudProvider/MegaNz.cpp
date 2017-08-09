@@ -118,8 +118,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
-    auto callback = callback_;
-    callback_ = nullptr;
+    auto callback = std::move(callback_);
     lock.unlock();
     if (callback) {
       if (e->getErrorCode() == 0)
@@ -423,10 +422,9 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
   return r->run();
 }
 
-AuthorizeRequest::Pointer MegaNz::authorizeAsync(
-    AuthorizeRequest::AuthorizeCompleted complete) {
+AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-             shared_from_this(), complete,
+             shared_from_this(),
              [=](AuthorizeRequest::Ptr r,
                  AuthorizeRequest::AuthorizeCompleted complete) {
                auto fetch = [=]() {

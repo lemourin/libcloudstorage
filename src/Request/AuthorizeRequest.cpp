@@ -28,21 +28,26 @@
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
-                                   AuthorizeCompleted complete,
                                    AuthorizationFlow callback)
     : Request(p) {
   if (!provider()->auth_callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
   set([=](Request::Ptr request) {
     auto on_complete = [=](EitherError<void> result) {
-      complete(result);
       request->done(result);
       provider()->auth_callback()->done(*provider(), result);
       std::unique_lock<std::mutex> lock(
           provider()->current_authorization_mutex_);
-      for (auto&& c : provider()->auth_callbacks_)
-        for (auto&& r : c.second) r(result);
-      provider()->auth_callbacks_.clear();
+      while (!provider()->auth_callbacks_.empty()) {
+        {
+          auto v = std::move(provider()->auth_callbacks_.begin()->second);
+          provider()->auth_callbacks_.erase(
+              provider()->auth_callbacks_.begin());
+          lock.unlock();
+          for (auto&& r : v) r(result);
+        }
+        lock.lock();
+      }
       provider()->current_authorization_ = nullptr;
     };
     callback ? callback(std::static_pointer_cast<AuthorizeRequest>(request),
@@ -148,11 +153,9 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
        input, output, error_stream);
 }
 
-SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p,
-                                         AuthorizeCompleted c)
-    : AuthorizeRequest(p, c, [=](AuthorizeRequest::Ptr r,
-                                 AuthorizeRequest::AuthorizeCompleted
-                                     complete) {
+SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)
+    : AuthorizeRequest(p, [=](AuthorizeRequest::Ptr r,
+                              AuthorizeRequest::AuthorizeCompleted complete) {
         if (p->auth_callback()->userConsentRequired(*p) !=
             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
           return complete(Error{IHttpRequest::Failure, "not waiting for code"});

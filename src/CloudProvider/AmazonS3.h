@@ -47,8 +47,7 @@ class AmazonS3 : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync(
-      AuthorizeRequest::AuthorizeCompleted) override;
+  AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,

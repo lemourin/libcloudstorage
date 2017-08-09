@@ -50,8 +50,7 @@ class OwnCloud : public CloudProvider {
   std::string endpoint() const override;
   std::string token() const override;
 
-  AuthorizeRequest::Pointer authorizeAsync(
-      AuthorizeRequest::AuthorizeCompleted) override;
+  AuthorizeRequest::Pointer authorizeAsync() override;
   CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 

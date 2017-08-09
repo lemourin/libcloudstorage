@@ -205,10 +205,8 @@ std::string AmazonS3::endpoint() const {
   return "https://s3-" + region() + ".amazonaws.com";
 }
 
-AuthorizeRequest::Pointer AmazonS3::authorizeAsync(
-    AuthorizeRequest::AuthorizeCompleted complete) {
-  return std::make_shared<SimpleAuthorization>(shared_from_this(), complete)
-      ->run();
+AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
+  return std::make_shared<SimpleAuthorization>(shared_from_this())->run();
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(

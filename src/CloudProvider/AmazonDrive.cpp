@@ -107,10 +107,9 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
   return r->run();
 }
 
-AuthorizeRequest::Pointer AmazonDrive::authorizeAsync(
-    AuthorizeRequest::AuthorizeCompleted complete) {
+AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-             shared_from_this(), complete,
+             shared_from_this(),
              [this](AuthorizeRequest::Ptr r,
                     AuthorizeRequest::AuthorizeCompleted complete) {
                r->oauth2Authorization([=](EitherError<void> auth_status) {
