@@ -133,7 +133,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                   [=](int code, util::Output, util::Output) {
                     if (IHttpRequest::isSuccess(code)) {
                       {
-                        std::unique_lock<std::mutex> lock(p->auth_lock());
+                        auto lock = p->auth_lock();
                         p->auth()->set_access_token(
                             p->auth()->exchangeAuthorizationCodeResponse(
                                 *output));
