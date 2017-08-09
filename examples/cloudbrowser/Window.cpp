@@ -154,7 +154,7 @@ void Window::initializeCloud(QString name) {
       std::end(initialized_clouds_)) {
     QSettings settings;
     {
-      std::unique_lock<std::mutex> lock(stream_mutex());
+      auto lock = stream_lock();
       std::cerr << "[DIAG] Trying to authorize with "
                 << settings.value(name).toString().toStdString() << std::endl;
     }
@@ -201,7 +201,7 @@ void Window::changeCurrentDirectory(int directory_id) {
 
 void Window::onSuccessfullyAuthorized(QString name) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[OK] Successfully authorized " << name.toStdString() << "\n";
   }
   auto it = unauthorized_clouds_.find(name.toStdString());
@@ -212,7 +212,7 @@ void Window::onAddedItem(ItemPointer i) { directory_model_.addItem(i, this); }
 
 void Window::onPlayFileFromUrl(QString url) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
   }
   if (media_player_) {
@@ -224,7 +224,7 @@ void Window::onPlayFileFromUrl(QString url) {
     emit showPlayer();
   }
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
   }
 }
@@ -351,7 +351,7 @@ void Window::play(int item_id) {
 
 void Window::stop() {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Trying to stop player\n";
   }
   if (media_player_)
@@ -361,14 +361,14 @@ void Window::stop() {
     emit hidePlayer();
   }
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Stopped\n";
   }
 }
 
 void Window::uploadFile(QString path) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Uploading file " << path.toStdString() << "\n";
   }
   QUrl url = path;
@@ -385,7 +385,7 @@ void Window::downloadFile(int item_id, QUrl path) {
                      path.toLocalFile().toStdString() + "/" +
                          escapeFileName(i->item()->filename())));
 
-  std::unique_lock<std::mutex> lock(stream_mutex());
+  auto lock = stream_lock();
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
             << "\n";
 }
@@ -394,7 +394,7 @@ void Window::deleteItem(int item_id) {
   ItemModel* i = directory_model_.get(item_id);
   delete_item_request_ =
       cloud_provider_->deleteItemAsync(i->item(), [this](EitherError<void> e) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (!e.left())
           std::cerr << "[DIAG] Successfully deleted file\n";
         else
@@ -406,7 +406,7 @@ void Window::deleteItem(int item_id) {
 void Window::createDirectory(QString name) {
   create_directory_request_ = cloud_provider_->createDirectoryAsync(
       current_directory_, name.toStdString(), [this](EitherError<IItem> item) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (item.right())
           std::cerr << "[DIAG] Successfully created directory\n";
         else
@@ -420,7 +420,7 @@ void Window::markMovedItem(int item_id) {
   if (moved_file_) {
     move_item_request_ = cloud_provider_->moveItemAsync(
         moved_file_, current_directory_, [this](EitherError<void> e) {
-          std::unique_lock<std::mutex> lock(stream_mutex());
+          auto lock = stream_lock();
           if (!e.left())
             std::cerr << "[DIAG] Successfully moved file\n";
           else
@@ -438,7 +438,7 @@ void Window::renameItem(int item_id, QString name) {
   auto item = directory_model_.get(item_id)->item();
   rename_item_request_ = cloud_provider_->renameItemAsync(
       item, name.toStdString(), [this](EitherError<void> e) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (!e.left())
           std::cerr << "[DIAG] Successfully renamed file\n";
         else

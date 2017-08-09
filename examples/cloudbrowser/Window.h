@@ -118,7 +118,9 @@ class Window : public QQuickView {
   void onAddedItem(ItemPointer);
   void onPlayFileFromUrl(QString url);
 
-  std::mutex& stream_mutex() const { return stream_mutex_; }
+  std::unique_lock<std::mutex> stream_lock() const {
+    return std::unique_lock<std::mutex>(stream_mutex_);
+  }
   MediaPlayer* media_player() const { return media_player_; }
   QString movedItem() const;
 
