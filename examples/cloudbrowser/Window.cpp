@@ -195,7 +195,7 @@ void Window::changeCurrentDirectory(int directory_id) {
   directory_stack_.push_back(current_directory_);
   current_directory_ = directory->item();
 
-  list_directory_request_ = nullptr;
+  if (list_directory_request_) list_directory_request_->cancel();
   startDirectoryClear([this]() { emit runListDirectory(); });
 }
 
