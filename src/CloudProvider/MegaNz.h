@@ -104,7 +104,8 @@ class MegaNz : public CloudProvider {
 
   template <class T>
   void ensureAuthorized(typename Request<T>::Ptr,
-                        AuthorizeRequest::AuthorizeCompleted);
+                        std::function<void(T)> on_error,
+                        std::function<void()> on_success);
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
