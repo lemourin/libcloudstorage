@@ -140,7 +140,7 @@ CloudProvider::CloudProvider(IAuth::Pointer auth)
     : auth_(std::move(auth)), http_() {}
 
 void CloudProvider::initialize(InitData&& data) {
-  std::lock_guard<std::mutex> lock(auth_mutex_);
+  auto lock = auth_lock();
   callback_ = std::move(data.callback_);
   crypto_ = std::move(data.crypto_engine_);
   http_ = std::move(data.http_engine_);
@@ -228,7 +228,7 @@ ICloudProvider::Hints CloudProvider::hints() const {
 }
 
 std::string CloudProvider::access_token() const {
-  std::lock_guard<std::mutex> lock(auth_mutex_);
+  auto lock = auth_lock();
   if (auth()->access_token() == nullptr) return "";
   return auth()->access_token()->token_;
 }
@@ -240,7 +240,7 @@ std::string CloudProvider::authorizeLibraryUrl() const {
 }
 
 std::string CloudProvider::token() const {
-  std::lock_guard<std::mutex> lock(auth_mutex_);
+  auto lock = auth_lock();
   if (auth()->access_token() == nullptr) return "";
   return auth()->access_token()->refresh_token_;
 }
@@ -321,7 +321,9 @@ AuthorizeRequest::Pointer CloudProvider::authorizeAsync(
   return std::make_shared<AuthorizeRequest>(shared_from_this(), c)->run();
 }
 
-std::mutex& CloudProvider::auth_mutex() const { return auth_mutex_; }
+std::unique_lock<std::mutex> CloudProvider::auth_lock() const {
+  return std::unique_lock<std::mutex>(auth_mutex_);
+}
 
 void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
                                 const std::string& name,

@@ -244,7 +244,7 @@ class CloudProvider : public ICloudProvider,
 
   virtual bool unpackCredentials(const std::string&);
 
-  std::mutex& auth_mutex() const;
+  std::unique_lock<std::mutex> auth_lock() const;
 
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
@@ -269,8 +269,8 @@ class CloudProvider : public ICloudProvider,
   std::unordered_map<IGenericRequest*,
                      std::vector<AuthorizeRequest::AuthorizeCompleted>>
       auth_callbacks_;
+  std::mutex current_authorization_mutex_;
   mutable std::mutex auth_mutex_;
-  mutable std::mutex current_authorization_mutex_;
 };
 
 }  // namespace cloudstorage

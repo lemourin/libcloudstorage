@@ -372,7 +372,7 @@ void MegaNz::removeStreamRequest(DownloadFileRequest::Pointer r) {
 
 void MegaNz::initialize(InitData&& data) {
   {
-    std::lock_guard<std::mutex> lock(auth_mutex());
+    auto lock = auth_lock();
     if (data.hints_.find("client_id") == std::end(data.hints_))
       mega_ = util::make_unique<MegaApi>("ZVhB0Czb");
     else
@@ -448,7 +448,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync(
                    auto code = [=](EitherError<std::string> e) {
                      if (e.left()) return complete(e.left());
                      {
-                       std::lock_guard<std::mutex> mutex(auth_mutex());
+                       auto lock = auth_lock();
                        auth()->set_access_token(
                            authorizationCodeToToken(*e.right()));
                      }

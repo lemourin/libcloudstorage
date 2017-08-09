@@ -509,17 +509,17 @@ bool AmazonS3::reauthorize(int code) const {
 }
 
 std::string AmazonS3::access_id() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return access_id_;
 }
 
 std::string AmazonS3::secret() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return secret_;
 }
 
 std::string AmazonS3::region() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return region_;
 }
 
@@ -528,7 +528,7 @@ std::pair<std::string, std::string> AmazonS3::split(const std::string& str) {
 }
 
 bool AmazonS3::unpackCredentials(const std::string& code) {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
   if (at_position == std::string::npos || separator == std::string::npos)

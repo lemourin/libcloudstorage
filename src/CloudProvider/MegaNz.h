@@ -133,7 +133,7 @@ class MegaNz : public CloudProvider {
   std::atomic_bool authorized_;
   std::random_device device_;
   std::default_random_engine engine_;
-  mutable std::mutex mutex_;
+  std::mutex mutex_;
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
   std::string file_url_;

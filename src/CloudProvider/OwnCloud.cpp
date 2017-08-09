@@ -46,7 +46,7 @@ std::string OwnCloud::name() const { return "owncloud"; }
 std::string OwnCloud::endpoint() const { return api_url(); }
 
 std::string OwnCloud::token() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return user_ + "@" + owncloud_base_url_ + Auth::SEPARATOR + password_;
 }
 
@@ -175,7 +175,7 @@ std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
 }
 
 std::string OwnCloud::api_url() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return "https://" + user_ + ":" + password_ + "@" + owncloud_base_url_;
 }
 
@@ -199,7 +199,7 @@ bool OwnCloud::reauthorize(int code) const {
 void OwnCloud::authorizeRequest(IHttpRequest&) const {}
 
 bool OwnCloud::unpackCredentials(const std::string& code) {
-  std::unique_lock<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
   if (at_position == std::string::npos || separator == std::string::npos)

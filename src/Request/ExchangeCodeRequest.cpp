@@ -42,7 +42,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
          error = std::make_shared<std::stringstream>();
     IHttpRequest::Pointer request;
     {
-      std::lock_guard<std::mutex> lock(provider()->auth_mutex());
+      auto lock = provider()->auth_lock();
       auto previous_code = provider()->auth()->authorization_code();
       provider()->auth()->set_authorization_code(authorization_code);
       request = provider()->auth()->exchangeAuthorizationCodeRequest(*input);
@@ -53,7 +53,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
               if (IHttpRequest::isSuccess(code)) {
                 std::string token;
                 {
-                  std::lock_guard<std::mutex> lock(provider()->auth_mutex());
+                  auto lock = provider()->auth_lock();
                   token = provider()
                               ->auth()
                               ->exchangeAuthorizationCodeResponse(*output)

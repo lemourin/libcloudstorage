@@ -70,7 +70,7 @@ AmazonDrive::AmazonDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonDrive::initialize(InitData&& data) {
   {
-    std::unique_lock<std::mutex> lock(auth_mutex());
+    auto lock = auth_lock();
     setWithHint(data.hints_, "metadata_url",
                 [this](std::string v) { metadata_url_ = v; });
     setWithHint(data.hints_, "content_url",
@@ -131,7 +131,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync(
                            Json::Value response;
                            *output >> response;
                            {
-                             std::unique_lock<std::mutex> lock(auth_mutex());
+                             auto lock = auth_lock();
                              metadata_url_ = response["metadataUrl"].asString();
                              content_url_ = response["contentUrl"].asString();
                            }
@@ -275,12 +275,12 @@ IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
 }
 
 std::string AmazonDrive::metadata_url() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return metadata_url_;
 }
 
 std::string AmazonDrive::content_url() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return content_url_;
 }
 
