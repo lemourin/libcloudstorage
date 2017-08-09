@@ -123,6 +123,7 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   if (is_cancelled()) {
+    lock.unlock();
     c(Error{IHttpRequest::Aborted, ""});
   } else {
     if (!p->current_authorization_)
