@@ -122,9 +122,13 @@ template <class T>
 void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
-  if (!p->current_authorization_)
-    p->current_authorization_ = p->authorizeAsync();
-  p->auth_callbacks_[this].push_back(c);
+  if (is_cancelled()) {
+    c(Error{IHttpRequest::Aborted, ""});
+  } else {
+    if (!p->current_authorization_)
+      p->current_authorization_ = p->authorizeAsync();
+    p->auth_callbacks_[this].push_back(c);
+  }
 }
 
 template <class T>
