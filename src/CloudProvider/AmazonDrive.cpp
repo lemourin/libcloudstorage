@@ -109,38 +109,35 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-             shared_from_this(),
-             [this](AuthorizeRequest::Ptr r,
-                    AuthorizeRequest::AuthorizeCompleted complete) {
-               r->oauth2Authorization([=](EitherError<void> auth_status) {
-                 if (auth_status.left()) return complete(auth_status.left());
-                 auto request = http()->create(
-                     "https://drive.amazonaws.com/drive/v1/account/endpoint",
-                     "GET");
-                 authorizeRequest(*request);
-                 auto input = std::make_shared<std::stringstream>(),
-                      output = std::make_shared<std::stringstream>(),
-                      error = std::make_shared<std::stringstream>();
-                 r->send(request.get(),
-                         [=](int code, util::Output, util::Output) {
-                           (void)r;
-                           if (!IHttpRequest::isSuccess(code))
-                             return complete(Error{code, error->str()});
+      shared_from_this(),
+      [this](AuthorizeRequest::Pointer r,
+             AuthorizeRequest::AuthorizeCompleted complete) {
+        r->oauth2Authorization([=](EitherError<void> auth_status) {
+          if (auth_status.left()) return complete(auth_status.left());
+          auto request = http()->create(
+              "https://drive.amazonaws.com/drive/v1/account/endpoint", "GET");
+          authorizeRequest(*request);
+          auto input = std::make_shared<std::stringstream>(),
+               output = std::make_shared<std::stringstream>(),
+               error = std::make_shared<std::stringstream>();
+          r->send(request.get(),
+                  [=](int code, util::Output, util::Output) {
+                    (void)r;
+                    if (!IHttpRequest::isSuccess(code))
+                      return complete(Error{code, error->str()});
 
-                           Json::Value response;
-                           *output >> response;
-                           {
-                             auto lock = auth_lock();
-                             metadata_url_ = response["metadataUrl"].asString();
-                             content_url_ = response["contentUrl"].asString();
-                           }
-                           complete(nullptr);
-                         },
-                         input, output, error);
-               });
-
-             })
-      ->run();
+                    Json::Value response;
+                    *output >> response;
+                    {
+                      auto lock = auth_lock();
+                      metadata_url_ = response["metadataUrl"].asString();
+                      content_url_ = response["contentUrl"].asString();
+                    }
+                    complete(nullptr);
+                  },
+                  input, output, error);
+        });
+      });
 }
 
 IHttpRequest::Pointer AmazonDrive::getItemDataRequest(const std::string& id,

@@ -51,7 +51,7 @@ std::string OwnCloud::token() const {
 }
 
 AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
-  return std::make_shared<SimpleAuthorization>(shared_from_this())->run();
+  return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(

@@ -126,9 +126,13 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
     lock.unlock();
     c(Error{IHttpRequest::Aborted, ""});
   } else {
-    if (!p->current_authorization_)
-      p->current_authorization_ = p->authorizeAsync();
     p->auth_callbacks_[this].push_back(c);
+    if (!p->current_authorization_) {
+      auto r = p->authorizeAsync();
+      p->current_authorization_ = r;
+      lock.unlock();
+      r->run();
+    }
   }
 }
 

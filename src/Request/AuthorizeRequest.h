@@ -32,7 +32,7 @@ namespace cloudstorage {
 
 class AuthorizeRequest : public Request<EitherError<void>> {
  public:
-  using Ptr = std::shared_ptr<AuthorizeRequest>;
+  using Pointer = std::shared_ptr<AuthorizeRequest>;
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
   using AuthorizationFlow = std::function<void(
       std::shared_ptr<AuthorizeRequest>, AuthorizeCompleted)>;

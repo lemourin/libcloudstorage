@@ -206,7 +206,7 @@ std::string AmazonS3::endpoint() const {
 }
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
-  return std::make_shared<SimpleAuthorization>(shared_from_this())->run();
+  return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(

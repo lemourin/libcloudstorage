@@ -424,49 +424,43 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-             shared_from_this(),
-             [=](AuthorizeRequest::Ptr r,
-                 AuthorizeRequest::AuthorizeCompleted complete) {
-               auto fetch = [=]() {
-                 if (r->is_cancelled())
-                   return complete(Error{IHttpRequest::Aborted, ""});
-                 auto fetch_nodes_listener = std::make_shared<RequestListener>(
-                     [=](EitherError<void> e, Listener*) {
-                       if (!e.left()) authorized_ = true;
-                       complete(e);
-                     });
-                 r->subrequest(fetch_nodes_listener);
-                 mega_->fetchNodes(fetch_nodes_listener.get());
-               };
-               login(r, [=](EitherError<void> e) {
-                 if (!e.left()) return fetch();
-                 if (auth_callback()->userConsentRequired(*this) ==
-                     ICloudProvider::IAuthCallback::Status::
-                         WaitForAuthorizationCode) {
-                   auto code = [=](EitherError<std::string> e) {
-                     if (e.left()) return complete(e.left());
-                     {
-                       auto lock = auth_lock();
-                       auth()->set_access_token(
-                           authorizationCodeToToken(*e.right()));
-                     }
-                     login(r, [=](EitherError<void> e) {
-                       if (e.left())
-                         complete(e.left());
-                       else
-                         fetch();
-                     });
-                   };
-                   r->set_server(
-                       r->provider()->auth()->requestAuthorizationCode(code),
-                       complete);
-                 } else {
-                   complete(
-                       Error{IHttpRequest::Aborted, "not waiting for code"});
-                 }
-               });
-             })
-      ->run();
+      shared_from_this(), [=](AuthorizeRequest::Pointer r,
+                              AuthorizeRequest::AuthorizeCompleted complete) {
+        auto fetch = [=]() {
+          if (r->is_cancelled())
+            return complete(Error{IHttpRequest::Aborted, ""});
+          auto fetch_nodes_listener = std::make_shared<RequestListener>(
+              [=](EitherError<void> e, Listener*) {
+                if (!e.left()) authorized_ = true;
+                complete(e);
+              });
+          r->subrequest(fetch_nodes_listener);
+          mega_->fetchNodes(fetch_nodes_listener.get());
+        };
+        login(r, [=](EitherError<void> e) {
+          if (!e.left()) return fetch();
+          if (auth_callback()->userConsentRequired(*this) ==
+              ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
+            auto code = [=](EitherError<std::string> e) {
+              if (e.left()) return complete(e.left());
+              {
+                auto lock = auth_lock();
+                auth()->set_access_token(authorizationCodeToToken(*e.right()));
+              }
+              login(r, [=](EitherError<void> e) {
+                if (e.left())
+                  complete(e.left());
+                else
+                  fetch();
+              });
+            };
+            r->set_server(r->provider()->auth()->requestAuthorizationCode(code),
+                          complete);
+          } else {
+            complete(Error{IHttpRequest::Aborted, "not waiting for code"});
+          }
+        });
+      });
 }
 
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
