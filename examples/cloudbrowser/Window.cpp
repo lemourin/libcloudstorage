@@ -516,6 +516,7 @@ QVariant DirectoryModel::data(const QModelIndex& id, int) const {
 }
 
 void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
+  if (!w->cloud_provider_) return;
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
   auto model = util::make_unique<ItemModel>(item, w->cloud_provider_, w);
   list_.push_back(std::move(model));
