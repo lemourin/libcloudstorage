@@ -107,8 +107,8 @@ template <class T>
 std::unique_ptr<HttpCallback> Request<T>::httpCallback(
     std::function<void(uint32_t, uint32_t)> progress_download,
     std::function<void(uint32_t, uint32_t)> progress_upload) {
-  return util::make_unique<HttpCallback>(is_cancelled_, progress_download,
-                                         progress_upload);
+  return util::make_unique<HttpCallback>([=] { return is_cancelled(); },
+                                         progress_download, progress_upload);
 }
 
 template <class T>
@@ -184,6 +184,22 @@ std::shared_ptr<CloudProvider> Request<T>::provider() const {
     return provider_shared_;
   else
     return provider_weak_.lock();
+}
+
+template <class T>
+bool Request<T>::is_cancelled() {
+  return is_cancelled_;
+}
+
+template <class T>
+void Request<T>::set_cancelled(bool e) {
+  std::lock_guard<std::mutex> lock(cancelled_mutex_);
+  is_cancelled_ = e;
+}
+
+template <class T>
+std::unique_lock<std::mutex> Request<T>::cancelled_lock() {
+  return std::unique_lock<std::mutex>(cancelled_mutex_);
 }
 
 template <class T>
