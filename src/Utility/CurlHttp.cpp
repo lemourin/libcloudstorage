@@ -46,10 +46,12 @@ struct Worker {
             std::unique_lock<std::mutex> lock(mutex_);
             nonempty_.wait(lock, [=] { return !tasks_.empty() || done_; });
             while (!tasks_.empty()) {
-              auto task = tasks_.back();
-              tasks_.pop_back();
-              lock.unlock();
-              task();
+              {
+                auto task = tasks_.back();
+                tasks_.pop_back();
+                lock.unlock();
+                task();
+              }
               lock.lock();
             }
           }
@@ -62,9 +64,11 @@ struct Worker {
   }
 
   void add(std::function<void()> task) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (tasks_.empty()) nonempty_.notify_one();
-    tasks_.push_back(task);
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      tasks_.push_back(task);
+    }
+    if (!tasks_.empty()) nonempty_.notify_one();
   }
 
   int task_cnt() {
