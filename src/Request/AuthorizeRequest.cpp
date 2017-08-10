@@ -116,7 +116,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                  p->auth()->refreshTokenResponse(*output));
            }
            return complete(nullptr);
-         } else if (!IHttpRequest::isClientError(code)) {
+         } else if (!IHttpRequest::isClientError(code) && r) {
            return complete(Error{code, error_stream->str()});
          }
          if (p->auth_callback()->userConsentRequired(*provider()) ==
