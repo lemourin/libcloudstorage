@@ -462,13 +462,14 @@ ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
   connect(this, &ItemModel::failedImage, this,
           [=]() {
             auto tinfo = thread_info_;
+            auto item = item_;
             thumbnail_thread_ = std::thread([=] {
-              auto thumbnail = cloudstorage::generate_thumbnail(item_);
+              auto thumbnail = cloudstorage::generate_thumbnail(item);
               std::lock_guard<std::mutex> lock(tinfo->lock_);
               if (!tinfo->nuked_ && thumbnail.right()) {
                 auto data = *thumbnail.right();
                 QFile file(QDir::tempPath() + "/" +
-                           Window::escapeFileName(item_->filename()).c_str() +
+                           Window::escapeFileName(item->filename()).c_str() +
                            ".thumbnail");
                 file.open(QFile::WriteOnly);
                 file.write(data.data(), data.length());
