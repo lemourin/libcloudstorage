@@ -55,10 +55,19 @@ void GetItemRequest::work(IItem::Pointer item, std::string p,
     complete(item);
     return done(item);
   }
+  if (!item) {
+    Error e{IHttpRequest::NotFound, "not found"};
+    complete(e);
+    return done(e);
+  }
   auto path = p.substr(1);
   auto it = path.find_first_of('/');
-  std::string name = std::string(path.begin(), path.begin() + it),
-              rest = std::string(path.begin() + it, path.end());
+  std::string name = it == std::string::npos
+                         ? path
+                         : std::string(path.begin(), path.begin() + it),
+              rest = it == std::string::npos
+                         ? ""
+                         : std::string(path.begin() + it, path.end());
   auto request = this->shared_from_this();
   subrequest(provider()->listDirectoryAsync(
       item, [=](EitherError<std::vector<IItem::Pointer>> e) {
