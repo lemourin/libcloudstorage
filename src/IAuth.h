@@ -80,15 +80,12 @@ class IAuth {
   virtual std::string authorizeLibraryUrl() const = 0;
 
   /**
-   * Runs a web server and waits until it receives http
+   * Creates a web server which fires a callback when it receives a
    * get request with either code_parameter_name or error_parameter_name.
    *
    * @param code_parameter_name usually "code"
    * @param error_parameter_name usually "error"
    * @param state_parameter_name usually "state"
-   * @param server_started called when server started
-   * @param server_stopped called when server stopped
-   * @return authorization code
    */
   virtual IHttpServer::Pointer awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
@@ -96,10 +93,8 @@ class IAuth {
 
   /**
    * Shortcut for awaitAuthorizationCode, usually calls
-   * awaitAuthorizationCode("code", "error", server_started, server_stopped).
+   * awaitAuthorizationCode("code", "error").
    *
-   * @param server_started called when server started
-   * @param server_stopped called when server stopped
    * @return authorization code
    */
   virtual IHttpServer::Pointer requestAuthorizationCode(CodeReceived) const = 0;

@@ -141,6 +141,8 @@ class IHttpRequest {
   /**
    * Sends http request and blocks until it receives full response.
    *
+   * @param on_completed callback to be called when request is finished
+   *
    * @param data data to be sent in the request body
    *
    * @param response stream with server's response
@@ -148,9 +150,6 @@ class IHttpRequest {
    * @param error_stream if set, response will be redirected here if http
    * request wasn't successful
    *
-   * @return if < 0, that means a library error occured with code -(returned
-   * value), otherwise http code of the response is returned, or one of values:
-   * Unknown, Aborted
    */
   virtual void send(CompleteCallback on_completed,
                     std::shared_ptr<std::istream> data,
