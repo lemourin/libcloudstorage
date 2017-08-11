@@ -114,7 +114,8 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
   }
 
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
-    provider_->removeRequestListener(shared_from_this());
+    auto p = shared_from_this();
+    provider_->removeRequestListener(p);
     std::unique_lock<std::mutex> lock(mutex_);
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
@@ -366,6 +367,7 @@ MegaNz::~MegaNz() {
     }
   }
   daemon_ = nullptr;
+  mega_ = nullptr;
 }
 
 void MegaNz::addStreamRequest(DownloadFileRequest::Pointer r) {
