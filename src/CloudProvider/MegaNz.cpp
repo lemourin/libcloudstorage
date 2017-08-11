@@ -46,7 +46,8 @@ namespace cloudstorage {
 
 namespace {
 
-class Listener : public IRequest<EitherError<void>> {
+class Listener : public IRequest<EitherError<void>>,
+                 public std::enable_shared_from_this<Listener> {
  public:
   using Callback = std::function<void(EitherError<void>, Listener*)>;
 
@@ -55,19 +56,22 @@ class Listener : public IRequest<EitherError<void>> {
   static constexpr int SUCCESS = 1;
   static constexpr int CANCELLED = 2;
 
-  Listener(Callback cb)
-      : status_(IN_PROGRESS), code_(IHttpRequest::Unknown), callback_(cb) {}
+  Listener(Callback cb, MegaNz* provider)
+      : status_(IN_PROGRESS),
+        error_({IHttpRequest::Unknown, ""}),
+        callback_(cb),
+        provider_(provider) {}
 
   ~Listener() { cancel(); }
 
   void cancel() override {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      if (status_ != IN_PROGRESS) return;
-      status_ = CANCELLED;
-      code_ = IHttpRequest::Aborted;
-    }
-    condition_.notify_all();
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (status_ != IN_PROGRESS) return;
+    status_ = CANCELLED;
+    error_ = {IHttpRequest::Aborted, ""};
+    auto callback = std::move(callback_);
+    lock.unlock();
+    if (callback) callback(error_, this);
     finish();
   }
 
@@ -75,16 +79,14 @@ class Listener : public IRequest<EitherError<void>> {
     finish();
     std::lock_guard<std::mutex> lock(mutex_);
     if (status_ != SUCCESS)
-      return Error{code_, error_};
+      return error_;
     else
       return nullptr;
   }
 
   void finish() override {
     std::unique_lock<std::mutex> lock(mutex_);
-    condition_.wait(lock, [this]() {
-      return status_ != IN_PROGRESS && status_ != CANCELLED;
-    });
+    condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
   }
 
   int status() {
@@ -98,23 +100,27 @@ class Listener : public IRequest<EitherError<void>> {
   int status_;
   std::mutex mutex_;
   std::condition_variable condition_;
-  int code_;
-  std::string error_;
+  Error error_;
   Callback callback_;
+  MegaNz* provider_;
 };
 
 class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
   using Listener::Listener;
 
+  void onRequestStart(MegaApi*, MegaRequest*) override {
+    provider_->addRequestListener(shared_from_this());
+  }
+
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
+    provider_->removeRequestListener(shared_from_this());
     std::unique_lock<std::mutex> lock(mutex_);
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
     else {
       status_ = FAILURE;
-      code_ = e->getErrorCode();
-      error_ = e->getErrorString();
+      error_ = {e->getErrorCode(), e->getErrorString()};
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
@@ -124,7 +130,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
       if (e->getErrorCode() == 0)
         callback(nullptr, this);
       else
-        callback(Error{code_, error_}, this);
+        callback(error_, this);
     }
     condition_.notify_all();
   }
@@ -138,21 +144,21 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   using Listener::Listener;
 
   void cancel() override {
-    MegaApi* mega;
-    int transfer;
-    {
-      std::unique_lock<std::mutex> lock(mutex_);
-      mega = mega_;
-      transfer = transfer_;
-    }
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto mega = std::move(mega_);
+    auto transfer = std::move(transfer_);
+    upload_callback_ = nullptr;
+    download_callback_ = nullptr;
+    lock.unlock();
     if (mega) {
-      std::unique_ptr<MegaTransfer> t(mega_->getTransferByTag(transfer));
-      if (t) mega_->cancelTransfer(t.get());
+      std::unique_ptr<MegaTransfer> t(mega->getTransferByTag(transfer));
+      if (t) mega->cancelTransfer(t.get());
     }
     Listener::cancel();
   }
 
   void onTransferStart(MegaApi* mega, MegaTransfer* transfer) {
+    provider_->addRequestListener(shared_from_this());
     std::lock_guard<std::mutex> lock(mutex_);
     if (status_ == CANCELLED) {
       mega->cancelTransfer(transfer);
@@ -165,6 +171,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
                       size_t size) override {
     if (status() == CANCELLED) return false;
+    std::unique_lock<std::mutex> lock(mutex_);
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
@@ -174,27 +181,30 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   }
 
   void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
+    if (status() == CANCELLED) return mega->cancelTransfer(t);
+    std::unique_lock<std::mutex> lock(mutex_);
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
-    if (status() == CANCELLED) mega->cancelTransfer(t);
   }
 
   void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      if (e->getErrorCode() == 0)
-        status_ = SUCCESS;
-      else {
-        code_ = e->getErrorCode();
-        error_ = e->getErrorString();
-        status_ = FAILURE;
-      }
-    }
+    auto r = shared_from_this();
+    provider_->removeRequestListener(r);
+    std::unique_lock<std::mutex> lock(mutex_);
     if (e->getErrorCode() == 0)
-      callback_(nullptr, this);
-    else
-      callback_(Error{code_, error_}, this);
-    callback_ = nullptr;
+      status_ = SUCCESS;
+    else {
+      error_ = {e->getErrorCode(), e->getErrorString()};
+      status_ = FAILURE;
+    }
+    auto callback = std::move(callback_);
+    lock.unlock();
+    if (callback) {
+      if (e->getErrorCode() == 0)
+        callback(nullptr, this);
+      else
+        callback(error_, this);
+    }
     condition_.notify_all();
   }
 
@@ -369,6 +379,16 @@ void MegaNz::removeStreamRequest(DownloadFileRequest::Pointer r) {
   stream_requests_.erase(r);
 }
 
+void MegaNz::addRequestListener(IRequest<EitherError<void>>::Pointer p) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  request_listeners_.insert(p);
+}
+
+void MegaNz::removeRequestListener(IRequest<EitherError<void>>::Pointer p) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  request_listeners_.erase(request_listeners_.find(p));
+}
+
 void MegaNz::initialize(InitData&& data) {
   {
     auto lock = auth_lock();
@@ -433,7 +453,8 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               [=](EitherError<void> e, Listener*) {
                 if (!e.left()) authorized_ = true;
                 complete(e);
-              });
+              },
+              this);
           r->subrequest(fetch_nodes_listener);
           mega_->fetchNodes(fetch_nodes_listener.get());
         };
@@ -555,7 +576,8 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
                 std::remove(cache.c_str());
                 callback->done(e);
                 return r->done(e);
-              });
+              },
+              this);
           listener->upload_callback_ = callback;
           r->subrequest(listener);
           std::unique_ptr<mega::MegaNode> node(
@@ -597,7 +619,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
                 std::remove(cache.c_str());
                 callback->done(nullptr);
                 r->done(nullptr);
-              });
+              },
+              this);
           r->subrequest(listener);
           std::unique_ptr<mega::MegaNode> node(
               mega_->getNodeByPath(item->id().c_str()));
@@ -623,7 +646,8 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               return r->done(e);
-            });
+            },
+            this);
         r->subrequest(listener);
         mega_->remove(node.get(), listener.get());
       }
@@ -656,7 +680,8 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
             auto item = toItem(node.get());
             callback(item);
             r->done(item);
-          });
+          },
+          this);
       r->subrequest(listener);
       mega_->createFolder(name.c_str(), parent_node.get(), listener.get());
     });
@@ -679,7 +704,8 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               r->done(e);
-            });
+            },
+            this);
         r->subrequest(listener);
         mega_->moveNode(source_node.get(), destination_node.get(),
                         listener.get());
@@ -705,7 +731,8 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               r->done(e);
-            });
+            },
+            this);
         r->subrequest(listener);
         mega_->renameNode(node.get(), name.c_str(), listener.get());
       } else {
@@ -730,7 +757,8 @@ std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
               [=](EitherError<void> e, Listener*) {
                 callback->done(e);
                 r->done(e);
-              });
+              },
+              this);
           listener->download_callback_ = callback;
           r->subrequest(listener);
           mega_->startStreaming(node.get(), start,
@@ -743,7 +771,7 @@ std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
 void MegaNz::login(Request<EitherError<void>>::Ptr r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
   auto auth_listener = std::make_shared<RequestListener>(
-      [=](EitherError<void> e, Listener*) { complete(e); });
+      [=](EitherError<void> e, Listener*) { complete(e); }, this);
   r->subrequest(auth_listener);
   auto data = credentialsFromString(token());
   std::string mail = data.first;

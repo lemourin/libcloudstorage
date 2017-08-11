@@ -111,6 +111,9 @@ class MegaNz : public CloudProvider {
   void addStreamRequest(DownloadFileRequest::Pointer);
   void removeStreamRequest(DownloadFileRequest::Pointer);
 
+  void addRequestListener(IRequest<EitherError<void>>::Pointer);
+  void removeRequestListener(IRequest<EitherError<void>>::Pointer);
+
   class Auth : public cloudstorage::Auth {
    public:
     Auth();
@@ -137,6 +140,7 @@ class MegaNz : public CloudProvider {
   std::string temporary_directory_;
   std::string file_url_;
   std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
+  std::unordered_set<IRequest<EitherError<void>>::Pointer> request_listeners_;
   bool deleted_;
 };
 
