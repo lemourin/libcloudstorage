@@ -234,8 +234,10 @@ int CurlHttpRequest::send(std::shared_ptr<std::istream> data,
       *error_stream << data;
     }
     return static_cast<int>(http_code);
-  } else
+  } else {
+    *error_stream << curl_easy_strerror(static_cast<CURLcode>(status));
     return -status;
+  }
 }
 
 void CurlHttpRequest::send(CompleteCallback c,
@@ -281,10 +283,6 @@ IHttpRequest::Pointer CurlHttp::create(const std::string& url,
                                        const std::string& method,
                                        bool follow_redirect) const {
   return util::make_unique<CurlHttpRequest>(url, method, follow_redirect);
-}
-
-std::string CurlHttp::error(int code) const {
-  return curl_easy_strerror(static_cast<CURLcode>(code));
 }
 
 }  // namespace cloudstorage

@@ -181,14 +181,6 @@ class IHttp {
   virtual IHttpRequest::Pointer create(const std::string& url,
                                        const std::string& method = "GET",
                                        bool follow_redirect = true) const = 0;
-
-  /**
-   * Gives description of http library's error code.
-   *
-   * @param code error code
-   * @return error description
-   */
-  virtual std::string error(int code) const = 0;
 };
 
 }  // namespace cloudstorage

@@ -37,7 +37,6 @@ class CurlHttp : public IHttp {
  public:
   IHttpRequest::Pointer create(const std::string&, const std::string&,
                                bool) const override;
-  std::string error(int) const override;
 };
 
 class CurlHttpRequest : public IHttpRequest,
