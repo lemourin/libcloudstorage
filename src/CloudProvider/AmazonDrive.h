@@ -45,7 +45,10 @@ class AmazonDrive : public CloudProvider {
   MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
                                          IItem::Pointer destination,
                                          MoveItemCallback) override;
-  cloudstorage::AuthorizeRequest::Pointer authorizeAsync() override;
+  AuthorizeRequest::Pointer authorizeAsync() override;
+
+  std::string metadata_url() const;
+  std::string content_url() const;
 
  private:
   IHttpRequest::Pointer getItemDataRequest(
@@ -68,13 +71,10 @@ class AmazonDrive : public CloudProvider {
 
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& page_token) const override;
+      const IItem&, std::istream&, std::string& page_token) const override;
 
   IItem::FileType type(const Json::Value&) const;
   IItem::Pointer toItem(const Json::Value&) const;
-
-  std::string metadata_url() const;
-  std::string content_url() const;
 
   bool reauthorize(int code) const override;
 

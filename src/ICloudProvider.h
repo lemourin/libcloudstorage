@@ -114,8 +114,7 @@ class ICloudProvider {
     * process; may contain the following:
     *  - client_id
     *  - client_secret
-    *  - redirect_uri_host
-    *  - redirect_uri_path
+    *  - redirect_uri
     *  - state
     *  - access_token
     *  - file_url (used by mega.nz, url provider's base url)

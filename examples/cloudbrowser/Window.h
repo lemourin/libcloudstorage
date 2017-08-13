@@ -45,6 +45,7 @@ class ItemModel : public QObject {
   using Pointer = std::unique_ptr<ItemModel>;
 
   ItemModel(IItem::Pointer item, ICloudProvider::Pointer, Window*);
+  ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
   cloudstorage::IItem::Pointer item() const { return item_; }
@@ -54,15 +55,23 @@ class ItemModel : public QObject {
  signals:
   void thumbnailChanged();
   void receivedImage();
+  void failedImage();
 
  private:
   friend class Window;
   friend class DownloadThumbnailCallback;
 
+  struct ThreadInfo {
+    std::mutex lock_;
+    bool nuked_ = false;
+  };
+
   QString thumbnail_;
   IItem::Pointer item_;
   ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
   ICloudProvider::Pointer provider_;
+  std::thread thumbnail_thread_;
+  std::shared_ptr<ThreadInfo> thread_info_;
   Window* window_;
 
   Q_OBJECT
@@ -109,7 +118,9 @@ class Window : public QQuickView {
   void onAddedItem(ItemPointer);
   void onPlayFileFromUrl(QString url);
 
-  std::mutex& stream_mutex() const { return stream_mutex_; }
+  std::unique_lock<std::mutex> stream_lock() const {
+    return std::unique_lock<std::mutex>(stream_mutex_);
+  }
   MediaPlayer* media_player() const { return media_player_; }
   QString movedItem() const;
 

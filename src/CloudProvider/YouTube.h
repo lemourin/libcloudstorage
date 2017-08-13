@@ -39,10 +39,10 @@ class YouTube : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
-  ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
+  ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer item, IListDirectoryCallback::Pointer callback) override;
   DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer, IDownloadFileCallback::Pointer) override;
 
@@ -55,8 +55,8 @@ class YouTube : public CloudProvider {
 
   IItem::Pointer getItemDataResponse(std::istream& response, bool audio) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      IItem::Pointer directory, std::istream&,
-      std::string& next_page_token) const;
+      const IItem& directory, std::istream&,
+      std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&, std::string kind, bool audio) const;
   std::string extractId(const std::string& full_id) const;

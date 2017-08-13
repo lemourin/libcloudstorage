@@ -33,37 +33,31 @@ UploadFileRequest::UploadFileRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
     const std::string& filename, UploadFileRequest::ICallback::Pointer callback)
     : Request(p),
-      directory_(std::move(directory)),
-      filename_(filename),
       stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2),
-                      callback->size()),
-      callback_(callback) {
-  set_resolver([this](Request*) -> EitherError<void> {
-    if (directory_->type() != IItem::FileType::Directory) {
-      Error e{IHttpRequest::Forbidden, "can't upload into non-directory"};
-      callback_->done(e);
-      return e;
-    }
-    std::stringstream response_stream;
-    Error error;
-    int code = sendRequest(
-        [this](std::ostream& input) {
-          callback_->reset();
+                      callback->size()) {
+  set([=](Request::Ptr request) {
+    auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
+    sendRequest(
+        [=](util::Output input) {
+          callback->reset();
           stream_wrapper_.reset();
-          input.rdbuf(&stream_wrapper_);
-          return provider()->uploadFileRequest(*directory_, filename_,
+          input->rdbuf(&stream_wrapper_);
+          return provider()->uploadFileRequest(*directory, filename,
                                                stream_wrapper_.prefix_,
                                                stream_wrapper_.suffix_);
         },
-        response_stream, &error,
-        std::bind(&ICallback::progress, callback_.get(), _1, _2));
-    if (IHttpRequest::isSuccess(code)) {
-      callback_->done(nullptr);
-      return nullptr;
-    } else {
-      callback_->done(error);
-      return error;
-    }
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback->done(e.left());
+            request->done(e.left());
+          } else {
+            callback->done(nullptr);
+            request->done(nullptr);
+          }
+        },
+        response_stream, nullptr,
+        std::bind(&UploadFileRequest::ICallback::progress, callback.get(), _1,
+                  _2));
   });
 }
 

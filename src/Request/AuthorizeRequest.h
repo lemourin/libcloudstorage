@@ -26,26 +26,33 @@
 
 #include "Request.h"
 
+#include "IAuth.h"
+
 namespace cloudstorage {
 
 class AuthorizeRequest : public Request<EitherError<void>> {
  public:
   using Pointer = std::shared_ptr<AuthorizeRequest>;
-  using AuthorizationFlow = std::function<EitherError<void>(AuthorizeRequest*)>;
+  using AuthorizeCompleted = std::function<void(EitherError<void>)>;
+  using AuthorizationFlow = std::function<void(
+      std::shared_ptr<AuthorizeRequest>, AuthorizeCompleted)>;
 
   AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizationFlow = nullptr);
   ~AuthorizeRequest();
 
-  EitherError<void> oauth2Authorization();
-
-  EitherError<std::string> getAuthorizationCode();
-
-  void cancel() override;
+  void oauth2Authorization(AuthorizeCompleted);
+  void sendCancel();
+  void cancel();
+  void set_server(std::shared_ptr<IHttpServer>, AuthorizeCompleted);
 
  private:
-  std::mutex mutex_;
-  bool awaiting_authorization_code_;
-  AuthorizationFlow callback_;
+  std::mutex lock_;
+  std::shared_ptr<IHttpServer> auth_server_;
+};
+
+class SimpleAuthorization : public AuthorizeRequest {
+ public:
+  SimpleAuthorization(std::shared_ptr<CloudProvider>);
 };
 
 }  // namespace cloudstorage

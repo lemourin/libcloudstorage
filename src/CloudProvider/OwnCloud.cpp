@@ -46,50 +46,40 @@ std::string OwnCloud::name() const { return "owncloud"; }
 std::string OwnCloud::endpoint() const { return api_url(); }
 
 std::string OwnCloud::token() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return user_ + "@" + owncloud_base_url_ + Auth::SEPARATOR + password_;
 }
 
 AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
-  return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest* r) -> EitherError<void> {
-        if (auth_callback()->userConsentRequired(*this) !=
-            IAuthCallback::Status::WaitForAuthorizationCode)
-          return Error{IHttpRequest::Failure, "not waiting for code"};
-        auto code = r->getAuthorizationCode();
-        if (code.left()) return code.left();
-        return unpackCredentials(*code.right())
-                   ? EitherError<void>(nullptr)
-                   : EitherError<void>(
-                         Error{IHttpRequest::Failure, "invalid code"});
-      });
+  return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
 ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto r = util::make_unique<Request<EitherError<IItem>>>(shared_from_this());
-  r->set_resolver([=](Request<EitherError<IItem>>* r) -> EitherError<IItem> {
-    std::stringstream response;
-    Error error;
-    int code = r->sendRequest(
-        [=](std::ostream&) {
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+    auto response = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
           return http()->create(
               api_url() + "/remote.php/webdav" + parent->id() + name + "/",
               "MKCOL");
         },
-        response, &error);
-    if (IHttpRequest::isSuccess(code)) {
-      IItem::Pointer item = util::make_unique<Item>(
-          name, parent->id() + name + "/", IItem::FileType::Directory);
-      callback(item);
-      return item;
-    } else {
-      callback(error);
-      return error;
-    }
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback(e.left());
+            r->done(e.left());
+          } else {
+            IItem::Pointer item = util::make_unique<Item>(
+                name, parent->id() + name + "/", IItem::FileType::Directory);
+            callback(item);
+            r->done(item);
+          }
+        },
+        response);
   });
-  return std::move(r);
+  return r->run();
 }
 
 IHttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
@@ -165,7 +155,7 @@ IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
 }
 
 std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
-    std::istream& stream, std::string&) const {
+    const IItem&, std::istream& stream, std::string&) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -183,7 +173,7 @@ std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
 }
 
 std::string OwnCloud::api_url() const {
-  std::lock_guard<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   return "https://" + user_ + ":" + password_ + "@" + owncloud_base_url_;
 }
 
@@ -207,7 +197,7 @@ bool OwnCloud::reauthorize(int code) const {
 void OwnCloud::authorizeRequest(IHttpRequest&) const {}
 
 bool OwnCloud::unpackCredentials(const std::string& code) {
-  std::unique_lock<std::mutex> lock(auth_mutex());
+  auto lock = auth_lock();
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
   if (at_position == std::string::npos || separator == std::string::npos)

@@ -31,28 +31,27 @@ namespace cloudstorage {
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id, Callback callback)
     : Request(p), id_(id), callback_(callback) {
-  set_resolver([this](Request*) -> EitherError<IItem> {
-    std::stringstream response_stream;
-    Error error;
-    int code = sendRequest(
-        [this](std::ostream& input) {
-          return provider()->getItemDataRequest(id_, input);
+  set([this](Request::Ptr request) {
+    auto response_stream = std::make_shared<std::stringstream>();
+    sendRequest(
+        [this](util::Output input) {
+          return provider()->getItemDataRequest(id_, *input);
         },
-        response_stream, &error);
-    if (IHttpRequest::isSuccess(code)) {
-      auto i = provider()->getItemDataResponse(response_stream);
-      callback_(i);
-      return i;
-    }
-    callback_(error);
-    return error;
+        [=](EitherError<util::Output> r) {
+          if (r.left()) {
+            callback_(r.left());
+            request->done(r.left());
+
+          } else {
+            auto i = provider()->getItemDataResponse(*response_stream);
+            callback_(i);
+            request->done(i);
+          }
+        },
+        response_stream);
   });
 }
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }
-
-GetItemDataRequest::Callback GetItemDataRequest::callback() const {
-  return callback_;
-}
 
 }  // namespace cloudstorage

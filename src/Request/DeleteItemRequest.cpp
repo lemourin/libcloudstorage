@@ -31,21 +31,23 @@ DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      DeleteItemCallback callback)
     : Request(p), item_(item), callback_(callback) {
-  set_resolver([this](Request* r) -> EitherError<void> {
-    std::stringstream output;
-    Error error;
-    int code = r->sendRequest(
-        [this](std::ostream& stream) {
-          return provider()->deleteItemRequest(*item_, stream);
+  set([this](Request::Ptr request) {
+    auto output = std::make_shared<std::stringstream>();
+    sendRequest(
+        [this](util::Output stream) {
+          return provider()->deleteItemRequest(*item_, *stream);
         },
-        output, &error);
-    if (IHttpRequest::isSuccess(code)) {
-      callback_(nullptr);
-      return nullptr;
-    } else {
-      callback_(error);
-      return error;
-    }
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback_(e.left());
+            request->done(e.left());
+          } else {
+            callback_(nullptr);
+            request->done(nullptr);
+          }
+        },
+        output);
+
   });
 }
 

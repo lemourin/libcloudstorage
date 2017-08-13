@@ -65,7 +65,7 @@ class Box : public CloudProvider {
 
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream&, std::string& next_page_token) const override;
+      const IItem&, std::istream&, std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
 

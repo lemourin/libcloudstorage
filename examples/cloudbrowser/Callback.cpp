@@ -30,10 +30,6 @@
 #include "Utility/Utility.h"
 #include "Window.h"
 
-#ifdef WITH_THUMBNAILER
-#include "GenerateThumbnail.h"
-#endif
-
 using cloudstorage::util::make_unique;
 
 DownloadFileCallback::DownloadFileCallback(Window* window, std::string filename)
@@ -46,8 +42,7 @@ void DownloadFileCallback::receivedData(const char* data, uint32_t length) {
 }
 
 void DownloadFileCallback::done(EitherError<void> e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
-
+  auto lock = window_->stream_lock();
   if (e.left()) {
     std::cerr << "[FAIL] Download: " << e.left()->code_ << " "
               << e.left()->description_ << "\n";
@@ -69,7 +64,7 @@ UploadFileCallback::UploadFileCallback(Window* window, QUrl url)
 
 void UploadFileCallback::reset() {
   {
-    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    auto lock = window_->stream_lock();
     std::cerr << "[DIAG] Starting transmission\n";
   }
   file_.reset();
@@ -82,7 +77,7 @@ uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
 uint64_t UploadFileCallback::size() { return file_.size(); }
 
 void UploadFileCallback::done(EitherError<void> e) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
+  auto lock = window_->stream_lock();
   if (e.left()) {
     std::cerr << "[FAIL] Upload: " << e.left()->code_ << " "
               << e.left()->description_ << "\n";
@@ -100,7 +95,7 @@ CloudProviderCallback::CloudProviderCallback(Window* w) : window_(w) {}
 
 ICloudProvider::IAuthCallback::Status
 CloudProviderCallback::userConsentRequired(const ICloudProvider& p) {
-  std::unique_lock<std::mutex> lock(window_->stream_mutex());
+  auto lock = window_->stream_lock();
   std::cerr << "[DIAG] User consent required: " << p.authorizeLibraryUrl()
             << "\n";
   emit window_->consentRequired(p.name().c_str());
@@ -111,7 +106,7 @@ CloudProviderCallback::userConsentRequired(const ICloudProvider& p) {
 void CloudProviderCallback::done(const ICloudProvider& drive,
                                  EitherError<void> e) {
   if (e.left()) {
-    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    auto lock = window_->stream_lock();
     std::cerr << "[FAIL] Authorize error: " << e.left()->code_ << " "
               << e.left()->description_ << "\n";
     emit window_->closeBrowser();
@@ -131,7 +126,7 @@ void ListDirectoryCallback::receivedItem(IItem::Pointer item) {
 
 void ListDirectoryCallback::done(EitherError<std::vector<IItem::Pointer>> e) {
   if (e.left()) {
-    std::unique_lock<std::mutex> lock(window_->stream_mutex());
+    auto lock = window_->stream_lock();
     std::cerr << "[FAIL] ListDirectory: " << e.left()->code_ << " "
               << e.left()->description_ << "\n";
     emit window_->closeBrowser();
@@ -147,12 +142,8 @@ void DownloadThumbnailCallback::receivedData(const char* data,
 
 void DownloadThumbnailCallback::done(EitherError<void> e) {
   if (e.left()) {
-    data_ = "";
-#ifdef WITH_THUMBNAILER
-    auto thumbnail = cloudstorage::generate_thumbnail(item_->item());
-    if (thumbnail.right()) data_ = *thumbnail.right();
-#endif
-    if (data_.empty()) return;
+    emit item_->failedImage();
+    return;
   }
   QFile file(QDir::tempPath() + "/" +
              Window::escapeFileName(item_->item()->filename()).c_str() +

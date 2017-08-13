@@ -32,21 +32,22 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                                      const std::string& name,
                                      RenameItemCallback callback)
     : Request(p) {
-  set_resolver([=](Request*) -> EitherError<void> {
-    std::stringstream output;
-    Error error;
-    int code = sendRequest(
-        [=](std::ostream& stream) {
-          return provider()->renameItemRequest(*item, name, stream);
+  set([=](Request::Ptr request) {
+    auto output = std::make_shared<std::stringstream>();
+    sendRequest(
+        [=](util::Output stream) {
+          return p->renameItemRequest(*item, name, *stream);
         },
-        output, &error);
-    if (IHttpRequest::isSuccess(code)) {
-      callback(nullptr);
-      return nullptr;
-    } else {
-      callback(error);
-      return error;
-    }
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback(e.left());
+            request->done(e.left());
+          } else {
+            callback(nullptr);
+            request->done(nullptr);
+          }
+        },
+        output);
   });
 }
 

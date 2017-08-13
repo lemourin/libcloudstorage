@@ -32,30 +32,25 @@ namespace cloudstorage {
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
                                          ICallback::Pointer callback,
-                                         RequestFactory request_factory,
-                                         bool fallback_thumbnail)
+                                         RequestFactory request_factory)
     : Request(p),
-      file_(std::move(file)),
       stream_wrapper_(
-          std::bind(&ICallback::receivedData, callback.get(), _1, _2)),
-      callback_(std::move(callback)),
-      request_factory_(request_factory),
-      fallback_thumbnail_(fallback_thumbnail) {
-  set_resolver([this](Request*) -> EitherError<void> {
-    std::ostream response_stream(&stream_wrapper_);
-    Error error;
-    int code = sendRequest(
-        [this](std::ostream& input) { return request_factory_(*file_, input); },
-        response_stream, &error,
-        std::bind(&DownloadFileRequest::ICallback::progress, callback_.get(),
-                  _1, _2));
-    if (IHttpRequest::isSuccess(code)) {
-      callback_->done(nullptr);
-      return nullptr;
-    } else {
-      callback_->done(error);
-      return error;
-    }
+          std::bind(&ICallback::receivedData, callback.get(), _1, _2)) {
+  set([=](Request::Ptr request) {
+    auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
+    sendRequest(
+        [=](util::Output input) { return request_factory(*file, *input); },
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback->done(e.left());
+            request->done(e.left());
+          } else {
+            callback->done(nullptr);
+            request->done(nullptr);
+          }
+        },
+        response_stream, std::bind(&DownloadFileRequest::ICallback::progress,
+                                   callback.get(), _1, _2));
   });
 }
 

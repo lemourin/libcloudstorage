@@ -38,8 +38,6 @@ class GetItemDataRequest : public Request<EitherError<IItem>> {
                      Callback);
   ~GetItemDataRequest();
 
-  Callback callback() const;
-
  private:
   std::string id_;
   Callback callback_;

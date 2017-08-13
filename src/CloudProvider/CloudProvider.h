@@ -39,8 +39,6 @@ class CloudProvider : public ICloudProvider,
  public:
   using Pointer = std::shared_ptr<CloudProvider>;
 
-  enum class AuthorizationStatus { Done, InProgress };
-
   CloudProvider(IAuth::Pointer);
 
   void initialize(InitData&&) override;
@@ -213,7 +211,8 @@ class CloudProvider : public ICloudProvider,
    * @return item set
    */
   virtual std::vector<IItem::Pointer> listDirectoryResponse(
-      std::istream& response, std::string& next_page_token) const;
+      const IItem& directory, std::istream& response,
+      std::string& next_page_token) const;
 
   /**
    * Used by default implementation of createDirectoryAsync, should translate
@@ -242,21 +241,9 @@ class CloudProvider : public ICloudProvider,
    */
   virtual bool reauthorize(int code) const;
 
-  std::mutex& auth_mutex() const;
-  std::mutex& current_authorization_mutex() const;
-  std::condition_variable& authorized_condition() const;
+  virtual bool unpackCredentials(const std::string&);
 
-  AuthorizationStatus authorization_status() const;
-  void set_authorization_status(AuthorizationStatus);
-
-  EitherError<void> authorization_result() const;
-  void set_authorization_result(EitherError<void>);
-
-  AuthorizeRequest::Pointer current_authorization() const;
-  void set_current_authorization(AuthorizeRequest::Pointer);
-
-  int authorization_request_count() const;
-  void set_authorization_request_count(int);
+  std::unique_lock<std::mutex> auth_lock() const;
 
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
@@ -268,19 +255,21 @@ class CloudProvider : public ICloudProvider,
                    std::function<void(std::string)>) const;
 
  private:
+  friend class AuthorizeRequest;
+  template <class T>
+  friend class Request;
+
   IAuth::Pointer auth_;
   IAuthCallback::Pointer callback_;
   ICrypto::Pointer crypto_;
   IHttp::Pointer http_;
   IHttpServerFactory::Pointer http_server_;
   AuthorizeRequest::Pointer current_authorization_;
-  AuthorizationStatus current_authorization_status_;
-  EitherError<void> authorization_result_;
-  int authorization_request_count_;
+  std::unordered_map<IGenericRequest*,
+                     std::vector<AuthorizeRequest::AuthorizeCompleted>>
+      auth_callbacks_;
+  std::mutex current_authorization_mutex_;
   mutable std::mutex auth_mutex_;
-  mutable std::mutex current_authorization_mutex_;
-  mutable std::mutex authorization_status_mutex_;
-  mutable std::condition_variable authorized_;
 };
 
 }  // namespace cloudstorage

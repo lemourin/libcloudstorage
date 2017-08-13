@@ -87,11 +87,12 @@ class MegaNz : public CloudProvider {
                                              const std::string& name,
                                              RenameItemCallback) override;
 
-  std::function<EitherError<void>(Request<EitherError<void>>*)>
-  downloadResolver(IItem::Pointer item, IDownloadFileCallback::Pointer,
-                   int64_t start = 0, int64_t size = -1);
+  std::function<void(Request<EitherError<void>>::Ptr)> downloadResolver(
+      IItem::Pointer item, IDownloadFileCallback::Pointer, int64_t start = 0,
+      int64_t size = -1);
 
-  EitherError<void> login(Request<EitherError<void>>* r);
+  void login(Request<EitherError<void>>::Ptr,
+             AuthorizeRequest::AuthorizeCompleted);
   std::string passwordHash(const std::string& password) const;
 
   mega::MegaApi* mega() const { return mega_.get(); }
@@ -101,12 +102,17 @@ class MegaNz : public CloudProvider {
   std::string temporaryFileName();
 
   template <class T>
-  EitherError<void> ensureAuthorized(Request<T>*);
+  void ensureAuthorized(typename Request<T>::Ptr,
+                        std::function<void(T)> on_error,
+                        std::function<void()> on_success);
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
   void addStreamRequest(DownloadFileRequest::Pointer);
   void removeStreamRequest(DownloadFileRequest::Pointer);
+
+  void addRequestListener(IRequest<EitherError<void>>::Pointer);
+  void removeRequestListener(IRequest<EitherError<void>>::Pointer);
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -129,11 +135,12 @@ class MegaNz : public CloudProvider {
   std::atomic_bool authorized_;
   std::random_device device_;
   std::default_random_engine engine_;
-  mutable std::mutex mutex_;
+  std::mutex mutex_;
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
   std::string file_url_;
   std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
+  std::unordered_set<IRequest<EitherError<void>>::Pointer> request_listeners_;
   bool deleted_;
 };
 

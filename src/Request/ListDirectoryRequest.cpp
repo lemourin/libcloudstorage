@@ -27,49 +27,53 @@
 
 namespace cloudstorage {
 
-ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
-                                           IItem::Pointer directory,
-                                           ICallback::Pointer callback)
-    : Request(p),
-      directory_(std::move(directory)),
-      callback_(std::move(callback)) {
-  set_resolver([this](Request*) -> EitherError<std::vector<IItem::Pointer>> {
-    if (directory_->type() != IItem::FileType::Directory) {
+ListDirectoryRequest::ListDirectoryRequest(
+    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
+    ICallback::Pointer callback, std::function<bool(int)> fault_tolerant)
+    : Request(p) {
+  set([=](Request::Ptr request) {
+    if (directory->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Forbidden, "trying to list non directory"};
-      callback_->done(e);
-      return e;
-    }
-    std::string page_token;
-    std::vector<IItem::Pointer> result;
-    bool failure = false;
-    Error error;
-    do {
-      std::stringstream output_stream;
-      int code = sendRequest(
-          [this, &page_token](std::ostream& i) {
-            return provider()->listDirectoryRequest(*directory_, page_token, i);
-          },
-          output_stream, &error);
-      if (IHttpRequest::isSuccess(code)) {
-        page_token = "";
-        for (auto& t :
-             provider()->listDirectoryResponse(output_stream, page_token)) {
-          callback_->receivedItem(t);
-          result.push_back(t);
-        }
-      } else
-        failure = true;
-    } while (!page_token.empty() && !failure);
-    if (!failure) {
-      callback_->done(result);
-      return result;
+      callback->done(e);
+      request->done(e);
     } else {
-      callback_->done(error);
-      return error;
+      work(directory, "", callback, fault_tolerant);
     }
   });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
+
+void ListDirectoryRequest::work(IItem::Pointer directory,
+                                std::string page_token,
+                                ICallback::Pointer callback,
+                                std::function<bool(int)> fault_tolerant) {
+  auto output_stream = std::make_shared<std::stringstream>();
+  auto request = this->shared_from_this();
+  sendRequest(
+      [=](util::Output i) {
+        return provider()->listDirectoryRequest(*directory, page_token, *i);
+      },
+      [=](EitherError<util::Output> e) {
+        if (e.right() || fault_tolerant(e.left()->code_)) {
+          std::string page_token = "";
+          for (auto& t : request->provider()->listDirectoryResponse(
+                   *directory, *output_stream, page_token)) {
+            callback->receivedItem(t);
+            result_.push_back(t);
+          }
+          if (!page_token.empty())
+            work(directory, page_token, callback, fault_tolerant);
+          else {
+            callback->done(result_);
+            request->done(result_);
+          }
+        } else {
+          callback->done(e.left());
+          request->done(e.left());
+        }
+      },
+      output_stream);
+}
 
 }  // namespace cloudstorage

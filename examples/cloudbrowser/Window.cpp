@@ -38,6 +38,10 @@
 
 #include "Utility/Utility.h"
 
+#ifdef WITH_THUMBNAILER
+#include "GenerateThumbnail.h"
+#endif
+
 using namespace cloudstorage;
 
 namespace {
@@ -131,6 +135,7 @@ Window::Window(MediaPlayer* media_player)
 }
 
 Window::~Window() {
+  cancelRequests();
   if (clear_directory_.valid()) clear_directory_.get();
   clearCurrentDirectoryList();
   saveCloudAccessToken();
@@ -149,7 +154,7 @@ void Window::initializeCloud(QString name) {
       std::end(initialized_clouds_)) {
     QSettings settings;
     {
-      std::unique_lock<std::mutex> lock(stream_mutex());
+      auto lock = stream_lock();
       std::cerr << "[DIAG] Trying to authorize with "
                 << settings.value(name).toString().toStdString() << std::endl;
     }
@@ -190,13 +195,13 @@ void Window::changeCurrentDirectory(int directory_id) {
   directory_stack_.push_back(current_directory_);
   current_directory_ = directory->item();
 
-  list_directory_request_ = nullptr;
+  if (list_directory_request_) list_directory_request_->cancel();
   startDirectoryClear([this]() { emit runListDirectory(); });
 }
 
 void Window::onSuccessfullyAuthorized(QString name) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[OK] Successfully authorized " << name.toStdString() << "\n";
   }
   auto it = unauthorized_clouds_.find(name.toStdString());
@@ -207,7 +212,7 @@ void Window::onAddedItem(ItemPointer i) { directory_model_.addItem(i, this); }
 
 void Window::onPlayFileFromUrl(QString url) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Playing url " << url.toStdString() << "\n";
   }
   if (media_player_) {
@@ -219,7 +224,7 @@ void Window::onPlayFileFromUrl(QString url) {
     emit showPlayer();
   }
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Set media " << url.toStdString() << "\n";
   }
 }
@@ -292,14 +297,14 @@ void Window::startDirectoryClear(std::function<void()> f) {
 }
 
 void Window::cancelRequests() {
-  list_directory_request_ = nullptr;
-  download_request_ = nullptr;
-  upload_request_ = nullptr;
-  item_data_request_ = nullptr;
-  delete_item_request_ = nullptr;
-  create_directory_request_ = nullptr;
-  move_item_request_ = nullptr;
-  rename_item_request_ = nullptr;
+  if (list_directory_request_) list_directory_request_->cancel();
+  if (download_request_) download_request_->cancel();
+  if (upload_request_) upload_request_->cancel();
+  if (item_data_request_) item_data_request_->cancel();
+  if (delete_item_request_) delete_item_request_->cancel();
+  if (create_directory_request_) create_directory_request_->cancel();
+  if (move_item_request_) move_item_request_->cancel();
+  if (rename_item_request_) rename_item_request_->cancel();
   moved_file_ = nullptr;
   emit movedItemChanged();
 }
@@ -346,7 +351,7 @@ void Window::play(int item_id) {
 
 void Window::stop() {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Trying to stop player\n";
   }
   if (media_player_)
@@ -356,14 +361,14 @@ void Window::stop() {
     emit hidePlayer();
   }
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Stopped\n";
   }
 }
 
 void Window::uploadFile(QString path) {
   {
-    std::unique_lock<std::mutex> lock(stream_mutex());
+    auto lock = stream_lock();
     std::cerr << "[DIAG] Uploading file " << path.toStdString() << "\n";
   }
   QUrl url = path;
@@ -380,7 +385,7 @@ void Window::downloadFile(int item_id, QUrl path) {
                      path.toLocalFile().toStdString() + "/" +
                          escapeFileName(i->item()->filename())));
 
-  std::unique_lock<std::mutex> lock(stream_mutex());
+  auto lock = stream_lock();
   std::cerr << "[DIAG] Downloading file " << path.toLocalFile().toStdString()
             << "\n";
 }
@@ -389,7 +394,7 @@ void Window::deleteItem(int item_id) {
   ItemModel* i = directory_model_.get(item_id);
   delete_item_request_ =
       cloud_provider_->deleteItemAsync(i->item(), [this](EitherError<void> e) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (!e.left())
           std::cerr << "[DIAG] Successfully deleted file\n";
         else
@@ -401,7 +406,7 @@ void Window::deleteItem(int item_id) {
 void Window::createDirectory(QString name) {
   create_directory_request_ = cloud_provider_->createDirectoryAsync(
       current_directory_, name.toStdString(), [this](EitherError<IItem> item) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (item.right())
           std::cerr << "[DIAG] Successfully created directory\n";
         else
@@ -415,7 +420,7 @@ void Window::markMovedItem(int item_id) {
   if (moved_file_) {
     move_item_request_ = cloud_provider_->moveItemAsync(
         moved_file_, current_directory_, [this](EitherError<void> e) {
-          std::unique_lock<std::mutex> lock(stream_mutex());
+          auto lock = stream_lock();
           if (!e.left())
             std::cerr << "[DIAG] Successfully moved file\n";
           else
@@ -433,7 +438,7 @@ void Window::renameItem(int item_id, QString name) {
   auto item = directory_model_.get(item_id)->item();
   rename_item_request_ = cloud_provider_->renameItemAsync(
       item, name.toStdString(), [this](EitherError<void> e) {
-        std::unique_lock<std::mutex> lock(stream_mutex());
+        auto lock = stream_lock();
         if (!e.left())
           std::cerr << "[DIAG] Successfully renamed file\n";
         else
@@ -443,13 +448,47 @@ void Window::renameItem(int item_id, QString name) {
 }
 
 ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
-    : item_(item), provider_(p), window_(w) {
+    : item_(item),
+      provider_(p),
+      thread_info_(std::make_shared<ThreadInfo>()),
+      window_(w) {
   connect(this, &ItemModel::receivedImage, this,
           [this]() {
             fetchThumbnail();
             emit thumbnailChanged();
           },
           Qt::QueuedConnection);
+#ifdef WITH_THUMBNAILER
+  connect(this, &ItemModel::failedImage, this,
+          [=]() {
+            auto tinfo = thread_info_;
+            auto item = item_;
+            thumbnail_thread_ = std::thread([=] {
+              auto thumbnail = cloudstorage::generate_thumbnail(item);
+              std::lock_guard<std::mutex> lock(tinfo->lock_);
+              if (!tinfo->nuked_ && thumbnail.right()) {
+                auto data = *thumbnail.right();
+                QFile file(QDir::tempPath() + "/" +
+                           Window::escapeFileName(item->filename()).c_str() +
+                           ".thumbnail");
+                file.open(QFile::WriteOnly);
+                file.write(data.data(), data.length());
+                emit receivedImage();
+              }
+            });
+          },
+          Qt::QueuedConnection);
+#endif
+}
+
+ItemModel::~ItemModel() {
+  if (thumbnail_request_) thumbnail_request_->cancel();
+  std::lock_guard<std::mutex> lock(thread_info_->lock_);
+  thread_info_->nuked_ = true;
+  try {
+    thumbnail_thread_.detach();
+  } catch (const std::exception&) {
+  }
 }
 
 void ItemModel::fetchThumbnail() {
@@ -478,6 +517,7 @@ QVariant DirectoryModel::data(const QModelIndex& id, int) const {
 }
 
 void DirectoryModel::addItem(IItem::Pointer item, Window* w) {
+  if (!w->cloud_provider_) return;
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
   auto model = util::make_unique<ItemModel>(item, w->cloud_provider_, w);
   list_.push_back(std::move(model));

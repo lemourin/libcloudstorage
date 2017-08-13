@@ -35,6 +35,7 @@ namespace cloudstorage {
 class IAuth {
  public:
   using Pointer = std::unique_ptr<IAuth>;
+  using CodeReceived = std::function<void(EitherError<std::string>)>;
 
   struct Token {
     using Pointer = std::unique_ptr<Token>;
@@ -79,33 +80,24 @@ class IAuth {
   virtual std::string authorizeLibraryUrl() const = 0;
 
   /**
-   * Runs a web server and waits until it receives http
+   * Creates a web server which fires a callback when it receives a
    * get request with either code_parameter_name or error_parameter_name.
    *
    * @param code_parameter_name usually "code"
    * @param error_parameter_name usually "error"
    * @param state_parameter_name usually "state"
-   * @param server_started called when server started
-   * @param server_stopped called when server stopped
-   * @return authorization code
    */
-  virtual EitherError<std::string> awaitAuthorizationCode(
+  virtual IHttpServer::Pointer awaitAuthorizationCode(
       std::string code_parameter_name, std::string error_parameter_name,
-      std::string state_parameter_name,
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const = 0;
+      std::string state_parameter_name, CodeReceived) const = 0;
 
   /**
    * Shortcut for awaitAuthorizationCode, usually calls
-   * awaitAuthorizationCode("code", "error", server_started, server_stopped).
+   * awaitAuthorizationCode("code", "error").
    *
-   * @param server_started called when server started
-   * @param server_stopped called when server stopped
    * @return authorization code
    */
-  virtual EitherError<std::string> requestAuthorizationCode(
-      std::function<void()> server_started = nullptr,
-      std::function<void()> server_stopped = nullptr) const = 0;
+  virtual IHttpServer::Pointer requestAuthorizationCode(CodeReceived) const = 0;
 
   virtual Token::Pointer fromTokenString(const std::string&) const = 0;
 

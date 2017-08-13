@@ -33,6 +33,8 @@ namespace cloudstorage {
 class IHttpRequest {
  public:
   using Pointer = std::shared_ptr<IHttpRequest>;
+  using CompleteCallback = std::function<void(
+      int, std::shared_ptr<std::ostream>, std::shared_ptr<std::ostream>)>;
 
   static constexpr int Ok = 200;
   static constexpr int Partial = 206;
@@ -47,7 +49,7 @@ class IHttpRequest {
 
   class ICallback {
    public:
-    using Pointer = std::unique_ptr<ICallback>;
+    using Pointer = std::shared_ptr<ICallback>;
 
     virtual ~ICallback() = default;
 
@@ -139,6 +141,8 @@ class IHttpRequest {
   /**
    * Sends http request and blocks until it receives full response.
    *
+   * @param on_completed callback to be called when request is finished
+   *
    * @param data data to be sent in the request body
    *
    * @param response stream with server's response
@@ -146,13 +150,12 @@ class IHttpRequest {
    * @param error_stream if set, response will be redirected here if http
    * request wasn't successful
    *
-   * @return if < 0, that means a library error occured with code -(returned
-   * value), otherwise http code of the response is returned, or one of values:
-   * Unknown, Aborted
    */
-  virtual int send(std::istream& data, std::ostream& response,
-                   std::ostream* error_stream = nullptr,
-                   ICallback::Pointer = nullptr) const = 0;
+  virtual void send(CompleteCallback on_completed,
+                    std::shared_ptr<std::istream> data,
+                    std::shared_ptr<std::ostream> response,
+                    std::shared_ptr<std::ostream> error_stream = nullptr,
+                    ICallback::Pointer = nullptr) const = 0;
 
   static bool isSuccess(int code) { return code / 100 == 2; }
   static bool isRedirect(int code) { return code / 100 == 3; }
@@ -177,14 +180,6 @@ class IHttp {
   virtual IHttpRequest::Pointer create(const std::string& url,
                                        const std::string& method = "GET",
                                        bool follow_redirect = true) const = 0;
-
-  /**
-   * Gives description of http library's error code.
-   *
-   * @param code error code
-   * @return error description
-   */
-  virtual std::string error(int code) const = 0;
 };
 
 }  // namespace cloudstorage
