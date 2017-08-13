@@ -65,7 +65,8 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   return std::make_shared<cloudstorage::ListDirectoryRequest>(
-             shared_from_this(), std::move(item), std::move(callback), true)
+             shared_from_this(), std::move(item), std::move(callback),
+             [](int code) { return code == IHttpRequest::NotFound; })
       ->run();
 }
 

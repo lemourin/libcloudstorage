@@ -27,10 +27,9 @@
 
 namespace cloudstorage {
 
-ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
-                                           IItem::Pointer directory,
-                                           ICallback::Pointer callback,
-                                           bool fault_tolerant)
+ListDirectoryRequest::ListDirectoryRequest(
+    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
+    ICallback::Pointer callback, std::function<bool(int)> fault_tolerant)
     : Request(p) {
   set([=](Request::Ptr request) {
     if (directory->type() != IItem::FileType::Directory) {
@@ -48,7 +47,7 @@ ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 void ListDirectoryRequest::work(IItem::Pointer directory,
                                 std::string page_token,
                                 ICallback::Pointer callback,
-                                bool fault_tolerant) {
+                                std::function<bool(int)> fault_tolerant) {
   auto output_stream = std::make_shared<std::stringstream>();
   auto request = this->shared_from_this();
   sendRequest(
@@ -56,7 +55,7 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },
       [=](EitherError<util::Output> e) {
-        if (e.right() || fault_tolerant) {
+        if (e.right() || fault_tolerant(e.left()->code_)) {
           std::string page_token = "";
           for (auto& t : request->provider()->listDirectoryResponse(
                    *directory, *output_stream, page_token)) {
