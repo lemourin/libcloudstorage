@@ -59,10 +59,6 @@ template <class T>
 void Request<T>::cancel() {
   if (is_cancelled()) return;
   set_cancelled(true);
-  {
-    std::lock_guard<std::mutex> lock(subrequest_mutex_);
-    for (auto r : subrequests_) r->cancel();
-  }
   auto p = provider();
   if (p) {
     std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
@@ -84,6 +80,10 @@ void Request<T>::cancel() {
       lock.unlock();
       auth->cancel();
     }
+  }
+  {
+    std::lock_guard<std::mutex> lock(subrequest_mutex_);
+    for (auto r : subrequests_) r->cancel();
   }
   finish();
 }
@@ -132,7 +132,11 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
       p->current_authorization_ = r;
       lock.unlock();
       r->run();
+      lock.lock();
     }
+    auto r = p->current_authorization_;
+    lock.unlock();
+    subrequest(r);
   }
 }
 
