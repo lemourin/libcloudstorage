@@ -360,9 +360,13 @@ MegaNz::~MegaNz() {
   {
     std::unique_lock<std::mutex> lock(mutex_);
     deleted_ = true;
-    for (auto r : stream_requests_) {
-      lock.unlock();
-      r->cancel();
+    while (!stream_requests_.empty()) {
+      {
+        auto r = *stream_requests_.begin();
+        stream_requests_.erase(stream_requests_.begin());
+        lock.unlock();
+        r->cancel();
+      }
       lock.lock();
     }
   }
