@@ -128,15 +128,17 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
   } else {
     p->auth_callbacks_[this].push_back(c);
     if (!p->current_authorization_) {
-      auto r = p->authorizeAsync();
-      p->current_authorization_ = r;
-      lock.unlock();
-      r->run();
+      {
+        auto r = p->authorizeAsync();
+        p->current_authorization_ = r;
+        lock.unlock();
+        r->run();
+      }
       lock.lock();
     }
     auto r = p->current_authorization_;
     lock.unlock();
-    subrequest(r);
+    if (r) subrequest(r);
   }
 }
 
