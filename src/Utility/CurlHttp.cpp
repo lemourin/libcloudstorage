@@ -231,11 +231,12 @@ int CurlHttpRequest::send(std::shared_ptr<std::istream> data,
       std::array<char, MAX_URL_LENGTH> redirect_url;
       char* data = redirect_url.data();
       curl_easy_getinfo(handle.get(), CURLINFO_REDIRECT_URL, &data);
-      *error_stream << data;
+      if (error_stream) *error_stream << data;
     }
     return static_cast<int>(http_code);
   } else {
-    *error_stream << curl_easy_strerror(static_cast<CURLcode>(status));
+    if (error_stream)
+      *error_stream << curl_easy_strerror(static_cast<CURLcode>(status));
     return -status;
   }
 }
