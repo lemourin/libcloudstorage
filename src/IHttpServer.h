@@ -82,6 +82,8 @@ class IHttpServer {
                                                   IConnection::Pointer) = 0;
   };
 
+  virtual ICallback::Pointer callback() const = 0;
+
   virtual IResponse::Pointer createResponse(int code, const IResponse::Headers&,
                                             const std::string& body) const = 0;
 

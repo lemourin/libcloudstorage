@@ -59,30 +59,35 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 
 void AuthorizeRequest::sendCancel() {
-  auto request =
-      provider()->http()->create(provider()->auth()->redirect_uri(), "GET");
-  request->setParameter("accepted", "false");
-  request->setParameter("state", provider()->auth()->state());
-  request->setParameter("error", "cancelled");
-  std::shared_ptr<IHttpServer> auth_server;
-  {
-    std::lock_guard<std::mutex> lock(lock_);
-    auth_server = auth_server_;
-  }
+  std::unique_lock<std::mutex> lock(lock_);
+  auto auth_server = std::move(auth_server_);
+  lock.unlock();
   if (auth_server) {
-    auto input = std::make_shared<std::stringstream>(),
-         output = std::make_shared<std::stringstream>(),
-         error = std::make_shared<std::stringstream>();
-    request->send(
-        [=](int code, util::Output, util::Output) {
-          (void)auth_server;
-          if (code != IHttpRequest::Unauthorized) {
-            throw std::runtime_error("couldn't cancel authorize request " +
-                                     std::to_string(code) + ": " +
-                                     error->str());
-          }
-        },
-        input, output, error);
+    class Connection : public IHttpServer::IConnection {
+     public:
+      Connection(const std::string& state) : state_(state) {}
+      ~Connection() {
+        if (f_) f_();
+      }
+
+      const char* getParameter(const std::string& name) const {
+        if (name == "error") return "cancelled";
+        if (name == "accepted") return "false";
+        if (name == "state") return state_.c_str();
+        return nullptr;
+      }
+      const char* header(const std::string&) const { return nullptr; }
+      std::string url() const { return "/"; }
+      void onCompleted(CompletedCallback f) { f_ = f; }
+      void suspend() {}
+      void resume() {}
+
+     private:
+      std::string state_;
+      CompletedCallback f_;
+    };
+    auto connection = std::make_shared<Connection>(provider()->auth()->state());
+    auth_server->callback()->receivedConnection(*auth_server, connection.get());
   }
 }
 
