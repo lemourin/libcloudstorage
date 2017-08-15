@@ -70,7 +70,8 @@ void AuthorizeRequest::sendCancel() {
     auth_server = auth_server_;
   }
   if (auth_server) {
-    auto output = std::make_shared<std::stringstream>(),
+    auto input = std::make_shared<std::stringstream>(),
+         output = std::make_shared<std::stringstream>(),
          error = std::make_shared<std::stringstream>();
     request->send(
         [=](int code, util::Output, util::Output) {
@@ -81,7 +82,7 @@ void AuthorizeRequest::sendCancel() {
                                      error->str());
           }
         },
-        output, error);
+        input, output, error);
   }
 }
 
