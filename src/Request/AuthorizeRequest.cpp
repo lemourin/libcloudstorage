@@ -75,8 +75,11 @@ void AuthorizeRequest::sendCancel() {
     request->send(
         [=](int code, util::Output, util::Output) {
           (void)auth_server;
-          if (code != IHttpRequest::Unauthorized)
-            throw std::runtime_error("couldn't cancel authorize request");
+          if (code != IHttpRequest::Unauthorized) {
+            throw std::runtime_error("couldn't cancel authorize request " +
+                                     std::to_string(code) + ": " +
+                                     error->str());
+          }
         },
         output, error);
   }
