@@ -50,6 +50,8 @@ class Auth : public IAuth {
       std::string error_page_;
       CodeReceived callback_;
     } data_;
+
+    std::mutex lock_;
   };
 
   Auth();

@@ -104,16 +104,20 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   const char* accepted = connection->getParameter("accepted");
   const char* code = connection->getParameter(data_.code_parameter_name_);
   const char* error = connection->getParameter(data_.error_parameter_name_);
-  if (accepted && data_.callback_) {
-    if (std::string(accepted) == "true" && code) {
-      data_.callback_(std::string(code));
-    } else {
-      if (error)
-        data_.callback_(Error{IHttpRequest::Bad, error});
-      else
-        data_.callback_(Error{IHttpRequest::Bad, ""});
+  if (accepted) {
+    std::unique_lock<std::mutex> lock(lock_);
+    auto callback = std::move(data_.callback_);
+    lock.unlock();
+    if (callback) {
+      if (std::string(accepted) == "true" && code) {
+        callback(std::string(code));
+      } else {
+        if (error)
+          callback(Error{IHttpRequest::Bad, error});
+        else
+          callback(Error{IHttpRequest::Bad, ""});
+      }
     }
-    data_.callback_ = nullptr;
   }
 
   if (code)
