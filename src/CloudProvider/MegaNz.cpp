@@ -481,8 +481,8 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
                   fetch();
               });
             };
-            r->set_server(r->provider()->auth()->requestAuthorizationCode(code),
-                          complete);
+            r->set_server(
+                r->provider()->auth()->requestAuthorizationCode(code));
           } else {
             complete(Error{IHttpRequest::Aborted, "not waiting for code"});
           }

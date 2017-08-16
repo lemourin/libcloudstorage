@@ -43,7 +43,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   void oauth2Authorization(AuthorizeCompleted);
   void sendCancel();
   void cancel();
-  void set_server(std::shared_ptr<IHttpServer>, AuthorizeCompleted);
+  void set_server(std::shared_ptr<IHttpServer>);
 
  private:
   std::mutex lock_;

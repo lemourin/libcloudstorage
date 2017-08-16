@@ -101,17 +101,12 @@ void AuthorizeRequest::cancel() {
   Request::cancel();
 }
 
-void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p,
-                                  AuthorizeCompleted complete) {
+void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
   {
     std::lock_guard<std::mutex> lock(lock_);
     auth_server_ = p;
   }
-  if (p) {
-    if (is_cancelled()) sendCancel();
-  } else {
-    complete(Error{IHttpRequest::Failure, "can't start http server"});
-  }
+  if (p && is_cancelled()) sendCancel();
 }
 
 void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
@@ -158,7 +153,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                   },
                   input, output, error_stream);
            };
-           set_server(p->auth()->requestAuthorizationCode(code), complete);
+           set_server(p->auth()->requestAuthorizationCode(code));
          } else {
            complete(Error{code, error_stream->str()});
          }
@@ -183,8 +178,7 @@ SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)
                          : EitherError<void>(
                                Error{IHttpRequest::Failure, "invalid code"}));
         };
-        set_server(r->provider()->auth()->requestAuthorizationCode(code),
-                   complete);
+        set_server(r->provider()->auth()->requestAuthorizationCode(code));
       }) {}
 
 }  // namespace cloudstorage
