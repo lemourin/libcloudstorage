@@ -51,16 +51,20 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
     r->send(request.get(),
             [=](int code, util::Output, util::Output) {
               if (IHttpRequest::isSuccess(code)) {
-                std::string token;
-                {
+                try {
                   auto lock = provider()->auth_lock();
-                  token = provider()
-                              ->auth()
-                              ->exchangeAuthorizationCodeResponse(*output)
-                              ->refresh_token_;
+                  auto token = provider()
+                                   ->auth()
+                                   ->exchangeAuthorizationCodeResponse(*output)
+                                   ->refresh_token_;
+                  lock.unlock();
+                  callback(token);
+                  r->done(token);
+                } catch (std::exception e) {
+                  Error err{IHttpRequest::Failure, e.what()};
+                  callback(err);
+                  r->done(err);
                 }
-                callback(token);
-                r->done(token);
               } else {
                 Error e{code, error->str()};
                 callback(e);

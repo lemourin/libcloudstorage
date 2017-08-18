@@ -64,32 +64,43 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
             callback(e.left());
             r->done(e.left());
           }
-          Json::Value json;
-          *output >> json;
-          auto item = toItem(json);
-          if (item->type() != IItem::FileType::Directory) {
-            r->sendRequest(
-                [=](util::Output) {
-                  auto request = http()->create(
-                      endpoint() + "/v1/disk/resources/download", "GET");
-                  request->setParameter("path", id);
-                  return request;
-                },
-                [=](EitherError<util::Output> e) {
-                  if (!e.left()) {
-                    Json::Value json;
-                    *output >> json;
-                    static_cast<Item*>(item.get())
-                        ->set_url(json["href"].asString());
-                  }
-                  callback(item);
-                  r->done(item);
-                },
-                output);
-
-          } else {
-            callback(item);
-            r->done(item);
+          try {
+            Json::Value json;
+            *output >> json;
+            auto item = toItem(json);
+            if (item->type() != IItem::FileType::Directory) {
+              r->sendRequest(
+                  [=](util::Output) {
+                    auto request = http()->create(
+                        endpoint() + "/v1/disk/resources/download", "GET");
+                    request->setParameter("path", id);
+                    return request;
+                  },
+                  [=](EitherError<util::Output> e) {
+                    if (!e.left()) {
+                      try {
+                        Json::Value json;
+                        *output >> json;
+                        static_cast<Item*>(item.get())
+                            ->set_url(json["href"].asString());
+                      } catch (std::exception e) {
+                        Error err{IHttpRequest::Failure, e.what()};
+                        callback(err);
+                        r->done(err);
+                      }
+                    }
+                    callback(item);
+                    r->done(item);
+                  },
+                  output);
+            } else {
+              callback(item);
+              r->done(item);
+            }
+          } catch (std::exception e) {
+            Error err{IHttpRequest::Failure, e.what()};
+            callback(err);
+            r->done(err);
           }
         },
         output);
@@ -115,26 +126,32 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
             callback->done(e.left());
             return r->done(e.left());
           }
-          Json::Value json;
-          *output >> json;
-          auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
-              &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
-          auto stream = std::make_shared<std::ostream>(wrapper.get());
-          std::string url = json["href"].asString();
-          r->sendRequest(
-              [=](util::Output) { return http()->create(url, "GET"); },
-              [=](EitherError<util::Output> e) {
-                (void)wrapper;
-                if (e.left()) {
-                  callback->done(e.left());
-                  r->done(e.left());
-                } else {
-                  callback->done(nullptr);
-                  r->done(nullptr);
-                }
-              },
-              stream, std::bind(&IDownloadFileCallback::progress,
-                                callback.get(), _1, _2));
+          try {
+            Json::Value json;
+            *output >> json;
+            auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
+                &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
+            auto stream = std::make_shared<std::ostream>(wrapper.get());
+            std::string url = json["href"].asString();
+            r->sendRequest(
+                [=](util::Output) { return http()->create(url, "GET"); },
+                [=](EitherError<util::Output> e) {
+                  (void)wrapper;
+                  if (e.left()) {
+                    callback->done(e.left());
+                    r->done(e.left());
+                  } else {
+                    callback->done(nullptr);
+                    r->done(nullptr);
+                  }
+                },
+                stream, std::bind(&IDownloadFileCallback::progress,
+                                  callback.get(), _1, _2));
+          } catch (std::exception e) {
+            Error err{IHttpRequest::Failure, e.what()};
+            callback->done(err);
+            r->done(err);
+          }
         },
         output);
   });
@@ -162,34 +179,40 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
             callback->done(e.left());
             return r->done(e.left());
           }
-          Json::Value response;
-          *output >> response;
-          std::string url = response["href"].asString();
-          auto wrapper = std::make_shared<UploadStreamWrapper>(
-              std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
-              callback->size());
-          auto output = std::make_shared<std::stringstream>();
-          r->sendRequest(
-              [=](util::Output input) {
-                auto request = http()->create(url, "PUT");
-                callback->reset();
-                wrapper->reset();
-                input->rdbuf(wrapper.get());
-                return request;
-              },
-              [=](EitherError<util::Output> e) {
-                (void)wrapper;
-                if (e.left()) {
-                  callback->done(e.left());
-                  r->done(e.left());
-                } else {
-                  callback->done(nullptr);
-                  r->done(nullptr);
-                }
-              },
-              output, nullptr,
-              std::bind(&IUploadFileCallback::progress, callback.get(), _1,
-                        _2));
+          try {
+            Json::Value response;
+            *output >> response;
+            std::string url = response["href"].asString();
+            auto wrapper = std::make_shared<UploadStreamWrapper>(
+                std::bind(&IUploadFileCallback::putData, callback.get(), _1,
+                          _2),
+                callback->size());
+            auto output = std::make_shared<std::stringstream>();
+            r->sendRequest(
+                [=](util::Output input) {
+                  auto request = http()->create(url, "PUT");
+                  callback->reset();
+                  wrapper->reset();
+                  input->rdbuf(wrapper.get());
+                  return request;
+                },
+                [=](EitherError<util::Output> e) {
+                  (void)wrapper;
+                  if (e.left()) {
+                    callback->done(e.left());
+                    r->done(e.left());
+                  } else {
+                    callback->done(nullptr);
+                    r->done(nullptr);
+                  }
+                },
+                output, nullptr, std::bind(&IUploadFileCallback::progress,
+                                           callback.get(), _1, _2));
+          } catch (std::exception e) {
+            Error err{IHttpRequest::Failure, e.what()};
+            callback->done(err);
+            r->done(err);
+          }
         },
         output);
   });
@@ -216,25 +239,37 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
             callback(e.left());
             return r->done(e.left());
           }
-          Json::Value json;
-          *output >> json;
-          r->sendRequest(
-              [=](util::Output) {
-                auto request = http()->create(json["href"].asString(), "GET");
-                return request;
-              },
-              [=](EitherError<util::Output> e) {
-                if (e.left()) {
-                  callback(e.left());
-                  return r->done(e.left());
-                }
-                Json::Value json;
-                *output >> json;
-                auto item = toItem(json);
-                callback(item);
-                r->done(item);
-              },
-              output);
+          try {
+            Json::Value json;
+            *output >> json;
+            r->sendRequest(
+                [=](util::Output) {
+                  auto request = http()->create(json["href"].asString(), "GET");
+                  return request;
+                },
+                [=](EitherError<util::Output> e) {
+                  if (e.left()) {
+                    callback(e.left());
+                    return r->done(e.left());
+                  }
+                  try {
+                    Json::Value json;
+                    *output >> json;
+                    auto item = toItem(json);
+                    callback(item);
+                    r->done(item);
+                  } catch (std::exception e) {
+                    Error err{IHttpRequest::Failure, e.what()};
+                    callback(err);
+                    r->done(err);
+                  }
+                },
+                output);
+          } catch (std::exception e) {
+            Error err{IHttpRequest::Failure, e.what()};
+            callback(err);
+            r->done(err);
+          }
         },
         output);
   });

@@ -108,19 +108,25 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                     callback(e.left());
                     return r->done(e.left());
                   }
-                  Json::Value response;
-                  *stream >> response;
-                  auto item = i;
-                  for (auto v : response["info"]["formats"])
-                    if (v["format_id"] == response["info"]["format_id"]) {
-                      auto nitem = std::make_shared<Item>(
-                          i->filename() + "." + v["ext"].asString(), i->id(),
-                          i->type());
-                      nitem->set_url(v["url"].asString());
-                      item = nitem;
-                    }
-                  callback(item);
-                  r->done(item);
+                  try {
+                    Json::Value response;
+                    *stream >> response;
+                    auto item = i;
+                    for (auto v : response["info"]["formats"])
+                      if (v["format_id"] == response["info"]["format_id"]) {
+                        auto nitem = std::make_shared<Item>(
+                            i->filename() + "." + v["ext"].asString(), i->id(),
+                            i->type());
+                        nitem->set_url(v["url"].asString());
+                        item = nitem;
+                      }
+                    callback(item);
+                    r->done(item);
+                  } catch (std::exception e) {
+                    Error err{IHttpRequest::Failure, e.what()};
+                    callback(err);
+                    r->done(err);
+                  }
                 },
                 stream);
           } else {

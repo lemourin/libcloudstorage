@@ -125,15 +125,17 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
                     (void)r;
                     if (!IHttpRequest::isSuccess(code))
                       return complete(Error{code, error->str()});
-
-                    Json::Value response;
-                    *output >> response;
-                    {
+                    try {
+                      Json::Value response;
+                      *output >> response;
                       auto lock = auth_lock();
                       metadata_url_ = response["metadataUrl"].asString();
                       content_url_ = response["contentUrl"].asString();
+                      lock.unlock();
+                      complete(nullptr);
+                    } catch (std::exception e) {
+                      complete(Error{IHttpRequest::Failure, e.what()});
                     }
-                    complete(nullptr);
                   },
                   input, output, error);
         });

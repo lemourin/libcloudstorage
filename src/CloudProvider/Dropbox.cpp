@@ -70,38 +70,50 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
             callback(e.left());
             r->done(e.left());
           } else {
-            Json::Value response;
-            *output >> response;
-            auto item = toItem(response);
-            if (item->type() == IItem::FileType::Directory) {
-              callback(item);
-              return r->done(item);
+            try {
+              Json::Value response;
+              *output >> response;
+              auto item = toItem(response);
+              if (item->type() == IItem::FileType::Directory) {
+                callback(item);
+                return r->done(item);
+              }
+              r->sendRequest(
+                  [=](util::Output input) {
+                    auto request = http()->create(
+                        endpoint() + "/2/files/get_temporary_link", "POST");
+                    request->setHeaderParameter("Content-Type",
+                                                "application/json");
+                    Json::Value parameter;
+                    parameter["path"] = id;
+                    *input << Json::FastWriter().write(parameter);
+                    return request;
+                  },
+                  [=](EitherError<util::Output> e) {
+                    if (e.left()) {
+                      callback(item);
+                      r->done(item);
+                    } else {
+                      try {
+                        Json::Value response;
+                        *output >> response;
+                        static_cast<Item*>(item.get())
+                            ->set_url(response["link"].asString());
+                        callback(item);
+                        r->done(item);
+                      } catch (std::exception e) {
+                        Error err{IHttpRequest::Failure, e.what()};
+                        callback(err);
+                        r->done(err);
+                      }
+                    }
+                  },
+                  output);
+            } catch (std::exception e) {
+              Error err{IHttpRequest::Failure, e.what()};
+              callback(err);
+              r->done(err);
             }
-            r->sendRequest(
-                [=](util::Output input) {
-                  auto request = http()->create(
-                      endpoint() + "/2/files/get_temporary_link", "POST");
-                  request->setHeaderParameter("Content-Type",
-                                              "application/json");
-                  Json::Value parameter;
-                  parameter["path"] = id;
-                  *input << Json::FastWriter().write(parameter);
-                  return request;
-                },
-                [=](EitherError<util::Output> e) {
-                  if (e.left()) {
-                    callback(item);
-                    r->done(item);
-                  } else {
-                    Json::Value response;
-                    *output >> response;
-                    static_cast<Item*>(item.get())
-                        ->set_url(response["link"].asString());
-                    callback(item);
-                    r->done(item);
-                  }
-                },
-                output);
           }
         },
         output);

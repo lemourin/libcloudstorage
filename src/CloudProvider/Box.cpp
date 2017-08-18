@@ -68,34 +68,46 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
                     callback(e.left());
                     r->done(e.left());
                   } else {
-                    Json::Value response;
-                    *output >> response;
-                    auto item = toItem(response);
-                    callback(item);
-                    r->done(item);
+                    try {
+                      Json::Value response;
+                      *output >> response;
+                      auto item = toItem(response);
+                      callback(item);
+                      r->done(item);
+                    } catch (std::exception e) {
+                      Error err{IHttpRequest::Failure, e.what()};
+                      callback(err);
+                      r->done(err);
+                    }
                   }
                 },
                 output);
           } else {
-            Json::Value response;
-            *output >> response;
-            auto item = toItem(response);
-            r->sendRequest(
-                [this, id](util::Output) {
-                  auto request = http()->create(
-                      endpoint() + "/2.0/files/" + id + "/content", "GET",
-                      false);
-                  return request;
-                },
-                [=](EitherError<util::Output> e) {
-                  if (e.left() && IHttpRequest::isRedirect(e.left()->code_)) {
-                    static_cast<Item*>(item.get())
-                        ->set_url(e.left()->description_);
-                  }
-                  callback(item);
-                  r->done(item);
-                },
-                output);
+            try {
+              Json::Value response;
+              *output >> response;
+              auto item = toItem(response);
+              r->sendRequest(
+                  [this, id](util::Output) {
+                    auto request = http()->create(
+                        endpoint() + "/2.0/files/" + id + "/content", "GET",
+                        false);
+                    return request;
+                  },
+                  [=](EitherError<util::Output> e) {
+                    if (e.left() && IHttpRequest::isRedirect(e.left()->code_)) {
+                      static_cast<Item*>(item.get())
+                          ->set_url(e.left()->description_);
+                    }
+                    callback(item);
+                    r->done(item);
+                  },
+                  output);
+            } catch (Json::Exception e) {
+              Error err{IHttpRequest::Failure, e.what()};
+              callback(err);
+              r->done(err);
+            }
           }
         },
         output);

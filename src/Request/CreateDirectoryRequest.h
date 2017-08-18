@@ -33,11 +33,6 @@ class CreateDirectoryRequest : public Request<EitherError<IItem>> {
   CreateDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
                          const std::string&, CreateDirectoryCallback);
   ~CreateDirectoryRequest();
-
- private:
-  IItem::Pointer parent_;
-  std::string name_;
-  CreateDirectoryCallback callback_;
 };
 
 }  // namespace cloudstorage

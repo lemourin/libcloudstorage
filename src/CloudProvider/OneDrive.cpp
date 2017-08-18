@@ -95,9 +95,15 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             callback->done(e.left());
             return r->done(e.left());
           }
-          Json::Value response;
-          *output >> response;
-          upload(r, 0, callback, response);
+          try {
+            Json::Value response;
+            *output >> response;
+            upload(r, 0, callback, response);
+          } catch (std::exception e) {
+            Error err{IHttpRequest::Failure, e.what()};
+            callback->done(err);
+            r->done(err);
+          }
         },
         output);
   });

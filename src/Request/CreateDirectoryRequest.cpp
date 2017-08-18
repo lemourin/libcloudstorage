@@ -31,26 +31,32 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                                IItem::Pointer parent,
                                                const std::string& name,
                                                CreateDirectoryCallback callback)
-    : Request(p), parent_(parent), name_(name), callback_(callback) {
-  set([this](Request::Ptr request) {
-    if (parent_->type() != IItem::FileType::Directory) {
+    : Request(p) {
+  set([=](Request::Ptr request) {
+    if (parent->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Forbidden, "parent not a directory"};
-      callback_(e);
+      callback(e);
       return done(e);
     }
     auto output = std::make_shared<std::stringstream>();
     sendRequest(
-        [this](util::Output stream) {
-          return provider()->createDirectoryRequest(*parent_, name_, *stream);
+        [=](util::Output stream) {
+          return provider()->createDirectoryRequest(*parent, name, *stream);
         },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
-            callback_(e.left());
+            callback(e.left());
             request->done(e.left());
           } else {
-            auto i = provider()->createDirectoryResponse(*output);
-            callback_(i);
-            request->done(i);
+            try {
+              auto i = provider()->createDirectoryResponse(*output);
+              callback(i);
+              request->done(i);
+            } catch (std::exception e) {
+              Error err{IHttpRequest::Failure, e.what()};
+              callback(err);
+              request->done(err);
+            }
           }
         },
         output);

@@ -30,22 +30,28 @@ namespace cloudstorage {
 
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id, Callback callback)
-    : Request(p), id_(id), callback_(callback) {
-  set([this](Request::Ptr request) {
+    : Request(p) {
+  set([=](Request::Ptr request) {
     auto response_stream = std::make_shared<std::stringstream>();
     sendRequest(
-        [this](util::Output input) {
-          return provider()->getItemDataRequest(id_, *input);
+        [=](util::Output input) {
+          return provider()->getItemDataRequest(id, *input);
         },
         [=](EitherError<util::Output> r) {
           if (r.left()) {
-            callback_(r.left());
+            callback(r.left());
             request->done(r.left());
 
           } else {
-            auto i = provider()->getItemDataResponse(*response_stream);
-            callback_(i);
-            request->done(i);
+            try {
+              auto i = provider()->getItemDataResponse(*response_stream);
+              callback(i);
+              request->done(i);
+            } catch (std::exception) {
+              Error e{IHttpRequest::Failure, "couldn't parse response"};
+              callback(e);
+              request->done(e);
+            }
           }
         },
         response_stream);

@@ -55,22 +55,28 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },
       [=](EitherError<util::Output> e) {
-        if (e.right() || fault_tolerant(e.left()->code_)) {
-          std::string page_token = "";
-          for (auto& t : request->provider()->listDirectoryResponse(
-                   *directory, *output_stream, page_token)) {
-            callback->receivedItem(t);
-            result_.push_back(t);
+        try {
+          if (e.right() || fault_tolerant(e.left()->code_)) {
+            std::string page_token = "";
+            for (auto& t : request->provider()->listDirectoryResponse(
+                     *directory, *output_stream, page_token)) {
+              callback->receivedItem(t);
+              result_.push_back(t);
+            }
+            if (!page_token.empty())
+              work(directory, page_token, callback, fault_tolerant);
+            else {
+              callback->done(result_);
+              request->done(result_);
+            }
+          } else {
+            callback->done(e.left());
+            request->done(e.left());
           }
-          if (!page_token.empty())
-            work(directory, page_token, callback, fault_tolerant);
-          else {
-            callback->done(result_);
-            request->done(result_);
-          }
-        } else {
-          callback->done(e.left());
-          request->done(e.left());
+        } catch (std::exception e) {
+          Error err{IHttpRequest::Failure, e.what()};
+          callback->done(err);
+          request->done(err);
         }
       },
       output_stream);
