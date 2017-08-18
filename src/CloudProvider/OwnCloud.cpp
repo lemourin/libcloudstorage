@@ -150,7 +150,7 @@ IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
       tinyxml2::XML_SUCCESS)
-    return nullptr;
+    throw std::logic_error("failed to parse xml");
   return toItem(document.RootElement()->FirstChild());
 }
 
@@ -161,7 +161,7 @@ std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
       tinyxml2::XML_SUCCESS)
-    return {};
+    throw std::logic_error("failed to parse xml");
   if (document.RootElement()->FirstChild() == nullptr) return {};
 
   std::vector<IItem::Pointer> result;
@@ -178,7 +178,10 @@ std::string OwnCloud::api_url() const {
 }
 
 IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
-  std::string id = node->FirstChildElement("d:href")->GetText();
+  if (!node) throw std::logic_error("invalid xml");
+  auto element = node->FirstChildElement("d:href");
+  if (!element) throw std::logic_error("invalid xml");
+  std::string id = element->GetText();
   id = id.substr(strlen("/remote.php/webdav"));
   IItem::FileType type = IItem::FileType::Unknown;
   if (id.back() == '/') type = IItem::FileType::Directory;
