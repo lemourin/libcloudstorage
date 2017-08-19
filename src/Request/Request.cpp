@@ -51,6 +51,10 @@ Request<T>::~Request() {
 
 template <class T>
 void Request<T>::finish() {
+  {
+    std::unique_lock<std::mutex> lock(subrequest_mutex_);
+    for (auto&& r : subrequests_) r->finish();
+  }
   std::shared_future<T> future = future_;
   if (future.valid()) future.wait();
 }
@@ -90,8 +94,8 @@ void Request<T>::cancel() {
 
 template <class T>
 T Request<T>::result() {
-  std::shared_future<T> future = future_;
-  return future.get();
+  finish();
+  return future_.get();
 }
 
 template <class T>
