@@ -53,7 +53,12 @@ template <class T>
 void Request<T>::finish() {
   {
     std::unique_lock<std::mutex> lock(subrequest_mutex_);
-    for (auto&& r : subrequests_) r->finish();
+    for (size_t i = 0; i < subrequests_.size(); i++) {
+      auto r = subrequests_[i];
+      lock.unlock();
+      r->finish();
+      lock.lock();
+    }
   }
   std::shared_future<T> future = future_;
   if (future.valid()) future.wait();
@@ -86,8 +91,13 @@ void Request<T>::cancel() {
     }
   }
   {
-    std::lock_guard<std::mutex> lock(subrequest_mutex_);
-    for (auto r : subrequests_) r->cancel();
+    std::unique_lock<std::mutex> lock(subrequest_mutex_);
+    for (size_t i = 0; i < subrequests_.size(); i++) {
+      auto r = subrequests_[i];
+      lock.unlock();
+      r->cancel();
+      lock.lock();
+    }
   }
   finish();
 }
