@@ -62,9 +62,10 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     auto response = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
-          return http()->create(
-              api_url() + "/remote.php/webdav" + parent->id() + name + "/",
-              "MKCOL");
+          return http()->create(api_url() + "/remote.php/webdav" +
+                                    parent->id() + util::Url::escape(name) +
+                                    "/",
+                                "MKCOL");
         },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
