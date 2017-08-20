@@ -24,19 +24,27 @@
 #ifndef CLOUDSTORAGE_H
 #define CLOUDSTORAGE_H
 
+#include "CloudProvider/CloudProvider.h"
 #include "ICloudStorage.h"
+
+#include <map>
 
 namespace cloudstorage {
 
 class CloudStorage : public ICloudStorage {
  public:
+  using CloudProviderFactory = std::function<CloudProvider::Pointer()>;
+
   CloudStorage();
 
-  std::vector<ICloudProvider::Pointer> providers() const override;
-  ICloudProvider::Pointer provider(const std::string& name) const override;
+  std::vector<std::string> providers() const override;
+  ICloudProvider::Pointer provider(const std::string& name,
+                                   ICloudProvider::InitData&&) const override;
 
  private:
-  std::vector<ICloudProvider::Pointer> providers_;
+  void add(CloudProviderFactory);
+
+  std::map<std::string, CloudProviderFactory> providers_;
 };
 
 }  // namespace cloudstorage

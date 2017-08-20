@@ -66,7 +66,7 @@ int main(int, char**) {
       if (current_directory == nullptr) {
         std::cout << "Select a provider: \n";
         for (auto p : ICloudStorage::create()->providers())
-          std::cout << p->name() << "\n";
+          std::cout << p << "\n";
       } else {
         auto lst = current_provider->listDirectoryAsync(current_directory)
                        ->result()
@@ -80,24 +80,24 @@ int main(int, char**) {
       if (current_provider == nullptr) {
         std::string provider_name;
         line >> provider_name;
-        auto provider = ICloudStorage::create()->provider(provider_name);
-        if (!provider)
-          std::cout << "No provider with name " << provider_name << "\n";
-        else {
-          std::string filename = provider_name + ".txt";
-          std::string token;
-          std::fstream(filename, std::fstream::in) >> token;
-          provider->initialize(
-              {token,
-               std::unique_ptr<Callback>(new Callback(filename)),
-               nullptr,
-               nullptr,
-               nullptr,
-               {}});
+        std::string filename = provider_name + ".txt";
+        std::string token;
+        std::fstream(filename, std::fstream::in) >> token;
+        auto provider = ICloudStorage::create()->provider(
+            provider_name,
+            {token,
+             std::unique_ptr<Callback>(new Callback(filename)),
+             nullptr,
+             nullptr,
+             nullptr,
+             {}});
+        if (provider) {
           prompt += provider_name + "/";
           current_provider = provider;
           current_directory = provider->rootDirectory();
           directory_stack.push_back(current_directory);
+        } else {
+          std::cout << "Provider " << provider_name << " unavailable.\n";
         }
       } else {
         std::string destination;

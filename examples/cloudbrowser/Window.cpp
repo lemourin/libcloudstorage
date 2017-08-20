@@ -55,14 +55,11 @@ std::string read_file(const std::string& path) {
 }  // namespace
 
 Window::Window(MediaPlayer* media_player)
-    : cloud_storage_(ICloudStorage::create()),
-      last_played_(-1),
-      media_player_(media_player) {
+    : last_played_(-1), media_player_(media_player) {
   qRegisterMetaType<ItemPointer>();
 
   QStringList clouds;
-  for (auto p : ICloudStorage::create()->providers())
-    clouds.append(p->name().c_str());
+  for (auto p : ICloudStorage::create()->providers()) clouds.append(p.c_str());
   clouds.append("mock");
 #ifdef WITH_QTWEBENGINE
   rootContext()->setContextProperty("qtwebengine", QVariant(true));
@@ -145,11 +142,6 @@ void Window::initializeCloud(QString name) {
   if (cloud_provider_ && cloud_provider_->name() == name.toStdString()) return;
   saveCloudAccessToken();
   cancelRequests();
-  if (name != "mock")
-    cloud_provider_ = cloud_storage_->provider(name.toStdString());
-  else
-    cloud_provider_ = util::make_unique<cloudstorage::MockProvider>();
-  current_directory_ = cloud_provider_->rootDirectory();
   if (initialized_clouds_.find(name.toStdString()) ==
       std::end(initialized_clouds_)) {
     QSettings settings;
@@ -172,14 +164,21 @@ void Window::initializeCloud(QString name) {
       hints["success_page"] = read_file(":/resources/default_success.html");
     }
     hints["error_page"] = read_file(":/resources/default_error.html");
-    cloud_provider_->initialize({settings.value(name).toString().toStdString(),
-                                 util::make_unique<CloudProviderCallback>(this),
-                                 nullptr, nullptr, nullptr, hints});
-    initialized_clouds_.insert(name.toStdString());
+
+    if (name != "mock")
+      cloud_provider_ = ICloudStorage::create()->provider(
+          name.toStdString(),
+          {settings.value(name).toString().toStdString(),
+           util::make_unique<CloudProviderCallback>(this), nullptr, nullptr,
+           nullptr, hints});
+    else
+      cloud_provider_ = util::make_unique<cloudstorage::MockProvider>();
+    initialized_clouds_[name.toStdString()] = cloud_provider_;
   } else if (unauthorized_clouds_.find(name.toStdString()) !=
              std::end(unauthorized_clouds_)) {
     emit openBrowser(cloud_provider_->authorizeLibraryUrl().c_str());
   }
+  if (cloud_provider_) current_directory_ = cloud_provider_->rootDirectory();
   emit runListDirectory();
 }
 

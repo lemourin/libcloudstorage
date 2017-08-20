@@ -171,7 +171,6 @@ class Window : public QQuickView {
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
   QJsonObject toJson(const ICloudProvider::Hints&) const;
 
-  ICloudStorage::Pointer cloud_storage_;
   ICloudProvider::Pointer cloud_provider_;
   IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
@@ -190,7 +189,7 @@ class Window : public QQuickView {
   int last_played_;
   MediaPlayer* media_player_;
   QString current_media_;
-  std::unordered_set<std::string> initialized_clouds_;
+  std::unordered_map<std::string, ICloudProvider::Pointer> initialized_clouds_;
   std::unordered_set<std::string> unauthorized_clouds_;
 
   Q_OBJECT

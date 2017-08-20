@@ -136,14 +136,6 @@ class ICloudProvider {
   virtual ~ICloudProvider() = default;
 
   /**
-   * Initializes the cloud provider, doesn't do any authorization just yet. The
-   * actual authorization will be done the first time it's actually needed.
-   *
-   * @param init_data initialization data
-   */
-  virtual void initialize(InitData&& init_data) = 0;
-
-  /**
    * Serializes token and hints in a json compact that are useful to be
    * restored in the following session. They might include refresh token, access
    * token or even custom provider configurations

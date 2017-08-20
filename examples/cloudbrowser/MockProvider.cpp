@@ -31,8 +31,6 @@ namespace cloudstorage {
 
 MockProvider::MockProvider() {}
 
-void MockProvider::initialize(InitData&&) {}
-
 std::string MockProvider::token() const { return ""; }
 
 ICloudProvider::Hints MockProvider::hints() const { return Hints(); }

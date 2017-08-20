@@ -136,7 +136,6 @@ class MockProvider : public ICloudProvider {
 
   MockProvider();
 
-  void initialize(InitData&&) override;
   std::string token() const override;
   Hints hints() const override;
   std::string name() const override;

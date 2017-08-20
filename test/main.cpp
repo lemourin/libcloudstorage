@@ -73,24 +73,24 @@ int main(int argc, char** argv) {
   std::string drive_backend = "google";
   if (argc >= 2) drive_backend = argv[1];
 
-  cloudstorage::ICloudProvider::Pointer drive =
-      cloudstorage::ICloudStorage::create()->provider(drive_backend);
-  if (drive == nullptr) {
-    std::cout << "Invalid drive backend.\n";
-    return 1;
-  }
   std::string drive_file = drive_backend + ".txt";
   std::string token;
   {
     std::fstream file(drive_file, std::fstream::in);
     file >> token;
   }
-  drive->initialize({token,
-                     std::unique_ptr<Callback>(new Callback(drive_file)),
-                     nullptr,
-                     nullptr,
-                     nullptr,
-                     {}});
+  auto drive = cloudstorage::ICloudStorage::create()->provider(
+      drive_backend,
+      {token,
+       std::unique_ptr<Callback>(new Callback(drive_file)),
+       nullptr,
+       nullptr,
+       nullptr,
+       {}});
+  if (drive == nullptr) {
+    std::cout << "Invalid drive backend.\n";
+    return 1;
+  }
   traverse_drive(*drive, drive->rootDirectory(), "/");
 
   return 0;

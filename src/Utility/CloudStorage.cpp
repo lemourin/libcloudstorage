@@ -41,29 +41,40 @@
 
 namespace cloudstorage {
 
-CloudStorage::CloudStorage()
-    : providers_({std::make_shared<GoogleDrive>(), std::make_shared<OneDrive>(),
-                  std::make_shared<Dropbox>(), std::make_shared<AmazonDrive>(),
-                  std::make_shared<Box>(), std::make_shared<YouTube>(),
-                  std::make_shared<YandexDisk>(), std::make_shared<OwnCloud>(),
-                  std::make_shared<AmazonS3>()}) {
+CloudStorage::CloudStorage() {
+  add([]() { return std::make_shared<GoogleDrive>(); });
+  add([]() { return std::make_shared<OneDrive>(); });
+  add([]() { return std::make_shared<Dropbox>(); });
+  add([]() { return std::make_shared<AmazonDrive>(); });
+  add([]() { return std::make_shared<Box>(); });
+  add([]() { return std::make_shared<YouTube>(); });
+  add([]() { return std::make_shared<YandexDisk>(); });
+  add([]() { return std::make_shared<OwnCloud>(); });
+  add([]() { return std::make_shared<AmazonS3>(); });
 #ifdef WITH_MEGA
-  providers_.emplace_back(std::make_shared<MegaNz>());
+  add([]() { return std::make_shared<MegaNz>(); });
 #endif
 }
 
-std::vector<ICloudProvider::Pointer> CloudStorage::providers() const {
-  return providers_;
+std::vector<std::string> CloudStorage::providers() const {
+  std::vector<std::string> result;
+  for (auto r : providers_) result.push_back(r.first);
+  return result;
 }
 
-ICloudProvider::Pointer CloudStorage::provider(const std::string& name) const {
-  for (ICloudProvider::Pointer p : providers_)
-    if (p->name() == name) return p;
-  return nullptr;
+ICloudProvider::Pointer CloudStorage::provider(
+    const std::string& name, ICloudProvider::InitData&& init_data) const {
+  auto it = providers_.find(name);
+  if (it == std::end(providers_)) return nullptr;
+  auto ret = it->second();
+  ret->initialize(std::move(init_data));
+  return ret;
 }
 
 ICloudStorage::Pointer ICloudStorage::create() {
   return util::make_unique<CloudStorage>();
 }
+
+void CloudStorage::add(CloudProviderFactory f) { providers_[f()->name()] = f; }
 
 }  // namespace cloudstorage
