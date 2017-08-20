@@ -304,8 +304,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     return server.createResponse(IHttpRequest::Forbidden, {},
                                  "state parameter missing / invalid");
   const char* file = connection->getParameter("file");
-  std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByHandle(
-      provider_->mega()->base64ToHandle(file)));
+  std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByPath(file));
   if (!node)
     return server.createResponse(IHttpRequest::NotFound, {}, "file not found");
   auto buffer = std::make_shared<Buffer>(connection);
@@ -798,8 +797,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
   auto item = util::make_unique<Item>(
       node->getName(), path.get(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
-  std::unique_ptr<char[]> handle(node->getBase64Handle());
-  item->set_url(endpoint() + "/?file=" + handle.get() +
+  item->set_url(endpoint() + "/?file=" + util::Url::escape(path.get()) +
                 "&state=" + auth()->state());
   return std::move(item);
 }
