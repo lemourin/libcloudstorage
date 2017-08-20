@@ -303,6 +303,9 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   if (!state || state != provider_->auth()->state())
     return server.createResponse(IHttpRequest::Forbidden, {},
                                  "state parameter missing / invalid");
+  if (!provider_->authorized_)
+    return server.createResponse(IHttpRequest::ServiceUnavailable, {},
+                                 "not authorized just yet");
   const char* file = connection->getParameter("file");
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByPath(file));
   if (!node)

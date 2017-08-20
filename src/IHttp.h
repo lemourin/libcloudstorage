@@ -43,6 +43,7 @@ class IHttpRequest {
   static constexpr int Forbidden = 403;
   static constexpr int NotFound = 404;
   static constexpr int RangeInvalid = 416;
+  static constexpr int ServiceUnavailable = 503;
   static constexpr int Aborted = 600;
   static constexpr int Unknown = 700;
   static constexpr int Failure = 800;
