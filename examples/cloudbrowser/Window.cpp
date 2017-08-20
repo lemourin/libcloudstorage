@@ -174,11 +174,14 @@ void Window::initializeCloud(QString name) {
     else
       cloud_provider_ = util::make_unique<cloudstorage::MockProvider>();
     initialized_clouds_[name.toStdString()] = cloud_provider_;
-  } else if (unauthorized_clouds_.find(name.toStdString()) !=
-             std::end(unauthorized_clouds_)) {
+  } else {
+    cloud_provider_ = initialized_clouds_.find(name.toStdString())->second;
+  }
+  if (unauthorized_clouds_.find(name.toStdString()) !=
+      std::end(unauthorized_clouds_)) {
     emit openBrowser(cloud_provider_->authorizeLibraryUrl().c_str());
   }
-  if (cloud_provider_) current_directory_ = cloud_provider_->rootDirectory();
+  current_directory_ = cloud_provider_->rootDirectory();
   emit runListDirectory();
 }
 
