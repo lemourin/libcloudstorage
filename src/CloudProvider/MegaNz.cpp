@@ -425,7 +425,8 @@ IItem::Pointer MegaNz::rootDirectory() const {
 }
 
 ICloudProvider::Hints MegaNz::hints() const {
-  Hints result = {{"temporary_directory", temporary_directory_}};
+  Hints result = {{"temporary_directory", temporary_directory_},
+                  {"file_url", file_url_}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
