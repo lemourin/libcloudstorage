@@ -31,11 +31,12 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
                                          ExchangeCodeCallback callback)
     : Request(p) {
-  set([=](Request<EitherError<std::string>>::Ptr r) {
+  set([=](Request<EitherError<Token>>::Ptr r) {
     std::stringstream stream;
     if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream)) {
-      callback(authorization_code);
-      return r->done(authorization_code);
+      Token token{authorization_code, ""};
+      callback(token);
+      return r->done(token);
     }
     auto input = std::make_shared<std::stringstream>(),
          output = std::make_shared<std::stringstream>(),
@@ -53,11 +54,11 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
               if (IHttpRequest::isSuccess(code)) {
                 try {
                   auto lock = provider()->auth_lock();
-                  auto token = provider()
-                                   ->auth()
-                                   ->exchangeAuthorizationCodeResponse(*output)
-                                   ->refresh_token_;
+                  auto auth_token =
+                      provider()->auth()->exchangeAuthorizationCodeResponse(
+                          *output);
                   lock.unlock();
+                  Token token{auth_token->refresh_token_, auth_token->token_};
                   callback(token);
                   r->done(token);
                 } catch (std::exception e) {

@@ -433,15 +433,14 @@ ICloudProvider::Hints MegaNz::hints() const {
 
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
-  auto r =
-      std::make_shared<Request<EitherError<std::string>>>(shared_from_this());
-  r->set([=](Request<EitherError<std::string>>::Ptr r) {
+  auto r = std::make_shared<Request<EitherError<Token>>>(shared_from_this());
+  r->set([=](Request<EitherError<Token>>::Ptr r) {
     auto token = authorizationCodeToToken(code);
-    EitherError<std::string> ret =
+    EitherError<Token> ret =
         token->token_.empty()
-            ? EitherError<std::string>(
+            ? EitherError<Token>(
                   Error{IHttpRequest::Failure, "invalid authorization code"})
-            : EitherError<std::string>(token->token_);
+            : EitherError<Token>({token->token_, ""});
     callback(ret);
     r->done(ret);
   });

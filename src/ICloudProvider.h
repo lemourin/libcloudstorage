@@ -42,7 +42,7 @@ class ICloudProvider {
   using Pointer = std::shared_ptr<ICloudProvider>;
   using Hints = std::unordered_map<std::string, std::string>;
 
-  using ExchangeCodeRequest = IRequest<EitherError<std::string>>;
+  using ExchangeCodeRequest = IRequest<EitherError<Token>>;
   using ListDirectoryRequest =
       IRequest<EitherError<std::vector<IItem::Pointer>>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
@@ -214,13 +214,13 @@ class ICloudProvider {
 
   /**
    * Exchanges authorization code which was sent to redirect_uri() by cloud
-   * provider for a token (refresh_token).
+   * provider for a token.
    *
    * @return object representing the pending request
    */
   virtual ExchangeCodeRequest::Pointer exchangeCodeAsync(
       const std::string& code,
-      ExchangeCodeCallback = [](EitherError<std::string>) {}) = 0;
+      ExchangeCodeCallback = [](EitherError<Token>) {}) = 0;
 
   /**
    * Lists directory.

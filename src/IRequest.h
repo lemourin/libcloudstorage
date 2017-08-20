@@ -34,10 +34,16 @@ namespace cloudstorage {
 
 struct Error;
 
-template <class Left, class Right> class Either;
+template <class Left, class Right>
+class Either;
 
 template <class T>
 using EitherError = Either<Error, T>;
+
+struct Token {
+  std::string token_;
+  std::string access_token_;
+};
 
 /**
  * Class representing pending request. When there is no reference to the
@@ -194,7 +200,7 @@ class Either<Left, void> {
   std::shared_ptr<Left> left_;
 };
 
-using ExchangeCodeCallback = std::function<void(EitherError<std::string>)>;
+using ExchangeCodeCallback = std::function<void(EitherError<Token>)>;
 using GetItemCallback = std::function<void(EitherError<IItem>)>;
 using GetItemDataCallback = std::function<void(EitherError<IItem>)>;
 using DeleteItemCallback = std::function<void(EitherError<void>)>;
