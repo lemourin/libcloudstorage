@@ -310,12 +310,6 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByPath(file));
   if (!node)
     return server.createResponse(IHttpRequest::NotFound, {}, "file not found");
-  auto buffer = std::make_shared<Buffer>(connection);
-  auto data = util::make_unique<HttpData>(buffer);
-  auto request = std::make_shared<Request<EitherError<void>>>(
-      std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
-  data->request_ = request;
-  provider_->addStreamRequest(request);
   int code = IHttpRequest::Ok;
   auto extension =
       static_cast<Item*>(provider_->toItem(node.get()).get())->extension();
@@ -337,6 +331,12 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     headers["Content-Range"] = stream.str();
     code = IHttpRequest::Partial;
   }
+  auto buffer = std::make_shared<Buffer>(connection);
+  auto data = util::make_unique<HttpData>(buffer);
+  auto request = std::make_shared<Request<EitherError<void>>>(
+      std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
+  data->request_ = request;
+  provider_->addStreamRequest(request);
   request->set(provider_->downloadResolver(
       provider_->toItem(node.get()),
       util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
