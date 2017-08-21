@@ -61,6 +61,7 @@ void Request<T>::finish() {
       r->finish();
       lock.lock();
     }
+    subrequests_.clear();
   }
 }
 
