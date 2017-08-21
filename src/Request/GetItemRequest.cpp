@@ -51,14 +51,14 @@ IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
 
 void GetItemRequest::work(IItem::Pointer item, std::string p,
                           Callback complete) {
-  if (p.empty() || p.size() == 1) {
-    complete(item);
-    return done(item);
-  }
   if (!item) {
     Error e{IHttpRequest::NotFound, "not found"};
     complete(e);
     return done(e);
+  }
+  if (p.empty() || p.size() == 1) {
+    complete(item);
+    return done(item);
   }
   auto path = p.substr(1);
   auto it = path.find_first_of('/');
