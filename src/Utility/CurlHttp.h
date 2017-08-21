@@ -46,6 +46,27 @@ class CurlHttpRequest : public IHttpRequest,
     void operator()(CURL*) const;
   };
 
+  struct CurlListDeleter {
+    void operator()(curl_slist*) const;
+  };
+
+  struct RequestData {
+    using Pointer = std::unique_ptr<RequestData>;
+
+    std::unique_ptr<CURL, CurlDeleter> handle_;
+    std::unique_ptr<curl_slist, CurlListDeleter> headers_;
+    std::shared_ptr<std::istream> data_;
+    std::shared_ptr<std::ostream> stream_;
+    std::shared_ptr<std::ostream> error_stream_;
+    std::shared_ptr<CurlHttpRequest::ICallback> callback_;
+    CompleteCallback complete_;
+    bool follow_redirect_;
+    bool first_call_;
+    bool success_;
+
+    void done(int result);
+  };
+
   CurlHttpRequest(const std::string& url, const std::string& method,
                   bool follow_redirect);
   std::unique_ptr<CURL, CurlDeleter> init() const;
@@ -64,10 +85,11 @@ class CurlHttpRequest : public IHttpRequest,
   const std::string& method() const override;
   bool follow_redirect() const override;
 
-  int send(std::shared_ptr<std::istream> data,
-           std::shared_ptr<std::ostream> response,
-           std::shared_ptr<std::ostream> error_stream,
-           ICallback::Pointer = nullptr) const;
+  RequestData::Pointer prepare(CompleteCallback,
+                               std::shared_ptr<std::istream> data,
+                               std::shared_ptr<std::ostream> response,
+                               std::shared_ptr<std::ostream> error_stream,
+                               ICallback::Pointer = nullptr) const;
 
   void send(CompleteCallback, std::shared_ptr<std::istream> data,
             std::shared_ptr<std::ostream> response,
@@ -77,7 +99,7 @@ class CurlHttpRequest : public IHttpRequest,
   std::string parametersToString() const;
 
  private:
-  curl_slist* headerParametersToList() const;
+  std::unique_ptr<curl_slist, CurlListDeleter> headerParametersToList() const;
 
   std::string url_;
   std::unordered_map<std::string, std::string> parameters_;
