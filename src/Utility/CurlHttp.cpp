@@ -24,6 +24,7 @@
 #include "CurlHttp.h"
 
 #include <json/json.h>
+#include <array>
 #include <sstream>
 
 #include "Utility.h"
