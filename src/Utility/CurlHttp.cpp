@@ -152,7 +152,7 @@ void RequestData::done(int code) {
     ret = http_code;
   } else {
     *error_stream_ << curl_easy_strerror(static_cast<CURLcode>(code));
-    ret = -code;
+    ret = (code == CURLE_ABORTED_BY_CALLBACK) ? IHttpRequest::Aborted : -code;
   }
   complete_(ret, stream_, error_stream_);
 }
