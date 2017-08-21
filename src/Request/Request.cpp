@@ -62,7 +62,6 @@ void Request<T>::finish() {
       lock.lock();
     }
   }
-  resolver_ = nullptr;
 }
 
 template <class T>
@@ -116,7 +115,9 @@ void Request<T>::set(Resolver r) {
 
 template <typename T>
 typename Request<T>::Ptr Request<T>::run() {
-  resolver_(this->shared_from_this());
+  auto r = std::move(resolver_);
+  if (!r) throw std::runtime_error("resolver not set");
+  r(this->shared_from_this());
   return this->shared_from_this();
 }
 
