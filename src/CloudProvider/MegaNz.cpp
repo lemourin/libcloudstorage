@@ -322,7 +322,8 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
   if (const char* range_str = connection->header("Range")) {
     range = util::parse_range(range_str);
     if (range.size == -1) range.size = node->getSize() - range.start;
-    if (range.start + range.size > node->getSize() || range.start == -1)
+    if (range.start + range.size > node->getSize() || range.start == -1 ||
+        range.size < 0)
       return server.createResponse(IHttpRequest::RangeInvalid, {},
                                    "invalid range");
     std::stringstream stream;
