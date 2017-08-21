@@ -24,6 +24,7 @@
 #ifndef IHTTP_H
 #define IHTTP_H
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -169,6 +170,8 @@ class IHttpRequest {
 class IHttp {
  public:
   using Pointer = std::unique_ptr<IHttp>;
+
+  virtual ~IHttp() = default;
 
   /**
    * Creates http request object.
