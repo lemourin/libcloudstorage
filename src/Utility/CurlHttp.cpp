@@ -24,10 +24,6 @@
 #include "CurlHttp.h"
 
 #include <json/json.h>
-#include <array>
-#include <atomic>
-#include <condition_variable>
-#include <future>
 #include <sstream>
 
 #include "Utility.h"
@@ -37,67 +33,12 @@ const uint32_t POLL_TIMEOUT = 100;
 
 namespace cloudstorage {
 
+namespace curl {
+
 namespace {
 
-struct Worker {
-  Worker() : done_(), thread_(std::bind(&Worker::work, this)) {}
-
-  ~Worker() {
-    done_ = true;
-    nonempty_.notify_one();
-    thread_.join();
-  }
-
-  void work() {
-    auto handle = curl_multi_init();
-    while (!done_ || !pending_.empty()) {
-      std::unique_lock<std::mutex> lock(lock_);
-      nonempty_.wait(lock, [=]() {
-        return done_ || !requests_.empty() || !pending_.empty();
-      });
-      auto requests = std::move(requests_);
-      lock.unlock();
-      for (auto&& r : requests) {
-        curl_multi_add_handle(handle, r->handle_.get());
-        pending_[r->handle_.get()] = std::move(r);
-      }
-      int dummy;
-      curl_multi_perform(handle, &dummy);
-      curl_multi_wait(handle, nullptr, 0, POLL_TIMEOUT, &dummy);
-      CURLMsg* msg;
-      do {
-        msg = curl_multi_info_read(handle, &dummy);
-        if (msg && msg->msg == CURLMSG_DONE) {
-          auto easy_handle = msg->easy_handle;
-          curl_multi_remove_handle(handle, easy_handle);
-          auto it = pending_.find(easy_handle);
-          it->second->done(msg->data.result);
-          pending_.erase(it);
-        }
-      } while (msg);
-    }
-    curl_multi_cleanup(handle);
-  }
-
-  void add(CurlHttpRequest::RequestData::Pointer r) {
-    {
-      std::lock_guard<std::mutex> lock(lock_);
-      requests_.push_back(std::move(r));
-    }
-    nonempty_.notify_all();
-  }
-
-  std::atomic_bool done_;
-  std::condition_variable nonempty_;
-  std::vector<CurlHttpRequest::RequestData::Pointer> requests_;
-  std::unordered_map<CURL*, CurlHttpRequest::RequestData::Pointer> pending_;
-  std::mutex lock_;
-  std::thread thread_;
-} worker;
-
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
-  CurlHttpRequest::RequestData* data =
-      static_cast<CurlHttpRequest::RequestData*>(userdata);
+  RequestData* data = static_cast<RequestData*>(userdata);
   if (data->first_call_) {
     data->first_call_ = false;
     if (data->callback_) {
@@ -150,12 +91,59 @@ std::ios::pos_type stream_length(std::istream& data) {
 
 }  // namespace
 
-void CurlHttpRequest::RequestData::done(int code) {
-  int ret = Unknown;
+CurlHttp::Worker::Worker() : done_(), thread_(std::bind(&Worker::work, this)) {}
+
+CurlHttp::Worker::~Worker() {
+  done_ = true;
+  nonempty_.notify_one();
+  thread_.join();
+}
+
+void CurlHttp::Worker::work() {
+  auto handle = curl_multi_init();
+  while (!done_ || !pending_.empty()) {
+    std::unique_lock<std::mutex> lock(lock_);
+    nonempty_.wait(lock, [=]() {
+      return done_ || !requests_.empty() || !pending_.empty();
+    });
+    auto requests = std::move(requests_);
+    lock.unlock();
+    for (auto&& r : requests) {
+      curl_multi_add_handle(handle, r->handle_.get());
+      pending_[r->handle_.get()] = std::move(r);
+    }
+    int dummy;
+    curl_multi_perform(handle, &dummy);
+    curl_multi_wait(handle, nullptr, 0, POLL_TIMEOUT, &dummy);
+    CURLMsg* msg;
+    do {
+      msg = curl_multi_info_read(handle, &dummy);
+      if (msg && msg->msg == CURLMSG_DONE) {
+        auto easy_handle = msg->easy_handle;
+        curl_multi_remove_handle(handle, easy_handle);
+        auto it = pending_.find(easy_handle);
+        it->second->done(msg->data.result);
+        pending_.erase(it);
+      }
+    } while (msg);
+  }
+  curl_multi_cleanup(handle);
+}
+
+void CurlHttp::Worker::add(RequestData::Pointer r) {
+  {
+    std::lock_guard<std::mutex> lock(lock_);
+    requests_.push_back(std::move(r));
+  }
+  nonempty_.notify_all();
+}
+
+void RequestData::done(int code) {
+  int ret = IHttpRequest::Unknown;
   if (code == CURLE_OK) {
-    long http_code = static_cast<long>(Unknown);
+    long http_code = static_cast<long>(IHttpRequest::Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
-    if (!follow_redirect_ && isRedirect(http_code)) {
+    if (!follow_redirect_ && IHttpRequest::isRedirect(http_code)) {
       std::array<char, MAX_URL_LENGTH> redirect_url;
       char* data = redirect_url.data();
       curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
@@ -171,11 +159,14 @@ void CurlHttpRequest::RequestData::done(int code) {
 
 CurlHttpRequest::CurlHttpRequest(const std::string& url,
                                  const std::string& method,
-                                 bool follow_redirect)
-    : url_(url), method_(method), follow_redirect_(follow_redirect) {}
+                                 bool follow_redirect,
+                                 std::shared_ptr<CurlHttp::Worker> worker)
+    : url_(url),
+      method_(method),
+      follow_redirect_(follow_redirect),
+      worker_(worker) {}
 
-std::unique_ptr<CURL, CurlHttpRequest::CurlDeleter> CurlHttpRequest::init()
-    const {
+std::unique_ptr<CURL, CurlDeleter> CurlHttpRequest::init() const {
   std::unique_ptr<CURL, CurlDeleter> handle(curl_easy_init());
   curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle.get(), CURLOPT_READFUNCTION, read_callback);
@@ -217,7 +208,7 @@ const std::string& CurlHttpRequest::url() const { return url_; }
 
 const std::string& CurlHttpRequest::method() const { return method_; }
 
-CurlHttpRequest::RequestData::Pointer CurlHttpRequest::prepare(
+RequestData::Pointer CurlHttpRequest::prepare(
     CompleteCallback complete, std::shared_ptr<std::istream> data,
     std::shared_ptr<std::ostream> response,
     std::shared_ptr<std::ostream> error_stream,
@@ -251,7 +242,7 @@ void CurlHttpRequest::send(CompleteCallback c,
                            std::shared_ptr<std::ostream> response,
                            std::shared_ptr<std::ostream> error_stream,
                            ICallback::Pointer cb) const {
-  worker.add(prepare(c, data, response, error_stream, cb));
+  worker_->add(prepare(c, data, response, error_stream, cb));
 }
 
 std::string CurlHttpRequest::parametersToString() const {
@@ -267,7 +258,7 @@ std::string CurlHttpRequest::parametersToString() const {
   return result;
 }
 
-std::unique_ptr<curl_slist, CurlHttpRequest::CurlListDeleter>
+std::unique_ptr<curl_slist, CurlListDeleter>
 CurlHttpRequest::headerParametersToList() const {
   curl_slist* list = nullptr;
   for (std::pair<std::string, std::string> p : header_parameters_)
@@ -275,18 +266,21 @@ CurlHttpRequest::headerParametersToList() const {
   return std::unique_ptr<curl_slist, CurlListDeleter>(list);
 }
 
-void CurlHttpRequest::CurlDeleter::operator()(CURL* handle) const {
-  curl_easy_cleanup(handle);
-}
+void CurlDeleter::operator()(CURL* handle) const { curl_easy_cleanup(handle); }
 
-void CurlHttpRequest::CurlListDeleter::operator()(curl_slist* lst) const {
+void CurlListDeleter::operator()(curl_slist* lst) const {
   curl_slist_free_all(lst);
 }
+
+CurlHttp::CurlHttp() : worker_(std::make_shared<Worker>()) {}
 
 IHttpRequest::Pointer CurlHttp::create(const std::string& url,
                                        const std::string& method,
                                        bool follow_redirect) const {
-  return util::make_unique<CurlHttpRequest>(url, method, follow_redirect);
+  return util::make_unique<CurlHttpRequest>(url, method, follow_redirect,
+                                            worker_);
 }
+
+}  // namespace curl
 
 }  // namespace cloudstorage

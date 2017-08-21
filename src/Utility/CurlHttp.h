@@ -25,50 +25,79 @@
 #define CURLHTTP_H
 
 #include <curl/curl.h>
+#include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "IHttp.h"
 
 namespace cloudstorage {
 
+namespace curl {
+
+struct CurlDeleter {
+  void operator()(CURL*) const;
+};
+
+struct CurlListDeleter {
+  void operator()(curl_slist*) const;
+};
+
+struct RequestData {
+  using Pointer = std::unique_ptr<RequestData>;
+
+  std::unique_ptr<CURL, CurlDeleter> handle_;
+  std::unique_ptr<curl_slist, CurlListDeleter> headers_;
+  std::shared_ptr<std::istream> data_;
+  std::shared_ptr<std::ostream> stream_;
+  std::shared_ptr<std::ostream> error_stream_;
+  std::shared_ptr<IHttpRequest::ICallback> callback_;
+  IHttpRequest::CompleteCallback complete_;
+  bool follow_redirect_;
+  bool first_call_;
+  bool success_;
+
+  void done(int result);
+};
+
 class CurlHttp : public IHttp {
  public:
+  CurlHttp();
+
   IHttpRequest::Pointer create(const std::string&, const std::string&,
                                bool) const override;
+
+ private:
+  friend class CurlHttpRequest;
+
+  struct Worker {
+    Worker();
+    ~Worker();
+
+    void work();
+    void add(RequestData::Pointer r);
+
+    std::atomic_bool done_;
+    std::condition_variable nonempty_;
+    std::vector<RequestData::Pointer> requests_;
+    std::unordered_map<CURL*, RequestData::Pointer> pending_;
+    std::mutex lock_;
+    std::thread thread_;
+  };
+
+  std::shared_ptr<Worker> worker_;
 };
 
 class CurlHttpRequest : public IHttpRequest,
                         public std::enable_shared_from_this<CurlHttpRequest> {
  public:
-  struct CurlDeleter {
-    void operator()(CURL*) const;
-  };
-
-  struct CurlListDeleter {
-    void operator()(curl_slist*) const;
-  };
-
-  struct RequestData {
-    using Pointer = std::unique_ptr<RequestData>;
-
-    std::unique_ptr<CURL, CurlDeleter> handle_;
-    std::unique_ptr<curl_slist, CurlListDeleter> headers_;
-    std::shared_ptr<std::istream> data_;
-    std::shared_ptr<std::ostream> stream_;
-    std::shared_ptr<std::ostream> error_stream_;
-    std::shared_ptr<CurlHttpRequest::ICallback> callback_;
-    CompleteCallback complete_;
-    bool follow_redirect_;
-    bool first_call_;
-    bool success_;
-
-    void done(int result);
-  };
-
   CurlHttpRequest(const std::string& url, const std::string& method,
-                  bool follow_redirect);
+                  bool follow_redirect,
+                  std::shared_ptr<CurlHttp::Worker> worker);
   std::unique_ptr<CURL, CurlDeleter> init() const;
 
   void setParameter(const std::string& parameter,
@@ -106,7 +135,10 @@ class CurlHttpRequest : public IHttpRequest,
   std::unordered_map<std::string, std::string> header_parameters_;
   std::string method_;
   bool follow_redirect_;
+  std::shared_ptr<CurlHttp::Worker> worker_;
 };
+
+}  // namespace curl
 
 }  // namespace cloudstorage
 

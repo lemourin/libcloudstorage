@@ -171,7 +171,7 @@ void CloudProvider::initialize(InitData&& data) {
 #endif
 
 #ifdef WITH_CURL
-  if (!http_) http_ = util::make_unique<CurlHttp>();
+  if (!http_) http_ = util::make_unique<curl::CurlHttp>();
 #endif
 
 #ifdef WITH_MICROHTTPD
