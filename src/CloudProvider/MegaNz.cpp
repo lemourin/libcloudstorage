@@ -242,15 +242,9 @@ struct Buffer {
 
 class HttpData : public IHttpServer::IResponse::ICallback {
  public:
-  HttpData(Buffer::Pointer d) : buffer_(d) {}
+  HttpData(Buffer::Pointer d, MegaNz* p) : buffer_(d), mega_(p) {}
 
-  ~HttpData() {
-    auto p = request_->provider();
-    if (p) {
-      auto mega = static_cast<MegaNz*>(request_->provider().get());
-      mega->removeStreamRequest(request_);
-    }
-  }
+  ~HttpData() { mega_->removeStreamRequest(request_); }
 
   int putData(char* buf, size_t max) override {
     std::unique_lock<std::mutex> lock(buffer_->mutex_);
@@ -268,6 +262,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   }
 
   Buffer::Pointer buffer_;
+  MegaNz* mega_;
   std::shared_ptr<Request<EitherError<void>>> request_;
 };
 
@@ -333,7 +328,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
     code = IHttpRequest::Partial;
   }
   auto buffer = std::make_shared<Buffer>(connection);
-  auto data = util::make_unique<HttpData>(buffer);
+  auto data = util::make_unique<HttpData>(buffer, provider_);
   auto request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
   data->request_ = request;

@@ -33,8 +33,8 @@ namespace cloudstorage {
 
 namespace {
 
-void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
-            std::string source_id,
+void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
+            std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete);
 
 std::string escapePath(const std::string& str) {
@@ -66,35 +66,33 @@ void remove(Request<EitherError<void>>::Ptr r,
   }));
 }
 
-void rename(Request<EitherError<void>>::Ptr r,
+void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
             std::shared_ptr<std::vector<IItem::Pointer>> lst,
             std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
   if (lst->empty()) return complete(nullptr);
   auto item = lst->back();
   lst->pop_back();
-  rename(r, lst, dest_id, source_id, [=](EitherError<void> e) {
+  rename(r, http, region, lst, dest_id, source_id, [=](EitherError<void> e) {
     if (e.left())
       complete(e.left());
     else
-      rename(r, dest_id + "/" + item->filename(), item->id(), complete);
+      rename(r, http, region, dest_id + "/" + item->filename(), item->id(),
+             complete);
   });
 }
 
-void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
-            std::string source_id,
+void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
+            std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
-  auto p = r->provider();
-  auto region = static_cast<AmazonS3*>(p.get())->region();
   auto finalize = [=]() {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
           auto data = AmazonS3::split(source_id);
-          return p->http()->create("https://" + data.first + ".s3." + region +
-                                       ".amazonaws.com/" +
-                                       escapePath(data.second),
-                                   "DELETE");
+          return http->create("https://" + data.first + ".s3." + region +
+                                  ".amazonaws.com/" + escapePath(data.second),
+                              "DELETE");
         },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
@@ -112,10 +110,10 @@ void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
     r->sendRequest(
         [=](util::Output) {
           auto dest_data = AmazonS3::split(dest_id);
-          auto request = p->http()->create(
-              "https://" + dest_data.first + ".s3." + region +
-                  ".amazonaws.com/" + escapePath(dest_data.second),
-              "PUT");
+          auto request =
+              http->create("https://" + dest_data.first + ".s3." + region +
+                               ".amazonaws.com/" + escapePath(dest_data.second),
+                           "PUT");
           auto source_data = AmazonS3::split(source_id);
           request->setHeaderParameter(
               "x-amz-copy-source",
@@ -144,7 +142,7 @@ void rename(Request<EitherError<void>>::Ptr r, std::string dest_id,
                   complete(e.left());
                   return r->done(e.left());
                 }
-                rename(r, e.right(), dest_id, source_id,
+                rename(r, http, region, e.right(), dest_id, source_id,
                        [=](EitherError<void> e) {
                          if (e.left()) {
                            complete(e.left());
@@ -214,7 +212,8 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     MoveItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
   r->set([=](Request<EitherError<void>>::Ptr r) {
-    rename(r, destination->id() + source->filename(), source->id(), callback);
+    rename(r, http(), region(), destination->id() + source->filename(),
+           source->id(), callback);
   });
   return r->run();
 }
@@ -229,7 +228,7 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
       path = split(item->id()).first + Auth::SEPARATOR;
     else
       path = split(item->id()).first + Auth::SEPARATOR + getPath(path) + "/";
-    rename(r, path + name, item->id(), callback);
+    rename(r, http(), region(), path + name, item->id(), callback);
   });
   return r->run();
 }
