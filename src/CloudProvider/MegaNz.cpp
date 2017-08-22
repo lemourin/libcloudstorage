@@ -238,6 +238,7 @@ struct Buffer {
   std::queue<char> data_;
   IHttpServer::IConnection::Pointer connection_;
   bool suspended_ = false;
+  bool done_ = false;
 };
 
 class HttpData : public IHttpServer::IResponse::ICallback {
@@ -248,7 +249,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   int putData(char* buf, size_t max) override {
     std::unique_lock<std::mutex> lock(buffer_->mutex_);
-    if (request_->is_cancelled()) return -1;
+    if (buffer_->done_) return -1;
     if (buffer_->data_.empty()) {
       buffer_->suspend();
       return 0;
@@ -276,7 +277,11 @@ class HttpDataCallback : public IDownloadFileCallback {
     buffer_->resume();
   }
 
-  void done(EitherError<void>) override { buffer_->resume(); }
+  void done(EitherError<void>) override {
+    std::lock_guard<std::mutex> lock(buffer_->mutex_);
+    buffer_->done_ = true;
+    buffer_->resume();
+  }
 
   void progress(uint32_t, uint32_t) override {}
 
