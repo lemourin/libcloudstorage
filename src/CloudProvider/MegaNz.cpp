@@ -456,8 +456,6 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         auto fetch = [=]() {
-          if (r->is_cancelled())
-            return complete(Error{IHttpRequest::Aborted, ""});
           auto fetch_nodes_listener = std::make_shared<RequestListener>(
               [=](EitherError<void> e, Listener*) {
                 if (!e.left()) authorized_ = true;
@@ -826,10 +824,6 @@ void MegaNz::ensureAuthorized(typename Request<T>::Ptr r,
     if (e.left()) {
       on_error(e.left());
       r->done(e.left());
-    } else if (r->is_cancelled()) {
-      Error e{IHttpRequest::Aborted, ""};
-      on_error(e);
-      r->done(e);
     } else
       on_success();
   };

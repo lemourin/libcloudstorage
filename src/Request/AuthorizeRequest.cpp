@@ -29,7 +29,7 @@ namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
                                    AuthorizationFlow callback)
-    : Request(p), state_(provider()->auth()->state()) {
+    : Request(p), state_(provider()->auth()->state()), server_cancelled_() {
   if (!provider()->auth_callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
   set([=](Request::Ptr request) {
@@ -62,6 +62,7 @@ AuthorizeRequest::~AuthorizeRequest() { cancel(); }
 void AuthorizeRequest::sendCancel() {
   std::unique_lock<std::mutex> lock(lock_);
   auto auth_server = std::move(auth_server_);
+  server_cancelled_ = true;
   lock.unlock();
   if (auth_server) {
     class Connection : public IHttpServer::IConnection {
@@ -104,11 +105,12 @@ void AuthorizeRequest::cancel() {
 }
 
 void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
-  {
-    std::lock_guard<std::mutex> lock(lock_);
-    auth_server_ = p;
+  std::unique_lock<std::mutex> lock(lock_);
+  auth_server_ = p;
+  if (p && server_cancelled_) {
+    lock.unlock();
+    sendCancel();
   }
-  if (p && is_cancelled()) sendCancel();
 }
 
 void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {

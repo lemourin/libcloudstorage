@@ -144,24 +144,19 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
   if (!p) return;
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
-  if (is_cancelled()) {
-    lock.unlock();
-    c(Error{IHttpRequest::Aborted, ""});
-  } else {
-    p->auth_callbacks_[this].push_back(c);
-    if (!p->current_authorization_) {
-      {
-        auto r = p->authorizeAsync();
-        p->current_authorization_ = r;
-        lock.unlock();
-        r->run();
-      }
-      lock.lock();
+  p->auth_callbacks_[this].push_back(c);
+  if (!p->current_authorization_) {
+    {
+      auto r = p->authorizeAsync();
+      p->current_authorization_ = r;
+      lock.unlock();
+      r->run();
     }
-    auto r = p->current_authorization_;
-    lock.unlock();
-    if (r) subrequest(r);
+    lock.lock();
   }
+  auto r = p->current_authorization_;
+  lock.unlock();
+  if (r) subrequest(r);
 }
 
 template <class T>
