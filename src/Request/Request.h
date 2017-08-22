@@ -101,6 +101,9 @@ class Request : public IRequest<ReturnValue>,
 
   void subrequest(std::shared_ptr<IGenericRequest>);
 
+  void authorize(IHttpRequest::Pointer r);
+  bool reauthorize(int code);
+
  private:
   friend class AuthorizeRequest;
 

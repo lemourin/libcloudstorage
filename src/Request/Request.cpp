@@ -142,6 +142,7 @@ std::unique_ptr<HttpCallback> Request<T>::httpCallback(
 template <class T>
 void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
+  if (!p) return;
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   if (is_cancelled()) {
     lock.unlock();
@@ -164,21 +165,31 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
 }
 
 template <class T>
+void Request<T>::authorize(IHttpRequest::Pointer r) {
+  auto p = provider();
+  if (p && r) p->authorizeRequest(*r);
+}
+
+template <class T>
+bool Request<T>::reauthorize(int code) {
+  auto p = provider();
+  return p ? p->reauthorize(code) : false;
+}
+
+template <class T>
 void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
                              std::shared_ptr<std::ostream> output,
                              ProgressFunction download,
                              ProgressFunction upload) {
-  auto p = provider();
   auto request = this->shared_from_this();
-  if (!p) return;
   auto input = std::make_shared<std::stringstream>(),
        error_stream = std::make_shared<std::stringstream>();
   auto r = factory(input);
-  if (r) p->authorizeRequest(*r);
+  authorize(r);
   send(r.get(),
        [=](int code, util::Output, util::Output) {
          if (IHttpRequest::isSuccess(code)) return complete(output);
-         if (p->reauthorize(code)) {
+         if (this->reauthorize(code)) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
@@ -189,7 +200,7 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
              auto input = std::make_shared<std::stringstream>(),
                   error_stream = std::make_shared<std::stringstream>();
              auto r = factory(input);
-             if (r) p->authorizeRequest(*r);
+             authorize(r);
              this->send(r.get(),
                         [=](int code, util::Output output, util::Output) {
                           (void)request;
