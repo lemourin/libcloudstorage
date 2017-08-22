@@ -46,6 +46,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   void set_server(std::shared_ptr<IHttpServer>);
 
  private:
+  std::string state_;
   std::mutex lock_;
   std::shared_ptr<IHttpServer> auth_server_;
 };

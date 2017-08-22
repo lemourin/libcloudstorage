@@ -98,12 +98,11 @@ class Request : public IRequest<ReturnValue>,
   std::shared_ptr<CloudProvider> provider() const;
 
   bool is_cancelled();
-  std::unique_lock<std::mutex> cancelled_lock();
 
   void subrequest(std::shared_ptr<IGenericRequest>);
 
  private:
-  void set_cancelled(bool);
+  friend class AuthorizeRequest;
 
   std::unique_ptr<HttpCallback> httpCallback(
       ProgressFunction progress_download = nullptr,
@@ -112,9 +111,9 @@ class Request : public IRequest<ReturnValue>,
   std::promise<ReturnValue> value_;
   std::shared_future<ReturnValue> future_;
   Resolver resolver_;
+  std::mutex provider_mutex_;
   std::shared_ptr<CloudProvider> provider_shared_;
   std::weak_ptr<CloudProvider> provider_weak_;
-  std::mutex cancelled_mutex_;
   std::atomic_bool is_cancelled_;
   std::mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;

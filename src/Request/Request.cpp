@@ -62,12 +62,17 @@ void Request<T>::finish() {
       lock.lock();
     }
   }
+  {
+    std::unique_lock<std::mutex> lock(provider_mutex_);
+    provider_shared_ = nullptr;
+    provider_weak_.reset();
+  }
 }
 
 template <class T>
 void Request<T>::cancel() {
   if (is_cancelled()) return;
-  set_cancelled(true);
+  is_cancelled_ = true;
   auto p = provider();
   if (p) {
     std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
@@ -227,17 +232,6 @@ std::shared_ptr<CloudProvider> Request<T>::provider() const {
 template <class T>
 bool Request<T>::is_cancelled() {
   return is_cancelled_;
-}
-
-template <class T>
-void Request<T>::set_cancelled(bool e) {
-  std::lock_guard<std::mutex> lock(cancelled_mutex_);
-  is_cancelled_ = e;
-}
-
-template <class T>
-std::unique_lock<std::mutex> Request<T>::cancelled_lock() {
-  return std::unique_lock<std::mutex>(cancelled_mutex_);
 }
 
 template <class T>
