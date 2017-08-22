@@ -33,10 +33,6 @@ class DeleteItemRequest : public Request<EitherError<void>> {
   DeleteItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer item,
                     DeleteItemCallback);
   ~DeleteItemRequest();
-
- private:
-  IItem::Pointer item_;
-  DeleteItemCallback callback_;
 };
 
 }  // namespace cloudstorage

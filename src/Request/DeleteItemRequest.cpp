@@ -30,19 +30,19 @@ namespace cloudstorage {
 DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      DeleteItemCallback callback)
-    : Request(p), item_(item), callback_(callback) {
-  set([this](Request::Ptr request) {
+    : Request(p) {
+  set([=](Request::Ptr request) {
     auto output = std::make_shared<std::stringstream>();
     sendRequest(
-        [this](util::Output stream) {
-          return provider()->deleteItemRequest(*item_, *stream);
+        [=](util::Output stream) {
+          return provider()->deleteItemRequest(*item, *stream);
         },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
-            callback_(e.left());
+            callback(e.left());
             request->done(e.left());
           } else {
-            callback_(nullptr);
+            callback(nullptr);
             request->done(nullptr);
           }
         },
