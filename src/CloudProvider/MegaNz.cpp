@@ -334,8 +334,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
       util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
   provider_->addStreamRequest(download_request);
   auto data = util::make_unique<HttpData>(buffer, provider_, download_request);
-  auto response =
-      request.response(code, headers, range.size, std::move(data));
+  auto response = request.response(code, headers, range.size, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
     std::unique_lock<std::mutex> lock(buffer->mutex_);
