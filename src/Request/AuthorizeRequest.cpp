@@ -65,31 +65,27 @@ void AuthorizeRequest::sendCancel() {
   server_cancelled_ = true;
   lock.unlock();
   if (auth_server) {
-    class Connection : public IHttpServer::IConnection {
+    class Request : public IHttpServer::IRequest {
      public:
-      Connection(const std::string& state) : state_(state) {}
-      ~Connection() {
-        if (f_) f_();
-      }
-
-      const char* getParameter(const std::string& name) const {
+      Request(const std::string& state) : state_(state) {}
+      const char* get(const std::string& name) const override {
         if (name == "error") return "cancelled";
         if (name == "accepted") return "false";
         if (name == "state") return state_.c_str();
         return nullptr;
       }
-      const char* header(const std::string&) const { return nullptr; }
-      std::string url() const { return "/"; }
-      void onCompleted(CompletedCallback f) { f_ = f; }
-      void suspend() {}
-      void resume() {}
+      const char* header(const std::string&) const override { return nullptr; }
+      std::string url() const override { return "/"; }
+      IHttpServer::IResponse::Pointer response(
+          int, const IHttpServer::IResponse::Headers&, int,
+          IHttpServer::IResponse::ICallback::Pointer) const override {
+        return nullptr;
+      }
 
      private:
       std::string state_;
-      CompletedCallback f_;
     };
-    auto connection = std::make_shared<Connection>(state_);
-    auth_server->callback()->receivedConnection(*auth_server, connection.get());
+    auth_server->callback()->handle(Request(state_));
   }
 }
 

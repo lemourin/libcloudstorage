@@ -37,49 +37,41 @@ class MicroHttpdServer : public IHttpServer {
 
   class Response : public IResponse {
    public:
-    Response() = default;
-    Response(int code, const IResponse::Headers&, const std::string& body);
+    Response(MHD_Connection* connection, int code, const IResponse::Headers&,
+             int size, IResponse::ICallback::Pointer);
     ~Response();
 
     MHD_Response* response() const { return response_; }
     int code() const { return code_; }
 
+    CompletedCallback callback() const { return callback_; }
+    void resume() override;
+    void completed(CompletedCallback f) override { callback_ = f; }
+
    protected:
+    MHD_Connection* connection_;
     MHD_Response* response_;
     int code_;
+    CompletedCallback callback_;
   };
 
-  class CallbackResponse : public Response {
+  class Request : public IRequest {
    public:
-    CallbackResponse(int code, const IResponse::Headers&, int size,
-                     int chunk_size, IResponse::ICallback::Pointer);
-  };
-
-  class Connection : public IConnection {
-   public:
-    Connection(MHD_Connection*, const char* url);
+    Request(MHD_Connection*, const char* url);
 
     MHD_Connection* connection() const { return connection_; }
-    CompletedCallback callback() const { return callback_; }
 
-    const char* getParameter(const std::string& name) const override;
+    const char* get(const std::string& name) const override;
     const char* header(const std::string&) const override;
     std::string url() const override;
-    void onCompleted(CompletedCallback) override;
-    void suspend() override;
-    void resume() override;
+
+    IResponse::Pointer response(int code, const IResponse::Headers&, int size,
+                                IResponse::ICallback::Pointer) const override;
 
    private:
     MHD_Connection* connection_;
     std::string url_;
-    CompletedCallback callback_;
   };
-
-  IResponse::Pointer createResponse(int code, const IResponse::Headers&,
-                                    const std::string& body) const override;
-  IResponse::Pointer createResponse(
-      int code, const IResponse::Headers&, int size, int chunk_size,
-      IResponse::ICallback::Pointer) const override;
 
   ICallback::Pointer callback() const override { return callback_; }
 

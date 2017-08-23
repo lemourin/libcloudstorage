@@ -36,18 +36,20 @@ class IHttpServer {
 
   enum class Type { Authorization, FileProvider };
 
-  class IConnection;
-
   virtual ~IHttpServer() = default;
 
   class IResponse {
    public:
     using Pointer = std::unique_ptr<IResponse>;
     using Headers = std::unordered_map<std::string, std::string>;
+    using CompletedCallback = std::function<void()>;
 
     class ICallback {
      public:
       using Pointer = std::unique_ptr<ICallback>;
+
+      static constexpr int Suspend = 0;
+      static constexpr int Abort = -1;
 
       virtual ~ICallback() = default;
 
@@ -55,21 +57,22 @@ class IHttpServer {
     };
 
     virtual ~IResponse() = default;
+
+    virtual void resume() = 0;
+    virtual void completed(CompletedCallback) = 0;
   };
 
-  class IConnection {
+  class IRequest {
    public:
-    using Pointer = IConnection*;
-    using CompletedCallback = std::function<void()>;
+    virtual ~IRequest() = default;
 
-    virtual ~IConnection() = default;
-
-    virtual const char* getParameter(const std::string& name) const = 0;
+    virtual const char* get(const std::string& name) const = 0;
     virtual const char* header(const std::string& name) const = 0;
     virtual std::string url() const = 0;
-    virtual void onCompleted(CompletedCallback) = 0;
-    virtual void suspend() = 0;
-    virtual void resume() = 0;
+
+    virtual IResponse::Pointer response(
+        int code, const IResponse::Headers&, int size,
+        IResponse::ICallback::Pointer) const = 0;
   };
 
   class ICallback {
@@ -78,18 +81,10 @@ class IHttpServer {
 
     virtual ~ICallback() = default;
 
-    virtual IResponse::Pointer receivedConnection(const IHttpServer&,
-                                                  IConnection::Pointer) = 0;
+    virtual IResponse::Pointer handle(const IRequest&) = 0;
   };
 
   virtual ICallback::Pointer callback() const = 0;
-
-  virtual IResponse::Pointer createResponse(int code, const IResponse::Headers&,
-                                            const std::string& body) const = 0;
-
-  virtual IResponse::Pointer createResponse(
-      int code, const IResponse::Headers&, int size, int chunk_size,
-      IResponse::ICallback::Pointer) const = 0;
 };
 
 class IHttpServerFactory {

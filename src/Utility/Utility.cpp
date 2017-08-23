@@ -31,6 +31,8 @@
 #include <sstream>
 #include <unordered_map>
 
+const uint32_t CHUNK_SIZE = 1024;
+
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
@@ -155,5 +157,28 @@ std::string Url::escape(const std::string& value) {
 std::string Url::escapeHeader(const std::string& header) {
   return Json::valueToQuotedString(header.c_str());
 }
+
+IHttpServer::IResponse::Pointer response_from_string(
+    const IHttpServer::IRequest& request, int code,
+    const IHttpServer::IResponse::Headers& headers, const std::string& data) {
+  class DataProvider : public IHttpServer::IResponse::ICallback {
+   public:
+    DataProvider(const std::string& data) : position_(), data_(data) {}
+
+    int putData(char* buffer, size_t max) override {
+      int cnt = std::min(data_.length() - position_, max);
+      memcpy(buffer, (data_.begin() + position_).base(), cnt);
+      position_ += cnt;
+      return cnt;
+    }
+
+   private:
+    int position_;
+    std::string data_;
+  };
+  return request.response(code, headers, data.length(),
+                          util::make_unique<DataProvider>(data));
+}
+
 }  // namespace util
 }  // namespace cloudstorage

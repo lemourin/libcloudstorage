@@ -36,8 +36,8 @@ class Auth : public IAuth {
 
   class HttpServerCallback : public IHttpServer::ICallback {
    public:
-    IHttpServer::IResponse::Pointer receivedConnection(
-        const IHttpServer&, IHttpServer::IConnection::Pointer) override;
+    IHttpServer::IResponse::Pointer handle(
+        const IHttpServer::IRequest&) override;
 
     struct HttpServerData {
       std::string code_parameter_name_;

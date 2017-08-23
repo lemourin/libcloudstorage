@@ -46,8 +46,8 @@ class MegaNz : public CloudProvider {
   class HttpServerCallback : public IHttpServer::ICallback {
    public:
     HttpServerCallback(MegaNz*);
-    IHttpServer::IResponse::Pointer receivedConnection(
-        const IHttpServer&, IHttpServer::IConnection::Pointer) override;
+    IHttpServer::IResponse::Pointer handle(
+        const IHttpServer::IRequest&) override;
 
    private:
     MegaNz* provider_;

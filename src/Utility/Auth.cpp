@@ -93,17 +93,17 @@ const std::string DEFAULT_ERROR_PAGE =
 
 namespace cloudstorage {
 
-IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
-    const IHttpServer& server, IHttpServer::IConnection::Pointer connection) {
-  const char* state = connection->getParameter(data_.state_parameter_name_);
+IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
+    const IHttpServer::IRequest& request) {
+  const char* state = request.get(data_.state_parameter_name_);
   if (!state || state != data_.state_)
-    return server.createResponse(
-        IHttpRequest::Unauthorized, {},
+    return util::response_from_string(
+        request, IHttpRequest::Unauthorized, {},
         data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 
-  const char* accepted = connection->getParameter("accepted");
-  const char* code = connection->getParameter(data_.code_parameter_name_);
-  const char* error = connection->getParameter(data_.error_parameter_name_);
+  const char* accepted = request.get("accepted");
+  const char* code = request.get(data_.code_parameter_name_);
+  const char* error = request.get(data_.error_parameter_name_);
   if (accepted) {
     std::unique_lock<std::mutex> lock(lock_);
     auto callback = std::move(data_.callback_);
@@ -121,23 +121,23 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::receivedConnection(
   }
 
   if (code)
-    return server.createResponse(IHttpRequest::Ok, {},
-                                 data_.success_page_.empty()
-                                     ? DEFAULT_SUCCESS_PAGE
-                                     : data_.success_page_);
+    return util::response_from_string(request, IHttpRequest::Ok, {},
+                                      data_.success_page_.empty()
+                                          ? DEFAULT_SUCCESS_PAGE
+                                          : data_.success_page_);
 
   if (error)
-    return server.createResponse(
-        IHttpRequest::Unauthorized, {},
+    return util::response_from_string(
+        request, IHttpRequest::Unauthorized, {},
         data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 
-  if (connection->url() == data_.redirect_uri_path_ + "/login")
-    return server.createResponse(
-        IHttpRequest::Ok, {},
+  if (request.url() == data_.redirect_uri_path_ + "/login")
+    return util::response_from_string(
+        request, IHttpRequest::Ok, {},
         data_.login_page_.empty() ? DEFAULT_LOGIN_PAGE : data_.login_page_);
 
-  return server.createResponse(
-      IHttpRequest::NotFound, {},
+  return util::response_from_string(
+      request, IHttpRequest::NotFound, {},
       data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
 }
 

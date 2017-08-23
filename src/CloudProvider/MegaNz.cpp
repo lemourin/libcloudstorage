@@ -218,41 +218,34 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
 struct Buffer {
   using Pointer = std::shared_ptr<Buffer>;
 
-  Buffer(IHttpServer::IConnection::Pointer c) : connection_(c) {}
-
   void resume() {
-    if (connection_ && suspended_) {
+    if (response_ && suspended_) {
       suspended_ = false;
-      connection_->resume();
-    }
-  }
-
-  void suspend() {
-    if (connection_ && !suspended_) {
-      suspended_ = true;
-      connection_->suspend();
+      response_->resume();
     }
   }
 
   std::mutex mutex_;
   std::queue<char> data_;
-  IHttpServer::IConnection::Pointer connection_;
+  IHttpServer::IResponse* response_;
   bool suspended_ = false;
   bool done_ = false;
 };
 
 class HttpData : public IHttpServer::IResponse::ICallback {
  public:
-  HttpData(Buffer::Pointer d, MegaNz* p) : buffer_(d), mega_(p) {}
+  HttpData(Buffer::Pointer d, MegaNz* p,
+           std::shared_ptr<Request<EitherError<void>>> r)
+      : buffer_(d), mega_(p), request_(r) {}
 
   ~HttpData() { mega_->removeStreamRequest(request_); }
 
   int putData(char* buf, size_t max) override {
     std::unique_lock<std::mutex> lock(buffer_->mutex_);
-    if (buffer_->done_) return -1;
+    if (buffer_->done_) return Abort;
     if (buffer_->data_.empty()) {
-      buffer_->suspend();
-      return 0;
+      buffer_->suspended_ = true;
+      return Suspend;
     }
     size_t cnt = std::min(buffer_->data_.size(), max);
     for (size_t i = 0; i < cnt; i++) {
@@ -292,24 +285,25 @@ class HttpDataCallback : public IDownloadFileCallback {
 
 MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
 
-IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
-    const IHttpServer& server, IHttpServer::IConnection::Pointer connection) {
+IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
+    const IHttpServer::IRequest& request) {
   {
     std::lock_guard<std::mutex> lock(provider_->mutex_);
     if (provider_->deleted_)
-      return server.createResponse(IHttpRequest::Bad, {}, "");
+      return util::response_from_string(request, IHttpRequest::Bad, {}, "");
   }
-  const char* state = connection->getParameter("state");
+  const char* state = request.get("state");
   if (!state || state != provider_->auth()->state())
-    return server.createResponse(IHttpRequest::Forbidden, {},
-                                 "state parameter missing / invalid");
+    return util::response_from_string(request, IHttpRequest::Forbidden, {},
+                                      "state parameter missing / invalid");
   if (!provider_->authorized_)
-    return server.createResponse(IHttpRequest::ServiceUnavailable, {},
-                                 "not authorized just yet");
-  const char* file = connection->getParameter("file");
+    return util::response_from_string(request, IHttpRequest::ServiceUnavailable,
+                                      {}, "not authorized just yet");
+  const char* file = request.get("file");
   std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByPath(file));
   if (!node)
-    return server.createResponse(IHttpRequest::NotFound, {}, "file not found");
+    return util::response_from_string(request, IHttpRequest::NotFound, {},
+                                      "file not found");
   int code = IHttpRequest::Ok;
   auto extension =
       static_cast<Item*>(provider_->toItem(node.get()).get())->extension();
@@ -319,35 +313,36 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::receivedConnection(
       {"Content-Disposition",
        "inline; filename=\"" + std::string(node->getName()) + "\""}};
   util::range range = {0, node->getSize()};
-  if (const char* range_str = connection->header("Range")) {
+  if (const char* range_str = request.header("Range")) {
     range = util::parse_range(range_str);
     if (range.size == -1) range.size = node->getSize() - range.start;
     if (range.start + range.size > node->getSize() || range.start == -1 ||
         range.size < 0)
-      return server.createResponse(IHttpRequest::RangeInvalid, {},
-                                   "invalid range");
+      return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
+                                        "invalid range");
     std::stringstream stream;
     stream << "bytes " << range.start << "-" << range.start + range.size - 1
            << "/" << node->getSize();
     headers["Content-Range"] = stream.str();
     code = IHttpRequest::Partial;
   }
-  auto buffer = std::make_shared<Buffer>(connection);
-  auto data = util::make_unique<HttpData>(buffer, provider_);
-  auto request = std::make_shared<Request<EitherError<void>>>(
+  auto buffer = std::make_shared<Buffer>();
+  auto download_request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
-  data->request_ = request;
-  provider_->addStreamRequest(request);
-  request->set(provider_->downloadResolver(
+  download_request->set(provider_->downloadResolver(
       provider_->toItem(node.get()),
       util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
-  request->run();
-  connection->onCompleted([buffer]() {
+  provider_->addStreamRequest(download_request);
+  auto data = util::make_unique<HttpData>(buffer, provider_, download_request);
+  auto response =
+      request.response(code, headers, range.size, std::move(data));
+  buffer->response_ = response.get();
+  response->completed([buffer]() {
     std::unique_lock<std::mutex> lock(buffer->mutex_);
-    buffer->connection_ = nullptr;
+    buffer->response_ = nullptr;
   });
-  return server.createResponse(code, headers, range.size, BUFFER_SIZE,
-                               std::move(data));
+  download_request->run();
+  return std::move(response);
 }
 
 MegaNz::MegaNz()

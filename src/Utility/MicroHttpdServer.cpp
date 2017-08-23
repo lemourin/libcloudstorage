@@ -27,6 +27,7 @@
 
 namespace cloudstorage {
 
+const int CHUNK_SIZE = 1024;
 const int AUTHORIZATION_PORT = 12345;
 const int FILE_PROVIDER_PORT = 12346;
 
@@ -37,30 +38,48 @@ int http_request_callback(void* cls, MHD_Connection* c, const char* url,
                           const char* /*upload_data*/,
                           size_t* /*upload_data_size*/, void** con_cls) {
   MicroHttpdServer* server = static_cast<MicroHttpdServer*>(cls);
-  auto connection = util::make_unique<MicroHttpdServer::Connection>(c, url);
-  auto response =
-      server->callback()->receivedConnection(*server, connection.get());
+  auto response = server->callback()->handle(MicroHttpdServer::Request(c, url));
   auto p = static_cast<MicroHttpdServer::Response*>(response.get());
   int ret = MHD_queue_response(c, p->code(), p->response());
-  *con_cls = connection.release();
+  *con_cls = response.release();
   return ret;
 }
 
 void http_request_completed(void*, MHD_Connection*, void** con_cls,
                             MHD_RequestTerminationCode) {
-  auto p = static_cast<MicroHttpdServer::Connection*>(*con_cls);
+  auto p = static_cast<MicroHttpdServer::Response*>(*con_cls);
   if (p->callback()) p->callback()();
   delete p;
 }
 
 }  // namespace
 
-MicroHttpdServer::Response::Response(int code,
+MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
                                      const IResponse::Headers& headers,
-                                     const std::string& body)
-    : response_(MHD_create_response_from_buffer(
-          body.length(), (void*)body.c_str(), MHD_RESPMEM_MUST_COPY)),
-      code_(code) {
+                                     int size,
+                                     IResponse::ICallback::Pointer callback)
+    : connection_(connection), code_(code) {
+  using DataType = std::pair<MHD_Connection*, IResponse::ICallback::Pointer>;
+
+  auto data_provider = [](void* cls, uint64_t, char* buf,
+                          size_t max) -> ssize_t {
+    auto data = static_cast<DataType*>(cls);
+    auto r = data->second->putData(buf, max);
+    if (r == IResponse::ICallback::Suspend) {
+      MHD_suspend_connection(data->first);
+      return 0;
+    } else if (r == IResponse::ICallback::Abort)
+      return MHD_CONTENT_READER_END_WITH_ERROR;
+    else
+      return r;
+  };
+  auto release_data = [](void* cls) {
+    auto data = static_cast<DataType*>(cls);
+    delete data;
+  };
+  auto data = util::make_unique<DataType>(connection, std::move(callback));
+  response_ = MHD_create_response_from_callback(size, CHUNK_SIZE, data_provider,
+                                                data.release(), release_data);
   for (auto it : headers)
     MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
 }
@@ -69,54 +88,24 @@ MicroHttpdServer::Response::~Response() {
   if (response_) MHD_destroy_response(response_);
 }
 
-MicroHttpdServer::CallbackResponse::CallbackResponse(
-    int code, const IResponse::Headers& headers, int size, int chunk_size,
-    IResponse::ICallback::Pointer callback) {
-  code_ = code;
-  auto data_provider = [](void* cls, uint64_t, char* buf,
-                          size_t max) -> ssize_t {
-    auto callback = static_cast<IResponse::ICallback*>(cls);
-    auto r = callback->putData(buf, max);
-    return r;
-  };
-  auto release_data = [](void* cls) {
-    auto callback = static_cast<IResponse::ICallback*>(cls);
-    delete callback;
-  };
-  response_ = MHD_create_response_from_callback(
-      size, chunk_size, data_provider, callback.release(), release_data);
-  for (auto it : headers)
-    MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
+void MicroHttpdServer::Response::resume() {
+  MHD_resume_connection(connection_);
 }
 
-MicroHttpdServer::Connection::Connection(MHD_Connection* c, const char* url)
+MicroHttpdServer::Request::Request(MHD_Connection* c, const char* url)
     : connection_(c), url_(url) {}
 
-const char* MicroHttpdServer::Connection::getParameter(
-    const std::string& name) const {
+const char* MicroHttpdServer::Request::get(const std::string& name) const {
   return MHD_lookup_connection_value(connection_, MHD_GET_ARGUMENT_KIND,
                                      name.c_str());
 }
 
-const char* MicroHttpdServer::Connection::header(
-    const std::string& name) const {
+const char* MicroHttpdServer::Request::header(const std::string& name) const {
   return MHD_lookup_connection_value(connection_, MHD_HEADER_KIND,
                                      name.c_str());
 }
 
-std::string MicroHttpdServer::Connection::url() const { return url_; }
-
-void MicroHttpdServer::Connection::onCompleted(CompletedCallback f) {
-  callback_ = f;
-}
-
-void MicroHttpdServer::Connection::suspend() {
-  MHD_suspend_connection(connection_);
-}
-
-void MicroHttpdServer::Connection::resume() {
-  MHD_resume_connection(connection_);
-}
+std::string MicroHttpdServer::Request::url() const { return url_; }
 
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
     : http_server_(MHD_start_daemon(
@@ -127,17 +116,11 @@ MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
 
 MicroHttpdServer::~MicroHttpdServer() { MHD_stop_daemon(http_server_); }
 
-MicroHttpdServer::IResponse::Pointer MicroHttpdServer::createResponse(
-    int code, const IResponse::Headers& headers,
-    const std::string& body) const {
-  return util::make_unique<Response>(code, headers, body);
-}
-
-MicroHttpdServer::IResponse::Pointer MicroHttpdServer::createResponse(
-    int code, const IResponse::Headers& headers, int size, int chunk_size,
+MicroHttpdServer::IResponse::Pointer MicroHttpdServer::Request::response(
+    int code, const IResponse::Headers& headers, int size,
     IResponse::ICallback::Pointer cb) const {
-  return util::make_unique<CallbackResponse>(code, headers, size, chunk_size,
-                                             std::move(cb));
+  return util::make_unique<Response>(connection_, code, headers, size,
+                                     std::move(cb));
 }
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(

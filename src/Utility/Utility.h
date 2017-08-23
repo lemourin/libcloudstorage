@@ -29,6 +29,8 @@
 #include <mutex>
 #include <string>
 
+#include "IHttpServer.h"
+
 namespace cloudstorage {
 
 namespace util {
@@ -56,6 +58,11 @@ class Url {
   static std::string escape(const std::string&);
   static std::string escapeHeader(const std::string&);
 };
+
+IHttpServer::IResponse::Pointer response_from_string(
+    const IHttpServer::IRequest&, int code,
+    const IHttpServer::IResponse::Headers&, const std::string&);
+
 }  // namespace util
 
 class Semaphore {
