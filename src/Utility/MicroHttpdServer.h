@@ -28,6 +28,8 @@
 
 #include "IHttpServer.h"
 
+#include <mutex>
+
 namespace cloudstorage {
 
 class MicroHttpdServer : public IHttpServer {
@@ -49,6 +51,11 @@ class MicroHttpdServer : public IHttpServer {
     void completed(CompletedCallback f) override { callback_ = f; }
 
    protected:
+    struct SharedData {
+      std::mutex mutex_;
+      bool suspended_ = false;
+    };
+    std::shared_ptr<SharedData> data_;
     MHD_Connection* connection_;
     MHD_Response* response_;
     int code_;

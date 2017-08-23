@@ -218,17 +218,37 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
 struct Buffer {
   using Pointer = std::shared_ptr<Buffer>;
 
-  void resume() {
-    if (response_ && suspended_) {
-      suspended_ = false;
-      response_->resume();
+  int read(char* buf, uint32_t max) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (done_) return IHttpServer::IResponse::ICallback::Abort;
+    if (data_.empty()) return IHttpServer::IResponse::ICallback::Suspend;
+    size_t cnt = std::min(data_.size(), (size_t)max);
+    for (size_t i = 0; i < cnt; i++) {
+      buf[i] = data_.front();
+      data_.pop();
     }
+    return cnt;
+  }
+
+  void put(const char* data, uint32_t length) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
+  }
+
+  void done() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    done_ = true;
+  }
+
+  void resume() {
+    std::lock_guard<std::mutex> lock(response_mutex_);
+    if (response_) response_->resume();
   }
 
   std::mutex mutex_;
   std::queue<char> data_;
+  std::mutex response_mutex_;
   IHttpServer::IResponse* response_;
-  bool suspended_ = false;
   bool done_ = false;
 };
 
@@ -241,18 +261,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   ~HttpData() { mega_->removeStreamRequest(request_); }
 
   int putData(char* buf, size_t max) override {
-    std::unique_lock<std::mutex> lock(buffer_->mutex_);
-    if (buffer_->done_) return Abort;
-    if (buffer_->data_.empty()) {
-      buffer_->suspended_ = true;
-      return Suspend;
-    }
-    size_t cnt = std::min(buffer_->data_.size(), max);
-    for (size_t i = 0; i < cnt; i++) {
-      buf[i] = buffer_->data_.front();
-      buffer_->data_.pop();
-    }
-    return cnt;
+    return buffer_->read(buf, max);
   }
 
   Buffer::Pointer buffer_;
@@ -265,14 +274,12 @@ class HttpDataCallback : public IDownloadFileCallback {
   HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
 
   void receivedData(const char* data, uint32_t length) override {
-    std::lock_guard<std::mutex> lock(buffer_->mutex_);
-    for (uint32_t i = 0; i < length; i++) buffer_->data_.push(data[i]);
+    buffer_->put(data, length);
     buffer_->resume();
   }
 
   void done(EitherError<void>) override {
-    std::lock_guard<std::mutex> lock(buffer_->mutex_);
-    buffer_->done_ = true;
+    buffer_->done();
     buffer_->resume();
   }
 
@@ -337,7 +344,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
   auto response = request.response(code, headers, range.size, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
-    std::unique_lock<std::mutex> lock(buffer->mutex_);
+    std::unique_lock<std::mutex> lock(buffer->response_mutex_);
     buffer->response_ = nullptr;
   });
   download_request->run();

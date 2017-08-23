@@ -58,15 +58,25 @@ MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
                                      const IResponse::Headers& headers,
                                      int size,
                                      IResponse::ICallback::Pointer callback)
-    : connection_(connection), code_(code) {
-  using DataType = std::pair<MHD_Connection*, IResponse::ICallback::Pointer>;
+    : data_(std::make_shared<SharedData>()),
+      connection_(connection),
+      code_(code) {
+  struct DataType {
+    std::shared_ptr<SharedData> data_;
+    MHD_Connection* connection_;
+    IResponse::ICallback::Pointer callback_;
+  };
 
   auto data_provider = [](void* cls, uint64_t, char* buf,
                           size_t max) -> ssize_t {
     auto data = static_cast<DataType*>(cls);
-    auto r = data->second->putData(buf, max);
+    std::unique_lock<std::mutex> lock(data->data_->mutex_);
+    auto r = data->callback_->putData(buf, max);
     if (r == IResponse::ICallback::Suspend) {
-      MHD_suspend_connection(data->first);
+      if (!data->data_->suspended_) {
+        data->data_->suspended_ = true;
+        MHD_suspend_connection(data->connection_);
+      }
       return 0;
     } else if (r == IResponse::ICallback::Abort)
       return MHD_CONTENT_READER_END_WITH_ERROR;
@@ -77,7 +87,8 @@ MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
     auto data = static_cast<DataType*>(cls);
     delete data;
   };
-  auto data = util::make_unique<DataType>(connection, std::move(callback));
+  auto data = util::make_unique<DataType>(
+      DataType{data_, connection, std::move(callback)});
   response_ = MHD_create_response_from_callback(size, CHUNK_SIZE, data_provider,
                                                 data.release(), release_data);
   for (auto it : headers)
@@ -89,7 +100,11 @@ MicroHttpdServer::Response::~Response() {
 }
 
 void MicroHttpdServer::Response::resume() {
-  MHD_resume_connection(connection_);
+  std::unique_lock<std::mutex> lock(data_->mutex_);
+  if (data_->suspended_) {
+    data_->suspended_ = false;
+    MHD_resume_connection(connection_);
+  }
 }
 
 MicroHttpdServer::Request::Request(MHD_Connection* c, const char* url)
