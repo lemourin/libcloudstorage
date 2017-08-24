@@ -83,6 +83,8 @@ class CloudProvider : public ICloudProvider,
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
                                              const std::string&,
                                              RenameItemCallback) override;
+  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer item, ListDirectoryCallback callback) override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer item,

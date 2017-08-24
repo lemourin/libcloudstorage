@@ -168,6 +168,8 @@ class MockProvider : public ICloudProvider {
                                              RenameItemCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, ListDirectoryCallback) override;
+  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  const std::string&,
                                                  DownloadFileCallback) override;

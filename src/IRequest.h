@@ -33,12 +33,18 @@
 namespace cloudstorage {
 
 struct Error;
+struct PageData;
 
 template <class Left, class Right>
 class Either;
 
 template <class T>
 using EitherError = Either<Error, T>;
+
+struct PageData {
+  std::vector<IItem::Pointer> items_;
+  std::string next_token_;  // empty if no next page
+};
 
 struct Token {
   std::string token_;
@@ -207,6 +213,7 @@ using DeleteItemCallback = std::function<void(EitherError<void>)>;
 using CreateDirectoryCallback = std::function<void(EitherError<IItem>)>;
 using MoveItemCallback = std::function<void(EitherError<void>)>;
 using RenameItemCallback = std::function<void(EitherError<void>)>;
+using ListDirectoryPageCallback = std::function<void(EitherError<PageData>)>;
 using ListDirectoryCallback =
     std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
 using DownloadFileCallback = std::function<void(EitherError<void>)>;

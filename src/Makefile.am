@@ -32,6 +32,7 @@ libcloudstorage_la_SOURCES = \
 	Request/DownloadFileRequest.cpp \
 	Request/GetItemRequest.cpp \
 	Request/ListDirectoryRequest.cpp \
+	Request/ListDirectoryPageRequest.cpp \
 	Request/UploadFileRequest.cpp \
 	Request/GetItemDataRequest.cpp \
 	Request/DeleteItemRequest.cpp \
@@ -63,6 +64,7 @@ noinst_HEADERS = \
 	Request/GetItemRequest.h \
 	Request/GetItemDataRequest.h \
 	Request/ListDirectoryRequest.h \
+	Request/ListDirectoryPageRequest.h \
 	Request/UploadFileRequest.h \
 	Request/DeleteItemRequest.h \
 	Request/CreateDirectoryRequest.h \

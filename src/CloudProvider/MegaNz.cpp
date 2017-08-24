@@ -753,6 +753,35 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
   return r->run();
 }
 
+ICloudProvider::ListDirectoryPageRequest::Pointer
+MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
+                               ListDirectoryPageCallback complete) {
+  auto r = std::make_shared<Request<EitherError<PageData>>>(shared_from_this());
+  r->set([=](Request<EitherError<PageData>>::Ptr r) {
+    ensureAuthorized<EitherError<PageData>>(r, complete, [=] {
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (node) {
+        std::vector<IItem::Pointer> result;
+        std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
+        if (lst) {
+          for (int i = 0; i < lst->size(); i++) {
+            auto item = toItem(lst->get(i));
+            result.push_back(item);
+          }
+        }
+        complete(PageData{result, ""});
+        r->done(PageData{result, ""});
+      } else {
+        Error e{IHttpRequest::NotFound, "node not found"};
+        complete(e);
+        r->done(e);
+      }
+    });
+  });
+  return r->run();
+}
+
 std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
     int64_t size) {

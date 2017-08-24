@@ -27,6 +27,7 @@
 #include <cstring>
 
 #include "Request/DownloadFileRequest.h"
+#include "Request/ListDirectoryPageRequest.h"
 #include "Request/ListDirectoryRequest.h"
 #include "Request/Request.h"
 
@@ -61,6 +62,15 @@ ICloudProvider::Hints YouTube::hints() const {
 std::string YouTube::name() const { return "youtube"; }
 
 std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
+
+ListDirectoryPageRequest::Pointer YouTube::listDirectoryPageAsync(
+    IItem::Pointer directory, const std::string& token,
+    ListDirectoryPageCallback complete) {
+  return std::make_shared<cloudstorage::ListDirectoryPageRequest>(
+             shared_from_this(), directory, token, complete,
+             [](int code) { return code == IHttpRequest::NotFound; })
+      ->run();
+}
 
 ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {

@@ -37,6 +37,7 @@
 #include "Request/ExchangeCodeRequest.h"
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
+#include "Request/ListDirectoryPageRequest.h"
 #include "Request/ListDirectoryRequest.h"
 #include "Request/MoveItemRequest.h"
 #include "Request/RenameItemRequest.h"
@@ -388,6 +389,15 @@ ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   return std::make_shared<cloudstorage::RenameItemRequest>(shared_from_this(),
                                                            item, name, callback)
+      ->run();
+}
+
+ICloudProvider::ListDirectoryPageRequest::Pointer
+CloudProvider::listDirectoryPageAsync(IItem::Pointer directory,
+                                      const std::string& token,
+                                      ListDirectoryPageCallback completed) {
+  return std::make_shared<cloudstorage::ListDirectoryPageRequest>(
+             shared_from_this(), directory, token, completed)
       ->run();
 }
 

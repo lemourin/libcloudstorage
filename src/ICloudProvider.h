@@ -43,6 +43,7 @@ class ICloudProvider {
   using Hints = std::unordered_map<std::string, std::string>;
 
   using ExchangeCodeRequest = IRequest<EitherError<Token>>;
+  using ListDirectoryPageRequest = IRequest<EitherError<PageData>>;
   using ListDirectoryRequest =
       IRequest<EitherError<std::vector<IItem::Pointer>>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
@@ -348,6 +349,19 @@ class ICloudProvider {
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
       RenameItemCallback callback = [](EitherError<void>) {}) = 0;
+
+  /**
+   * Lists directory, but returns only one page of items.
+   *
+   * @param directory directory to be listed
+   *
+   * @param token token denoting the page, empty if querying for the first page
+   *
+   * @return object representing the pending request
+   */
+  virtual ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer directory, const std::string& token = "",
+      ListDirectoryPageCallback = [](EitherError<PageData>) {}) = 0;
 
   /**
    * Simplified version of listDirectoryAsync.

@@ -250,6 +250,7 @@ void Request<T>::subrequest(std::shared_ptr<IGenericRequest> request) {
   }
 }
 
+template class Request<EitherError<PageData>>;
 template class Request<EitherError<Token>>;
 template class Request<EitherError<std::vector<char>>>;
 template class Request<EitherError<std::string>>;

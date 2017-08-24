@@ -101,6 +101,12 @@ ICloudProvider::RenameItemRequest::Pointer MockProvider::renameItemAsync(
   return util::make_unique<MockMoveItemRequest>();
 }
 
+ICloudProvider::ListDirectoryPageRequest::Pointer
+MockProvider::listDirectoryPageAsync(IItem::Pointer, const std::string&,
+                                     ListDirectoryPageCallback) {
+  return nullptr;
+}
+
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
     IItem::Pointer, ListDirectoryCallback) {
   return nullptr;
