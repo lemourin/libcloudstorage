@@ -141,7 +141,7 @@ class IHttpRequest {
   virtual bool follow_redirect() const = 0;
 
   /**
-   * Sends http request and blocks until it receives full response.
+   * Sends http request in an asynchronous fashion.
    *
    * @param on_completed callback to be called when request is finished
    *

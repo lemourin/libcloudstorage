@@ -229,8 +229,7 @@ class ICloudProvider {
    *
    * @param absolute_path should start with /
    *
-   * @param callback called when finished; if successful, it gets IItem
-   * object as a parameter, otherwise it gets nullptr
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -269,8 +268,7 @@ class ICloudProvider {
    *
    * @param id
    *
-   * @param callback called when finished; if successful, it gets
-   * IItem object as a parameter, otherwise it gets nullptr
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -293,8 +291,7 @@ class ICloudProvider {
    *
    * @param item item to be deleted
    *
-   * @param callback called when finished; if successful, it gets true,
-   * otherwise false
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -309,8 +306,7 @@ class ICloudProvider {
    *
    * @param name new directory's name
    *
-   * @param callback called when finished; if successful, it gets IItem
-   * object, otherwise nullptr
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -325,8 +321,7 @@ class ICloudProvider {
    *
    * @param destination destination directory
    *
-   * @param callback called when finished; if successful, it gets true,
-   * otherwise false
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -341,8 +336,7 @@ class ICloudProvider {
    *
    * @param name new name
    *
-   * @param callback called when finished; if successful, it gets true,
-   * otherwise false
+   * @param callback called when finished
    *
    * @return object representing the pending request
    */
@@ -382,8 +376,7 @@ class ICloudProvider {
    *
    * @param filename name at which the downloaded file will be saved
    *
-   * @param callback called when done; if successful, it gets true, otherwise
-   * false
+   * @param callback called when done
    *
    * @return object representing the pending request
    */
@@ -398,8 +391,7 @@ class ICloudProvider {
    *
    * @param filename name at which thumbnail will be saved
    *
-   * @param callback called when done; if successful, it gets true, otherwise
-   * false
+   * @param callback called when done
    *
    * @return object representing pending request
    */
@@ -417,8 +409,7 @@ class ICloudProvider {
    * @param filename name at which the file will be saved in the cloud
    * provider
    *
-   * @param callback called when done, if successful, it gets true, otherwise
-   * false
+   * @param callback called when done
    *
    * @return object representing the pending request
    */
