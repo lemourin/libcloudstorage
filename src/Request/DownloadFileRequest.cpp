@@ -36,7 +36,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
     : Request(p),
       stream_wrapper_(
           std::bind(&ICallback::receivedData, callback.get(), _1, _2)) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
     sendRequest(
         [=](util::Output input) { return request_factory(*file, *input); },

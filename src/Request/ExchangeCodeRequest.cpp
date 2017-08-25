@@ -31,7 +31,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
                                          ExchangeCodeCallback callback)
     : Request(p) {
-  set([=](Request<EitherError<Token>>::Ptr r) {
+  set([=](Request<EitherError<Token>>::Pointer r) {
     std::stringstream stream;
     if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream)) {
       Token token{authorization_code, ""};

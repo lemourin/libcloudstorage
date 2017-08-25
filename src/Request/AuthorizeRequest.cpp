@@ -32,7 +32,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), state_(provider()->auth()->state()), server_cancelled_() {
   if (!provider()->auth_callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     auto on_complete = [=](EitherError<void> result) {
       std::unique_lock<std::mutex> lock(
           provider()->current_authorization_mutex_);
@@ -168,7 +168,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
 }
 
 SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)
-    : AuthorizeRequest(p, [=](AuthorizeRequest::Ptr r,
+    : AuthorizeRequest(p, [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         if (p->auth_callback()->userConsentRequired(*p) !=
             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {

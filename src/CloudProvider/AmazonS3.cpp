@@ -33,7 +33,7 @@ namespace cloudstorage {
 
 namespace {
 
-void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
             std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete);
 
@@ -52,7 +52,7 @@ std::string escapePath(const std::string& str) {
   return result;
 }
 
-void remove(Request<EitherError<void>>::Ptr r,
+void remove(Request<EitherError<void>>::Pointer r,
             std::shared_ptr<std::vector<IItem::Pointer>> lst,
             std::function<void(EitherError<void>)> complete) {
   if (lst->empty()) return complete(nullptr);
@@ -66,7 +66,7 @@ void remove(Request<EitherError<void>>::Ptr r,
   }));
 }
 
-void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
             std::shared_ptr<std::vector<IItem::Pointer>> lst,
             std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
@@ -82,7 +82,7 @@ void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
   });
 }
 
-void rename(Request<EitherError<void>>::Ptr r, IHttp* http, std::string region,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
             std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
   auto finalize = [=]() {
@@ -211,7 +211,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     rename(r, http(), region(), destination->id() + source->filename(),
            source->id(), callback);
   });
@@ -221,7 +221,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     std::string path = split(item->id()).second;
     if (!path.empty() && path.back() == '/') path.pop_back();
     if (path.find_first_of('/') == std::string::npos)
@@ -237,7 +237,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
@@ -268,7 +268,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     auto release = [=] {
       auto output = std::make_shared<std::stringstream>();
       r->sendRequest(
@@ -314,7 +314,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto work = [=]() {
       auto data = split(id);
       auto item = std::make_shared<Item>(

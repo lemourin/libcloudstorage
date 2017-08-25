@@ -35,7 +35,7 @@ UploadFileRequest::UploadFileRequest(
     : Request(p),
       stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2),
                       callback->size()) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
     sendRequest(
         [=](util::Output input) {

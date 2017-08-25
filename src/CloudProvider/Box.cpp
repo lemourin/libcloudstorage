@@ -50,7 +50,7 @@ bool Box::reauthorize(int code) const {
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [this, id](util::Output) {

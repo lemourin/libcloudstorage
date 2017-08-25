@@ -31,7 +31,7 @@ namespace cloudstorage {
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id, Callback callback)
     : Request(p) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     auto response_stream = std::make_shared<std::stringstream>();
     sendRequest(
         [=](util::Output input) {

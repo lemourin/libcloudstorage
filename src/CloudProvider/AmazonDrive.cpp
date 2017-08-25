@@ -34,7 +34,7 @@ namespace cloudstorage {
 
 namespace {
 
-void move(Request<EitherError<void>>::Ptr r, IHttp* http,
+void move(Request<EitherError<void>>::Pointer r, IHttp* http,
           std::string metadata_url,
           std::shared_ptr<std::vector<std::string>> lst, IItem::Pointer source,
           IItem::Pointer destination,
@@ -98,7 +98,7 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     move(r, http(), metadata_url(),
          std::make_shared<std::vector<std::string>>(
              static_cast<Item*>(source.get())->parents()),

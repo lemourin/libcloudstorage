@@ -63,9 +63,10 @@ std::string YouTube::name() const { return "youtube"; }
 
 std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
-ListDirectoryPageRequest::Pointer YouTube::listDirectoryPageAsync(
-    IItem::Pointer directory, const std::string& token,
-    ListDirectoryPageCallback complete) {
+ICloudProvider::ListDirectoryPageRequest::Pointer
+YouTube::listDirectoryPageAsync(IItem::Pointer directory,
+                                const std::string& token,
+                                ListDirectoryPageCallback complete) {
   return std::make_shared<cloudstorage::ListDirectoryPageRequest>(
              shared_from_this(), directory, token, complete,
              [](int code) { return code == IHttpRequest::NotFound; })
@@ -83,7 +84,7 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     if (id == AUDIO_DIRECTORY) {
       IItem::Pointer i = std::make_shared<Item>(
           AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::FileType::Directory);
@@ -152,7 +153,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     std::string url = item->url();
     auto download = [=](std::string url) {
       auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(

@@ -43,7 +43,7 @@ template <class ReturnValue>
 class Request : public IRequest<ReturnValue>,
                 public std::enable_shared_from_this<Request<ReturnValue>> {
  public:
-  using Ptr = std::shared_ptr<Request<ReturnValue>>;
+  using Pointer = std::shared_ptr<Request<ReturnValue>>;
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using RequestFactory =
       std::function<IHttpRequest::Pointer(std::shared_ptr<std::ostream>)>;
@@ -53,7 +53,7 @@ class Request : public IRequest<ReturnValue>,
 
   class Wrapper : public IRequest<ReturnValue> {
    public:
-    Wrapper(Request::Ptr);
+    Wrapper(Request::Pointer);
     ~Wrapper();
 
     void finish() override;
@@ -61,7 +61,7 @@ class Request : public IRequest<ReturnValue>,
     ReturnValue result() override;
 
    private:
-    Request::Ptr request_;
+    Request::Pointer request_;
   };
 
   Request(std::shared_ptr<CloudProvider>);

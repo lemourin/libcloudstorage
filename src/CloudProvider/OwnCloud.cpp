@@ -58,7 +58,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto response = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {

@@ -89,11 +89,11 @@ class MegaNz : public CloudProvider {
   ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
       IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
 
-  std::function<void(Request<EitherError<void>>::Ptr)> downloadResolver(
+  std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
       IItem::Pointer item, IDownloadFileCallback::Pointer, int64_t start = 0,
       int64_t size = -1);
 
-  void login(Request<EitherError<void>>::Ptr,
+  void login(Request<EitherError<void>>::Pointer,
              AuthorizeRequest::AuthorizeCompleted);
   std::string passwordHash(const std::string& password) const;
 
@@ -104,7 +104,7 @@ class MegaNz : public CloudProvider {
   std::string temporaryFileName();
 
   template <class T>
-  void ensureAuthorized(typename Request<T>::Ptr,
+  void ensureAuthorized(typename Request<T>::Pointer,
                         std::function<void(T)> on_error,
                         std::function<void()> on_success);
 

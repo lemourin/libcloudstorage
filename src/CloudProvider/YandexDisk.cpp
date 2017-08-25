@@ -50,7 +50,7 @@ IItem::Pointer YandexDisk::rootDirectory() const {
 ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
@@ -112,7 +112,7 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
@@ -162,7 +162,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
@@ -223,7 +223,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer
 YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
                                  CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {

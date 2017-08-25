@@ -36,7 +36,7 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 namespace {
-void upload(Request<EitherError<void>>::Ptr r, int sent,
+void upload(Request<EitherError<void>>::Pointer r, int sent,
             IUploadFileCallback::Pointer callback, Json::Value response) {
   auto output = std::make_shared<std::stringstream>();
   int size = callback->size();
@@ -81,7 +81,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {

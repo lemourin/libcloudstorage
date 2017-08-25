@@ -33,7 +33,7 @@
 namespace cloudstorage {
 
 template <class T>
-Request<T>::Wrapper::Wrapper(Request::Ptr r) : request_(r) {}
+Request<T>::Wrapper::Wrapper(Request::Pointer r) : request_(r) {}
 
 template <class T>
 Request<T>::Wrapper::~Wrapper() {

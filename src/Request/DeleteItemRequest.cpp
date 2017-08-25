@@ -31,7 +31,7 @@ DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      DeleteItemCallback callback)
     : Request(p) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     auto output = std::make_shared<std::stringstream>();
     sendRequest(
         [=](util::Output stream) {

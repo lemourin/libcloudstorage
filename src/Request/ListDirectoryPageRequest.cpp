@@ -32,7 +32,7 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
     const std::string& token, ListDirectoryPageCallback completed,
     std::function<bool(int)> fault_tolerant)
     : Request(p) {
-  set([=](Request<EitherError<PageData>>::Ptr r) {
+  set([=](Request<EitherError<PageData>>::Pointer r) {
     if (directory->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Bad, "file not a directory"};
       completed(e);

@@ -32,7 +32,7 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
                                  IItem::Pointer destination,
                                  MoveItemCallback callback)
     : Request(p) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     if (destination->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Forbidden, "destination not a directory"};
       callback(e);

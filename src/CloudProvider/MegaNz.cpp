@@ -441,7 +441,7 @@ ICloudProvider::Hints MegaNz::hints() const {
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
   auto r = std::make_shared<Request<EitherError<Token>>>(shared_from_this());
-  r->set([=](Request<EitherError<Token>>::Ptr r) {
+  r->set([=](Request<EitherError<Token>>::Pointer r) {
     auto token = authorizationCodeToToken(code);
     EitherError<Token> ret =
         token->token_.empty()
@@ -497,7 +497,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
 ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     ensureAuthorized<EitherError<IItem>>(r, callback, [=] {
       std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(id.c_str()));
       if (!node) {
@@ -517,7 +517,7 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
   using ItemList = EitherError<std::vector<IItem::Pointer>>;
   auto r = std::make_shared<Request<ItemList>>(shared_from_this());
-  r->set([=](Request<ItemList>::Ptr r) {
+  r->set([=](Request<ItemList>::Pointer r) {
     ensureAuthorized<ItemList>(
         r, std::bind(&IListDirectoryCallback::done, callback.get(), _1), [=] {
           std::unique_ptr<mega::MegaNode> node(
@@ -556,7 +556,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IUploadFileCallback::done, callback.get(), _1), [=] {
           std::string cache = temporaryFileName();
@@ -603,7 +603,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
           std::string cache = temporaryFileName();
@@ -643,7 +643,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(r, callback, [=] {
       std::unique_ptr<mega::MegaNode> node(
           mega_->getNodeByPath(item->id().c_str()));
@@ -670,7 +670,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Ptr r) {
+  r->set([=](Request<EitherError<IItem>>::Pointer r) {
     ensureAuthorized<EitherError<IItem>>(r, callback, [=] {
       std::unique_ptr<mega::MegaNode> parent_node(
           mega_->getNodeByPath(parent->id().c_str()));
@@ -703,7 +703,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(r, callback, [=] {
       std::unique_ptr<mega::MegaNode> source_node(
           mega_->getNodeByPath(source->id().c_str()));
@@ -732,7 +732,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Ptr r) {
+  r->set([=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(r, callback, [=] {
       std::unique_ptr<mega::MegaNode> node(
           mega_->getNodeByPath(item->id().c_str()));
@@ -759,7 +759,7 @@ ICloudProvider::ListDirectoryPageRequest::Pointer
 MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
                                ListDirectoryPageCallback complete) {
   auto r = std::make_shared<Request<EitherError<PageData>>>(shared_from_this());
-  r->set([=](Request<EitherError<PageData>>::Ptr r) {
+  r->set([=](Request<EitherError<PageData>>::Pointer r) {
     ensureAuthorized<EitherError<PageData>>(r, complete, [=] {
       std::unique_ptr<mega::MegaNode> node(
           mega_->getNodeByPath(item->id().c_str()));
@@ -784,10 +784,10 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
   return r->run();
 }
 
-std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
+std::function<void(Request<EitherError<void>>::Pointer)> MegaNz::downloadResolver(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
     int64_t size) {
-  return [=](Request<EitherError<void>>::Ptr r) {
+  return [=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
           std::unique_ptr<mega::MegaNode> node(
@@ -807,7 +807,7 @@ std::function<void(Request<EitherError<void>>::Ptr)> MegaNz::downloadResolver(
   };
 }
 
-void MegaNz::login(Request<EitherError<void>>::Ptr r,
+void MegaNz::login(Request<EitherError<void>>::Pointer r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
   auto auth_listener = std::make_shared<RequestListener>(
       [=](EitherError<void> e, Listener*) { complete(e); }, this);
@@ -849,7 +849,7 @@ std::string MegaNz::temporaryFileName() {
 }
 
 template <class T>
-void MegaNz::ensureAuthorized(typename Request<T>::Ptr r,
+void MegaNz::ensureAuthorized(typename Request<T>::Pointer r,
                               std::function<void(T)> on_error,
                               std::function<void()> on_success) {
   auto f = [=](EitherError<void> e) {

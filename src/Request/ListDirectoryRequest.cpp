@@ -31,7 +31,7 @@ ListDirectoryRequest::ListDirectoryRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
     ICallback::Pointer callback, std::function<bool(int)> fault_tolerant)
     : Request(p) {
-  set([=](Request::Ptr request) {
+  set([=](Request::Pointer request) {
     if (directory->type() != IItem::FileType::Directory) {
       Error e{IHttpRequest::Forbidden, "trying to list non directory"};
       callback->done(e);
