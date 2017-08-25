@@ -31,7 +31,7 @@
 
 #include "Utility.h"
 
-const char* DEFAULT_REDIRECT_URI = "http://localhost:12345";
+const char* DEFAULT_REDIRECT_URI = "http://127.0.0.1:12345";
 
 const std::string CDN =
     "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
