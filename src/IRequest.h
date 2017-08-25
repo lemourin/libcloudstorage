@@ -74,7 +74,7 @@ class IGenericRequest {
 template <class ReturnValue>
 class IRequest : public IGenericRequest {
  public:
-  using Pointer = std::shared_ptr<IRequest>;
+  using Pointer = std::unique_ptr<IRequest>;
 
   /**
    * Retrieves the result, blocks if it wasn't computed just yet.

@@ -33,6 +33,29 @@
 namespace cloudstorage {
 
 template <class T>
+Request<T>::Wrapper::Wrapper(Request::Ptr r) : request_(r) {}
+
+template <class T>
+Request<T>::Wrapper::~Wrapper() {
+  cancel();
+}
+
+template <class T>
+void Request<T>::Wrapper::finish() {
+  request_->finish();
+}
+
+template <class T>
+void Request<T>::Wrapper::cancel() {
+  request_->cancel();
+}
+
+template <class T>
+T Request<T>::Wrapper::result() {
+  return request_->result();
+}
+
+template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider)
     : future_(value_.get_future()),
       provider_shared_(provider),
@@ -119,11 +142,11 @@ void Request<T>::set(Resolver r) {
 }
 
 template <typename T>
-typename Request<T>::Ptr Request<T>::run() {
+typename Request<T>::Wrapper::Pointer Request<T>::run() {
   auto r = std::move(resolver_);
   if (!r) throw std::runtime_error("resolver not set");
   r(this->shared_from_this());
-  return this->shared_from_this();
+  return util::make_unique<Wrapper>(this->shared_from_this());
 }
 
 template <class T>

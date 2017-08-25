@@ -110,11 +110,11 @@ class MegaNz : public CloudProvider {
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
-  void addStreamRequest(DownloadFileRequest::Pointer);
-  void removeStreamRequest(DownloadFileRequest::Pointer);
+  void addStreamRequest(std::shared_ptr<DownloadFileRequest>);
+  void removeStreamRequest(std::shared_ptr<DownloadFileRequest>);
 
-  void addRequestListener(IRequest<EitherError<void>>::Pointer);
-  void removeRequestListener(IRequest<EitherError<void>>::Pointer);
+  void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
+  void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -141,8 +141,9 @@ class MegaNz : public CloudProvider {
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
   std::string file_url_;
-  std::unordered_set<DownloadFileRequest::Pointer> stream_requests_;
-  std::unordered_set<IRequest<EitherError<void>>::Pointer> request_listeners_;
+  std::unordered_set<std::shared_ptr<DownloadFileRequest>> stream_requests_;
+  std::unordered_set<std::shared_ptr<IRequest<EitherError<void>>>>
+      request_listeners_;
   bool deleted_;
 };
 

@@ -336,9 +336,9 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
   auto buffer = std::make_shared<Buffer>();
   auto download_request = std::make_shared<Request<EitherError<void>>>(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
-  download_request->set(provider_->downloadResolver(
+  auto resolver = provider_->downloadResolver(
       provider_->toItem(node.get()),
-      util::make_unique<HttpDataCallback>(buffer), range.start, range.size));
+      util::make_unique<HttpDataCallback>(buffer), range.start, range.size);
   provider_->addStreamRequest(download_request);
   auto data = util::make_unique<HttpData>(buffer, provider_, download_request);
   auto response = request.response(code, headers, range.size, std::move(data));
@@ -347,7 +347,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     std::unique_lock<std::mutex> lock(buffer->response_mutex_);
     buffer->response_ = nullptr;
   });
-  download_request->run();
+  resolver(download_request);
   return std::move(response);
 }
 
@@ -378,23 +378,25 @@ MegaNz::~MegaNz() {
   mega_ = nullptr;
 }
 
-void MegaNz::addStreamRequest(DownloadFileRequest::Pointer r) {
+void MegaNz::addStreamRequest(std::shared_ptr<DownloadFileRequest> r) {
   std::lock_guard<std::mutex> lock(mutex_);
   stream_requests_.insert(r);
 }
 
-void MegaNz::removeStreamRequest(DownloadFileRequest::Pointer r) {
+void MegaNz::removeStreamRequest(std::shared_ptr<DownloadFileRequest> r) {
   r->cancel();
   std::lock_guard<std::mutex> lock(mutex_);
   stream_requests_.erase(r);
 }
 
-void MegaNz::addRequestListener(IRequest<EitherError<void>>::Pointer p) {
+void MegaNz::addRequestListener(
+    std::shared_ptr<IRequest<EitherError<void>>> p) {
   std::lock_guard<std::mutex> lock(mutex_);
   request_listeners_.insert(p);
 }
 
-void MegaNz::removeRequestListener(IRequest<EitherError<void>>::Pointer p) {
+void MegaNz::removeRequestListener(
+    std::shared_ptr<IRequest<EitherError<void>>> p) {
   std::lock_guard<std::mutex> lock(mutex_);
   request_listeners_.erase(request_listeners_.find(p));
 }

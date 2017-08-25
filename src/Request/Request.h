@@ -51,6 +51,19 @@ class Request : public IRequest<ReturnValue>,
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
   using RequestCompleted = std::function<void(EitherError<util::Output>)>;
 
+  class Wrapper : public IRequest<ReturnValue> {
+   public:
+    Wrapper(Request::Ptr);
+    ~Wrapper();
+
+    void finish() override;
+    void cancel() override;
+    ReturnValue result() override;
+
+   private:
+    Request::Ptr request_;
+  };
+
   Request(std::shared_ptr<CloudProvider>);
   Request(std::weak_ptr<CloudProvider>);
   ~Request();
@@ -60,7 +73,7 @@ class Request : public IRequest<ReturnValue>,
   ReturnValue result() override;
 
   void set(Resolver);
-  Ptr run();
+  typename Wrapper::Pointer run();
   void done(const ReturnValue&);
 
   /**
