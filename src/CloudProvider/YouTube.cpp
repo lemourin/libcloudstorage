@@ -128,6 +128,8 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                         auto nitem = std::make_shared<Item>(
                             i->filename() + "." + v["ext"].asString(), i->id(),
                             i->type());
+                        nitem->set_thumbnail_url(
+                            static_cast<Item*>(i.get())->thumbnail_url());
                         nitem->set_url(v["url"].asString());
                         item = nitem;
                       }
@@ -304,7 +306,8 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     else if (kind == "youtube#videoListResponse")
       video_id = v["id"].asString();
     else
-      return nullptr;
+      throw std::logic_error("invalid kind");
+
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
         id_prefix + VIDEO_ID_PREFIX + video_id,
