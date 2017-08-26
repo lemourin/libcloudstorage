@@ -33,9 +33,17 @@ namespace cloudstorage {
 
 class IHttpRequest {
  public:
+  struct Response {
+    int http_code_;
+    int content_length_;
+    std::shared_ptr<std::ostream> output_stream_;
+    std::shared_ptr<std::ostream> error_stream_;
+  };
+
   using Pointer = std::shared_ptr<IHttpRequest>;
-  using CompleteCallback = std::function<void(
-      int, std::shared_ptr<std::ostream>, std::shared_ptr<std::ostream>)>;
+  using GetParameters = std::unordered_map<std::string, std::string>;
+  using HeaderParameters = std::unordered_map<std::string, std::string>;
+  using CompleteCallback = std::function<void(Response)>;
 
   static constexpr int Ok = 200;
   static constexpr int Partial = 206;
@@ -100,16 +108,14 @@ class IHttpRequest {
    *
    * @return map of parameters
    */
-  virtual const std::unordered_map<std::string, std::string>& parameters()
-      const = 0;
+  virtual const GetParameters& parameters() const = 0;
 
   /**
    * Returns header parameters set with setHeaderParameter.
    *
    * @return header parameters
    */
-  virtual const std::unordered_map<std::string, std::string>& headerParameters()
-      const = 0;
+  virtual const HeaderParameters& headerParameters() const = 0;
 
   /**
    * @return url(without parameters set with setParameter)

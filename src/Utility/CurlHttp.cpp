@@ -136,21 +136,26 @@ void CurlHttp::Worker::add(RequestData::Pointer r) {
 
 void RequestData::done(int code) {
   int ret = IHttpRequest::Unknown;
+  int content_length = 0;
   if (code == CURLE_OK) {
     long http_code = static_cast<long>(IHttpRequest::Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
+    ret = http_code;
     if (!follow_redirect_ && IHttpRequest::isRedirect(http_code)) {
       std::array<char, MAX_URL_LENGTH> redirect_url;
       char* data = redirect_url.data();
       curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
       *error_stream_ << data;
     }
-    ret = http_code;
+    double curl_content_length;
+    curl_easy_getinfo(handle_.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+                      &curl_content_length);
+    content_length = (int)(curl_content_length + 0.5);
   } else {
     *error_stream_ << curl_easy_strerror(static_cast<CURLcode>(code));
     ret = (code == CURLE_ABORTED_BY_CALLBACK) ? IHttpRequest::Aborted : -code;
   }
-  complete_(ret, stream_, error_stream_);
+  complete_({ret, content_length, stream_, error_stream_});
 }
 
 CurlHttpRequest::CurlHttpRequest(const std::string& url,
@@ -225,6 +230,8 @@ RequestData::Pointer CurlHttpRequest::prepare(
     curl_easy_setopt(handle, CURLOPT_UPLOAD, static_cast<long>(true));
     curl_easy_setopt(handle, CURLOPT_INFILESIZE,
                      static_cast<long>(stream_length(*data)));
+  } else if (method_ == "HEAD") {
+    curl_easy_setopt(handle, CURLOPT_NOBODY, 1L);
   } else if (method_ != "GET") {
     if (stream_length(*data) > 0)
       curl_easy_setopt(handle, CURLOPT_UPLOAD, static_cast<long>(true));
