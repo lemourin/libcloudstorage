@@ -75,20 +75,6 @@ class IHttpRequest {
      * @param now count of bytes uploaded
      */
     virtual void progressUpload(uint32_t total, uint32_t now) = 0;
-
-    /**
-     * Called when response's http code was received.
-     *
-     * @param code received http code
-     */
-    virtual void receivedHttpCode(int code) = 0;
-
-    /**
-     * Called when response's Content-Length header was received.
-     *
-     * @param length Content-Length
-     */
-    virtual void receivedContentLength(int length) = 0;
   };
 
   /**

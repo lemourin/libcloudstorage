@@ -42,10 +42,6 @@ class HttpCallback : public IHttpRequest::ICallback {
 
   void progressUpload(uint32_t, uint32_t) override;
 
-  void receivedHttpCode(int) override;
-
-  void receivedContentLength(int) override;
-
  private:
   std::function<bool()> is_cancelled_;
   std::function<void(uint32_t, uint32_t)> progress_download_;

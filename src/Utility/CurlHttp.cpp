@@ -46,12 +46,7 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
       long http_code = 0;
       curl_easy_getinfo(data->handle_.get(), CURLINFO_RESPONSE_CODE,
                         &http_code);
-      data->callback_->receivedHttpCode(static_cast<int>(http_code));
       data->success_ = IHttpRequest::isSuccess(static_cast<int>(http_code));
-      double content_length = 0;
-      curl_easy_getinfo(data->handle_.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD,
-                        &content_length);
-      data->callback_->receivedContentLength(static_cast<int>(content_length));
     }
   }
   if (!data->error_stream_ || data->success_)

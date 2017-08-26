@@ -43,8 +43,4 @@ void HttpCallback::progressUpload(uint32_t total, uint32_t now) {
   if (progress_upload_) progress_upload_(total, now);
 }
 
-void HttpCallback::receivedHttpCode(int) {}
-
-void HttpCallback::receivedContentLength(int) {}
-
 }  // namespace cloudstorage
