@@ -42,7 +42,8 @@ std::string Dropbox::name() const { return "dropbox"; }
 std::string Dropbox::endpoint() const { return DROPBOXAPI_ENDPOINT; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
-  return util::make_unique<Item>("/", "", IItem::FileType::Directory);
+  return util::make_unique<Item>("/", "", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 bool Dropbox::reauthorize(int code) const {
@@ -101,16 +102,16 @@ ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
                             ->set_url(response["link"].asString());
                         callback(item);
                         r->done(item);
-                      } catch (std::exception e) {
-                        Error err{IHttpRequest::Failure, e.what()};
+                      } catch (std::exception) {
+                        Error err{IHttpRequest::Failure, output->str()};
                         callback(err);
                         r->done(err);
                       }
                     }
                   },
                   output);
-            } catch (std::exception e) {
-              Error err{IHttpRequest::Failure, e.what()};
+            } catch (std::exception) {
+              Error err{IHttpRequest::Failure, output->str()};
               callback(err);
               r->done(err);
             }
@@ -259,7 +260,8 @@ IItem::Pointer Dropbox::toItem(const Json::Value& v) {
       type = IItem::FileType::Image;
   }
   return util::make_unique<Item>(v["name"].asString(),
-                                 v["path_display"].asString(), type);
+                                 v["path_display"].asString(),
+                                 v["size"].asUInt64(), type);
 }
 
 Dropbox::Auth::Auth() {

@@ -33,7 +33,8 @@ namespace cloudstorage {
 OwnCloud::OwnCloud() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer OwnCloud::rootDirectory() const {
-  return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "/", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 void OwnCloud::initialize(InitData&& data) {
@@ -73,7 +74,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
             r->done(e.left());
           } else {
             IItem::Pointer item = util::make_unique<Item>(
-                name, parent->id() + name + "/", IItem::FileType::Directory);
+                name, parent->id() + name + "/", 0, IItem::FileType::Directory);
             callback(item);
             r->done(item);
           }
@@ -189,7 +190,16 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto item = util::make_unique<Item>(util::Url::unescape(filename), id, type);
+  auto get_size = [](const tinyxml2::XMLNode* node) {
+    auto propstat = node->FirstChildElement("d:propstat");
+    if (!propstat) return IItem::UnknownSize;
+    auto prop = propstat->FirstChildElement("d:prop");
+    if (!prop) return IItem::UnknownSize;
+    auto size = prop->FirstChildElement("d:getcontentlength");
+    return size ? (size_t)std::atoll(size->GetText()) : IItem::UnknownSize;
+  };
+  auto item = util::make_unique<Item>(util::Url::unescape(filename), id,
+                                      get_size(node), type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return std::move(item);
 }

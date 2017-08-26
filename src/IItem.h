@@ -33,6 +33,8 @@ class IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
 
+  static constexpr size_t UnknownSize = -1;
+
   enum class FileType { Directory, Video, Audio, Image, Unknown };
 
   virtual ~IItem() = default;
@@ -40,6 +42,7 @@ class IItem {
   virtual std::string filename() const = 0;
   virtual std::string extension() const = 0;
   virtual std::string id() const = 0;
+  virtual size_t size() const = 0;
 
   /**
    * This url is valid if IItem instance was received by

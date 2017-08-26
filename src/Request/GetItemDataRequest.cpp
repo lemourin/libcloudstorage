@@ -48,7 +48,7 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
               callback(i);
               request->done(i);
             } catch (std::exception) {
-              Error e{IHttpRequest::Failure, "couldn't parse response"};
+              Error e{IHttpRequest::Failure, response_stream->str()};
               callback(e);
               request->done(e);
             }

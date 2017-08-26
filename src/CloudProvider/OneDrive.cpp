@@ -99,8 +99,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             Json::Value response;
             *output >> response;
             upload(r, 0, callback, response);
-          } catch (std::exception e) {
-            Error err{IHttpRequest::Failure, e.what()};
+          } catch (std::exception) {
+            Error err{IHttpRequest::Failure, output->str()};
             callback->done(err);
             r->done(err);
           }
@@ -115,7 +115,8 @@ IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
   IHttpRequest::Pointer request =
       http()->create(endpoint() + "/v1.0/drive/items/" + id, "GET");
   request->setParameter(
-      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
+      "select",
+      "name,folder,audio,image,photo,video,id,size,@content.downloadUrl");
   return request;
 }
 
@@ -125,7 +126,8 @@ IHttpRequest::Pointer OneDrive::listDirectoryRequest(
   auto request = http()->create(
       endpoint() + "/v1.0/drive/items/" + item.id() + "/children", "GET");
   request->setParameter(
-      "select", "name,folder,audio,image,photo,video,id,@content.downloadUrl");
+      "select",
+      "name,folder,audio,image,photo,video,id,size,@content.downloadUrl");
   return request;
 }
 
@@ -198,8 +200,8 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
     type = IItem::FileType::Video;
   else if (v.isMember("audio"))
     type = IItem::FileType::Audio;
-  auto item =
-      util::make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+  auto item = util::make_unique<Item>(v["name"].asString(), v["id"].asString(),
+                                      v["size"].asUInt64(), type);
   item->set_url(v["@content.downloadUrl"].asString());
   item->set_thumbnail_url(
       endpoint() + "/v1.0/drive/items/" + item->id() +

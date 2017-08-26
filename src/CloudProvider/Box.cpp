@@ -36,7 +36,8 @@ namespace cloudstorage {
 Box::Box() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer Box::rootDirectory() const {
-  return util::make_unique<Item>("root", "0", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "0", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 std::string Box::name() const { return "box"; }
@@ -74,8 +75,8 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
                       auto item = toItem(response);
                       callback(item);
                       r->done(item);
-                    } catch (std::exception e) {
-                      Error err{IHttpRequest::Failure, e.what()};
+                    } catch (std::exception) {
+                      Error err{IHttpRequest::Failure, output->str()};
                       callback(err);
                       r->done(err);
                     }
@@ -121,6 +122,7 @@ IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
                                                 std::ostream&) const {
   auto request = http()->create(
       endpoint() + "/2.0/folders/" + item.id() + "/items/", "GET");
+  request->setParameter("fields", "name,id,size");
   if (!page_token.empty()) request->setParameter("offset", page_token);
   return request;
 }
@@ -238,8 +240,8 @@ std::vector<IItem::Pointer> Box::listDirectoryResponse(
 IItem::Pointer Box::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v["type"].asString() == "folder") type = IItem::FileType::Directory;
-  auto item =
-      util::make_unique<Item>(v["name"].asString(), v["id"].asString(), type);
+  auto item = util::make_unique<Item>(v["name"].asString(), v["id"].asString(),
+                                      v["size"].asUInt64(), type);
   return std::move(item);
 }
 

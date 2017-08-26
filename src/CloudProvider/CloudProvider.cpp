@@ -247,7 +247,8 @@ std::string CloudProvider::token() const {
 }
 
 IItem::Pointer CloudProvider::rootDirectory() const {
-  return util::make_unique<Item>("/", "root", IItem::FileType::Directory);
+  return util::make_unique<Item>("/", "root", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 ICloudProvider::IAuthCallback* CloudProvider::auth_callback() const {

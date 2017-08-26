@@ -33,8 +33,8 @@ namespace cloudstorage {
 
 namespace {
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
-            std::string dest_id, std::string source_id,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
+            std::string region, std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete);
 
 std::string escapePath(const std::string& str) {
@@ -66,7 +66,8 @@ void remove(Request<EitherError<void>>::Pointer r,
   }));
 }
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
+            std::string region,
             std::shared_ptr<std::vector<IItem::Pointer>> lst,
             std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
@@ -82,8 +83,8 @@ void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string regi
   });
 }
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http, std::string region,
-            std::string dest_id, std::string source_id,
+void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
+            std::string region, std::string dest_id, std::string source_id,
             std::function<void(EitherError<void>)> complete) {
   auto finalize = [=]() {
     auto output = std::make_shared<std::stringstream>();
@@ -254,7 +255,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
           } else {
             auto path = getPath(parent->id());
             if (!split(path).second.empty()) path += "/";
-            auto item = std::make_shared<Item>(name, path + name + "/",
+            auto item = std::make_shared<Item>(name, path + name + "/", 0,
                                                IItem::FileType::Directory);
             callback(EitherError<IItem>(item));
             r->done(EitherError<IItem>(item));
@@ -315,29 +316,53 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    auto work = [=]() {
+    auto factory = [=](util::Output) {
       auto data = split(id);
-      auto item = std::make_shared<Item>(
-          getFilename(data.second), id,
-          (data.second.empty() || data.second.back() == '/')
-              ? IItem::FileType::Directory
-              : IItem::FileType::Unknown);
-      if (item->type() != IItem::FileType::Directory)
-        item->set_url(getUrl(*item));
-      callback(EitherError<IItem>(item));
-      r->done(EitherError<IItem>(item));
+      auto request = http()->create(
+          "https://" + data.first + ".s3." + region() + ".amazonaws.com/",
+          "GET");
+      request->setParameter("list-type", "2");
+      request->setParameter("prefix", data.second);
+      request->setParameter("delimiter", data.second);
+      return request;
     };
-    if (access_id().empty() || secret().empty())
-      r->reauthorize([=](EitherError<void> e) {
-        if (e.left()) {
-          callback(e.left());
-          r->done(e.left());
-        } else {
-          work();
-        }
-      });
-    else
-      work();
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        factory,
+        [=](EitherError<util::Output> e) {
+          if (e.left()) {
+            callback(e.left());
+            return r->done(e.left());
+          }
+          std::stringstream sstream;
+          sstream << output->rdbuf();
+          tinyxml2::XMLDocument document;
+          if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
+              tinyxml2::XML_SUCCESS) {
+            Error e{IHttpRequest::Failure, "invalid xml"};
+            callback(e);
+            return r->done(e);
+          }
+          auto get_size = [](const tinyxml2::XMLNode* node) {
+            auto contents_element = node->FirstChildElement("Contents");
+            if (!contents_element) return IItem::UnknownSize;
+            auto size_element = contents_element->FirstChildElement("Size");
+            if (!size_element) return IItem::UnknownSize;
+            auto text = size_element->GetText();
+            return text ? (size_t)std::atoll(text) : IItem::UnknownSize;
+          };
+          auto data = split(id);
+          auto item = std::make_shared<Item>(
+              getFilename(data.second), id, get_size(document.RootElement()),
+              (data.second.empty() || data.second.back() == '/')
+                  ? IItem::FileType::Directory
+                  : IItem::FileType::Unknown);
+          if (item->type() != IItem::FileType::Directory)
+            item->set_url(getUrl(*item));
+          callback(EitherError<IItem>(item));
+          r->done(EitherError<IItem>(item));
+        },
+        output);
   });
   return r->run();
 }
@@ -385,26 +410,32 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
       tinyxml2::XML_SUCCESS)
-    return {};
+    throw std::logic_error("invalid xml");
   std::vector<IItem::Pointer> result;
   if (auto buckets = document.RootElement()->FirstChildElement("Buckets")) {
     for (auto child = buckets->FirstChild(); child;
          child = child->NextSibling()) {
-      std::string name = child->FirstChildElement("Name")->GetText();
-      auto item = util::make_unique<Item>(name, name + Auth::SEPARATOR,
+      auto name_element = child->FirstChildElement("Name");
+      if (!name_element) throw std::logic_error("invalid xml");
+      std::string name = name_element->GetText();
+      auto item = util::make_unique<Item>(name, name + Auth::SEPARATOR, -1,
                                           IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
-  } else if (document.RootElement()->FirstChildElement("Name")) {
-    std::string bucket =
-        document.RootElement()->FirstChildElement("Name")->GetText();
+  } else if (auto name_element =
+                 document.RootElement()->FirstChildElement("Name")) {
+    std::string bucket = name_element->GetText();
     for (auto child = document.RootElement()->FirstChildElement("Contents");
          child; child = child->NextSiblingElement("Contents")) {
-      if (child->FirstChildElement("Size")->GetText() == std::string("0"))
-        continue;
-      std::string id = child->FirstChildElement("Key")->GetText();
+      auto size_element = child->FirstChildElement("Size");
+      if (!size_element) throw std::logic_error("invalid xml");
+      auto size = std::atoll(size_element->GetText());
+      if (size == 0) continue;
+      auto key_element = child->FirstChildElement("Key");
+      if (!key_element) throw std::logic_error("invalid xml");
+      std::string id = key_element->GetText();
       auto item = util::make_unique<Item>(getFilename(id),
-                                          bucket + Auth::SEPARATOR + id,
+                                          bucket + Auth::SEPARATOR + id, size,
                                           IItem::FileType::Unknown);
       item->set_url(getUrl(*item));
       result.push_back(std::move(item));
@@ -412,17 +443,22 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
     for (auto child =
              document.RootElement()->FirstChildElement("CommonPrefixes");
          child; child = child->NextSiblingElement("CommonPrefixes")) {
-      std::string id = child->FirstChildElement("Prefix")->GetText();
-      auto item = util::make_unique<Item>(getFilename(id),
-                                          bucket + Auth::SEPARATOR + id,
-                                          IItem::FileType::Directory);
+      auto prefix_element = child->FirstChildElement("Prefix");
+      if (!prefix_element) throw std::logic_error("invalid xml");
+      std::string id = prefix_element->GetText();
+      auto item = util::make_unique<Item>(
+          getFilename(id), bucket + Auth::SEPARATOR + id, IItem::UnknownSize,
+          IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
-    if (document.RootElement()->FirstChildElement("IsTruncated")->GetText() ==
-        std::string("true")) {
-      next_page_token = document.RootElement()
-                            ->FirstChildElement("NextContinuationToken")
-                            ->GetText();
+    auto is_truncated_element =
+        document.RootElement()->FirstChildElement("IsTruncated");
+    if (!is_truncated_element) throw std::logic_error("invalid xml");
+    if (is_truncated_element->GetText() == std::string("true")) {
+      auto next_token_element =
+          document.RootElement()->FirstChildElement("NextContinuationToken");
+      if (!next_token_element) throw std::logic_error("invalid xml");
+      next_page_token = next_token_element->GetText();
     }
   }
   return result;

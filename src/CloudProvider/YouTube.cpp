@@ -87,7 +87,8 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
     if (id == AUDIO_DIRECTORY) {
       IItem::Pointer i = std::make_shared<Item>(
-          AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::FileType::Directory);
+          AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::UnknownSize,
+          IItem::FileType::Directory);
       callback(i);
       return r->done(i);
     }
@@ -102,50 +103,52 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
           auto i = getItemDataResponse(
               *response_stream, id.find(AUDIO_ID_PREFIX) != std::string::npos);
           auto stream = std::make_shared<std::stringstream>();
-          if (i->type() == IItem::FileType::Audio) {
-            r->sendRequest(
-                [=](util::Output) {
-                  auto request =
-                      http()->create(youtube_dl_url_ + "/api/info", "GET");
-                  request->setParameter("format", "bestaudio");
-                  request->setParameter(
-                      "url",
-                      "http://youtube.com/watch?v=" +
-                          extractId(id).substr(VIDEO_ID_PREFIX.length()));
-                  return request;
-                },
-                [=](EitherError<util::Output> e) {
-                  if (e.left()) {
-                    callback(e.left());
-                    return r->done(e.left());
-                  }
-                  try {
-                    Json::Value response;
-                    *stream >> response;
-                    auto item = i;
-                    for (auto v : response["info"]["formats"])
-                      if (v["format_id"] == response["info"]["format_id"]) {
-                        auto nitem = std::make_shared<Item>(
-                            i->filename() + "." + v["ext"].asString(), i->id(),
-                            i->type());
-                        nitem->set_thumbnail_url(
-                            static_cast<Item*>(i.get())->thumbnail_url());
-                        nitem->set_url(v["url"].asString());
-                        item = nitem;
-                      }
-                    callback(item);
-                    r->done(item);
-                  } catch (std::exception e) {
-                    Error err{IHttpRequest::Failure, e.what()};
-                    callback(err);
-                    r->done(err);
-                  }
-                },
-                stream);
-          } else {
-            callback(i);
-            r->done(i);
-          }
+          auto request = [=](std::string format) {
+            return [=](util::Output) {
+              auto request =
+                  http()->create(youtube_dl_url_ + "/api/info", "GET");
+              request->setParameter("format", format);
+              request->setParameter(
+                  "url",
+                  "http://youtube.com/watch?v=" +
+                      extractId(id).substr(VIDEO_ID_PREFIX.length()));
+              return request;
+            };
+          };
+          auto response = [=](EitherError<util::Output> e) {
+            if (e.left()) {
+              callback(e.left());
+              return r->done(e.left());
+            }
+            try {
+              Json::Value response;
+              *stream >> response;
+              auto item = i;
+              for (auto v : response["info"]["formats"]) {
+                if (v["format_id"] == response["info"]["format_id"]) {
+                  auto size = v["filesize"].isNull() ? IItem::UnknownSize
+                                                     : v["filesize"].asUInt64();
+                  auto nitem = std::make_shared<Item>(
+                      i->filename() + "." + v["ext"].asString(), i->id(), size,
+                      i->type());
+                  nitem->set_thumbnail_url(
+                      static_cast<Item*>(i.get())->thumbnail_url());
+                  nitem->set_url(v["url"].asString());
+                  item = nitem;
+                }
+              }
+              callback(item);
+              r->done(item);
+            } catch (std::exception) {
+              Error err{IHttpRequest::Failure, stream->str()};
+              callback(err);
+              r->done(err);
+            }
+          };
+          if (i->type() == IItem::FileType::Audio)
+            r->sendRequest(request("bestaudio"), response, stream);
+          else
+            r->sendRequest(request("best"), response, stream);
         },
         response_stream);
   });
@@ -268,7 +271,7 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     for (const std::string& name : related_playlists.getMemberNames()) {
       auto item = util::make_unique<Item>(
           name_prefix + name, id_prefix + related_playlists[name].asString(),
-          IItem::FileType::Directory);
+          IItem::UnknownSize, IItem::FileType::Directory);
       item->set_thumbnail_url(
           response["items"][0]["snippet"]["thumbnails"]["default"]["url"]
               .asString());
@@ -284,6 +287,7 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     next_page_token = response["nextPageToken"].asString();
   else if (directory.id() == rootDirectory()->id() && next_page_token.empty())
     result.push_back(util::make_unique<Item>(AUDIO_DIRECTORY, AUDIO_DIRECTORY,
+                                             IItem::UnknownSize,
                                              IItem::FileType::Directory));
   return result;
 }
@@ -293,9 +297,10 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
   std::string id_prefix = audio ? AUDIO_ID_PREFIX : "";
   std::string name_prefix = audio ? AUDIO_DIRECTORY + " " : "";
   if (kind == "youtube#playlistListResponse") {
-    auto item = util::make_unique<Item>(
-        name_prefix + v["snippet"]["title"].asString(),
-        id_prefix + v["id"].asString(), IItem::FileType::Directory);
+    auto item =
+        util::make_unique<Item>(name_prefix + v["snippet"]["title"].asString(),
+                                id_prefix + v["id"].asString(),
+                                IItem::UnknownSize, IItem::FileType::Directory);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
     return std::move(item);
@@ -310,7 +315,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
-        id_prefix + VIDEO_ID_PREFIX + video_id,
+        id_prefix + VIDEO_ID_PREFIX + video_id, IItem::UnknownSize,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());

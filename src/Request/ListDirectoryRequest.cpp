@@ -73,8 +73,8 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
             callback->done(e.left());
             request->done(e.left());
           }
-        } catch (std::exception e) {
-          Error err{IHttpRequest::Failure, e.what()};
+        } catch (std::exception) {
+          Error err{IHttpRequest::Failure, output_stream->str()};
           callback->done(err);
           request->done(err);
         }

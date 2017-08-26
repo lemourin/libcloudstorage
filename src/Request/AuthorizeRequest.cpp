@@ -124,8 +124,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
              auth->set_access_token(auth->refreshTokenResponse(*output));
              lock.unlock();
              return complete(nullptr);
-           } catch (std::exception e) {
-             Error err{IHttpRequest::Failure, e.what()};
+           } catch (std::exception) {
+             Error err{IHttpRequest::Failure, output->str()};
              return complete(err);
            }
          } else if (!IHttpRequest::isClientError(code) && r) {
@@ -150,8 +150,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                             auth->exchangeAuthorizationCodeResponse(*output));
                         lock.unlock();
                         complete(nullptr);
-                      } catch (std::exception e) {
-                        complete(Error{IHttpRequest::Failure, e.what()});
+                      } catch (std::exception) {
+                        complete(Error{IHttpRequest::Failure, output->str()});
                       }
                     } else {
                       complete(Error{code, error_stream->str()});

@@ -23,6 +23,8 @@
 
 #include "Utility.h"
 
+#include "IItem.h"
+
 #include <json/json.h>
 #include <algorithm>
 #include <cstdlib>
@@ -34,6 +36,8 @@
 const uint32_t CHUNK_SIZE = 1024;
 
 namespace cloudstorage {
+
+constexpr size_t IItem::UnknownSize;
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"aac", "audio/aac"},   {"avi", "video/x-msvideo"},

@@ -61,8 +61,8 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                   Token token{auth_token->refresh_token_, auth_token->token_};
                   callback(token);
                   r->done(token);
-                } catch (std::exception e) {
-                  Error err{IHttpRequest::Failure, e.what()};
+                } catch (std::exception) {
+                  Error err{IHttpRequest::Failure, output->str()};
                   callback(err);
                   r->done(err);
                 }

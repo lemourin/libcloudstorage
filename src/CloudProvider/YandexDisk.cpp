@@ -44,7 +44,8 @@ std::string YandexDisk::endpoint() const {
 }
 
 IItem::Pointer YandexDisk::rootDirectory() const {
-  return util::make_unique<Item>("disk", "disk:/", IItem::FileType::Directory);
+  return util::make_unique<Item>("disk", "disk:/", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
@@ -83,8 +84,8 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
                         *output >> json;
                         static_cast<Item*>(item.get())
                             ->set_url(json["href"].asString());
-                      } catch (std::exception e) {
-                        Error err{IHttpRequest::Failure, e.what()};
+                      } catch (std::exception) {
+                        Error err{IHttpRequest::Failure, output->str()};
                         callback(err);
                         r->done(err);
                       }
@@ -97,8 +98,8 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
               callback(item);
               r->done(item);
             }
-          } catch (std::exception e) {
-            Error err{IHttpRequest::Failure, e.what()};
+          } catch (std::exception) {
+            Error err{IHttpRequest::Failure, output->str()};
             callback(err);
             r->done(err);
           }
@@ -147,8 +148,8 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
                 },
                 stream, std::bind(&IDownloadFileCallback::progress,
                                   callback.get(), _1, _2));
-          } catch (std::exception e) {
-            Error err{IHttpRequest::Failure, e.what()};
+          } catch (std::exception) {
+            Error err{IHttpRequest::Failure, output->str()};
             callback->done(err);
             r->done(err);
           }
@@ -208,8 +209,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
                 },
                 output, nullptr, std::bind(&IUploadFileCallback::progress,
                                            callback.get(), _1, _2));
-          } catch (std::exception e) {
-            Error err{IHttpRequest::Failure, e.what()};
+          } catch (std::exception) {
+            Error err{IHttpRequest::Failure, output->str()};
             callback->done(err);
             r->done(err);
           }
@@ -258,15 +259,15 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
                     auto item = toItem(json);
                     callback(item);
                     r->done(item);
-                  } catch (std::exception e) {
-                    Error err{IHttpRequest::Failure, e.what()};
+                  } catch (std::exception) {
+                    Error err{IHttpRequest::Failure, output->str()};
                     callback(err);
                     r->done(err);
                   }
                 },
                 output);
-          } catch (std::exception e) {
-            Error err{IHttpRequest::Failure, e.what()};
+          } catch (std::exception) {
+            Error err{IHttpRequest::Failure, output->str()};
             callback(err);
             r->done(err);
           }
@@ -332,8 +333,8 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
   IItem::FileType type = v["type"].asString() == "dir"
                              ? IItem::FileType::Directory
                              : Item::fromMimeType(v["mime_type"].asString());
-  auto item =
-      util::make_unique<Item>(v["name"].asString(), v["path"].asString(), type);
+  auto item = util::make_unique<Item>(
+      v["name"].asString(), v["path"].asString(), v["size"].asUInt64(), type);
   item->set_thumbnail_url(v["preview"].asString());
   return std::move(item);
 }

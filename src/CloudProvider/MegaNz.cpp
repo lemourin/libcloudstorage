@@ -40,7 +40,7 @@ using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
 const int CACHE_FILENAME_LENGTH = 12;
-const std::string DEFAULT_FILE_URL = "http://127.0.0.1:12346";
+const std::string DEFAULT_FILE_URL = "http://localhost:12346";
 
 namespace cloudstorage {
 
@@ -427,7 +427,8 @@ std::string MegaNz::name() const { return "mega"; }
 std::string MegaNz::endpoint() const { return file_url_; }
 
 IItem::Pointer MegaNz::rootDirectory() const {
-  return util::make_unique<Item>("root", "/", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "/", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 ICloudProvider::Hints MegaNz::hints() const {
@@ -784,9 +785,10 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
   return r->run();
 }
 
-std::function<void(Request<EitherError<void>>::Pointer)> MegaNz::downloadResolver(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback, int64_t start,
-    int64_t size) {
+std::function<void(Request<EitherError<void>>::Pointer)>
+MegaNz::downloadResolver(IItem::Pointer item,
+                         IDownloadFileCallback::Pointer callback, int64_t start,
+                         int64_t size) {
   return [=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
@@ -829,7 +831,7 @@ std::string MegaNz::passwordHash(const std::string& password) const {
 IItem::Pointer MegaNz::toItem(MegaNode* node) {
   std::unique_ptr<char[]> path(mega_->getNodePath(node));
   auto item = util::make_unique<Item>(
-      node->getName(), path.get(),
+      node->getName(), path.get(), node->getSize(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   item->set_url(endpoint() + "/?file=" + util::Url::escape(path.get()) +
                 "&state=" + auth()->state());

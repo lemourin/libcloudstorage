@@ -91,7 +91,8 @@ std::string AmazonDrive::name() const { return "amazon"; }
 std::string AmazonDrive::endpoint() const { return content_url(); }
 
 IItem::Pointer AmazonDrive::rootDirectory() const {
-  return util::make_unique<Item>("root", "root", IItem::FileType::Directory);
+  return util::make_unique<Item>("root", "root", IItem::UnknownSize,
+                                 IItem::FileType::Directory);
 }
 
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
@@ -133,8 +134,8 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
                       content_url_ = response["contentUrl"].asString();
                       lock.unlock();
                       complete(nullptr);
-                    } catch (std::exception e) {
-                      complete(Error{IHttpRequest::Failure, e.what()});
+                    } catch (std::exception) {
+                      complete(Error{IHttpRequest::Failure, output->str()});
                     }
                   },
                   input, output, error);
@@ -257,7 +258,9 @@ IItem::FileType AmazonDrive::type(const Json::Value& v) const {
 
 IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-  auto item = util::make_unique<Item>(name, v["id"].asString(), type(v));
+  auto item = util::make_unique<Item>(name, v["id"].asString(),
+                                      v["contentProperties"]["size"].asUInt64(),
+                                      type(v));
   item->set_url(v["tempLink"].asString());
   if (item->type() == IItem::FileType::Image)
     item->set_thumbnail_url(item->url() +

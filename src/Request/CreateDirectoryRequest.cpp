@@ -52,8 +52,8 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
               auto i = provider()->createDirectoryResponse(*output);
               callback(i);
               request->done(i);
-            } catch (std::exception e) {
-              Error err{IHttpRequest::Failure, e.what()};
+            } catch (std::exception) {
+              Error err{IHttpRequest::Failure, output->str()};
               callback(err);
               request->done(err);
             }
