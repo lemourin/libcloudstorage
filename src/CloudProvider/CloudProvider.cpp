@@ -285,9 +285,9 @@ ICloudProvider::GetItemRequest::Pointer CloudProvider::getItemAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
-    IItem::Pointer file, IDownloadFileCallback::Pointer callback) {
+    IItem::Pointer file, IDownloadFileCallback::Pointer callback, Range range) {
   return std::make_shared<cloudstorage::DownloadFileRequest>(
-             shared_from_this(), std::move(file), std::move(callback),
+             shared_from_this(), std::move(file), std::move(callback), range,
              std::bind(&CloudProvider::downloadFileRequest, this, _1, _2))
       ->run();
 }
@@ -357,7 +357,7 @@ std::pair<std::string, std::string> CloudProvider::credentialsFromString(
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   return std::make_shared<cloudstorage::DownloadFileRequest>(
-             shared_from_this(), item, std::move(callback),
+             shared_from_this(), item, std::move(callback), FullRange,
              std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2))
       ->run();
 }
@@ -412,7 +412,8 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(
     IItem::Pointer item, const std::string& filename,
     DownloadFileCallback callback) {
   return downloadFileAsync(
-      item, util::make_unique<::DownloadFileCallback>(filename, callback));
+      item, util::make_unique<::DownloadFileCallback>(filename, callback),
+      FullRange);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(

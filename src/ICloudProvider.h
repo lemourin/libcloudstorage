@@ -244,7 +244,8 @@ class ICloudProvider {
    * @return object representing the pending request
    */
   virtual DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer item, IDownloadFileCallback::Pointer) = 0;
+      IItem::Pointer item, IDownloadFileCallback::Pointer,
+      Range = FullRange) = 0;
 
   /**
    * Uploads the file provided by callback.

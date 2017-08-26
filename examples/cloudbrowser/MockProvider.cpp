@@ -62,7 +62,7 @@ ICloudProvider::GetItemRequest::Pointer MockProvider::getItemAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MockProvider::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range) {
   return util::make_unique<MockDownloadFileRequest>(item, std::move(callback));
 }
 

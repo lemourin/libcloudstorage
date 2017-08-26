@@ -24,6 +24,7 @@
 #include "Utility.h"
 
 #include "IItem.h"
+#include "IRequest.h"
 
 #include <json/json.h>
 #include <algorithm>
@@ -51,8 +52,6 @@ const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"3gp", "video/3gpp"},  {"3g2", "video/3gpp2"},
     {"mp4", "video/mp4"},   {"mkv", "video/webm"}};
 
-namespace util {
-
 namespace {
 
 unsigned char from_hex(unsigned char ch) {
@@ -74,6 +73,14 @@ std::string to_lower(std::string str) {
 
 }  // namespace
 
+bool operator==(const Range& r1, const Range& r2) {
+  return std::tie(r1.start_, r1.size_) == std::tie(r2.start_, r2.size_);
+}
+
+bool operator!=(const Range& r1, const Range& r2) { return !(r1 == r2); }
+
+namespace util {
+
 std::string remove_whitespace(const std::string& str) {
   std::string result;
   for (char c : str)
@@ -81,18 +88,25 @@ std::string remove_whitespace(const std::string& str) {
   return result;
 }
 
-range parse_range(const std::string& r) {
+Range parse_range(const std::string& r) {
   std::string str = remove_whitespace(r);
   size_t l = strlen("bytes=");
-  if (str.substr(0, l) != "bytes=") return {-1, -1};
+  if (str.substr(0, l) != "bytes=") return InvalidRange;
   std::string n1, n2;
   size_t it = l;
   while (it < r.length() && str[it] != '-') n1 += str[it++];
   it++;
   while (it < r.length()) n2 += str[it++];
-  auto begin = n1.empty() ? -1 : atoll(n1.c_str());
-  auto end = n2.empty() ? -1 : atoll(n2.c_str());
-  return {begin, end == -1 ? -1 : (end - begin + 1)};
+  auto begin = n1.empty() ? 0 : (uint64_t)atoll(n1.c_str());
+  auto end = n2.empty() ? Range::Full : (uint64_t)atoll(n2.c_str());
+  return {begin, end == Range::Full ? Range::Full : (end - begin + 1)};
+}
+
+std::string range_to_string(Range r) {
+  std::stringstream stream;
+  stream << "bytes=" << r.start_ << "-";
+  if (r.size_ != Range::Full) stream << r.size_ - r.start_ + 1;
+  return stream.str();
 }
 
 std::string address(const std::string& url, uint16_t port) {

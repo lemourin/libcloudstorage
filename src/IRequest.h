@@ -51,6 +51,17 @@ struct Token {
   std::string access_token_;
 };
 
+struct Range {
+  static constexpr uint64_t Begin = 0;
+  static constexpr uint64_t Full = -1;
+
+  uint64_t start_;
+  uint64_t size_;
+};
+
+const Range FullRange = {Range::Begin, Range::Full};
+const Range InvalidRange = {-1ULL, 0};
+
 /**
  * Class representing pending request. When there is no reference to the
  * request, it's immediately cancelled.

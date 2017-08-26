@@ -169,7 +169,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range range) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
   r->set([=](Request<EitherError<void>>::Pointer r) {
     std::string url = item->url();
@@ -177,19 +177,25 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
           &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
       auto stream = std::make_shared<std::ostream>(wrapper.get());
-      r->sendRequest([=](util::Output) { return http()->create(url, "GET"); },
-                     [=](EitherError<util::Output> e) {
-                       (void)wrapper;
-                       if (e.left()) {
-                         callback->done(e.left());
-                         r->done(e.left());
-                       } else {
-                         callback->done(nullptr);
-                         r->done(nullptr);
-                       }
-                     },
-                     stream, std::bind(&IDownloadFileCallback::progress,
-                                       callback.get(), _1, _2));
+      r->sendRequest(
+          [=](util::Output) {
+            auto r = http()->create(url, "GET");
+            if (range != FullRange)
+              r->setHeaderParameter("Range", util::range_to_string(range));
+            return r;
+          },
+          [=](EitherError<util::Output> e) {
+            (void)wrapper;
+            if (e.left()) {
+              callback->done(e.left());
+              r->done(e.left());
+            } else {
+              callback->done(nullptr);
+              r->done(nullptr);
+            }
+          },
+          stream,
+          std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
     };
     if (item->type() == IItem::FileType::Audio) {
       r->subrequest(getItemDataAsync(item->id(), [=](EitherError<IItem> e) {

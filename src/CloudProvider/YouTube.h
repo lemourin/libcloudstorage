@@ -45,8 +45,9 @@ class YouTube : public CloudProvider {
       IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer item, IListDirectoryCallback::Pointer callback) override;
-  DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
+                                                 IDownloadFileCallback::Pointer,
+                                                 Range) override;
 
  private:
   IHttpRequest::Pointer getItemDataRequest(const std::string&,

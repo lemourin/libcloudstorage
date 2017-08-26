@@ -63,8 +63,9 @@ class CloudProvider : public ICloudProvider,
       IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
                                        GetItemCallback) override;
-  DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
+                                                 IDownloadFileCallback::Pointer,
+                                                 Range) override;
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;

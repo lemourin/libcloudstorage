@@ -70,8 +70,9 @@ class MegaNz : public CloudProvider {
       const std::string& id, GetItemDataCallback callback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, IListDirectoryCallback::Pointer) override;
-  DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
+                                                 IDownloadFileCallback::Pointer,
+                                                 Range) override;
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
@@ -90,8 +91,7 @@ class MegaNz : public CloudProvider {
       IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
 
   std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
-      IItem::Pointer item, IDownloadFileCallback::Pointer, int64_t start = 0,
-      int64_t size = -1);
+      IItem::Pointer item, IDownloadFileCallback::Pointer, Range);
 
   void login(Request<EitherError<void>>::Pointer,
              AuthorizeRequest::AuthorizeCompleted);

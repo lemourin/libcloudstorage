@@ -32,6 +32,7 @@ namespace cloudstorage {
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
                                          ICallback::Pointer callback,
+                                         Range range,
                                          RequestFactory request_factory)
     : Request(p),
       stream_wrapper_(
@@ -39,7 +40,12 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
   set([=](Request::Pointer request) {
     auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
     sendRequest(
-        [=](util::Output input) { return request_factory(*file, *input); },
+        [=](util::Output input) {
+          auto request = request_factory(*file, *input);
+          if (range != FullRange)
+            request->setHeaderParameter("Range", util::range_to_string(range));
+          return request;
+        },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
             callback->done(e.left());

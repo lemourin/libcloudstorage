@@ -31,6 +31,11 @@
 
 namespace cloudstorage {
 
+struct Range;
+
+bool operator==(const Range&, const Range&);
+bool operator!=(const Range&, const Range&);
+
 namespace util {
 
 using Output = std::shared_ptr<std::ostream>;
@@ -41,12 +46,9 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-struct range {
-  int64_t start, size;
-};
-
 std::string remove_whitespace(const std::string& str);
-range parse_range(const std::string& str);
+Range parse_range(const std::string& str);
+std::string range_to_string(Range);
 std::string address(const std::string& url, uint16_t port);
 std::string to_mime_type(const std::string& extension);
 

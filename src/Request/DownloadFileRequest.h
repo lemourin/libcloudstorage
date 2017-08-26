@@ -46,7 +46,8 @@ class DownloadFileRequest : public Request<EitherError<void>> {
   using ICallback = IDownloadFileCallback;
 
   DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
-                      ICallback::Pointer, RequestFactory request_factory);
+                      ICallback::Pointer, Range,
+                      RequestFactory request_factory);
   ~DownloadFileRequest();
 
  private:

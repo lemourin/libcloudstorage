@@ -40,8 +40,9 @@ class YandexDisk : public CloudProvider {
 
   GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id, GetItemDataCallback callback) override;
-  DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer) override;
+  DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
+                                                 IDownloadFileCallback::Pointer,
+                                                 Range) override;
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;

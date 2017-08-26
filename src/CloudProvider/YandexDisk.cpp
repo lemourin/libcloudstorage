@@ -111,7 +111,7 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range range) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
   r->set([=](Request<EitherError<void>>::Pointer r) {
     auto output = std::make_shared<std::stringstream>();
@@ -135,7 +135,13 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
             auto stream = std::make_shared<std::ostream>(wrapper.get());
             std::string url = json["href"].asString();
             r->sendRequest(
-                [=](util::Output) { return http()->create(url, "GET"); },
+                [=](util::Output) {
+                  auto r = http()->create(url, "GET");
+                  if (range != FullRange)
+                    r->setHeaderParameter("Range",
+                                          util::range_to_string(range));
+                  return r;
+                },
                 [=](EitherError<util::Output> e) {
                   (void)wrapper;
                   if (e.left()) {

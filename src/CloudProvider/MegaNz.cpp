@@ -319,16 +319,16 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
       {"Accept-Ranges", "bytes"},
       {"Content-Disposition",
        "inline; filename=\"" + std::string(node->getName()) + "\""}};
-  util::range range = {0, node->getSize()};
+  Range range = {0, (uint64_t)node->getSize()};
   if (const char* range_str = request.header("Range")) {
     range = util::parse_range(range_str);
-    if (range.size == -1) range.size = node->getSize() - range.start;
-    if (range.start + range.size > node->getSize() || range.start == -1 ||
-        range.size < 0)
+    if (range.size_ == Range::Full)
+      range.size_ = node->getSize() - range.start_;
+    if (range.start_ + range.size_ > (uint64_t)node->getSize())
       return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
                                         "invalid range");
     std::stringstream stream;
-    stream << "bytes " << range.start << "-" << range.start + range.size - 1
+    stream << "bytes " << range.start_ << "-" << range.start_ + range.size_ - 1
            << "/" << node->getSize();
     headers["Content-Range"] = stream.str();
     code = IHttpRequest::Partial;
@@ -338,10 +338,10 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
       std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
   auto resolver = provider_->downloadResolver(
       provider_->toItem(node.get()),
-      util::make_unique<HttpDataCallback>(buffer), range.start, range.size);
+      util::make_unique<HttpDataCallback>(buffer), range);
   provider_->addStreamRequest(download_request);
   auto data = util::make_unique<HttpData>(buffer, provider_, download_request);
-  auto response = request.response(code, headers, range.size, std::move(data));
+  auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
     std::unique_lock<std::mutex> lock(buffer->response_mutex_);
@@ -547,9 +547,9 @@ ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range range) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set(downloadResolver(item, callback));
+  r->set(downloadResolver(item, callback, range));
   return r->run();
 }
 
@@ -787,8 +787,7 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
 
 std::function<void(Request<EitherError<void>>::Pointer)>
 MegaNz::downloadResolver(IItem::Pointer item,
-                         IDownloadFileCallback::Pointer callback, int64_t start,
-                         int64_t size) {
+                         IDownloadFileCallback::Pointer callback, Range range) {
   return [=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
@@ -802,8 +801,10 @@ MegaNz::downloadResolver(IItem::Pointer item,
               this);
           listener->download_callback_ = callback;
           r->subrequest(listener);
-          mega_->startStreaming(node.get(), start,
-                                size == -1 ? node->getSize() - start : size,
+          mega_->startStreaming(node.get(), range.start_,
+                                range.size_ == Range::Full
+                                    ? (uint64_t)node->getSize() - range.start_
+                                    : range.size_,
                                 listener.get());
         });
   };
