@@ -136,7 +136,7 @@ void CurlHttp::Worker::add(RequestData::Pointer r) {
 
 void RequestData::done(int code) {
   int ret = IHttpRequest::Unknown;
-  int content_length = 0;
+  uint64_t content_length = 0;
   if (code == CURLE_OK) {
     long http_code = static_cast<long>(IHttpRequest::Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
@@ -150,7 +150,7 @@ void RequestData::done(int code) {
     double curl_content_length;
     curl_easy_getinfo(handle_.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD,
                       &curl_content_length);
-    content_length = (int)(curl_content_length + 0.5);
+    content_length = (uint64_t)(curl_content_length + 0.5);
   } else {
     *error_stream_ << curl_easy_strerror(static_cast<CURLcode>(code));
     ret = (code == CURLE_ABORTED_BY_CALLBACK) ? IHttpRequest::Aborted : -code;

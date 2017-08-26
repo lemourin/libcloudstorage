@@ -35,7 +35,7 @@ class IHttpRequest {
  public:
   struct Response {
     int http_code_;
-    int content_length_;
+    uint64_t content_length_;
     std::shared_ptr<std::ostream> output_stream_;
     std::shared_ptr<std::ostream> error_stream_;
   };
