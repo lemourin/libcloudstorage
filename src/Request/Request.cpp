@@ -205,32 +205,35 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   auto r = factory(input);
   authorize(r);
   send(r.get(),
-       [=](int code, util::Output, util::Output) {
-         if (IHttpRequest::isSuccess(code)) return complete(output);
-         if (this->reauthorize(code)) {
+       [=](IHttpRequest::Response response) {
+         if (IHttpRequest::isSuccess(response.http_code_))
+           return complete(output);
+         if (this->reauthorize(response.http_code_)) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
                  return complete(e.left());
                else
-                 return complete(Error{code, error_stream->str()});
+                 return complete(
+                     Error{response.http_code_, error_stream->str()});
              }
              auto input = std::make_shared<std::stringstream>(),
                   error_stream = std::make_shared<std::stringstream>();
              auto r = factory(input);
              authorize(r);
-             this->send(r.get(),
-                        [=](int code, util::Output output, util::Output) {
-                          (void)request;
-                          if (IHttpRequest::isSuccess(code))
-                            complete(output);
-                          else
-                            complete(Error{code, error_stream->str()});
-                        },
-                        input, output, error_stream, download, upload);
+             this->send(
+                 r.get(),
+                 [=](IHttpRequest::Response response) {
+                   (void)request;
+                   if (IHttpRequest::isSuccess(response.http_code_))
+                     complete(output);
+                   else
+                     complete(Error{response.http_code_, error_stream->str()});
+                 },
+                 input, output, error_stream, download, upload);
            });
          } else {
-           complete(Error{code, error_stream->str()});
+           complete(Error{response.http_code_, error_stream->str()});
          }
        },
        input, output, error_stream, download, upload);
@@ -247,7 +250,7 @@ void Request<T>::send(IHttpRequest* request,
     request->send(complete, input, output, error,
                   httpCallback(download, upload));
   else
-    complete(IHttpRequest::Aborted, output, error);
+    complete({IHttpRequest::Aborted, 0, output, error});
 }
 
 template <class T>

@@ -117,8 +117,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
   auto auth = provider()->auth();
   auto auth_callback = provider()->auth_callback();
   send(r.get(),
-       [=](int code, util::Output, util::Output) {
-         if (IHttpRequest::isSuccess(code)) {
+       [=](IHttpRequest::Response response) {
+         if (IHttpRequest::isSuccess(response.http_code_)) {
            try {
              auto lock = provider()->auth_lock();
              auth->set_access_token(auth->refreshTokenResponse(*output));
@@ -128,8 +128,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
              Error err{IHttpRequest::Failure, output->str()};
              return complete(err);
            }
-         } else if (!IHttpRequest::isClientError(code) && r) {
-           return complete(Error{code, error_stream->str()});
+         } else if (!IHttpRequest::isClientError(response.http_code_) && r) {
+           return complete(Error{response.http_code_, error_stream->str()});
          }
          if (auth_callback->userConsentRequired(*provider()) ==
              ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
@@ -142,8 +142,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                   error_stream = std::make_shared<std::stringstream>();
              auto r = auth->exchangeAuthorizationCodeRequest(*input);
              send(r.get(),
-                  [=](int code, util::Output, util::Output) {
-                    if (IHttpRequest::isSuccess(code)) {
+                  [=](IHttpRequest::Response response) {
+                    if (IHttpRequest::isSuccess(response.http_code_)) {
                       try {
                         auto lock = provider()->auth_lock();
                         auth->set_access_token(
@@ -154,14 +154,14 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                         complete(Error{IHttpRequest::Failure, output->str()});
                       }
                     } else {
-                      complete(Error{code, error_stream->str()});
+                      complete(Error{response.http_code_, error_stream->str()});
                     }
                   },
                   input, output, error_stream);
            };
            set_server(auth->requestAuthorizationCode(code));
          } else {
-           complete(Error{code, error_stream->str()});
+           complete(Error{response.http_code_, error_stream->str()});
          }
        },
        input, output, error_stream);

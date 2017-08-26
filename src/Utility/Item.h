@@ -38,9 +38,13 @@ class Item : public IItem {
   Item(std::string filename, std::string id, size_t size, FileType);
 
   std::string filename() const override;
+  void set_filename(std::string);
+
   std::string extension() const override;
   std::string id() const override;
+
   size_t size() const override;
+  void set_size(size_t);
 
   std::string url() const override;
   void set_url(std::string);

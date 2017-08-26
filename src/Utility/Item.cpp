@@ -64,15 +64,19 @@ Item::Item(std::string filename, std::string id, size_t size, FileType type)
 
 std::string Item::filename() const { return filename_; }
 
+void Item::set_filename(std::string filename) { filename_ = filename; }
+
 std::string Item::extension() const {
   return filename_.substr(filename_.find_last_of('.') + 1, std::string::npos);
 }
 
 std::string Item::id() const { return id_; }
 
-std::string Item::url() const { return url_; }
-
 size_t Item::size() const { return size_; }
+
+void Item::set_size(size_t size) { size_ = size; }
+
+std::string Item::url() const { return url_; }
 
 void Item::set_url(std::string url) { url_ = url; }
 

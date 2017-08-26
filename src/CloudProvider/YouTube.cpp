@@ -100,7 +100,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
             callback(e.left());
             return r->done(e.left());
           }
-          auto i = getItemDataResponse(
+          auto item = getItemDataResponse(
               *response_stream, id.find(AUDIO_ID_PREFIX) != std::string::npos);
           auto stream = std::make_shared<std::stringstream>();
           auto request = [=](std::string format) {
@@ -123,29 +123,42 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
             try {
               Json::Value response;
               *stream >> response;
-              auto item = i;
               for (auto v : response["info"]["formats"]) {
                 if (v["format_id"] == response["info"]["format_id"]) {
+                  auto nitem = static_cast<Item*>(item.get());
                   auto size = v["filesize"].isNull() ? IItem::UnknownSize
                                                      : v["filesize"].asUInt64();
-                  auto nitem = std::make_shared<Item>(
-                      i->filename() + "." + v["ext"].asString(), i->id(), size,
-                      i->type());
-                  nitem->set_thumbnail_url(
-                      static_cast<Item*>(i.get())->thumbnail_url());
+                  nitem->set_size(size);
+                  nitem->set_filename(item->filename() + "." +
+                                      v["ext"].asString());
                   nitem->set_url(v["url"].asString());
-                  item = nitem;
                 }
               }
-              callback(item);
-              r->done(item);
+              if (item->size() == IItem::UnknownSize) {
+                auto request = http()->create(item->url(), "HEAD");
+                auto input = std::make_shared<std::stringstream>();
+                auto output = std::make_shared<std::stringstream>();
+                auto error = std::make_shared<std::stringstream>();
+                r->send(request.get(),
+                        [=](IHttpRequest::Response response) {
+                          if (IHttpRequest::isSuccess(response.http_code_))
+                            static_cast<Item*>(item.get())
+                                ->set_size(response.content_length_);
+                          callback(item);
+                          r->done(item);
+                        },
+                        input, output, error);
+              } else {
+                callback(item);
+                r->done(item);
+              }
             } catch (std::exception) {
               Error err{IHttpRequest::Failure, stream->str()};
               callback(err);
               r->done(err);
             }
           };
-          if (i->type() == IItem::FileType::Audio)
+          if (item->type() == IItem::FileType::Audio)
             r->sendRequest(request("bestaudio"), response, stream);
           else
             r->sendRequest(request("best"), response, stream);

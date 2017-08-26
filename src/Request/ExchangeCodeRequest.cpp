@@ -50,8 +50,8 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
       provider()->auth()->set_authorization_code(previous_code);
     }
     r->send(request.get(),
-            [=](int code, util::Output, util::Output) {
-              if (IHttpRequest::isSuccess(code)) {
+            [=](IHttpRequest::Response response) {
+              if (IHttpRequest::isSuccess(response.http_code_)) {
                 try {
                   auto lock = provider()->auth_lock();
                   auto auth_token =
@@ -67,7 +67,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                   r->done(err);
                 }
               } else {
-                Error e{code, error->str()};
+                Error e{response.http_code_, error->str()};
                 callback(e);
                 r->done(e);
               }
