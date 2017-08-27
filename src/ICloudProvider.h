@@ -124,13 +124,12 @@ class ICloudProvider {
     *  - youtube_dl_url (url to youtube-dl-server)
     *  - temporary_directory (used by mega.nz, has to use native path separators
     *    i.e. \ for windows and / for others; has to end with a separator)
-    *  - login_page (html code of login page to be displayed when cloud provider
-    *    doesn't use oauth; check for DEFAULT_LOGIN_PAGE to see what is the
-    *    expected layout of the page)
-    *  - success_page (html code of page to be displayed when library was
-    *    authorized successfully)
-    *  - error_page (html code of page to be displayed when library
-    *    authorization failed)
+    *  - login_page (login page to be displayed when cloud provider doesn't use
+    *    oauth; check for DEFAULT_LOGIN_PAGE to see what is the expected layout
+    *    of the page)
+    *  - success_page (page to be displayed when library was authorized
+    *    successfully)
+    *  - error_page (page to be displayed when library authorization failed)
     */
     Hints hints_;
   };
