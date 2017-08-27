@@ -56,6 +56,13 @@ class Listener : public IRequest<EitherError<void>>,
   static constexpr int SUCCESS = 1;
   static constexpr int CANCELLED = 2;
 
+  template <class T>
+  static std::shared_ptr<T> make(Callback cb, MegaNz* provider) {
+    auto r = std::make_shared<T>(cb, provider);
+    provider->addRequestListener(r);
+    return r;
+  }
+
   Listener(Callback cb, MegaNz* provider)
       : status_(IN_PROGRESS),
         error_({IHttpRequest::Unknown, ""}),
@@ -109,10 +116,6 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
  public:
   using Listener::Listener;
 
-  void onRequestStart(MegaApi*, MegaRequest*) override {
-    provider_->addRequestListener(shared_from_this());
-  }
-
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
     auto p = shared_from_this();
     provider_->removeRequestListener(p);
@@ -159,7 +162,6 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   }
 
   void onTransferStart(MegaApi* mega, MegaTransfer* transfer) {
-    provider_->addRequestListener(shared_from_this());
     std::lock_guard<std::mutex> lock(mutex_);
     if (status_ == CANCELLED) {
       mega->cancelTransfer(transfer);
@@ -482,7 +484,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         auto fetch = [=]() {
-          auto fetch_nodes_listener = std::make_shared<RequestListener>(
+          auto fetch_nodes_listener = Listener::make<RequestListener>(
               [=](EitherError<void> e, Listener*) {
                 if (!e.left()) authorized_ = true;
                 complete(e);
@@ -604,7 +606,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
               mega_cache.write(buffer.data(), length);
             }
           }
-          auto listener = std::make_shared<TransferListener>(
+          auto listener = Listener::make<TransferListener>(
               [=](EitherError<void> e, Listener*) {
                 std::remove(cache.c_str());
                 callback->done(e);
@@ -630,7 +632,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     ensureAuthorized<EitherError<void>>(
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
           std::string cache = temporaryFileName();
-          auto listener = std::make_shared<RequestListener>(
+          auto listener = Listener::make<RequestListener>(
               [=](EitherError<void> e, Listener*) {
                 if (e.left()) {
                   callback->done(e.left());
@@ -675,7 +677,7 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
         callback(e);
         r->done(e);
       } else {
-        auto listener = std::make_shared<RequestListener>(
+        auto listener = Listener::make<RequestListener>(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               return r->done(e);
@@ -702,7 +704,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
         callback(e);
         return r->done(e);
       }
-      auto listener = std::make_shared<RequestListener>(
+      auto listener = Listener::make<RequestListener>(
           [=](EitherError<void> e, Listener* listener) {
             if (e.left()) {
               callback(e.left());
@@ -733,7 +735,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
       std::unique_ptr<mega::MegaNode> destination_node(
           mega_->getNodeByPath(destination->id().c_str()));
       if (source_node && destination_node) {
-        auto listener = std::make_shared<RequestListener>(
+        auto listener = Listener::make<RequestListener>(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               r->done(e);
@@ -760,7 +762,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
       std::unique_ptr<mega::MegaNode> node(
           mega_->getNodeByPath(item->id().c_str()));
       if (node) {
-        auto listener = std::make_shared<RequestListener>(
+        auto listener = Listener::make<RequestListener>(
             [=](EitherError<void> e, Listener*) {
               callback(e);
               r->done(e);
@@ -815,7 +817,7 @@ MegaNz::downloadResolver(IItem::Pointer item,
         r, std::bind(&IDownloadFileCallback::done, callback.get(), _1), [=] {
           std::unique_ptr<mega::MegaNode> node(
               mega_->getNodeByPath(item->id().c_str()));
-          auto listener = std::make_shared<TransferListener>(
+          auto listener = Listener::make<TransferListener>(
               [=](EitherError<void> e, Listener*) {
                 callback->done(e);
                 r->done(e);
@@ -834,10 +836,10 @@ MegaNz::downloadResolver(IItem::Pointer item,
 
 void MegaNz::login(Request<EitherError<void>>::Pointer r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
-  auto session_auth_listener = std::make_shared<RequestListener>(
+  auto session_auth_listener = Listener::make<RequestListener>(
       [=](EitherError<void> e, Listener*) {
         if (e.left()) {
-          auto auth_listener = std::make_shared<RequestListener>(
+          auto auth_listener = Listener::make<RequestListener>(
               [=](EitherError<void> e, Listener*) {
                 if (!e.left()) {
                   auto lock = auth_lock();
