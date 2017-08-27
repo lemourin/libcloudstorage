@@ -225,7 +225,7 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
-  return {{"access_token", access_token()}};
+  return {{"access_token", access_token()}, {"state", auth()->state()}};
 }
 
 std::string CloudProvider::access_token() const {
