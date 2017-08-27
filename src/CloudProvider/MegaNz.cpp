@@ -404,22 +404,30 @@ void MegaNz::removeRequestListener(
 void MegaNz::initialize(InitData&& data) {
   {
     auto lock = auth_lock();
-    if (data.hints_.find("client_id") == std::end(data.hints_))
-      mega_ = util::make_unique<MegaApi>("ZVhB0Czb");
-    else
-      setWithHint(data.hints_, "client_id", [this](std::string v) {
-        mega_ = util::make_unique<MegaApi>(v.c_str());
-      });
     setWithHint(data.hints_, "temporary_directory",
                 [this](std::string v) { temporary_directory_ = v; });
     setWithHint(data.hints_, "file_url",
                 [this](std::string v) { file_url_ = v; });
+    setWithHint(data.hints_, "session_id",
+                [this](std::string v) { session_ = v; });
+    setWithHint(data.hints_, "client_id", [this](std::string v) {
+      mega_ =
+          util::make_unique<MegaApi>(v.c_str(), temporary_directory_.c_str());
+    });
+    if (!mega_)
+      mega_ =
+          util::make_unique<MegaApi>("ZVhB0Czb", temporary_directory_.c_str());
     if (file_url_.empty()) file_url_ = DEFAULT_FILE_URL;
   }
   CloudProvider::initialize(std::move(data));
   daemon_ =
       http_server()->create(util::make_unique<HttpServerCallback>(this),
                             auth()->state(), IHttpServer::Type::FileProvider);
+}
+
+std::string MegaNz::session() const {
+  auto lock = auth_lock();
+  return session_;
 }
 
 std::string MegaNz::name() const { return "mega"; }
@@ -433,7 +441,8 @@ IItem::Pointer MegaNz::rootDirectory() const {
 
 ICloudProvider::Hints MegaNz::hints() const {
   Hints result = {{"temporary_directory", temporary_directory_},
-                  {"file_url", file_url_}};
+                  {"file_url", file_url_},
+                  {"session_id", session()}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
@@ -812,16 +821,32 @@ MegaNz::downloadResolver(IItem::Pointer item,
 
 void MegaNz::login(Request<EitherError<void>>::Pointer r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
-  auto auth_listener = std::make_shared<RequestListener>(
-      [=](EitherError<void> e, Listener*) { complete(e); }, this);
-  r->subrequest(auth_listener);
-  auto data = credentialsFromString(token());
-  std::string mail = data.first;
-  std::string private_key = data.second;
-  std::unique_ptr<char[]> hash(
-      mega_->getStringHash(private_key.c_str(), mail.c_str()));
-  mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
-                   auth_listener.get());
+  auto session_auth_listener = std::make_shared<RequestListener>(
+      [=](EitherError<void> e, Listener*) {
+        if (e.left()) {
+          auto auth_listener = std::make_shared<RequestListener>(
+              [=](EitherError<void> e, Listener*) {
+                auto lock = auth_lock();
+                std::unique_ptr<char[]> session(mega_->dumpSession());
+                session_ = session.get();
+                lock.unlock();
+                complete(e);
+              },
+              this);
+          r->subrequest(auth_listener);
+          auto data = credentialsFromString(token());
+          std::string mail = data.first;
+          std::string private_key = data.second;
+          std::unique_ptr<char[]> hash(
+              mega_->getStringHash(private_key.c_str(), mail.c_str()));
+          mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
+                           auth_listener.get());
+        } else
+          complete(e);
+      },
+      this);
+  r->subrequest(session_auth_listener);
+  mega_->fastLogin(session().c_str(), session_auth_listener.get());
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {
