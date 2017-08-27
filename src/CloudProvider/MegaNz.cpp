@@ -252,23 +252,6 @@ struct Buffer {
   bool done_ = false;
 };
 
-class HttpData : public IHttpServer::IResponse::ICallback {
- public:
-  HttpData(Buffer::Pointer d, MegaNz* p,
-           std::shared_ptr<Request<EitherError<void>>> r)
-      : buffer_(d), mega_(p), request_(r) {}
-
-  ~HttpData() { mega_->removeStreamRequest(request_); }
-
-  int putData(char* buf, size_t max) override {
-    return buffer_->read(buf, max);
-  }
-
-  Buffer::Pointer buffer_;
-  MegaNz* mega_;
-  std::shared_ptr<Request<EitherError<void>>> request_;
-};
-
 class HttpDataCallback : public IDownloadFileCallback {
  public:
   HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
@@ -288,6 +271,57 @@ class HttpDataCallback : public IDownloadFileCallback {
   Buffer::Pointer buffer_;
 };
 
+class HttpData : public IHttpServer::IResponse::ICallback {
+ public:
+  static constexpr int AuthInProgress = 0;
+  static constexpr int AuthSuccess = 1;
+  static constexpr int AuthFailed = 2;
+
+  HttpData(Buffer::Pointer d, MegaNz* p, std::string filename, Range range)
+      : status_(AuthInProgress),
+        buffer_(d),
+        mega_(p),
+        request_(std::make_shared<Request<EitherError<void>>>(
+            std::weak_ptr<CloudProvider>(p->shared_from_this()))) {
+    p->ensureAuthorized<EitherError<void>>(
+        request_,
+        [=](EitherError<void>) {
+          status_ = AuthFailed;
+          buffer_->resume();
+        },
+        [=]() {
+          std::unique_ptr<MegaNode> node(
+              p->mega()->getNodeByPath(filename.c_str()));
+          if (!node || range.start_ + range.size_ > (uint64_t)node->getSize())
+            status_ = AuthFailed;
+          else {
+            status_ = AuthSuccess;
+            p->downloadResolver(p->toItem(node.get()),
+                                util::make_unique<HttpDataCallback>(buffer_),
+                                range)(request_);
+            p->addStreamRequest(request_);
+          }
+          buffer_->resume();
+        });
+  }
+
+  ~HttpData() { mega_->removeStreamRequest(request_); }
+
+  int putData(char* buf, size_t max) override {
+    if (status_ == AuthFailed)
+      return Abort;
+    else if (status_ == AuthInProgress)
+      return Suspend;
+    else
+      return buffer_->read(buf, max);
+  }
+
+  std::atomic_int status_;
+  Buffer::Pointer buffer_;
+  MegaNz* mega_;
+  std::shared_ptr<Request<EitherError<void>>> request_;
+};
+
 }  // namespace
 
 MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
@@ -300,54 +334,41 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
       return util::response_from_string(request, IHttpRequest::Bad, {}, "");
   }
   const char* state = request.get("state");
-  if (!state || state != provider_->auth()->state())
-    return util::response_from_string(request, IHttpRequest::Forbidden, {},
-                                      "state parameter missing / invalid");
-  if (!provider_->authorized_)
-    return util::response_from_string(request, IHttpRequest::ServiceUnavailable,
-                                      {}, "not authorized just yet");
   const char* file = request.get("file");
-  std::unique_ptr<mega::MegaNode> node(provider_->mega()->getNodeByPath(file));
-  if (!node)
-    return util::response_from_string(request, IHttpRequest::NotFound, {},
-                                      "file not found");
-  int code = IHttpRequest::Ok;
-  auto extension =
-      static_cast<Item*>(provider_->toItem(node.get()).get())->extension();
+  const char* size_parameter = request.get("size");
+  if (!state || state != provider_->auth()->state() || !file || !size_parameter)
+    return util::response_from_string(request, IHttpRequest::Bad, {},
+                                      "invalid request");
+  std::string filename = file;
+  auto size = (uint64_t)std::atoll(size_parameter);
+  auto name = filename.substr(filename.find_last_of('/') + 1);
+  auto extension = filename.substr(filename.find_last_of('.') + 1);
   std::unordered_map<std::string, std::string> headers = {
       {"Content-Type", util::to_mime_type(extension)},
       {"Accept-Ranges", "bytes"},
-      {"Content-Disposition",
-       "inline; filename=\"" + std::string(node->getName()) + "\""}};
-  Range range = {0, (uint64_t)node->getSize()};
+      {"Content-Disposition", "inline; filename=\"" + name + "\""}};
+  Range range = {0, size};
+  int code = IHttpRequest::Ok;
   if (const char* range_str = request.header("Range")) {
     range = util::parse_range(range_str);
-    if (range.size_ == Range::Full)
-      range.size_ = node->getSize() - range.start_;
-    if (range.start_ + range.size_ > (uint64_t)node->getSize())
+    if (range.size_ == Range::Full) range.size_ = size - range.start_;
+    if (range.start_ + range.size_ > size)
       return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
                                         "invalid range");
     std::stringstream stream;
     stream << "bytes " << range.start_ << "-" << range.start_ + range.size_ - 1
-           << "/" << node->getSize();
+           << "/" << size;
     headers["Content-Range"] = stream.str();
     code = IHttpRequest::Partial;
   }
   auto buffer = std::make_shared<Buffer>();
-  auto download_request = std::make_shared<Request<EitherError<void>>>(
-      std::weak_ptr<CloudProvider>(provider_->shared_from_this()));
-  auto resolver = provider_->downloadResolver(
-      provider_->toItem(node.get()),
-      util::make_unique<HttpDataCallback>(buffer), range);
-  provider_->addStreamRequest(download_request);
-  auto data = util::make_unique<HttpData>(buffer, provider_, download_request);
+  auto data = util::make_unique<HttpData>(buffer, provider_, filename, range);
   auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
     std::unique_lock<std::mutex> lock(buffer->response_mutex_);
     buffer->response_ = nullptr;
   });
-  resolver(download_request);
   return std::move(response);
 }
 
@@ -408,8 +429,6 @@ void MegaNz::initialize(InitData&& data) {
                 [this](std::string v) { temporary_directory_ = v; });
     setWithHint(data.hints_, "file_url",
                 [this](std::string v) { file_url_ = v; });
-    setWithHint(data.hints_, "session_id",
-                [this](std::string v) { session_ = v; });
     setWithHint(data.hints_, "client_id", [this](std::string v) {
       mega_ =
           util::make_unique<MegaApi>(v.c_str(), temporary_directory_.c_str());
@@ -425,11 +444,6 @@ void MegaNz::initialize(InitData&& data) {
                             auth()->state(), IHttpServer::Type::FileProvider);
 }
 
-std::string MegaNz::session() const {
-  auto lock = auth_lock();
-  return session_;
-}
-
 std::string MegaNz::name() const { return "mega"; }
 
 std::string MegaNz::endpoint() const { return file_url_; }
@@ -441,8 +455,7 @@ IItem::Pointer MegaNz::rootDirectory() const {
 
 ICloudProvider::Hints MegaNz::hints() const {
   Hints result = {{"temporary_directory", temporary_directory_},
-                  {"file_url", file_url_},
-                  {"session_id", session()}};
+                  {"file_url", file_url_}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
@@ -826,10 +839,11 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
         if (e.left()) {
           auto auth_listener = std::make_shared<RequestListener>(
               [=](EitherError<void> e, Listener*) {
-                auto lock = auth_lock();
-                std::unique_ptr<char[]> session(mega_->dumpSession());
-                session_ = session.get();
-                lock.unlock();
+                if (!e.left()) {
+                  auto lock = auth_lock();
+                  std::unique_ptr<char[]> session(mega_->dumpSession());
+                  auth()->access_token()->token_ = session.get();
+                }
                 complete(e);
               },
               this);
@@ -846,7 +860,7 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
       },
       this);
   r->subrequest(session_auth_listener);
-  mega_->fastLogin(session().c_str(), session_auth_listener.get());
+  mega_->fastLogin(access_token().c_str(), session_auth_listener.get());
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {
@@ -860,6 +874,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
       node->getName(), path.get(), node->getSize(),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   item->set_url(endpoint() + "/?file=" + util::Url::escape(path.get()) +
+                "&size=" + std::to_string(node->getSize()) +
                 "&state=" + auth()->state());
   return std::move(item);
 }

@@ -63,6 +63,8 @@ class MegaNz : public CloudProvider {
   IItem::Pointer rootDirectory() const override;
   Hints hints() const override;
 
+  const std::atomic_bool& authorized() const { return authorized_; }
+
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;
   AuthorizeRequest::Pointer authorizeAsync() override;
@@ -133,8 +135,6 @@ class MegaNz : public CloudProvider {
   };
 
  private:
-  std::string session() const;
-
   std::unique_ptr<mega::MegaApi> mega_;
   std::atomic_bool authorized_;
   std::random_device device_;
@@ -143,7 +143,6 @@ class MegaNz : public CloudProvider {
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
   std::string file_url_;
-  std::string session_;
   std::unordered_set<std::shared_ptr<DownloadFileRequest>> stream_requests_;
   std::unordered_set<std::shared_ptr<IRequest<EitherError<void>>>>
       request_listeners_;
