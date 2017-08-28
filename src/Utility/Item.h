@@ -35,13 +35,14 @@ class Item : public IItem {
  public:
   using Pointer = std::shared_ptr<Item>;
 
-  Item(std::string filename, std::string id, size_t size, FileType);
+  Item(std::string filename, std::string id, size_t size, TimeStamp, FileType);
 
   std::string filename() const override;
   void set_filename(std::string);
 
   std::string extension() const override;
   std::string id() const override;
+  TimeStamp timestamp() const override;
 
   size_t size() const override;
   void set_size(size_t);
@@ -69,6 +70,7 @@ class Item : public IItem {
   std::string id_;
   std::string url_;
   size_t size_;
+  TimeStamp timestamp_;
   std::string thumbnail_url_;
   FileType type_;
   bool is_hidden_;

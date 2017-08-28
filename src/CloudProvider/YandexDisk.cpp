@@ -45,6 +45,7 @@ std::string YandexDisk::endpoint() const {
 
 IItem::Pointer YandexDisk::rootDirectory() const {
   return util::make_unique<Item>("disk", "disk:/", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -340,7 +341,8 @@ IItem::Pointer YandexDisk::toItem(const Json::Value& v) const {
                              ? IItem::FileType::Directory
                              : Item::fromMimeType(v["mime_type"].asString());
   auto item = util::make_unique<Item>(
-      v["name"].asString(), v["path"].asString(), v["size"].asUInt64(), type);
+      v["name"].asString(), v["path"].asString(), v["size"].asUInt64(),
+      util::parse_time(v["modified"].asString()), type);
   item->set_thumbnail_url(v["preview"].asString());
   return std::move(item);
 }

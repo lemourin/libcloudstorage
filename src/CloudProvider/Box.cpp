@@ -37,6 +37,7 @@ Box::Box() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer Box::rootDirectory() const {
   return util::make_unique<Item>("root", "0", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -122,7 +123,7 @@ IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
                                                 std::ostream&) const {
   auto request = http()->create(
       endpoint() + "/2.0/folders/" + item.id() + "/items/", "GET");
-  request->setParameter("fields", "name,id,size");
+  request->setParameter("fields", "name,id,size,modified_at");
   if (!page_token.empty()) request->setParameter("offset", page_token);
   return request;
 }
@@ -240,8 +241,9 @@ std::vector<IItem::Pointer> Box::listDirectoryResponse(
 IItem::Pointer Box::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v["type"].asString() == "folder") type = IItem::FileType::Directory;
-  auto item = util::make_unique<Item>(v["name"].asString(), v["id"].asString(),
-                                      v["size"].asUInt64(), type);
+  auto item = util::make_unique<Item>(
+      v["name"].asString(), v["id"].asString(), v["size"].asUInt64(),
+      util::parse_time(v["modified_at"].asString()), type);
   return std::move(item);
 }
 

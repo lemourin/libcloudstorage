@@ -45,7 +45,7 @@ IHttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
   auto request = http()->create(endpoint() + "/drive/v3/files/" + id, "GET");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents,size");
+                        "mimeType,iconLink,parents,size,modifiedTime");
   return request;
 }
 
@@ -56,7 +56,7 @@ IHttpRequest::Pointer GoogleDrive::listDirectoryRequest(
   request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
   request->setParameter("fields",
                         "files(id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents,size),kind,"
+                        "mimeType,iconLink,parents,size,modifiedTime),kind,"
                         "nextPageToken");
   if (!page_token.empty()) request->setParameter("pageToken", page_token);
   return request;
@@ -183,6 +183,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
       v["name"].asString(), v["id"].asString(),
       v.isMember("size") ? std::atoll(v["size"].asString().c_str())
                          : IItem::UnknownSize,
+      util::parse_time(v["modifiedTime"].asString()),
       toFileType(v["mimeType"].asString()));
   item->set_hidden(v["trashed"].asBool());
   std::string thumnail_url = v["thumbnailLink"].asString();

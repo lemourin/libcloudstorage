@@ -43,6 +43,7 @@ std::string Dropbox::endpoint() const { return DROPBOXAPI_ENDPOINT; }
 
 IItem::Pointer Dropbox::rootDirectory() const {
   return util::make_unique<Item>("/", "", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -259,9 +260,9 @@ IItem::Pointer Dropbox::toItem(const Json::Value& v) {
     else if (file_type == "photo")
       type = IItem::FileType::Image;
   }
-  return util::make_unique<Item>(v["name"].asString(),
-                                 v["path_display"].asString(),
-                                 v["size"].asUInt64(), type);
+  return util::make_unique<Item>(
+      v["name"].asString(), v["path_display"].asString(), v["size"].asUInt64(),
+      util::parse_time(v["client_modified"].asString()), type);
 }
 
 Dropbox::Auth::Auth() {

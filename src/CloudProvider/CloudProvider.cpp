@@ -248,6 +248,7 @@ std::string CloudProvider::token() const {
 
 IItem::Pointer CloudProvider::rootDirectory() const {
   return util::make_unique<Item>("/", "root", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 

@@ -452,6 +452,7 @@ std::string MegaNz::endpoint() const { return file_url_; }
 
 IItem::Pointer MegaNz::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -874,6 +875,9 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
   std::unique_ptr<char[]> path(mega_->getNodePath(node));
   auto item = util::make_unique<Item>(
       node->getName(), path.get(), node->getSize(),
+      node->isFolder() ? IItem::UnknownTimeStamp
+                       : std::chrono::system_clock::time_point(
+                             std::chrono::seconds(node->getModificationTime())),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
   item->set_url(endpoint() + "/?file=" + util::Url::escape(path.get()) +
                 "&size=" + std::to_string(node->getSize()) +

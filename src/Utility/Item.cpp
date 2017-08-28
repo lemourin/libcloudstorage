@@ -51,11 +51,13 @@ bool find(const std::string* array, int length, std::string str) {
 
 }  // namespace
 
-Item::Item(std::string filename, std::string id, size_t size, FileType type)
+Item::Item(std::string filename, std::string id, size_t size,
+           TimeStamp timestamp, FileType type)
     : filename_(filename),
       id_(id),
       url_(),
       size_(size),
+      timestamp_(timestamp),
       thumbnail_url_(),
       type_(type),
       is_hidden_(false) {
@@ -71,6 +73,8 @@ std::string Item::extension() const {
 }
 
 std::string Item::id() const { return id_; }
+
+IItem::TimeStamp Item::timestamp() const { return timestamp_; }
 
 size_t Item::size() const { return size_; }
 

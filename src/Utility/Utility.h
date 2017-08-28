@@ -28,6 +28,7 @@
 #include <string>
 
 #include "IHttpServer.h"
+#include "IItem.h"
 
 namespace cloudstorage {
 
@@ -51,6 +52,7 @@ Range parse_range(const std::string& str);
 std::string range_to_string(Range);
 std::string address(const std::string& url, uint16_t port);
 std::string to_mime_type(const std::string& extension);
+IItem::TimeStamp parse_time(const std::string& time);
 
 class Url {
  public:

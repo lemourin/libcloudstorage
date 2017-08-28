@@ -92,6 +92,7 @@ std::string AmazonDrive::endpoint() const { return content_url(); }
 
 IItem::Pointer AmazonDrive::rootDirectory() const {
   return util::make_unique<Item>("root", "root", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -258,9 +259,10 @@ IItem::FileType AmazonDrive::type(const Json::Value& v) const {
 
 IItem::Pointer AmazonDrive::toItem(const Json::Value& v) const {
   std::string name = v["isRoot"].asBool() ? "root" : v["name"].asString();
-  auto item = util::make_unique<Item>(name, v["id"].asString(),
-                                      v["contentProperties"]["size"].asUInt64(),
-                                      type(v));
+  auto item = util::make_unique<Item>(
+      name, v["id"].asString(), v["contentProperties"]["size"].asUInt64(),
+      util::parse_time(v["contentProperties"]["contentDate"].asString()),
+      type(v));
   item->set_url(v["tempLink"].asString());
   if (item->type() == IItem::FileType::Image)
     item->set_thumbnail_url(item->url() +

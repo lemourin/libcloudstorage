@@ -114,9 +114,9 @@ IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
                                                    std::ostream&) const {
   IHttpRequest::Pointer request =
       http()->create(endpoint() + "/v1.0/drive/items/" + id, "GET");
-  request->setParameter(
-      "select",
-      "name,folder,audio,image,photo,video,id,size,@content.downloadUrl");
+  request->setParameter("select",
+                        "name,folder,audio,image,photo,video,id,size,"
+                        "lastModifiedDateTime,@content.downloadUrl");
   return request;
 }
 
@@ -125,9 +125,9 @@ IHttpRequest::Pointer OneDrive::listDirectoryRequest(
   if (!page_token.empty()) return http()->create(page_token, "GET");
   auto request = http()->create(
       endpoint() + "/v1.0/drive/items/" + item.id() + "/children", "GET");
-  request->setParameter(
-      "select",
-      "name,folder,audio,image,photo,video,id,size,@content.downloadUrl");
+  request->setParameter("select",
+                        "name,folder,audio,image,photo,video,id,size,"
+                        "lastModifiedDateTime,@content.downloadUrl");
   return request;
 }
 
@@ -200,8 +200,9 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
     type = IItem::FileType::Video;
   else if (v.isMember("audio"))
     type = IItem::FileType::Audio;
-  auto item = util::make_unique<Item>(v["name"].asString(), v["id"].asString(),
-                                      v["size"].asUInt64(), type);
+  auto item = util::make_unique<Item>(
+      v["name"].asString(), v["id"].asString(), v["size"].asUInt64(),
+      util::parse_time(v["lastModifiedDateTime"].asString()), type);
   item->set_url(v["@content.downloadUrl"].asString());
   item->set_thumbnail_url(
       endpoint() + "/v1.0/drive/items/" + item->id() +

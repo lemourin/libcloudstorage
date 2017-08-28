@@ -27,13 +27,31 @@
 #include "Utility/Item.h"
 
 #include <cstring>
+#include <iomanip>
 
 namespace cloudstorage {
+
+namespace {
+
+IItem::TimeStamp parse_time(const std::string& str) {
+  std::stringstream stream(str);
+  std::tm time;
+  stream >> std::get_time(&time, "%a, %d %b %Y %T GMT");
+  if (!stream.fail()) {
+    return std::chrono::system_clock::time_point(
+        std::chrono::seconds(util::timegm(time)));
+  } else {
+    return IItem::UnknownTimeStamp;
+  }
+}
+
+}  // namespace
 
 OwnCloud::OwnCloud() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer OwnCloud::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -74,7 +92,8 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
             r->done(e.left());
           } else {
             IItem::Pointer item = util::make_unique<Item>(
-                name, parent->id() + name + "/", 0, IItem::FileType::Directory);
+                name, parent->id() + name + "/", 0, IItem::UnknownTimeStamp,
+                IItem::FileType::Directory);
             callback(item);
             r->done(item);
           }
@@ -190,16 +209,18 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
   filename = filename.substr(filename.find_last_of('/') + 1);
-  auto get_size = [](const tinyxml2::XMLNode* node) {
-    auto propstat = node->FirstChildElement("d:propstat");
-    if (!propstat) return IItem::UnknownSize;
-    auto prop = propstat->FirstChildElement("d:prop");
-    if (!prop) return IItem::UnknownSize;
-    auto size = prop->FirstChildElement("d:getcontentlength");
-    return size ? (size_t)std::atoll(size->GetText()) : IItem::UnknownSize;
-  };
-  auto item = util::make_unique<Item>(util::Url::unescape(filename), id,
-                                      get_size(node), type);
+  auto propstat = node->FirstChildElement("d:propstat");
+  if (!propstat) throw std::logic_error("invalid xml");
+  auto prop = propstat->FirstChildElement("d:prop");
+  if (!prop) throw std::logic_error("invalid xml");
+  auto size = IItem::UnknownSize;
+  auto timestamp = IItem::UnknownTimeStamp;
+  if (auto size_element = prop->FirstChildElement("d:getcontentlength"))
+    if (auto text = size_element->GetText()) size = std::atoll(text);
+  if (auto timestamp_element = prop->FirstChildElement("d:getlastmodified"))
+    if (auto text = timestamp_element->GetText()) timestamp = parse_time(text);
+  auto item = util::make_unique<Item>(util::Url::unescape(filename), id, size,
+                                      timestamp, type);
   item->set_url(api_url() + "/remote.php/webdav" + id);
   return std::move(item);
 }

@@ -256,6 +256,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
             auto path = getPath(parent->id());
             if (!split(path).second.empty()) path += "/";
             auto item = std::make_shared<Item>(name, path + name + "/", 0,
+                                               IItem::UnknownTimeStamp,
                                                IItem::FileType::Directory);
             callback(EitherError<IItem>(item));
             r->done(EitherError<IItem>(item));
@@ -343,17 +344,20 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
             callback(e);
             return r->done(e);
           }
-          auto get_size = [](const tinyxml2::XMLNode* node) {
-            auto contents_element = node->FirstChildElement("Contents");
-            if (!contents_element) return IItem::UnknownSize;
-            auto size_element = contents_element->FirstChildElement("Size");
-            if (!size_element) return IItem::UnknownSize;
-            auto text = size_element->GetText();
-            return text ? (size_t)std::atoll(text) : IItem::UnknownSize;
-          };
+          auto node = document.RootElement();
+          auto size = IItem::UnknownSize;
+          auto timestamp = IItem::UnknownTimeStamp;
+          if (auto contents_element = node->FirstChildElement("Contents")) {
+            if (auto size_element = contents_element->FirstChildElement("Size"))
+              if (auto text = size_element->GetText()) size = std::atoll(text);
+            if (auto time_element =
+                    contents_element->FirstChildElement("LastModified"))
+              if (auto text = time_element->GetText())
+                timestamp = util::parse_time(text);
+          }
           auto data = split(id);
           auto item = std::make_shared<Item>(
-              getFilename(data.second), id, get_size(document.RootElement()),
+              getFilename(data.second), id, size, timestamp,
               (data.second.empty() || data.second.back() == '/')
                   ? IItem::FileType::Directory
                   : IItem::FileType::Unknown);
@@ -418,8 +422,9 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       auto name_element = child->FirstChildElement("Name");
       if (!name_element) throw std::logic_error("invalid xml");
       std::string name = name_element->GetText();
-      auto item = util::make_unique<Item>(name, name + Auth::SEPARATOR, -1,
-                                          IItem::FileType::Directory);
+      auto item = util::make_unique<Item>(
+          name, name + Auth::SEPARATOR, IItem::UnknownSize,
+          IItem::UnknownTimeStamp, IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
   } else if (auto name_element =
@@ -434,9 +439,12 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       auto key_element = child->FirstChildElement("Key");
       if (!key_element) throw std::logic_error("invalid xml");
       std::string id = key_element->GetText();
-      auto item = util::make_unique<Item>(getFilename(id),
-                                          bucket + Auth::SEPARATOR + id, size,
-                                          IItem::FileType::Unknown);
+      auto timestamp_element = child->FirstChildElement("LastModified");
+      if (!timestamp_element) throw std::logic_error("invalid xml");
+      std::string timestamp = timestamp_element->GetText();
+      auto item = util::make_unique<Item>(
+          getFilename(id), bucket + Auth::SEPARATOR + id, size,
+          util::parse_time(timestamp), IItem::FileType::Unknown);
       item->set_url(getUrl(*item));
       result.push_back(std::move(item));
     }
@@ -448,7 +456,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       std::string id = prefix_element->GetText();
       auto item = util::make_unique<Item>(
           getFilename(id), bucket + Auth::SEPARATOR + id, IItem::UnknownSize,
-          IItem::FileType::Directory);
+          IItem::UnknownTimeStamp, IItem::FileType::Directory);
       result.push_back(std::move(item));
     }
     auto is_truncated_element =

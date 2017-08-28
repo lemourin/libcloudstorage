@@ -24,6 +24,7 @@
 #ifndef IITEM_H
 #define IITEM_H
 
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -32,13 +33,17 @@ namespace cloudstorage {
 class IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
+  using TimeStamp = std::chrono::system_clock::time_point;
 
   static constexpr size_t UnknownSize = -1;
+  static constexpr TimeStamp UnknownTimeStamp =
+      std::chrono::system_clock::time_point::min();
 
   enum class FileType { Directory, Video, Audio, Image, Unknown };
 
   virtual ~IItem() = default;
 
+  virtual TimeStamp timestamp() const = 0;
   virtual std::string filename() const = 0;
   virtual std::string extension() const = 0;
   virtual std::string id() const = 0;

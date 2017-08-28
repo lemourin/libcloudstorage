@@ -39,6 +39,7 @@ const uint32_t CHUNK_SIZE = 1024;
 namespace cloudstorage {
 
 constexpr size_t IItem::UnknownSize;
+constexpr IItem::TimeStamp IItem::UnknownTimeStamp;
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"aac", "audio/aac"},   {"avi", "video/x-msvideo"},
@@ -134,6 +135,10 @@ std::string to_mime_type(const std::string& extension) {
     return "application/octet-stream";
   else
     return it->second;
+}
+
+IItem::TimeStamp parse_time(const std::string&) {
+  return IItem::UnknownTimeStamp;
 }
 
 std::string Url::unescape(const std::string& str) {
