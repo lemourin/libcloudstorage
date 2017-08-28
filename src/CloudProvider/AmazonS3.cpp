@@ -168,20 +168,22 @@ std::string path(std::string url) {
 }
 
 std::string currentDate() {
-  auto now = std::chrono::system_clock::now();
-  auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
+  auto time =
+      util::gmtime(std::chrono::duration_cast<std::chrono::seconds>(
+                       std::chrono::system_clock::now().time_since_epoch())
+                       .count());
   std::stringstream ss;
-  ss << std::put_time(std::gmtime(&in_time_t), "%Y%m%d");
+  ss << std::put_time(&time, "%Y%m%d");
   return ss.str();
 }
 
 std::string currentDateAndTime() {
-  auto now = std::chrono::system_clock::now();
-  auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
+  auto time =
+      util::gmtime(std::chrono::duration_cast<std::chrono::seconds>(
+                       std::chrono::system_clock::now().time_since_epoch())
+                       .count());
   std::stringstream ss;
-  ss << std::put_time(std::gmtime(&in_time_t), "%Y%m%dT%H%M%SZ");
+  ss << std::put_time(&time, "%Y%m%dT%H%M%SZ");
   return ss.str();
 }
 

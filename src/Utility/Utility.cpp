@@ -72,6 +72,12 @@ std::string to_lower(std::string str) {
   return str;
 }
 
+bool leap_year(int year) {
+  return !(year % 4) && ((year % 100) || !(year % 400));
+}
+
+int year_size(int year) { return leap_year(year) ? 366 : 365; }
+
 }  // namespace
 
 bool operator==(const Range& r1, const Range& r2) {
@@ -135,6 +141,32 @@ std::string to_mime_type(const std::string& extension) {
     return "application/octet-stream";
   else
     return it->second;
+}
+
+std::tm gmtime(time_t time) {
+  const int ytab[2][12] = {{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+                           {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+  auto year = 1970;
+  auto dayclock = time % (24 * 60 * 60);
+  auto dayno = time / (24 * 60 * 60);
+  std::tm tmbuf = {};
+
+  tmbuf.tm_sec = dayclock % 60;
+  tmbuf.tm_min = (dayclock % 3600) / 60;
+  tmbuf.tm_hour = dayclock / 3600;
+  tmbuf.tm_wday = (dayno + 4) % 7;
+  while (dayno >= year_size(year)) {
+    dayno -= year_size(year);
+    year++;
+  }
+  tmbuf.tm_year = year - 1900;
+  tmbuf.tm_yday = dayno;
+  while (dayno >= ytab[leap_year(year)][tmbuf.tm_mon]) {
+    dayno -= ytab[leap_year(year)][tmbuf.tm_mon];
+    tmbuf.tm_mon++;
+  }
+  tmbuf.tm_mday = dayno + 1;
+  return tmbuf;
 }
 
 time_t timegm(const std::tm& t) {
