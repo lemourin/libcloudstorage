@@ -38,9 +38,6 @@ const uint32_t CHUNK_SIZE = 1024;
 
 namespace cloudstorage {
 
-constexpr size_t IItem::UnknownSize;
-constexpr IItem::TimeStamp IItem::UnknownTimeStamp;
-
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"aac", "audio/aac"},   {"avi", "video/x-msvideo"},
     {"gif", "image/gif"},   {"jpeg", "image/jpeg"},

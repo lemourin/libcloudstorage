@@ -40,8 +40,11 @@ const std::string IMAGE_EXTENSIONS[] = {
 
 namespace cloudstorage {
 
-namespace {
+constexpr size_t IItem::UnknownSize;
+const IItem::TimeStamp IItem::UnknownTimeStamp =
+    std::chrono::system_clock::time_point::min();
 
+namespace {
 bool find(const std::string* array, int length, std::string str) {
   for (char& c : str) c = std::tolower(c);
   for (int i = 0; i < length; i++)

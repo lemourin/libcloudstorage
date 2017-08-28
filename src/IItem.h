@@ -36,8 +36,7 @@ class IItem {
   using TimeStamp = std::chrono::system_clock::time_point;
 
   static constexpr size_t UnknownSize = -1;
-  static constexpr TimeStamp UnknownTimeStamp =
-      std::chrono::system_clock::time_point::min();
+  static const TimeStamp UnknownTimeStamp;
 
   enum class FileType { Directory, Video, Audio, Image, Unknown };
 
