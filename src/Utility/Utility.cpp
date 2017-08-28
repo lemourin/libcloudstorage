@@ -137,7 +137,49 @@ std::string to_mime_type(const std::string& extension) {
     return it->second;
 }
 
-IItem::TimeStamp parse_time(const std::string&) {
+time_t timegm(const std::tm& t) {
+  const int month_count = 12;
+  const int days[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+  int year = 1900 + t.tm_year + t.tm_mon / month_count;
+  time_t result = (year - 1970) * 365 + days[t.tm_mon % month_count];
+
+  result += (year - 1968) / 4;
+  result -= (year - 1900) / 100;
+  result += (year - 1600) / 400;
+  if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) &&
+      (t.tm_mon % month_count) < 2)
+    result--;
+  result += t.tm_mday - 1;
+  result *= 24;
+  result += t.tm_hour;
+  result *= 60;
+  result += t.tm_min;
+  result *= 60;
+  result += t.tm_sec;
+  if (t.tm_isdst == 1) result -= 3600;
+  return result;
+}
+
+IItem::TimeStamp parse_time(const std::string& str) {
+  const uint32_t SIZE = 6;
+  char buffer[SIZE + 1] = {};
+  float sec;
+  std::tm time = {};
+  if (sscanf(str.c_str(), "%d-%d-%dT%d:%d:%f%6s", &time.tm_year, &time.tm_mon,
+             &time.tm_mday, &time.tm_hour, &time.tm_min, &sec, buffer) == 7) {
+    time.tm_year -= 1900;
+    time.tm_mon--;
+    time.tm_sec = (int)(sec + 0.5);
+    if (buffer != std::string("Z")) {
+      int offset_hour, offset_minute;
+      if (sscanf(buffer, "%d:%d", &offset_hour, &offset_minute) == 2) {
+        time.tm_hour -= offset_hour;
+        time.tm_min -= offset_minute;
+      }
+    }
+    return std::chrono::system_clock::time_point(
+        std::chrono::seconds(timegm(time)));
+  }
   return IItem::UnknownTimeStamp;
 }
 
