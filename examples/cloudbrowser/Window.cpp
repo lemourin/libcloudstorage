@@ -449,7 +449,8 @@ void Window::renameItem(int item_id, QString name) {
       });
 }
 
-ItemModel::ItemModel(IItem::Pointer item, ICloudProvider::Pointer p, Window* w)
+ItemModel::ItemModel(IItem::Pointer item, std::shared_ptr<ICloudProvider> p,
+                     Window* w)
     : item_(item),
       provider_(p),
       thread_info_(std::make_shared<ThreadInfo>()),

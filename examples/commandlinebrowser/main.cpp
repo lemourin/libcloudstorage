@@ -42,7 +42,7 @@ class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
   std::string drive_file_;
 };
 
-IItem::Pointer getChild(ICloudProvider::Pointer provider, IItem::Pointer item,
+IItem::Pointer getChild(ICloudProvider* provider, IItem::Pointer item,
                         const std::string& filename) {
   auto lst = provider->listDirectoryAsync(item)->result().right();
   if (!lst) return nullptr;
@@ -93,8 +93,8 @@ int main(int, char**) {
              {}});
         if (provider) {
           prompt += provider_name + "/";
-          current_provider = provider;
           current_directory = provider->rootDirectory();
+          current_provider = std::move(provider);
           directory_stack.push_back(current_directory);
         } else {
           std::cout << "Provider " << provider_name << " unavailable.\n";
@@ -104,7 +104,7 @@ int main(int, char**) {
         std::getline(line, destination);
         if (destination != "..") {
           auto item =
-              getChild(current_provider, current_directory, destination);
+              getChild(current_provider.get(), current_directory, destination);
           if (item) {
             if (item->type() == IItem::FileType::Directory) {
               current_directory = item;
@@ -134,7 +134,7 @@ int main(int, char**) {
       else {
         std::string file;
         std::getline(line, file);
-        auto item = getChild(current_provider, current_directory, file);
+        auto item = getChild(current_provider.get(), current_directory, file);
         if (item) {
           auto data =
               current_provider->getItemDataAsync(item->id())->result().right();

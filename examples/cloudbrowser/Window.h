@@ -44,7 +44,7 @@ class ItemModel : public QObject {
  public:
   using Pointer = std::unique_ptr<ItemModel>;
 
-  ItemModel(IItem::Pointer item, ICloudProvider::Pointer, Window*);
+  ItemModel(IItem::Pointer item, std::shared_ptr<ICloudProvider>, Window*);
   ~ItemModel();
 
   QString name() const { return item_->filename().c_str(); }
@@ -69,7 +69,7 @@ class ItemModel : public QObject {
   QString thumbnail_;
   IItem::Pointer item_;
   ICloudProvider::DownloadFileRequest::Pointer thumbnail_request_;
-  ICloudProvider::Pointer provider_;
+  std::shared_ptr<ICloudProvider> provider_;
   std::thread thumbnail_thread_;
   std::shared_ptr<ThreadInfo> thread_info_;
   Window* window_;
@@ -171,7 +171,7 @@ class Window : public QQuickView {
   ICloudProvider::Hints fromJson(const QJsonObject&) const;
   QJsonObject toJson(const ICloudProvider::Hints&) const;
 
-  ICloudProvider::Pointer cloud_provider_;
+  std::shared_ptr<ICloudProvider> cloud_provider_;
   IItem::Pointer current_directory_;
   std::vector<cloudstorage::IItem::Pointer> directory_stack_;
   ICloudProvider::ListDirectoryRequest::Pointer list_directory_request_;
@@ -189,7 +189,8 @@ class Window : public QQuickView {
   int last_played_;
   MediaPlayer* media_player_;
   QString current_media_;
-  std::unordered_map<std::string, ICloudProvider::Pointer> initialized_clouds_;
+  std::unordered_map<std::string, std::shared_ptr<ICloudProvider>>
+      initialized_clouds_;
   std::unordered_set<std::string> unauthorized_clouds_;
 
   Q_OBJECT

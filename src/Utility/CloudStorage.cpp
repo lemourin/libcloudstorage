@@ -41,6 +41,122 @@
 
 namespace cloudstorage {
 
+namespace {
+
+class CloudProviderWrapper : public ICloudProvider {
+ public:
+  CloudProviderWrapper(std::shared_ptr<ICloudProvider> p) : p_(p) {}
+
+  std::string token() const override { return p_->token(); }
+
+  Hints hints() const override { return p_->hints(); }
+
+  std::string name() const override { return p_->name(); }
+
+  std::string endpoint() const override { return p_->endpoint(); }
+
+  std::string authorizeLibraryUrl() const override {
+    return p_->authorizeLibraryUrl();
+  }
+
+  IItem::Pointer rootDirectory() const override { return p_->rootDirectory(); }
+
+  ExchangeCodeRequest::Pointer exchangeCodeAsync(
+      const std::string& code, ExchangeCodeCallback cb) override {
+    return p_->exchangeCodeAsync(code, cb);
+  }
+
+  ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer directory, IListDirectoryCallback::Pointer cb) override {
+    return p_->listDirectoryAsync(directory, cb);
+  }
+
+  GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,
+                                       GetItemCallback callback) override {
+    return p_->getItemAsync(absolute_path, callback);
+  }
+
+  DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer item, IDownloadFileCallback::Pointer cb,
+      Range range) override {
+    return p_->downloadFileAsync(item, cb, range);
+  }
+
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer parent, const std::string& filename,
+      IUploadFileCallback::Pointer cb) override {
+    return p_->uploadFileAsync(parent, filename, cb);
+  }
+
+  GetItemDataRequest::Pointer getItemDataAsync(
+      const std::string& id, GetItemDataCallback callback) override {
+    return p_->getItemDataAsync(id, callback);
+  }
+
+  DownloadFileRequest::Pointer getThumbnailAsync(
+      IItem::Pointer item, IDownloadFileCallback::Pointer cb) override {
+    return p_->getThumbnailAsync(item, cb);
+  }
+
+  DeleteItemRequest::Pointer deleteItemAsync(
+      IItem::Pointer item, DeleteItemCallback callback) override {
+    return p_->deleteItemAsync(item, callback);
+  }
+
+  CreateDirectoryRequest::Pointer createDirectoryAsync(
+      IItem::Pointer parent, const std::string& name,
+      CreateDirectoryCallback callback) override {
+    return p_->createDirectoryAsync(parent, name, callback);
+  }
+
+  MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
+                                         IItem::Pointer destination,
+                                         MoveItemCallback callback) override {
+    return p_->moveItemAsync(source, destination, callback);
+  }
+
+  RenameItemRequest::Pointer renameItemAsync(
+      IItem::Pointer item, const std::string& name,
+      RenameItemCallback callback) override {
+    return p_->renameItemAsync(item, name, callback);
+  }
+
+  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer directory, const std::string& token,
+      ListDirectoryPageCallback cb) override {
+    return p_->listDirectoryPageAsync(directory, token, cb);
+  }
+
+  ListDirectoryRequest::Pointer listDirectoryAsync(
+      IItem::Pointer item, ListDirectoryCallback callback) override {
+    return p_->listDirectoryAsync(item, callback);
+  }
+
+  DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer item, const std::string& filename,
+      DownloadFileCallback callback) {
+    return p_->downloadFileAsync(item, filename, callback);
+  }
+
+  DownloadFileRequest::Pointer getThumbnailAsync(
+      IItem::Pointer item, const std::string& filename,
+      GetThumbnailCallback callback) {
+    return p_->getThumbnailAsync(item, filename, callback);
+  }
+
+  UploadFileRequest::Pointer uploadFileAsync(IItem::Pointer parent,
+                                             const std::string& path,
+                                             const std::string& filename,
+                                             UploadFileCallback callback) {
+    return p_->uploadFileAsync(parent, path, filename, callback);
+  }
+
+ private:
+  std::shared_ptr<ICloudProvider> p_;
+};
+
+}  // namespace
+
 CloudStorage::CloudStorage() {
   add([]() { return std::make_shared<GoogleDrive>(); });
   add([]() { return std::make_shared<OneDrive>(); });
@@ -68,7 +184,7 @@ ICloudProvider::Pointer CloudStorage::provider(
   if (it == std::end(providers_)) return nullptr;
   auto ret = it->second();
   ret->initialize(std::move(init_data));
-  return ret;
+  return util::make_unique<CloudProviderWrapper>(ret);
 }
 
 ICloudStorage::Pointer ICloudStorage::create() {

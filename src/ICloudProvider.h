@@ -39,7 +39,7 @@ namespace cloudstorage {
 
 class ICloudProvider {
  public:
-  using Pointer = std::shared_ptr<ICloudProvider>;
+  using Pointer = std::unique_ptr<ICloudProvider>;
   using Hints = std::unordered_map<std::string, std::string>;
 
   using ExchangeCodeRequest = IRequest<EitherError<Token>>;
