@@ -40,9 +40,8 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
     }
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
-        [=](util::Output) {
-          return r->provider()->listDirectoryRequest(*directory, token,
-                                                     *output);
+        [=](util::Output input) {
+          return r->provider()->listDirectoryRequest(*directory, token, *input);
         },
         [=](EitherError<util::Output> e) {
           if (e.left()) {
