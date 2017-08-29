@@ -160,8 +160,12 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
           };
           if (item->type() == IItem::FileType::Audio)
             r->sendRequest(request("bestaudio"), response, stream);
-          else
+          else if (item->type() == IItem::FileType::Video)
             r->sendRequest(request("best"), response, stream);
+          else {
+            callback(item);
+            r->done(item);
+          }
         },
         response_stream);
   });
