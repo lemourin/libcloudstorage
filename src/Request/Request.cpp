@@ -57,15 +57,7 @@ T Request<T>::Wrapper::result() {
 
 template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider)
-    : future_(value_.get_future()),
-      provider_shared_(provider),
-      is_cancelled_(false) {}
-
-template <class T>
-Request<T>::Request(std::weak_ptr<CloudProvider> provider)
-    : future_(value_.get_future()),
-      provider_weak_(provider),
-      is_cancelled_(false) {}
+    : future_(value_.get_future()), provider_(provider), is_cancelled_(false) {}
 
 template <class T>
 Request<T>::~Request() {
@@ -87,8 +79,7 @@ void Request<T>::finish() {
   }
   {
     std::unique_lock<std::mutex> lock(provider_mutex_);
-    provider_shared_ = nullptr;
-    provider_weak_.reset();
+    provider_ = nullptr;
   }
 }
 
@@ -97,7 +88,7 @@ void Request<T>::cancel() {
   if (is_cancelled()) return;
   is_cancelled_ = true;
   auto p = provider();
-  if (p) {
+  {
     std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
     auto it = p->auth_callbacks_.find(this);
     if (it != std::end(p->auth_callbacks_)) {
@@ -165,7 +156,6 @@ std::unique_ptr<HttpCallback> Request<T>::httpCallback(
 template <class T>
 void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
-  if (!p) return;
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   p->auth_callbacks_[this].push_back(c);
   if (!p->current_authorization_) {
@@ -184,14 +174,12 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
 
 template <class T>
 void Request<T>::authorize(IHttpRequest::Pointer r) {
-  auto p = provider();
-  if (p && r) p->authorizeRequest(*r);
+  if (r) provider()->authorizeRequest(*r);
 }
 
 template <class T>
 bool Request<T>::reauthorize(int code) {
-  auto p = provider();
-  return p ? p->reauthorize(code) : false;
+  return provider()->reauthorize(code);
 }
 
 template <class T>
@@ -255,10 +243,7 @@ void Request<T>::send(IHttpRequest* request,
 
 template <class T>
 std::shared_ptr<CloudProvider> Request<T>::provider() const {
-  if (provider_shared_)
-    return provider_shared_;
-  else
-    return provider_weak_.lock();
+  return provider_;
 }
 
 template <class T>

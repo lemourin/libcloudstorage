@@ -65,7 +65,6 @@ class Request : public IRequest<ReturnValue>,
   };
 
   Request(std::shared_ptr<CloudProvider>);
-  Request(std::weak_ptr<CloudProvider>);
   ~Request();
 
   void finish() override;
@@ -128,8 +127,7 @@ class Request : public IRequest<ReturnValue>,
   std::shared_future<ReturnValue> future_;
   Resolver resolver_;
   std::mutex provider_mutex_;
-  std::shared_ptr<CloudProvider> provider_shared_;
-  std::weak_ptr<CloudProvider> provider_weak_;
+  std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
   std::mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
