@@ -45,12 +45,12 @@ class MegaNz : public CloudProvider {
  public:
   class HttpServerCallback : public IHttpServer::ICallback {
    public:
-    HttpServerCallback(MegaNz*);
+    HttpServerCallback(std::shared_ptr<MegaNz>);
     IHttpServer::IResponse::Pointer handle(
         const IHttpServer::IRequest&) override;
 
    private:
-    MegaNz* provider_;
+    std::weak_ptr<MegaNz> provider_;
   };
 
   MegaNz();

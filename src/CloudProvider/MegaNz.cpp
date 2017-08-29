@@ -279,19 +279,27 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   static constexpr int AuthSuccess = 1;
   static constexpr int AuthFailed = 2;
 
-  HttpData(Buffer::Pointer d, MegaNz* p, std::string filename, Range range)
+  HttpData(Buffer::Pointer d, std::weak_ptr<MegaNz> mega_ptr,
+           std::string filename, Range range)
       : status_(AuthInProgress),
         buffer_(d),
-        mega_(p),
-        request_(std::make_shared<Request<EitherError<void>>>(
-            std::weak_ptr<CloudProvider>(p->shared_from_this()))) {
+        mega_(mega_ptr),
+        request_(std::make_shared<Request<EitherError<void>>>(mega_ptr)) {
+    auto p = mega_.lock();
+    if (!p) {
+      request_->done(Error{IHttpRequest::Bad, ""});
+      return;
+    }
     p->ensureAuthorized<EitherError<void>>(
         request_,
-        [=](EitherError<void>) {
+        [=](EitherError<void> e) {
           status_ = AuthFailed;
+          request_->done(e);
           buffer_->resume();
         },
         [=]() {
+          auto p = mega_.lock();
+          if (!p) return;
           std::unique_ptr<MegaNode> node(
               p->mega()->getNodeByPath(filename.c_str()));
           if (!node || range.start_ + range.size_ > (uint64_t)node->getSize())
@@ -307,7 +315,10 @@ class HttpData : public IHttpServer::IResponse::ICallback {
         });
   }
 
-  ~HttpData() { mega_->removeStreamRequest(request_); }
+  ~HttpData() {
+    auto p = mega_.lock();
+    if (p) p->removeStreamRequest(request_);
+  }
 
   int putData(char* buf, size_t max) override {
     if (status_ == AuthFailed)
@@ -320,25 +331,24 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   std::atomic_int status_;
   Buffer::Pointer buffer_;
-  MegaNz* mega_;
+  std::weak_ptr<MegaNz> mega_;
   std::shared_ptr<Request<EitherError<void>>> request_;
 };
 
 }  // namespace
 
-MegaNz::HttpServerCallback::HttpServerCallback(MegaNz* p) : provider_(p) {}
+MegaNz::HttpServerCallback::HttpServerCallback(std::shared_ptr<MegaNz> p)
+    : provider_(p) {}
 
 IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
-  {
-    std::lock_guard<std::mutex> lock(provider_->mutex_);
-    if (provider_->deleted_)
-      return util::response_from_string(request, IHttpRequest::Bad, {}, "");
-  }
+  auto provider = provider_.lock();
+  if (!provider)
+    return util::response_from_string(request, IHttpRequest::Bad, {}, "");
   const char* state = request.get("state");
   const char* file = request.get("file");
   const char* size_parameter = request.get("size");
-  if (!state || state != provider_->auth()->state() || !file || !size_parameter)
+  if (!state || state != provider->auth()->state() || !file || !size_parameter)
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       "invalid request");
   std::string filename = file;
@@ -380,13 +390,11 @@ MegaNz::MegaNz()
       authorized_(),
       engine_(device_()),
       daemon_(),
-      temporary_directory_("."),
-      deleted_(false) {}
+      temporary_directory_(".") {}
 
 MegaNz::~MegaNz() {
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    deleted_ = true;
     while (!stream_requests_.empty()) {
       {
         auto r = *stream_requests_.begin();
@@ -441,9 +449,10 @@ void MegaNz::initialize(InitData&& data) {
     if (file_url_.empty()) file_url_ = DEFAULT_FILE_URL;
   }
   CloudProvider::initialize(std::move(data));
-  daemon_ =
-      http_server()->create(util::make_unique<HttpServerCallback>(this),
-                            auth()->state(), IHttpServer::Type::FileProvider);
+  daemon_ = http_server()->create(
+      util::make_unique<HttpServerCallback>(
+          std::static_pointer_cast<MegaNz>(shared_from_this())),
+      auth()->state(), IHttpServer::Type::FileProvider);
 }
 
 std::string MegaNz::name() const { return "mega"; }
