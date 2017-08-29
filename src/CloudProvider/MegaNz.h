@@ -50,13 +50,14 @@ class MegaNz : public CloudProvider {
         const IHttpServer::IRequest&) override;
 
    private:
-    std::weak_ptr<MegaNz> provider_;
+    std::shared_ptr<MegaNz> provider_;
   };
 
   MegaNz();
   ~MegaNz();
 
   void initialize(InitData&&) override;
+  void destroy() override;
 
   std::string name() const override;
   std::string endpoint() const override;

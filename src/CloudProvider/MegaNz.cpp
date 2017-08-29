@@ -279,17 +279,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   static constexpr int AuthSuccess = 1;
   static constexpr int AuthFailed = 2;
 
-  HttpData(Buffer::Pointer d, std::weak_ptr<MegaNz> mega_ptr,
+  HttpData(Buffer::Pointer d, std::shared_ptr<MegaNz> mega,
            std::string filename, Range range)
       : status_(AuthInProgress),
         buffer_(d),
-        mega_(mega_ptr),
-        request_(std::make_shared<Request<EitherError<void>>>(mega_ptr)) {
-    auto p = mega_.lock();
-    if (!p) {
-      request_->done(Error{IHttpRequest::Bad, ""});
-      return;
-    }
+        mega_(mega),
+        request_(std::make_shared<Request<EitherError<void>>>(mega)) {
+    auto p = mega.get();
     p->ensureAuthorized<EitherError<void>>(
         request_,
         [=](EitherError<void> e) {
@@ -298,8 +294,6 @@ class HttpData : public IHttpServer::IResponse::ICallback {
           buffer_->resume();
         },
         [=]() {
-          auto p = mega_.lock();
-          if (!p) return;
           std::unique_ptr<MegaNode> node(
               p->mega()->getNodeByPath(filename.c_str()));
           if (!node || range.start_ + range.size_ > (uint64_t)node->getSize())
@@ -315,10 +309,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
         });
   }
 
-  ~HttpData() {
-    auto p = mega_.lock();
-    if (p) p->removeStreamRequest(request_);
-  }
+  ~HttpData() { mega_->removeStreamRequest(request_); }
 
   int putData(char* buf, size_t max) override {
     if (status_ == AuthFailed)
@@ -331,7 +322,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   std::atomic_int status_;
   Buffer::Pointer buffer_;
-  std::weak_ptr<MegaNz> mega_;
+  std::shared_ptr<MegaNz> mega_;
   std::shared_ptr<Request<EitherError<void>>> request_;
 };
 
@@ -342,13 +333,10 @@ MegaNz::HttpServerCallback::HttpServerCallback(std::shared_ptr<MegaNz> p)
 
 IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
-  auto provider = provider_.lock();
-  if (!provider)
-    return util::response_from_string(request, IHttpRequest::Bad, {}, "");
   const char* state = request.get("state");
   const char* file = request.get("file");
   const char* size_parameter = request.get("size");
-  if (!state || state != provider->auth()->state() || !file || !size_parameter)
+  if (!state || state != provider_->auth()->state() || !file || !size_parameter)
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       "invalid request");
   std::string filename = file;
@@ -390,28 +378,18 @@ MegaNz::MegaNz()
       authorized_(),
       engine_(device_()),
       daemon_(),
-      temporary_directory_(".") {}
+      temporary_directory_("."),
+      deleted_() {}
 
-MegaNz::~MegaNz() {
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    while (!stream_requests_.empty()) {
-      {
-        auto r = *stream_requests_.begin();
-        stream_requests_.erase(stream_requests_.begin());
-        lock.unlock();
-        r->cancel();
-      }
-      lock.lock();
-    }
-  }
-  daemon_ = nullptr;
-  mega_ = nullptr;
-}
+MegaNz::~MegaNz() { mega_ = nullptr; }
 
 void MegaNz::addStreamRequest(std::shared_ptr<DownloadFileRequest> r) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   stream_requests_.insert(r);
+  if (deleted_) {
+    lock.unlock();
+    removeStreamRequest(r);
+  }
 }
 
 void MegaNz::removeStreamRequest(std::shared_ptr<DownloadFileRequest> r) {
@@ -453,6 +431,23 @@ void MegaNz::initialize(InitData&& data) {
       util::make_unique<HttpServerCallback>(
           std::static_pointer_cast<MegaNz>(shared_from_this())),
       auth()->state(), IHttpServer::Type::FileProvider);
+}
+
+void MegaNz::destroy() {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    deleted_ = true;
+    while (!stream_requests_.empty()) {
+      {
+        auto r = *stream_requests_.begin();
+        stream_requests_.erase(stream_requests_.begin());
+        lock.unlock();
+        r->cancel();
+      }
+      lock.lock();
+    }
+  }
+  daemon_ = nullptr;
 }
 
 std::string MegaNz::name() const { return "mega"; }
