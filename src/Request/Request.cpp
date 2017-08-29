@@ -88,7 +88,7 @@ void Request<T>::cancel() {
   if (is_cancelled()) return;
   is_cancelled_ = true;
   auto p = provider();
-  {
+  if (p) {
     std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
     auto it = p->auth_callbacks_.find(this);
     if (it != std::end(p->auth_callbacks_)) {
