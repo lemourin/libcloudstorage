@@ -45,7 +45,9 @@ namespace {
 
 class CloudProviderWrapper : public ICloudProvider {
  public:
-  CloudProviderWrapper(std::shared_ptr<ICloudProvider> p) : p_(p) {}
+  CloudProviderWrapper(std::shared_ptr<CloudProvider> p) : p_(p) {}
+
+  ~CloudProviderWrapper() { p_->destroy(); }
 
   std::string token() const override { return p_->token(); }
 
@@ -152,7 +154,7 @@ class CloudProviderWrapper : public ICloudProvider {
   }
 
  private:
-  std::shared_ptr<ICloudProvider> p_;
+  std::shared_ptr<CloudProvider> p_;
 };
 
 }  // namespace

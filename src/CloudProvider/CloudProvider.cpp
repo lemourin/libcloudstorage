@@ -187,6 +187,8 @@ void CloudProvider::initialize(InitData&& data) {
   auth()->initialize(http(), http_server());
 }
 
+void CloudProvider::destroy() {}
+
 std::string ICloudProvider::serializeSession(const std::string& token,
                                              const Hints& hints) {
   Json::Value root_json;

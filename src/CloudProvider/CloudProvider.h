@@ -42,6 +42,7 @@ class CloudProvider : public ICloudProvider,
   CloudProvider(IAuth::Pointer);
 
   virtual void initialize(InitData&&);
+  virtual void destroy();
 
   Hints hints() const override;
   std::string access_token() const;
