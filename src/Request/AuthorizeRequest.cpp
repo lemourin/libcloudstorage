@@ -90,11 +90,13 @@ void AuthorizeRequest::sendCancel() {
 }
 
 void AuthorizeRequest::cancel() {
-  if (is_cancelled()) return;
   {
-    std::lock_guard<std::mutex> lock1(provider_mutex_);
-    std::lock_guard<std::mutex> lock2(lock_);
-    if (provider() && !provider()->auth_callbacks_.empty()) return;
+    std::lock_guard<std::mutex> lock(provider_mutex_);
+    if (provider()) {
+      std::lock_guard<std::mutex> lock(
+          provider()->current_authorization_mutex_);
+      if (!provider()->auth_callbacks_.empty()) return;
+    }
   }
   sendCancel();
   Request::cancel();
