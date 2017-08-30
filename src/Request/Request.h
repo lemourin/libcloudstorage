@@ -109,7 +109,7 @@ class Request : public IRequest<ReturnValue>,
 
   std::shared_ptr<CloudProvider> provider() const;
 
-  bool is_cancelled();
+  bool is_cancelled() const;
 
   void subrequest(std::shared_ptr<IGenericRequest>);
 

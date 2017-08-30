@@ -85,28 +85,30 @@ void Request<T>::finish() {
 
 template <class T>
 void Request<T>::cancel() {
-  if (is_cancelled()) return;
   is_cancelled_ = true;
-  auto p = provider();
-  if (p) {
-    std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
-    auto it = p->auth_callbacks_.find(this);
-    if (it != std::end(p->auth_callbacks_)) {
-      while (!it->second.empty()) {
-        {
-          auto c = it->second.back();
-          it->second.pop_back();
-          lock.unlock();
-          c(Error{IHttpRequest::Aborted, ""});
+  {
+    std::unique_lock<std::mutex> lock(provider_mutex_);
+    auto p = provider();
+    if (p) {
+      std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
+      auto it = p->auth_callbacks_.find(this);
+      if (it != std::end(p->auth_callbacks_)) {
+        while (!it->second.empty()) {
+          {
+            auto c = it->second.back();
+            it->second.pop_back();
+            lock.unlock();
+            c(Error{IHttpRequest::Aborted, ""});
+          }
+          lock.lock();
         }
-        lock.lock();
+        p->auth_callbacks_.erase(it);
       }
-      p->auth_callbacks_.erase(it);
-    }
-    if (p->auth_callbacks_.empty() && p->current_authorization_) {
-      auto auth = std::move(p->current_authorization_);
-      lock.unlock();
-      auth->cancel();
+      if (p->auth_callbacks_.empty() && p->current_authorization_) {
+        auto auth = std::move(p->current_authorization_);
+        lock.unlock();
+        auth->cancel();
+      }
     }
   }
   {
@@ -157,6 +159,10 @@ template <class T>
 void Request<T>::reauthorize(AuthorizeCompleted c) {
   auto p = provider();
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
+  if (is_cancelled()) {
+    lock.unlock();
+    return c(Error{IHttpRequest::Aborted, ""});
+  }
   p->auth_callbacks_[this].push_back(c);
   if (!p->current_authorization_) {
     {
@@ -247,7 +253,7 @@ std::shared_ptr<CloudProvider> Request<T>::provider() const {
 }
 
 template <class T>
-bool Request<T>::is_cancelled() {
+bool Request<T>::is_cancelled() const {
   return is_cancelled_;
 }
 
