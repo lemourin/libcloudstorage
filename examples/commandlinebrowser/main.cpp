@@ -1,10 +1,12 @@
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 
 #include "ICloudProvider.h"
 #include "ICloudStorage.h"
+#include "Utility/Utility.h"
 
 using cloudstorage::ICloudProvider;
 using cloudstorage::ICloudStorage;
@@ -13,7 +15,7 @@ using cloudstorage::IItem;
 const std::string HELP_MESSAGE =
     "ls: list directory\n"
     "cd: change directory\n"
-    "url: get url to the file\n"
+    "info: get file info\n"
     "help: this message\n";
 
 class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
@@ -128,7 +130,7 @@ int main(int, char**) {
           }
         }
       }
-    } else if (command == "url") {
+    } else if (command == "info") {
       if (!current_provider)
         std::cout << "No provider set\n";
       else {
@@ -138,7 +140,19 @@ int main(int, char**) {
         if (item) {
           auto data =
               current_provider->getItemDataAsync(item->id())->result().right();
-          if (data) std::cout << "Url: " << data->url() << "\n";
+          if (data) {
+            if (data->timestamp() != IItem::UnknownTimeStamp) {
+              auto time = cloudstorage::util::gmtime(
+                  std::chrono::duration_cast<std::chrono::seconds>(
+                      data->timestamp().time_since_epoch())
+                      .count());
+              std::cout << "timestamp: " << std::put_time(&time, "%c") << "\n";
+            }
+            if (data->size() != IItem::UnknownSize)
+              std::cout << "size: " << data->size() << "\n";
+            if (!data->url().empty())
+              std::cout << "url: " << data->url() << "\n";
+          }
         }
       }
     } else if (command == "help") {
