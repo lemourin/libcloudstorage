@@ -1,5 +1,5 @@
 /*****************************************************************************
- * OwnCloud.cpp : OwnCloud implementation
+ * WebDav.cpp : WebDav implementation
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#include "OwnCloud.h"
+#include "WebDav.h"
 
 #include "Request/AuthorizeRequest.h"
 #include "Utility/Item.h"
@@ -47,36 +47,36 @@ IItem::TimeStamp parse_time(const std::string& str) {
 
 }  // namespace
 
-OwnCloud::OwnCloud() : CloudProvider(util::make_unique<Auth>()) {}
+WebDav::WebDav() : CloudProvider(util::make_unique<Auth>()) {}
 
-IItem::Pointer OwnCloud::rootDirectory() const {
+IItem::Pointer WebDav::rootDirectory() const {
   return util::make_unique<Item>("root", "/", IItem::UnknownSize,
                                  IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
-void OwnCloud::initialize(InitData&& data) {
+void WebDav::initialize(InitData&& data) {
   unpackCredentials(data.token_);
   CloudProvider::initialize(std::move(data));
 }
 
-std::string OwnCloud::name() const { return "owncloud"; }
+std::string WebDav::name() const { return "webdav"; }
 
-std::string OwnCloud::endpoint() const {
+std::string WebDav::endpoint() const {
   auto lock = auth_lock();
   return webdav_url_;
 }
 
-std::string OwnCloud::token() const {
+std::string WebDav::token() const {
   auto lock = auth_lock();
   return user_ + "@" + webdav_url_ + Auth::SEPARATOR + password_;
 }
 
-AuthorizeRequest::Pointer OwnCloud::authorizeAsync() {
+AuthorizeRequest::Pointer WebDav::authorizeAsync() {
   return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
-ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
+ICloudProvider::CreateDirectoryRequest::Pointer WebDav::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
@@ -105,59 +105,59 @@ ICloudProvider::CreateDirectoryRequest::Pointer OwnCloud::createDirectoryAsync(
   return r->run();
 }
 
-IHttpRequest::Pointer OwnCloud::getItemDataRequest(const std::string& id,
-                                                   std::ostream&) const {
+IHttpRequest::Pointer WebDav::getItemDataRequest(const std::string& id,
+                                                 std::ostream&) const {
   auto request = http()->create(endpoint() + id, "PROPFIND");
   request->setHeaderParameter("Depth", "0");
   return request;
 }
 
-IHttpRequest::Pointer OwnCloud::listDirectoryRequest(const IItem& item,
-                                                     const std::string&,
-                                                     std::ostream&) const {
+IHttpRequest::Pointer WebDav::listDirectoryRequest(const IItem& item,
+                                                   const std::string&,
+                                                   std::ostream&) const {
   auto request = http()->create(endpoint() + item.id(), "PROPFIND");
   request->setHeaderParameter("Depth", "1");
   return request;
 }
 
-IHttpRequest::Pointer OwnCloud::uploadFileRequest(const IItem& directory,
-                                                  const std::string& filename,
-                                                  std::ostream&,
-                                                  std::ostream&) const {
+IHttpRequest::Pointer WebDav::uploadFileRequest(const IItem& directory,
+                                                const std::string& filename,
+                                                std::ostream&,
+                                                std::ostream&) const {
   return http()->create(
       endpoint() + directory.id() + util::Url::escape(filename), "PUT");
 }
 
-IHttpRequest::Pointer OwnCloud::downloadFileRequest(const IItem& item,
-                                                    std::ostream&) const {
+IHttpRequest::Pointer WebDav::downloadFileRequest(const IItem& item,
+                                                  std::ostream&) const {
   return http()->create(static_cast<const Item&>(item).url(), "GET");
 }
 
-IHttpRequest::Pointer OwnCloud::deleteItemRequest(const IItem& item,
-                                                  std::ostream&) const {
+IHttpRequest::Pointer WebDav::deleteItemRequest(const IItem& item,
+                                                std::ostream&) const {
   auto request = http()->create(endpoint() + item.id(), "DELETE");
   return request;
 }
 
-IHttpRequest::Pointer OwnCloud::moveItemRequest(const IItem& source,
-                                                const IItem& destination,
-                                                std::ostream&) const {
+IHttpRequest::Pointer WebDav::moveItemRequest(const IItem& source,
+                                              const IItem& destination,
+                                              std::ostream&) const {
   auto request = http()->create(endpoint() + source.id(), "MOVE");
   request->setHeaderParameter(
       "Destination", endpoint() + destination.id() + "/" + source.filename());
   return request;
 }
 
-IHttpRequest::Pointer OwnCloud::renameItemRequest(const IItem& item,
-                                                  const std::string& name,
-                                                  std::ostream&) const {
+IHttpRequest::Pointer WebDav::renameItemRequest(const IItem& item,
+                                                const std::string& name,
+                                                std::ostream&) const {
   auto request = http()->create(endpoint() + item.id(), "MOVE");
   request->setHeaderParameter("Destination",
                               endpoint() + getPath(item.id()) + "/" + name);
   return request;
 }
 
-IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
+IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -167,8 +167,9 @@ IItem::Pointer OwnCloud::getItemDataResponse(std::istream& stream) const {
   return toItem(document.RootElement()->FirstChild());
 }
 
-std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
-    const IItem&, std::istream& stream, std::string&) const {
+std::vector<IItem::Pointer> WebDav::listDirectoryResponse(const IItem&,
+                                                          std::istream& stream,
+                                                          std::string&) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -185,7 +186,7 @@ std::vector<IItem::Pointer> OwnCloud::listDirectoryResponse(
   return result;
 }
 
-IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
+IItem::Pointer WebDav::toItem(const tinyxml2::XMLNode* node) const {
   if (!node) throw std::logic_error("invalid xml");
   auto element = node->FirstChildElement("d:href");
   if (!element) throw std::logic_error("invalid xml");
@@ -215,17 +216,17 @@ IItem::Pointer OwnCloud::toItem(const tinyxml2::XMLNode* node) const {
   return std::move(item);
 }
 
-bool OwnCloud::reauthorize(int code) const {
+bool WebDav::reauthorize(int code) const {
   return CloudProvider::reauthorize(code) || endpoint().empty();
 }
 
-void OwnCloud::authorizeRequest(IHttpRequest& r) const {
+void WebDav::authorizeRequest(IHttpRequest& r) const {
   auto lock = auth_lock();
   r.setHeaderParameter("Authorization",
                        "Basic " + util::to_base64(user_ + ":" + password_));
 }
 
-bool OwnCloud::unpackCredentials(const std::string& code) {
+bool WebDav::unpackCredentials(const std::string& code) {
   auto lock = auth_lock();
   auto separator = code.find_first_of(Auth::SEPARATOR);
   auto at_position = code.find_last_of('@', separator);
@@ -237,28 +238,27 @@ bool OwnCloud::unpackCredentials(const std::string& code) {
   return true;
 }
 
-OwnCloud::Auth::Auth() {}
+WebDav::Auth::Auth() {}
 
-std::string OwnCloud::Auth::authorizeLibraryUrl() const {
+std::string WebDav::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login?state=" + state();
 }
 
-IHttpRequest::Pointer OwnCloud::Auth::exchangeAuthorizationCodeRequest(
+IHttpRequest::Pointer WebDav::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
   return nullptr;
 }
 
-IHttpRequest::Pointer OwnCloud::Auth::refreshTokenRequest(std::ostream&) const {
+IHttpRequest::Pointer WebDav::Auth::refreshTokenRequest(std::ostream&) const {
   return nullptr;
 }
 
-IAuth::Token::Pointer OwnCloud::Auth::exchangeAuthorizationCodeResponse(
+IAuth::Token::Pointer WebDav::Auth::exchangeAuthorizationCodeResponse(
     std::istream&) const {
   return nullptr;
 }
 
-IAuth::Token::Pointer OwnCloud::Auth::refreshTokenResponse(
-    std::istream&) const {
+IAuth::Token::Pointer WebDav::Auth::refreshTokenResponse(std::istream&) const {
   return nullptr;
 }
 

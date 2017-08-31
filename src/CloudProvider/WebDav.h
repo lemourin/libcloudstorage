@@ -1,5 +1,5 @@
 /*****************************************************************************
- * OwnCloud.h : OwnCloud headers
+ * WebDav.h : WebDav headers
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef OWNCLOUD_H
-#define OWNCLOUD_H
+#ifndef WEBDAV_H
+#define WEBDAV_H
 
 #include <tinyxml2.h>
 
@@ -31,16 +31,16 @@
 namespace cloudstorage {
 
 /**
- * OwnCloud doesn't use oauth, it does the authorization by sending user
+ * WebDav doesn't use oauth, it does the authorization by sending user
  * and password with every http request. Token in this case is the following:
- * username\@owncloud_base_url##password.
+ * username\@webdav_url##password.
  * Authorize library url is http://redirect_uri()/login.
  * This webpage is hosted during the Auth::awaitAuthorizationCode and shows text
  * inputs for username and password.
  */
-class OwnCloud : public CloudProvider {
+class WebDav : public CloudProvider {
  public:
-  OwnCloud();
+  WebDav();
 
   IItem::Pointer rootDirectory() const override;
 
@@ -107,4 +107,4 @@ class OwnCloud : public CloudProvider {
 
 }  // namespace cloudstorage
 
-#endif  // OWNCLOUD_H
+#endif  // WEBDAV_H

@@ -25,7 +25,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/Box.cpp \
 	CloudProvider/YouTube.cpp \
 	CloudProvider/YandexDisk.cpp \
-	CloudProvider/OwnCloud.cpp \
+	CloudProvider/WebDav.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -56,7 +56,7 @@ noinst_HEADERS = \
 	CloudProvider/AmazonS3.h \
 	CloudProvider/YouTube.h \
 	CloudProvider/YandexDisk.h \
-	CloudProvider/OwnCloud.h \
+	CloudProvider/WebDav.h \
 	Request/HttpCallback.h \
 	Request/AuthorizeRequest.h \
 	Request/Request.h \

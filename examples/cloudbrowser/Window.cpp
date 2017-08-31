@@ -155,7 +155,7 @@ void Window::initializeCloud(QString name) {
     auto hints = fromJson(data);
     hints["temporary_directory"] =
         QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
-    if (name == "amazons3" || name == "mega" || name == "owncloud") {
+    if (name == "amazons3" || name == "mega" || name == "webdav") {
       hints["login_page"] =
           read_file(":/resources/" + name.toStdString() + "_login.html");
       hints["success_page"] =

@@ -89,8 +89,8 @@ DEPS_res = \
 	resources/default_success.html \
 	resources/mega_login.html \
 	resources/mega_success.html \
-	resources/owncloud_login.html \
-	resources/owncloud_success.html
+	resources/webdav_login.html \
+	resources/webdav_success.html
 
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<

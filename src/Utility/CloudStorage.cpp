@@ -29,7 +29,7 @@
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
 #include "CloudProvider/OneDrive.h"
-#include "CloudProvider/OwnCloud.h"
+#include "CloudProvider/WebDav.h"
 #include "CloudProvider/YandexDisk.h"
 #include "CloudProvider/YouTube.h"
 
@@ -167,7 +167,7 @@ CloudStorage::CloudStorage() {
   add([]() { return std::make_shared<Box>(); });
   add([]() { return std::make_shared<YouTube>(); });
   add([]() { return std::make_shared<YandexDisk>(); });
-  add([]() { return std::make_shared<OwnCloud>(); });
+  add([]() { return std::make_shared<WebDav>(); });
   add([]() { return std::make_shared<AmazonS3>(); });
 #ifdef WITH_MEGA
   add([]() { return std::make_shared<MegaNz>(); });
