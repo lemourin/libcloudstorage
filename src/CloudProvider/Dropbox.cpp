@@ -261,7 +261,8 @@ IItem::Pointer Dropbox::toItem(const Json::Value& v) {
       type = IItem::FileType::Image;
   }
   return util::make_unique<Item>(
-      v["name"].asString(), v["path_display"].asString(), v["size"].asUInt64(),
+      v["name"].asString(), v["path_display"].asString(),
+      v.isMember("size") ? v["size"].asUInt64() : IItem::UnknownSize,
       util::parse_time(v["client_modified"].asString()), type);
 }
 
