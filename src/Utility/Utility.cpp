@@ -212,6 +212,44 @@ IItem::TimeStamp parse_time(const std::string& str) {
   return IItem::UnknownTimeStamp;
 }
 
+std::string to_base64(const std::string& in) {
+  using uchar = unsigned char;
+  const char* base64_chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string out;
+  int val = 0, valb = -6;
+  for (uchar c : in) {
+    val = (val << 8) + c;
+    valb += 8;
+    while (valb >= 0) {
+      out.push_back(base64_chars[(val >> valb) & 0x3F]);
+      valb -= 6;
+    }
+  }
+  if (valb > -6) out.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
+  while (out.size() % 4) out.push_back('=');
+  return out;
+}
+
+Url::Url(const std::string& url_s) {
+  using namespace std;
+  const string prot_end("://");
+  string::const_iterator prot_i =
+      search(url_s.begin(), url_s.end(), prot_end.begin(), prot_end.end());
+  protocol_.reserve(distance(url_s.begin(), prot_i));
+  transform(url_s.begin(), prot_i, back_inserter(protocol_),
+            ptr_fun<int, int>(tolower));
+  if (prot_i == url_s.end()) return;
+  advance(prot_i, prot_end.length());
+  string::const_iterator path_i = find(prot_i, url_s.end(), '/');
+  host_.reserve(distance(prot_i, path_i));
+  transform(prot_i, path_i, back_inserter(host_), ptr_fun<int, int>(tolower));
+  string::const_iterator query_i = find(path_i, url_s.end(), '?');
+  path_.assign(path_i, query_i);
+  if (query_i != url_s.end()) ++query_i;
+  query_.assign(query_i, url_s.end());
+}
+
 std::string Url::unescape(const std::string& str) {
   std::string result;
   for (size_t i = 0; i < str.size(); ++i) {

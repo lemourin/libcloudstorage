@@ -55,12 +55,26 @@ std::string to_mime_type(const std::string& extension);
 IItem::TimeStamp parse_time(const std::string& time);
 std::tm gmtime(time_t);
 time_t timegm(const std::tm&);
+std::string to_base64(const std::string&);
 
 class Url {
  public:
+  Url(const std::string&);
+
   static std::string unescape(const std::string&);
   static std::string escape(const std::string&);
   static std::string escapeHeader(const std::string&);
+
+  std::string protocol() const { return protocol_; }
+  std::string host() const { return host_; }
+  std::string path() const { return path_; }
+  std::string query() const { return query_; }
+
+ private:
+  std::string protocol_;
+  std::string host_;
+  std::string path_;
+  std::string query_;
 };
 
 IHttpServer::IResponse::Pointer response_from_string(
