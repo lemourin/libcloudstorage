@@ -76,8 +76,6 @@ class OwnCloud : public CloudProvider {
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
 
-  std::string api_url() const;
-
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 
   bool reauthorize(int code) const override;
@@ -102,7 +100,7 @@ class OwnCloud : public CloudProvider {
  private:
   bool unpackCredentials(const std::string& code) override;
 
-  std::string owncloud_base_url_;
+  std::string webdav_url_;
   std::string user_;
   std::string password_;
 };
