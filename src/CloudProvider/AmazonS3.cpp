@@ -319,14 +319,21 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
+    auto data = split(id);
+    if (data.second.empty()) {
+      auto item = std::make_shared<Item>(data.first, id, IItem::UnknownSize,
+                                         IItem::UnknownTimeStamp,
+                                         IItem::FileType::Directory);
+      callback(EitherError<IItem>(item));
+      return r->done(EitherError<IItem>(item));
+    }
     auto factory = [=](util::Output) {
-      auto data = split(id);
       auto request = http()->create(
           "https://" + data.first + ".s3." + region() + ".amazonaws.com/",
           "GET");
       request->setParameter("list-type", "2");
       request->setParameter("prefix", data.second);
-      request->setParameter("delimiter", data.second);
+      request->setParameter("delimiter", "/");
       return request;
     };
     auto output = std::make_shared<std::stringstream>();
@@ -357,12 +364,12 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
               if (auto text = time_element->GetText())
                 timestamp = util::parse_time(text);
           }
-          auto data = split(id);
+          auto type = data.second.back() == '/' ? IItem::FileType::Directory
+                                                : IItem::FileType::Unknown;
           auto item = std::make_shared<Item>(
-              getFilename(data.second), id, size, timestamp,
-              (data.second.empty() || data.second.back() == '/')
-                  ? IItem::FileType::Directory
-                  : IItem::FileType::Unknown);
+              getFilename(data.second), id,
+              type == IItem::FileType::Directory ? IItem::UnknownSize : size,
+              timestamp, type);
           if (item->type() != IItem::FileType::Directory)
             item->set_url(getUrl(*item));
           callback(EitherError<IItem>(item));
