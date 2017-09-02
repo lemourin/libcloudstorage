@@ -81,7 +81,7 @@ class AmazonS3 : public CloudProvider {
   std::string secret() const;
   std::string region() const;
 
-  static std::pair<std::string, std::string> split(const std::string&);
+  static std::pair<std::string, std::string> extract(const std::string&);
 
   class Auth : public cloudstorage::Auth {
    public:
