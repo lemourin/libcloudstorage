@@ -113,6 +113,10 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
+    if (id == rootDirectory()->id()) {
+      callback(rootDirectory());
+      return r->done(rootDirectory());
+    }
     if (id == AUDIO_DIRECTORY_ID) {
       IItem::Pointer i = std::make_shared<Item>(
           AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
