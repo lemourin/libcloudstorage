@@ -26,6 +26,7 @@
 #include "Request/AuthorizeRequest.h"
 #include "Utility/Item.h"
 
+#include <json/json.h>
 #include <cstring>
 #include <iomanip>
 
@@ -69,7 +70,11 @@ std::string WebDav::endpoint() const {
 
 std::string WebDav::token() const {
   auto lock = auth_lock();
-  return user_ + "@" + webdav_url_ + Auth::SEPARATOR + password_;
+  Json::Value json;
+  json["username"] = user_;
+  json["password"] = password_;
+  json["webdav_url"] = webdav_url_;
+  return util::to_base64(Json::FastWriter().write(json));
 }
 
 AuthorizeRequest::Pointer WebDav::authorizeAsync() {
@@ -228,14 +233,14 @@ void WebDav::authorizeRequest(IHttpRequest& r) const {
 
 bool WebDav::unpackCredentials(const std::string& code) {
   auto lock = auth_lock();
-  auto separator = code.find_first_of(Auth::SEPARATOR);
-  auto at_position = code.find_last_of('@', separator);
-  if (at_position == std::string::npos || separator == std::string::npos)
+  Json::Value json;
+  if (Json::Reader().parse(util::from_base64(code), json)) {
+    user_ = json["username"].asString();
+    password_ = json["password"].asString();
+    webdav_url_ = json["webdav_url"].asString();
+    return true;
+  } else
     return false;
-  user_ = code.substr(0, at_position);
-  webdav_url_ = code.substr(at_position + 1, separator - at_position - 1);
-  password_ = code.substr(separator + strlen(Auth::SEPARATOR));
-  return true;
 }
 
 WebDav::Auth::Auth() {}
