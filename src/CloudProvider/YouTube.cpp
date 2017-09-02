@@ -53,7 +53,7 @@ struct YouTubeItem {
 YouTubeItem from_string(const std::string& id) {
   Json::Value json;
   if (Json::Reader().parse(util::from_base64(id), json)) {
-    return {json["audio"].asBool(), json["video"].asBool(),
+    return {json["audio"].asBool(), json["playlist"].asBool(),
             json["id"].asString()};
   } else {
     return {};
