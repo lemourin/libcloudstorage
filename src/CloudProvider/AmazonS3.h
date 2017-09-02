@@ -35,7 +35,8 @@ namespace cloudstorage {
  * ICrypto implementation. Be careful about renaming and moving directories,
  * because there has to be an http request per each of its subelement. Buckets
  * are listed as root directory's children, renaming and moving them doesn't
- * work. Access token is of shape: access_id\@region##secret.
+ * work. Token in this case is a base64 encoded json with fields
+ * username (access_id), password (secret_key), region.
  */
 class AmazonS3 : public CloudProvider {
  public:

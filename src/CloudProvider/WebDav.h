@@ -32,8 +32,8 @@ namespace cloudstorage {
 
 /**
  * WebDav doesn't use oauth, it does the authorization by sending user
- * and password with every http request. Token in this case is the following:
- * username\@webdav_url##password.
+ * and password with every http request. Token in this case is a base64 encoded
+ * json with fields username, password, webdav_url.
  * Authorize library url is http://redirect_uri()/login.
  * This webpage is hosted during the Auth::awaitAuthorizationCode and shows text
  * inputs for username and password.
