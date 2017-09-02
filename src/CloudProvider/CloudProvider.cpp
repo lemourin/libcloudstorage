@@ -350,11 +350,14 @@ std::string CloudProvider::getFilename(const std::string& path) {
 
 std::pair<std::string, std::string> CloudProvider::credentialsFromString(
     const std::string& str) {
-  auto it = str.find(Auth::SEPARATOR);
-  if (it == std::string::npos) return {};
-  std::string login(str.begin(), str.begin() + it);
-  std::string password(str.begin() + it + strlen(Auth::SEPARATOR), str.end());
-  return {login, password};
+  Json::Value json;
+  if (Json::Reader().parse(util::from_base64(str), json)) {
+    std::string username = json["username"].asString();
+    std::string password = json["password"].asString();
+    return {username, password};
+  } else {
+    return {};
+  }
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
