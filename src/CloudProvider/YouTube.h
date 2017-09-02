@@ -62,7 +62,6 @@ class YouTube : public CloudProvider {
       std::string& next_page_token) const override;
 
   IItem::Pointer toItem(const Json::Value&, std::string kind, bool audio) const;
-  std::string extractId(const std::string& full_id) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:

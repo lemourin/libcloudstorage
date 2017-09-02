@@ -34,13 +34,41 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
-const std::string VIDEO_ID_PREFIX = "video###";
-const std::string AUDIO_ID_PREFIX = "audio###";
 const std::string AUDIO_DIRECTORY = "audio";
+const std::string AUDIO_DIRECTORY_ID =
+    "eyJhdWRpbyI6dHJ1ZSwicGxheWxpc3QiOnRydWUsImlkIjoiYXVkaW8ifQo=";
 
 using namespace std::placeholders;
 
 namespace cloudstorage {
+
+namespace {
+
+struct YouTubeItem {
+  bool audio;
+  bool playlist;
+  std::string id;
+};
+
+YouTubeItem from_string(const std::string& id) {
+  Json::Value json;
+  if (Json::Reader().parse(util::from_base64(id), json)) {
+    return {json["audio"].asBool(), json["video"].asBool(),
+            json["id"].asString()};
+  } else {
+    return {};
+  }
+}
+
+std::string to_string(YouTubeItem item) {
+  Json::Value json;
+  json["audio"] = item.audio;
+  json["playlist"] = item.playlist;
+  json["id"] = item.id;
+  return util::to_base64(Json::FastWriter().write(json));
+}
+
+}  // namespace
 
 YouTube::YouTube()
     : CloudProvider(util::make_unique<Auth>()),
@@ -85,9 +113,9 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    if (id == AUDIO_DIRECTORY) {
+    if (id == AUDIO_DIRECTORY_ID) {
       IItem::Pointer i = std::make_shared<Item>(
-          AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::UnknownSize,
+          AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Directory);
       callback(i);
       return r->done(i);
@@ -100,18 +128,16 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
             callback(e.left());
             return r->done(e.left());
           }
-          auto item = getItemDataResponse(
-              *response_stream, id.find(AUDIO_ID_PREFIX) != std::string::npos);
+          auto id_data = from_string(id);
+          auto item = getItemDataResponse(*response_stream, id_data.audio);
           auto stream = std::make_shared<std::stringstream>();
           auto request = [=](std::string format) {
             return [=](util::Output) {
               auto request =
                   http()->create(youtube_dl_url_ + "/api/info", "GET");
               request->setParameter("format", format);
-              request->setParameter(
-                  "url",
-                  "http://youtube.com/watch?v=" +
-                      extractId(id).substr(VIDEO_ID_PREFIX.length()));
+              request->setParameter("url",
+                                    "http://youtube.com/watch?v=" + id_data.id);
               return request;
             };
           };
@@ -219,23 +245,23 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
 
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
                                                   std::ostream&) const {
-  std::string id = extractId(full_id);
-  if (id.find(VIDEO_ID_PREFIX) != std::string::npos) {
+  auto id_data = from_string(full_id);
+  if (!id_data.playlist) {
     auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
     request->setParameter("part", "contentDetails,snippet");
-    request->setParameter("id", id.substr(VIDEO_ID_PREFIX.length()));
+    request->setParameter("id", id_data.id);
     return request;
   } else {
     auto request = http()->create(endpoint() + "/youtube/v3/playlists", "GET");
     request->setParameter("part", "contentDetails,snippet");
-    request->setParameter("id", id);
+    request->setParameter("id", id_data.id);
     return request;
   }
 }
 
 IHttpRequest::Pointer YouTube::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
-  if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY) {
+  if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY_ID) {
     if (page_token.empty())
       return http()->create(
           endpoint() +
@@ -260,7 +286,7 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
         http()->create(endpoint() + "/youtube/v3/playlistItems", "GET");
     request->setParameter("part", "snippet");
     request->setParameter("maxResults", "50");
-    request->setParameter("playlistId", extractId(item.id()));
+    request->setParameter("playlistId", from_string(item.id()).id);
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
     return request;
   }
@@ -282,18 +308,15 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
                            .str(),
                        response);
   std::vector<IItem::Pointer> result;
-  std::string id_prefix =
-      directory.id().find(AUDIO_ID_PREFIX) != std::string::npos ||
-              directory.id() == AUDIO_DIRECTORY
-          ? AUDIO_ID_PREFIX
-          : "";
-  std::string name_prefix = id_prefix.empty() ? "" : AUDIO_DIRECTORY + " ";
+  bool audio = from_string(directory.id()).audio;
+  std::string name_prefix = !audio ? "" : AUDIO_DIRECTORY + " ";
   if (response["kind"].asString() == "youtube#channelListResponse") {
     Json::Value related_playlists =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
     for (const std::string& name : related_playlists.getMemberNames()) {
       auto item = util::make_unique<Item>(
-          name_prefix + name, id_prefix + related_playlists[name].asString(),
+          name_prefix + name,
+          to_string({audio, true, related_playlists[name].asString()}),
           IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory);
       item->set_thumbnail_url(
@@ -304,26 +327,24 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     next_page_token = "real_playlist";
   } else {
     for (const Json::Value& v : response["items"])
-      result.push_back(
-          toItem(v, response["kind"].asString(), !id_prefix.empty()));
+      result.push_back(toItem(v, response["kind"].asString(), audio));
   }
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
   else if (directory.id() == rootDirectory()->id() && next_page_token.empty())
     result.push_back(util::make_unique<Item>(
-        AUDIO_DIRECTORY, AUDIO_DIRECTORY, IItem::UnknownSize,
+        AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
         IItem::UnknownTimeStamp, IItem::FileType::Directory));
   return result;
 }
 
 IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
                                bool audio) const {
-  std::string id_prefix = audio ? AUDIO_ID_PREFIX : "";
   std::string name_prefix = audio ? AUDIO_DIRECTORY + " " : "";
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(
         name_prefix + v["snippet"]["title"].asString(),
-        id_prefix + v["id"].asString(), IItem::UnknownSize,
+        to_string({audio, true, v["id"].asString()}), IItem::UnknownSize,
         IItem::UnknownTimeStamp, IItem::FileType::Directory);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
@@ -339,7 +360,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
-        id_prefix + VIDEO_ID_PREFIX + video_id, IItem::UnknownSize,
+        to_string({audio, false, video_id}), IItem::UnknownSize,
         IItem::UnknownTimeStamp,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
@@ -350,13 +371,6 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
                   video_id);
     return std::move(item);
   }
-}
-
-std::string YouTube::extractId(const std::string& full_id) const {
-  if (full_id.find(AUDIO_ID_PREFIX) != std::string::npos)
-    return full_id.substr(AUDIO_ID_PREFIX.length());
-  else
-    return full_id;
 }
 
 std::string YouTube::Auth::authorizeLibraryUrl() const {
