@@ -27,8 +27,13 @@
     <div class="container center-block">
       <script>
         function submitData() {
-          var code = encodeURIComponent($('#inputAccessKey').val() + '@' + $('#inputRegion').val() + '##' + $('#inputSecretKey').val());
-          window.location.href = location.pathname.split("/").slice(0,-1).join("/") + "?code=" + code + "&state=" + url('?').state;
+          var json = {
+            username: $('#inputAccessKey').val(),
+            password: $('#inputSecretKey').val(),
+            region: $('#inputRegion').val()
+          };
+          var code = window.btoa(JSON.stringify(json));
+          window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
           return false;
         };
       </script>
