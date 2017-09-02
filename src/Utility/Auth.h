@@ -32,8 +32,6 @@ namespace cloudstorage {
 
 class Auth : public IAuth {
  public:
-  static constexpr const char* SEPARATOR = "##";
-
   class HttpServerCallback : public IHttpServer::ICallback {
    public:
     IHttpServer::IResponse::Pointer handle(
