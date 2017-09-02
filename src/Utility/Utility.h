@@ -56,6 +56,7 @@ IItem::TimeStamp parse_time(const std::string& time);
 std::tm gmtime(time_t);
 time_t timegm(const std::tm&);
 std::string to_base64(const std::string&);
+std::string from_base64(const std::string&);
 
 class Url {
  public:

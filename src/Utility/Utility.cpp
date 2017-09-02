@@ -213,12 +213,11 @@ IItem::TimeStamp parse_time(const std::string& str) {
 }
 
 std::string to_base64(const std::string& in) {
-  using uchar = unsigned char;
   const char* base64_chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   std::string out;
   int val = 0, valb = -6;
-  for (uchar c : in) {
+  for (uint8_t c : in) {
     val = (val << 8) + c;
     valb += 8;
     while (valb >= 0) {
@@ -228,6 +227,30 @@ std::string to_base64(const std::string& in) {
   }
   if (valb > -6) out.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
   while (out.size() % 4) out.push_back('=');
+  return out;
+}
+
+std::string from_base64(const std::string& in) {
+  const uint8_t lookup[] = {
+      62,  255, 62,  255, 63,  52,  53, 54, 55, 56, 57, 58, 59, 60, 61, 255,
+      255, 0,   255, 255, 255, 255, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+      10,  11,  12,  13,  14,  15,  16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+      255, 255, 255, 255, 63,  255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+      36,  37,  38,  39,  40,  41,  42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
+
+  std::string out;
+  int val = 0, valb = -8;
+  for (uint8_t c : in) {
+    if (c < '+' || c > 'z') break;
+    c -= '+';
+    if (lookup[c] >= 64) break;
+    val = (val << 6) + lookup[c];
+    valb += 6;
+    if (valb >= 0) {
+      out.push_back(char((val >> valb) & 0xFF));
+      valb -= 8;
+    }
+  }
   return out;
 }
 
