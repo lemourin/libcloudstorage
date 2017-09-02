@@ -333,6 +333,10 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set([=](Request<EitherError<IItem>>::Pointer r) {
+    if (id == rootDirectory()->id()) {
+      callback(rootDirectory());
+      return r->done(rootDirectory());
+    }
     auto data = extract(id);
     if (data.second.empty()) {
       auto item = std::make_shared<Item>(data.first, id, IItem::UnknownSize,
