@@ -29,6 +29,7 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#include <json/json.h>
 #include <array>
 #include <condition_variable>
 #include <cstring>
@@ -922,7 +923,10 @@ IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
     const std::string& code) const {
   auto data = credentialsFromString(code);
   IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
-  token->token_ = data.first + Auth::SEPARATOR + passwordHash(data.second);
+  Json::Value json;
+  json["username"] = data.first;
+  json["password"] = passwordHash(data.second);
+  token->token_ = util::to_base64(Json::FastWriter().write(json));
   token->refresh_token_ = token->token_;
   return token;
 }
