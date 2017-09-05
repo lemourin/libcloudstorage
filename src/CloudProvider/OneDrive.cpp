@@ -48,7 +48,7 @@ void upload(Request<EitherError<void>>::Pointer r, int sent,
   r->sendRequest(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
-        *length = callback->putData(buffer.begin().base(), CHUNK_SIZE);
+        *length = callback->putData(buffer.data(), CHUNK_SIZE);
         auto request = r->provider()->http()->create(
             response["uploadUrl"].asString(), "PUT");
         std::stringstream content_range;

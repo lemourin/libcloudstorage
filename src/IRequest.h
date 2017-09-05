@@ -87,6 +87,10 @@ class IRequest : public IGenericRequest {
  public:
   using Pointer = std::unique_ptr<IRequest>;
 
+  virtual void finish() = 0;
+
+  virtual void cancel() = 0;
+
   /**
    * Retrieves the result, blocks if it wasn't computed just yet.
    * @return result
@@ -191,6 +195,7 @@ struct Error {
 template <class Left, class Right>
 class Either {
  public:
+  Either() {}
   Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
   Either(const Right& right) : right_(std::make_shared<Right>(right)) {}
   Either(std::shared_ptr<Left> left) : left_(left) {}
@@ -207,6 +212,7 @@ class Either {
 template <class Left>
 class Either<Left, void> {
  public:
+  Either() {}
   Either(std::nullptr_t) {}
   Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
   Either(std::shared_ptr<Left> left) : left_(left) {}

@@ -28,6 +28,7 @@
 
 #include <json/json.h>
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -322,7 +323,7 @@ IHttpServer::IResponse::Pointer response_from_string(
 
     int putData(char* buffer, size_t max) override {
       int cnt = std::min(data_.length() - position_, max);
-      memcpy(buffer, (data_.begin() + position_).base(), cnt);
+      memcpy(buffer, data_.data() + position_, cnt);
       position_ += cnt;
       return cnt;
     }

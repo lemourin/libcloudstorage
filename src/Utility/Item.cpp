@@ -26,6 +26,7 @@
 #include "Utility/Utility.h"
 
 #include <algorithm>
+#include <cctype>
 
 #define SIZE(x) (sizeof(x) / sizeof(x[0]))
 

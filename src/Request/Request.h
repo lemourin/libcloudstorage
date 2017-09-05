@@ -53,7 +53,7 @@ class Request : public IRequest<ReturnValue>,
 
   class Wrapper : public IRequest<ReturnValue> {
    public:
-    Wrapper(Request::Pointer);
+    Wrapper(typename Request<ReturnValue>::Pointer);
     ~Wrapper();
 
     void finish() override;
@@ -61,7 +61,7 @@ class Request : public IRequest<ReturnValue>,
     ReturnValue result() override;
 
    private:
-    Request::Pointer request_;
+    typename Request<ReturnValue>::Pointer request_;
   };
 
   Request(std::shared_ptr<CloudProvider>);
