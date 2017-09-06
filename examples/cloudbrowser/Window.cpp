@@ -314,7 +314,7 @@ void Window::cancelRequests() {
 ICloudProvider::Hints Window::fromJson(const QJsonObject& json) const {
   ICloudProvider::Hints hints;
   for (QString key : json.keys())
-    hints[key.toStdString()] = json[key].toString().toStdString();
+    hints[key.toStdString()] = json[key].toString("").toStdString();
   return hints;
 }
 
