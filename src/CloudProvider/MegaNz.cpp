@@ -297,9 +297,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
         [=]() {
           std::unique_ptr<MegaNode> node(
               p->mega()->getNodeByPath(filename.c_str()));
-          if (!node || range.start_ + range.size_ > (uint64_t)node->getSize())
+          if (!node || range.start_ + range.size_ > (uint64_t)node->getSize()) {
             status_ = AuthFailed;
-          else {
+            if (!node)
+              request_->done(Error{IHttpRequest::Bad, "invalid node"});
+            else
+              request_->done(Error{IHttpRequest::Bad, "invalid range"});
+          } else {
             status_ = AuthSuccess;
             p->downloadResolver(p->toItem(node.get()),
                                 util::make_unique<HttpDataCallback>(buffer_),
@@ -892,7 +896,7 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
 
 std::string MegaNz::randomString(int length) {
   std::unique_lock<std::mutex> lock(mutex_);
-  std::uniform_int_distribution<char> dist('a', 'z');
+  std::uniform_int_distribution<short> dist('a', 'z');
   std::string result;
   for (int i = 0; i < length; i++) result += dist(engine_);
   return result;
