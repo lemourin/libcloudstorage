@@ -6,7 +6,7 @@ lib_LTLIBRARIES = libcloudbrowser.la
 AM_LDFLAGS = \
 	-no-undefined
 
-cloudbrowser_SOURCES = main.cpp resources.cpp
+cloudbrowser_SOURCES = main.cpp
 cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
@@ -14,7 +14,8 @@ libcloudbrowser_la_SOURCES = \
 	Callback.cpp Callback.h \
 	MediaPlayer.cpp MediaPlayer.h \
 	MockProvider.cpp MockProvider.h \
-	Exec.cpp Exec.h
+	Exec.cpp Exec.h \
+	resources.cpp
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
@@ -95,7 +96,7 @@ DEPS_res = \
 	$(MOC) -o $@ $<
 
 resources.cpp: qml.qrc $(DEPS_res)
-	$(RCC) -o $@ $<
+	$(RCC) --name resources -o $@ $<
 
 EXTRA_DIST = qml.qrc $(DEPS_res)
 

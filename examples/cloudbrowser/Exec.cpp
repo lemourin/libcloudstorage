@@ -108,6 +108,7 @@ class MainWidget : public QWidget {
 
 int exec_cloudbrowser(int argc, char** argv) {
   try {
+    Q_INIT_RESOURCE(resources);
 #ifdef WITH_CRYPTO
     crypto_lock crypto;
 #endif
