@@ -1,5 +1,5 @@
 /*****************************************************************************
- * main.cpp : cloudbrowser main function
+ * Exec.h
  *
  *****************************************************************************
  * Copyright (C) 2016 VideoLAN
@@ -21,6 +21,4 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#include "Exec.h"
-
-int main(int argc, char** argv) { return exec_cloudbrowser(argc, argv); }
+int exec_cloudbrowser(int argc, char** argv);

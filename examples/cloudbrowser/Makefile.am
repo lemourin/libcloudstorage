@@ -6,7 +6,7 @@ lib_LTLIBRARIES = libcloudbrowser.la
 AM_LDFLAGS = \
 	-no-undefined
 
-cloudbrowser_SOURCES = 
+cloudbrowser_SOURCES = main.cpp
 cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
@@ -14,7 +14,7 @@ libcloudbrowser_la_SOURCES = \
 	Callback.cpp Callback.h \
 	MediaPlayer.cpp MediaPlayer.h \
 	MockProvider.cpp MockProvider.h \
-	main.cpp
+	Exec.cpp Exec.h
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
