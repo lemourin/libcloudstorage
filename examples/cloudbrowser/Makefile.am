@@ -6,7 +6,7 @@ lib_LTLIBRARIES = libcloudbrowser.la
 AM_LDFLAGS = \
 	-no-undefined
 
-cloudbrowser_SOURCES = main.cpp
+cloudbrowser_SOURCES = main.cpp resources.cpp
 cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
@@ -67,8 +67,7 @@ endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
-	MediaPlayer.moc.cpp \
-	resources.cpp
+	MediaPlayer.moc.cpp
 
 DEPS_res = \
 	qml/main.qml \
