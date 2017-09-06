@@ -344,7 +344,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
   if (!state || state != provider_->auth()->state() || !file || !size_parameter)
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       "invalid request");
-  std::string filename = file;
+  std::string filename = util::from_base64(file);
   auto size = (uint64_t)std::atoll(size_parameter);
   auto name = filename.substr(filename.find_last_of('/') + 1);
   auto extension = filename.substr(filename.find_last_of('.') + 1);
@@ -888,9 +888,9 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
                        : std::chrono::system_clock::time_point(
                              std::chrono::seconds(node->getModificationTime())),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
-  item->set_url(endpoint() + "/?file=" + util::Url::escape(path.get()) +
-                "&size=" + std::to_string(node->getSize()) +
-                "&state=" + auth()->state());
+  item->set_url(
+      endpoint() + "/?file=" + util::Url::escape(util::to_base64(path.get())) +
+      "&size=" + std::to_string(node->getSize()) + "&state=" + auth()->state());
   return std::move(item);
 }
 
