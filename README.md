@@ -120,14 +120,14 @@ Implement following cloud providers:
 * `XXL Box`
 
 Implement bindings to various languages, notably script languages:
-* Obj-C
-* python
-* ruby
-* JS/node
-* Java
+* `Obj-C`
+* `python`
+* `ruby`
+* `JS/node`
+* `Java`
 
 Integrate in various desktops
-* KIO slave
-* gvfs implementation
-* fuse
-* Dokan fuse
+* `KIO` slave
+* `gvfs` implementation
+* `fuse`
+* `Dokan fuse`
