@@ -89,9 +89,9 @@ DEPS_res = \
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<
 
-resources.cpp: qml.qrc $(DEPS_res)
+resources.cpp: resources.qrc $(DEPS_res)
 	$(RCC) --name resources -o $@ $<
 
-EXTRA_DIST = qml.qrc $(DEPS_res)
+EXTRA_DIST = resources.qrc $(DEPS_res)
 
 BUILT_SOURCES = $(nodist_cloudbrowser_SOURCES)
