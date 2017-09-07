@@ -59,12 +59,6 @@ libcloudbrowser_la_LIBADD += $(libffmpegthumbnailer_LIBS)
 libcloudbrowser_la_SOURCES += \
 	GenerateThumbnail.cpp GenerateThumbnail.h
 endif
-if WITH_CRYPTO
-libcloudbrowser_la_CXXFLAGS += \
-	$(libcrypto_CFLAGS)
-libcloudbrowser_la_LIBADD += \
-	$(libcrypto_LIBS)
-endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	Window.moc.cpp \
