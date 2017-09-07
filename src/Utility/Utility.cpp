@@ -110,7 +110,7 @@ Range parse_range(const std::string& r) {
 std::string range_to_string(Range r) {
   std::stringstream stream;
   stream << "bytes=" << r.start_ << "-";
-  if (r.size_ != Range::Full) stream << r.size_ - r.start_ + 1;
+  if (r.size_ != Range::Full) stream << r.size_ + r.start_ - 1;
   return stream.str();
 }
 
