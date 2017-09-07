@@ -139,12 +139,16 @@ MicroHttpdServer::IResponse::Pointer MicroHttpdServer::Request::response(
 }
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(
+    IHttpServer::ICallback::Pointer cb, uint16_t port) {
+  return util::make_unique<MicroHttpdServer>(cb, port);
+}
+
+IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, const std::string&,
     IHttpServer::Type type) {
-  return util::make_unique<MicroHttpdServer>(
-      cb,
-      type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
-                                               : FILE_PROVIDER_PORT);
+  return create(cb,
+                type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
+                                                         : FILE_PROVIDER_PORT);
 }
 
 }  // namespace cloudstorage
