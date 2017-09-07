@@ -132,10 +132,13 @@ int exec_cloudbrowser(int argc, char** argv) {
     window.resize(800, 600);
     window.show();
 
-    return app.exec();
+    int ret = app.exec();
+
+    Q_CLEANUP_RESOURCE(resources);
+
+    return ret;
   } catch (const std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";
+    return 1;
   }
-
-  return 0;
 }
