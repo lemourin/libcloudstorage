@@ -255,23 +255,29 @@ std::string from_base64(const std::string& in) {
   return out;
 }
 
-Url::Url(const std::string& url_s) {
-  using namespace std;
-  const string prot_end("://");
-  string::const_iterator prot_i =
-      search(url_s.begin(), url_s.end(), prot_end.begin(), prot_end.end());
-  protocol_.reserve(distance(url_s.begin(), prot_i));
-  transform(url_s.begin(), prot_i, back_inserter(protocol_),
-            ptr_fun<int, int>(tolower));
-  if (prot_i == url_s.end()) return;
-  advance(prot_i, prot_end.length());
-  string::const_iterator path_i = find(prot_i, url_s.end(), '/');
-  host_.reserve(distance(prot_i, path_i));
-  transform(prot_i, path_i, back_inserter(host_), ptr_fun<int, int>(tolower));
-  string::const_iterator query_i = find(path_i, url_s.end(), '?');
-  path_.assign(path_i, query_i);
-  if (query_i != url_s.end()) ++query_i;
-  query_.assign(query_i, url_s.end());
+Url::Url(const std::string& url) {
+  const std::string prot_end = "://";
+
+  auto it =
+      std::search(url.begin(), url.end(), prot_end.begin(), prot_end.end());
+  if (it == url.end()) {
+    it = url.begin();
+    protocol_ = "http";
+  } else {
+    protocol_ = std::string(url.begin(), it);
+    it += prot_end.length();
+  }
+
+  auto it_next = std::find(it, url.end(), '/');
+  host_ = std::string(it, it_next);
+  it = it_next;
+
+  it_next = std::find(it, url.end(), '?');
+  path_ = std::string(it, it_next);
+  it = it_next;
+
+  if (it != url.end()) it++;
+  query_ = std::string(it, url.end());
 }
 
 std::string Url::unescape(const std::string& str) {
