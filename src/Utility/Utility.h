@@ -50,7 +50,6 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 std::string remove_whitespace(const std::string& str);
 Range parse_range(const std::string& str);
 std::string range_to_string(Range);
-std::string address(const std::string& url, uint16_t port);
 std::string to_mime_type(const std::string& extension);
 IItem::TimeStamp parse_time(const std::string& time);
 std::tm gmtime(time_t);

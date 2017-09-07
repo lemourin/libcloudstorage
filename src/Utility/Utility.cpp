@@ -114,25 +114,6 @@ std::string range_to_string(Range r) {
   return stream.str();
 }
 
-std::string address(const std::string& url, uint16_t port) {
-  const auto https = "https://";
-  const auto http = "http://";
-  int cnt = std::count(http, http + strlen(http), '/') + 1;
-  std::string hostname = url, path;
-  for (size_t i = 0; i < url.length(); i++) {
-    if (url[i] == '/') cnt--;
-    if (cnt == 0) {
-      hostname = std::string(url.begin(), url.begin() + i);
-      path = std::string(url.begin() + i, url.end());
-      break;
-    }
-  }
-  if ((hostname.substr(0, strlen(https)) == https && port != 443) ||
-      (hostname.substr(0, strlen(http)) == http && port != 80))
-    hostname += ":" + std::to_string(port);
-  return hostname + path;
-}
-
 std::string to_mime_type(const std::string& extension) {
   auto it = MIME_TYPE.find(to_lower(extension));
   if (it == std::end(MIME_TYPE))
