@@ -30,14 +30,13 @@ namespace cloudstorage {
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
     : Request(p) {
-  set([=](Request::Pointer) {
-    if (path.empty() || path.front() != '/') {
-      Error e{IHttpRequest::Forbidden, "invalid path"};
-      callback(e);
-      return done(e);
-    }
-    work(provider()->rootDirectory(), path, callback);
-  });
+  set(
+      [=](Request::Pointer) {
+        if (path.empty() || path.front() != '/')
+          return done(Error{IHttpRequest::Forbidden, "invalid path"});
+        work(provider()->rootDirectory(), path, callback);
+      },
+      callback);
 }
 
 GetItemRequest::~GetItemRequest() { cancel(); }
@@ -51,15 +50,9 @@ IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
 
 void GetItemRequest::work(IItem::Pointer item, std::string p,
                           Callback complete) {
-  if (!item) {
-    Error e{IHttpRequest::NotFound, "not found"};
-    complete(e);
-    return done(e);
-  }
-  if (p.empty() || p.size() == 1) {
-    complete(item);
-    return done(item);
-  }
+  if (!item) return done(Error{IHttpRequest::NotFound, "not found"});
+  if (p.empty() || p.size() == 1) return done(item);
+
   auto path = p.substr(1);
   auto it = path.find_first_of('/');
   std::string name = it == std::string::npos
@@ -71,12 +64,10 @@ void GetItemRequest::work(IItem::Pointer item, std::string p,
   auto request = this->shared_from_this();
   subrequest(provider()->listDirectoryAsync(
       item, [=](EitherError<std::vector<IItem::Pointer>> e) {
-        if (e.left()) {
-          complete(e.left());
+        if (e.left())
           request->done(e.left());
-        } else {
+        else
           work(getItem(*e.right(), name), rest, complete);
-        }
       }));
 }
 

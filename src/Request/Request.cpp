@@ -130,20 +130,22 @@ T Request<T>::result() {
 }
 
 template <class T>
-void Request<T>::set(Resolver r) {
+void Request<T>::set(Resolver r, Callback cb) {
   resolver_ = r;
+  callback_ = cb;
 }
 
 template <typename T>
 typename Request<T>::Wrapper::Pointer Request<T>::run() {
-  auto r = std::move(resolver_);
-  if (!r) throw std::runtime_error("resolver not set");
-  r(this->shared_from_this());
+  if (!resolver_) throw std::runtime_error("resolver not set");
+  std::move(resolver_)(this->shared_from_this());
   return util::make_unique<Wrapper>(this->shared_from_this());
 }
 
 template <class T>
 void Request<T>::done(const T& t) {
+  if (!callback_) throw std::runtime_error("no callback");
+  std::move(callback_)(t);
   value_.set_value(t);
 }
 

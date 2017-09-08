@@ -112,138 +112,124 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    if (id == rootDirectory()->id()) {
-      callback(rootDirectory());
-      return r->done(rootDirectory());
-    }
-    if (id == AUDIO_DIRECTORY_ID) {
-      IItem::Pointer i = std::make_shared<Item>(
-          AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
-          IItem::UnknownTimeStamp, IItem::FileType::Directory);
-      callback(i);
-      return r->done(i);
-    }
-    auto response_stream = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output input) { return getItemDataRequest(id, *input); },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            return r->done(e.left());
-          }
-          auto id_data = from_string(id);
-          auto item = getItemDataResponse(*response_stream, id_data.audio);
-          auto stream = std::make_shared<std::stringstream>();
-          auto request = [=](std::string format) {
-            return [=](util::Output) {
-              auto request =
-                  http()->create(youtube_dl_url_ + "/api/info", "GET");
-              request->setParameter("format", format);
-              request->setParameter("url",
-                                    "http://youtube.com/watch?v=" + id_data.id);
-              return request;
-            };
-          };
-          auto response = [=](EitherError<util::Output> e) {
-            if (e.left()) {
-              callback(e.left());
-              return r->done(e.left());
-            }
-            try {
-              Json::Value response;
-              *stream >> response;
-              for (auto v : response["info"]["formats"]) {
-                if (v["format_id"] == response["info"]["format_id"]) {
-                  auto nitem = static_cast<Item*>(item.get());
-                  auto size = v["filesize"].isNull() ? IItem::UnknownSize
-                                                     : v["filesize"].asUInt64();
-                  nitem->set_size(size);
-                  nitem->set_filename(item->filename() + "." +
-                                      v["ext"].asString());
-                  nitem->set_url(v["url"].asString());
+  r->set(
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        if (id == rootDirectory()->id()) return r->done(rootDirectory());
+        if (id == AUDIO_DIRECTORY_ID) {
+          IItem::Pointer i = std::make_shared<Item>(
+              AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
+              IItem::UnknownTimeStamp, IItem::FileType::Directory);
+          return r->done(i);
+        }
+        auto response_stream = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [=](util::Output input) { return getItemDataRequest(id, *input); },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) return r->done(e.left());
+              auto id_data = from_string(id);
+              auto item = getItemDataResponse(*response_stream, id_data.audio);
+              auto stream = std::make_shared<std::stringstream>();
+              auto request = [=](std::string format) {
+                return [=](util::Output) {
+                  auto request =
+                      http()->create(youtube_dl_url_ + "/api/info", "GET");
+                  request->setParameter("format", format);
+                  request->setParameter(
+                      "url", "http://youtube.com/watch?v=" + id_data.id);
+                  return request;
+                };
+              };
+              auto response = [=](EitherError<util::Output> e) {
+                if (e.left()) return r->done(e.left());
+                try {
+                  Json::Value response;
+                  *stream >> response;
+                  for (auto v : response["info"]["formats"]) {
+                    if (v["format_id"] == response["info"]["format_id"]) {
+                      auto nitem = static_cast<Item*>(item.get());
+                      auto size = v["filesize"].isNull()
+                                      ? IItem::UnknownSize
+                                      : v["filesize"].asUInt64();
+                      nitem->set_size(size);
+                      nitem->set_filename(item->filename() + "." +
+                                          v["ext"].asString());
+                      nitem->set_url(v["url"].asString());
+                    }
+                  }
+                  if (item->size() == IItem::UnknownSize) {
+                    auto request = http()->create(item->url(), "HEAD");
+                    auto input = std::make_shared<std::stringstream>();
+                    auto output = std::make_shared<std::stringstream>();
+                    auto error = std::make_shared<std::stringstream>();
+                    r->send(request.get(),
+                            [=](IHttpRequest::Response response) {
+                              if (IHttpRequest::isSuccess(response.http_code_))
+                                static_cast<Item*>(item.get())
+                                    ->set_size(response.content_length_);
+                              r->done(item);
+                            },
+                            input, output, error);
+                  } else {
+                    r->done(item);
+                  }
+                } catch (std::exception) {
+                  r->done(Error{IHttpRequest::Failure, stream->str()});
                 }
-              }
-              if (item->size() == IItem::UnknownSize) {
-                auto request = http()->create(item->url(), "HEAD");
-                auto input = std::make_shared<std::stringstream>();
-                auto output = std::make_shared<std::stringstream>();
-                auto error = std::make_shared<std::stringstream>();
-                r->send(request.get(),
-                        [=](IHttpRequest::Response response) {
-                          if (IHttpRequest::isSuccess(response.http_code_))
-                            static_cast<Item*>(item.get())
-                                ->set_size(response.content_length_);
-                          callback(item);
-                          r->done(item);
-                        },
-                        input, output, error);
-              } else {
-                callback(item);
+              };
+              if (item->type() == IItem::FileType::Audio)
+                r->sendRequest(request("bestaudio"), response, stream);
+              else if (item->type() == IItem::FileType::Video)
+                r->sendRequest(request("best"), response, stream);
+              else {
                 r->done(item);
               }
-            } catch (std::exception) {
-              Error err{IHttpRequest::Failure, stream->str()};
-              callback(err);
-              r->done(err);
-            }
-          };
-          if (item->type() == IItem::FileType::Audio)
-            r->sendRequest(request("bestaudio"), response, stream);
-          else if (item->type() == IItem::FileType::Video)
-            r->sendRequest(request("best"), response, stream);
-          else {
-            callback(item);
-            r->done(item);
-          }
-        },
-        response_stream);
-  });
+            },
+            response_stream);
+      },
+      callback);
   return r->run();
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range range) {
+    IItem::Pointer item, IDownloadFileCallback::Pointer cb, Range range) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Pointer r) {
-    std::string url = item->url();
-    auto download = [=](std::string url) {
-      auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
-          &IDownloadFileCallback::receivedData, callback.get(), _1, _2));
-      auto stream = std::make_shared<std::ostream>(wrapper.get());
-      r->sendRequest(
-          [=](util::Output) {
-            auto r = http()->create(url, "GET");
-            if (range != FullRange)
-              r->setHeaderParameter("Range", util::range_to_string(range));
-            return r;
-          },
-          [=](EitherError<util::Output> e) {
-            (void)wrapper;
-            if (e.left()) {
-              callback->done(e.left());
+  auto callback = cb.get();
+  r->set(
+      [=](Request<EitherError<void>>::Pointer r) {
+        std::string url = item->url();
+        auto download = [=](std::string url) {
+          auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
+              &IDownloadFileCallback::receivedData, callback, _1, _2));
+          auto stream = std::make_shared<std::ostream>(wrapper.get());
+          r->sendRequest(
+              [=](util::Output) {
+                auto r = http()->create(url, "GET");
+                if (range != FullRange)
+                  r->setHeaderParameter("Range", util::range_to_string(range));
+                return r;
+              },
+              [=](EitherError<util::Output> e) {
+                (void)wrapper;
+                if (e.left())
+                  r->done(e.left());
+                else
+                  r->done(nullptr);
+              },
+              stream,
+              std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
+        };
+        if (item->type() == IItem::FileType::Audio) {
+          r->subrequest(getItemDataAsync(item->id(), [=](EitherError<IItem> e) {
+            if (e.left())
               r->done(e.left());
-            } else {
-              callback->done(nullptr);
-              r->done(nullptr);
-            }
-          },
-          stream,
-          std::bind(&IDownloadFileCallback::progress, callback.get(), _1, _2));
-    };
-    if (item->type() == IItem::FileType::Audio) {
-      r->subrequest(getItemDataAsync(item->id(), [=](EitherError<IItem> e) {
-        if (e.left()) {
-          callback->done(e.left());
-          r->done(e.left());
+            else
+              download(e.right()->url());
+          }));
         } else {
-          download(e.right()->url());
+          download(item->url());
         }
-      }));
-    } else {
-      download(item->url());
-    }
-  });
+      },
+      [=](EitherError<void> e) { cb->done(e); });
   return r->run();
 }
 

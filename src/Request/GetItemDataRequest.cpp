@@ -31,31 +31,26 @@ namespace cloudstorage {
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id, Callback callback)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    auto response_stream = std::make_shared<std::stringstream>();
-    sendRequest(
-        [=](util::Output input) {
-          return provider()->getItemDataRequest(id, *input);
-        },
-        [=](EitherError<util::Output> r) {
-          if (r.left()) {
-            callback(r.left());
-            request->done(r.left());
-
-          } else {
-            try {
-              auto i = provider()->getItemDataResponse(*response_stream);
-              callback(i);
-              request->done(i);
-            } catch (std::exception) {
-              Error e{IHttpRequest::Failure, response_stream->str()};
-              callback(e);
-              request->done(e);
-            }
-          }
-        },
-        response_stream);
-  });
+  set(
+      [=](Request::Pointer request) {
+        auto response_stream = std::make_shared<std::stringstream>();
+        sendRequest(
+            [=](util::Output input) {
+              return provider()->getItemDataRequest(id, *input);
+            },
+            [=](EitherError<util::Output> r) {
+              if (r.left()) return request->done(r.left());
+              try {
+                request->done(
+                    provider()->getItemDataResponse(*response_stream));
+              } catch (std::exception) {
+                request->done(
+                    Error{IHttpRequest::Failure, response_stream->str()});
+              }
+            },
+            response_stream);
+      },
+      callback);
 }
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }

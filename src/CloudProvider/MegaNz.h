@@ -94,7 +94,7 @@ class MegaNz : public CloudProvider {
       IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
 
   std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
-      IItem::Pointer item, IDownloadFileCallback::Pointer, Range);
+      IItem::Pointer item, IDownloadFileCallback*, Range);
 
   void login(Request<EitherError<void>>::Pointer,
              AuthorizeRequest::AuthorizeCompleted);
@@ -108,13 +108,13 @@ class MegaNz : public CloudProvider {
 
   template <class T>
   void ensureAuthorized(typename Request<T>::Pointer,
-                        std::function<void(T)> on_error,
                         std::function<void()> on_success);
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
-  void addStreamRequest(std::shared_ptr<DownloadFileRequest>);
-  void removeStreamRequest(std::shared_ptr<DownloadFileRequest>);
+  void addStreamRequest(std::shared_ptr<ICloudProvider::DownloadFileRequest>);
+  void removeStreamRequest(
+      std::shared_ptr<ICloudProvider::DownloadFileRequest>);
 
   void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
   void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
@@ -144,7 +144,8 @@ class MegaNz : public CloudProvider {
   IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
   std::string file_url_;
-  std::unordered_set<std::shared_ptr<DownloadFileRequest>> stream_requests_;
+  std::unordered_set<std::shared_ptr<ICloudProvider::DownloadFileRequest>>
+      stream_requests_;
   std::unordered_set<std::shared_ptr<IRequest<EitherError<void>>>>
       request_listeners_;
   bool deleted_;

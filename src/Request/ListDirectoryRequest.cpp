@@ -25,28 +25,30 @@
 
 #include "CloudProvider/CloudProvider.h"
 
+using namespace std::placeholders;
+
 namespace cloudstorage {
 
 ListDirectoryRequest::ListDirectoryRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
-    ICallback::Pointer callback, std::function<bool(int)> fault_tolerant)
+    ICallback::Pointer cb, std::function<bool(int)> fault_tolerant)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    if (directory->type() != IItem::FileType::Directory) {
-      Error e{IHttpRequest::Forbidden, "trying to list non directory"};
-      callback->done(e);
-      request->done(e);
-    } else {
-      work(directory, "", callback, fault_tolerant);
-    }
-  });
+  auto callback = cb.get();
+  set(
+      [=](Request::Pointer request) {
+        if (directory->type() != IItem::FileType::Directory)
+          request->done(
+              Error{IHttpRequest::Forbidden, "trying to list non directory"});
+        else
+          work(directory, "", callback, fault_tolerant);
+      },
+      [=](EitherError<std::vector<IItem::Pointer>> e) { cb->done(e); });
 }
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
 void ListDirectoryRequest::work(IItem::Pointer directory,
-                                std::string page_token,
-                                ICallback::Pointer callback,
+                                std::string page_token, ICallback* callback,
                                 std::function<bool(int)> fault_tolerant) {
   auto output_stream = std::make_shared<std::stringstream>();
   auto request = this->shared_from_this();
@@ -66,17 +68,13 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
             if (!page_token.empty())
               work(directory, page_token, callback, fault_tolerant);
             else {
-              callback->done(result_);
               request->done(result_);
             }
           } else {
-            callback->done(e.left());
             request->done(e.left());
           }
         } catch (std::exception) {
-          Error err{IHttpRequest::Failure, output_stream->str()};
-          callback->done(err);
-          request->done(err);
+          request->done(Error{IHttpRequest::Failure, output_stream->str()});
         }
       },
       output_stream);

@@ -32,35 +32,29 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                                const std::string& name,
                                                CreateDirectoryCallback callback)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    if (parent->type() != IItem::FileType::Directory) {
-      Error e{IHttpRequest::Forbidden, "parent not a directory"};
-      callback(e);
-      return done(e);
-    }
-    auto output = std::make_shared<std::stringstream>();
-    sendRequest(
-        [=](util::Output stream) {
-          return provider()->createDirectoryRequest(*parent, name, *stream);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            request->done(e.left());
-          } else {
-            try {
-              auto i = provider()->createDirectoryResponse(*output);
-              callback(i);
-              request->done(i);
-            } catch (std::exception) {
-              Error err{IHttpRequest::Failure, output->str()};
-              callback(err);
-              request->done(err);
-            }
-          }
-        },
-        output);
-  });
+  set(
+      [=](Request::Pointer request) {
+        if (parent->type() != IItem::FileType::Directory) {
+          Error e{IHttpRequest::Forbidden, "parent not a directory"};
+          callback(e);
+          return done(e);
+        }
+        auto output = std::make_shared<std::stringstream>();
+        sendRequest(
+            [=](util::Output stream) {
+              return provider()->createDirectoryRequest(*parent, name, *stream);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) return request->done(e.left());
+              try {
+                request->done(provider()->createDirectoryResponse(*output));
+              } catch (std::exception) {
+                request->done(Error{IHttpRequest::Failure, output->str()});
+              }
+            },
+            output);
+      },
+      callback);
 }
 
 CreateDirectoryRequest::~CreateDirectoryRequest() { cancel(); }

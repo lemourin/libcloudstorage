@@ -32,29 +32,32 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
     : Request(p), state_(provider()->auth()->state()), server_cancelled_() {
   if (!provider()->auth_callback())
     throw std::logic_error("CloudProvider's callback can't be null.");
-  set([=](Request::Pointer request) {
-    auto on_complete = [=](EitherError<void> result) {
-      std::unique_lock<std::mutex> lock(
-          provider()->current_authorization_mutex_);
-      while (!provider()->auth_callbacks_.empty()) {
-        {
-          auto v = std::move(provider()->auth_callbacks_.begin()->second);
-          provider()->auth_callbacks_.erase(
-              provider()->auth_callbacks_.begin());
+  set(
+      [=](Request::Pointer request) {
+        auto on_complete = [=](EitherError<void> result) {
+          std::unique_lock<std::mutex> lock(
+              provider()->current_authorization_mutex_);
+          while (!provider()->auth_callbacks_.empty()) {
+            {
+              auto v = std::move(provider()->auth_callbacks_.begin()->second);
+              provider()->auth_callbacks_.erase(
+                  provider()->auth_callbacks_.begin());
+              lock.unlock();
+              for (auto&& r : v) r(result);
+            }
+            lock.lock();
+          }
+          provider()->current_authorization_ = nullptr;
           lock.unlock();
-          for (auto&& r : v) r(result);
-        }
-        lock.lock();
-      }
-      provider()->current_authorization_ = nullptr;
-      lock.unlock();
-      provider()->auth_callback()->done(*provider(), result);
-      request->done(result);
-    };
-    callback ? callback(std::static_pointer_cast<AuthorizeRequest>(request),
-                        on_complete)
-             : oauth2Authorization(on_complete);
-  });
+          request->done(result);
+        };
+        callback ? callback(std::static_pointer_cast<AuthorizeRequest>(request),
+                            on_complete)
+                 : oauth2Authorization(on_complete);
+      },
+      [=](EitherError<void> e) {
+        provider()->auth_callback()->done(*provider(), e);
+      });
 }
 
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }

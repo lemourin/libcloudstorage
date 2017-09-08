@@ -32,36 +32,31 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
     const std::string& token, ListDirectoryPageCallback completed,
     std::function<bool(int)> fault_tolerant)
     : Request(p) {
-  set([=](Request<EitherError<PageData>>::Pointer r) {
-    if (directory->type() != IItem::FileType::Directory) {
-      Error e{IHttpRequest::Bad, "file not a directory"};
-      completed(e);
-      return r->done(e);
-    }
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output input) {
-          return r->provider()->listDirectoryRequest(*directory, token, *input);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            if (!fault_tolerant(e.left()->code_)) {
-              completed(e.left());
-              return r->done(e.left());
-            } else {
-              completed(PageData{{}, ""});
-              return r->done(PageData{{}, ""});
-            }
-          }
-          std::string next_token;
-          auto lst = r->provider()->listDirectoryResponse(*directory, *output,
-                                                          next_token);
-          PageData result{lst, next_token};
-          completed(result);
-          r->done(result);
-        },
-        output);
-  });
+  set(
+      [=](Request<EitherError<PageData>>::Pointer r) {
+        if (directory->type() != IItem::FileType::Directory)
+          return r->done(Error{IHttpRequest::Bad, "file not a directory"});
+        auto output = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [=](util::Output input) {
+              return r->provider()->listDirectoryRequest(*directory, token,
+                                                         *input);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) {
+                if (!fault_tolerant(e.left()->code_))
+                  return r->done(e.left());
+                else
+                  return r->done(PageData{{}, ""});
+              }
+              std::string next_token;
+              auto lst = r->provider()->listDirectoryResponse(
+                  *directory, *output, next_token);
+              r->done(PageData{lst, next_token});
+            },
+            output);
+      },
+      completed);
 }
 
 }  // namespace cloudstorage

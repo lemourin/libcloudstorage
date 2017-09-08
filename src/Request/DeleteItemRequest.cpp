@@ -31,24 +31,22 @@ DeleteItemRequest::DeleteItemRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      DeleteItemCallback callback)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    auto output = std::make_shared<std::stringstream>();
-    sendRequest(
-        [=](util::Output stream) {
-          return provider()->deleteItemRequest(*item, *stream);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            request->done(e.left());
-          } else {
-            callback(nullptr);
-            request->done(nullptr);
-          }
-        },
-        output);
-
-  });
+  set(
+      [=](Request::Pointer request) {
+        auto output = std::make_shared<std::stringstream>();
+        sendRequest(
+            [=](util::Output stream) {
+              return provider()->deleteItemRequest(*item, *stream);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left())
+                request->done(e.left());
+              else
+                request->done(nullptr);
+            },
+            output);
+      },
+      callback);
 }
 
 DeleteItemRequest::~DeleteItemRequest() { cancel(); }

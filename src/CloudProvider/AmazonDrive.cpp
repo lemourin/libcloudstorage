@@ -100,12 +100,14 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Pointer r) {
-    move(r, http(), metadata_url(),
-         std::make_shared<std::vector<std::string>>(
-             static_cast<Item*>(source.get())->parents()),
-         source, destination, callback);
-  });
+  r->set(
+      [=](Request<EitherError<void>>::Pointer r) {
+        move(r, http(), metadata_url(),
+             std::make_shared<std::vector<std::string>>(
+                 static_cast<Item*>(source.get())->parents()),
+             source, destination, callback);
+      },
+      callback);
   return r->run();
 }
 

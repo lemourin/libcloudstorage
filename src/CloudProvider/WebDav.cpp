@@ -85,28 +85,25 @@ ICloudProvider::CreateDirectoryRequest::Pointer WebDav::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    auto response = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output) {
-          return http()->create(
-              endpoint() + parent->id() + util::Url::escape(name) + "/",
-              "MKCOL");
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            r->done(e.left());
-          } else {
-            IItem::Pointer item = util::make_unique<Item>(
-                name, parent->id() + name + "/", 0, IItem::UnknownTimeStamp,
-                IItem::FileType::Directory);
-            callback(item);
-            r->done(item);
-          }
-        },
-        response);
-  });
+  r->set(
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        auto response = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [=](util::Output) {
+              return http()->create(
+                  endpoint() + parent->id() + util::Url::escape(name) + "/",
+                  "MKCOL");
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) return r->done(e.left());
+              IItem::Pointer item = util::make_unique<Item>(
+                  name, parent->id() + name + "/", 0, IItem::UnknownTimeStamp,
+                  IItem::FileType::Directory);
+              r->done(item);
+            },
+            response);
+      },
+      callback);
   return r->run();
 }
 

@@ -32,23 +32,22 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                                      const std::string& name,
                                      RenameItemCallback callback)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    auto output = std::make_shared<std::stringstream>();
-    sendRequest(
-        [=](util::Output stream) {
-          return p->renameItemRequest(*item, name, *stream);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            request->done(e.left());
-          } else {
-            callback(nullptr);
-            request->done(nullptr);
-          }
-        },
-        output);
-  });
+  set(
+      [=](Request::Pointer request) {
+        auto output = std::make_shared<std::stringstream>();
+        sendRequest(
+            [=](util::Output stream) {
+              return p->renameItemRequest(*item, name, *stream);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left())
+                request->done(e.left());
+              else
+                request->done(nullptr);
+            },
+            output);
+      },
+      callback);
 }
 
 RenameItemRequest::~RenameItemRequest() { cancel(); }

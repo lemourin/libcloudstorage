@@ -47,6 +47,7 @@ class Request : public IRequest<ReturnValue>,
   using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
   using RequestFactory =
       std::function<IHttpRequest::Pointer(std::shared_ptr<std::ostream>)>;
+  using Callback = std::function<void(ReturnValue)>;
   using Resolver = std::function<void(std::shared_ptr<Request>)>;
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
   using RequestCompleted = std::function<void(EitherError<util::Output>)>;
@@ -71,7 +72,7 @@ class Request : public IRequest<ReturnValue>,
   void cancel() override;
   ReturnValue result() override;
 
-  void set(Resolver);
+  void set(Resolver, Callback);
   typename Wrapper::Pointer run();
   void done(const ReturnValue&);
 
@@ -126,6 +127,7 @@ class Request : public IRequest<ReturnValue>,
   std::promise<ReturnValue> value_;
   std::shared_future<ReturnValue> future_;
   Resolver resolver_;
+  Callback callback_;
   std::mutex provider_mutex_;
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;

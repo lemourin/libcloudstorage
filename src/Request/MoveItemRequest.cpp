@@ -32,28 +32,25 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
                                  IItem::Pointer destination,
                                  MoveItemCallback callback)
     : Request(p) {
-  set([=](Request::Pointer request) {
-    if (destination->type() != IItem::FileType::Directory) {
-      Error e{IHttpRequest::Forbidden, "destination not a directory"};
-      callback(e);
-      return request->done(e);
-    }
-    auto output = std::make_shared<std::stringstream>();
-    sendRequest(
-        [=](util::Output stream) {
-          return p->moveItemRequest(*source, *destination, *stream);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            request->done(e.left());
-          } else {
-            callback(nullptr);
-            request->done(nullptr);
-          }
-        },
-        output);
-  });
+  set(
+      [=](Request::Pointer request) {
+        if (destination->type() != IItem::FileType::Directory)
+          return request->done(
+              Error{IHttpRequest::Forbidden, "destination not a directory"});
+        auto output = std::make_shared<std::stringstream>();
+        sendRequest(
+            [=](util::Output stream) {
+              return p->moveItemRequest(*source, *destination, *stream);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left())
+                request->done(e.left());
+              else
+                request->done(nullptr);
+            },
+            output);
+      },
+      callback);
 }
 
 MoveItemRequest::~MoveItemRequest() { cancel(); }

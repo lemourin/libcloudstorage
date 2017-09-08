@@ -31,25 +31,25 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
                                          ExchangeCodeCallback callback)
     : Request(p) {
-  set([=](Request<EitherError<Token>>::Pointer r) {
-    std::stringstream stream;
-    if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream)) {
-      Token token{authorization_code, ""};
-      callback(token);
-      return r->done(token);
-    }
-    auto input = std::make_shared<std::stringstream>(),
-         output = std::make_shared<std::stringstream>(),
-         error = std::make_shared<std::stringstream>();
-    IHttpRequest::Pointer request;
-    {
-      auto lock = provider()->auth_lock();
-      auto previous_code = provider()->auth()->authorization_code();
-      provider()->auth()->set_authorization_code(authorization_code);
-      request = provider()->auth()->exchangeAuthorizationCodeRequest(*input);
-      provider()->auth()->set_authorization_code(previous_code);
-    }
-    r->send(request.get(),
+  set(
+      [=](Request<EitherError<Token>>::Pointer r) {
+        std::stringstream stream;
+        if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
+          return r->done(Token{authorization_code, ""});
+        auto input = std::make_shared<std::stringstream>(),
+             output = std::make_shared<std::stringstream>(),
+             error = std::make_shared<std::stringstream>();
+        IHttpRequest::Pointer request;
+        {
+          auto lock = provider()->auth_lock();
+          auto previous_code = provider()->auth()->authorization_code();
+          provider()->auth()->set_authorization_code(authorization_code);
+          request =
+              provider()->auth()->exchangeAuthorizationCodeRequest(*input);
+          provider()->auth()->set_authorization_code(previous_code);
+        }
+        r->send(
+            request.get(),
             [=](IHttpRequest::Response response) {
               if (IHttpRequest::isSuccess(response.http_code_)) {
                 try {
@@ -59,21 +59,17 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                           *output);
                   lock.unlock();
                   Token token{auth_token->refresh_token_, auth_token->token_};
-                  callback(token);
                   r->done(token);
                 } catch (std::exception) {
-                  Error err{IHttpRequest::Failure, output->str()};
-                  callback(err);
-                  r->done(err);
+                  r->done(Error{IHttpRequest::Failure, output->str()});
                 }
               } else {
-                Error e{response.http_code_, error->str()};
-                callback(e);
-                r->done(e);
+                r->done(Error{response.http_code_, error->str()});
               }
             },
             input, output, error);
-  });
+      },
+      callback);
 }
 
 ExchangeCodeRequest::~ExchangeCodeRequest() { cancel(); }

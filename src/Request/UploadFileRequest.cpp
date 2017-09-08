@@ -29,36 +29,37 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
-UploadFileRequest::UploadFileRequest(
-    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
-    const std::string& filename, UploadFileRequest::ICallback::Pointer callback)
+UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
+                                     IItem::Pointer directory,
+                                     const std::string& filename,
+                                     UploadFileRequest::ICallback::Pointer cb)
     : Request(p),
-      stream_wrapper_(std::bind(&ICallback::putData, callback.get(), _1, _2),
-                      callback->size()) {
-  set([=](Request::Pointer request) {
-    auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
-    sendRequest(
-        [=](util::Output input) {
-          callback->reset();
-          stream_wrapper_.reset();
-          input->rdbuf(&stream_wrapper_);
-          return provider()->uploadFileRequest(*directory, filename,
-                                               stream_wrapper_.prefix_,
-                                               stream_wrapper_.suffix_);
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback->done(e.left());
-            request->done(e.left());
-          } else {
-            callback->done(nullptr);
-            request->done(nullptr);
-          }
-        },
-        response_stream, nullptr,
-        std::bind(&UploadFileRequest::ICallback::progress, callback.get(), _1,
-                  _2));
-  });
+      stream_wrapper_(std::bind(&ICallback::putData, cb.get(), _1, _2),
+                      cb->size()) {
+  auto callback = cb.get();
+  set(
+      [=](Request::Pointer request) {
+        auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
+        sendRequest(
+            [=](util::Output input) {
+              callback->reset();
+              stream_wrapper_.reset();
+              input->rdbuf(&stream_wrapper_);
+              return provider()->uploadFileRequest(*directory, filename,
+                                                   stream_wrapper_.prefix_,
+                                                   stream_wrapper_.suffix_);
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left())
+                request->done(e.left());
+              else
+                request->done(nullptr);
+            },
+            response_stream, nullptr,
+            std::bind(&UploadFileRequest::ICallback::progress, callback, _1,
+                      _2));
+      },
+      [=](EitherError<void> e) { cb->done(e); });
 }
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }

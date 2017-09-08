@@ -52,69 +52,63 @@ bool Box::reauthorize(int code) const {
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [this, id](util::Output) {
-          return http()->create(endpoint() + "/2.0/files/" + id, "GET");
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            r->sendRequest(
-                [this, id](util::Output) {
-                  return http()->create(endpoint() + "/2.0/folders/" + id,
-                                        "GET");
-                },
-                [=](EitherError<util::Output> e) {
-                  if (e.left()) {
-                    callback(e.left());
-                    r->done(e.left());
-                  } else {
-                    try {
-                      Json::Value response;
-                      *output >> response;
-                      auto item = toItem(response);
-                      callback(item);
-                      r->done(item);
-                    } catch (std::exception) {
-                      Error err{IHttpRequest::Failure, output->str()};
-                      callback(err);
-                      r->done(err);
-                    }
-                  }
-                },
-                output);
-          } else {
-            try {
-              Json::Value response;
-              *output >> response;
-              auto item = toItem(response);
-              r->sendRequest(
-                  [this, id](util::Output) {
-                    auto request = http()->create(
-                        endpoint() + "/2.0/files/" + id + "/content", "GET",
-                        false);
-                    return request;
-                  },
-                  [=](EitherError<util::Output> e) {
-                    if (e.left() && IHttpRequest::isRedirect(e.left()->code_)) {
-                      static_cast<Item*>(item.get())
-                          ->set_url(e.left()->description_);
-                    }
-                    callback(item);
-                    r->done(item);
-                  },
-                  output);
-            } catch (Json::Exception e) {
-              Error err{IHttpRequest::Failure, e.what()};
-              callback(err);
-              r->done(err);
-            }
-          }
-        },
-        output);
-
-  });
+  r->set(
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        auto output = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [this, id](util::Output) {
+              return http()->create(endpoint() + "/2.0/files/" + id, "GET");
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) {
+                r->sendRequest(
+                    [this, id](util::Output) {
+                      return http()->create(endpoint() + "/2.0/folders/" + id,
+                                            "GET");
+                    },
+                    [=](EitherError<util::Output> e) {
+                      if (e.left())
+                        r->done(e.left());
+                      else {
+                        try {
+                          Json::Value response;
+                          *output >> response;
+                          r->done(toItem(response));
+                        } catch (std::exception) {
+                          r->done(Error{IHttpRequest::Failure, output->str()});
+                        }
+                      }
+                    },
+                    output);
+              } else {
+                try {
+                  Json::Value response;
+                  *output >> response;
+                  auto item = toItem(response);
+                  r->sendRequest(
+                      [this, id](util::Output) {
+                        auto request = http()->create(
+                            endpoint() + "/2.0/files/" + id + "/content", "GET",
+                            false);
+                        return request;
+                      },
+                      [=](EitherError<util::Output> e) {
+                        if (e.left() &&
+                            IHttpRequest::isRedirect(e.left()->code_)) {
+                          static_cast<Item*>(item.get())
+                              ->set_url(e.left()->description_);
+                        }
+                        r->done(item);
+                      },
+                      output);
+                } catch (Json::Exception e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              }
+            },
+            output);
+      },
+      callback);
   return r->run();
 }
 

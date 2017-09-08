@@ -54,72 +54,59 @@ bool Dropbox::reauthorize(int code) const {
 ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set([=](Request<EitherError<IItem>>::Pointer r) {
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output input) {
-          auto request =
-              http()->create(endpoint() + "/2/files/get_metadata", "POST");
-          request->setHeaderParameter("Content-Type", "application/json");
-          Json::Value parameter;
-          parameter["path"] = id;
-          parameter["include_media_info"] = true;
-          *input << Json::FastWriter().write(parameter);
-          return request;
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback(e.left());
-            r->done(e.left());
-          } else {
-            try {
-              Json::Value response;
-              *output >> response;
-              auto item = toItem(response);
-              if (item->type() == IItem::FileType::Directory) {
-                callback(item);
-                return r->done(item);
-              }
-              r->sendRequest(
-                  [=](util::Output input) {
-                    auto request = http()->create(
-                        endpoint() + "/2/files/get_temporary_link", "POST");
-                    request->setHeaderParameter("Content-Type",
-                                                "application/json");
-                    Json::Value parameter;
-                    parameter["path"] = id;
-                    *input << Json::FastWriter().write(parameter);
-                    return request;
-                  },
-                  [=](EitherError<util::Output> e) {
-                    if (e.left()) {
-                      callback(item);
-                      r->done(item);
-                    } else {
+  r->set(
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        auto output = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [=](util::Output input) {
+              auto request =
+                  http()->create(endpoint() + "/2/files/get_metadata", "POST");
+              request->setHeaderParameter("Content-Type", "application/json");
+              Json::Value parameter;
+              parameter["path"] = id;
+              parameter["include_media_info"] = true;
+              *input << Json::FastWriter().write(parameter);
+              return request;
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) return r->done(e.left());
+              try {
+                Json::Value response;
+                *output >> response;
+                auto item = toItem(response);
+                if (item->type() == IItem::FileType::Directory)
+                  return r->done(item);
+                r->sendRequest(
+                    [=](util::Output input) {
+                      auto request = http()->create(
+                          endpoint() + "/2/files/get_temporary_link", "POST");
+                      request->setHeaderParameter("Content-Type",
+                                                  "application/json");
+                      Json::Value parameter;
+                      parameter["path"] = id;
+                      *input << Json::FastWriter().write(parameter);
+                      return request;
+                    },
+                    [=](EitherError<util::Output> e) {
+                      if (e.left()) return r->done(item);
                       try {
                         Json::Value response;
                         *output >> response;
                         static_cast<Item*>(item.get())
                             ->set_url(response["link"].asString());
-                        callback(item);
                         r->done(item);
                       } catch (std::exception) {
-                        Error err{IHttpRequest::Failure, output->str()};
-                        callback(err);
-                        r->done(err);
+                        r->done(Error{IHttpRequest::Failure, output->str()});
                       }
-                    }
-                  },
-                  output);
-            } catch (std::exception) {
-              Error err{IHttpRequest::Failure, output->str()};
-              callback(err);
-              r->done(err);
-            }
-          }
-        },
-        output);
-  });
+                    },
+                    output);
+              } catch (std::exception) {
+                r->done(Error{IHttpRequest::Failure, output->str()});
+              }
+            },
+            output);
+      },
+      callback);
   return r->run();
 }
 

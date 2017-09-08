@@ -37,14 +37,11 @@ namespace cloudstorage {
 
 namespace {
 void upload(Request<EitherError<void>>::Pointer r, int sent,
-            IUploadFileCallback::Pointer callback, Json::Value response) {
+            IUploadFileCallback* callback, Json::Value response) {
   auto output = std::make_shared<std::stringstream>();
   int size = callback->size();
   auto length = std::make_shared<int>(0);
-  if (sent >= size) {
-    callback->done(nullptr);
-    return r->done(nullptr);
-  }
+  if (sent >= size) return r->done(nullptr);
   r->sendRequest(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
@@ -59,12 +56,10 @@ void upload(Request<EitherError<void>>::Pointer r, int sent,
         return request;
       },
       [=](EitherError<util::Output> e) {
-        if (e.left()) {
-          callback->done(e.left());
+        if (e.left())
           r->done(e.left());
-        } else {
+        else
           upload(r, sent + *length, callback, response);
-        }
       },
       output, nullptr,
       [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
@@ -79,34 +74,32 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
-    IUploadFileCallback::Pointer callback) {
+    IUploadFileCallback::Pointer cb) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set([=](Request<EitherError<void>>::Pointer r) {
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output) {
-          return http()->create(
-              endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +
-                  util::Url::escape(filename) + ":/upload.createSession",
-              "POST");
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) {
-            callback->done(e.left());
-            return r->done(e.left());
-          }
-          try {
-            Json::Value response;
-            *output >> response;
-            upload(r, 0, callback, response);
-          } catch (std::exception) {
-            Error err{IHttpRequest::Failure, output->str()};
-            callback->done(err);
-            r->done(err);
-          }
-        },
-        output);
-  });
+  auto callback = cb.get();
+  r->set(
+      [=](Request<EitherError<void>>::Pointer r) {
+        auto output = std::make_shared<std::stringstream>();
+        r->sendRequest(
+            [=](util::Output) {
+              return http()->create(
+                  endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +
+                      util::Url::escape(filename) + ":/upload.createSession",
+                  "POST");
+            },
+            [=](EitherError<util::Output> e) {
+              if (e.left()) return r->done(e.left());
+              try {
+                Json::Value response;
+                *output >> response;
+                upload(r, 0, callback, response);
+              } catch (std::exception) {
+                r->done(Error{IHttpRequest::Failure, output->str()});
+              }
+            },
+            output);
+      },
+      [=](EitherError<void> e) { cb->done(e); });
   return r->run();
 }
 
