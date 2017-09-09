@@ -40,9 +40,10 @@ class Dropbox : public CloudProvider {
   bool reauthorize(int code,
                    const IHttpRequest::HeaderParameters&) const override;
 
-  GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
-                                               GetItemDataCallback) override;
-
+  IHttpRequest::Pointer getItemUrlRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer getItemDataRequest(
+      const std::string&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -68,6 +69,8 @@ class Dropbox : public CloudProvider {
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   IItem::Pointer createDirectoryResponse(std::istream&) const override;
+  std::string getItemUrlResponse(std::istream& response) const override;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
 

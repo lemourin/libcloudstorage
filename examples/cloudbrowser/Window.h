@@ -177,7 +177,7 @@ class Window : public QQuickView {
   ICloudProvider::ListDirectoryRequest::Pointer list_directory_request_;
   ICloudProvider::DownloadFileRequest::Pointer download_request_;
   ICloudProvider::UploadFileRequest::Pointer upload_request_;
-  ICloudProvider::GetItemDataRequest::Pointer item_data_request_;
+  ICloudProvider::GetItemUrlRequest::Pointer url_request_;
   ICloudProvider::DeleteItemRequest::Pointer delete_item_request_;
   ICloudProvider::CreateDirectoryRequest::Pointer create_directory_request_;
   ICloudProvider::MoveItemRequest::Pointer move_item_request_;

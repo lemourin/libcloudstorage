@@ -39,7 +39,6 @@ class MockProvider : public ICloudProvider {
     std::string extension() const override { return ""; }
     std::string id() const override { return filename_; }
     TimeStamp timestamp() const override { return UnknownTimeStamp; }
-    std::string url() const override { return ""; }
     size_t size() const override { return 0; }
     bool is_hidden() const override { return false; }
     FileType type() const override { return type_; }
@@ -147,6 +146,8 @@ class MockProvider : public ICloudProvider {
 
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;
+  GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
+                                             GetItemUrlCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, IListDirectoryCallback::Pointer) override;
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,

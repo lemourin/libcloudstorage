@@ -224,6 +224,7 @@ class Either<Left, void> {
 };
 
 using ExchangeCodeCallback = std::function<void(EitherError<Token>)>;
+using GetItemUrlCallback = std::function<void(EitherError<std::string>)>;
 using GetItemCallback = std::function<void(EitherError<IItem>)>;
 using GetItemDataCallback = std::function<void(EitherError<IItem>)>;
 using DeleteItemCallback = std::function<void(EitherError<void>)>;

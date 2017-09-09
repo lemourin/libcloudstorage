@@ -153,7 +153,9 @@ class IHttpRequest {
                     std::shared_ptr<std::ostream> error_stream = nullptr,
                     ICallback::Pointer = nullptr) const = 0;
 
-  static bool isSuccess(int code) { return code / 100 == 2; }
+  static bool isSuccess(int code) {
+    return code / 100 == 2 || isRedirect(code);
+  }
   static bool isRedirect(int code) { return code / 100 == 3; }
   static bool isClientError(int code) {
     return code / 100 == 4 || code / 100 == 5;

@@ -302,7 +302,7 @@ void Window::cancelRequests() {
   if (list_directory_request_) list_directory_request_->cancel();
   if (download_request_) download_request_->cancel();
   if (upload_request_) upload_request_->cancel();
-  if (item_data_request_) item_data_request_->cancel();
+  if (url_request_) url_request_->cancel();
   if (delete_item_request_) delete_item_request_->cancel();
   if (create_directory_request_) create_directory_request_->cancel();
   if (move_item_request_) move_item_request_->cancel();
@@ -345,9 +345,15 @@ void Window::play(int item_id) {
   if (item->item()->type() != IItem::FileType::Audio)
     contentItem()->setFocus(false);
   last_played_ = item_id;
-  item_data_request_ = cloud_provider_->getItemDataAsync(
-      item->item()->id(), [this](EitherError<IItem> i) {
-        if (i.right()) emit runPlayerFromUrl(i.right()->url().c_str());
+  url_request_ = cloud_provider_->getItemUrlAsync(
+      item->item(), [this](EitherError<std::string> i) {
+        if (i.right())
+          emit runPlayerFromUrl(i.right()->c_str());
+        else {
+          auto lock = stream_lock();
+          std::cerr << "[FAIL] Failed to get url: " << i.left()->description_
+                    << "\n";
+        }
       });
 }
 
@@ -466,8 +472,11 @@ ItemModel::ItemModel(IItem::Pointer item, std::shared_ptr<ICloudProvider> p,
           [=]() {
             auto tinfo = thread_info_;
             auto item = item_;
+            auto provider = provider_;
             thumbnail_thread_ = std::thread([=] {
-              auto thumbnail = cloudstorage::generate_thumbnail(item);
+              auto url = provider->getItemUrlAsync(item)->result();
+              if (url.left()) return;
+              auto thumbnail = cloudstorage::generate_thumbnail(*url.right());
               std::lock_guard<std::mutex> lock(tinfo->lock_);
               if (!tinfo->nuked_ && thumbnail.right()) {
                 auto data = *thumbnail.right();

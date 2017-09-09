@@ -58,6 +58,8 @@ class CloudProvider : public ICloudProvider,
 
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
+  GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
+                                             GetItemUrlCallback) override;
   ExchangeCodeRequest::Pointer exchangeCodeAsync(const std::string&,
                                                  ExchangeCodeCallback) override;
   ListDirectoryRequest::Pointer listDirectoryAsync(
@@ -109,6 +111,9 @@ class CloudProvider : public ICloudProvider,
    */
   virtual IHttpRequest::Pointer getItemDataRequest(
       const std::string& id, std::ostream& input_stream) const;
+
+  virtual IHttpRequest::Pointer getItemUrlRequest(
+      const IItem&, std::ostream& input_stream) const;
 
   /**
    * Used by default implementation of listDirectoryAsync.
@@ -202,6 +207,8 @@ class CloudProvider : public ICloudProvider,
    * @return item object
    */
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
+
+  virtual std::string getItemUrlResponse(std::istream& response) const;
 
   /**
    * Used by default implementation of listDirectoryAsync, should extract items

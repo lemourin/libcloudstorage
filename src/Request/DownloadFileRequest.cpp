@@ -80,7 +80,6 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
   auto callback = cb.get();
   set(
       [=](Request<EitherError<void>>::Pointer r) {
-        std::string url = file->url();
         auto download = [=](std::string url) {
           auto stream = std::make_shared<std::ostream>(&stream_wrapper_);
           r->sendRequest(
@@ -99,17 +98,11 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
               stream,
               std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
         };
-        if (file->url().empty()) {
-          r->subrequest(provider()->getItemDataAsync(
-              file->id(), [=](EitherError<IItem> e) {
-                if (e.left())
-                  r->done(e.left());
-                else
-                  download(e.right()->url());
-              }));
-        } else {
-          download(file->url());
-        }
+        r->subrequest(
+            provider()->getItemUrlAsync(file, [=](EitherError<std::string> e) {
+              if (e.left()) return r->done(e.left());
+              download(*e.right());
+            }));
       },
       [=](EitherError<void> e) { cb->done(e); });
 }

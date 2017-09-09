@@ -49,6 +49,19 @@ bool Box::reauthorize(int code, const IHttpRequest::HeaderParameters&) const {
   return IHttpRequest::isClientError(code) && code != IHttpRequest::NotFound;
 }
 
+IHttpRequest::Pointer Box::getItemUrlRequest(const IItem& item,
+                                             std::ostream&) const {
+  auto request = http()->create(
+      endpoint() + "/2.0/files/" + item.id() + "/content", "GET", false);
+  return request;
+}
+
+std::string Box::getItemUrlResponse(std::istream& response) const {
+  std::string url;
+  response >> url;
+  return url;
+}
+
 ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
@@ -80,30 +93,6 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
                       }
                     },
                     output);
-              } else {
-                try {
-                  Json::Value response;
-                  *output >> response;
-                  auto item = toItem(response);
-                  r->sendRequest(
-                      [this, id](util::Output) {
-                        auto request = http()->create(
-                            endpoint() + "/2.0/files/" + id + "/content", "GET",
-                            false);
-                        return request;
-                      },
-                      [=](EitherError<util::Output> e) {
-                        if (e.left() &&
-                            IHttpRequest::isRedirect(e.left()->code_)) {
-                          static_cast<Item*>(item.get())
-                              ->set_url(e.left()->description_);
-                        }
-                        r->done(item);
-                      },
-                      output);
-                } catch (Json::Exception e) {
-                  r->done(Error{IHttpRequest::Failure, e.what()});
-                }
               }
             },
             output);

@@ -45,69 +45,30 @@ bool PCloud::reauthorize(int, const IHttpRequest::HeaderParameters& h) const {
   return (it != h.end() && (it->second == "1000" || it->second == "2000"));
 }
 
-ICloudProvider::GetItemDataRequest::Pointer PCloud::getItemDataAsync(
-    const std::string& id, GetItemDataCallback callback) {
-  using RequestType = Request<EitherError<IItem>>;
-  auto r = std::make_shared<RequestType>(shared_from_this());
-  auto get_history = [=](RequestType::Pointer r,
-                         std::function<void(EitherError<IItem>)> f) {
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output) {
-          auto r = http()->create(endpoint() + "/checksumfile");
-          r->setParameter("fileid", id);
-          return r;
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) return f(e.left());
-          try {
-            Json::Value json;
-            *output >> json;
-            auto entries = json["entries"];
-            f(toItem(entries[entries.size() - 1]["metadata"]));
-          } catch (std::exception e) {
-            f(Error{IHttpRequest::Failure, e.what()});
-          }
-        },
-        output);
-  };
-  auto get_link = [=](RequestType::Pointer r, const std::string& path,
-                      std::function<void(EitherError<std::string>)> f) {
-    auto output = std::make_shared<std::stringstream>();
-    r->sendRequest(
-        [=](util::Output) {
-          auto r = http()->create(endpoint() + path);
-          r->setParameter("fileid", id);
-          return r;
-        },
-        [=](EitherError<util::Output> e) {
-          if (e.left()) return f(e.left());
-          try {
-            Json::Value json;
-            *output >> json;
-            f("https://" + json["hosts"][0].asString() +
-              json["path"].asString());
-          } catch (std::exception e) {
-            f(Error{IHttpRequest::Failure, e.what()});
-          }
-        },
-        output);
-  };
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        get_history(r, [=](EitherError<IItem> e) {
-          if (e.left()) return r->done(e);
-          auto i = e.right();
-          if (i->type() == IItem::FileType::Directory) return r->done(e);
-          get_link(r, "/getfilelink", [=](EitherError<std::string> e) {
-            if (auto str = e.right())
-              static_cast<Item*>(i.get())->set_url(*str);
-            r->done(i);
-          });
-        });
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
+                                                std::ostream&) const {
+  auto r = http()->create(endpoint() + "/getfilelink");
+  r->setParameter("fileid", item.id());
+  return r;
+}
+
+std::string PCloud::getItemUrlResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return "https://" + json["hosts"][0].asString() + json["path"].asString();
+}
+
+IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string& id,
+                                                 std::ostream&) const {
+  auto r = http()->create(endpoint() + "/checksumfile");
+  r->setParameter("fileid", id);
+  return r;
+}
+
+IItem::Pointer PCloud::getItemDataResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json["metadata"]);
 }
 
 IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,

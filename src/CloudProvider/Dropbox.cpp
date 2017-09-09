@@ -52,63 +52,38 @@ bool Dropbox::reauthorize(int code,
   return code == IHttpRequest::Bad || code == IHttpRequest::Unauthorized;
 }
 
-ICloudProvider::GetItemDataRequest::Pointer Dropbox::getItemDataAsync(
-    const std::string& id, GetItemDataCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output input) {
-              auto request =
-                  http()->create(endpoint() + "/2/files/get_metadata", "POST");
-              request->setHeaderParameter("Content-Type", "application/json");
-              Json::Value parameter;
-              parameter["path"] = id;
-              parameter["include_media_info"] = true;
-              *input << Json::FastWriter().write(parameter);
-              return request;
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                Json::Value response;
-                *output >> response;
-                auto item = toItem(response);
-                if (item->type() == IItem::FileType::Directory)
-                  return r->done(item);
-                r->sendRequest(
-                    [=](util::Output input) {
-                      auto request = http()->create(
-                          endpoint() + "/2/files/get_temporary_link", "POST");
-                      request->setHeaderParameter("Content-Type",
-                                                  "application/json");
-                      Json::Value parameter;
-                      parameter["path"] = id;
-                      *input << Json::FastWriter().write(parameter);
-                      return request;
-                    },
-                    [=](EitherError<util::Output> e) {
-                      if (e.left()) return r->done(item);
-                      try {
-                        Json::Value response;
-                        *output >> response;
-                        static_cast<Item*>(item.get())
-                            ->set_url(response["link"].asString());
-                        r->done(item);
-                      } catch (std::exception) {
-                        r->done(Error{IHttpRequest::Failure, output->str()});
-                      }
-                    },
-                    output);
-              } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
-              }
-            },
-            output);
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
+                                                 std::ostream& input) const {
+  auto request =
+      http()->create(endpoint() + "/2/files/get_temporary_link", "POST");
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value parameter;
+  parameter["path"] = item.id();
+  input << Json::FastWriter().write(parameter);
+  return request;
+}
+
+std::string Dropbox::getItemUrlResponse(std::istream& output) const {
+  Json::Value response;
+  output >> response;
+  return response["link"].asString();
+}
+
+IHttpRequest::Pointer Dropbox::getItemDataRequest(const std::string& id,
+                                                  std::ostream& input) const {
+  auto request = http()->create(endpoint() + "/2/files/get_metadata", "POST");
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value parameter;
+  parameter["path"] = id;
+  parameter["include_media_info"] = true;
+  input << Json::FastWriter().write(parameter);
+  return request;
+}
+
+IItem::Pointer Dropbox::getItemDataResponse(std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+  return toItem(response);
 }
 
 IHttpRequest::Pointer Dropbox::listDirectoryRequest(

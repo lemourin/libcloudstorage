@@ -37,6 +37,7 @@
 #include "Request/ExchangeCodeRequest.h"
 #include "Request/GetItemDataRequest.h"
 #include "Request/GetItemRequest.h"
+#include "Request/GetItemUrlRequest.h"
 #include "Request/ListDirectoryPageRequest.h"
 #include "Request/ListDirectoryRequest.h"
 #include "Request/MoveItemRequest.h"
@@ -400,6 +401,13 @@ ICloudProvider::RenameItemRequest::Pointer CloudProvider::renameItemAsync(
       ->run();
 }
 
+ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getItemUrlAsync(
+    IItem::Pointer i, GetItemUrlCallback callback) {
+  return std::make_shared<cloudstorage::GetItemUrlRequest>(shared_from_this(),
+                                                           i, callback)
+      ->run();
+}
+
 ICloudProvider::ListDirectoryPageRequest::Pointer
 CloudProvider::listDirectoryPageAsync(IItem::Pointer directory,
                                       const std::string& token,
@@ -440,6 +448,11 @@ ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                         std::ostream&) const {
+  return nullptr;
+}
+
+IHttpRequest::Pointer CloudProvider::getItemUrlRequest(const IItem&,
+                                                       std::ostream&) const {
   return nullptr;
 }
 
@@ -491,6 +504,10 @@ IHttpRequest::Pointer CloudProvider::renameItemRequest(const IItem&,
 
 IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
+}
+
+std::string CloudProvider::getItemUrlResponse(std::istream&) const {
+  return "";
 }
 
 std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(

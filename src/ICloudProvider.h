@@ -43,6 +43,7 @@ class ICloudProvider {
   using Hints = std::unordered_map<std::string, std::string>;
 
   using ExchangeCodeRequest = IRequest<EitherError<Token>>;
+  using GetItemUrlRequest = IRequest<EitherError<std::string>>;
   using ListDirectoryPageRequest = IRequest<EitherError<PageData>>;
   using ListDirectoryRequest =
       IRequest<EitherError<std::vector<IItem::Pointer>>>;
@@ -213,6 +214,9 @@ class ICloudProvider {
   virtual ExchangeCodeRequest::Pointer exchangeCodeAsync(
       const std::string& code,
       ExchangeCodeCallback = [](EitherError<Token>) {}) = 0;
+
+  virtual GetItemUrlRequest::Pointer getItemUrlAsync(
+      IItem::Pointer, GetItemUrlCallback = [](EitherError<std::string>) {}) = 0;
 
   /**
    * Lists directory.

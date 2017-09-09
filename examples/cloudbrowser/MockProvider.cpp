@@ -50,6 +50,11 @@ ICloudProvider::ExchangeCodeRequest::Pointer MockProvider::exchangeCodeAsync(
   return nullptr;
 }
 
+ICloudProvider::GetItemUrlRequest::Pointer MockProvider::getItemUrlAsync(
+    IItem::Pointer, GetItemUrlCallback) {
+  return nullptr;
+}
+
 ICloudProvider::ListDirectoryRequest::Pointer MockProvider::listDirectoryAsync(
     IItem::Pointer directory, IListDirectoryCallback::Pointer callback) {
   return util::make_unique<MockListDirectoryRequest>(directory,

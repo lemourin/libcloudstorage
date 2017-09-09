@@ -38,8 +38,6 @@ class YandexDisk : public CloudProvider {
   std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
 
-  GetItemDataRequest::Pointer getItemDataAsync(
-      const std::string& id, GetItemDataCallback callback) override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,
                                                  Range) override;
@@ -49,6 +47,10 @@ class YandexDisk : public CloudProvider {
   CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 
+  IHttpRequest::Pointer getItemUrlRequest(
+      const IItem&, std::ostream& input_stream) const override;
+  IHttpRequest::Pointer getItemDataRequest(
+      const std::string&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -61,6 +63,8 @@ class YandexDisk : public CloudProvider {
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+  IItem::Pointer getItemDataResponse(std::istream& response) const override;
+  std::string getItemUrlResponse(std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
   void authorizeRequest(IHttpRequest&) const override;

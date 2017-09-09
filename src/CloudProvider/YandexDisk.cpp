@@ -49,57 +49,31 @@ IItem::Pointer YandexDisk::rootDirectory() const {
                                  IItem::FileType::Directory);
 }
 
-ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
-    const std::string& id, GetItemDataCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output) {
-              auto request =
-                  http()->create(endpoint() + "/v1/disk/resources", "GET");
-              request->setParameter("path", id);
-              return request;
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                Json::Value json;
-                *output >> json;
-                auto item = toItem(json);
-                if (item->type() != IItem::FileType::Directory) {
-                  r->sendRequest(
-                      [=](util::Output) {
-                        auto request = http()->create(
-                            endpoint() + "/v1/disk/resources/download", "GET");
-                        request->setParameter("path", id);
-                        return request;
-                      },
-                      [=](EitherError<util::Output> e) {
-                        try {
-                          if (!e.left()) {
-                            Json::Value json;
-                            *output >> json;
-                            static_cast<Item*>(item.get())
-                                ->set_url(json["href"].asString());
-                          }
-                          r->done(item);
-                        } catch (std::exception) {
-                          r->done(Error{IHttpRequest::Failure, output->str()});
-                        }
-                      },
-                      output);
-                } else
-                  r->done(item);
-              } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
-              }
-            },
-            output);
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer YandexDisk::getItemUrlRequest(const IItem& item,
+                                                    std::ostream&) const {
+  auto request =
+      http()->create(endpoint() + "/v1/disk/resources/download", "GET");
+  request->setParameter("path", item.id());
+  return request;
+}
+
+std::string YandexDisk::getItemUrlResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return json["href"].asString();
+}
+
+IHttpRequest::Pointer YandexDisk::getItemDataRequest(const std::string& id,
+                                                     std::ostream&) const {
+  auto request = http()->create(endpoint() + "/v1/disk/resources", "GET");
+  request->setParameter("path", id);
+  return request;
+}
+
+IItem::Pointer YandexDisk::getItemDataResponse(std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(

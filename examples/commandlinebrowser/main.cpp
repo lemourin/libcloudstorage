@@ -150,8 +150,10 @@ int main(int, char**) {
             }
             if (data->size() != IItem::UnknownSize)
               std::cout << "size: " << data->size() << "\n";
-            if (!data->url().empty())
-              std::cout << "url: " << data->url() << "\n";
+            auto url_request =
+                current_provider->getItemUrlAsync(item)->result();
+            if (auto url = url_request.right())
+              std::cout << "url: " << url << "\n";
           }
         }
       }

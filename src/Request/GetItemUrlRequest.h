@@ -1,8 +1,8 @@
 /*****************************************************************************
- * GenerateThumbnail.cpp
+ * GetItemUrlRequest.h
  *
  *****************************************************************************
- * Copyright (C) 2016 VideoLAN
+ * Copyright (C) 2016-2016 VideoLAN
  *
  * Authors: Paweł Wegner <pawel.wegner95@gmail.com>
  *
@@ -20,25 +20,21 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
-#include "GenerateThumbnail.h"
 
-#include <libffmpegthumbnailer/videothumbnailer.h>
+#ifndef GET_ITEM_URL_REQUEST_H
+#define GET_ITEM_URL_REQUEST_H
 
-#include "IHttp.h"
-#include "IRequest.h"
+#include "Request.h"
 
 namespace cloudstorage {
 
-EitherError<std::string> generate_thumbnail(const std::string& url) {
-  try {
-    std::vector<uint8_t> buffer;
-    ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-    thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png, buffer);
-    auto ptr = reinterpret_cast<const char*>(buffer.data());
-    return std::string(ptr, ptr + buffer.size());
-  } catch (const std::exception& e) {
-    return Error{IHttpRequest::Bad, e.what()};
-  }
-}
+class GetItemUrlRequest : public Request<EitherError<std::string>> {
+ public:
+  GetItemUrlRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
+                    GetItemUrlCallback);
+  ~GetItemUrlRequest();
+};
 
 }  // namespace cloudstorage
+
+#endif  // GET_ITEM_URL_REQUEST

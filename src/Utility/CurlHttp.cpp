@@ -161,7 +161,7 @@ void RequestData::done(int code) {
       std::array<char, MAX_URL_LENGTH> redirect_url;
       char* data = redirect_url.data();
       curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
-      *error_stream_ << data;
+      *stream_ << data;
     }
   } else {
     *error_stream_ << curl_easy_strerror(static_cast<CURLcode>(code));

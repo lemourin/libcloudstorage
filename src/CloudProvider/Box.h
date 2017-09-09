@@ -43,6 +43,8 @@ class Box : public CloudProvider {
                                                GetItemDataCallback) override;
 
  private:
+  IHttpRequest::Pointer getItemUrlRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -66,6 +68,7 @@ class Box : public CloudProvider {
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+  std::string getItemUrlResponse(std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
 

@@ -109,6 +109,24 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
       ->run();
 }
 
+IHttpRequest::Pointer YouTube::getItemUrlRequest(const IItem& item,
+                                                 std::ostream&) const {
+  auto request = http()->create(youtube_dl_url_ + "/api/info", "GET");
+  auto id_data = from_string(item.id());
+  request->setParameter("format", id_data.audio ? "bestaudio" : "best");
+  request->setParameter("url", "http://youtube.com/watch?v=" + id_data.id);
+  return request;
+}
+
+std::string YouTube::getItemUrlResponse(std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+  for (auto v : response["info"]["formats"])
+    if (v["format_id"] == response["info"]["format_id"])
+      return v["url"].asString();
+  throw std::logic_error("invalid response");
+}
+
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
@@ -127,64 +145,10 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
             [=](EitherError<util::Output> e) {
               if (e.left()) return r->done(e.left());
               auto id_data = from_string(id);
-              auto item = getItemDataResponse(*response_stream, id_data.audio);
-              auto stream = std::make_shared<std::stringstream>();
-              auto request = [=](std::string format) {
-                return [=](util::Output) {
-                  auto request =
-                      http()->create(youtube_dl_url_ + "/api/info", "GET");
-                  request->setParameter("format", format);
-                  request->setParameter(
-                      "url", "http://youtube.com/watch?v=" + id_data.id);
-                  return request;
-                };
-              };
-              auto response = [=](EitherError<util::Output> e) {
-                if (e.left()) return r->done(e.left());
-                try {
-                  Json::Value response;
-                  *stream >> response;
-                  for (auto v : response["info"]["formats"]) {
-                    if (v["format_id"] == response["info"]["format_id"]) {
-                      auto nitem = static_cast<Item*>(item.get());
-                      auto size = v["filesize"].isNull()
-                                      ? IItem::UnknownSize
-                                      : v["filesize"].asUInt64();
-                      nitem->set_size(size);
-                      nitem->set_filename(item->filename() + "." +
-                                          v["ext"].asString());
-                      nitem->set_url(v["url"].asString());
-                    }
-                  }
-                  if (item->size() == IItem::UnknownSize) {
-                    auto request = http()->create(item->url(), "HEAD");
-                    auto input = std::make_shared<std::stringstream>();
-                    auto output = std::make_shared<std::stringstream>();
-                    auto error = std::make_shared<std::stringstream>();
-                    r->send(
-                        request.get(),
-                        [=](IHttpRequest::Response response) {
-                          if (IHttpRequest::isSuccess(response.http_code_)) {
-                            auto size = std::atoll(
-                                response.headers_["content-length"].c_str());
-                            static_cast<Item*>(item.get())->set_size(size);
-                          }
-                          r->done(item);
-                        },
-                        input, output, error);
-                  } else {
-                    r->done(item);
-                  }
-                } catch (std::exception) {
-                  r->done(Error{IHttpRequest::Failure, stream->str()});
-                }
-              };
-              if (item->type() == IItem::FileType::Audio)
-                r->sendRequest(request("bestaudio"), response, stream);
-              else if (item->type() == IItem::FileType::Video)
-                r->sendRequest(request("best"), response, stream);
-              else {
-                r->done(item);
+              try {
+                r->done(getItemDataResponse(*response_stream, id_data.audio));
+              } catch (std::exception) {
+                r->done(Error{IHttpRequest::Failure, response_stream->str()});
               }
             },
             response_stream);

@@ -47,7 +47,7 @@ class Item : public IItem {
   size_t size() const override;
   void set_size(size_t);
 
-  std::string url() const override;
+  std::string url() const;
   void set_url(std::string);
 
   std::string thumbnail_url() const;
