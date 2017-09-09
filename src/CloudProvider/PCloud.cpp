@@ -22,20 +22,100 @@
  *****************************************************************************/
 #include "PCloud.h"
 
+#include "Utility/Item.h"
+
+const std::string THUMBNAIL_SIZE = "64x64";
+
 namespace cloudstorage {
 
-std::string PCloud::name() const { return "pcloud"; }
-std::string PCloud::endpoint() const { return ""; }
+PCloud::PCloud() : CloudProvider(util::make_unique<Auth>()) {}
 
-IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string&,
-                                                 std::ostream&) const {
-  return nullptr;
+IItem::Pointer PCloud::rootDirectory() const {
+  return util::make_unique<Item>("/", "0", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
+                                 IItem::FileType::Directory);
 }
 
-IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem&,
+std::string PCloud::name() const { return "pcloud"; }
+
+std::string PCloud::endpoint() const { return "https://api.pcloud.com"; }
+
+bool PCloud::reauthorize(int, const IHttpRequest::HeaderParameters& h) const {
+  auto it = h.find("x-error");
+  return (it != h.end() && (it->second == "1000" || it->second == "2000"));
+}
+
+ICloudProvider::GetItemDataRequest::Pointer PCloud::getItemDataAsync(
+    const std::string& id, GetItemDataCallback callback) {
+  using RequestType = Request<EitherError<IItem>>;
+  auto r = std::make_shared<RequestType>(shared_from_this());
+  auto get_history = [=](RequestType::Pointer r,
+                         std::function<void(EitherError<IItem>)> f) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
+          auto r = http()->create(endpoint() + "/checksumfile");
+          r->setParameter("fileid", id);
+          return r;
+        },
+        [=](EitherError<util::Output> e) {
+          if (e.left()) return f(e.left());
+          try {
+            Json::Value json;
+            *output >> json;
+            auto entries = json["entries"];
+            f(toItem(entries[entries.size() - 1]["metadata"]));
+          } catch (std::exception e) {
+            f(Error{IHttpRequest::Failure, e.what()});
+          }
+        },
+        output);
+  };
+  auto get_link = [=](RequestType::Pointer r, const std::string& path,
+                      std::function<void(EitherError<std::string>)> f) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
+          auto r = http()->create(endpoint() + path);
+          r->setParameter("fileid", id);
+          return r;
+        },
+        [=](EitherError<util::Output> e) {
+          if (e.left()) return f(e.left());
+          try {
+            Json::Value json;
+            *output >> json;
+            f("https://" + json["hosts"][0].asString() +
+              json["path"].asString());
+          } catch (std::exception e) {
+            f(Error{IHttpRequest::Failure, e.what()});
+          }
+        },
+        output);
+  };
+  r->set(
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        get_history(r, [=](EitherError<IItem> e) {
+          if (e.left()) return r->done(e);
+          auto i = e.right();
+          if (i->type() == IItem::FileType::Directory) return r->done(e);
+          get_link(r, "/getfilelink", [=](EitherError<std::string> e) {
+            if (auto str = e.right())
+              static_cast<Item*>(i.get())->set_url(*str);
+            r->done(i);
+          });
+        });
+      },
+      callback);
+  return r->run();
+}
+
+IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
                                                    const std::string&,
                                                    std::ostream&) const {
-  return nullptr;
+  auto req = http()->create(endpoint() + "/listfolder");
+  req->setParameter("folderid", item.id());
+  return req;
 }
 
 IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem&,
@@ -72,25 +152,46 @@ IHttpRequest::Pointer PCloud::renameItemRequest(const IItem&,
   return nullptr;
 }
 
-IItem::Pointer PCloud::getItemDataResponse(std::istream&) const {
-  return nullptr;
+std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
+    const IItem&, std::istream& response, std::string&) const {
+  Json::Value json;
+  response >> json;
+  std::vector<IItem::Pointer> result;
+  for (auto&& v : json["metadata"]["contents"]) result.push_back(toItem(v));
+  return result;
 }
 
-std::vector<IItem::Pointer> PCloud::listDirectoryResponse(const IItem&,
-                                                          std::istream&,
-                                                          std::string&) const {
-  return {};
+IItem::Pointer PCloud::toItem(const Json::Value& v) const {
+  auto item = util::make_unique<Item>(
+      v["name"].asString(),
+      v["isfolder"].asBool() ? v["folderid"].asString()
+                             : v["fileid"].asString(),
+      IItem::UnknownSize, IItem::UnknownTimeStamp,
+      v["isfolder"].asBool() ? IItem::FileType::Directory
+                             : IItem::FileType::Unknown);
+  if (v["thumb"].asBool())
+    item->set_thumbnail_url(endpoint() + "/getthumb?fileid=" + item->id() +
+                            "&size=" + THUMBNAIL_SIZE);
+  return item;
 }
 
-IItem::Pointer PCloud::toItem(const Json::Value&) const { return nullptr; }
+PCloud::Auth::Auth() {
+  set_client_id("EDEqpUpRnFF");
+  set_client_secret("PQLFPbyObs5IzeUdXF7VcfkuAPs7");
+}
 
-PCloud::Auth::Auth() {}
-
-std::string PCloud::Auth::authorizeLibraryUrl() const { return ""; }
+std::string PCloud::Auth::authorizeLibraryUrl() const {
+  return "https://my.pcloud.com/oauth2/authorize?client_id=" + client_id() +
+         "&response_type=code"
+         "&redirect_uri=" +
+         util::Url::escape(redirect_uri()) + "&state=" + state();
+}
 
 IHttpRequest::Pointer PCloud::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
-  return nullptr;
+  return http()->create(
+      "https://api.pcloud.com/oauth2_token?client_id=" + client_id() +
+      "&client_secret=" + client_secret() + "&code=" + authorization_code());
 }
 
 IHttpRequest::Pointer PCloud::Auth::refreshTokenRequest(std::ostream&) const {
@@ -98,8 +199,12 @@ IHttpRequest::Pointer PCloud::Auth::refreshTokenRequest(std::ostream&) const {
 }
 
 IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  return nullptr;
+    std::istream& stream) const {
+  Json::Value json;
+  stream >> json;
+  if (!json.isMember("access_token")) throw std::logic_error("no access token");
+  return util::make_unique<Token>(Token{json["access_token"].asString(),
+                                        json["access_token"].asString(), -1});
 }
 
 IAuth::Token::Pointer PCloud::Auth::refreshTokenResponse(std::istream&) const {

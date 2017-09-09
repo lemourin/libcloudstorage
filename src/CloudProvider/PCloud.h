@@ -30,11 +30,15 @@ namespace cloudstorage {
 
 class PCloud : public CloudProvider {
  public:
+  PCloud();
+
+  IItem::Pointer rootDirectory() const override;
   std::string name() const override;
   std::string endpoint() const override;
+  bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
 
-  IHttpRequest::Pointer getItemDataRequest(
-      const std::string&, std::ostream& input_stream) const override;
+  GetItemDataRequest::Pointer getItemDataAsync(
+      const std::string&, GetItemDataCallback callback) override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -53,7 +57,6 @@ class PCloud : public CloudProvider {
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
                                           std::ostream&) const override;
 
-  IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
 
