@@ -319,10 +319,6 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
-    item->set_url(youtube_dl_url_ +
-                  "/api/play?url=https://www.youtube.com/"
-                  "watch?v=" +
-                  video_id);
     return std::move(item);
   }
 }
