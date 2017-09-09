@@ -154,41 +154,20 @@ YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {
         auto output = std::make_shared<std::stringstream>();
+        auto path =
+            parent->id() + (parent->id().back() == '/' ? "" : "/") + name;
         r->sendRequest(
             [=](util::Output) {
               auto request =
                   http()->create(endpoint() + "/v1/disk/resources/", "PUT");
-              request->setParameter(
-                  "path",
-                  parent->id() + (parent->id().back() == '/' ? "" : "/") +
-                      name);
+              request->setParameter("path", path);
               return request;
             },
             [=](EitherError<util::Output> e) {
               if (e.left()) return r->done(e.left());
-              try {
-                Json::Value json;
-                *output >> json;
-                r->sendRequest(
-                    [=](util::Output) {
-                      auto request =
-                          http()->create(json["href"].asString(), "GET");
-                      return request;
-                    },
-                    [=](EitherError<util::Output> e) {
-                      if (e.left()) return r->done(e.left());
-                      try {
-                        Json::Value json;
-                        *output >> json;
-                        r->done(toItem(json));
-                      } catch (std::exception) {
-                        r->done(Error{IHttpRequest::Failure, output->str()});
-                      }
-                    },
-                    output);
-              } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
-              }
+              r->done(IItem::Pointer(util::make_unique<Item>(
+                  name, path, 0, std::chrono::system_clock::now(),
+                  IItem::FileType::Directory)));
             },
             output);
       },
