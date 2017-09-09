@@ -151,7 +151,9 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
-  for (Json::Value v : response["files"]) result.push_back(toItem(v));
+  for (Json::Value v : response["files"])
+    if (!isGoogleMimeType(v["mimeType"].asString()))
+      result.push_back(toItem(v));
 
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
