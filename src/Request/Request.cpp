@@ -246,7 +246,7 @@ void Request<T>::send(IHttpRequest* request,
     request->send(complete, input, output, error,
                   httpCallback(download, upload));
   else
-    complete({IHttpRequest::Aborted, 0, output, error});
+    complete({IHttpRequest::Aborted, {}, output, error});
 }
 
 template <class T>

@@ -62,6 +62,22 @@ size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
   return stream->gcount();
 }
 
+size_t header_callback(char* buffer, size_t size, size_t nitems,
+                       void* userdata) {
+  auto header_data = static_cast<IHttpRequest::HeaderParameters*>(userdata);
+  std::string header(buffer, buffer + size * nitems);
+  auto pos = header.find_first_of(":");
+  if (pos != std::string::npos) {
+    auto header_name = header.substr(0, pos);
+    for (auto&& c : header_name) c = std::tolower(c);
+    std::stringstream stream(header.substr(pos + 1));
+    std::string header_value, token;
+    while (stream >> token) header_value += token;
+    (*header_data)[header_name] = header_value;
+  }
+  return size * nitems;
+}
+
 int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
                       curl_off_t ultotal, curl_off_t ulnow) {
   CurlHttpRequest::ICallback* callback =
@@ -137,7 +153,6 @@ void CurlHttp::Worker::add(RequestData::Pointer r) {
 
 void RequestData::done(int code) {
   int ret = IHttpRequest::Unknown;
-  uint64_t content_length = 0;
   if (code == CURLE_OK) {
     long http_code = static_cast<long>(IHttpRequest::Unknown);
     curl_easy_getinfo(handle_.get(), CURLINFO_RESPONSE_CODE, &http_code);
@@ -148,15 +163,11 @@ void RequestData::done(int code) {
       curl_easy_getinfo(handle_.get(), CURLINFO_REDIRECT_URL, &data);
       *error_stream_ << data;
     }
-    double curl_content_length;
-    curl_easy_getinfo(handle_.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD,
-                      &curl_content_length);
-    content_length = (uint64_t)(curl_content_length + 0.5);
   } else {
     *error_stream_ << curl_easy_strerror(static_cast<CURLcode>(code));
     ret = (code == CURLE_ABORTED_BY_CALLBACK) ? IHttpRequest::Aborted : -code;
   }
-  complete_({ret, content_length, stream_, error_stream_});
+  complete_({ret, response_headers_, stream_, error_stream_});
 }
 
 CurlHttpRequest::CurlHttpRequest(const std::string& url,
@@ -172,6 +183,7 @@ std::unique_ptr<CURL, CurlDeleter> CurlHttpRequest::init() const {
   std::unique_ptr<CURL, CurlDeleter> handle(curl_easy_init());
   curl_easy_setopt(handle.get(), CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(handle.get(), CURLOPT_READFUNCTION, read_callback);
+  curl_easy_setopt(handle.get(), CURLOPT_HEADERFUNCTION, header_callback);
   curl_easy_setopt(handle.get(), CURLOPT_SSL_VERIFYPEER,
                    static_cast<long>(false));
   curl_easy_setopt(handle.get(), CURLOPT_FOLLOWLOCATION,
@@ -216,12 +228,22 @@ RequestData::Pointer CurlHttpRequest::prepare(
     std::shared_ptr<std::ostream> response,
     std::shared_ptr<std::ostream> error_stream,
     ICallback::Pointer callback) const {
-  auto cb_data = util::make_unique<RequestData>(RequestData{
-      init(), headerParametersToList(), data, response, error_stream, callback,
-      complete, follow_redirect(), true, false});
+  auto cb_data =
+      util::make_unique<RequestData>(RequestData{init(),
+                                                 headerParametersToList(),
+                                                 {},
+                                                 data,
+                                                 response,
+                                                 error_stream,
+                                                 callback,
+                                                 complete,
+                                                 follow_redirect(),
+                                                 true,
+                                                 false});
   auto handle = cb_data->handle_.get();
   curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb_data.get());
   curl_easy_setopt(handle, CURLOPT_XFERINFODATA, callback.get());
+  curl_easy_setopt(handle, CURLOPT_HEADERDATA, &cb_data->response_headers_);
   curl_easy_setopt(handle, CURLOPT_READDATA, data.get());
   curl_easy_setopt(handle, CURLOPT_HTTPHEADER, cb_data->headers_.get());
   if (method_ == "POST") {

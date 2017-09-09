@@ -52,6 +52,7 @@ struct RequestData {
 
   std::unique_ptr<CURL, CurlDeleter> handle_;
   std::unique_ptr<curl_slist, CurlListDeleter> headers_;
+  IHttpRequest::HeaderParameters response_headers_;
   std::shared_ptr<std::istream> data_;
   std::shared_ptr<std::ostream> stream_;
   std::shared_ptr<std::ostream> error_stream_;

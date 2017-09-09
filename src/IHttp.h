@@ -33,17 +33,19 @@ namespace cloudstorage {
 
 class IHttpRequest {
  public:
-  struct Response {
-    int http_code_;
-    uint64_t content_length_;
-    std::shared_ptr<std::ostream> output_stream_;
-    std::shared_ptr<std::ostream> error_stream_;
-  };
+  struct Response;
 
   using Pointer = std::shared_ptr<IHttpRequest>;
   using GetParameters = std::unordered_map<std::string, std::string>;
   using HeaderParameters = std::unordered_map<std::string, std::string>;
   using CompleteCallback = std::function<void(Response)>;
+
+  struct Response {
+    int http_code_;
+    HeaderParameters headers_;  // header names should be lower cased
+    std::shared_ptr<std::ostream> output_stream_;
+    std::shared_ptr<std::ostream> error_stream_;
+  };
 
   static constexpr int Ok = 200;
   static constexpr int Partial = 206;

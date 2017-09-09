@@ -161,14 +161,17 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                     auto input = std::make_shared<std::stringstream>();
                     auto output = std::make_shared<std::stringstream>();
                     auto error = std::make_shared<std::stringstream>();
-                    r->send(request.get(),
-                            [=](IHttpRequest::Response response) {
-                              if (IHttpRequest::isSuccess(response.http_code_))
-                                static_cast<Item*>(item.get())
-                                    ->set_size(response.content_length_);
-                              r->done(item);
-                            },
-                            input, output, error);
+                    r->send(
+                        request.get(),
+                        [=](IHttpRequest::Response response) {
+                          if (IHttpRequest::isSuccess(response.http_code_)) {
+                            auto size = std::atoll(
+                                response.headers_["content-length"].c_str());
+                            static_cast<Item*>(item.get())->set_size(size);
+                          }
+                          r->done(item);
+                        },
+                        input, output, error);
                   } else {
                     r->done(item);
                   }
