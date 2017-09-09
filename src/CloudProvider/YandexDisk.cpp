@@ -87,52 +87,61 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
   auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto upload_url = [=](Request<EitherError<void>>::Pointer r,
+                        std::function<void(EitherError<std::string>)> f) {
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output) {
+          auto request =
+              http()->create(endpoint() + "/v1/disk/resources/upload", "GET");
+          std::string path = directory->id();
+          if (path.back() != '/') path += "/";
+          path += filename;
+          request->setParameter("path", path);
+          return request;
+        },
+        [=](EitherError<util::Output> e) {
+          if (e.left()) f(e.left());
+          try {
+            Json::Value response;
+            *output >> response;
+            f(response["href"].asString());
+          } catch (std::exception) {
+            f(Error{IHttpRequest::Failure, output->str()});
+          }
+        },
+        output);
+  };
+  auto upload = [=](Request<EitherError<void>>::Pointer r, std::string url,
+                    std::function<void(EitherError<void>)> f) {
+    auto wrapper = std::make_shared<UploadStreamWrapper>(
+        std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
+        callback->size());
+    auto output = std::make_shared<std::stringstream>();
+    r->sendRequest(
+        [=](util::Output input) {
+          auto request = http()->create(url, "PUT");
+          callback->reset();
+          wrapper->reset();
+          input->rdbuf(wrapper.get());
+          return request;
+        },
+        [=](EitherError<util::Output> e) {
+          (void)wrapper;
+          if (e.left())
+            f(e.left());
+          else
+            f(nullptr);
+        },
+        output, nullptr,
+        std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
+  };
   r->set(
       [=](Request<EitherError<void>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output) {
-              auto request = http()->create(
-                  endpoint() + "/v1/disk/resources/upload", "GET");
-              std::string path = directory->id();
-              if (path.back() != '/') path += "/";
-              path += filename;
-              request->setParameter("path", path);
-              return request;
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                Json::Value response;
-                *output >> response;
-                std::string url = response["href"].asString();
-                auto wrapper = std::make_shared<UploadStreamWrapper>(
-                    std::bind(&IUploadFileCallback::putData, callback.get(), _1,
-                              _2),
-                    callback->size());
-                auto output = std::make_shared<std::stringstream>();
-                r->sendRequest(
-                    [=](util::Output input) {
-                      auto request = http()->create(url, "PUT");
-                      callback->reset();
-                      wrapper->reset();
-                      input->rdbuf(wrapper.get());
-                      return request;
-                    },
-                    [=](EitherError<util::Output> e) {
-                      (void)wrapper;
-                      if (e.left())
-                        r->done(e.left());
-                      else
-                        r->done(nullptr);
-                    },
-                    output, nullptr, std::bind(&IUploadFileCallback::progress,
-                                               callback.get(), _1, _2));
-              } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
-              }
-            },
-            output);
+        upload_url(r, [=](EitherError<std::string> ret) {
+          if (ret.left()) r->done(ret.left());
+          upload(r, *ret.right(), [=](EitherError<void> e) { r->done(e); });
+        });
       },
       [=](EitherError<void> e) { callback->done(e); });
   return r->run();
