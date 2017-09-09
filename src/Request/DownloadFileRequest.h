@@ -54,6 +54,18 @@ class DownloadFileRequest : public Request<EitherError<void>> {
   DownloadStreamWrapper stream_wrapper_;
 };
 
+class DownloadFileFromUrlRequest : public Request<EitherError<void>> {
+ public:
+  using ICallback = IDownloadFileCallback;
+
+  DownloadFileFromUrlRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
+                             ICallback::Pointer, Range);
+  ~DownloadFileFromUrlRequest();
+
+ private:
+  DownloadStreamWrapper stream_wrapper_;
+};
+
 }  // namespace cloudstorage
 
 #endif  // DOWNLOADFILEREQUEST_H

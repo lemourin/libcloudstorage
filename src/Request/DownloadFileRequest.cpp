@@ -72,4 +72,48 @@ std::streamsize DownloadStreamWrapper::xsputn(const char_type* data,
   return length;
 }
 
+DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
+    std::shared_ptr<CloudProvider> p, IItem::Pointer file,
+    ICallback::Pointer cb, Range range)
+    : Request(p),
+      stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {
+  auto callback = cb.get();
+  set(
+      [=](Request<EitherError<void>>::Pointer r) {
+        std::string url = file->url();
+        auto download = [=](std::string url) {
+          auto stream = std::make_shared<std::ostream>(&stream_wrapper_);
+          r->sendRequest(
+              [=](util::Output) {
+                auto r = provider()->http()->create(url, "GET");
+                if (range != FullRange)
+                  r->setHeaderParameter("Range", util::range_to_string(range));
+                return r;
+              },
+              [=](EitherError<util::Output> e) {
+                if (e.left())
+                  r->done(e.left());
+                else
+                  r->done(nullptr);
+              },
+              stream,
+              std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
+        };
+        if (file->url().empty()) {
+          r->subrequest(provider()->getItemDataAsync(
+              file->id(), [=](EitherError<IItem> e) {
+                if (e.left())
+                  r->done(e.left());
+                else
+                  download(e.right()->url());
+              }));
+        } else {
+          download(file->url());
+        }
+      },
+      [=](EitherError<void> e) { cb->done(e); });
+}
+
+DownloadFileFromUrlRequest::~DownloadFileFromUrlRequest() { cancel(); }
+
 }  // namespace cloudstorage

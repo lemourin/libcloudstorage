@@ -191,46 +191,10 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer cb, Range range) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  auto callback = cb.get();
-  r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        std::string url = item->url();
-        auto download = [=](std::string url) {
-          auto wrapper = std::make_shared<DownloadStreamWrapper>(std::bind(
-              &IDownloadFileCallback::receivedData, callback, _1, _2));
-          auto stream = std::make_shared<std::ostream>(wrapper.get());
-          r->sendRequest(
-              [=](util::Output) {
-                auto r = http()->create(url, "GET");
-                if (range != FullRange)
-                  r->setHeaderParameter("Range", util::range_to_string(range));
-                return r;
-              },
-              [=](EitherError<util::Output> e) {
-                (void)wrapper;
-                if (e.left())
-                  r->done(e.left());
-                else
-                  r->done(nullptr);
-              },
-              stream,
-              std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
-        };
-        if (item->type() == IItem::FileType::Audio) {
-          r->subrequest(getItemDataAsync(item->id(), [=](EitherError<IItem> e) {
-            if (e.left())
-              r->done(e.left());
-            else
-              download(e.right()->url());
-          }));
-        } else {
-          download(item->url());
-        }
-      },
-      [=](EitherError<void> e) { cb->done(e); });
-  return r->run();
+    IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
+  return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
+                                                      range)
+      ->run();
 }
 
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,

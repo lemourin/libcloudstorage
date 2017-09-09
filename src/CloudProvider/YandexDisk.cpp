@@ -103,54 +103,10 @@ ICloudProvider::GetItemDataRequest::Pointer YandexDisk::getItemDataAsync(
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
-    IItem::Pointer item, IDownloadFileCallback::Pointer cb, Range range) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  auto callback = cb.get();
-  r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output) {
-              auto request = http()->create(
-                  endpoint() + "/v1/disk/resources/download", "GET");
-              request->setParameter("path", item->id());
-              return request;
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                Json::Value json;
-                *output >> json;
-                auto wrapper = std::make_shared<DownloadStreamWrapper>(
-                    std::bind(&IDownloadFileCallback::receivedData, callback,
-                              _1, _2));
-                auto stream = std::make_shared<std::ostream>(wrapper.get());
-                std::string url = json["href"].asString();
-                r->sendRequest(
-                    [=](util::Output) {
-                      auto r = http()->create(url, "GET");
-                      if (range != FullRange)
-                        r->setHeaderParameter("Range",
-                                              util::range_to_string(range));
-                      return r;
-                    },
-                    [=](EitherError<util::Output> e) {
-                      (void)wrapper;
-                      if (e.left())
-                        r->done(e.left());
-                      else
-                        r->done(nullptr);
-                    },
-                    stream, std::bind(&IDownloadFileCallback::progress,
-                                      callback, _1, _2));
-              } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
-              }
-            },
-            output);
-      },
-      [=](EitherError<void> e) { cb->done(e); });
-  return r->run();
+    IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
+  return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
+                                                      range)
+      ->run();
 }
 
 ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
