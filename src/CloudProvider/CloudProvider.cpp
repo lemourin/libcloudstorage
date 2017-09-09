@@ -315,7 +315,8 @@ void CloudProvider::authorizeRequest(IHttpRequest& r) const {
   r.setHeaderParameter("Authorization", "Bearer " + access_token());
 }
 
-bool CloudProvider::reauthorize(int code) const {
+bool CloudProvider::reauthorize(int code,
+                                const IHttpRequest::HeaderParameters&) const {
   return IHttpRequest::isAuthorizationError(code);
 }
 

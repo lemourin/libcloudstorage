@@ -186,8 +186,9 @@ void Request<T>::authorize(IHttpRequest::Pointer r) {
 }
 
 template <class T>
-bool Request<T>::reauthorize(int code) {
-  return provider()->reauthorize(code);
+bool Request<T>::reauthorize(int code,
+                             const IHttpRequest::HeaderParameters& h) {
+  return provider()->reauthorize(code, h);
 }
 
 template <class T>
@@ -202,9 +203,11 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   authorize(r);
   send(r.get(),
        [=](IHttpRequest::Response response) {
-         if (IHttpRequest::isSuccess(response.http_code_))
+         bool reauthorize =
+             this->reauthorize(response.http_code_, response.headers_);
+         if (IHttpRequest::isSuccess(response.http_code_) && !reauthorize)
            return complete(output);
-         if (this->reauthorize(response.http_code_)) {
+         if (reauthorize) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)

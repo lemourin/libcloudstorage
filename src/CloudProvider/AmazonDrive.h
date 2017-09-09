@@ -76,7 +76,8 @@ class AmazonDrive : public CloudProvider {
   IItem::FileType type(const Json::Value&) const;
   IItem::Pointer toItem(const Json::Value&) const;
 
-  bool reauthorize(int code) const override;
+  bool reauthorize(int code,
+                   const IHttpRequest::HeaderParameters&) const override;
 
   class Auth : public cloudstorage::Auth {
    public:

@@ -37,7 +37,8 @@ class Dropbox : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
-  bool reauthorize(int code) const override;
+  bool reauthorize(int code,
+                   const IHttpRequest::HeaderParameters&) const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback) override;

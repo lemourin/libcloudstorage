@@ -78,7 +78,8 @@ class WebDav : public CloudProvider {
 
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 
-  bool reauthorize(int code) const override;
+  bool reauthorize(int code,
+                   const IHttpRequest::HeaderParameters&) const override;
   void authorizeRequest(IHttpRequest&) const override;
 
   class Auth : public cloudstorage::Auth {

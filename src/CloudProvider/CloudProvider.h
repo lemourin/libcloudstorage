@@ -238,12 +238,13 @@ class CloudProvider : public ICloudProvider,
 
   /**
    * Returns whether we should try to authorize again after receiving response
-   * with http code / curl error.
+   * with http code.
    *
-   * @param code http code / curl error
+   * @param code http code
    * @return whether to do authorization again or not
    */
-  virtual bool reauthorize(int code) const;
+  virtual bool reauthorize(int code,
+                           const IHttpRequest::HeaderParameters&) const;
 
   virtual bool unpackCredentials(const std::string&);
 

@@ -218,8 +218,9 @@ IItem::Pointer WebDav::toItem(const tinyxml2::XMLNode* node) const {
   return std::move(item);
 }
 
-bool WebDav::reauthorize(int code) const {
-  return CloudProvider::reauthorize(code) || endpoint().empty();
+bool WebDav::reauthorize(int code,
+                         const IHttpRequest::HeaderParameters& h) const {
+  return CloudProvider::reauthorize(code, h) || endpoint().empty();
 }
 
 void WebDav::authorizeRequest(IHttpRequest& r) const {

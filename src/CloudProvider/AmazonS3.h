@@ -76,7 +76,7 @@ class AmazonS3 : public CloudProvider {
       const IItem&, std::istream&, std::string& next_page_token) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
-  bool reauthorize(int) const override;
+  bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
 
   std::string access_id() const;
   std::string secret() const;

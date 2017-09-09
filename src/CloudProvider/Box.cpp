@@ -45,7 +45,7 @@ std::string Box::name() const { return "box"; }
 
 std::string Box::endpoint() const { return BOXAPI_ENDPOINT; }
 
-bool Box::reauthorize(int code) const {
+bool Box::reauthorize(int code, const IHttpRequest::HeaderParameters&) const {
   return IHttpRequest::isClientError(code) && code != IHttpRequest::NotFound;
 }
 

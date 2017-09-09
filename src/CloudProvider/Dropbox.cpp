@@ -47,7 +47,8 @@ IItem::Pointer Dropbox::rootDirectory() const {
                                  IItem::FileType::Directory);
 }
 
-bool Dropbox::reauthorize(int code) const {
+bool Dropbox::reauthorize(int code,
+                          const IHttpRequest::HeaderParameters&) const {
   return code == IHttpRequest::Bad || code == IHttpRequest::Unauthorized;
 }
 

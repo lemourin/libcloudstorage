@@ -289,7 +289,8 @@ std::string AmazonDrive::content_url() const {
   return content_url_;
 }
 
-bool AmazonDrive::reauthorize(int code) const {
+bool AmazonDrive::reauthorize(int code,
+                              const IHttpRequest::HeaderParameters&) const {
   return IHttpRequest::isClientError(code) || metadata_url().empty() ||
          content_url().empty();
 }

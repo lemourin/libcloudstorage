@@ -552,9 +552,11 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
     request.setParameter(p.first, util::Url::escape(p.second));
 }
 
-bool AmazonS3::reauthorize(int code) const {
-  return CloudProvider::reauthorize(code) || code == IHttpRequest::Forbidden ||
-         access_id().empty() || secret().empty();
+bool AmazonS3::reauthorize(int code,
+                           const IHttpRequest::HeaderParameters& h) const {
+  return CloudProvider::reauthorize(code, h) ||
+         code == IHttpRequest::Forbidden || access_id().empty() ||
+         secret().empty();
 }
 
 std::string AmazonS3::access_id() const {
