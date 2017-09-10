@@ -89,11 +89,15 @@ ICloudProvider::DownloadFileRequest::Pointer PCloud::downloadFileAsync(
       ->run();
 }
 
-IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem&,
-                                                const std::string&,
+IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem& directory,
+                                                const std::string& filename,
                                                 std::ostream&,
                                                 std::ostream&) const {
-  return nullptr;
+  auto req = http()->create(endpoint() + "/uploadfile", "POST");
+  req->setHeaderParameter("Content-Type", "application/octet-stream");
+  req->setParameter("folderid", directory.id());
+  req->setParameter("filename", util::Url::escape(filename));
+  return req;
 }
 
 IHttpRequest::Pointer PCloud::deleteItemRequest(const IItem& item,
