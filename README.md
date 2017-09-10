@@ -157,3 +157,5 @@ Integrate in various desktops
 * `gvfs` implementation
 * `fuse`
 * `Dokan fuse`
+
+Implement chunked uploads.
