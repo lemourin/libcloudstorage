@@ -44,7 +44,8 @@ std::string PCloud::endpoint() const { return "https://api.pcloud.com"; }
 
 bool PCloud::reauthorize(int, const IHttpRequest::HeaderParameters& h) const {
   auto it = h.find("x-error");
-  return (it != h.end() && (it->second == "1000" || it->second == "2000"));
+  return (it != h.end() && (it->second == "1000" || it->second == "2000" ||
+                            it->second == "2094"));
 }
 
 IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
