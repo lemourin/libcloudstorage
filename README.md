@@ -16,6 +16,7 @@ Supported cloud providers:
 * `WebDAV`
 * `mega.nz`
 * `AmazonS3`
+* `pCloud`
 * `YouTube` (partial)
 
 Supported operations on files:
