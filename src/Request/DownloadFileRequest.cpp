@@ -24,6 +24,7 @@
 #include "DownloadFileRequest.h"
 
 #include "CloudProvider/CloudProvider.h"
+#include "Utility/Item.h"
 
 using namespace std::placeholders;
 
@@ -80,7 +81,8 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
   auto callback = cb.get();
   set(
       [=](Request<EitherError<void>>::Pointer r) {
-        auto download = [=](std::string url) {
+        auto download = [=](std::string url,
+                            std::function<void(EitherError<void>)> cb) {
           auto stream = std::make_shared<std::ostream>(&stream_wrapper_);
           r->sendRequest(
               [=](util::Output) {
@@ -91,18 +93,30 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
               },
               [=](EitherError<util::Output> e) {
                 if (e.left())
-                  r->done(e.left());
+                  cb(e.left());
                 else
-                  r->done(nullptr);
+                  cb(nullptr);
               },
               stream,
               std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
         };
-        r->subrequest(
-            provider()->getItemUrlAsync(file, [=](EitherError<std::string> e) {
-              if (e.left()) return r->done(e.left());
-              download(*e.right());
-            }));
+        auto cached_url = static_cast<Item*>(file.get())->url();
+        auto get_url = [=]() {
+          r->subrequest(provider()->getItemUrlAsync(
+              file, [=](EitherError<std::string> e) {
+                if (e.left()) return r->done(e.left());
+                download(*e.right(), [=](EitherError<void> e) { r->done(e); });
+              }));
+        };
+        if (!cached_url.empty())
+          download(cached_url, [=](EitherError<void> e) {
+            if (e.left())
+              get_url();
+            else
+              r->done(e);
+          });
+        else
+          get_url();
       },
       [=](EitherError<void> e) { cb->done(e); });
 }

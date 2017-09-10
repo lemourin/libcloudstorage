@@ -24,6 +24,7 @@
 #ifndef ITEM_H
 #define ITEM_H
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -66,6 +67,7 @@ class Item : public IItem {
   static FileType fromExtension(const std::string& filename);
 
  private:
+  mutable std::mutex mutex_;
   std::string filename_;
   std::string id_;
   std::string url_;

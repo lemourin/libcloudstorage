@@ -84,9 +84,15 @@ size_t Item::size() const { return size_; }
 
 void Item::set_size(size_t size) { size_ = size; }
 
-std::string Item::url() const { return url_; }
+std::string Item::url() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return url_;
+}
 
-void Item::set_url(std::string url) { url_ = url; }
+void Item::set_url(std::string url) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  url_ = url;
+}
 
 std::string Item::thumbnail_url() const { return thumbnail_url_; }
 
