@@ -26,6 +26,7 @@
 
 #include <curl/curl.h>
 #include <atomic>
+#include <cctype>
 #include <condition_variable>
 #include <memory>
 #include <string>
