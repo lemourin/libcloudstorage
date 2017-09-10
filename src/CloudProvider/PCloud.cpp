@@ -174,7 +174,8 @@ IItem::Pointer PCloud::toItem(const Json::Value& v) const {
       v["name"].asString(),
       v["isfolder"].asBool() ? v["folderid"].asString()
                              : v["fileid"].asString(),
-      IItem::UnknownSize, IItem::UnknownTimeStamp,
+      v.isMember("size") ? v["size"].asInt64() : IItem::UnknownSize,
+      IItem::UnknownTimeStamp,
       v["isfolder"].asBool() ? IItem::FileType::Directory
                              : IItem::FileType::Unknown);
   if (v["thumb"].asBool())
