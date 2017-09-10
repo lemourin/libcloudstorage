@@ -56,6 +56,8 @@ class CloudProvider : public ICloudProvider,
   IHttpServerFactory* http_server() const;
   IAuthCallback* auth_callback() const;
 
+  virtual bool isSuccess(int code, const IHttpRequest::HeaderParameters&) const;
+
   virtual AuthorizeRequest::Pointer authorizeAsync();
 
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,

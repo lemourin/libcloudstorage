@@ -51,7 +51,8 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
         r->send(
             request.get(),
             [=](IHttpRequest::Response response) {
-              if (IHttpRequest::isSuccess(response.http_code_)) {
+              if (provider()->isSuccess(response.http_code_,
+                                        response.headers_)) {
                 try {
                   auto lock = provider()->auth_lock();
                   auto auth_token =

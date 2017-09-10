@@ -33,8 +33,12 @@ namespace cloudstorage {
 class HttpCallback : public IHttpRequest::ICallback {
  public:
   HttpCallback(std::function<bool()> is_cancelled,
+               std::function<bool(int, const IHttpRequest::HeaderParameters&)>
+                   is_success,
                std::function<void(uint32_t, uint32_t)> progress_download,
                std::function<void(uint32_t, uint32_t)> progress_upload);
+
+  bool isSuccess(int, const IHttpRequest::HeaderParameters&) const override;
 
   bool abort() override;
 
@@ -44,6 +48,7 @@ class HttpCallback : public IHttpRequest::ICallback {
 
  private:
   std::function<bool()> is_cancelled_;
+  std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success_;
   std::function<void(uint32_t, uint32_t)> progress_download_;
   std::function<void(uint32_t, uint32_t)> progress_upload_;
 };

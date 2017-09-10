@@ -27,11 +27,18 @@ namespace cloudstorage {
 
 HttpCallback::HttpCallback(
     std::function<bool()> is_cancelled,
+    std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success,
     std::function<void(uint32_t, uint32_t)> progress_download,
     std::function<void(uint32_t, uint32_t)> progress_upload)
     : is_cancelled_(is_cancelled),
+      is_success_(is_success),
       progress_download_(progress_download),
       progress_upload_(progress_upload) {}
+
+bool HttpCallback::isSuccess(int code,
+                             const IHttpRequest::HeaderParameters& h) const {
+  return is_success_(code, h);
+}
 
 bool HttpCallback::abort() { return is_cancelled_(); }
 

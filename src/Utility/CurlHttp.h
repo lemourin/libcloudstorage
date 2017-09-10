@@ -59,8 +59,7 @@ struct RequestData {
   std::shared_ptr<IHttpRequest::ICallback> callback_;
   IHttpRequest::CompleteCallback complete_;
   bool follow_redirect_;
-  bool first_call_;
-  bool success_;
+  long http_code_;
 
   void done(int result);
 };

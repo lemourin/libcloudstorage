@@ -40,16 +40,12 @@ namespace {
 
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
   RequestData* data = static_cast<RequestData*>(userdata);
-  if (data->first_call_) {
-    data->first_call_ = false;
-    if (data->callback_) {
-      long http_code = 0;
-      curl_easy_getinfo(data->handle_.get(), CURLINFO_RESPONSE_CODE,
-                        &http_code);
-      data->success_ = IHttpRequest::isSuccess(static_cast<int>(http_code));
-    }
-  }
-  if (!data->error_stream_ || data->success_)
+  if (!data->http_code_)
+    curl_easy_getinfo(data->handle_.get(), CURLINFO_RESPONSE_CODE,
+                      &data->http_code_);
+  if (!data->error_stream_ ||
+      data->callback_->isSuccess(static_cast<int>(data->http_code_),
+                                 data->response_headers_))
     data->stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
   else
     data->error_stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
@@ -238,8 +234,7 @@ RequestData::Pointer CurlHttpRequest::prepare(
                                                  callback,
                                                  complete,
                                                  follow_redirect(),
-                                                 true,
-                                                 false});
+                                                 0});
   auto handle = cb_data->handle_.get();
   curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb_data.get());
   curl_easy_setopt(handle, CURLOPT_XFERINFODATA, callback.get());

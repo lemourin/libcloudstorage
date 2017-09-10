@@ -30,6 +30,8 @@
 #include <algorithm>
 #include <cctype>
 
+using namespace std::placeholders;
+
 namespace cloudstorage {
 
 template <class T>
@@ -153,8 +155,10 @@ template <class T>
 std::unique_ptr<HttpCallback> Request<T>::httpCallback(
     std::function<void(uint32_t, uint32_t)> progress_download,
     std::function<void(uint32_t, uint32_t)> progress_upload) {
-  return util::make_unique<HttpCallback>([=] { return is_cancelled(); },
-                                         progress_download, progress_upload);
+  return util::make_unique<HttpCallback>(
+      [=] { return is_cancelled(); },
+      std::bind(&CloudProvider::isSuccess, provider_.get(), _1, _2),
+      progress_download, progress_upload);
 }
 
 template <class T>
@@ -203,11 +207,9 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   authorize(r);
   send(r.get(),
        [=](IHttpRequest::Response response) {
-         bool reauthorize =
-             this->reauthorize(response.http_code_, response.headers_);
-         if (IHttpRequest::isSuccess(response.http_code_) && !reauthorize)
+         if (provider()->isSuccess(response.http_code_, response.headers_))
            return complete(output);
-         if (reauthorize) {
+         if (this->reauthorize(response.http_code_, response.headers_)) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
@@ -224,7 +226,8 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
                  r.get(),
                  [=](IHttpRequest::Response response) {
                    (void)request;
-                   if (IHttpRequest::isSuccess(response.http_code_))
+                   if (provider()->isSuccess(response.http_code_,
+                                             response.headers_))
                      complete(output);
                    else
                      complete(Error{response.http_code_, error_stream->str()});

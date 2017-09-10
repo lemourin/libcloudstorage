@@ -36,6 +36,8 @@ class PCloud : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
   bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
+  bool isSuccess(int code,
+                 const IHttpRequest::HeaderParameters&) const override;
 
   DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range);

@@ -123,7 +123,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
   auto auth_callback = provider()->auth_callback();
   send(r.get(),
        [=](IHttpRequest::Response response) {
-         if (IHttpRequest::isSuccess(response.http_code_)) {
+         if (provider()->isSuccess(response.http_code_, response.headers_)) {
            try {
              auto lock = provider()->auth_lock();
              auth->set_access_token(auth->refreshTokenResponse(*output));
@@ -148,7 +148,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
              auto r = auth->exchangeAuthorizationCodeRequest(*input);
              send(r.get(),
                   [=](IHttpRequest::Response response) {
-                    if (IHttpRequest::isSuccess(response.http_code_)) {
+                    if (provider()->isSuccess(response.http_code_,
+                                              response.headers_)) {
                       try {
                         auto lock = provider()->auth_lock();
                         auth->set_access_token(

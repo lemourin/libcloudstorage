@@ -127,7 +127,7 @@ AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
           r->send(request.get(),
                   [=](IHttpRequest::Response response) {
                     (void)r;
-                    if (!IHttpRequest::isSuccess(response.http_code_))
+                    if (!isSuccess(response.http_code_, response.headers_))
                       return complete(Error{response.http_code_, error->str()});
                     try {
                       Json::Value response;

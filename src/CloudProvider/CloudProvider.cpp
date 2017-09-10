@@ -267,6 +267,11 @@ IHttpServerFactory* CloudProvider::http_server() const {
   return http_server_.get();
 }
 
+bool CloudProvider::isSuccess(int code,
+                              const IHttpRequest::HeaderParameters&) const {
+  return IHttpRequest::isSuccess(code);
+}
+
 ICloudProvider::ExchangeCodeRequest::Pointer CloudProvider::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
   return std::make_shared<cloudstorage::ExchangeCodeRequest>(shared_from_this(),

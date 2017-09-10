@@ -65,6 +65,8 @@ class IHttpRequest {
 
     virtual ~ICallback() = default;
 
+    virtual bool isSuccess(int code, const HeaderParameters&) const = 0;
+
     /**
      * @return whether to abort request right now
      */
