@@ -37,6 +37,9 @@ class PCloud : public CloudProvider {
   std::string endpoint() const override;
   bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
 
+  DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range);
+
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer getItemDataRequest(
@@ -47,8 +50,6 @@ class PCloud : public CloudProvider {
   IHttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename,
       std::ostream& prefix_stream, std::ostream& suffix_stream) const override;
-  IHttpRequest::Pointer downloadFileRequest(
-      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer createDirectoryRequest(const IItem&,

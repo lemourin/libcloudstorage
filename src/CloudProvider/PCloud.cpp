@@ -22,7 +22,9 @@
  *****************************************************************************/
 #include "PCloud.h"
 
+#include "Request/DownloadFileRequest.h"
 #include "Utility/Item.h"
+#include "Utility/Utility.h"
 
 const std::string THUMBNAIL_SIZE = "64x64";
 
@@ -80,6 +82,13 @@ IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
   return req;
 }
 
+ICloudProvider::DownloadFileRequest::Pointer PCloud::downloadFileAsync(
+    IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
+  return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
+                                                      range)
+      ->run();
+}
+
 IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem&,
                                                 const std::string&,
                                                 std::ostream&,
@@ -87,31 +96,58 @@ IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem&,
   return nullptr;
 }
 
-IHttpRequest::Pointer PCloud::downloadFileRequest(const IItem&,
-                                                  std::ostream&) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer PCloud::deleteItemRequest(const IItem&,
+IHttpRequest::Pointer PCloud::deleteItemRequest(const IItem& item,
                                                 std::ostream&) const {
-  return nullptr;
+  if (item.type() == IItem::FileType::Directory) {
+    auto request = http()->create(endpoint() + "/deletefolderrecursive");
+    request->setParameter("folderid", item.id());
+    return request;
+  } else {
+    auto request = http()->create(endpoint() + "/deletefile");
+    request->setParameter("fileid", item.id());
+    return request;
+  }
 }
 
-IHttpRequest::Pointer PCloud::createDirectoryRequest(const IItem&,
-                                                     const std::string&,
+IHttpRequest::Pointer PCloud::createDirectoryRequest(const IItem& item,
+                                                     const std::string& name,
                                                      std::ostream&) const {
-  return nullptr;
+  auto request = http()->create(endpoint() + "/createfolder");
+  request->setParameter("folderid", item.id());
+  request->setParameter("name", util::Url::escape(name));
+  return request;
 }
 
-IHttpRequest::Pointer PCloud::moveItemRequest(const IItem&, const IItem&,
+IHttpRequest::Pointer PCloud::moveItemRequest(const IItem& source,
+                                              const IItem& destination,
                                               std::ostream&) const {
-  return nullptr;
+  if (source.type() == IItem::FileType::Directory) {
+    auto request = http()->create(endpoint() + "/renamefolder");
+    request->setParameter("folderid", source.id());
+    request->setParameter("tofolderid", destination.id());
+    return request;
+  } else {
+    auto request = http()->create(endpoint() + "/renamefile");
+    request->setParameter("fileid", source.id());
+    request->setParameter("tofolderid", destination.id());
+    return request;
+  }
 }
 
-IHttpRequest::Pointer PCloud::renameItemRequest(const IItem&,
-                                                const std::string&,
+IHttpRequest::Pointer PCloud::renameItemRequest(const IItem& item,
+                                                const std::string& name,
                                                 std::ostream&) const {
-  return nullptr;
+  if (item.type() == IItem::FileType::Directory) {
+    auto request = http()->create(endpoint() + "/renamefolder");
+    request->setParameter("folderid", item.id());
+    request->setParameter("toname", util::Url::escape(name));
+    return request;
+  } else {
+    auto request = http()->create(endpoint() + "/renamefile");
+    request->setParameter("fileid", item.id());
+    request->setParameter("toname", util::Url::escape(name));
+    return request;
+  }
 }
 
 std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
