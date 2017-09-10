@@ -187,7 +187,7 @@ IItem::Pointer PCloud::toItem(const Json::Value& v) const {
   if (v["thumb"].asBool())
     item->set_thumbnail_url(endpoint() + "/getthumb?fileid=" + item->id() +
                             "&size=" + THUMBNAIL_SIZE);
-  return item;
+  return std::move(item);
 }
 
 PCloud::Auth::Auth() {
