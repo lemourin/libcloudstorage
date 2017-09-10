@@ -71,6 +71,7 @@ IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string& id,
                                                  std::ostream&) const {
   auto r = http()->create(endpoint() + "/checksumfile");
   r->setParameter("fileid", id);
+  r->setParameter("timeformat", "timestamp");
   return r;
 }
 
@@ -85,6 +86,7 @@ IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
                                                    std::ostream&) const {
   auto req = http()->create(endpoint() + "/listfolder");
   req->setParameter("folderid", item.id());
+  req->setParameter("timeformat", "timestamp");
   return req;
 }
 
@@ -125,6 +127,7 @@ IHttpRequest::Pointer PCloud::createDirectoryRequest(const IItem& item,
   auto request = http()->create(endpoint() + "/createfolder");
   request->setParameter("folderid", item.id());
   request->setParameter("name", util::Url::escape(name));
+  request->setParameter("timeformat", "timestamp");
   return request;
 }
 
@@ -175,7 +178,10 @@ IItem::Pointer PCloud::toItem(const Json::Value& v) const {
       v["isfolder"].asBool() ? v["folderid"].asString()
                              : v["fileid"].asString(),
       v.isMember("size") ? v["size"].asInt64() : IItem::UnknownSize,
-      IItem::UnknownTimeStamp,
+      v.isMember("modified")
+          ? std::chrono::system_clock::time_point(
+                std::chrono::seconds(v["modified"].asInt64()))
+          : IItem::UnknownTimeStamp,
       v["isfolder"].asBool() ? IItem::FileType::Directory
                              : IItem::FileType::Unknown);
   if (v["thumb"].asBool())
