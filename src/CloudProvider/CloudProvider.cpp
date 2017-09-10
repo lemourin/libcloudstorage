@@ -506,7 +506,8 @@ IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
 }
 
-std::string CloudProvider::getItemUrlResponse(std::istream&) const {
+std::string CloudProvider::getItemUrlResponse(const IItem&,
+                                              std::istream&) const {
   return "";
 }
 

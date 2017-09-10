@@ -56,7 +56,8 @@ IHttpRequest::Pointer Box::getItemUrlRequest(const IItem& item,
   return request;
 }
 
-std::string Box::getItemUrlResponse(std::istream& response) const {
+std::string Box::getItemUrlResponse(const IItem&,
+                                    std::istream& response) const {
   std::string url;
   response >> url;
   return url;

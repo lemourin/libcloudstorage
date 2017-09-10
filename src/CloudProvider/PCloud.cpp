@@ -52,7 +52,8 @@ IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
   return r;
 }
 
-std::string PCloud::getItemUrlResponse(std::istream& response) const {
+std::string PCloud::getItemUrlResponse(const IItem&,
+                                       std::istream& response) const {
   Json::Value json;
   response >> json;
   return "https://" + json["hosts"][0].asString() + json["path"].asString();

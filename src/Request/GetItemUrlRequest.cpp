@@ -55,7 +55,7 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                 if (e.left())
                   r->done(e.left());
                 else {
-                  auto url = provider()->getItemUrlResponse(*output);
+                  auto url = provider()->getItemUrlResponse(*item, *output);
                   static_cast<Item*>(item.get())->set_url(url);
                   r->done(url);
                 }

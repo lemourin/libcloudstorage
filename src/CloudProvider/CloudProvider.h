@@ -208,7 +208,8 @@ class CloudProvider : public ICloudProvider,
    */
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
 
-  virtual std::string getItemUrlResponse(std::istream& response) const;
+  virtual std::string getItemUrlResponse(const IItem& item,
+                                         std::istream& response) const;
 
   /**
    * Used by default implementation of listDirectoryAsync, should extract items

@@ -40,6 +40,17 @@ std::string GoogleDrive::name() const { return "google"; }
 
 std::string GoogleDrive::endpoint() const { return GOOGLEAPI_ENDPOINT; }
 
+IHttpRequest::Pointer GoogleDrive::getItemUrlRequest(
+    const IItem& item, std::ostream& stream) const {
+  return getItemDataRequest(item.id(), stream);
+}
+
+std::string GoogleDrive::getItemUrlResponse(const IItem& item,
+                                            std::istream&) const {
+  return endpoint() + "/drive/v3/files/" + item.id() +
+         "?alt=media&access_token=" + access_token();
+}
+
 IHttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
                                                       std::ostream&) const {
   auto request = http()->create(endpoint() + "/drive/v3/files/" + id, "GET");
@@ -194,8 +205,6 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   else if (thumnail_url.empty())
     thumnail_url = v["iconLink"].asString();
   item->set_thumbnail_url(thumnail_url);
-  item->set_url(endpoint() + "/drive/v3/files/" + item->id() +
-                "?alt=media&access_token=" + access_token());
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
   item->set_parents(parents);

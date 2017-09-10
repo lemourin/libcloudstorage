@@ -64,7 +64,8 @@ class YandexDisk : public CloudProvider {
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
-  std::string getItemUrlResponse(std::istream& response) const override;
+  std::string getItemUrlResponse(const IItem&,
+                                 std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
   void authorizeRequest(IHttpRequest&) const override;

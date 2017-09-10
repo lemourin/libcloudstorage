@@ -118,7 +118,8 @@ IHttpRequest::Pointer YouTube::getItemUrlRequest(const IItem& item,
   return request;
 }
 
-std::string YouTube::getItemUrlResponse(std::istream& stream) const {
+std::string YouTube::getItemUrlResponse(const IItem&,
+                                        std::istream& stream) const {
   Json::Value response;
   stream >> response;
   for (auto v : response["info"]["formats"])
