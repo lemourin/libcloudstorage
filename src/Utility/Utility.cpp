@@ -65,11 +65,6 @@ unsigned char from_hex(unsigned char ch) {
   return ch;
 }
 
-std::string to_lower(std::string str) {
-  for (char& c : str) c = tolower(c);
-  return str;
-}
-
 bool leap_year(int year) {
   return !(year % 4) && ((year % 100) || !(year % 400));
 }
@@ -85,6 +80,11 @@ bool operator==(const Range& r1, const Range& r2) {
 bool operator!=(const Range& r1, const Range& r2) { return !(r1 == r2); }
 
 namespace util {
+
+std::string to_lower(std::string str) {
+  for (char& c : str) c = tolower(c);
+  return str;
+}
 
 std::string remove_whitespace(const std::string& str) {
   std::string result;

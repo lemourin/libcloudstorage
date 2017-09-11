@@ -47,6 +47,7 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
+std::string to_lower(std::string);
 std::string remove_whitespace(const std::string& str);
 Range parse_range(const std::string& str);
 std::string range_to_string(Range);
