@@ -131,6 +131,9 @@ IHttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
   auto request =
       http()->create(endpoint() + "/drive/v3/files/" + source.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
+  request->setParameter("fields",
+                        "id,name,thumbnailLink,trashed,"
+                        "mimeType,iconLink,parents");
   std::string current_parents;
   for (auto str : source.parents()) current_parents += str + ",";
   current_parents.pop_back();
@@ -145,6 +148,9 @@ IHttpRequest::Pointer GoogleDrive::renameItemRequest(
   auto request =
       http()->create(endpoint() + "/drive/v3/files/" + item.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
+  request->setParameter("fields",
+                        "id,name,thumbnailLink,trashed,"
+                        "mimeType,iconLink,parents");
   Json::Value json;
   json["name"] = name;
   input << json;
