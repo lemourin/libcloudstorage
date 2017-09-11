@@ -54,7 +54,7 @@ class ICloudProvider {
   using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
   using MoveItemRequest = IRequest<EitherError<void>>;
-  using RenameItemRequest = IRequest<EitherError<void>>;
+  using RenameItemRequest = IRequest<EitherError<IItem>>;
 
   class IAuthCallback {
    public:
@@ -346,7 +346,7 @@ class ICloudProvider {
    */
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
-      RenameItemCallback callback = [](EitherError<void>) {}) = 0;
+      RenameItemCallback callback = [](EitherError<IItem>) {}) = 0;
 
   /**
    * Lists directory, but returns only one page of items.

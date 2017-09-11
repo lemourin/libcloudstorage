@@ -66,6 +66,9 @@ class YandexDisk : public CloudProvider {
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::string getItemUrlResponse(const IItem&,
                                  std::istream& response) const override;
+  IItem::Pointer renameItemResponse(const IItem& old_item,
+                                    const std::string& name,
+                                    std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
   void authorizeRequest(IHttpRequest&) const override;

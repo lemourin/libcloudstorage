@@ -228,6 +228,10 @@ class CloudProvider : public ICloudProvider,
       const IItem& directory, std::istream& response,
       std::string& next_page_token) const;
 
+  virtual IItem::Pointer renameItemResponse(const IItem& old_item,
+                                            const std::string& name,
+                                            std::istream& response) const;
+
   /**
    * Used by default implementation of createDirectoryAsync, should translate
    * response into new directory's item object.

@@ -511,6 +511,12 @@ IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
 }
 
+IItem::Pointer CloudProvider::renameItemResponse(const IItem&,
+                                                 const std::string&,
+                                                 std::istream& response) const {
+  return getItemDataResponse(response);
+}
+
 std::string CloudProvider::getItemUrlResponse(const IItem&,
                                               std::istream&) const {
   return "";

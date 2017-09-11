@@ -38,8 +38,9 @@ using ItemId = std::pair<std::string, std::string>;
 
 namespace {
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
-            std::string region, ItemId dest_id, ItemId source_id,
+template <class T>
+void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
+            ItemId dest_id, ItemId source_id,
             std::function<void(EitherError<void>)> complete);
 
 std::string to_string(ItemId str) {
@@ -64,7 +65,8 @@ std::string escapePath(const std::string& str) {
   return result;
 }
 
-void remove(Request<EitherError<void>>::Pointer r,
+template <class T>
+void remove(typename Request<T>::Pointer r,
             std::shared_ptr<std::vector<IItem::Pointer>> lst,
             std::function<void(EitherError<void>)> complete) {
   if (lst->empty()) return complete(nullptr);
@@ -74,29 +76,30 @@ void remove(Request<EitherError<void>>::Pointer r,
     if (e.left())
       complete(e.left());
     else
-      remove(r, lst, complete);
+      remove<T>(r, lst, complete);
   }));
 }
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
-            std::string region,
+template <class T>
+void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
             std::shared_ptr<std::vector<IItem::Pointer>> lst, ItemId dest_id,
             ItemId source_id, std::function<void(EitherError<void>)> complete) {
   if (lst->empty()) return complete(nullptr);
   auto item = lst->back();
   lst->pop_back();
-  rename(r, http, region, lst, dest_id, source_id, [=](EitherError<void> e) {
+  rename<T>(r, http, region, lst, dest_id, source_id, [=](EitherError<void> e) {
     if (e.left())
       complete(e.left());
     else
-      rename(r, http, region,
-             {dest_id.first, dest_id.second + "/" + item->filename()},
-             AmazonS3::extract(item->id()), complete);
+      rename<T>(r, http, region,
+                {dest_id.first, dest_id.second + "/" + item->filename()},
+                AmazonS3::extract(item->id()), complete);
   });
 }
 
-void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
-            std::string region, ItemId dest_id, ItemId source_id,
+template <class T>
+void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
+            ItemId dest_id, ItemId source_id,
             std::function<void(EitherError<void>)> complete) {
   auto finalize = [=]() {
     auto output = std::make_shared<std::stringstream>();
@@ -142,13 +145,13 @@ void rename(Request<EitherError<void>>::Pointer r, IHttp* http,
           r->subrequest(r->provider()->listDirectoryAsync(
               e.right(), [=](EitherError<std::vector<IItem::Pointer>> e) {
                 if (e.left()) return r->done(e.left());
-                rename(r, http, region, e.right(), dest_id, source_id,
-                       [=](EitherError<void> e) {
-                         if (e.left())
-                           complete(e.left());
-                         else
-                           finalize();
-                       });
+                rename<T>(r, http, region, e.right(), dest_id, source_id,
+                          [=](EitherError<void> e) {
+                            if (e.left())
+                              complete(e.left());
+                            else
+                              finalize();
+                          });
               }));
         }));
   }
@@ -219,10 +222,10 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
   r->set(
       [=](Request<EitherError<void>>::Pointer r) {
         auto data = AmazonS3::extract(destination->id());
-        rename(r, http(), region(),
-               {data.first, data.second + source->filename()},
-               AmazonS3::extract(source->id()),
-               [=](EitherError<void> e) { r->done(e); });
+        rename<EitherError<void>>(
+            r, http(), region(), {data.first, data.second + source->filename()},
+            AmazonS3::extract(source->id()),
+            [=](EitherError<void> e) { r->done(e); });
       },
       callback);
   return r->run();
@@ -230,9 +233,9 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
 
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=](Request<EitherError<IItem>>::Pointer r) {
         auto data = extract(item->id());
         auto path = data.second;
         if (!path.empty() && path.back() == '/') path.pop_back();
@@ -240,8 +243,15 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
           path = "";
         else
           path = getPath(path) + "/";
-        rename(r, http(), region(), {data.first, path + name},
-               extract(item->id()), [=](EitherError<void> e) { r->done(e); });
+        rename<EitherError<IItem>>(
+            r, http(), region(), {data.first, path + name}, extract(item->id()),
+            [=](EitherError<void> e) {
+              if (e.left()) return r->done(e.left());
+              IItem::Pointer nitem = util::make_unique<Item>(
+                  item->filename(), item->id(), item->size(), item->timestamp(),
+                  item->type());
+              r->done(nitem);
+            });
       },
       callback);
   return r->run();
@@ -304,10 +314,12 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
           r->subrequest(r->provider()->listDirectoryAsync(
               item, [=](EitherError<std::vector<IItem::Pointer>> e) {
                 if (e.left()) return r->done(e.left());
-                remove(r, e.right(), [=](EitherError<void> e) {
-                  if (e.left()) return r->done(e.left());
-                  release();
-                });
+                remove<EitherError<void>>(r, e.right(),
+                                          [=](EitherError<void> e) {
+                                            if (e.left())
+                                              return r->done(e.left());
+                                            release();
+                                          });
               }));
         } else
           release();

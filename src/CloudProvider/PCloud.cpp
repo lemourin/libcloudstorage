@@ -138,11 +138,13 @@ IHttpRequest::Pointer PCloud::moveItemRequest(const IItem& source,
     auto request = http()->create(endpoint() + "/renamefolder");
     request->setParameter("folderid", source.id());
     request->setParameter("tofolderid", destination.id());
+    request->setParameter("timeformat", "timestamp");
     return request;
   } else {
     auto request = http()->create(endpoint() + "/renamefile");
     request->setParameter("fileid", source.id());
     request->setParameter("tofolderid", destination.id());
+    request->setParameter("timeformat", "timestamp");
     return request;
   }
 }
@@ -154,11 +156,13 @@ IHttpRequest::Pointer PCloud::renameItemRequest(const IItem& item,
     auto request = http()->create(endpoint() + "/renamefolder");
     request->setParameter("folderid", item.id());
     request->setParameter("toname", util::Url::escape(name));
+    request->setParameter("timeformat", "timestamp");
     return request;
   } else {
     auto request = http()->create(endpoint() + "/renamefile");
     request->setParameter("fileid", item.id());
     request->setParameter("toname", util::Url::escape(name));
+    request->setParameter("timeformat", "timestamp");
     return request;
   }
 }

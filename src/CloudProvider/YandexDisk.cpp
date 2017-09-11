@@ -213,6 +213,13 @@ IHttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
   return request;
 }
 
+IItem::Pointer YandexDisk::renameItemResponse(const IItem& item,
+                                              const std::string& name,
+                                              std::istream&) const {
+  return util::make_unique<Item>(name, getPath(item.id()) + "/" + name,
+                                 item.size(), item.timestamp(), item.type());
+}
+
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   Json::Value response;

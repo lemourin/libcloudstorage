@@ -171,6 +171,15 @@ IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {
   return toItem(document.RootElement()->FirstChild());
 }
 
+IItem::Pointer WebDav::renameItemResponse(const IItem& item,
+                                          const std::string& name,
+                                          std::istream&) const {
+  auto i = util::make_unique<Item>(name, getPath(item.id()) + "/" + name,
+                                   item.size(), item.timestamp(), item.type());
+  i->set_url(static_cast<const Item&>(item).url());
+  return i;
+}
+
 std::vector<IItem::Pointer> WebDav::listDirectoryResponse(const IItem&,
                                                           std::istream& stream,
                                                           std::string&) const {

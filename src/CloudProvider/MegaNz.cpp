@@ -744,15 +744,21 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        ensureAuthorized<EitherError<void>>(r, [=] {
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        ensureAuthorized<EitherError<IItem>>(r, [=] {
           std::unique_ptr<mega::MegaNode> node(
               mega_->getNodeByPath(item->id().c_str()));
           if (node) {
             auto listener = Listener::make<RequestListener>(
-                [=](EitherError<void> e, Listener*) { r->done(e); }, this);
+                [=](EitherError<void> e, Listener*) {
+                  if (e.left()) return r->done(e.left());
+                  std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(
+                      (getPath(item->id()) + "/" + name).c_str()));
+                  r->done(toItem(node.get()));
+                },
+                this);
             r->subrequest(listener);
             mega_->renameNode(node.get(), name.c_str(), listener.get());
           } else
