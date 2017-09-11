@@ -34,6 +34,7 @@
 #include <condition_variable>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <queue>
 
 using namespace mega;
@@ -718,17 +719,23 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        ensureAuthorized<EitherError<void>>(r, [=] {
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        ensureAuthorized<EitherError<IItem>>(r, [=] {
           std::unique_ptr<mega::MegaNode> source_node(
               mega_->getNodeByPath(source->id().c_str()));
           std::unique_ptr<mega::MegaNode> destination_node(
               mega_->getNodeByPath(destination->id().c_str()));
           if (source_node && destination_node) {
             auto listener = Listener::make<RequestListener>(
-                [=](EitherError<void> e, Listener*) { r->done(e); }, this);
+                [=](EitherError<void> e, Listener* listener) {
+                  if (e.left()) return r->done(e.left());
+                  std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
+                      static_cast<RequestListener*>(listener)->node_));
+                  r->done(toItem(node.get()));
+                },
+                this);
             r->subrequest(listener);
             mega_->moveNode(source_node.get(), destination_node.get(),
                             listener.get());
@@ -752,10 +759,10 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
               mega_->getNodeByPath(item->id().c_str()));
           if (node) {
             auto listener = Listener::make<RequestListener>(
-                [=](EitherError<void> e, Listener*) {
+                [=](EitherError<void> e, Listener* listener) {
                   if (e.left()) return r->done(e.left());
-                  std::unique_ptr<mega::MegaNode> node(mega_->getNodeByPath(
-                      (getPath(item->id()) + "/" + name).c_str()));
+                  std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
+                      static_cast<RequestListener*>(listener)->node_));
                   r->done(toItem(node.get()));
                 },
                 this);

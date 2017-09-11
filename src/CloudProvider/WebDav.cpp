@@ -145,9 +145,9 @@ IHttpRequest::Pointer WebDav::moveItemRequest(const IItem& source,
                                               const IItem& destination,
                                               std::ostream&) const {
   auto request = http()->create(endpoint() + source.id(), "MOVE");
-  request->setHeaderParameter("Destination",
-                              util::Url(endpoint()).path() + destination.id() +
-                                  "/" + source.filename());
+  request->setHeaderParameter(
+      "Destination",
+      util::Url(endpoint()).path() + destination.id() + source.filename());
   return request;
 }
 
@@ -176,7 +176,22 @@ IItem::Pointer WebDav::renameItemResponse(const IItem& item,
                                           std::istream&) const {
   auto i = util::make_unique<Item>(name, getPath(item.id()) + "/" + name,
                                    item.size(), item.timestamp(), item.type());
-  i->set_url(static_cast<const Item&>(item).url());
+  auto lock = auth_lock();
+  auto url = util::Url(webdav_url_);
+  i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
+             url.host() + url.path() + i->id() + url.query());
+  return i;
+}
+
+IItem::Pointer WebDav::moveItemResponse(const IItem& source, const IItem& dest,
+                                        std::istream&) const {
+  auto i =
+      util::make_unique<Item>(source.filename(), dest.id() + source.filename(),
+                              source.size(), source.timestamp(), source.type());
+  auto lock = auth_lock();
+  auto url = util::Url(webdav_url_);
+  i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
+             url.host() + url.path() + i->id() + url.query());
   return i;
 }
 

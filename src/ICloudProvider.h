@@ -53,7 +53,7 @@ class ICloudProvider {
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
-  using MoveItemRequest = IRequest<EitherError<void>>;
+  using MoveItemRequest = IRequest<EitherError<IItem>>;
   using RenameItemRequest = IRequest<EitherError<IItem>>;
 
   class IAuthCallback {
@@ -331,7 +331,7 @@ class ICloudProvider {
    */
   virtual MoveItemRequest::Pointer moveItemAsync(
       IItem::Pointer source, IItem::Pointer destination,
-      MoveItemCallback callback = [](EitherError<void>) {}) = 0;
+      MoveItemCallback callback = [](EitherError<IItem>) {}) = 0;
 
   /**
    * Renames item.

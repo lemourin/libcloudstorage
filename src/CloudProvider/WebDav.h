@@ -78,6 +78,8 @@ class WebDav : public CloudProvider {
   IItem::Pointer renameItemResponse(const IItem& old_item,
                                     const std::string& name,
                                     std::istream& response) const override;
+  IItem::Pointer moveItemResponse(const IItem&, const IItem&,
+                                  std::istream&) const override;
 
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 

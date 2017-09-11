@@ -34,8 +34,8 @@ namespace cloudstorage {
 
 namespace {
 
-void move(Request<EitherError<void>>::Pointer r, IHttp* http,
-          std::string metadata_url,
+template <class T>
+void move(typename Request<T>::Pointer r, IHttp* http, std::string metadata_url,
           std::shared_ptr<std::vector<std::string>> lst, IItem::Pointer source,
           IItem::Pointer destination,
           std::function<void(EitherError<void>)> complete) {
@@ -58,7 +58,7 @@ void move(Request<EitherError<void>>::Pointer r, IHttp* http,
         if (e.left())
           complete(e.left());
         else
-          move(r, http, metadata_url, lst, source, destination, complete);
+          move<T>(r, http, metadata_url, lst, source, destination, complete);
       },
       output);
 }
@@ -99,13 +99,16 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        move(r, http(), metadata_url(),
-             std::make_shared<std::vector<std::string>>(
-                 static_cast<Item*>(source.get())->parents()),
-             source, destination, callback);
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        move<EitherError<IItem>>(
+            r, http(), metadata_url(),
+            std::make_shared<std::vector<std::string>>(
+                static_cast<Item*>(source.get())->parents()),
+            source, destination, [=](EitherError<void>) {
+
+            });
       },
       callback);
   return r->run();

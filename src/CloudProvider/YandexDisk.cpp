@@ -220,6 +220,14 @@ IItem::Pointer YandexDisk::renameItemResponse(const IItem& item,
                                  item.size(), item.timestamp(), item.type());
 }
 
+IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
+                                            const IItem& dest,
+                                            std::istream&) const {
+  return util::make_unique<Item>(
+      source.filename(), dest.id() + "/" + source.filename(), source.size(),
+      source.timestamp(), source.type());
+}
+
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   Json::Value response;

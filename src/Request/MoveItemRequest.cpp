@@ -43,10 +43,13 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
               return p->moveItemRequest(*source, *destination, *stream);
             },
             [=](EitherError<util::Output> e) {
-              if (e.left())
-                request->done(e.left());
-              else
-                request->done(nullptr);
+              if (e.left()) return request->done(e.left());
+              try {
+                request->done(
+                    p->moveItemResponse(*source, *destination, *output));
+              } catch (std::exception) {
+                request->done(Error{IHttpRequest::Failure, output->str()});
+              }
             },
             output);
       },

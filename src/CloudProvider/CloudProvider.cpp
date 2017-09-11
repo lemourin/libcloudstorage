@@ -517,6 +517,11 @@ IItem::Pointer CloudProvider::renameItemResponse(const IItem&,
   return getItemDataResponse(response);
 }
 
+IItem::Pointer CloudProvider::moveItemResponse(const IItem&, const IItem&,
+                                               std::istream& response) const {
+  return getItemDataResponse(response);
+}
+
 std::string CloudProvider::getItemUrlResponse(const IItem&,
                                               std::istream&) const {
   return "";

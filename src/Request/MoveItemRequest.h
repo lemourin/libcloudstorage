@@ -28,7 +28,7 @@
 
 namespace cloudstorage {
 
-class MoveItemRequest : public Request<EitherError<void>> {
+class MoveItemRequest : public Request<EitherError<IItem>> {
  public:
   MoveItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer source,
                   IItem::Pointer destination, MoveItemCallback);

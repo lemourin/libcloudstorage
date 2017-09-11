@@ -218,14 +218,20 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=](Request<EitherError<IItem>>::Pointer r) {
         auto data = AmazonS3::extract(destination->id());
-        rename<EitherError<void>>(
+        rename<EitherError<IItem>>(
             r, http(), region(), {data.first, data.second + source->filename()},
-            AmazonS3::extract(source->id()),
-            [=](EitherError<void> e) { r->done(e); });
+            AmazonS3::extract(source->id()), [=](EitherError<void> e) {
+              if (e.left()) return r->done(e.left());
+              IItem::Pointer nitem = util::make_unique<Item>(
+                  source->filename(),
+                  to_string({data.first, data.second + source->filename()}),
+                  source->size(), source->timestamp(), source->type());
+              r->done(nitem);
+            });
       },
       callback);
   return r->run();
@@ -248,8 +254,8 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
             [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
               IItem::Pointer nitem = util::make_unique<Item>(
-                  item->filename(), item->id(), item->size(), item->timestamp(),
-                  item->type());
+                  name, to_string({data.first, path + name}), item->size(),
+                  item->timestamp(), item->type());
               r->done(nitem);
             });
       },
