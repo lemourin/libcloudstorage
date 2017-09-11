@@ -148,32 +148,21 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   return r->run();
 }
 
-ICloudProvider::CreateDirectoryRequest::Pointer
-YandexDisk::createDirectoryAsync(IItem::Pointer parent, const std::string& name,
-                                 CreateDirectoryCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        auto path =
-            parent->id() + (parent->id().back() == '/' ? "" : "/") + name;
-        r->sendRequest(
-            [=](util::Output) {
-              auto request =
-                  http()->create(endpoint() + "/v1/disk/resources/", "PUT");
-              request->setParameter("path", path);
-              return request;
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              r->done(IItem::Pointer(util::make_unique<Item>(
-                  name, path, 0, std::chrono::system_clock::now(),
-                  IItem::FileType::Directory)));
-            },
-            output);
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer YandexDisk::createDirectoryRequest(
+    const IItem& parent, const std::string& name, std::ostream&) const {
+  auto request = http()->create(endpoint() + "/v1/disk/resources/", "PUT");
+  auto path = parent.id() + (parent.id().back() == '/' ? "" : "/") + name;
+  request->setParameter("path", path);
+  return request;
+}
+
+IItem::Pointer YandexDisk::createDirectoryResponse(const IItem& parent,
+                                                   const std::string& name,
+                                                   std::istream&) const {
+  auto path = parent.id() + (parent.id().back() == '/' ? "" : "/") + name;
+  return util::make_unique<Item>(name, path, 0,
+                                 std::chrono::system_clock::now(),
+                                 IItem::FileType::Directory);
 }
 
 IHttpRequest::Pointer YandexDisk::listDirectoryRequest(

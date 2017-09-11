@@ -263,37 +263,23 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
   return r->run();
 }
 
-ICloudProvider::CreateDirectoryRequest::Pointer AmazonS3::createDirectoryAsync(
-    IItem::Pointer parent, const std::string& name,
-    CreateDirectoryCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output) {
-              auto data = extract(parent->id());
-              return http()->create("https://" + data.first + ".s3." +
-                                        region() + ".amazonaws.com/" +
-                                        escapePath(data.second + name + "/"),
-                                    "PUT");
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) {
-                r->done(e.left());
-              } else {
-                auto data = extract(parent->id());
-                auto item = std::make_shared<Item>(
-                    name,
-                    util::to_base64(to_string({data.first, data.second + "/"})),
-                    0, IItem::UnknownTimeStamp, IItem::FileType::Directory);
-                r->done(EitherError<IItem>(item));
-              }
-            },
-            output);
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer AmazonS3::createDirectoryRequest(const IItem& parent,
+                                                       const std::string& name,
+                                                       std::ostream&) const {
+  auto data = extract(parent.id());
+  return http()->create("https://" + data.first + ".s3." + region() +
+                            ".amazonaws.com/" +
+                            escapePath(data.second + name + "/"),
+                        "PUT");
+}
+
+IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
+                                                 const std::string& name,
+                                                 std::istream&) const {
+  auto data = extract(parent.id());
+  return std::make_shared<Item>(
+      name, util::to_base64(to_string({data.first, data.second + "/"})), 0,
+      IItem::UnknownTimeStamp, IItem::FileType::Directory);
 }
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(

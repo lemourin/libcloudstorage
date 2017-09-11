@@ -44,9 +44,10 @@ class YandexDisk : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
-  CreateDirectoryRequest::Pointer createDirectoryAsync(
-      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
 
+  IHttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                               const std::string& name,
+                                               std::ostream&) const override;
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer getItemDataRequest(
@@ -71,6 +72,9 @@ class YandexDisk : public CloudProvider {
                                     std::istream& response) const override;
   IItem::Pointer moveItemResponse(const IItem&, const IItem&,
                                   std::istream&) const override;
+  IItem::Pointer createDirectoryResponse(const IItem& parent,
+                                         const std::string& name,
+                                         std::istream& response) const;
 
   IItem::Pointer toItem(const Json::Value&) const;
   void authorizeRequest(IHttpRequest&) const override;

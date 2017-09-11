@@ -243,7 +243,9 @@ class CloudProvider : public ICloudProvider,
    *
    * @return item object
    */
-  virtual IItem::Pointer createDirectoryResponse(std::istream& response) const;
+  virtual IItem::Pointer createDirectoryResponse(const IItem& parent,
+                                                 const std::string& name,
+                                                 std::istream& response) const;
 
   /**
    * Should add access token to the request, by default sets Authorization

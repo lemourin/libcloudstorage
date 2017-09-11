@@ -57,12 +57,12 @@ class AmazonS3 : public CloudProvider {
   RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
                                              const std::string&,
                                              RenameItemCallback) override;
-  CreateDirectoryRequest::Pointer createDirectoryAsync(
-      IItem::Pointer parent, const std::string& name,
-      CreateDirectoryCallback) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback) override;
 
+  IHttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                               const std::string& name,
+                                               std::ostream&) const override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -74,6 +74,9 @@ class AmazonS3 : public CloudProvider {
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+  IItem::Pointer createDirectoryResponse(const IItem& parent,
+                                         const std::string& name,
+                                         std::istream& response) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
   bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;

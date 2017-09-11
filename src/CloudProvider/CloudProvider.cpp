@@ -533,7 +533,7 @@ std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
 }
 
 IItem::Pointer CloudProvider::createDirectoryResponse(
-    std::istream& stream) const {
+    const IItem&, const std::string&, std::istream& stream) const {
   return getItemDataResponse(stream);
 }
 

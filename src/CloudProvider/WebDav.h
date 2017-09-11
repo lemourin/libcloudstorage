@@ -51,8 +51,9 @@ class WebDav : public CloudProvider {
   std::string token() const override;
 
   AuthorizeRequest::Pointer authorizeAsync() override;
-  CreateDirectoryRequest::Pointer createDirectoryAsync(
-      IItem::Pointer, const std::string&, CreateDirectoryCallback) override;
+  IHttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                               const std::string& name,
+                                               std::ostream&) const override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;
@@ -80,6 +81,9 @@ class WebDav : public CloudProvider {
                                     std::istream& response) const override;
   IItem::Pointer moveItemResponse(const IItem&, const IItem&,
                                   std::istream&) const override;
+  IItem::Pointer createDirectoryResponse(const IItem& parent,
+                                         const std::string& name,
+                                         std::istream& response) const override;
 
   IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
 

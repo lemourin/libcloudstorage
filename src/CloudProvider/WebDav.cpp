@@ -81,30 +81,19 @@ AuthorizeRequest::Pointer WebDav::authorizeAsync() {
   return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
-ICloudProvider::CreateDirectoryRequest::Pointer WebDav::createDirectoryAsync(
-    IItem::Pointer parent, const std::string& name,
-    CreateDirectoryCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto response = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            [=](util::Output) {
-              return http()->create(
-                  endpoint() + parent->id() + util::Url::escape(name) + "/",
-                  "MKCOL");
-            },
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              IItem::Pointer item = util::make_unique<Item>(
-                  name, parent->id() + name + "/", 0, IItem::UnknownTimeStamp,
-                  IItem::FileType::Directory);
-              r->done(item);
-            },
-            response);
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer WebDav::createDirectoryRequest(const IItem& parent,
+                                                     const std::string& name,
+                                                     std::ostream&) const {
+  return http()->create(
+      endpoint() + parent.id() + util::Url::escape(name) + "/", "MKCOL");
+}
+
+IItem::Pointer WebDav::createDirectoryResponse(const IItem& parent,
+                                               const std::string& name,
+                                               std::istream&) const {
+  return util::make_unique<Item>(name, parent.id() + name + "/", 0,
+                                 IItem::UnknownTimeStamp,
+                                 IItem::FileType::Directory);
 }
 
 IHttpRequest::Pointer WebDav::getItemDataRequest(const std::string& id,
