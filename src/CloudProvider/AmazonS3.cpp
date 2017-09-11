@@ -45,8 +45,8 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
 
 std::string to_string(ItemId str) {
   Json::Value json;
-  json["bucket"] = str.first;
-  json["path"] = str.second;
+  json["b"] = str.first;
+  json["p"] = str.second;
   return util::to_base64(Json::FastWriter().write(json));
 }
 
@@ -118,17 +118,19 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
         },
         output);
   };
-  if (!source_id.second.empty() && source_id.second.back() != '/') {
+  auto rename_one = [=](std::function<void(EitherError<void>)> complete,
+                        bool directory = true) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
-          auto request =
-              http->create("https://" + dest_id.first + ".s3." + region +
-                               ".amazonaws.com/" + escapePath(dest_id.second),
-                           "PUT");
-          request->setHeaderParameter(
-              "x-amz-copy-source",
-              escapePath("/" + source_id.first + "/" + source_id.second));
+          auto request = http->create(
+              "https://" + dest_id.first + ".s3." + region + ".amazonaws.com/" +
+                  escapePath(dest_id.second) + (directory ? "/" : ""),
+              "PUT");
+          if (!directory)
+            request->setHeaderParameter(
+                "x-amz-copy-source",
+                escapePath("/" + source_id.first + "/" + source_id.second));
           return request;
         },
         [=](EitherError<util::Output> e) {
@@ -138,22 +140,26 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
             finalize();
         },
         output);
-  } else {
-    r->subrequest(r->provider()->getItemDataAsync(
-        to_string(source_id), [=](EitherError<IItem> e) {
-          if (e.left()) complete(e.left());
-          r->subrequest(r->provider()->listDirectoryAsync(
-              e.right(), [=](EitherError<std::vector<IItem::Pointer>> e) {
-                if (e.left()) return r->done(e.left());
-                rename<T>(r, http, region, e.right(), dest_id, source_id,
-                          [=](EitherError<void> e) {
-                            if (e.left())
-                              complete(e.left());
-                            else
-                              finalize();
-                          });
-              }));
+  };
+  if (source_id.second.empty() || source_id.second.back() == '/') {
+    auto item = std::make_shared<Item>(
+        "", to_string(source_id), IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::FileType::Directory);
+    r->subrequest(r->provider()->listDirectoryAsync(
+        item, [=](EitherError<std::vector<IItem::Pointer>> e) {
+          rename<T>(r, http, region, e.right(), dest_id, source_id,
+                    [=](EitherError<void> e) {
+                      if (e.left()) return complete(e.left());
+                      rename_one([=](EitherError<void> e) {
+                        if (e.left())
+                          complete(e.left());
+                        else
+                          finalize();
+                      });
+                    });
         }));
+  } else {
+    rename_one(complete, false);
   }
 }
 
@@ -215,9 +221,11 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
             r, http(), region(), {data.first, data.second + source->filename()},
             AmazonS3::extract(source->id()), [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
+              auto path =
+                  data.second + source->filename() +
+                  (source->type() == IItem::FileType::Directory ? "/" : "");
               auto nitem = std::make_shared<Item>(
-                  source->filename(),
-                  to_string({data.first, data.second + source->filename()}),
+                  source->filename(), to_string({data.first, path}),
                   source->size(), source->timestamp(), source->type());
               nitem->set_url(getUrl(*nitem));
               r->done(std::static_pointer_cast<IItem>(nitem));
@@ -243,8 +251,11 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
             r, http(), region(), {data.first, path + name}, extract(item->id()),
             [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
+              auto npath =
+                  path +
+                  (item->type() == IItem::FileType::Directory ? "/" : "");
               auto nitem = std::make_shared<Item>(
-                  name, to_string({data.first, path + name}), item->size(),
+                  name, to_string({data.first, npath}), item->size(),
                   item->timestamp(), item->type());
               nitem->set_url(getUrl(*nitem));
               r->done(std::static_pointer_cast<IItem>(nitem));
@@ -269,7 +280,7 @@ IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
                                                  std::istream&) const {
   auto data = extract(parent.id());
   return std::make_shared<Item>(
-      name, to_string({data.first, data.second + "/"}), 0,
+      name, to_string({data.first, data.second + name + "/"}), 0,
       IItem::UnknownTimeStamp, IItem::FileType::Directory);
 }
 
@@ -420,7 +431,8 @@ IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
 }
 
 std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
-    const IItem&, std::istream& stream, std::string& next_page_token) const {
+    const IItem& parent, std::istream& stream,
+    std::string& next_page_token) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -447,10 +459,10 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
       auto size_element = child->FirstChildElement("Size");
       if (!size_element) throw std::logic_error("invalid xml");
       auto size = std::atoll(size_element->GetText());
-      if (size == 0) continue;
       auto key_element = child->FirstChildElement("Key");
       if (!key_element) throw std::logic_error("invalid xml");
       std::string id = key_element->GetText();
+      if (size == 0 && parent.id() == to_string({bucket, id})) continue;
       auto timestamp_element = child->FirstChildElement("LastModified");
       if (!timestamp_element) throw std::logic_error("invalid xml");
       std::string timestamp = timestamp_element->GetText();
@@ -581,7 +593,7 @@ std::string AmazonS3::region() const {
 std::pair<std::string, std::string> AmazonS3::extract(const std::string& str) {
   Json::Value json;
   if (Json::Reader().parse(util::from_base64(str), json))
-    return {json["bucket"].asString(), json["path"].asString()};
+    return {json["b"].asString(), json["p"].asString()};
   else
     return {};
 }
