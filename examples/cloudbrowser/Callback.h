@@ -86,7 +86,7 @@ class UploadFileCallback : public IUploadFileCallback {
   void reset() override;
   uint32_t putData(char* data, uint32_t maxlength) override;
   uint64_t size() override;
-  void done(EitherError<void>) override;
+  void done(EitherError<IItem>) override;
   void progress(uint32_t total, uint32_t now) override;
 
  private:

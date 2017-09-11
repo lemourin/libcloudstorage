@@ -49,7 +49,7 @@ class ICloudProvider {
       IRequest<EitherError<std::vector<IItem::Pointer>>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
   using DownloadFileRequest = IRequest<EitherError<void>>;
-  using UploadFileRequest = IRequest<EitherError<void>>;
+  using UploadFileRequest = IRequest<EitherError<IItem>>;
   using GetItemDataRequest = IRequest<EitherError<IItem>>;
   using DeleteItemRequest = IRequest<EitherError<void>>;
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
@@ -420,7 +420,7 @@ class ICloudProvider {
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer parent, const std::string& path,
       const std::string& filename,
-      UploadFileCallback callback = [](EitherError<void>) {}) = 0;
+      UploadFileCallback callback = [](EitherError<IItem>) {}) = 0;
 };
 
 }  // namespace cloudstorage

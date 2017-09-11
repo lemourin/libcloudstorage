@@ -76,13 +76,13 @@ uint32_t UploadFileCallback::putData(char* data, uint32_t maxlength) {
 
 uint64_t UploadFileCallback::size() { return file_.size(); }
 
-void UploadFileCallback::done(EitherError<void> e) {
+void UploadFileCallback::done(EitherError<IItem> e) {
   auto lock = window_->stream_lock();
   if (e.left()) {
     std::cerr << "[FAIL] Upload: " << e.left()->code_ << " "
               << e.left()->description_ << "\n";
   } else {
-    std::cerr << "[OK] Successfuly uploaded\n";
+    std::cerr << "[OK] Successfully uploaded " << e.right()->filename() << "\n";
   }
   emit window_->uploadProgressChanged(0, 0);
 }

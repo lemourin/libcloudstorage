@@ -124,7 +124,9 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
 
   uint64_t size() override { return size_; }
 
-  void done(cloudstorage::EitherError<void> e) override { callback_(e); }
+  void done(cloudstorage::EitherError<cloudstorage::IItem> e) override {
+    callback_(e);
+  }
 
   void progress(uint32_t, uint32_t) override {}
 
@@ -519,6 +521,12 @@ IItem::Pointer CloudProvider::renameItemResponse(const IItem&,
 
 IItem::Pointer CloudProvider::moveItemResponse(const IItem&, const IItem&,
                                                std::istream& response) const {
+  return getItemDataResponse(response);
+}
+
+IItem::Pointer CloudProvider::uploadFileResponse(const IItem&,
+                                                 const std::string&, uint64_t,
+                                                 std::istream& response) const {
   return getItemDataResponse(response);
 }
 

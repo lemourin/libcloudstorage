@@ -29,6 +29,7 @@
 #include <json/json.h>
 #include <cstring>
 #include <iomanip>
+#include <iostream>
 
 namespace cloudstorage {
 
@@ -148,6 +149,14 @@ IHttpRequest::Pointer WebDav::renameItemRequest(const IItem& item,
       "Destination",
       util::Url(endpoint()).path() + getPath(item.id()) + "/" + name);
   return request;
+}
+
+IItem::Pointer WebDav::uploadFileResponse(const IItem& item,
+                                          const std::string& filename,
+                                          uint64_t size, std::istream&) const {
+  return util::make_unique<Item>(filename, getPath(item.id()) + "/" + filename,
+                                 size, std::chrono::system_clock::now(),
+                                 IItem::FileType::Unknown);
 }
 
 IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {

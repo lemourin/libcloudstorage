@@ -81,6 +81,14 @@ IItem::Pointer PCloud::getItemDataResponse(std::istream& response) const {
   return toItem(json["metadata"]);
 }
 
+IItem::Pointer PCloud::uploadFileResponse(const IItem&, const std::string&,
+                                          uint64_t,
+                                          std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json["metadata"][0]);
+}
+
 IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
                                                    const std::string&,
                                                    std::ostream&) const {
@@ -105,6 +113,7 @@ IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem& directory,
   req->setHeaderParameter("Content-Type", "application/octet-stream");
   req->setParameter("folderid", directory.id());
   req->setParameter("filename", util::Url::escape(filename));
+  req->setParameter("timeformat", "timestamp");
   return req;
 }
 

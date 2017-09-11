@@ -27,6 +27,7 @@
 #include <tinyxml2.h>
 #include <algorithm>
 #include <iomanip>
+#include <iostream>
 
 #include "Utility/Utility.h"
 
@@ -409,6 +410,15 @@ IHttpRequest::Pointer AmazonS3::uploadFileRequest(const IItem& directory,
                             ".amazonaws.com/" +
                             escapePath(data.second + filename),
                         "PUT");
+}
+
+IItem::Pointer AmazonS3::uploadFileResponse(const IItem& item,
+                                            const std::string& filename,
+                                            uint64_t size,
+                                            std::istream&) const {
+  return util::make_unique<Item>(filename, getPath(item.id()) + "/" + filename,
+                                 size, std::chrono::system_clock::now(),
+                                 IItem::FileType::Unknown);
 }
 
 IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,

@@ -192,13 +192,14 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
   }
 
-  void onTransferFinish(MegaApi*, MegaTransfer*, MegaError* e) override {
+  void onTransferFinish(MegaApi*, MegaTransfer* t, MegaError* e) override {
     auto r = shared_from_this();
     provider_->removeRequestListener(r);
     std::unique_lock<std::mutex> lock(mutex_);
-    if (e->getErrorCode() == 0)
+    if (e->getErrorCode() == 0) {
       status_ = SUCCESS;
-    else {
+      node_ = t->getNodeHandle();
+    } else {
       error_ = {e->getErrorCode(), e->getErrorString()};
       status_ = FAILURE;
     }
@@ -217,6 +218,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   IUploadFileCallback* upload_callback_ = nullptr;
   MegaApi* mega_ = nullptr;
   int transfer_ = 0;
+  MegaHandle node_ = 0;
 };
 
 struct Buffer {
@@ -591,11 +593,11 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   auto callback = cb.get();
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        ensureAuthorized<EitherError<void>>(r, [=] {
+      [=](Request<EitherError<IItem>>::Pointer r) {
+        ensureAuthorized<EitherError<IItem>>(r, [=] {
           std::string cache = temporaryFileName();
           {
             std::fstream mega_cache(cache.c_str(),
@@ -614,9 +616,12 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
             }
           }
           auto listener = Listener::make<TransferListener>(
-              [=](EitherError<void> e, Listener*) {
+              [=](EitherError<void> e, Listener* listener) {
                 std::remove(cache.c_str());
-                return r->done(e);
+                if (e.left()) return r->done(e.left());
+                std::unique_ptr<MegaNode> node(mega_->getNodeByHandle(
+                    static_cast<TransferListener*>(listener)->node_));
+                r->done(toItem(node.get()));
               },
               this);
           listener->upload_callback_ = callback;
@@ -628,7 +633,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 
         });
       },
-      [=](EitherError<void> e) { cb->done(e); });
+      [=](EitherError<IItem> e) { cb->done(e); });
   return r->run();
 }
 

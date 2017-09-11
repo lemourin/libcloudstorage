@@ -138,6 +138,13 @@ IHttpRequest::Pointer Box::uploadFileRequest(
   return request;
 }
 
+IItem::Pointer Box::uploadFileResponse(const IItem&, const std::string&,
+                                       uint64_t, std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  return toItem(json["entries"][0]);
+}
+
 IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
                                                std::ostream&) const {
   return http()->create(endpoint() + "/2.0/files/" + item.id() + "/content",

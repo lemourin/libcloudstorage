@@ -26,6 +26,7 @@
 #include <json/json.h>
 #include <sstream>
 
+#include <iostream>
 #include "Request/Request.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -36,12 +37,14 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 namespace {
-void upload(Request<EitherError<void>>::Pointer r, int sent,
+void upload(Request<EitherError<IItem>>::Pointer r, int sent,
             IUploadFileCallback* callback, Json::Value response) {
   auto output = std::make_shared<std::stringstream>();
   int size = callback->size();
   auto length = std::make_shared<int>(0);
-  if (sent >= size) return r->done(nullptr);
+  if (sent >= size)
+    return r->done(
+        static_cast<OneDrive*>(r->provider().get())->toItem(response));
   r->sendRequest(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
@@ -56,10 +59,14 @@ void upload(Request<EitherError<void>>::Pointer r, int sent,
         return request;
       },
       [=](EitherError<util::Output> e) {
-        if (e.left())
-          r->done(e.left());
-        else
-          upload(r, sent + *length, callback, response);
+        if (e.left()) return r->done(e.left());
+        try {
+          Json::Value json;
+          *output >> json;
+          upload(r, sent + *length, callback, json);
+        } catch (std::exception) {
+          r->done(Error{IHttpRequest::Failure, output->str()});
+        }
       },
       output, nullptr,
       [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
@@ -75,10 +82,10 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   auto callback = cb.get();
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=](Request<EitherError<IItem>>::Pointer r) {
         auto output = std::make_shared<std::stringstream>();
         r->sendRequest(
             [=](util::Output) {
@@ -99,7 +106,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
             },
             output);
       },
-      [=](EitherError<void> e) { cb->done(e); });
+      [=](EitherError<IItem> e) { cb->done(e); });
   return r->run();
 }
 

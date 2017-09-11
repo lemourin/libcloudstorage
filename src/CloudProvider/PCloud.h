@@ -67,6 +67,9 @@ class PCloud : public CloudProvider {
   std::string getItemUrlResponse(const IItem& item,
                                  std::istream& response) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
+  IItem::Pointer uploadFileResponse(const IItem& parent,
+                                    const std::string& filename, uint64_t,
+                                    std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
 

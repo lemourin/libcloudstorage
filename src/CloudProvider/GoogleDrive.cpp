@@ -78,10 +78,14 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
     std::ostream& suffix_stream) const {
   const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
   const Item& item = static_cast<const Item&>(f);
-  IHttpRequest::Pointer request = http()->create(
-      endpoint() + "/upload/drive/v3/files?uploadType=multipart", "POST");
+  IHttpRequest::Pointer request =
+      http()->create(endpoint() + "/upload/drive/v3/files", "POST");
   request->setHeaderParameter("Content-Type",
                               "multipart/related; boundary=" + separator);
+  request->setParameter("uploadType", "multipart");
+  request->setParameter("fields",
+                        "id,name,thumbnailLink,trashed,"
+                        "mimeType,iconLink,parents");
   Json::Value request_data;
   request_data["name"] = filename;
   request_data["parents"].append(item.id());

@@ -207,6 +207,16 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
   return result;
 }
 
+IItem::Pointer Dropbox::uploadFileResponse(const IItem&,
+                                           const std::string& name, uint64_t,
+                                           std::istream& stream) const {
+  Json::Value response;
+  stream >> response;
+  return util::make_unique<Item>(
+      name, response["path"].asString(), response["bytes"].size(),
+      std::chrono::system_clock::now(), IItem::FileType::Unknown);
+}
+
 IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
                                                 const std::string&,
                                                 std::istream& response) const {

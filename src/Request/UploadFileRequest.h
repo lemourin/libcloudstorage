@@ -50,7 +50,7 @@ class UploadStreamWrapper : public std::streambuf {
   pos_type position_;
 };
 
-class UploadFileRequest : public Request<EitherError<void>> {
+class UploadFileRequest : public Request<EitherError<IItem>> {
  public:
   using ICallback = IUploadFileCallback;
 

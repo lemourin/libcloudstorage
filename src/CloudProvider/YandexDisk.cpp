@@ -87,17 +87,17 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  auto upload_url = [=](Request<EitherError<void>>::Pointer r,
+  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
+  auto path = directory->id();
+  if (path.back() != '/') path += "/";
+  path += filename;
+  auto upload_url = [=](Request<EitherError<IItem>>::Pointer r,
                         std::function<void(EitherError<std::string>)> f) {
     auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources/upload", "GET");
-          std::string path = directory->id();
-          if (path.back() != '/') path += "/";
-          path += filename;
           request->setParameter("path", path);
           return request;
         },
@@ -113,8 +113,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
         },
         output);
   };
-  auto upload = [=](Request<EitherError<void>>::Pointer r, std::string url,
-                    std::function<void(EitherError<void>)> f) {
+  auto upload = [=](Request<EitherError<IItem>>::Pointer r, std::string url,
+                    std::function<void(EitherError<IItem>)> f) {
     auto wrapper = std::make_shared<UploadStreamWrapper>(
         std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
         callback->size());
@@ -128,23 +128,23 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           return request;
         },
         [=](EitherError<util::Output> e) {
-          (void)wrapper;
-          if (e.left())
-            f(e.left());
-          else
-            f(nullptr);
+          if (e.left()) return f(e.left());
+          IItem::Pointer item = util::make_unique<Item>(
+              filename, path, wrapper->size_, std::chrono::system_clock::now(),
+              IItem::FileType::Unknown);
+          f(item);
         },
         output, nullptr,
         std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
   };
   r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=](Request<EitherError<IItem>>::Pointer r) {
         upload_url(r, [=](EitherError<std::string> ret) {
           if (ret.left()) r->done(ret.left());
-          upload(r, *ret.right(), [=](EitherError<void> e) { r->done(e); });
+          upload(r, *ret.right(), [=](EitherError<IItem> e) { r->done(e); });
         });
       },
-      [=](EitherError<void> e) { callback->done(e); });
+      [=](EitherError<IItem> e) { callback->done(e); });
   return r->run();
 }
 

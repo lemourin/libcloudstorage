@@ -176,7 +176,7 @@ class IUploadFileCallback {
   /**
    * Called when the upload is finished sucessfully.
    */
-  virtual void done(EitherError<void>) = 0;
+  virtual void done(EitherError<IItem>) = 0;
 
   /**
    * Called when upload progress changed.
@@ -235,7 +235,7 @@ using ListDirectoryPageCallback = std::function<void(EitherError<PageData>)>;
 using ListDirectoryCallback =
     std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
 using DownloadFileCallback = std::function<void(EitherError<void>)>;
-using UploadFileCallback = std::function<void(EitherError<void>)>;
+using UploadFileCallback = std::function<void(EitherError<IItem>)>;
 using GetThumbnailCallback = std::function<void(EitherError<void>)>;
 
 }  // namespace cloudstorage

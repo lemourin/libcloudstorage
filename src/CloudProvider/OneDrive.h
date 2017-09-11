@@ -38,6 +38,8 @@ class OneDrive : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
+  IItem::Pointer toItem(const Json::Value&) const;
+
  protected:
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string& filename,
@@ -80,8 +82,6 @@ class OneDrive : public CloudProvider {
         std::istream&) const override;
     Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
-
-  IItem::Pointer toItem(const Json::Value&) const;
 };
 
 }  // namespace cloudstorage

@@ -24,6 +24,7 @@
 #ifndef CLOUDPROVIDER_H
 #define CLOUDPROVIDER_H
 
+#include <cstdint>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -234,6 +235,11 @@ class CloudProvider : public ICloudProvider,
 
   virtual IItem::Pointer moveItemResponse(const IItem&, const IItem&,
                                           std::istream&) const;
+
+  virtual IItem::Pointer uploadFileResponse(const IItem& parent,
+                                            const std::string& filename,
+                                            uint64_t size,
+                                            std::istream& response) const;
 
   /**
    * Used by default implementation of createDirectoryAsync, should translate
