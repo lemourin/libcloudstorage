@@ -207,6 +207,16 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
   return result;
 }
 
+IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
+                                                const std::string&,
+                                                std::istream& response) const {
+  Json::Value json;
+  response >> json;
+  auto item = toItem(json);
+  static_cast<Item*>(item.get())->set_type(IItem::FileType::Directory);
+  return item;
+}
+
 IItem::Pointer Dropbox::toItem(const Json::Value& v) {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v[".tag"].asString() == "folder")

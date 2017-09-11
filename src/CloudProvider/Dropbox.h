@@ -71,6 +71,9 @@ class Dropbox : public CloudProvider {
   std::string getItemUrlResponse(const IItem& item,
                                  std::istream& response) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
+  IItem::Pointer createDirectoryResponse(const IItem& parent,
+                                         const std::string& name,
+                                         std::istream& response) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
 
