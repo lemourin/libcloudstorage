@@ -58,7 +58,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
 
   void done(EitherError<void>) override;
 
-  void progress(uint32_t, uint32_t) override;
+  void progress(uint64_t, uint64_t) override;
 
  private:
   ItemModel* item_;
@@ -71,7 +71,7 @@ class DownloadFileCallback : public IDownloadFileCallback {
 
   void receivedData(const char* data, uint32_t length) override;
   void done(EitherError<void>) override;
-  void progress(uint32_t total, uint32_t now) override;
+  void progress(uint64_t total, uint64_t now) override;
 
  private:
   Window* window_;
@@ -87,7 +87,7 @@ class UploadFileCallback : public IUploadFileCallback {
   uint32_t putData(char* data, uint32_t maxlength) override;
   uint64_t size() override;
   void done(EitherError<IItem>) override;
-  void progress(uint32_t total, uint32_t now) override;
+  void progress(uint64_t total, uint64_t now) override;
 
  private:
   Window* window_;

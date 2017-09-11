@@ -144,7 +144,7 @@ class IDownloadFileCallback {
    * @param total count of bytes to download
    * @param now count of bytes downloaded
    */
-  virtual void progress(uint32_t total, uint32_t now) = 0;
+  virtual void progress(uint64_t total, uint64_t now) = 0;
 };
 
 class IUploadFileCallback {
@@ -184,7 +184,7 @@ class IUploadFileCallback {
    * @param total count of bytes to upload
    * @param now count of bytes already uploaded
    */
-  virtual void progress(uint32_t total, uint32_t now) = 0;
+  virtual void progress(uint64_t total, uint64_t now) = 0;
 };
 
 struct Error {

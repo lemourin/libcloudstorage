@@ -78,7 +78,7 @@ class IHttpRequest {
      * @param total count of bytes to download
      * @param now count of bytes downloaded
      */
-    virtual void progressDownload(uint32_t total, uint32_t now) = 0;
+    virtual void progressDownload(uint64_t total, uint64_t now) = 0;
 
     /**
      * Called when upload progress changed.
@@ -86,7 +86,7 @@ class IHttpRequest {
      * @param total count of bytes to upload
      * @param now count of bytes uploaded
      */
-    virtual void progressUpload(uint32_t total, uint32_t now) = 0;
+    virtual void progressUpload(uint64_t total, uint64_t now) = 0;
   };
 
   /**

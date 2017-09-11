@@ -272,7 +272,7 @@ class HttpDataCallback : public IDownloadFileCallback {
     buffer_->resume();
   }
 
-  void progress(uint32_t, uint32_t) override {}
+  void progress(uint64_t, uint64_t) override {}
 
   Buffer::Pointer buffer_;
 };

@@ -53,7 +53,7 @@ void DownloadFileCallback::done(EitherError<void> e) {
   emit window_->downloadProgressChanged(0, 0);
 }
 
-void DownloadFileCallback::progress(uint32_t total, uint32_t now) {
+void DownloadFileCallback::progress(uint64_t total, uint64_t now) {
   emit window_->downloadProgressChanged(total, now);
 }
 
@@ -87,7 +87,7 @@ void UploadFileCallback::done(EitherError<IItem> e) {
   emit window_->uploadProgressChanged(0, 0);
 }
 
-void UploadFileCallback::progress(uint32_t total, uint32_t now) {
+void UploadFileCallback::progress(uint64_t total, uint64_t now) {
   emit window_->uploadProgressChanged(total, now);
 }
 
@@ -153,4 +153,4 @@ void DownloadThumbnailCallback::done(EitherError<void> e) {
   emit item_->receivedImage();
 }
 
-void DownloadThumbnailCallback::progress(uint32_t, uint32_t) {}
+void DownloadThumbnailCallback::progress(uint64_t, uint64_t) {}

@@ -80,11 +80,11 @@ int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
       static_cast<CurlHttpRequest::ICallback*>(clientp);
   if (callback) {
     if (ultotal != 0)
-      callback->progressUpload(static_cast<uint32_t>(ultotal),
-                               static_cast<uint32_t>(ulnow));
+      callback->progressUpload(static_cast<uint64_t>(ultotal),
+                               static_cast<uint64_t>(ulnow));
     if (dltotal != 0)
-      callback->progressDownload(static_cast<uint32_t>(dltotal),
-                                 static_cast<uint32_t>(dlnow));
+      callback->progressDownload(static_cast<uint64_t>(dltotal),
+                                 static_cast<uint64_t>(dlnow));
     if (callback->abort()) return 1;
   }
   return 0;

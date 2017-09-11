@@ -32,25 +32,27 @@
 namespace cloudstorage {
 class HttpCallback : public IHttpRequest::ICallback {
  public:
+  using ProgressFunction = std::function<void(uint64_t, uint64_t)>;
+
   HttpCallback(std::function<bool()> is_cancelled,
                std::function<bool(int, const IHttpRequest::HeaderParameters&)>
                    is_success,
-               std::function<void(uint32_t, uint32_t)> progress_download,
-               std::function<void(uint32_t, uint32_t)> progress_upload);
+               ProgressFunction progress_download,
+               ProgressFunction progress_upload);
 
   bool isSuccess(int, const IHttpRequest::HeaderParameters&) const override;
 
   bool abort() override;
 
-  void progressDownload(uint32_t total, uint32_t now) override;
+  void progressDownload(uint64_t total, uint64_t now) override;
 
-  void progressUpload(uint32_t, uint32_t) override;
+  void progressUpload(uint64_t, uint64_t) override;
 
  private:
   std::function<bool()> is_cancelled_;
   std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success_;
-  std::function<void(uint32_t, uint32_t)> progress_download_;
-  std::function<void(uint32_t, uint32_t)> progress_upload_;
+  ProgressFunction progress_download_;
+  ProgressFunction progress_upload_;
 };
 }  // namespace cloudstorage
 

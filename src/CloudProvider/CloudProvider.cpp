@@ -94,7 +94,7 @@ class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
     callback_(e);
   }
 
-  void progress(uint32_t, uint32_t) override {}
+  void progress(uint64_t, uint64_t) override {}
 
  private:
   std::fstream file_;
@@ -128,7 +128,7 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
     callback_(e);
   }
 
-  void progress(uint32_t, uint32_t) override {}
+  void progress(uint64_t, uint64_t) override {}
 
  private:
   std::fstream file_;
