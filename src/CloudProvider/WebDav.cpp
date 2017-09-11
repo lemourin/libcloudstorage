@@ -145,8 +145,9 @@ IHttpRequest::Pointer WebDav::moveItemRequest(const IItem& source,
                                               const IItem& destination,
                                               std::ostream&) const {
   auto request = http()->create(endpoint() + source.id(), "MOVE");
-  request->setHeaderParameter(
-      "Destination", endpoint() + destination.id() + "/" + source.filename());
+  request->setHeaderParameter("Destination",
+                              util::Url(endpoint()).path() + destination.id() +
+                                  "/" + source.filename());
   return request;
 }
 
@@ -154,8 +155,9 @@ IHttpRequest::Pointer WebDav::renameItemRequest(const IItem& item,
                                                 const std::string& name,
                                                 std::ostream&) const {
   auto request = http()->create(endpoint() + item.id(), "MOVE");
-  request->setHeaderParameter("Destination",
-                              endpoint() + getPath(item.id()) + "/" + name);
+  request->setHeaderParameter(
+      "Destination",
+      util::Url(endpoint()).path() + getPath(item.id()) + "/" + name);
   return request;
 }
 
