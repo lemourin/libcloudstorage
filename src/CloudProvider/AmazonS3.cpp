@@ -27,7 +27,6 @@
 #include <tinyxml2.h>
 #include <algorithm>
 #include <iomanip>
-#include <iostream>
 
 #include "Utility/Utility.h"
 
@@ -158,17 +157,6 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
   }
 }
 
-std::string host(std::string url) {
-  const char* http = "https://";
-  return url.substr(strlen(http),
-                    url.find_first_of('/', strlen(http)) - strlen(http));
-}
-
-std::string path(std::string url) {
-  int length = host(url).length();
-  return url.substr(strlen("https://") + length);
-}
-
 std::string currentDate() {
   auto time =
       util::gmtime(std::chrono::duration_cast<std::chrono::seconds>(
@@ -227,11 +215,12 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
             r, http(), region(), {data.first, data.second + source->filename()},
             AmazonS3::extract(source->id()), [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
-              IItem::Pointer nitem = util::make_unique<Item>(
+              auto nitem = std::make_shared<Item>(
                   source->filename(),
                   to_string({data.first, data.second + source->filename()}),
                   source->size(), source->timestamp(), source->type());
-              r->done(nitem);
+              nitem->set_url(getUrl(*nitem));
+              r->done(std::static_pointer_cast<IItem>(nitem));
             });
       },
       callback);
@@ -254,10 +243,11 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
             r, http(), region(), {data.first, path + name}, extract(item->id()),
             [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
-              IItem::Pointer nitem = util::make_unique<Item>(
+              auto nitem = std::make_shared<Item>(
                   name, to_string({data.first, path + name}), item->size(),
                   item->timestamp(), item->type());
-              r->done(nitem);
+              nitem->set_url(getUrl(*nitem));
+              r->done(std::static_pointer_cast<IItem>(nitem));
             });
       },
       callback);
@@ -279,7 +269,7 @@ IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
                                                  std::istream&) const {
   auto data = extract(parent.id());
   return std::make_shared<Item>(
-      name, util::to_base64(to_string({data.first, data.second + "/"})), 0,
+      name, to_string({data.first, data.second + "/"}), 0,
       IItem::UnknownTimeStamp, IItem::FileType::Directory);
 }
 
@@ -499,15 +489,16 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
   std::string scope = current_date + "/" + region() + "/s3/aws4_request";
+  util::Url url(request.url());
   request.setParameter("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
   request.setParameter("X-Amz-Credential", access_id() + "/" + scope);
   request.setParameter("X-Amz-Date", time);
   request.setParameter("X-Amz-Expires", "86400");
-  request.setHeaderParameter("host", host(request.url()));
+  request.setHeaderParameter("host", url.host());
 
   std::vector<std::pair<std::string, std::string>> header_parameters;
   for (auto q : request.headerParameters())
-    header_parameters.push_back({q.first, q.second});
+    header_parameters.push_back({util::to_lower(q.first), q.second});
   std::sort(header_parameters.begin(), header_parameters.end());
 
   std::string signed_headers;
@@ -528,8 +519,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
     query_parameters.push_back({q.first, q.second});
   std::sort(query_parameters.begin(), query_parameters.end());
 
-  std::string canonical_request =
-      request.method() + "\n" + path(request.url()) + "\n";
+  std::string canonical_request = request.method() + "\n" + url.path() + "\n";
 
   bool first = false;
   for (auto q : query_parameters) {
