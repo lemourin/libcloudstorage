@@ -154,8 +154,8 @@ IHttpRequest::Pointer WebDav::renameItemRequest(const IItem& item,
 IItem::Pointer WebDav::uploadFileResponse(const IItem& item,
                                           const std::string& filename,
                                           uint64_t size, std::istream&) const {
-  return util::make_unique<Item>(filename, getPath(item.id()) + "/" + filename,
-                                 size, std::chrono::system_clock::now(),
+  return util::make_unique<Item>(filename, item.id() + filename, size,
+                                 std::chrono::system_clock::now(),
                                  IItem::FileType::Unknown);
 }
 

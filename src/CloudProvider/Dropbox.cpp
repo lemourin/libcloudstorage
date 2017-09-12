@@ -213,7 +213,7 @@ IItem::Pointer Dropbox::uploadFileResponse(const IItem&,
   Json::Value response;
   stream >> response;
   return util::make_unique<Item>(
-      name, response["path"].asString(), response["bytes"].size(),
+      name, response["path"].asString(), response["bytes"].asInt64(),
       std::chrono::system_clock::now(), IItem::FileType::Unknown);
 }
 

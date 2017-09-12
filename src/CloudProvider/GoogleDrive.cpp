@@ -85,7 +85,7 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
   request->setParameter("uploadType", "multipart");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents");
+                        "mimeType,iconLink,parents,size,modifiedTime");
   Json::Value request_data;
   request_data["name"] = filename;
   request_data["parents"].append(item.id());
@@ -119,7 +119,7 @@ IHttpRequest::Pointer GoogleDrive::createDirectoryRequest(
   request->setHeaderParameter("Content-Type", "application/json");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents");
+                        "mimeType,iconLink,parents,size,modifiedTime");
   Json::Value json;
   json["mimeType"] = "application/vnd.google-apps.folder";
   json["name"] = name;
@@ -137,7 +137,7 @@ IHttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
   request->setHeaderParameter("Content-Type", "application/json");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents");
+                        "mimeType,iconLink,parents,size,modifiedTime");
   std::string current_parents;
   for (auto str : source.parents()) current_parents += str + ",";
   current_parents.pop_back();
@@ -154,7 +154,7 @@ IHttpRequest::Pointer GoogleDrive::renameItemRequest(
   request->setHeaderParameter("Content-Type", "application/json");
   request->setParameter("fields",
                         "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents");
+                        "mimeType,iconLink,parents,size,modifiedTime");
   Json::Value json;
   json["name"] = name;
   input << json;
