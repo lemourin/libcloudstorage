@@ -417,9 +417,10 @@ IItem::Pointer AmazonS3::uploadFileResponse(const IItem& item,
                                             const std::string& filename,
                                             uint64_t size,
                                             std::istream&) const {
-  return util::make_unique<Item>(filename, getPath(item.id()) + "/" + filename,
-                                 size, std::chrono::system_clock::now(),
-                                 IItem::FileType::Unknown);
+  auto data = extract(item.id());
+  return util::make_unique<Item>(
+      filename, to_string({data.first, data.second + filename}), size,
+      std::chrono::system_clock::now(), IItem::FileType::Unknown);
 }
 
 IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
