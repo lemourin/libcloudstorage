@@ -252,7 +252,7 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
             [=](EitherError<void> e) {
               if (e.left()) return r->done(e.left());
               auto npath =
-                  path +
+                  path + name +
                   (item->type() == IItem::FileType::Directory ? "/" : "");
               auto nitem = std::make_shared<Item>(
                   name, to_string({data.first, npath}), item->size(),
