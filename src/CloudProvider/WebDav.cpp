@@ -178,7 +178,7 @@ IItem::Pointer WebDav::renameItemResponse(const IItem& item,
   auto url = util::Url(webdav_url_);
   i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
              url.host() + url.path() + i->id() + url.query());
-  return i;
+  return std::move(i);
 }
 
 IItem::Pointer WebDav::moveItemResponse(const IItem& source, const IItem& dest,
@@ -190,7 +190,7 @@ IItem::Pointer WebDav::moveItemResponse(const IItem& source, const IItem& dest,
   auto url = util::Url(webdav_url_);
   i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
              url.host() + url.path() + i->id() + url.query());
-  return i;
+  return std::move(i);
 }
 
 std::vector<IItem::Pointer> WebDav::listDirectoryResponse(const IItem&,
