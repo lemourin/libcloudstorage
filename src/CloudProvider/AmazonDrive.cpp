@@ -104,8 +104,11 @@ ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
             r, http(), metadata_url(),
             std::make_shared<std::vector<std::string>>(
                 static_cast<Item*>(source.get())->parents()),
-            source, destination, [=](EitherError<void>) {
-
+            source, destination, [=](EitherError<void> e) {
+              if (e.left())
+                r->done(e.left());
+              else
+                r->done(source);
             });
       },
       callback);
