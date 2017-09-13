@@ -33,7 +33,7 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
     : Request(p) {
   set(
       [=](Request::Pointer request) {
-        send(
+        this->request(
             [=](util::Output input) {
               return provider()->getItemDataRequest(id, *input);
             },

@@ -39,7 +39,7 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
           callback(e);
           return done(e);
         }
-        send(
+        this->request(
             [=](util::Output stream) {
               return provider()->createDirectoryRequest(*parent, name, *stream);
             },
