@@ -39,7 +39,6 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
   auto callback = cb.get();
   set(
       [=](Request::Pointer request) {
-        auto response_stream = std::make_shared<std::ostream>(&stream_wrapper_);
         sendRequest(
             [=](util::Output input) {
               auto request = request_factory(*file, *input);
@@ -54,7 +53,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
               else
                 request->done(nullptr);
             },
-            response_stream,
+            nullptr, std::make_shared<std::ostream>(&stream_wrapper_),
             std::bind(&DownloadFileRequest::ICallback::progress, callback, _1,
                       _2));
       },
@@ -83,7 +82,6 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
       [=](Request<EitherError<void>>::Pointer r) {
         auto download = [=](std::string url,
                             std::function<void(EitherError<void>)> cb) {
-          auto stream = std::make_shared<std::ostream>(&stream_wrapper_);
           r->sendRequest(
               [=](util::Output) {
                 auto r = provider()->http()->create(url, "GET");
@@ -97,7 +95,7 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
                 else
                   cb(nullptr);
               },
-              stream,
+              nullptr, std::make_shared<std::ostream>(&stream_wrapper_),
               std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
         };
         auto cached_url = static_cast<Item*>(file.get())->url();

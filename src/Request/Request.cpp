@@ -203,13 +203,14 @@ bool Request<T>::reauthorize(int code,
 
 template <class T>
 void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
+                             std::shared_ptr<std::iostream> input,
                              std::shared_ptr<std::ostream> output,
                              ProgressFunction download,
                              ProgressFunction upload) {
   auto request = this->shared_from_this();
-  auto input = std::make_shared<std::stringstream>(),
-       error_stream = std::make_shared<std::stringstream>();
+  if (!input) input = std::make_shared<std::stringstream>();
   if (!output) output = std::make_shared<std::stringstream>();
+  auto error_stream = std::make_shared<std::stringstream>();
   auto r = factory(input);
   authorize(r);
   send(r.get(),

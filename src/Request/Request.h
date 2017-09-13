@@ -100,13 +100,14 @@ class Request : public IRequest<ReturnValue>,
    * authorization and does the request again.
    *
    * @param factory function which should create request to perform
+   * @param input_stream input stream
    * @param output output stream
-   * @param error_stream error stream
    * @param download download progress callback
    * @param upload upload progress callback
    * @return http code or curl error code
    */
   void sendRequest(RequestFactory factory, RequestCompleted,
+                   std::shared_ptr<std::iostream> input = nullptr,
                    std::shared_ptr<std::ostream> output = nullptr,
                    ProgressFunction download = nullptr,
                    ProgressFunction upload = nullptr);

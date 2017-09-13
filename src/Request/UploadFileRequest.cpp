@@ -40,10 +40,9 @@ UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
   set(
       [=](Request::Pointer request) {
         sendRequest(
-            [=](util::Output input) {
+            [=](util::Output) {
               callback->reset();
               stream_wrapper_.reset();
-              input->rdbuf(&stream_wrapper_);
               return provider()->uploadFileRequest(*directory, filename,
                                                    stream_wrapper_.prefix_,
                                                    stream_wrapper_.suffix_);
@@ -59,8 +58,9 @@ UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }
             },
-            nullptr, nullptr, std::bind(&UploadFileRequest::ICallback::progress,
-                                        callback, _1, _2));
+            std::make_shared<std::iostream>(&stream_wrapper_), nullptr,
+            std::bind(&UploadFileRequest::ICallback::progress, callback, _1,
+                      _2));
       },
       [=](EitherError<IItem> e) { cb->done(e); });
 }
