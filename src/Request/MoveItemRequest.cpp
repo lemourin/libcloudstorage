@@ -37,21 +37,20 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
         if (destination->type() != IItem::FileType::Directory)
           return request->done(
               Error{IHttpRequest::Forbidden, "destination not a directory"});
-        auto output = std::make_shared<std::stringstream>();
         sendRequest(
             [=](util::Output stream) {
               return p->moveItemRequest(*source, *destination, *stream);
             },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
-                request->done(
-                    p->moveItemResponse(*source, *destination, *output));
+                request->done(p->moveItemResponse(*source, *destination,
+                                                  e.right()->output()));
               } catch (std::exception) {
-                request->done(Error{IHttpRequest::Failure, output->str()});
+                request->done(
+                    Error{IHttpRequest::Failure, e.right()->output().str()});
               }
-            },
-            output);
+            });
       },
       callback);
 }

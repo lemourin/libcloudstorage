@@ -48,7 +48,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                             util::range_to_string(range));
               return request;
             },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left())
                 request->done(e.left());
               else
@@ -91,7 +91,7 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
                   r->setHeaderParameter("Range", util::range_to_string(range));
                 return r;
               },
-              [=](EitherError<util::Output> e) {
+              [=](EitherError<Response> e) {
                 if (e.left())
                   cb(e.left());
                 else

@@ -50,18 +50,17 @@ ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 void ListDirectoryRequest::work(IItem::Pointer directory,
                                 std::string page_token, ICallback* callback,
                                 std::function<bool(int)> fault_tolerant) {
-  auto output_stream = std::make_shared<std::stringstream>();
   auto request = this->shared_from_this();
   sendRequest(
       [=](util::Output i) {
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },
-      [=](EitherError<util::Output> e) {
+      [=](EitherError<Response> e) {
         try {
           if (e.right() || fault_tolerant(e.left()->code_)) {
             std::string page_token = "";
             for (auto& t : request->provider()->listDirectoryResponse(
-                     *directory, *output_stream, page_token)) {
+                     *directory, e.right()->output(), page_token)) {
               callback->receivedItem(t);
               result_.push_back(t);
             }
@@ -74,10 +73,10 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
             request->done(e.left());
           }
         } catch (std::exception) {
-          request->done(Error{IHttpRequest::Failure, output_stream->str()});
+          request->done(
+              Error{IHttpRequest::Failure, e.right()->output().str()});
         }
-      },
-      output_stream);
+      });
 }
 
 }  // namespace cloudstorage

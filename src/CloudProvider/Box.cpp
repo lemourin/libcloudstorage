@@ -68,35 +68,33 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
         r->sendRequest(
             [this, id](util::Output) {
               return http()->create(endpoint() + "/2.0/files/" + id, "GET");
             },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left()) {
                 r->sendRequest(
                     [this, id](util::Output) {
                       return http()->create(endpoint() + "/2.0/folders/" + id,
                                             "GET");
                     },
-                    [=](EitherError<util::Output> e) {
+                    [=](EitherError<Response> e) {
                       if (e.left())
                         r->done(e.left());
                       else {
                         try {
                           Json::Value response;
-                          *output >> response;
+                          e.right()->output() >> response;
                           r->done(toItem(response));
                         } catch (std::exception) {
-                          r->done(Error{IHttpRequest::Failure, output->str()});
+                          r->done(Error{IHttpRequest::Failure,
+                                        e.right()->output().str()});
                         }
                       }
-                    },
-                    output);
+                    });
               }
-            },
-            output);
+            });
       },
       callback);
   return r->run();

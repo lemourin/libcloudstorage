@@ -93,7 +93,6 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   path += filename;
   auto upload_url = [=](Request<EitherError<IItem>>::Pointer r,
                         std::function<void(EitherError<std::string>)> f) {
-    auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
           auto request =
@@ -101,24 +100,22 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           request->setParameter("path", path);
           return request;
         },
-        [=](EitherError<util::Output> e) {
+        [=](EitherError<Response> e) {
           if (e.left()) f(e.left());
           try {
             Json::Value response;
-            *output >> response;
+            e.right()->output() >> response;
             f(response["href"].asString());
           } catch (std::exception) {
-            f(Error{IHttpRequest::Failure, output->str()});
+            f(Error{IHttpRequest::Failure, e.right()->output().str()});
           }
-        },
-        output);
+        });
   };
   auto upload = [=](Request<EitherError<IItem>>::Pointer r, std::string url,
                     std::function<void(EitherError<IItem>)> f) {
     auto wrapper = std::make_shared<UploadStreamWrapper>(
         std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
         callback->size());
-    auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output input) {
           auto request = http()->create(url, "PUT");
@@ -127,14 +124,14 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           input->rdbuf(wrapper.get());
           return request;
         },
-        [=](EitherError<util::Output> e) {
+        [=](EitherError<Response> e) {
           if (e.left()) return f(e.left());
           IItem::Pointer item = util::make_unique<Item>(
               filename, path, wrapper->size_, std::chrono::system_clock::now(),
               IItem::FileType::Unknown);
           f(item);
         },
-        output, nullptr,
+        nullptr, nullptr,
         std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
   };
   r->set(

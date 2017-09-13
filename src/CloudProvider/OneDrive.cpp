@@ -39,7 +39,6 @@ namespace cloudstorage {
 namespace {
 void upload(Request<EitherError<IItem>>::Pointer r, int sent,
             IUploadFileCallback* callback, Json::Value response) {
-  auto output = std::make_shared<std::stringstream>();
   int size = callback->size();
   auto length = std::make_shared<int>(0);
   if (sent >= size)
@@ -58,17 +57,17 @@ void upload(Request<EitherError<IItem>>::Pointer r, int sent,
         stream->write(buffer.data(), *length);
         return request;
       },
-      [=](EitherError<util::Output> e) {
+      [=](EitherError<Response> e) {
         if (e.left()) return r->done(e.left());
         try {
           Json::Value json;
-          *output >> json;
+          e.right()->output() >> json;
           upload(r, sent + *length, callback, json);
         } catch (std::exception) {
-          r->done(Error{IHttpRequest::Failure, output->str()});
+          r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       },
-      output, nullptr,
+      nullptr, nullptr,
       [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
 }
 }  // namespace
@@ -86,7 +85,6 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
   auto callback = cb.get();
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {
-        auto output = std::make_shared<std::stringstream>();
         r->sendRequest(
             [=](util::Output) {
               return http()->create(
@@ -94,17 +92,17 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                       util::Url::escape(filename) + ":/upload.createSession",
                   "POST");
             },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left()) return r->done(e.left());
               try {
                 Json::Value response;
-                *output >> response;
+                e.right()->output() >> response;
                 upload(r, 0, callback, response);
               } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, output->str()});
+                r->done(
+                    Error{IHttpRequest::Failure, e.right()->output().str()});
               }
-            },
-            output);
+            });
       },
       [=](EitherError<IItem> e) { cb->done(e); });
   return r->run();

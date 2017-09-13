@@ -140,19 +140,19 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
               IItem::UnknownTimeStamp, IItem::FileType::Directory);
           return r->done(i);
         }
-        auto response_stream = std::make_shared<std::stringstream>();
         r->sendRequest(
             [=](util::Output input) { return getItemDataRequest(id, *input); },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left()) return r->done(e.left());
               auto id_data = from_string(id);
               try {
-                r->done(getItemDataResponse(*response_stream, id_data.audio));
+                r->done(
+                    getItemDataResponse(e.right()->output(), id_data.audio));
               } catch (std::exception) {
-                r->done(Error{IHttpRequest::Failure, response_stream->str()});
+                r->done(
+                    Error{IHttpRequest::Failure, e.right()->output().str()});
               }
-            },
-            response_stream);
+            });
       },
       callback);
   return r->run();

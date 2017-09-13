@@ -39,6 +39,16 @@ class CloudProvider;
 class HttpCallback;
 class IItem;
 
+class Response {
+ public:
+  Response(IHttpRequest::Response);
+
+  std::stringstream& output();
+
+ private:
+  IHttpRequest::Response http_;
+};
+
 template <class ReturnValue>
 class Request : public IRequest<ReturnValue>,
                 public std::enable_shared_from_this<Request<ReturnValue>> {
@@ -50,7 +60,7 @@ class Request : public IRequest<ReturnValue>,
   using Callback = std::function<void(ReturnValue)>;
   using Resolver = std::function<void(std::shared_ptr<Request>)>;
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
-  using RequestCompleted = std::function<void(EitherError<util::Output>)>;
+  using RequestCompleted = std::function<void(EitherError<Response>)>;
 
   class Wrapper : public IRequest<ReturnValue> {
    public:
@@ -97,7 +107,7 @@ class Request : public IRequest<ReturnValue>,
    * @return http code or curl error code
    */
   void sendRequest(RequestFactory factory, RequestCompleted,
-                   std::shared_ptr<std::ostream> output,
+                   std::shared_ptr<std::ostream> output = nullptr,
                    ProgressFunction download = nullptr,
                    ProgressFunction upload = nullptr);
 

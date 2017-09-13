@@ -102,7 +102,6 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
             ItemId dest_id, ItemId source_id,
             std::function<void(EitherError<void>)> complete) {
   auto finalize = [=]() {
-    auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
           return http->create("https://" + source_id.first + ".s3." + region +
@@ -110,17 +109,15 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
                                   escapePath(source_id.second),
                               "DELETE");
         },
-        [=](EitherError<util::Output> e) {
+        [=](EitherError<Response> e) {
           if (e.left())
             complete(e.left());
           else
             complete(nullptr);
-        },
-        output);
+        });
   };
   auto rename_one = [=](std::function<void(EitherError<void>)> complete,
                         bool directory = true) {
-    auto output = std::make_shared<std::stringstream>();
     r->sendRequest(
         [=](util::Output) {
           auto request = http->create(
@@ -133,13 +130,12 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
                 escapePath("/" + source_id.first + "/" + source_id.second));
           return request;
         },
-        [=](EitherError<util::Output> e) {
+        [=](EitherError<Response> e) {
           if (e.left())
             complete(e.left());
           else
             finalize();
-        },
-        output);
+        });
   };
   if (source_id.second.empty() || source_id.second.back() == '/') {
     auto item = std::make_shared<Item>(
@@ -290,7 +286,6 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
   r->set(
       [=](Request<EitherError<void>>::Pointer r) {
         auto release = [=] {
-          auto output = std::make_shared<std::stringstream>();
           r->sendRequest(
               [=](util::Output) {
                 auto data = extract(item->id());
@@ -299,10 +294,9 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
                                           escapePath(data.second),
                                       "DELETE");
               },
-              [=](EitherError<util::Output> e) {
+              [=](EitherError<Response> e) {
                 r->done(e.left() ? e.left() : nullptr);
-              },
-              output);
+              });
         };
         if (item->type() == IItem::FileType::Directory) {
           r->subrequest(r->provider()->listDirectoryAsync(
@@ -344,42 +338,35 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
           request->setParameter("delimiter", "/");
           return request;
         };
-        auto output = std::make_shared<std::stringstream>();
-        r->sendRequest(
-            factory,
-            [=](EitherError<util::Output> e) {
-              if (e.left()) return r->done(e.left());
-              std::stringstream sstream;
-              sstream << output->rdbuf();
-              tinyxml2::XMLDocument document;
-              if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-                  tinyxml2::XML_SUCCESS)
-                return r->done(Error{IHttpRequest::Failure, "invalid xml"});
-              auto node = document.RootElement();
-              auto size = IItem::UnknownSize;
-              auto timestamp = IItem::UnknownTimeStamp;
-              if (auto contents_element = node->FirstChildElement("Contents")) {
-                if (auto size_element =
-                        contents_element->FirstChildElement("Size"))
-                  if (auto text = size_element->GetText())
-                    size = std::atoll(text);
-                if (auto time_element =
-                        contents_element->FirstChildElement("LastModified"))
-                  if (auto text = time_element->GetText())
-                    timestamp = util::parse_time(text);
-              }
-              auto type = data.second.back() == '/' ? IItem::FileType::Directory
-                                                    : IItem::FileType::Unknown;
-              auto item = std::make_shared<Item>(
-                  getFilename(data.second), id,
-                  type == IItem::FileType::Directory ? IItem::UnknownSize
-                                                     : size,
-                  timestamp, type);
-              if (item->type() != IItem::FileType::Directory)
-                item->set_url(getUrl(*item));
-              r->done(EitherError<IItem>(item));
-            },
-            output);
+        r->sendRequest(factory, [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          std::stringstream sstream;
+          sstream << e.right()->output().rdbuf();
+          tinyxml2::XMLDocument document;
+          if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
+              tinyxml2::XML_SUCCESS)
+            return r->done(Error{IHttpRequest::Failure, "invalid xml"});
+          auto node = document.RootElement();
+          auto size = IItem::UnknownSize;
+          auto timestamp = IItem::UnknownTimeStamp;
+          if (auto contents_element = node->FirstChildElement("Contents")) {
+            if (auto size_element = contents_element->FirstChildElement("Size"))
+              if (auto text = size_element->GetText()) size = std::atoll(text);
+            if (auto time_element =
+                    contents_element->FirstChildElement("LastModified"))
+              if (auto text = time_element->GetText())
+                timestamp = util::parse_time(text);
+          }
+          auto type = data.second.back() == '/' ? IItem::FileType::Directory
+                                                : IItem::FileType::Unknown;
+          auto item = std::make_shared<Item>(
+              getFilename(data.second), id,
+              type == IItem::FileType::Directory ? IItem::UnknownSize : size,
+              timestamp, type);
+          if (item->type() != IItem::FileType::Directory)
+            item->set_url(getUrl(*item));
+          r->done(EitherError<IItem>(item));
+        });
       },
       callback);
   return r->run();

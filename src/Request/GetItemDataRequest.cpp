@@ -33,22 +33,20 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
     : Request(p) {
   set(
       [=](Request::Pointer request) {
-        auto response_stream = std::make_shared<std::stringstream>();
         sendRequest(
             [=](util::Output input) {
               return provider()->getItemDataRequest(id, *input);
             },
-            [=](EitherError<util::Output> r) {
+            [=](EitherError<Response> r) {
               if (r.left()) return request->done(r.left());
               try {
                 request->done(
-                    provider()->getItemDataResponse(*response_stream));
+                    provider()->getItemDataResponse(r.right()->output()));
               } catch (std::exception) {
                 request->done(
-                    Error{IHttpRequest::Failure, response_stream->str()});
+                    Error{IHttpRequest::Failure, r.right()->output().str()});
               }
-            },
-            response_stream);
+            });
       },
       callback);
 }

@@ -34,6 +34,12 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
+Response::Response(IHttpRequest::Response r) : http_(r) {}
+
+std::stringstream& Response::output() {
+  return static_cast<std::stringstream&>(*http_.output_stream_.get());
+}
+
 template <class T>
 Request<T>::Wrapper::Wrapper(typename Request<T>::Pointer r) : request_(r) {}
 
@@ -203,12 +209,13 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
   auto request = this->shared_from_this();
   auto input = std::make_shared<std::stringstream>(),
        error_stream = std::make_shared<std::stringstream>();
+  if (!output) output = std::make_shared<std::stringstream>();
   auto r = factory(input);
   authorize(r);
   send(r.get(),
        [=](IHttpRequest::Response response) {
          if (provider()->isSuccess(response.http_code_, response.headers_))
-           return complete(output);
+           return complete(Response(response));
          if (this->reauthorize(response.http_code_, response.headers_)) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
@@ -228,7 +235,7 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
                    (void)request;
                    if (provider()->isSuccess(response.http_code_,
                                              response.headers_))
-                     complete(output);
+                     complete(Response(response));
                    else
                      complete(Error{response.http_code_, error_stream->str()});
                  },

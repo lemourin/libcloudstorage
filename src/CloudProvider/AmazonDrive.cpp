@@ -41,7 +41,6 @@ void move(typename Request<T>::Pointer r, IHttp* http, std::string metadata_url,
           std::function<void(EitherError<void>)> complete) {
   if (lst->empty()) return complete(nullptr);
   auto parent = lst->back();
-  auto output = std::make_shared<std::stringstream>();
   lst->pop_back();
   r->sendRequest(
       [=](util::Output stream) {
@@ -54,13 +53,12 @@ void move(typename Request<T>::Pointer r, IHttp* http, std::string metadata_url,
         *stream << json;
         return request;
       },
-      [=](EitherError<util::Output> e) {
+      [=](EitherError<Response> e) {
         if (e.left())
           complete(e.left());
         else
           move<T>(r, http, metadata_url, lst, source, destination, complete);
-      },
-      output);
+      });
 }
 
 }  // namespace

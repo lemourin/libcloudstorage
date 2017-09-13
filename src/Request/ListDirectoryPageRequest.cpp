@@ -36,25 +36,28 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
       [=](Request<EitherError<PageData>>::Pointer r) {
         if (directory->type() != IItem::FileType::Directory)
           return r->done(Error{IHttpRequest::Bad, "file not a directory"});
-        auto output = std::make_shared<std::stringstream>();
         r->sendRequest(
             [=](util::Output input) {
               return r->provider()->listDirectoryRequest(*directory, token,
                                                          *input);
             },
-            [=](EitherError<util::Output> e) {
+            [=](EitherError<Response> e) {
               if (e.left()) {
                 if (!fault_tolerant(e.left()->code_))
                   return r->done(e.left());
                 else
                   return r->done(PageData{{}, ""});
               }
-              std::string next_token;
-              auto lst = r->provider()->listDirectoryResponse(
-                  *directory, *output, next_token);
-              r->done(PageData{lst, next_token});
-            },
-            output);
+              try {
+                std::string next_token;
+                auto lst = r->provider()->listDirectoryResponse(
+                    *directory, e.right()->output(), next_token);
+                r->done(PageData{lst, next_token});
+              } catch (std::exception) {
+                r->done(
+                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              }
+            });
       },
       completed);
 }
