@@ -80,6 +80,8 @@ MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
       return 0;
     } else if (r == IResponse::ICallback::Abort)
       return MHD_CONTENT_READER_END_WITH_ERROR;
+    else if (r == IResponse::ICallback::End)
+      return MHD_CONTENT_READER_END_OF_STREAM;
     else
       return r;
   };
@@ -89,8 +91,9 @@ MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
   };
   auto data = util::make_unique<DataType>(
       DataType{data_, connection, std::move(callback)});
-  response_ = MHD_create_response_from_callback(size, CHUNK_SIZE, data_provider,
-                                                data.release(), release_data);
+  response_ = MHD_create_response_from_callback(
+      size == UnknownSize ? MHD_SIZE_UNKNOWN : size, CHUNK_SIZE, data_provider,
+      data.release(), release_data);
   for (auto it : headers)
     MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
 }

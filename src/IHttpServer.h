@@ -44,12 +44,15 @@ class IHttpServer {
     using Headers = std::unordered_map<std::string, std::string>;
     using CompletedCallback = std::function<void()>;
 
+    static constexpr int UnknownSize = -1;
+
     class ICallback {
      public:
       using Pointer = std::unique_ptr<ICallback>;
 
       static constexpr int Suspend = 0;
       static constexpr int Abort = -1;
+      static constexpr int End = -2;
 
       virtual ~ICallback() = default;
 
