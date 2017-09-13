@@ -76,10 +76,19 @@ std::string PCloud::getItemUrlResponse(const IItem&,
 
 IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string& id,
                                                  std::ostream&) const {
-  auto r = http()->create(endpoint() + "/checksumfile");
-  r->setParameter("fileid", FileId(id).id_);
-  r->setParameter("timeformat", "timestamp");
-  return r;
+  auto data = FileId(id);
+  if (!data.folder_) {
+    auto r = http()->create(endpoint() + "/checksumfile");
+    r->setParameter("fileid", FileId(id).id_);
+    r->setParameter("timeformat", "timestamp");
+    return r;
+  } else {
+    auto r = http()->create(endpoint() + "/listfolder");
+    r->setParameter("nofiles", "1");
+    r->setParameter("folderid", FileId(id).id_);
+    r->setParameter("timeformat", "timestamp");
+    return r;
+  }
 }
 
 IItem::Pointer PCloud::getItemDataResponse(std::istream& response) const {
