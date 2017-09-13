@@ -53,6 +53,10 @@ bool PCloud::reauthorize(int, const IHttpRequest::HeaderParameters& h) const {
                             it->second == "2094"));
 }
 
+void PCloud::authorizeRequest(IHttpRequest& r) const {
+  r.setHeaderParameter("Authorization", "Bearer " + token());
+}
+
 IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
                                                 std::ostream&) const {
   auto r = http()->create(endpoint() + "/getfilelink");
