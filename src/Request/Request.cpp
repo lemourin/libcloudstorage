@@ -159,8 +159,7 @@ void Request<T>::done(const T& t) {
 
 template <class T>
 std::unique_ptr<HttpCallback> Request<T>::httpCallback(
-    std::function<void(uint32_t, uint32_t)> progress_download,
-    std::function<void(uint32_t, uint32_t)> progress_upload) {
+    ProgressFunction progress_download, ProgressFunction progress_upload) {
   return util::make_unique<HttpCallback>(
       [=] { return is_cancelled(); },
       std::bind(&CloudProvider::isSuccess, provider_.get(), _1, _2),

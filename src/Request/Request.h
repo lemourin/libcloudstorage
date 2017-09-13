@@ -54,7 +54,7 @@ class Request : public IRequest<ReturnValue>,
                 public std::enable_shared_from_this<Request<ReturnValue>> {
  public:
   using Pointer = std::shared_ptr<Request<ReturnValue>>;
-  using ProgressFunction = std::function<void(uint32_t, uint32_t)>;
+  using ProgressFunction = std::function<void(uint64_t, uint64_t)>;
   using RequestFactory =
       std::function<IHttpRequest::Pointer(std::shared_ptr<std::ostream>)>;
   using Callback = std::function<void(ReturnValue)>;
