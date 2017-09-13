@@ -97,7 +97,8 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
                 else
                   cb(nullptr);
               },
-              nullptr, std::make_shared<std::ostream>(&stream_wrapper_),
+              [] { return std::make_shared<std::stringstream>(); },
+              std::make_shared<std::ostream>(&stream_wrapper_),
               std::bind(&IDownloadFileCallback::progress, callback, _1, _2),
               nullptr, true);
         };
