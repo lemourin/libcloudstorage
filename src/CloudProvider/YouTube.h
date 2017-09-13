@@ -63,6 +63,7 @@ class YouTube : public CloudProvider {
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
   std::string getItemUrlResponse(const IItem&,
+                                 const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&, std::string kind, bool audio) const;

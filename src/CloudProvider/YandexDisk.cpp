@@ -57,8 +57,9 @@ IHttpRequest::Pointer YandexDisk::getItemUrlRequest(const IItem& item,
   return request;
 }
 
-std::string YandexDisk::getItemUrlResponse(const IItem&,
-                                           std::istream& response) const {
+std::string YandexDisk::getItemUrlResponse(
+    const IItem&, const IHttpRequest::HeaderParameters&,
+    std::istream& response) const {
   Json::Value json;
   response >> json;
   return json["href"].asString();

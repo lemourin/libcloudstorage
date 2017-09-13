@@ -80,11 +80,12 @@ IHttpRequest::Pointer Box::getItemUrlRequest(const IItem& item,
   return request;
 }
 
-std::string Box::getItemUrlResponse(const IItem&,
-                                    std::istream& response) const {
-  std::string url;
-  response >> url;
-  return url;
+std::string Box::getItemUrlResponse(
+    const IItem&, const IHttpRequest::HeaderParameters& header,
+    std::istream&) const {
+  auto it = header.find("location");
+  if (it == header.end()) throw std::logic_error("no location header");
+  return it->second;
 }
 
 IHttpRequest::Pointer Box::getItemDataRequest(const std::string& id,

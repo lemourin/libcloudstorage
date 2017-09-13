@@ -530,8 +530,8 @@ IItem::Pointer CloudProvider::uploadFileResponse(const IItem&,
   return getItemDataResponse(response);
 }
 
-std::string CloudProvider::getItemUrlResponse(const IItem&,
-                                              std::istream&) const {
+std::string CloudProvider::getItemUrlResponse(
+    const IItem&, const IHttpRequest::HeaderParameters&, std::istream&) const {
   return "";
 }
 

@@ -64,6 +64,7 @@ IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
 }
 
 std::string Dropbox::getItemUrlResponse(const IItem&,
+                                        const IHttpRequest::HeaderParameters&,
                                         std::istream& output) const {
   Json::Value response;
   output >> response;

@@ -66,6 +66,7 @@ class YandexDisk : public CloudProvider {
       const IItem&, std::istream&, std::string& next_page_token) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::string getItemUrlResponse(const IItem&,
+                                 const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
   IItem::Pointer renameItemResponse(const IItem& old_item,
                                     const std::string& name,

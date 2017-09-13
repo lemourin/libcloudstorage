@@ -45,8 +45,9 @@ IHttpRequest::Pointer GoogleDrive::getItemUrlRequest(
   return getItemDataRequest(item.id(), stream);
 }
 
-std::string GoogleDrive::getItemUrlResponse(const IItem& item,
-                                            std::istream&) const {
+std::string GoogleDrive::getItemUrlResponse(
+    const IItem& item, const IHttpRequest::HeaderParameters&,
+    std::istream&) const {
   return endpoint() + "/drive/v3/files/" + item.id() +
          "?alt=media&access_token=" + access_token();
 }

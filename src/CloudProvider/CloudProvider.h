@@ -212,6 +212,7 @@ class CloudProvider : public ICloudProvider,
   virtual IItem::Pointer getItemDataResponse(std::istream& response) const;
 
   virtual std::string getItemUrlResponse(const IItem& item,
+                                         const IHttpRequest::HeaderParameters&,
                                          std::istream& response) const;
 
   /**

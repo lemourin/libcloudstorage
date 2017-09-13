@@ -61,6 +61,7 @@ IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
 }
 
 std::string PCloud::getItemUrlResponse(const IItem&,
+                                       const IHttpRequest::HeaderParameters&,
                                        std::istream& response) const {
   Json::Value json;
   response >> json;

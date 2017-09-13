@@ -36,6 +36,10 @@ namespace cloudstorage {
 
 Response::Response(IHttpRequest::Response r) : http_(r) {}
 
+const IHttpRequest::HeaderParameters& Response::headers() const {
+  return http_.headers_;
+}
+
 std::stringstream& Response::output() {
   return static_cast<std::stringstream&>(*http_.output_stream_.get());
 }

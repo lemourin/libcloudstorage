@@ -43,6 +43,7 @@ class Response {
  public:
   Response(IHttpRequest::Response);
 
+  const IHttpRequest::HeaderParameters& headers() const;
   std::stringstream& output();
 
  private:
