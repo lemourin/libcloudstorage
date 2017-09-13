@@ -33,11 +33,34 @@ const std::string BOXAPI_ENDPOINT = "https://api.box.com";
 
 namespace cloudstorage {
 
+namespace {
+
+struct BoxId {
+  bool folder_;
+  std::string id_;
+};
+
+BoxId from_string(const std::string& str) {
+  std::stringstream stream(util::from_base64(str));
+  Json::Value json;
+  stream >> json;
+  return {json["t"].asBool(), json["id"].asString()};
+}
+
+std::string to_string(const BoxId& i) {
+  Json::Value json;
+  json["t"] = i.folder_;
+  json["id"] = i.id_;
+  return util::to_base64(Json::FastWriter().write(json));
+}
+
+}  // namespace
+
 Box::Box() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer Box::rootDirectory() const {
-  return util::make_unique<Item>("root", "0", IItem::UnknownSize,
-                                 IItem::UnknownTimeStamp,
+  return util::make_unique<Item>("root", to_string({true, "0"}),
+                                 IItem::UnknownSize, IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
 
@@ -52,7 +75,8 @@ bool Box::reauthorize(int code, const IHttpRequest::HeaderParameters&) const {
 IHttpRequest::Pointer Box::getItemUrlRequest(const IItem& item,
                                              std::ostream&) const {
   auto request = http()->create(
-      endpoint() + "/2.0/files/" + item.id() + "/content", "GET", false);
+      endpoint() + "/2.0/files/" + from_string(item.id()).id_ + "/content",
+      "GET", false);
   return request;
 }
 
@@ -63,48 +87,21 @@ std::string Box::getItemUrlResponse(const IItem&,
   return url;
 }
 
-ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
-    const std::string& id, GetItemDataCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        r->request(
-            [this, id](util::Output) {
-              return http()->create(endpoint() + "/2.0/files/" + id, "GET");
-            },
-            [=](EitherError<Response> e) {
-              if (e.left()) {
-                r->request(
-                    [this, id](util::Output) {
-                      return http()->create(endpoint() + "/2.0/folders/" + id,
-                                            "GET");
-                    },
-                    [=](EitherError<Response> e) {
-                      if (e.left())
-                        r->done(e.left());
-                      else {
-                        try {
-                          Json::Value response;
-                          e.right()->output() >> response;
-                          r->done(toItem(response));
-                        } catch (std::exception) {
-                          r->done(Error{IHttpRequest::Failure,
-                                        e.right()->output().str()});
-                        }
-                      }
-                    });
-              }
-            });
-      },
-      callback);
-  return r->run();
+IHttpRequest::Pointer Box::getItemDataRequest(const std::string& id,
+                                              std::ostream&) const {
+  auto data = from_string(id);
+  if (data.folder_)
+    return http()->create(endpoint() + "/2.0/folders/" + data.id_, "GET");
+  else
+    return http()->create(endpoint() + "/2.0/files/" + data.id_, "GET");
 }
 
 IHttpRequest::Pointer Box::listDirectoryRequest(const IItem& item,
                                                 const std::string& page_token,
                                                 std::ostream&) const {
   auto request = http()->create(
-      endpoint() + "/2.0/folders/" + item.id() + "/items/", "GET");
+      endpoint() + "/2.0/folders/" + from_string(item.id()).id_ + "/items/",
+      "GET");
   request->setParameter("fields", "name,id,size,modified_at");
   if (!page_token.empty()) request->setParameter("offset", page_token);
   return request;
@@ -121,7 +118,7 @@ IHttpRequest::Pointer Box::uploadFileRequest(
   Json::Value json;
   json["name"] = filename;
   Json::Value parent;
-  parent["id"] = directory.id();
+  parent["id"] = from_string(directory.id()).id_;
   json["parent"] = parent;
   std::string json_data = Json::FastWriter().write(json);
   json_data.pop_back();
@@ -145,23 +142,27 @@ IItem::Pointer Box::uploadFileResponse(const IItem&, const std::string&,
 
 IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
                                                std::ostream&) const {
-  return http()->create(endpoint() + "/2.0/files/" + item.id() + "/content",
-                        "GET");
+  return http()->create(
+      endpoint() + "/2.0/files/" + from_string(item.id()).id_ + "/content",
+      "GET");
 }
 
 IHttpRequest::Pointer Box::getThumbnailRequest(const IItem& item,
                                                std::ostream&) const {
-  return http()->create(
-      endpoint() + "/2.0/files/" + item.id() + "/thumbnail.png", "GET");
+  return http()->create(endpoint() + "/2.0/files/" +
+                            from_string(item.id()).id_ + "/thumbnail.png",
+                        "GET");
 }
 
 IHttpRequest::Pointer Box::deleteItemRequest(const IItem& item,
                                              std::ostream&) const {
-  if (item.type() == IItem::FileType::Directory)
-    return http()->create(
-        endpoint() + "/2.0/folders/" + item.id() + "?recursive=true", "DELETE");
-  else
-    return http()->create(endpoint() + "/2.0/files/" + item.id(), "DELETE");
+  auto data = from_string(item.id());
+  if (item.type() == IItem::FileType::Directory) {
+    auto r = http()->create(endpoint() + "/2.0/folders/" + data.id_, "DELETE");
+    r->setParameter("recursive", "true");
+    return r;
+  } else
+    return http()->create(endpoint() + "/2.0/files/" + data.id_, "DELETE");
 }
 
 IHttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
@@ -171,7 +172,7 @@ IHttpRequest::Pointer Box::createDirectoryRequest(const IItem& item,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
-  json["parent"]["id"] = item.id();
+  json["parent"]["id"] = from_string(item.id()).id_;
   stream << json;
   return request;
 }
@@ -180,14 +181,15 @@ IHttpRequest::Pointer Box::moveItemRequest(const IItem& source,
                                            const IItem& destination,
                                            std::ostream& stream) const {
   IHttpRequest::Pointer request;
+  auto data = from_string(source.id());
   if (source.type() == IItem::FileType::Directory)
-    request = http()->create(endpoint() + "/2.0/folders/" + source.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/folders/" + data.id_, "PUT");
   else
-    request = http()->create(endpoint() + "/2.0/files/" + source.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/files/" + data.id_, "PUT");
 
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
-  json["parent"]["id"] = destination.id();
+  json["parent"]["id"] = from_string(destination.id()).id_;
   stream << json;
   return request;
 }
@@ -196,10 +198,11 @@ IHttpRequest::Pointer Box::renameItemRequest(const IItem& item,
                                              const std::string& name,
                                              std::ostream& input) const {
   IHttpRequest::Pointer request;
+  auto data = from_string(item.id());
   if (item.type() == IItem::FileType::Directory)
-    request = http()->create(endpoint() + "/2.0/folders/" + item.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/folders/" + data.id_, "PUT");
   else
-    request = http()->create(endpoint() + "/2.0/files/" + item.id(), "PUT");
+    request = http()->create(endpoint() + "/2.0/files/" + data.id_, "PUT");
   Json::Value json;
   json["name"] = name;
   input << json;
@@ -231,8 +234,10 @@ IItem::Pointer Box::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v["type"].asString() == "folder") type = IItem::FileType::Directory;
   auto item = util::make_unique<Item>(
-      v["name"].asString(), v["id"].asString(), v["size"].asUInt64(),
-      util::parse_time(v["modified_at"].asString()), type);
+      v["name"].asString(),
+      to_string({type == IItem::FileType::Directory, v["id"].asString()}),
+      v["size"].asUInt64(), util::parse_time(v["modified_at"].asString()),
+      type);
   return std::move(item);
 }
 

@@ -39,10 +39,9 @@ class Box : public CloudProvider {
   std::string endpoint() const override;
   bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
 
-  GetItemDataRequest::Pointer getItemDataAsync(const std::string&,
-                                               GetItemDataCallback) override;
-
  private:
+  IHttpRequest::Pointer getItemDataRequest(
+      const std::string& id, std::ostream& input_stream) const override;
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer listDirectoryRequest(
