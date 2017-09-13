@@ -57,6 +57,7 @@ class Request : public IRequest<ReturnValue>,
   using ProgressFunction = std::function<void(uint64_t, uint64_t)>;
   using RequestFactory =
       std::function<IHttpRequest::Pointer(std::shared_ptr<std::ostream>)>;
+  using InputFactory = std::function<std::shared_ptr<std::iostream>()>;
   using Callback = std::function<void(ReturnValue)>;
   using Resolver = std::function<void(std::shared_ptr<Request>)>;
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
@@ -106,18 +107,12 @@ class Request : public IRequest<ReturnValue>,
    * @param upload upload progress callback
    * @return http code or curl error code
    */
-  void sendRequest(RequestFactory factory, RequestCompleted,
-                   std::shared_ptr<std::iostream> input = nullptr,
-                   std::shared_ptr<std::ostream> output = nullptr,
-                   ProgressFunction download = nullptr,
-                   ProgressFunction upload = nullptr);
+  void send(RequestFactory factory, RequestCompleted, InputFactory,
+            std::shared_ptr<std::ostream> output, ProgressFunction download,
+            ProgressFunction upload, bool authorized);
 
-  void send(IHttpRequest*, IHttpRequest::CompleteCallback complete,
-            std::shared_ptr<std::istream> input,
-            std::shared_ptr<std::ostream> output,
-            std::shared_ptr<std::ostream> error,
-            ProgressFunction download = nullptr,
-            ProgressFunction upload = nullptr);
+  void request(RequestFactory factory, RequestCompleted);
+  void send(RequestFactory factory, RequestCompleted);
 
   std::shared_ptr<CloudProvider> provider() const;
 
@@ -131,9 +126,16 @@ class Request : public IRequest<ReturnValue>,
  private:
   friend class AuthorizeRequest;
 
-  std::unique_ptr<HttpCallback> httpCallback(
+  std::unique_ptr<HttpCallback> http_callback(
       ProgressFunction progress_download = nullptr,
       ProgressFunction progress_upload = nullptr);
+
+  void send(IHttpRequest*, IHttpRequest::CompleteCallback complete,
+            std::shared_ptr<std::istream> input,
+            std::shared_ptr<std::ostream> output,
+            std::shared_ptr<std::ostream> error,
+            ProgressFunction download = nullptr,
+            ProgressFunction upload = nullptr);
 
   std::promise<ReturnValue> value_;
   std::shared_future<ReturnValue> future_;

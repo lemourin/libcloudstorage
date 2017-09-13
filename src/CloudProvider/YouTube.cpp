@@ -140,7 +140,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
               IItem::UnknownTimeStamp, IItem::FileType::Directory);
           return r->done(i);
         }
-        r->sendRequest(
+        r->request(
             [=](util::Output input) { return getItemDataRequest(id, *input); },
             [=](EitherError<Response> e) {
               if (e.left()) return r->done(e.left());

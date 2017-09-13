@@ -115,62 +115,50 @@ void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
 }
 
 void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
-  auto input = std::make_shared<std::stringstream>(),
-       output = std::make_shared<std::stringstream>(),
-       error_stream = std::make_shared<std::stringstream>();
-  auto r = provider()->auth()->refreshTokenRequest(*input);
   auto auth = provider()->auth();
   auto auth_callback = provider()->auth_callback();
-  send(r.get(),
-       [=](IHttpRequest::Response response) {
-         if (provider()->isSuccess(response.http_code_, response.headers_)) {
+  send([=](util::Output input) { return auth->refreshTokenRequest(*input); },
+       [=](EitherError<Response> e) {
+         if (auto r = e.right()) {
            try {
              auto lock = provider()->auth_lock();
-             auth->set_access_token(auth->refreshTokenResponse(*output));
+             auth->set_access_token(auth->refreshTokenResponse(r->output()));
              lock.unlock();
              return complete(nullptr);
            } catch (std::exception) {
-             Error err{IHttpRequest::Failure, output->str()};
-             return complete(err);
+             return complete(Error{IHttpRequest::Failure, r->output().str()});
            }
-         } else if (!IHttpRequest::isClientError(response.http_code_) && r) {
-           return complete(Error{response.http_code_, error_stream->str()});
+         } else if ((!IHttpRequest::isClientError(e.left()->code_) &&
+                     e.left()->code_ != IHttpRequest::Aborted) ||
+                    auth_callback->userConsentRequired(*provider()) ==
+                        ICloudProvider::IAuthCallback::Status::None) {
+           return complete(e.left());
          }
-         if (auth_callback->userConsentRequired(*provider()) ==
-             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
-           auto code = [=](EitherError<std::string> authorization_code) {
-             if (authorization_code.left())
-               return complete(authorization_code.left());
-             auth->set_authorization_code(*authorization_code.right());
-             auto input = std::make_shared<std::stringstream>(),
-                  output = std::make_shared<std::stringstream>(),
-                  error_stream = std::make_shared<std::stringstream>();
-             auto r = auth->exchangeAuthorizationCodeRequest(*input);
-             send(r.get(),
-                  [=](IHttpRequest::Response response) {
-                    if (provider()->isSuccess(response.http_code_,
-                                              response.headers_)) {
-                      try {
-                        auto lock = provider()->auth_lock();
-                        auth->set_access_token(
-                            auth->exchangeAuthorizationCodeResponse(*output));
-                        lock.unlock();
-                        complete(nullptr);
-                      } catch (std::exception) {
-                        complete(Error{IHttpRequest::Failure, output->str()});
-                      }
-                    } else {
-                      complete(Error{response.http_code_, error_stream->str()});
-                    }
-                  },
-                  input, output, error_stream);
-           };
-           set_server(auth->requestAuthorizationCode(code));
-         } else {
-           complete(Error{response.http_code_, error_stream->str()});
-         }
-       },
-       input, output, error_stream);
+         auto code = [=](EitherError<std::string> authorization_code) {
+           if (authorization_code.left())
+             return complete(authorization_code.left());
+           auth->set_authorization_code(*authorization_code.right());
+           send(
+               [=](util::Output input) {
+                 return auth->exchangeAuthorizationCodeRequest(*input);
+               },
+               [=](EitherError<Response> e) {
+                 if (e.left()) return complete(e.left());
+                 try {
+                   auto lock = provider()->auth_lock();
+                   auth->set_access_token(
+                       auth->exchangeAuthorizationCodeResponse(
+                           e.right()->output()));
+                   lock.unlock();
+                   complete(nullptr);
+                 } catch (std::exception) {
+                   complete(
+                       Error{IHttpRequest::Failure, e.right()->output().str()});
+                 }
+               });
+         };
+         set_server(auth->requestAuthorizationCode(code));
+       });
 }
 
 SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)

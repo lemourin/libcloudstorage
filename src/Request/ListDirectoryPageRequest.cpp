@@ -36,7 +36,7 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
       [=](Request<EitherError<PageData>>::Pointer r) {
         if (directory->type() != IItem::FileType::Directory)
           return r->done(Error{IHttpRequest::Bad, "file not a directory"});
-        r->sendRequest(
+        r->request(
             [=](util::Output input) {
               return r->provider()->listDirectoryRequest(*directory, token,
                                                          *input);

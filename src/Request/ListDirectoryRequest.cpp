@@ -51,7 +51,7 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
                                 std::string page_token, ICallback* callback,
                                 std::function<bool(int)> fault_tolerant) {
   auto request = this->shared_from_this();
-  sendRequest(
+  this->request(
       [=](util::Output i) {
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },

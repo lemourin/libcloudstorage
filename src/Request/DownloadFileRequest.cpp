@@ -39,7 +39,7 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
   auto callback = cb.get();
   set(
       [=](Request::Pointer request) {
-        sendRequest(
+        send(
             [=](util::Output input) {
               auto request = request_factory(*file, *input);
               if (range != FullRange)
@@ -53,9 +53,11 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
               else
                 request->done(nullptr);
             },
-            nullptr, std::make_shared<std::ostream>(&stream_wrapper_),
+            []() { return std::make_shared<std::stringstream>(); },
+            std::make_shared<std::ostream>(&stream_wrapper_),
             std::bind(&DownloadFileRequest::ICallback::progress, callback, _1,
-                      _2));
+                      _2),
+            nullptr, true);
       },
       [=](EitherError<void> e) { cb->done(e); });
 }
@@ -82,7 +84,7 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
       [=](Request<EitherError<void>>::Pointer r) {
         auto download = [=](std::string url,
                             std::function<void(EitherError<void>)> cb) {
-          r->sendRequest(
+          r->send(
               [=](util::Output) {
                 auto r = provider()->http()->create(url, "GET");
                 if (range != FullRange)
@@ -96,7 +98,8 @@ DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
                   cb(nullptr);
               },
               nullptr, std::make_shared<std::ostream>(&stream_wrapper_),
-              std::bind(&IDownloadFileCallback::progress, callback, _1, _2));
+              std::bind(&IDownloadFileCallback::progress, callback, _1, _2),
+              nullptr, true);
         };
         auto cached_url = static_cast<Item*>(file.get())->url();
         auto get_url = [=]() {

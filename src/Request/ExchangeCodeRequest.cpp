@@ -36,39 +36,31 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
         std::stringstream stream;
         if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
           return r->done(Token{authorization_code, ""});
-        auto input = std::make_shared<std::stringstream>(),
-             output = std::make_shared<std::stringstream>(),
-             error = std::make_shared<std::stringstream>();
-        IHttpRequest::Pointer request;
-        {
-          auto lock = provider()->auth_lock();
-          auto previous_code = provider()->auth()->authorization_code();
-          provider()->auth()->set_authorization_code(authorization_code);
-          request =
-              provider()->auth()->exchangeAuthorizationCodeRequest(*input);
-          provider()->auth()->set_authorization_code(previous_code);
-        }
         r->send(
-            request.get(),
-            [=](IHttpRequest::Response response) {
-              if (provider()->isSuccess(response.http_code_,
-                                        response.headers_)) {
-                try {
-                  auto lock = provider()->auth_lock();
-                  auto auth_token =
-                      provider()->auth()->exchangeAuthorizationCodeResponse(
-                          *output);
-                  lock.unlock();
-                  Token token{auth_token->refresh_token_, auth_token->token_};
-                  r->done(token);
-                } catch (std::exception) {
-                  r->done(Error{IHttpRequest::Failure, output->str()});
-                }
-              } else {
-                r->done(Error{response.http_code_, error->str()});
-              }
+            [=](util::Output input) {
+              auto lock = provider()->auth_lock();
+              auto previous_code = provider()->auth()->authorization_code();
+              provider()->auth()->set_authorization_code(authorization_code);
+              auto request =
+                  provider()->auth()->exchangeAuthorizationCodeRequest(*input);
+              provider()->auth()->set_authorization_code(previous_code);
+              return request;
             },
-            input, output, error);
+            [=](EitherError<Response> e) {
+              if (e.left()) return r->done(e.left());
+              try {
+                auto lock = provider()->auth_lock();
+                auto auth_token =
+                    provider()->auth()->exchangeAuthorizationCodeResponse(
+                        e.right()->output());
+                lock.unlock();
+                Token token{auth_token->refresh_token_, auth_token->token_};
+                r->done(token);
+              } catch (std::exception) {
+                r->done(
+                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              }
+            });
       },
       callback);
 }

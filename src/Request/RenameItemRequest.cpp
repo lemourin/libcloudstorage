@@ -34,7 +34,7 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(p) {
   set(
       [=](Request::Pointer request) {
-        sendRequest(
+        send(
             [=](util::Output stream) {
               return p->renameItemRequest(*item, name, *stream);
             },

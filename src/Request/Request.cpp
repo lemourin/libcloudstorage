@@ -158,7 +158,7 @@ void Request<T>::done(const T& t) {
 }
 
 template <class T>
-std::unique_ptr<HttpCallback> Request<T>::httpCallback(
+std::unique_ptr<HttpCallback> Request<T>::http_callback(
     ProgressFunction progress_download, ProgressFunction progress_upload) {
   return util::make_unique<HttpCallback>(
       [=] { return is_cancelled(); },
@@ -201,22 +201,36 @@ bool Request<T>::reauthorize(int code,
 }
 
 template <class T>
-void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
-                             std::shared_ptr<std::iostream> input,
-                             std::shared_ptr<std::ostream> output,
-                             ProgressFunction download,
-                             ProgressFunction upload) {
+void Request<T>::request(RequestFactory factory, RequestCompleted complete) {
+  this->send(factory, complete,
+             [] { return std::make_shared<std::stringstream>(); },
+             std::make_shared<std::stringstream>(), nullptr, nullptr, true);
+}
+
+template <class T>
+void Request<T>::send(RequestFactory factory, RequestCompleted complete) {
+  this->send(factory, complete,
+             [] { return std::make_shared<std::stringstream>(); },
+             std::make_shared<std::stringstream>(), nullptr, nullptr, false);
+}
+
+template <class T>
+void Request<T>::send(RequestFactory factory, RequestCompleted complete,
+                      InputFactory input_factory,
+                      std::shared_ptr<std::ostream> output,
+                      ProgressFunction download, ProgressFunction upload,
+                      bool authorized) {
   auto request = this->shared_from_this();
-  if (!input) input = std::make_shared<std::stringstream>();
-  if (!output) output = std::make_shared<std::stringstream>();
+  auto input = input_factory();
   auto error_stream = std::make_shared<std::stringstream>();
   auto r = factory(input);
-  authorize(r);
+  if (authorized) authorize(r);
   send(r.get(),
        [=](IHttpRequest::Response response) {
          if (provider()->isSuccess(response.http_code_, response.headers_))
            return complete(Response(response));
-         if (this->reauthorize(response.http_code_, response.headers_)) {
+         if (authorized &&
+             this->reauthorize(response.http_code_, response.headers_)) {
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
@@ -225,10 +239,10 @@ void Request<T>::sendRequest(RequestFactory factory, RequestCompleted complete,
                  return complete(
                      Error{response.http_code_, error_stream->str()});
              }
-             auto input = std::make_shared<std::stringstream>(),
-                  error_stream = std::make_shared<std::stringstream>();
+             auto input = input_factory();
+             auto error_stream = std::make_shared<std::stringstream>();
              auto r = factory(input);
-             authorize(r);
+             if (authorized) authorize(r);
              this->send(
                  r.get(),
                  [=](IHttpRequest::Response response) {
@@ -257,7 +271,7 @@ void Request<T>::send(IHttpRequest* request,
                       ProgressFunction download, ProgressFunction upload) {
   if (request)
     request->send(complete, input, output, error,
-                  httpCallback(download, upload));
+                  http_callback(download, upload));
   else
     complete({IHttpRequest::Aborted, {}, output, error});
 }

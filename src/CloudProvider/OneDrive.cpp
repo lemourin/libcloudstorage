@@ -44,7 +44,7 @@ void upload(Request<EitherError<IItem>>::Pointer r, int sent,
   if (sent >= size)
     return r->done(
         static_cast<OneDrive*>(r->provider().get())->toItem(response));
-  r->sendRequest(
+  r->send(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
         *length = callback->putData(buffer.data(), CHUNK_SIZE);
@@ -67,8 +67,10 @@ void upload(Request<EitherError<IItem>>::Pointer r, int sent,
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       },
-      nullptr, nullptr,
-      [=](uint32_t, uint32_t now) { callback->progress(size, sent + now); });
+      [] { return std::make_shared<std::stringstream>(); },
+      std::make_shared<std::stringstream>(), nullptr,
+      [=](uint64_t, uint64_t now) { callback->progress(size, sent + now); },
+      true);
 }
 }  // namespace
 
@@ -85,7 +87,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
   auto callback = cb.get();
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {
-        r->sendRequest(
+        r->request(
             [=](util::Output) {
               return http()->create(
                   endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +

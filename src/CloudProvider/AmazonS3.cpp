@@ -102,7 +102,7 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
             ItemId dest_id, ItemId source_id,
             std::function<void(EitherError<void>)> complete) {
   auto finalize = [=]() {
-    r->sendRequest(
+    r->request(
         [=](util::Output) {
           return http->create("https://" + source_id.first + ".s3." + region +
                                   ".amazonaws.com/" +
@@ -118,7 +118,7 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
   };
   auto rename_one = [=](std::function<void(EitherError<void>)> complete,
                         bool directory = true) {
-    r->sendRequest(
+    r->request(
         [=](util::Output) {
           auto request = http->create(
               "https://" + dest_id.first + ".s3." + region + ".amazonaws.com/" +
@@ -286,7 +286,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
   r->set(
       [=](Request<EitherError<void>>::Pointer r) {
         auto release = [=] {
-          r->sendRequest(
+          r->request(
               [=](util::Output) {
                 auto data = extract(item->id());
                 return http()->create("https://" + data.first + ".s3." +
@@ -338,7 +338,7 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
           request->setParameter("delimiter", "/");
           return request;
         };
-        r->sendRequest(factory, [=](EitherError<Response> e) {
+        r->request(factory, [=](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           std::stringstream sstream;
           sstream << e.right()->output().rdbuf();

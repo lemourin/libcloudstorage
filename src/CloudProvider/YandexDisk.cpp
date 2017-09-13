@@ -93,7 +93,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   path += filename;
   auto upload_url = [=](Request<EitherError<IItem>>::Pointer r,
                         std::function<void(EitherError<std::string>)> f) {
-    r->sendRequest(
+    r->request(
         [=](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources/upload", "GET");
@@ -116,12 +116,11 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     auto wrapper = std::make_shared<UploadStreamWrapper>(
         std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
         callback->size());
-    r->sendRequest(
-        [=](util::Output input) {
+    r->send(
+        [=](util::Output) {
           auto request = http()->create(url, "PUT");
           callback->reset();
           wrapper->reset();
-          input->rdbuf(wrapper.get());
           return request;
         },
         [=](EitherError<Response> e) {
@@ -131,8 +130,10 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
               IItem::FileType::Unknown);
           f(item);
         },
-        nullptr, nullptr,
-        std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2));
+        [=] { return std::make_shared<std::iostream>(wrapper.get()); },
+        std::make_shared<std::stringstream>(), nullptr,
+        std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2),
+        true);
   };
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {

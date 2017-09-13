@@ -45,7 +45,7 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
           else
             return r->done(url);
         }
-        r->sendRequest(
+        r->send(
             [=](util::Output input) {
               return provider()->getItemUrlRequest(*item, *input);
             },

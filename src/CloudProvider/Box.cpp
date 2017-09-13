@@ -68,13 +68,13 @@ ICloudProvider::GetItemDataRequest::Pointer Box::getItemDataAsync(
   auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   r->set(
       [=](Request<EitherError<IItem>>::Pointer r) {
-        r->sendRequest(
+        r->request(
             [this, id](util::Output) {
               return http()->create(endpoint() + "/2.0/files/" + id, "GET");
             },
             [=](EitherError<Response> e) {
               if (e.left()) {
-                r->sendRequest(
+                r->request(
                     [this, id](util::Output) {
                       return http()->create(endpoint() + "/2.0/folders/" + id,
                                             "GET");
