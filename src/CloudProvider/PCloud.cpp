@@ -30,10 +30,12 @@ const std::string THUMBNAIL_SIZE = "64x64";
 
 namespace cloudstorage {
 
+using util::FileId;
+
 PCloud::PCloud() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer PCloud::rootDirectory() const {
-  return util::make_unique<Item>("/", "0", IItem::UnknownSize,
+  return util::make_unique<Item>("/", FileId(true, "0"), IItem::UnknownSize,
                                  IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
@@ -60,7 +62,7 @@ void PCloud::authorizeRequest(IHttpRequest& r) const {
 IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
                                                 std::ostream&) const {
   auto r = http()->create(endpoint() + "/getfilelink");
-  r->setParameter("fileid", item.id());
+  r->setParameter("fileid", FileId(item.id()).id_);
   return r;
 }
 
@@ -75,7 +77,7 @@ std::string PCloud::getItemUrlResponse(const IItem&,
 IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string& id,
                                                  std::ostream&) const {
   auto r = http()->create(endpoint() + "/checksumfile");
-  r->setParameter("fileid", id);
+  r->setParameter("fileid", FileId(id).id_);
   r->setParameter("timeformat", "timestamp");
   return r;
 }
@@ -98,7 +100,7 @@ IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
                                                    const std::string&,
                                                    std::ostream&) const {
   auto req = http()->create(endpoint() + "/listfolder");
-  req->setParameter("folderid", item.id());
+  req->setParameter("folderid", FileId(item.id()).id_);
   req->setParameter("timeformat", "timestamp");
   return req;
 }
@@ -116,7 +118,7 @@ IHttpRequest::Pointer PCloud::uploadFileRequest(const IItem& directory,
                                                 std::ostream&) const {
   auto req = http()->create(endpoint() + "/uploadfile", "POST");
   req->setHeaderParameter("Content-Type", "application/octet-stream");
-  req->setParameter("folderid", directory.id());
+  req->setParameter("folderid", FileId(directory.id()).id_);
   req->setParameter("filename", util::Url::escape(filename));
   req->setParameter("timeformat", "timestamp");
   return req;
@@ -126,11 +128,11 @@ IHttpRequest::Pointer PCloud::deleteItemRequest(const IItem& item,
                                                 std::ostream&) const {
   if (item.type() == IItem::FileType::Directory) {
     auto request = http()->create(endpoint() + "/deletefolderrecursive");
-    request->setParameter("folderid", item.id());
+    request->setParameter("folderid", FileId(item.id()).id_);
     return request;
   } else {
     auto request = http()->create(endpoint() + "/deletefile");
-    request->setParameter("fileid", item.id());
+    request->setParameter("fileid", FileId(item.id()).id_);
     return request;
   }
 }
@@ -139,7 +141,7 @@ IHttpRequest::Pointer PCloud::createDirectoryRequest(const IItem& item,
                                                      const std::string& name,
                                                      std::ostream&) const {
   auto request = http()->create(endpoint() + "/createfolder");
-  request->setParameter("folderid", item.id());
+  request->setParameter("folderid", FileId(item.id()).id_);
   request->setParameter("name", util::Url::escape(name));
   request->setParameter("timeformat", "timestamp");
   return request;
@@ -150,14 +152,14 @@ IHttpRequest::Pointer PCloud::moveItemRequest(const IItem& source,
                                               std::ostream&) const {
   if (source.type() == IItem::FileType::Directory) {
     auto request = http()->create(endpoint() + "/renamefolder");
-    request->setParameter("folderid", source.id());
-    request->setParameter("tofolderid", destination.id());
+    request->setParameter("folderid", FileId(source.id()).id_);
+    request->setParameter("tofolderid", FileId(destination.id()).id_);
     request->setParameter("timeformat", "timestamp");
     return request;
   } else {
     auto request = http()->create(endpoint() + "/renamefile");
-    request->setParameter("fileid", source.id());
-    request->setParameter("tofolderid", destination.id());
+    request->setParameter("fileid", FileId(source.id()).id_);
+    request->setParameter("tofolderid", FileId(destination.id()).id_);
     request->setParameter("timeformat", "timestamp");
     return request;
   }
@@ -168,13 +170,13 @@ IHttpRequest::Pointer PCloud::renameItemRequest(const IItem& item,
                                                 std::ostream&) const {
   if (item.type() == IItem::FileType::Directory) {
     auto request = http()->create(endpoint() + "/renamefolder");
-    request->setParameter("folderid", item.id());
+    request->setParameter("folderid", FileId(item.id()).id_);
     request->setParameter("toname", util::Url::escape(name));
     request->setParameter("timeformat", "timestamp");
     return request;
   } else {
     auto request = http()->create(endpoint() + "/renamefile");
-    request->setParameter("fileid", item.id());
+    request->setParameter("fileid", FileId(item.id()).id_);
     request->setParameter("toname", util::Url::escape(name));
     request->setParameter("timeformat", "timestamp");
     return request;
@@ -193,8 +195,8 @@ std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
 IItem::Pointer PCloud::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(
       v["name"].asString(),
-      v["isfolder"].asBool() ? v["folderid"].asString()
-                             : v["fileid"].asString(),
+      v["isfolder"].asBool() ? FileId(true, v["folderid"].asString())
+                             : FileId(false, v["fileid"].asString()),
       v.isMember("size") ? v["size"].asInt64() : IItem::UnknownSize,
       v.isMember("modified")
           ? std::chrono::system_clock::time_point(
