@@ -81,6 +81,23 @@ bool operator!=(const Range& r1, const Range& r2) { return !(r1 == r2); }
 
 namespace util {
 
+FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
+
+FileId::FileId(const std::string& str) : folder_() {
+  Json::Value json;
+  if (Json::Reader().parse(util::from_base64(str), json)) {
+    folder_ = json["t"].asBool();
+    id_ = json["id"].asString();
+  }
+}
+
+FileId::operator std::string() const {
+  Json::Value json;
+  json["t"] = folder_;
+  json["id"] = id_;
+  return util::to_base64(Json::FastWriter().write(json));
+}
+
 std::string to_lower(std::string str) {
   for (char& c : str) c = tolower(c);
   return str;

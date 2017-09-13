@@ -42,6 +42,16 @@ namespace util {
 using Output = std::shared_ptr<std::ostream>;
 using Input = std::shared_ptr<std::istream>;
 
+struct FileId {
+  FileId(bool, const std::string&);
+  FileId(const std::string&);
+
+  operator std::string() const;
+
+  bool folder_;
+  std::string id_;
+};
+
 template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
