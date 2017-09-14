@@ -34,35 +34,34 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          IItem::Pointer file,
                                          ICallback::Pointer cb, Range range,
                                          RequestFactory request_factory)
-    : Request(p),
-      stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {
-  auto callback = cb.get();
-  set(
-      [=](Request::Pointer request) {
-        send(
-            [=](util::Output input) {
-              auto request = request_factory(*file, *input);
-              if (range != FullRange)
-                request->setHeaderParameter("Range",
-                                            util::range_to_string(range));
-              return request;
-            },
-            [=](EitherError<Response> e) {
-              if (e.left())
-                request->done(e.left());
-              else
-                request->done(nullptr);
-            },
-            []() { return std::make_shared<std::stringstream>(); },
-            std::make_shared<std::ostream>(&stream_wrapper_),
-            std::bind(&DownloadFileRequest::ICallback::progress, callback, _1,
-                      _2),
-            nullptr, true);
-      },
-      [=](EitherError<void> e) { cb->done(e); });
-}
+    : Request(p, [=](EitherError<void> e) { cb->done(e); },
+              std::bind(&DownloadFileRequest::resolve, this, _1, file, cb.get(),
+                        range, request_factory)),
+      stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
+
+void DownloadFileRequest::resolve(Request::Pointer request, IItem::Pointer file,
+                                  ICallback* callback, Range range,
+                                  RequestFactory request_factory) {
+  send(
+      [=](util::Output input) {
+        auto request = request_factory(*file, *input);
+        if (range != FullRange)
+          request->setHeaderParameter("Range", util::range_to_string(range));
+        return request;
+      },
+      [=](EitherError<Response> e) {
+        if (e.left())
+          request->done(e.left());
+        else
+          request->done(nullptr);
+      },
+      []() { return std::make_shared<std::stringstream>(); },
+      std::make_shared<std::ostream>(&stream_wrapper_),
+      std::bind(&DownloadFileRequest::ICallback::progress, callback, _1, _2),
+      nullptr, true);
+}
 
 DownloadStreamWrapper::DownloadStreamWrapper(
     std::function<void(const char*, uint32_t)> callback)
@@ -77,52 +76,53 @@ std::streamsize DownloadStreamWrapper::xsputn(const char_type* data,
 DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer file,
     ICallback::Pointer cb, Range range)
-    : Request(p),
-      stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {
-  auto callback = cb.get();
-  set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        auto download = [=](std::string url,
-                            std::function<void(EitherError<void>)> cb) {
-          r->send(
-              [=](util::Output) {
-                auto r = provider()->http()->create(url, "GET");
-                if (range != FullRange)
-                  r->setHeaderParameter("Range", util::range_to_string(range));
-                return r;
-              },
-              [=](EitherError<Response> e) {
-                if (e.left())
-                  cb(e.left());
-                else
-                  cb(nullptr);
-              },
-              [] { return std::make_shared<std::stringstream>(); },
-              std::make_shared<std::ostream>(&stream_wrapper_),
-              std::bind(&IDownloadFileCallback::progress, callback, _1, _2),
-              nullptr, true);
-        };
-        auto cached_url = static_cast<Item*>(file.get())->url();
-        auto get_url = [=]() {
-          r->subrequest(provider()->getItemUrlAsync(
-              file, [=](EitherError<std::string> e) {
-                if (e.left()) return r->done(e.left());
-                download(*e.right(), [=](EitherError<void> e) { r->done(e); });
-              }));
-        };
-        if (!cached_url.empty())
-          download(cached_url, [=](EitherError<void> e) {
-            if (e.left())
-              get_url();
-            else
-              r->done(e);
-          });
-        else
-          get_url();
-      },
-      [=](EitherError<void> e) { cb->done(e); });
-}
+    : Request(p, [=](EitherError<void> e) { cb->done(e); },
+              std::bind(&DownloadFileFromUrlRequest::resolve, this, _1, file,
+                        cb.get(), range)),
+      stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileFromUrlRequest::~DownloadFileFromUrlRequest() { cancel(); }
+
+void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
+                                         IItem::Pointer file,
+                                         ICallback* callback, Range range) {
+  auto download = [=](std::string url,
+                      std::function<void(EitherError<void>)> cb) {
+    r->send(
+        [=](util::Output) {
+          auto r = provider()->http()->create(url, "GET");
+          if (range != FullRange)
+            r->setHeaderParameter("Range", util::range_to_string(range));
+          return r;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left())
+            cb(e.left());
+          else
+            cb(nullptr);
+        },
+        [] { return std::make_shared<std::stringstream>(); },
+        std::make_shared<std::ostream>(&stream_wrapper_),
+        std::bind(&IDownloadFileCallback::progress, callback, _1, _2), nullptr,
+        true);
+  };
+  auto cached_url = static_cast<Item*>(file.get())->url();
+  auto get_url = [=]() {
+    r->subrequest(
+        provider()->getItemUrlAsync(file, [=](EitherError<std::string> e) {
+          if (e.left()) return r->done(e.left());
+          download(*e.right(), [=](EitherError<void> e) { r->done(e); });
+        }));
+  };
+  if (!cached_url.empty())
+    download(cached_url, [=](EitherError<void> e) {
+      if (e.left())
+        get_url();
+      else
+        r->done(e);
+    });
+  else
+    get_url();
+}
 
 }  // namespace cloudstorage

@@ -42,6 +42,8 @@ class ListDirectoryRequest
   ~ListDirectoryRequest();
 
  private:
+  void resolve(Request::Pointer, IItem::Pointer directory, ICallback* cb,
+               std::function<bool(int)> fault_tolerant);
   void work(IItem::Pointer directory, std::string page_token, ICallback*,
             std::function<bool(int)> fault_tolerant);
 

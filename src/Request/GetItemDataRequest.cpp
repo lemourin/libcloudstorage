@@ -30,9 +30,7 @@ namespace cloudstorage {
 
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id, Callback callback)
-    : Request(p) {
-  set(
-      [=](Request::Pointer request) {
+    : Request(p, callback, [=](Request::Pointer request) {
         this->request(
             [=](util::Output input) {
               return provider()->getItemDataRequest(id, *input);
@@ -47,9 +45,7 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                     Error{IHttpRequest::Failure, r.right()->output().str()});
               }
             });
-      },
-      callback);
-}
+      }) {}
 
 GetItemDataRequest::~GetItemDataRequest() { cancel(); }
 

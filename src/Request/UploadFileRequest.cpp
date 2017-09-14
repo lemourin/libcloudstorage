@@ -33,41 +33,41 @@ UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer directory,
                                      const std::string& filename,
                                      UploadFileRequest::ICallback::Pointer cb)
-    : Request(p),
+    : Request(p, [=](EitherError<IItem> e) { cb->done(e); },
+              std::bind(&UploadFileRequest::resolve, this, _1, directory,
+                        filename, cb.get())),
       stream_wrapper_(std::bind(&ICallback::putData, cb.get(), _1, _2),
-                      cb->size()) {
-  auto callback = cb.get();
-  set(
-      [=](Request::Pointer request) {
-        send(
-            [=](util::Output) {
-              callback->reset();
-              stream_wrapper_.reset();
-              return provider()->uploadFileRequest(*directory, filename,
-                                                   stream_wrapper_.prefix_,
-                                                   stream_wrapper_.suffix_);
-            },
-            [=](EitherError<Response> e) {
-              if (e.left()) return request->done(e.left());
-              try {
-                request->done(provider()->uploadFileResponse(
-                    *directory, filename, stream_wrapper_.size_,
-                    e.right()->output()));
-              } catch (std::exception) {
-                request->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
-              }
-            },
-            [=] { return std::make_shared<std::iostream>(&stream_wrapper_); },
-            std::make_shared<std::stringstream>(), nullptr,
-            std::bind(&UploadFileRequest::ICallback::progress, callback, _1,
-                      _2),
-            true);
-      },
-      [=](EitherError<IItem> e) { cb->done(e); });
-}
+                      cb->size()) {}
 
 UploadFileRequest::~UploadFileRequest() { cancel(); }
+
+void UploadFileRequest::resolve(Request::Pointer request,
+                                IItem::Pointer directory, std::string filename,
+                                ICallback* callback) {
+  send(
+      [=](util::Output) {
+        callback->reset();
+        stream_wrapper_.reset();
+        return provider()->uploadFileRequest(*directory, filename,
+                                             stream_wrapper_.prefix_,
+                                             stream_wrapper_.suffix_);
+      },
+      [=](EitherError<Response> e) {
+        if (e.left()) return request->done(e.left());
+        try {
+          request->done(provider()->uploadFileResponse(*directory, filename,
+                                                       stream_wrapper_.size_,
+                                                       e.right()->output()));
+        } catch (std::exception) {
+          request->done(
+              Error{IHttpRequest::Failure, e.right()->output().str()});
+        }
+      },
+      [=] { return std::make_shared<std::iostream>(&stream_wrapper_); },
+      std::make_shared<std::stringstream>(), nullptr,
+      std::bind(&UploadFileRequest::ICallback::progress, callback, _1, _2),
+      true);
+}
 
 UploadStreamWrapper::UploadStreamWrapper(
     std::function<uint32_t(char*, uint32_t)> callback, uint64_t size)

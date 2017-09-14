@@ -83,31 +83,31 @@ std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   auto callback = cb.get();
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        r->request(
-            [=](util::Output) {
-              return http()->create(
-                  endpoint() + "/v1.0/drive/items/" + parent->id() + ":/" +
-                      util::Url::escape(filename) + ":/upload.createSession",
-                  "POST");
-            },
-            [=](EitherError<Response> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                Json::Value response;
-                e.right()->output() >> response;
-                upload(r, 0, callback, response);
-              } catch (std::exception) {
-                r->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
-              }
-            });
-      },
-      [=](EitherError<IItem> e) { cb->done(e); });
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               r->request(
+                   [=](util::Output) {
+                     return http()->create(endpoint() + "/v1.0/drive/items/" +
+                                               parent->id() + ":/" +
+                                               util::Url::escape(filename) +
+                                               ":/upload.createSession",
+                                           "POST");
+                   },
+                   [=](EitherError<Response> e) {
+                     if (e.left()) return r->done(e.left());
+                     try {
+                       Json::Value response;
+                       e.right()->output() >> response;
+                       upload(r, 0, callback, response);
+                     } catch (std::exception) {
+                       r->done(Error{IHttpRequest::Failure,
+                                     e.right()->output().str()});
+                     }
+                   });
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,

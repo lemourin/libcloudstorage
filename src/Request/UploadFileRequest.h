@@ -59,6 +59,9 @@ class UploadFileRequest : public Request<EitherError<IItem>> {
   ~UploadFileRequest();
 
  private:
+  void resolve(Request::Pointer, IItem::Pointer directory, std::string filename,
+               ICallback*);
+
   UploadStreamWrapper stream_wrapper_;
 };
 

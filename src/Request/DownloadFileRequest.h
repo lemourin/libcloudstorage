@@ -51,6 +51,9 @@ class DownloadFileRequest : public Request<EitherError<void>> {
   ~DownloadFileRequest();
 
  private:
+  void resolve(Request::Pointer request, IItem::Pointer file, ICallback*, Range,
+               RequestFactory request_factory);
+
   DownloadStreamWrapper stream_wrapper_;
 };
 
@@ -63,6 +66,8 @@ class DownloadFileFromUrlRequest : public Request<EitherError<void>> {
   ~DownloadFileFromUrlRequest();
 
  private:
+  void resolve(Request::Pointer, IItem::Pointer, ICallback*, Range);
+
   DownloadStreamWrapper stream_wrapper_;
 };
 

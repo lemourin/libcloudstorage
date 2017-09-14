@@ -77,14 +77,13 @@ class Request : public IRequest<ReturnValue>,
     typename Request<ReturnValue>::Pointer request_;
   };
 
-  Request(std::shared_ptr<CloudProvider>);
+  Request(std::shared_ptr<CloudProvider>, Callback, Resolver);
   ~Request();
 
   void finish() override;
   void cancel() override;
   ReturnValue result() override;
 
-  void set(Resolver, Callback);
   typename Wrapper::Pointer run();
   void done(const ReturnValue&);
 

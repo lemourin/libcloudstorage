@@ -131,32 +131,33 @@ std::string YouTube::getItemUrlResponse(const IItem&,
 
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        if (id == rootDirectory()->id()) return r->done(rootDirectory());
-        if (id == AUDIO_DIRECTORY_ID) {
-          IItem::Pointer i = std::make_shared<Item>(
-              AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
-              IItem::UnknownTimeStamp, IItem::FileType::Directory);
-          return r->done(i);
-        }
-        r->request(
-            [=](util::Output input) { return getItemDataRequest(id, *input); },
-            [=](EitherError<Response> e) {
-              if (e.left()) return r->done(e.left());
-              auto id_data = from_string(id);
-              try {
-                r->done(
-                    getItemDataResponse(e.right()->output(), id_data.audio));
-              } catch (std::exception) {
-                r->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
-              }
-            });
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               if (id == rootDirectory()->id()) return r->done(rootDirectory());
+               if (id == AUDIO_DIRECTORY_ID) {
+                 IItem::Pointer i = std::make_shared<Item>(
+                     AUDIO_DIRECTORY, AUDIO_DIRECTORY_ID, IItem::UnknownSize,
+                     IItem::UnknownTimeStamp, IItem::FileType::Directory);
+                 return r->done(i);
+               }
+               r->request(
+                   [=](util::Output input) {
+                     return getItemDataRequest(id, *input);
+                   },
+                   [=](EitherError<Response> e) {
+                     if (e.left()) return r->done(e.left());
+                     auto id_data = from_string(id);
+                     try {
+                       r->done(getItemDataResponse(e.right()->output(),
+                                                   id_data.audio));
+                     } catch (std::exception) {
+                       r->done(Error{IHttpRequest::Failure,
+                                     e.right()->output().str()});
+                     }
+                   });
+             })
+      ->run();
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(

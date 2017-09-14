@@ -46,6 +46,8 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   void set_server(std::shared_ptr<IHttpServer>);
 
  private:
+  void resolve(Request::Pointer, AuthorizationFlow callback);
+
   std::string state_;
   std::mutex lock_;
   bool server_cancelled_;

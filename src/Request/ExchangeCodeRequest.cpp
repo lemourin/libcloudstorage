@@ -30,9 +30,7 @@ namespace cloudstorage {
 ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
                                          ExchangeCodeCallback callback)
-    : Request(p) {
-  set(
-      [=](Request<EitherError<Token>>::Pointer r) {
+    : Request(p, callback, [=](Request<EitherError<Token>>::Pointer r) {
         std::stringstream stream;
         if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
           return r->done(Token{authorization_code, ""});
@@ -61,9 +59,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }
             });
-      },
-      callback);
-}
+      }) {}
 
 ExchangeCodeRequest::~ExchangeCodeRequest() { cancel(); }
 

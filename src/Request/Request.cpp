@@ -68,8 +68,13 @@ T Request<T>::Wrapper::result() {
 }
 
 template <class T>
-Request<T>::Request(std::shared_ptr<CloudProvider> provider)
-    : future_(value_.get_future()), provider_(provider), is_cancelled_(false) {}
+Request<T>::Request(std::shared_ptr<CloudProvider> provider, Callback callback,
+                    Resolver resolver)
+    : future_(value_.get_future()),
+      resolver_(resolver),
+      callback_(callback),
+      provider_(provider),
+      is_cancelled_(false) {}
 
 template <class T>
 Request<T>::~Request() {
@@ -139,12 +144,6 @@ template <class T>
 T Request<T>::result() {
   finish();
   return future_.get();
-}
-
-template <class T>
-void Request<T>::set(Resolver r, Callback cb) {
-  resolver_ = r;
-  callback_ = cb;
 }
 
 template <typename T>

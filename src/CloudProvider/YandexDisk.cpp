@@ -88,7 +88,6 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
   auto path = directory->id();
   if (path.back() != '/') path += "/";
   path += filename;
@@ -136,15 +135,17 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
         std::bind(&IUploadFileCallback::progress, callback.get(), _1, _2),
         true);
   };
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        upload_url(r, [=](EitherError<std::string> ret) {
-          if (ret.left()) r->done(ret.left());
-          upload(r, *ret.right(), [=](EitherError<IItem> e) { r->done(e); });
-        });
-      },
-      [=](EitherError<IItem> e) { callback->done(e); });
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(),
+             [=](EitherError<IItem> e) { callback->done(e); },
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               upload_url(r, [=](EitherError<std::string> ret) {
+                 if (ret.left()) r->done(ret.left());
+                 upload(r, *ret.right(),
+                        [=](EitherError<IItem> e) { r->done(e); });
+               });
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer YandexDisk::createDirectoryRequest(

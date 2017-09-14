@@ -29,15 +29,11 @@ namespace cloudstorage {
 
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
-    : Request(p) {
-  set(
-      [=](Request::Pointer) {
+    : Request(p, callback, [=](Request::Pointer) {
         if (path.empty() || path.front() != '/')
           return done(Error{IHttpRequest::Forbidden, "invalid path"});
         work(provider()->rootDirectory(), path, callback);
-      },
-      callback);
-}
+      }) {}
 
 GetItemRequest::~GetItemRequest() { cancel(); }
 

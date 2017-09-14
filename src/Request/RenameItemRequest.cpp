@@ -31,9 +31,7 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      const std::string& name,
                                      RenameItemCallback callback)
-    : Request(p) {
-  set(
-      [=](Request::Pointer request) {
+    : Request(p, callback, [=](Request::Pointer request) {
         this->request(
             [=](util::Output stream) {
               return p->renameItemRequest(*item, name, *stream);
@@ -48,9 +46,7 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }
             });
-      },
-      callback);
-}
+      }) {}
 
 RenameItemRequest::~RenameItemRequest() { cancel(); }
 

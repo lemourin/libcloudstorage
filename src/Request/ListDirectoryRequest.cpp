@@ -32,20 +32,23 @@ namespace cloudstorage {
 ListDirectoryRequest::ListDirectoryRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
     ICallback::Pointer cb, std::function<bool(int)> fault_tolerant)
-    : Request(p) {
-  auto callback = cb.get();
-  set(
-      [=](Request::Pointer request) {
-        if (directory->type() != IItem::FileType::Directory)
-          request->done(
-              Error{IHttpRequest::Forbidden, "trying to list non directory"});
-        else
-          work(directory, "", callback, fault_tolerant);
-      },
-      [=](EitherError<std::vector<IItem::Pointer>> e) { cb->done(e); });
-}
+    : Request(p,
+              [=](EitherError<std::vector<IItem::Pointer>> e) { cb->done(e); },
+              std::bind(&ListDirectoryRequest::resolve, this, _1, directory,
+                        cb.get(), fault_tolerant)) {}
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
+
+void ListDirectoryRequest::resolve(Request::Pointer request,
+                                   IItem::Pointer directory,
+                                   ICallback* callback,
+                                   std::function<bool(int)> fault_tolerant) {
+  if (directory->type() != IItem::FileType::Directory)
+    request->done(
+        Error{IHttpRequest::Forbidden, "trying to list non directory"});
+  else
+    work(directory, "", callback, fault_tolerant);
+}
 
 void ListDirectoryRequest::work(IItem::Pointer directory,
                                 std::string page_token, ICallback* callback,

@@ -209,56 +209,57 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto data = AmazonS3::extract(destination->id());
-        rename<EitherError<IItem>>(
-            r, http(), region(), {data.first, data.second + source->filename()},
-            AmazonS3::extract(source->id()), [=](EitherError<void> e) {
-              if (e.left()) return r->done(e.left());
-              auto path =
-                  data.second + source->filename() +
-                  (source->type() == IItem::FileType::Directory ? "/" : "");
-              auto nitem = std::make_shared<Item>(
-                  source->filename(), to_string({data.first, path}),
-                  source->size(), source->timestamp(), source->type());
-              nitem->set_url(getUrl(*nitem));
-              r->done(std::static_pointer_cast<IItem>(nitem));
-            });
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               auto data = AmazonS3::extract(destination->id());
+               rename<EitherError<IItem>>(
+                   r, http(), region(),
+                   {data.first, data.second + source->filename()},
+                   AmazonS3::extract(source->id()), [=](EitherError<void> e) {
+                     if (e.left()) return r->done(e.left());
+                     auto path =
+                         data.second + source->filename() +
+                         (source->type() == IItem::FileType::Directory ? "/"
+                                                                       : "");
+                     auto nitem = std::make_shared<Item>(
+                         source->filename(), to_string({data.first, path}),
+                         source->size(), source->timestamp(), source->type());
+                     nitem->set_url(getUrl(*nitem));
+                     r->done(std::static_pointer_cast<IItem>(nitem));
+                   });
+             })
+      ->run();
 }
 
 ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        auto data = extract(item->id());
-        auto path = data.second;
-        if (!path.empty() && path.back() == '/') path.pop_back();
-        if (path.find_first_of('/') == std::string::npos)
-          path = "";
-        else
-          path = getPath(path) + "/";
-        rename<EitherError<IItem>>(
-            r, http(), region(), {data.first, path + name}, extract(item->id()),
-            [=](EitherError<void> e) {
-              if (e.left()) return r->done(e.left());
-              auto npath =
-                  path + name +
-                  (item->type() == IItem::FileType::Directory ? "/" : "");
-              auto nitem = std::make_shared<Item>(
-                  name, to_string({data.first, npath}), item->size(),
-                  item->timestamp(), item->type());
-              nitem->set_url(getUrl(*nitem));
-              r->done(std::static_pointer_cast<IItem>(nitem));
-            });
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               auto data = extract(item->id());
+               auto path = data.second;
+               if (!path.empty() && path.back() == '/') path.pop_back();
+               if (path.find_first_of('/') == std::string::npos)
+                 path = "";
+               else
+                 path = getPath(path) + "/";
+               rename<EitherError<IItem>>(
+                   r, http(), region(), {data.first, path + name},
+                   extract(item->id()), [=](EitherError<void> e) {
+                     if (e.left()) return r->done(e.left());
+                     auto npath =
+                         path + name +
+                         (item->type() == IItem::FileType::Directory ? "/"
+                                                                     : "");
+                     auto nitem = std::make_shared<Item>(
+                         name, to_string({data.first, npath}), item->size(),
+                         item->timestamp(), item->type());
+                     nitem->set_url(getUrl(*nitem));
+                     r->done(std::static_pointer_cast<IItem>(nitem));
+                   });
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer AmazonS3::createDirectoryRequest(const IItem& parent,
@@ -282,94 +283,99 @@ IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<void>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<void>>::Pointer r) {
-        auto release = [=] {
-          r->request(
-              [=](util::Output) {
-                auto data = extract(item->id());
-                return http()->create("https://" + data.first + ".s3." +
-                                          region() + ".amazonaws.com/" +
-                                          escapePath(data.second),
-                                      "DELETE");
-              },
-              [=](EitherError<Response> e) {
-                r->done(e.left() ? e.left() : nullptr);
-              });
-        };
-        if (item->type() == IItem::FileType::Directory) {
-          r->subrequest(r->provider()->listDirectoryAsync(
-              item, [=](EitherError<std::vector<IItem::Pointer>> e) {
-                if (e.left()) return r->done(e.left());
-                remove<EitherError<void>>(r, e.right(),
-                                          [=](EitherError<void> e) {
-                                            if (e.left())
-                                              return r->done(e.left());
-                                            release();
-                                          });
-              }));
-        } else
-          release();
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<void>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<void>>::Pointer r) {
+               auto release = [=] {
+                 r->request(
+                     [=](util::Output) {
+                       auto data = extract(item->id());
+                       return http()->create("https://" + data.first + ".s3." +
+                                                 region() + ".amazonaws.com/" +
+                                                 escapePath(data.second),
+                                             "DELETE");
+                     },
+                     [=](EitherError<Response> e) {
+                       r->done(e.left() ? e.left() : nullptr);
+                     });
+               };
+               if (item->type() == IItem::FileType::Directory) {
+                 r->subrequest(r->provider()->listDirectoryAsync(
+                     item, [=](EitherError<std::vector<IItem::Pointer>> e) {
+                       if (e.left()) return r->done(e.left());
+                       remove<EitherError<void>>(r, e.right(),
+                                                 [=](EitherError<void> e) {
+                                                   if (e.left())
+                                                     return r->done(e.left());
+                                                   release();
+                                                 });
+                     }));
+               } else
+                 release();
+             })
+      ->run();
 }
 
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        if (id == rootDirectory()->id()) return r->done(rootDirectory());
-        auto data = extract(id);
-        if (data.second.empty()) {
-          auto item = std::make_shared<Item>(data.first, id, IItem::UnknownSize,
-                                             IItem::UnknownTimeStamp,
-                                             IItem::FileType::Directory);
-          return r->done(EitherError<IItem>(item));
-        }
-        auto factory = [=](util::Output) {
-          auto request = http()->create(
-              "https://" + data.first + ".s3." + region() + ".amazonaws.com/",
-              "GET");
-          request->setParameter("list-type", "2");
-          request->setParameter("prefix", data.second);
-          request->setParameter("delimiter", "/");
-          return request;
-        };
-        r->request(factory, [=](EitherError<Response> e) {
-          if (e.left()) return r->done(e.left());
-          std::stringstream sstream;
-          sstream << e.right()->output().rdbuf();
-          tinyxml2::XMLDocument document;
-          if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-              tinyxml2::XML_SUCCESS)
-            return r->done(Error{IHttpRequest::Failure, "invalid xml"});
-          auto node = document.RootElement();
-          auto size = IItem::UnknownSize;
-          auto timestamp = IItem::UnknownTimeStamp;
-          if (auto contents_element = node->FirstChildElement("Contents")) {
-            if (auto size_element = contents_element->FirstChildElement("Size"))
-              if (auto text = size_element->GetText()) size = std::atoll(text);
-            if (auto time_element =
-                    contents_element->FirstChildElement("LastModified"))
-              if (auto text = time_element->GetText())
-                timestamp = util::parse_time(text);
-          }
-          auto type = data.second.back() == '/' ? IItem::FileType::Directory
-                                                : IItem::FileType::Unknown;
-          auto item = std::make_shared<Item>(
-              getFilename(data.second), id,
-              type == IItem::FileType::Directory ? IItem::UnknownSize : size,
-              timestamp, type);
-          if (item->type() != IItem::FileType::Directory)
-            item->set_url(getUrl(*item));
-          r->done(EitherError<IItem>(item));
-        });
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               if (id == rootDirectory()->id()) return r->done(rootDirectory());
+               auto data = extract(id);
+               if (data.second.empty()) {
+                 auto item = std::make_shared<Item>(
+                     data.first, id, IItem::UnknownSize,
+                     IItem::UnknownTimeStamp, IItem::FileType::Directory);
+                 return r->done(EitherError<IItem>(item));
+               }
+               auto factory = [=](util::Output) {
+                 auto request =
+                     http()->create("https://" + data.first + ".s3." +
+                                        region() + ".amazonaws.com/",
+                                    "GET");
+                 request->setParameter("list-type", "2");
+                 request->setParameter("prefix", data.second);
+                 request->setParameter("delimiter", "/");
+                 return request;
+               };
+               r->request(factory, [=](EitherError<Response> e) {
+                 if (e.left()) return r->done(e.left());
+                 std::stringstream sstream;
+                 sstream << e.right()->output().rdbuf();
+                 tinyxml2::XMLDocument document;
+                 if (document.Parse(sstream.str().c_str(),
+                                    sstream.str().size()) !=
+                     tinyxml2::XML_SUCCESS)
+                   return r->done(Error{IHttpRequest::Failure, "invalid xml"});
+                 auto node = document.RootElement();
+                 auto size = IItem::UnknownSize;
+                 auto timestamp = IItem::UnknownTimeStamp;
+                 if (auto contents_element =
+                         node->FirstChildElement("Contents")) {
+                   if (auto size_element =
+                           contents_element->FirstChildElement("Size"))
+                     if (auto text = size_element->GetText())
+                       size = std::atoll(text);
+                   if (auto time_element =
+                           contents_element->FirstChildElement("LastModified"))
+                     if (auto text = time_element->GetText())
+                       timestamp = util::parse_time(text);
+                 }
+                 auto type = data.second.back() == '/'
+                                 ? IItem::FileType::Directory
+                                 : IItem::FileType::Unknown;
+                 auto item = std::make_shared<Item>(
+                     getFilename(data.second), id,
+                     type == IItem::FileType::Directory ? IItem::UnknownSize
+                                                        : size,
+                     timestamp, type);
+                 if (item->type() != IItem::FileType::Directory)
+                   item->set_url(getUrl(*item));
+                 r->done(EitherError<IItem>(item));
+               });
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer AmazonS3::listDirectoryRequest(

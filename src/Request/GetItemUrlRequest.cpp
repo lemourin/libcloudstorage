@@ -30,9 +30,7 @@ namespace cloudstorage {
 GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer item,
                                      GetItemUrlCallback callback)
-    : Request(p) {
-  set(
-      [=](Request<EitherError<std::string>>::Pointer r) {
+    : Request(p, callback, [=](Request<EitherError<std::string>>::Pointer r) {
         if (item->type() == IItem::FileType::Directory)
           return r->done(Error{IHttpRequest::ServiceUnavailable,
                                "url not provided for directory"});
@@ -64,9 +62,7 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }
             });
-      },
-      callback);
-}
+      }) {}
 
 GetItemUrlRequest::~GetItemUrlRequest() { cancel(); }
 

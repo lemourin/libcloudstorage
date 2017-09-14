@@ -97,22 +97,21 @@ IItem::Pointer AmazonDrive::rootDirectory() const {
 ICloudProvider::MoveItemRequest::Pointer AmazonDrive::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto r = std::make_shared<Request<EitherError<IItem>>>(shared_from_this());
-  r->set(
-      [=](Request<EitherError<IItem>>::Pointer r) {
-        move<EitherError<IItem>>(
-            r, http(), metadata_url(),
-            std::make_shared<std::vector<std::string>>(
-                static_cast<Item*>(source.get())->parents()),
-            source, destination, [=](EitherError<void> e) {
-              if (e.left())
-                r->done(e.left());
-              else
-                r->done(source);
-            });
-      },
-      callback);
-  return r->run();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               move<EitherError<IItem>>(
+                   r, http(), metadata_url(),
+                   std::make_shared<std::vector<std::string>>(
+                       static_cast<Item*>(source.get())->parents()),
+                   source, destination, [=](EitherError<void> e) {
+                     if (e.left())
+                       r->done(e.left());
+                     else
+                       r->done(source);
+                   });
+             })
+      ->run();
 }
 
 AuthorizeRequest::Pointer AmazonDrive::authorizeAsync() {
@@ -306,11 +305,11 @@ AmazonDrive::Auth::Auth() {
 }
 
 std::string AmazonDrive::Auth::authorizeLibraryUrl() const {
-  std::string url =
-      "https://www.amazon.com/ap/oa?client_id=" + client_id() +
-      "&redirect_uri=" + redirect_uri() +
-      "&response_type=code&scope=clouddrive:write+clouddrive:read_all&state=" +
-      state();
+  std::string url = "https://www.amazon.com/ap/oa?client_id=" + client_id() +
+                    "&redirect_uri=" + redirect_uri() +
+                    "&response_type=code&scope=clouddrive:write+clouddrive:"
+                    "read_all&state=" +
+                    state();
   return url;
 }
 
