@@ -87,26 +87,8 @@ class Request : public IRequest<ReturnValue>,
   typename Wrapper::Pointer run();
   void done(const ReturnValue&);
 
-  /**
-   * If there is authorization in progress for the cloud provider, waits until
-   * it finishes and returns its status; otherwise starts authorization itself
-   * and waits for it to finish.
-   *
-   * @return whether the authorization was successful
-   */
   void reauthorize(AuthorizeCompleted);
 
-  /**
-   * Sends a request created by factory function; if request failed, tries to do
-   * authorization and does the request again.
-   *
-   * @param factory function which should create request to perform
-   * @param input_stream input stream
-   * @param output output stream
-   * @param download download progress callback
-   * @param upload upload progress callback
-   * @return http code or curl error code
-   */
   void send(RequestFactory factory, RequestCompleted, InputFactory,
             std::shared_ptr<std::ostream> output, ProgressFunction download,
             ProgressFunction upload, bool authorized);
