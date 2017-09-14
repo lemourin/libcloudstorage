@@ -1,2 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = cloudbrowser commandlinebrowser
+SUBDIRS = commandlinebrowser
+
+if WITH_QT
+SUBDIRS += cloudbrowser
+endif

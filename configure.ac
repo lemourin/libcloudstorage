@@ -88,17 +88,20 @@ AM_CONDITIONAL([WITH_QTMULTIMEDIAWIDGETS], [test "x$with_qtmultimediawidgets" = 
 AC_ARG_WITH([qmlplayer], AS_HELP_STRING([--with-qmlplayer]))
 AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
 
+HAVE_QT=0
 HAVE_QTWEBENGINE=0
 HAVE_THUMBNAILER=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
+    HAVE_QT=1
     QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
     QT_HOST_PATH="$(eval $PKG_CONFIG --variable=host_bins Qt5Core)"
     AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
     AC_PATH_PROGS(RCC, [rcc-qt5 rcc], rcc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
     AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
-  ])
+    AC_DEFINE(WITH_QT)
+  ], [HAVE_QT=0])
   PKG_CHECK_MODULES([qtwebengine], [Qt5WebEngine], [
     HAVE_QTWEBENGINE=1
     AC_DEFINE(WITH_QTWEBENGINE)
@@ -116,11 +119,12 @@ AS_IF([test "x$with_examples" = "xyes"], [
     PKG_CHECK_MODULES([qtmultimediawidgets], [Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets])
     AC_DEFINE(WITH_QTMULTIMEDIAWIDGETS)
   ], [
-    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia])
+    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia], [HAVE_QT=0])
     AC_DEFINE(WITH_QMLPLAYER)
   ])
 ])
 
+AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 
