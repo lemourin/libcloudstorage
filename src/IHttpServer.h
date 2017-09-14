@@ -71,6 +71,7 @@ class IHttpServer {
 
     virtual const char* get(const std::string& name) const = 0;
     virtual const char* header(const std::string& name) const = 0;
+    virtual std::string method() const = 0;
     virtual std::string url() const = 0;
 
     virtual IResponse::Pointer response(

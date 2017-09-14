@@ -64,12 +64,13 @@ class MicroHttpdServer : public IHttpServer {
 
   class Request : public IRequest {
    public:
-    Request(MHD_Connection*, const char* url);
+    Request(MHD_Connection*, const char* url, const char* method);
 
     MHD_Connection* connection() const { return connection_; }
 
     const char* get(const std::string& name) const override;
     const char* header(const std::string&) const override;
+    std::string method() const override;
     std::string url() const override;
 
     IResponse::Pointer response(int code, const IResponse::Headers&, int size,
@@ -78,6 +79,7 @@ class MicroHttpdServer : public IHttpServer {
    private:
     MHD_Connection* connection_;
     std::string url_;
+    std::string method_;
   };
 
   ICallback::Pointer callback() const override { return callback_; }
