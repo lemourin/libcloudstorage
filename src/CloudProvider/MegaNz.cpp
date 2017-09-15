@@ -863,7 +863,8 @@ std::string MegaNz::passwordHash(const std::string& password) const {
 IItem::Pointer MegaNz::toItem(MegaNode* node) {
   std::unique_ptr<char[]> path(mega_->getNodePath(node));
   auto item = util::make_unique<Item>(
-      node->getName(), path.get(), node->getSize(),
+      node->getName(), path.get(),
+      node->isFolder() ? IItem::UnknownSize : node->getSize(),
       node->isFolder() ? IItem::UnknownTimeStamp
                        : std::chrono::system_clock::time_point(
                              std::chrono::seconds(node->getModificationTime())),
