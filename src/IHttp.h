@@ -49,6 +49,7 @@ class IHttpRequest {
 
   static constexpr int Ok = 200;
   static constexpr int Partial = 206;
+  static constexpr int MultiStatus = 207;
   static constexpr int Bad = 400;
   static constexpr int Unauthorized = 401;
   static constexpr int Forbidden = 403;
