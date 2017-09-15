@@ -33,24 +33,40 @@ const int FILE_PROVIDER_PORT = 12346;
 
 namespace {
 
+struct ConnectionData {
+  bool created_ = true;
+  IHttpServer::IResponse::Pointer response_;
+};
+
 int http_request_callback(void* cls, MHD_Connection* c, const char* url,
                           const char* method, const char* /*version*/,
-                          const char* /*upload_data*/,
-                          size_t* /*upload_data_size*/, void** con_cls) {
+                          const char* /*upload_data*/, size_t* upload_data_size,
+                          void** con_cls) {
   MicroHttpdServer* server = static_cast<MicroHttpdServer*>(cls);
-  auto response =
-      server->callback()->handle(MicroHttpdServer::Request(c, url, method));
-  auto p = static_cast<MicroHttpdServer::Response*>(response.get());
-  int ret = MHD_queue_response(c, p->code(), p->response());
-  *con_cls = response.release();
-  return ret;
+  if (auto d = static_cast<ConnectionData*>(*con_cls)) {
+    int ret = MHD_YES;
+    if (*upload_data_size == 0) {
+      auto response =
+          server->callback()->handle(MicroHttpdServer::Request(c, url, method));
+      auto p = static_cast<MicroHttpdServer::Response*>(response.get());
+      ret = MHD_queue_response(c, p->code(), p->response());
+      d->response_ = std::move(response);
+    } else {
+      *upload_data_size = 0;
+    }
+    return ret;
+  } else {
+    *con_cls = new ConnectionData();
+    return MHD_YES;
+  }
 }
 
 void http_request_completed(void*, MHD_Connection*, void** con_cls,
                             MHD_RequestTerminationCode) {
-  auto p = static_cast<MicroHttpdServer::Response*>(*con_cls);
-  if (p->callback()) p->callback()();
-  delete p;
+  auto d = static_cast<ConnectionData*>(*con_cls);
+  auto p = static_cast<MicroHttpdServer::Response*>(d->response_.get());
+  if (p && p->callback()) p->callback()();
+  delete d;
 }
 
 }  // namespace
