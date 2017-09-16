@@ -24,7 +24,9 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <iomanip>
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "IHttpServer.h"
@@ -91,6 +93,31 @@ class Url {
 IHttpServer::IResponse::Pointer response_from_string(
     const IHttpServer::IRequest&, int code,
     const IHttpServer::IResponse::Headers&, const std::string&);
+
+namespace priv {
+extern std::mutex stream_mutex;
+extern std::unique_ptr<std::ostream> stream;
+
+template <class... Args>
+void log() {}
+
+template <class First, class... Rest>
+void log(First&& t, Rest&&... rest) {
+  *priv::stream << t << " ";
+  log(std::forward<Rest>(rest)...);
+}
+
+}  // namespace priv
+
+template <class... Args>
+void log(Args&&... t) {
+  std::lock_guard<std::mutex> lock(priv::stream_mutex);
+  std::time_t time = std::time(nullptr);
+  auto tm = util::gmtime(time);
+  *priv::stream << "[" << std::put_time(&tm, "%D %T") << "] ";
+  priv::log(std::forward<Args>(t)...);
+  *priv::stream << std::endl;
+}
 
 }  // namespace util
 

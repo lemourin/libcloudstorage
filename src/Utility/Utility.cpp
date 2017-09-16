@@ -32,6 +32,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <unordered_map>
 
@@ -80,6 +81,12 @@ bool operator==(const Range& r1, const Range& r2) {
 bool operator!=(const Range& r1, const Range& r2) { return !(r1 == r2); }
 
 namespace util {
+
+namespace priv {
+std::unique_ptr<std::ostream> stream =
+    util::make_unique<std::ostream>(std::cout.rdbuf());
+std::mutex stream_mutex;
+}
 
 FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
 
