@@ -59,21 +59,23 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },
       [=](EitherError<Response> e) {
+        if (e.left()) {
+          if (!fault_tolerant(e.left()->code_))
+            return request->done(e.left());
+          else
+            return request->done({});
+        }
         try {
-          if (e.right() || fault_tolerant(e.left()->code_)) {
-            std::string page_token = "";
-            for (auto& t : request->provider()->listDirectoryResponse(
-                     *directory, e.right()->output(), page_token)) {
-              callback->receivedItem(t);
-              result_.push_back(t);
-            }
-            if (!page_token.empty())
-              work(directory, page_token, callback, fault_tolerant);
-            else {
-              request->done(result_);
-            }
-          } else {
-            request->done(e.left());
+          std::string page_token = "";
+          for (auto& t : request->provider()->listDirectoryResponse(
+                   *directory, e.right()->output(), page_token)) {
+            callback->receivedItem(t);
+            result_.push_back(t);
+          }
+          if (!page_token.empty())
+            work(directory, page_token, callback, fault_tolerant);
+          else {
+            request->done(result_);
           }
         } catch (std::exception) {
           request->done(
