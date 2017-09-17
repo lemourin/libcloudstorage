@@ -114,15 +114,6 @@ int fuse_lowlevel(
     fuse_args *args, fuse_cmdline_opts *opts,
     const std::vector<cloudstorage::IFileSystem::ProviderEntry> &providers,
     std::shared_ptr<IHttp> http, const std::string &temporary_directory) {
-  if (opts->show_help) {
-    fuse_cmdline_help();
-    fuse_lowlevel_help();
-    return 0;
-  } else if (opts->show_version) {
-    util::log("FUSE library version ", fuse_pkgversion());
-    fuse_lowlevel_version();
-    return 0;
-  }
   auto ctx = cloudstorage::IFileSystem::create(
       providers, util::make_unique<HttpWrapper>(http), temporary_directory);
   auto operations = cloudstorage::low_level_operations();
@@ -168,6 +159,20 @@ int main(int argc, char **argv) {
                                   });
   opts->clone_fd = true;
   if (fuse_parse_cmdline(args.get(), opts.get()) != 0) return 1;
+  if (opts->show_help) {
+    std::cerr << util::libcloudstorage_ascii_art() << "\n\n";
+    std::cerr << "    --add=provider_label   add cloud provider with label\n";
+    std::cerr << "    --config=config_path   path to configuration file\n";
+    std::cerr << "                           (default: "
+                 "~/.libcloudstorage-fuse.json)\n";
+    std::cerr << "\n";
+    fuse_cmdline_help();
+    fuse_lowlevel_help();
+    return 0;
+  } else if (opts->show_version) {
+    fuse_lowlevel_version();
+    return 0;
+  }
   std::stringstream stream;
   stream << std::ifstream(options.config_file).rdbuf();
   Json::Value json;
