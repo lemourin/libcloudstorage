@@ -1,7 +1,5 @@
 #include "FuseLowLevel.h"
 
-#include <cloudstorage/ICloudProvider.h>
-#include <cloudstorage/ICloudStorage.h>
 #include <cassert>
 #include <cfloat>
 #include <cstring>
