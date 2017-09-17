@@ -62,29 +62,27 @@ The generic way to build and install it is:
 * `make`
 * `sudo make install`
 
-`./configure` flags:
+Optional dependency notes:
 
-* `--with-cryptopp`
+* `libcryptopp`:
 
-   library  will  use  `cryptopp`'s   hashing  functions;  without  this  flag  
-   user  will  have  to  implement   `ICrypto`'s  interface  and  pass  it  to  
-   `ICloudProvider`'s initialize method
+  when  not  found,  `ICrypto`  interface  needs to  be  implemented,  can  be  
+  explicitly disabled with `--with-cryptopp=no`
 
-* `--with-curl`
+* `libcurl`
 
-   library will use `curl` to make all `http` requests; without this user will  
-   have to implement `IHttp` interface
+  when not found, `IHttp` interface needs to be implemented, can be explicitly  
+  disabled with `--with-curl=no`
 
-* `--with-microhttpd`
+* `libmicrohttpd`
 
-   library  will use  `libmicrohttpd`  as  a http  server,  it's required  for  
-   retrieving the oauth  authorization code; without this flag  user will have  
-   to implement `IHttpServer` interface
+  when  not found,  `IHttpServer` interface  needs to  be implemented,  can be  
+  explicitly disabled with `--with-microhttpd=no`
 
-* `--with-mega=no`
+* `mega`
 
-   if  you  don't  have  access  to  `Mega  SDK`,  pass  this  flag  to  build  
-   `libcloudstorage` without it
+  when  not  found,  `mega`  cloud  provider will  not  be  included,  can  be  
+  explicitly disabled with `--with-mega=no`
 
 Cloud Browser:
 ==============
@@ -122,6 +120,32 @@ Screenshot:
     <img src="https://i.imgur.com/yqiydaD.png" width="480" height="270" />
   </a>
 
+FUSE:
+=====
+
+In `examples/fuse` there is implemented a user space file system using `fuse3`  
+(https://github.com/libfuse/libfuse) library. It will be build when `fuse3` is  
+found  and  `--with-examples`  configure  flag  is  passed.  The  file  system  
+is  implemented  using `libfuse`'s  low  level  api;  however high  level  api  
+implementation is  also provided. The  file system supports  moving, renaming,  
+creating  directories, reading  and writing  new files.  Writing over  already  
+present  files in  cloud  provider  is not  supported.  The  file system  uses  
+asynchronous  I/O to  its full  potency. It  doesn't cache  files anywhere  by  
+itself which implies no local storage  overhead. Most cloud providers are fast  
+enough when it comes to watching  videos; with `mega.nz` being the fastest and  
+`Google Drive` being the slowest.
+
+## Usage:
+
+To add cloud providers to file system, first the cloud providers need to be
+added. This can be done by calling:
+
+`libcloudstorage-fuse --add=provider_label`
+
+After cloud providers are added, the file system can be mount using:
+
+`libcloudstorage-fuse mountpoint`
+
 TODO:
 =====
 
@@ -155,7 +179,6 @@ Implement bindings to various languages, notably script languages:
 Integrate in various desktops
 * `KIO` slave
 * `gvfs` implementation
-* `fuse`
 * `Dokan fuse`
 
 Implement chunked uploads.
