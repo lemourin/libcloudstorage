@@ -68,6 +68,7 @@ AC_CONFIG_FILES([
   examples/Makefile
   examples/cloudbrowser/Makefile
   examples/commandlinebrowser/Makefile
+  examples/fuse/Makefile
 ])
 
 SOCKET_LIBS=""
@@ -91,6 +92,7 @@ AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
 HAVE_QT=0
 HAVE_QTWEBENGINE=0
 HAVE_THUMBNAILER=0
+HAVE_FUSE=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
@@ -122,10 +124,15 @@ AS_IF([test "x$with_examples" = "xyes"], [
     PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia], [HAVE_QT=0])
     AC_DEFINE(WITH_QMLPLAYER)
   ])
+  PKG_CHECK_MODULES([fuse], [fuse3], [
+    HAVE_FUSE=1
+    AC_DEFINE(WITH_FUSE)
+  ], [HAVE_FUSE=0])
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
+AM_CONDITIONAL([WITH_FUSE], [test "$HAVE_FUSE" -eq 1])
 
 AC_OUTPUT
