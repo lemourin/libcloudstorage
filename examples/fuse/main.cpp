@@ -17,17 +17,7 @@
 #include "Utility/Utility.h"
 
 using namespace std::placeholders;
-
-using cloudstorage::util::log;
-using cloudstorage::util::login_page;
-using cloudstorage::util::response_from_string;
-using cloudstorage::util::make_unique;
-using cloudstorage::ICloudProvider;
-using cloudstorage::IHttp;
-using cloudstorage::EitherError;
-using cloudstorage::IHttpRequest;
-using cloudstorage::ICloudStorage;
-using cloudstorage::IHttpServer;
+using namespace cloudstorage;
 
 #define OPTION(t, p) \
   { t, offsetof(struct options, p), 1 }
@@ -58,13 +48,14 @@ class HttpServerCallback : public IHttpServer::ICallback {
     auto state = request.get("state");
     if (code && state) {
       promise_.set_value({code, state});
-      return response_from_string(request, IHttpRequest::Ok, {},
-                                  "token received");
+      return util::response_from_string(request, IHttpRequest::Ok, {},
+                                        "token received");
     } else if (request.url() == "/login" && state) {
-      return response_from_string(request, IHttpRequest::Ok, {},
-                                  login_page(state));
+      return util::response_from_string(request, IHttpRequest::Ok, {},
+                                        util::login_page(state));
     } else {
-      return response_from_string(request, IHttpRequest::Bad, {}, "error");
+      return util::response_from_string(request, IHttpRequest::Bad, {},
+                                        "error");
     }
   }
 
@@ -98,9 +89,9 @@ cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
     std::shared_ptr<IHttp> http_;
   };
   ICloudProvider::InitData init_data;
-  init_data.callback_ = make_unique<AuthCallback>();
+  init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
-  init_data.http_engine_ = make_unique<HttpWrapper>(http);
+  init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
   init_data.hints_["access_token"] = config["access_token"].asString();
   init_data.hints_["youtube_dl_url"] = config["youtube_dl_url"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
@@ -127,7 +118,7 @@ int fuse_lowlevel(
     fuse_lowlevel_help();
     return 0;
   } else if (opts->show_version) {
-    log("FUSE library version ", fuse_pkgversion());
+    util::log("FUSE library version ", fuse_pkgversion());
     fuse_lowlevel_version();
     return 0;
   }
