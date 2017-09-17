@@ -30,26 +30,44 @@ AS_IF([test "x$with_mega" != "xno"], [
 ])
 AM_CONDITIONAL([WITH_MEGA], [test "$HAVE_MEGA" -eq 1])
 
+HAVE_CRYPTOPP=0
 AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
-AM_CONDITIONAL([WITH_CRYPTOPP], [test "x$with_cryptopp" = "xyes"])
-AS_IF([test "x$with_cryptopp" = "xyes"], [
-  PKG_CHECK_MODULES([libcryptopp], [libcrypto++])
-  AC_DEFINE(WITH_CRYPTOPP)
+AS_IF([test "x$with_cryptopp" != "xno"], [
+  PKG_CHECK_MODULES([libcryptopp], [libcrypto++], [
+    HAVE_CRYPTOPP=1
+    AC_DEFINE(WITH_CRYPTOPP)
+  ], [
+    HAVE_CRYPTOPP=0
+    AS_IF([test "x$with_mega" = "xyes"], [AC_MSG_ERROR([libcrypto++ not found])])
+  ])
 ])
+AM_CONDITIONAL([WITH_CRYPTOPP], [test "$HAVE_CRYPTOPP" -eq 1])
 
+HAVE_CURL=0
 AC_ARG_WITH([curl], AS_HELP_STRING([--with-curl]))
-AM_CONDITIONAL([WITH_CURL], [test "x$with_curl" = "xyes"])
-AS_IF([test "x$with_curl" = "xyes"], [
-  PKG_CHECK_MODULES([libcurl], [libcurl])
-  AC_DEFINE(WITH_CURL)
+AS_IF([test "x$with_curl" != "xno"], [
+  PKG_CHECK_MODULES([libcurl], [libcurl], [
+    HAVE_CURL=1
+    AC_DEFINE(WITH_CURL)
+  ], [
+    HAVE_CURL=0
+    AS_IF([test "x$with_curl" = "xyes"], [AC_MSG_ERROR([libcurl not found])])
+  ])
 ])
+AM_CONDITIONAL([WITH_CURL], [test "$HAVE_CURL" -eq 1])
 
+HAVE_MICROHTTPD=0
 AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
-AM_CONDITIONAL([WITH_MICROHTTPD], [test "x$with_microhttpd" = "xyes"])
-AS_IF([test "x$with_microhttpd" = "xyes"], [
-  PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd])
-  AC_DEFINE(WITH_MICROHTTPD)
+AS_IF([test "x$with_microhttpd" != "xno"], [
+  PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [
+    HAVE_MICROHTTPD=1
+    AC_DEFINE(WITH_MICROHTTPD)
+  ], [
+    HAVE_MICROHTTPD=0
+    AS_IF([test "x$with_microhttpd" = "xyes"], [AC_MSG_ERROR([libmicrohttpd not found])])
+  ])
 ])
+AM_CONDITIONAL([WITH_MICROHTTPD], [test "$HAVE_MICROHTTPD" -eq 1])
 
 case "${host_os}" in
   *mingw32*)
