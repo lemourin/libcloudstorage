@@ -63,6 +63,19 @@ class HttpServerCallback : public IHttpServer::ICallback {
   std::promise<HttpServerData> &promise_;
 };
 
+class HttpWrapper : public IHttp {
+ public:
+  HttpWrapper(std::shared_ptr<IHttp> http) : http_(http) {}
+  IHttpRequest::Pointer create(const std::string &url,
+                               const std::string &method,
+                               bool follow_redirect) const override {
+    return http_->create(url, method, follow_redirect);
+  }
+
+ private:
+  std::shared_ptr<IHttp> http_;
+};
+
 const struct fuse_opt option_spec[] = {OPTION("--config=%s", config_file),
                                        OPTION("--add=%s", provider_label),
                                        FUSE_OPT_END};
@@ -76,18 +89,6 @@ cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
     }
     void done(const ICloudProvider &, EitherError<void>) override {}
   };
-  class HttpWrapper : public IHttp {
-   public:
-    HttpWrapper(std::shared_ptr<IHttp> http) : http_(http) {}
-    IHttpRequest::Pointer create(const std::string &url,
-                                 const std::string &method,
-                                 bool follow_redirect) const override {
-      return http_->create(url, method, follow_redirect);
-    }
-
-   private:
-    std::shared_ptr<IHttp> http_;
-  };
   ICloudProvider::InitData init_data;
   init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
@@ -100,8 +101,8 @@ cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
 }
 
 std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
-    const Json::Value &data, const std::string &temporary_directory) {
-  auto http = std::make_shared<cloudstorage::curl::CurlHttp>();
+    const Json::Value &data, std::shared_ptr<IHttp> http,
+    const std::string &temporary_directory) {
   std::vector<cloudstorage::IFileSystem::ProviderEntry> providers;
   for (auto &&p : data)
     providers.push_back(
@@ -112,7 +113,7 @@ std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
 int fuse_lowlevel(
     fuse_args *args, fuse_cmdline_opts *opts,
     const std::vector<cloudstorage::IFileSystem::ProviderEntry> &providers,
-    const std::string &temporary_directory) {
+    std::shared_ptr<IHttp> http, const std::string &temporary_directory) {
   if (opts->show_help) {
     fuse_cmdline_help();
     fuse_lowlevel_help();
@@ -122,7 +123,8 @@ int fuse_lowlevel(
     fuse_lowlevel_version();
     return 0;
   }
-  auto ctx = cloudstorage::IFileSystem::create(providers, temporary_directory);
+  auto ctx = cloudstorage::IFileSystem::create(
+      providers, util::make_unique<HttpWrapper>(http), temporary_directory);
   auto operations = cloudstorage::low_level_operations();
   pointer<fuse_session> session(
       fuse_session_new(args, &operations, sizeof(operations), ctx.get()),
@@ -206,8 +208,9 @@ int main(int argc, char **argv) {
   fuse_daemonize(opts->foreground);
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty()) temporary_directory = "/tmp/";
-  auto p = providers(json["providers"], temporary_directory);
-  int ret = fuse_lowlevel(args.get(), opts.get(), p, temporary_directory);
+  auto http = std::make_shared<cloudstorage::curl::CurlHttp>();
+  auto p = providers(json["providers"], http, temporary_directory);
+  int ret = fuse_lowlevel(args.get(), opts.get(), p, http, temporary_directory);
   for (size_t i = 0; i < p.size(); i++) {
     json["providers"][int(i)]["token"] = p[i].provider_->token();
     json["providers"][int(i)]["access_token"] =

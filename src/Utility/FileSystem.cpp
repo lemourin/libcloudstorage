@@ -91,9 +91,11 @@ FileSystem::CreatedNode::~CreatedNode() {
 }
 
 FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
+                       IHttp::Pointer http,
                        const std::string& temporary_directory)
     : next_(1),
       running_(true),
+      http_(std::move(http)),
       temporary_directory_(temporary_directory),
       cancelled_request_thread_(std::async(
           std::launch::async, std::bind(&FileSystem::cancelled, this))),
@@ -250,8 +252,7 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
         n->size() == IItem::UnknownSize)
       get_url_async(n->provider(), n->item(), [=](EitherError<std::string> e) {
         if (auto url = e.right()) {
-          auto http = static_cast<CloudProvider*>(n->provider().get())->http();
-          http->create(*url, "HEAD")
+          http_->create(*url, "HEAD")
               ->send(
                   [=](IHttpRequest::Response response) {
                     if (IHttpRequest::isSuccess(response.http_code_)) {
@@ -621,9 +622,9 @@ std::string FileSystem::sanitize(const std::string& name) {
 }
 
 IFileSystem::Pointer IFileSystem::create(
-    const std::vector<ProviderEntry>& p,
+    const std::vector<ProviderEntry>& p, IHttp::Pointer http,
     const std::string& temporary_directory) {
-  return util::make_unique<FileSystem>(p, temporary_directory);
+  return util::make_unique<FileSystem>(p, std::move(http), temporary_directory);
 }
 
 }  // namespace cloudstorage

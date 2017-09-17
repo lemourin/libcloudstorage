@@ -50,7 +50,7 @@ class FileSystem : public IFileSystem {
     std::shared_ptr<IGenericRequest> upload_request_;
   };
 
-  FileSystem(const std::vector<ProviderEntry> &,
+  FileSystem(const std::vector<ProviderEntry> &, IHttp::Pointer http,
              const std::string &temporary_directory);
   ~FileSystem();
 
@@ -124,6 +124,7 @@ class FileSystem : public IFileSystem {
   std::deque<RequestData> request_data_;
   std::deque<std::shared_ptr<IGenericRequest>> cancelled_request_;
   std::atomic_bool running_;
+  IHttp::Pointer http_;
   std::string temporary_directory_;
   std::condition_variable_any cancelled_request_condition_;
   std::condition_variable_any request_data_condition_;

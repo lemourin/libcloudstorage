@@ -43,6 +43,7 @@ class IFileSystem {
   virtual ~IFileSystem() = default;
 
   static IFileSystem::Pointer create(const std::vector<ProviderEntry> &,
+                                     IHttp::Pointer http,
                                      const std::string &temporary_directory);
 
   virtual std::string sanitize(const std::string &filename) = 0;
