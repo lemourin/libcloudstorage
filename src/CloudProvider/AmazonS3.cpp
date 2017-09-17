@@ -117,7 +117,7 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
         });
   };
   auto rename_one = [=](std::function<void(EitherError<void>)> complete,
-                        bool directory = true) {
+                        bool directory) {
     r->request(
         [=](util::Output) {
           auto request = http->create(
@@ -146,12 +146,14 @@ void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
           rename<T>(r, http, region, e.right(), dest_id, source_id,
                     [=](EitherError<void> e) {
                       if (e.left()) return complete(e.left());
-                      rename_one([=](EitherError<void> e) {
-                        if (e.left())
-                          complete(e.left());
-                        else
-                          finalize();
-                      });
+                      rename_one(
+                          [=](EitherError<void> e) {
+                            if (e.left())
+                              complete(e.left());
+                            else
+                              finalize();
+                          },
+                          true);
                     });
         }));
   } else {

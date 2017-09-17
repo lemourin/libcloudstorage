@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include "FuseHighLevel.h"
 #include "FuseLowLevel.h"
@@ -15,12 +16,12 @@
 #include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
 
-using namespace std::string_literals;
 using namespace std::placeholders;
 
 using cloudstorage::util::log;
 using cloudstorage::util::login_page;
 using cloudstorage::util::response_from_string;
+using cloudstorage::util::make_unique;
 using cloudstorage::ICloudProvider;
 using cloudstorage::IHttp;
 using cloudstorage::EitherError;
@@ -97,9 +98,9 @@ cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
     std::shared_ptr<IHttp> http_;
   };
   ICloudProvider::InitData init_data;
-  init_data.callback_ = std::make_unique<AuthCallback>();
+  init_data.callback_ = make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
-  init_data.http_engine_ = std::make_unique<HttpWrapper>(http);
+  init_data.http_engine_ = make_unique<HttpWrapper>(http);
   init_data.hints_["access_token"] = config["access_token"].asString();
   init_data.hints_["youtube_dl_url"] = config["youtube_dl_url"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
@@ -134,10 +135,10 @@ int fuse_lowlevel(
   auto operations = cloudstorage::low_level_operations();
   pointer<fuse_session> session(
       fuse_session_new(args, &operations, sizeof(operations), ctx.get()),
-      [](auto session) { fuse_session_destroy(session); });
+      [](fuse_session *session) { fuse_session_destroy(session); });
   if (!session) return 1;
   pointer<int> fuse_signal(new int(fuse_set_signal_handlers(session.get())),
-                           [&](auto h) {
+                           [&](int *h) {
                              if (!*h)
                                fuse_remove_signal_handlers(session.get());
                              delete h;
@@ -145,7 +146,7 @@ int fuse_lowlevel(
   if (*fuse_signal) return 1;
   pointer<int> fuse_mount(
       new int(fuse_session_mount(session.get(), opts->mountpoint)),
-      [&](auto m) {
+      [&](int *m) {
         if (!*m) fuse_session_unmount(session.get());
         delete m;
       });
@@ -157,7 +158,7 @@ int fuse_lowlevel(
 
 int main(int argc, char **argv) {
   pointer<fuse_args> args(new fuse_args(FUSE_ARGS_INIT(argc, argv)),
-                          [](auto e) {
+                          [](fuse_args *e) {
                             fuse_opt_free_args(e);
                             delete e;
                           });
@@ -165,12 +166,13 @@ int main(int argc, char **argv) {
   if (fuse_opt_parse(args.get(), &options, option_spec, nullptr) == -1)
     return 1;
   if (!options.config_file)
-    options.config_file =
-        strdup((getenv("HOME") + "/.libcloudstorage-fuse.json"s).c_str());
-  pointer<fuse_cmdline_opts> opts(new fuse_cmdline_opts{}, [](auto opts) {
-    free(opts->mountpoint);
-    delete opts;
-  });
+    options.config_file = strdup(
+        (std::string(getenv("HOME")) + "/.libcloudstorage-fuse.json").c_str());
+  pointer<fuse_cmdline_opts> opts(new fuse_cmdline_opts{},
+                                  [](fuse_cmdline_opts *opts) {
+                                    free(opts->mountpoint);
+                                    delete opts;
+                                  });
   opts->clone_fd = true;
   if (fuse_parse_cmdline(args.get(), opts.get()) != 0) return 1;
   std::stringstream stream;

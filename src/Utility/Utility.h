@@ -25,6 +25,7 @@
 #define UTILITY_H
 
 #include <iomanip>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>

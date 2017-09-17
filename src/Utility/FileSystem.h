@@ -2,6 +2,7 @@
 #define FILE_SYSTEM_H
 
 #include <atomic>
+#include <condition_variable>
 #include <deque>
 #include <fstream>
 #include <future>

@@ -11,8 +11,6 @@
 #include "FuseHighLevel.h"
 #include "Utility/Utility.h"
 
-using namespace std::string_literals;
-
 namespace cloudstorage {
 
 using util::log;
@@ -24,7 +22,7 @@ IFileSystem *context(fuse_req_t req) {
 }
 
 void getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *) {
-  context(req)->getattr(ino, [=](auto e) {
+  context(req)->getattr(ino, [=](EitherError<IFileSystem::INode> e) {
     if (auto i = e.right()) {
       auto stat = item_to_stat(i);
       fuse_reply_attr(req, &stat, 1);
@@ -45,7 +43,7 @@ void open(fuse_req_t req, fuse_ino_t, struct fuse_file_info *fi) {
 }
 
 void release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *) {
-  context(req)->release(ino, [=](auto e) {
+  context(req)->release(ino, [=](EitherError<void> e) {
     if (e.left()) {
       log("release:", e.left()->code_, e.left()->description_);
       fuse_reply_err(req, EINVAL);
@@ -56,7 +54,7 @@ void release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *) {
 
 void read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
           struct fuse_file_info *) {
-  context(req)->read(ino, off, size, [=](auto e) {
+  context(req)->read(ino, off, size, [=](EitherError<std::string> e) {
     if (auto data = e.right()) {
       fuse_reply_buf(req, data->data(), data->size());
     } else {
@@ -68,33 +66,35 @@ void read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
              struct fuse_file_info *) {
-  context(req)->readdir(ino, [=](auto e) {
-    if (auto lst = e.right()) {
-      std::string data;
-      for (size_t i = off; i < lst->size(); i++) {
-        auto item = lst->at(i);
-        auto name = context(req)->sanitize(item->filename());
-        auto sz = fuse_add_direntry(req, nullptr, 0, name.c_str(), nullptr, 0);
-        if (data.size() + sz > size) {
+  context(req)->readdir(
+      ino, [=](EitherError<std::vector<IFileSystem::INode::Pointer>> e) {
+        if (auto lst = e.right()) {
+          std::string data;
+          for (size_t i = off; i < lst->size(); i++) {
+            auto item = lst->at(i);
+            auto name = context(req)->sanitize(item->filename());
+            auto sz =
+                fuse_add_direntry(req, nullptr, 0, name.c_str(), nullptr, 0);
+            if (data.size() + sz > size) {
+              fuse_reply_buf(req, data.data(), data.size());
+              return;
+            }
+            std::vector<char> buffer(sz);
+            auto stat = item_to_stat(lst->at(i));
+            fuse_add_direntry(req, buffer.data(), buffer.size(), name.c_str(),
+                              &stat, i + 1);
+            data += std::string(buffer.begin(), buffer.end());
+          }
           fuse_reply_buf(req, data.data(), data.size());
-          return;
+        } else {
+          log("readdir:", e.left()->code_, e.left()->description_);
+          fuse_reply_err(req, ENOENT);
         }
-        std::vector<char> buffer(sz);
-        auto stat = item_to_stat(lst->at(i));
-        fuse_add_direntry(req, buffer.data(), buffer.size(), name.c_str(),
-                          &stat, i + 1);
-        data += std::string(buffer.begin(), buffer.end());
-      }
-      fuse_reply_buf(req, data.data(), data.size());
-    } else {
-      log("readdir:", e.left()->code_, e.left()->description_);
-      fuse_reply_err(req, ENOENT);
-    }
-  });
+      });
 }
 
 void lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
-  context(req)->lookup(parent, name, [=](auto e) {
+  context(req)->lookup(parent, name, [=](EitherError<IFileSystem::INode> e) {
     if (auto node = e.right()) {
       fuse_entry_param entry = {};
       entry.ino = node->inode();
@@ -112,17 +112,18 @@ void lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 
 void rename(fuse_req_t req, fuse_ino_t parent, const char *name,
             fuse_ino_t newparent, const char *newname, unsigned int) {
-  context(req)->rename(parent, name, newparent, newname, [=](auto e) {
-    if (e.left()) {
-      log("rename:", e.left()->code_, e.left()->description_);
-      fuse_reply_err(req, ENOSYS);
-    } else
-      fuse_reply_err(req, 0);
-  });
+  context(req)->rename(
+      parent, name, newparent, newname, [=](EitherError<IItem> e) {
+        if (e.left()) {
+          log("rename:", e.left()->code_, e.left()->description_);
+          fuse_reply_err(req, ENOSYS);
+        } else
+          fuse_reply_err(req, 0);
+      });
 }
 
 void mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t) {
-  context(req)->mkdir(parent, name, [=](auto e) {
+  context(req)->mkdir(parent, name, [=](EitherError<IFileSystem::INode> e) {
     if (e.left()) {
       log("mkdir:", e.left()->code_, e.left()->description_);
       fuse_reply_err(req, ENOSYS);
@@ -140,7 +141,7 @@ void mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t) {
 }
 
 void remove(fuse_req_t req, fuse_ino_t parent, const char *name) {
-  context(req)->remove(parent, name, [=](auto e) {
+  context(req)->remove(parent, name, [=](EitherError<void> e) {
     if (e.left()) {
       if (e.left()->code_ == IFileSystem::NotEmpty)
         fuse_reply_err(req, ENOTEMPTY);
@@ -167,7 +168,7 @@ void mknod(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t, dev_t) {
 
 void write(fuse_req_t req, fuse_ino_t ino, const char *data, size_t size,
            off_t off, struct fuse_file_info *) {
-  context(req)->write(ino, data, size, off, [=](auto e) {
+  context(req)->write(ino, data, size, off, [=](EitherError<uint32_t> e) {
     if (e.left()) {
       log("write:", e.left()->code_, e.left()->description_);
       fuse_reply_err(req, ENOSYS);
