@@ -33,81 +33,14 @@
 
 const char* DEFAULT_REDIRECT_URI = "http://localhost:12345";
 
-const std::string CDN =
-    "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
-    "integrity='sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s='"
-    "crossorigin='anonymous'></script>"
-    "<script "
-    "src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
-    "</script>";
-
-const std::string DEFAULT_LOGIN_PAGE =
-    "<html>" + CDN +
-    "<body>"
-    "libcloudstorage login page"
-    "<table>"
-    "<tr><td>Username:</td><td><input id='username'/></td></tr>"
-    "<tr><td>Password:</td><td><input id='password' type='password'/></td></tr>"
-    "<tr><td>AmazonS3 region:</td><td><input id='region'/></td></tr>"
-    "<tr><td>WebDAV url:</td><td><input id='webdav_url'/></td></tr>"
-    "<tr><td>"
-    "  <a id='link'><input id='submit' type='button' value='Login'></a>"
-    "</td></tr>"
-    "<script>"
-    " $(function() {"
-    "   var func = function() {"
-    "     var json = {"
-    "        username: $('#username').val(),"
-    "        password: $('#password').val(),"
-    "        region: $('#region').val(),"
-    "        webdav_url: $('#webdav_url').val()"
-    "     };"
-    "     var str = window.btoa(JSON.stringify(json));"
-    "     $('#link').attr('href', location.pathname + '?code='"
-    "                     + encodeURIComponent(str) + "
-    "                     '&state=' +  url('?').state);"
-    "   };"
-    "   $('#login').change(func);"
-    "   $('#password').change(func);"
-    "   $('#region').change(func);"
-    "   $('#webdav_url').change(func);"
-    " });"
-    "</script>"
-    "</table>"
-    "</body>"
-    "</html>";
-
-const std::string DEFAULT_SUCCESS_PAGE =
-    "<html>" + CDN +
-    "<body>Success.</body>"
-    "<script>"
-    "  $.ajax({ 'data': { 'accepted': 'true' } });"
-    "  history.replaceState({}, null, "
-    "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-    "'/success');"
-    "</script>"
-    "</html>";
-
-const std::string DEFAULT_ERROR_PAGE =
-    "<html>" + CDN +
-    "<body>Error.</body>"
-    "<script>"
-    "  $.ajax({ 'data': { 'accepted': 'false' } });"
-    "  history.replaceState({}, null,"
-    "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-    "'/error');"
-    "</script>"
-    "</html>";
-
 namespace cloudstorage {
 
 IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
   const char* state = request.get(data_.state_parameter_name_);
   if (!state || state != data_.state_)
-    return util::response_from_string(
-        request, IHttpRequest::Unauthorized, {},
-        data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
+    return util::response_from_string(request, IHttpRequest::Unauthorized, {},
+                                      data_.error_page_);
 
   const char* accepted = request.get("accepted");
   const char* code = request.get(data_.code_parameter_name_);
@@ -130,23 +63,18 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
 
   if (code)
     return util::response_from_string(request, IHttpRequest::Ok, {},
-                                      data_.success_page_.empty()
-                                          ? DEFAULT_SUCCESS_PAGE
-                                          : data_.success_page_);
+                                      data_.success_page_);
 
   if (error)
-    return util::response_from_string(
-        request, IHttpRequest::Unauthorized, {},
-        data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
+    return util::response_from_string(request, IHttpRequest::Unauthorized, {},
+                                      data_.error_page_);
 
   if (request.url() == data_.redirect_uri_path_ + "/login")
-    return util::response_from_string(
-        request, IHttpRequest::Ok, {},
-        data_.login_page_.empty() ? DEFAULT_LOGIN_PAGE : data_.login_page_);
+    return util::response_from_string(request, IHttpRequest::Ok, {},
+                                      data_.login_page_);
 
-  return util::response_from_string(
-      request, IHttpRequest::NotFound, {},
-      data_.error_page_.empty() ? DEFAULT_ERROR_PAGE : data_.error_page_);
+  return util::response_from_string(request, IHttpRequest::NotFound, {},
+                                    data_.error_page_);
 }
 
 Auth::Auth() : redirect_uri_(DEFAULT_REDIRECT_URI), http_(), http_server_() {}

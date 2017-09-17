@@ -52,6 +52,14 @@ const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"3gp", "video/3gpp"},  {"3g2", "video/3gpp2"},
     {"mp4", "video/mp4"},   {"mkv", "video/webm"}};
 
+const std::string CDN =
+    "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
+    "integrity='sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s='"
+    "crossorigin='anonymous'></script>"
+    "<script "
+    "src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
+    "</script>";
+
 namespace {
 
 unsigned char from_hex(unsigned char ch) {
@@ -345,6 +353,79 @@ IHttpServer::IResponse::Pointer response_from_string(
   };
   return request.response(code, headers, data.length(),
                           util::make_unique<DataProvider>(data));
+}
+
+std::string login_page(const std::string&) {
+  return "<html>" + CDN +
+         "<body>"
+         "libcloudstorage login page"
+         "<table>"
+         "<tr><td>Username:</td><td><input id='username'/></td></tr>"
+         "<tr><td>Password:</td><td><input id='password' "
+         "type='password'/></td></tr>"
+         "<tr><td>AmazonS3 region:</td><td><input id='region'/></td></tr>"
+         "<tr><td>WebDAV url:</td><td><input id='webdav_url'/></td></tr>"
+         "<tr><td>"
+         "  <a id='link'><input id='submit' type='button' value='Login'></a>"
+         "</td></tr>"
+         "<script>"
+         " $(function() {"
+         "   var func = function() {"
+         "     var json = {"
+         "        username: $('#username').val(),"
+         "        password: $('#password').val(),"
+         "        region: $('#region').val(),"
+         "        webdav_url: $('#webdav_url').val()"
+         "     };"
+         "     var str = window.btoa(JSON.stringify(json));"
+         "     $('#link').attr('href', location.pathname + '?code='"
+         "                     + encodeURIComponent(str) + "
+         "                     '&state=' +  url('?').state);"
+         "   };"
+         "   $('#login').change(func);"
+         "   $('#password').change(func);"
+         "   $('#region').change(func);"
+         "   $('#webdav_url').change(func);"
+         " });"
+         "</script>"
+         "</table>"
+         "</body>"
+         "</html>";
+}
+
+std::string success_page(const std::string&) {
+  return "<html>" + CDN +
+         "<body>Success.</body>"
+         "<script>"
+         "  $.ajax({ 'data': { 'accepted': 'true' } });"
+         "  history.replaceState({}, null, "
+         "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+         "'/success');"
+         "</script>"
+         "</html>";
+}
+
+std::string error_page(const std::string&) {
+  return "<html>" + CDN +
+         "<body>Error.</body>"
+         "<script>"
+         "  $.ajax({ 'data': { 'accepted': 'false' } });"
+         "  history.replaceState({}, null,"
+         "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
+         "'/error');"
+         "</script>"
+         "</html>";
+}
+
+const char* libcloudstorage_ascii_art() {
+  return R"(   _ _ _          _                 _     _                             
+  | (_| |        | |               | |   | |                            
+  | |_| |__   ___| | ___  _   _  __| |___| |_ ___  _ __ __ _  __ _  ___ 
+  | | | '_ \ / __| |/ _ \| | | |/ _` / __| __/ _ \| '__/ _` |/ _` |/ _ \
+  | | | |_) | (__| | (_) | |_| | (_| \__ | || (_) | | | (_| | (_| |  __/
+  |_|_|_.__/ \___|_|\___/ \__,_|\__,_|___/\__\___/|_|  \__,_|\__, |\___|
+                                                              __/ |     
+                                                             |___/      )";
 }
 
 }  // namespace util

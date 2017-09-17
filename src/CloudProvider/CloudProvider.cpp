@@ -187,6 +187,12 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_server_)
     throw std::runtime_error("No http server module specified.");
   if (auth()->state().empty()) auth()->set_state(DEFAULT_STATE);
+  if (auth()->login_page().empty())
+    auth()->set_login_page(util::login_page(name()));
+  if (auth()->success_page().empty())
+    auth()->set_success_page(util::success_page(name()));
+  if (auth()->error_page().empty())
+    auth()->set_error_page(util::error_page(name()));
   auth()->initialize(http(), http_server());
 }
 

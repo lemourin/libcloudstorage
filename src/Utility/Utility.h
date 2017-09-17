@@ -69,6 +69,10 @@ std::tm gmtime(time_t);
 time_t timegm(const std::tm&);
 std::string to_base64(const std::string&);
 std::string from_base64(const std::string&);
+std::string login_page(const std::string& provider);
+std::string success_page(const std::string& provider);
+std::string error_page(const std::string& provider);
+const char* libcloudstorage_ascii_art();
 
 class Url {
  public:
