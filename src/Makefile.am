@@ -15,6 +15,7 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
+	Utility/FileSystem.cpp \
 	Utility/Utility.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
@@ -48,6 +49,7 @@ noinst_HEADERS = \
 	Utility/CloudStorage.h \
 	Utility/Auth.h \
 	Utility/Item.h \
+	Utility/FileSystem.h \
 	Utility/Utility.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
@@ -83,7 +85,8 @@ libcloudstorage_la_HEADERS = \
 	IRequest.h \
 	ICrypto.h \
 	IHttp.h \
-	IHttpServer.h
+	IHttpServer.h \
+	IFileSystem.h
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \
