@@ -137,7 +137,7 @@ enough when it comes to watching  videos; with `mega.nz` being the fastest and
 
 ## Usage:
 
-To add cloud providers to file system, first the cloud providers need to be
+To add cloud providers to file system, first the cloud providers need to be  
 added. This can be done by calling:
 
 `libcloudstorage-fuse --add=provider_label`
