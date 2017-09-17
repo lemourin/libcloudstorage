@@ -55,7 +55,7 @@ std::chrono::system_clock::time_point FileSystem::Node::timestamp() const {
   return item_->timestamp();
 }
 
-uint64_t FileSystem::Node::size() const { return item_->size(); }
+uint64_t FileSystem::Node::size() const { return size_; }
 
 void FileSystem::Node::set_size(uint64_t size) { size_ = size; }
 
