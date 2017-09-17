@@ -341,7 +341,7 @@ IHttpServer::IResponse::Pointer response_from_string(
     DataProvider(const std::string& data) : position_(), data_(data) {}
 
     int putData(char* buffer, size_t max) override {
-      int cnt = std::min(data_.length() - position_, max);
+      int cnt = std::min<int>(data_.length() - position_, max);
       memcpy(buffer, data_.data() + position_, cnt);
       position_ += cnt;
       return cnt;

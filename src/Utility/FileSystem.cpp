@@ -354,13 +354,13 @@ void FileSystem::read(FileId node, size_t offset, size_t sz,
     return cb(std::string());
   if (nd->item()->id() == AUTH_ITEM_ID) {
     auto data = authorize_file(nd->provider()->authorizeLibraryUrl());
-    auto start = std::min(offset, data.size() - 1);
-    auto size = std::min(data.size() - start, sz);
+    auto start = std::min<size_t>(offset, data.size() - 1);
+    auto size = std::min<size_t>(data.size() - start, sz);
     auto d = data.substr(start, size);
     return cb(d);
   }
-  auto start = std::min(offset, (size_t)nd->size() - 1);
-  auto size = std::min(sz, (size_t)nd->size() - start);
+  auto start = std::min<size_t>(offset, (size_t)nd->size() - 1);
+  auto size = std::min<size_t>(sz, (size_t)nd->size() - start);
   download_item_async(nd->provider(), nd->item(), Range{start, size}, cb);
 }
 
@@ -589,7 +589,7 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
                                         start_)
               .count());
       if (e.left()) return callback_(e.left());
-      buffer_.resize(std::min(buffer_.size(), size_));
+      buffer_.resize(std::min<size_t>(buffer_.size(), size_));
       callback_(buffer_);
     }
 

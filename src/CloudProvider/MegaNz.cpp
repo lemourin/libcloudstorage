@@ -227,7 +227,7 @@ struct Buffer {
     std::unique_lock<std::mutex> lock(mutex_);
     if (done_) return IHttpServer::IResponse::ICallback::Abort;
     if (data_.empty()) return IHttpServer::IResponse::ICallback::Suspend;
-    size_t cnt = std::min(data_.size(), (size_t)max);
+    size_t cnt = std::min<size_t>(data_.size(), (size_t)max);
     for (size_t i = 0; i < cnt; i++) {
       buf[i] = data_.front();
       data_.pop();
