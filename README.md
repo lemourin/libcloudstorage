@@ -84,6 +84,32 @@ Optional dependency notes:
   when  not  found,  `mega`  cloud  provider will  not  be  included,  can  be  
   explicitly disabled with `--with-mega=no`
 
+FUSE:
+=====
+
+In `bin/fuse`  there is  implemented a  user space  file system  using `fuse3`  
+(https://github.com/libfuse/libfuse) library. It will be build when `fuse3` is  
+found  (unless explicitly  disabled  with `--with-fuse=no`).  The file  system  
+is  implemented  using `libfuse`'s  low  level  api;  however high  level  api  
+implementation is  also provided. The  file system supports  moving, renaming,  
+creating  directories, reading  and writing  new files.  Writing over  already  
+present  files in  cloud  provider  is not  supported.  The  file system  uses  
+asynchronous  I/O to  its full  potency. It  doesn't cache  files anywhere  by  
+itself which implies no local storage  overhead. Most cloud providers are fast  
+enough when it comes to watching  videos; with `mega.nz` being the fastest and  
+`Google Drive` being the slowest.
+
+## Usage:
+
+To add cloud providers to file system, first the cloud providers need to be  
+added. This can be done by calling:
+
+`libcloudstorage-fuse --add=provider_label`
+
+After cloud providers are added, the file system can be mount using:
+
+`libcloudstorage-fuse mountpoint`
+
 Cloud Browser:
 ==============
 
@@ -119,32 +145,6 @@ Screenshot:
   <a href="https://i.imgur.com/yqiydaD.png">
     <img src="https://i.imgur.com/yqiydaD.png" width="480" height="270" />
   </a>
-
-FUSE:
-=====
-
-In `examples/fuse` there is implemented a user space file system using `fuse3`  
-(https://github.com/libfuse/libfuse) library. It will be build when `fuse3` is  
-found  and  `--with-examples`  configure  flag  is  passed.  The  file  system  
-is  implemented  using `libfuse`'s  low  level  api;  however high  level  api  
-implementation is  also provided. The  file system supports  moving, renaming,  
-creating  directories, reading  and writing  new files.  Writing over  already  
-present  files in  cloud  provider  is not  supported.  The  file system  uses  
-asynchronous  I/O to  its full  potency. It  doesn't cache  files anywhere  by  
-itself which implies no local storage  overhead. Most cloud providers are fast  
-enough when it comes to watching  videos; with `mega.nz` being the fastest and  
-`Google Drive` being the slowest.
-
-## Usage:
-
-To add cloud providers to file system, first the cloud providers need to be  
-added. This can be done by calling:
-
-`libcloudstorage-fuse --add=provider_label`
-
-After cloud providers are added, the file system can be mount using:
-
-`libcloudstorage-fuse mountpoint`
 
 TODO:
 =====
