@@ -16,7 +16,7 @@ using util::log;
 namespace {
 
 IFileSystem *context(fuse_req_t req) {
-  return static_cast<IFileSystem *>(fuse_req_userdata(req));
+  return *static_cast<IFileSystem **>(fuse_req_userdata(req));
 }
 
 void getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *) {

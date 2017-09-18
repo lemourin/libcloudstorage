@@ -24,7 +24,7 @@ FileId file_id(std::string path) {
 }
 
 IFileSystem *context() {
-  return static_cast<IFileSystem *>(fuse_get_context()->private_data);
+  return *static_cast<IFileSystem **>(fuse_get_context()->private_data);
 }
 
 int getattr(const char *path, struct stat *stat, struct fuse_file_info *) {

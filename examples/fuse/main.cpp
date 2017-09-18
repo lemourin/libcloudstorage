@@ -39,6 +39,29 @@ struct HttpServerData {
   std::string state_;
 };
 
+struct FuseLowLevel {
+  FuseLowLevel(fuse_args *args, const char *mountpoint, void *userdata) {
+    auto operations = cloudstorage::low_level_operations();
+    session_ =
+        fuse_session_new(args, &operations, sizeof(operations), userdata);
+    fuse_set_signal_handlers(session_);
+    fuse_session_mount(session_, mountpoint);
+  }
+
+  ~FuseLowLevel() {
+    fuse_session_unmount(session_);
+    fuse_remove_signal_handlers(session_);
+    fuse_session_destroy(session_);
+  }
+
+  int run(bool singlethread, bool clone_fd) const {
+    return singlethread ? fuse_session_loop(session_)
+                        : fuse_session_loop_mt(session_, clone_fd);
+  }
+
+  fuse_session *session_;
+};
+
 class HttpServerCallback : public IHttpServer::ICallback {
  public:
   HttpServerCallback(std::promise<HttpServerData> &p) : promise_(p) {}
@@ -110,34 +133,26 @@ std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
   return std::move(providers);
 }
 
-int fuse_lowlevel(
-    fuse_args *args, fuse_cmdline_opts *opts,
-    const std::vector<cloudstorage::IFileSystem::ProviderEntry> &providers,
-    std::shared_ptr<IHttp> http, const std::string &temporary_directory) {
-  auto ctx = cloudstorage::IFileSystem::create(
-      providers, util::make_unique<HttpWrapper>(http), temporary_directory);
-  auto operations = cloudstorage::low_level_operations();
-  pointer<fuse_session> session(
-      fuse_session_new(args, &operations, sizeof(operations), ctx.get()),
-      [](fuse_session *session) { fuse_session_destroy(session); });
-  if (!session) return 1;
-  pointer<int> fuse_signal(new int(fuse_set_signal_handlers(session.get())),
-                           [&](int *h) {
-                             if (!*h)
-                               fuse_remove_signal_handlers(session.get());
-                             delete h;
-                           });
-  if (*fuse_signal) return 1;
-  pointer<int> fuse_mount(
-      new int(fuse_session_mount(session.get(), opts->mountpoint)),
-      [&](int *m) {
-        if (!*m) fuse_session_unmount(session.get());
-        delete m;
-      });
-  if (*fuse_mount) return 1;
-  return opts->singlethread
-             ? fuse_session_loop(session.get())
-             : fuse_session_loop_mt(session.get(), opts->clone_fd);
+int fuse_lowlevel(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
+  auto ctx = new IFileSystem *;
+  FuseLowLevel fuse(args, opts->mountpoint, ctx);
+  fuse_daemonize(opts->foreground);
+  auto http = std::make_shared<curl::CurlHttp>();
+  auto temporary_directory = json["temporary_directory"].asString();
+  if (temporary_directory.empty()) temporary_directory = "/tmp/";
+  auto p = providers(json["providers"], http, temporary_directory);
+  *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
+                             temporary_directory)
+             .release();
+  int ret = fuse.run(opts->singlethread, opts->clone_fd);
+  for (size_t i = 0; i < p.size(); i++) {
+    json["providers"][int(i)]["token"] = p[i].provider_->token();
+    json["providers"][int(i)]["access_token"] =
+        p[i].provider_->hints()["access_token"];
+  }
+  delete *ctx;
+  delete ctx;
+  return ret;
 }
 
 int main(int argc, char **argv) {
@@ -157,7 +172,6 @@ int main(int argc, char **argv) {
                                     free(opts->mountpoint);
                                     delete opts;
                                   });
-  opts->clone_fd = true;
   if (fuse_parse_cmdline(args.get(), opts.get()) != 0) return 1;
   if (opts->show_help) {
     std::cerr << util::libcloudstorage_ascii_art() << "\n\n";
@@ -210,17 +224,7 @@ int main(int argc, char **argv) {
                 << ret.left()->description_ << "\n";
     return 0;
   }
-  fuse_daemonize(opts->foreground);
-  auto temporary_directory = json["temporary_directory"].asString();
-  if (temporary_directory.empty()) temporary_directory = "/tmp/";
-  auto http = std::make_shared<cloudstorage::curl::CurlHttp>();
-  auto p = providers(json["providers"], http, temporary_directory);
-  int ret = fuse_lowlevel(args.get(), opts.get(), p, http, temporary_directory);
-  for (size_t i = 0; i < p.size(); i++) {
-    json["providers"][int(i)]["token"] = p[i].provider_->token();
-    json["providers"][int(i)]["access_token"] =
-        p[i].provider_->hints()["access_token"];
-  }
+  int ret = fuse_lowlevel(args.get(), opts.get(), json);
   std::ofstream(options.config_file) << json;
   return ret;
 }
