@@ -152,7 +152,7 @@ AS_IF([test "x$with_examples" = "xyes"], [
     PKG_CHECK_MODULES([qtmultimediawidgets], [Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets])
     AC_DEFINE(WITH_QTMULTIMEDIAWIDGETS)
   ], [
-    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia], [HAVE_QT=0])
+    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia], [], [HAVE_QT=0])
     AC_DEFINE(WITH_QMLPLAYER)
   ])
 ])
