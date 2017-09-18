@@ -19,7 +19,7 @@
 namespace cloudstorage {
 
 const int READ_AHEAD = 2 * 1024 * 1024;
-const int CACHED_CHUNK_COUNT = 2;
+const int CACHED_CHUNK_COUNT = 4;
 
 class FileSystem : public IFileSystem {
  public:
