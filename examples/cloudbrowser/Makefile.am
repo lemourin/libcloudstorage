@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
-bin_PROGRAMS = cloudbrowser
-lib_LTLIBRARIES = libcloudbrowser.la
+noinst_PROGRAMS = cloudbrowser
+noinst_LTLIBRARIES = libcloudbrowser.la
 
 AM_LDFLAGS = \
 	-no-undefined

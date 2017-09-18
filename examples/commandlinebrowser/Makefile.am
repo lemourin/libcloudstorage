@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-bin_PROGRAMS = commandlinebrowser
+noinst_PROGRAMS = commandlinebrowser
 
 AM_LDFLAGS = \
 	-no-undefined
