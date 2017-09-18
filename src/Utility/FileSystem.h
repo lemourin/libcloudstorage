@@ -18,6 +18,9 @@
 
 namespace cloudstorage {
 
+const int READ_AHEAD = 2 * 1024 * 1024;
+const int CACHED_CHUNK_COUNT = 2;
+
 class FileSystem : public IFileSystem {
  public:
   using mutex = std::recursive_mutex;
@@ -43,11 +46,29 @@ class FileSystem : public IFileSystem {
     void set_size(uint64_t size);
 
    private:
+    friend class FileSystem;
+
+    struct Chunk {
+      Range range_;
+      std::string data_;
+    };
+
+    struct ReadRequest {
+      Range range_;
+      DownloadItemCallback callback_;
+
+      bool operator==(const ReadRequest &r) const { return range_ == r.range_; }
+    };
+
+    mutex mutex_;
     std::shared_ptr<ICloudProvider> provider_;
     IItem::Pointer item_;
     FileId inode_;
     uint64_t size_;
     std::shared_ptr<IGenericRequest> upload_request_;
+    std::vector<ReadRequest> read_request_;
+    std::vector<Range> pending_download_;
+    std::deque<Chunk> chunk_;
   };
 
   FileSystem(const std::vector<ProviderEntry> &, IHttp::Pointer http,

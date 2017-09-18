@@ -360,9 +360,60 @@ void FileSystem::read(FileId node, size_t offset, size_t sz,
     auto d = data.substr(start, size);
     return cb(d);
   }
-  auto start = std::min<size_t>(offset, (size_t)nd->size() - 1);
-  auto size = std::min<size_t>(sz, (size_t)nd->size() - start);
-  download_item_async(nd->provider(), nd->item(), Range{start, size}, cb);
+  auto fit = [=](Range r) {
+    r.start_ = std::min<size_t>(r.start_, (size_t)nd->size() - 1);
+    r.size_ = std::min<size_t>(r.size_, (size_t)nd->size() - r.start_);
+    return r;
+  };
+  Range range = fit({offset, sz});
+  std::unique_lock<mutex> lock(nd->mutex_);
+  auto inside = [=](Range r1, Range r2) {
+    r1 = fit(r1);
+    r2 = fit(r2);
+    return r1.start_ >= r2.start_ &&
+           r1.start_ + r1.size_ <= r2.start_ + r2.size_;
+  };
+  auto download = [=](Range range) {
+    for (auto&& download_range : nd->pending_download_)
+      if (inside(range, download_range)) return;
+    range = fit({range.start_, std::max<size_t>(range.size_, READ_AHEAD)});
+    nd->pending_download_.push_back(range);
+    download_item_async(
+        nd->provider(), nd->item(), range, [=](EitherError<std::string> e) {
+          std::unique_lock<mutex> lock(nd->mutex_);
+          auto requests = nd->read_request_;
+          for (auto&& read : requests)
+            if (inside(read.range_, range)) {
+              if (e.left())
+                read.callback_(e.left());
+              else
+                read.callback_(e.right()->substr(
+                    read.range_.start_ - range.start_, read.range_.size_));
+              auto it = std::find(nd->read_request_.begin(),
+                                  nd->read_request_.end(), read);
+              nd->read_request_.erase(it);
+            }
+          auto it = std::find(nd->pending_download_.begin(),
+                              nd->pending_download_.end(), range);
+          nd->pending_download_.erase(it);
+          if (e.right()) {
+            nd->chunk_.push_back({range, std::move(*e.right())});
+            if (nd->chunk_.size() >= CACHED_CHUNK_COUNT) nd->chunk_.pop_front();
+          }
+        });
+  };
+  bool read_ahead = true;
+  for (auto&& chunk : nd->chunk_)
+    if (inside(Range{range.start_ + READ_AHEAD / 2, READ_AHEAD / 2},
+               chunk.range_))
+      read_ahead = false;
+  if (read_ahead) download(Range{range.start_ + READ_AHEAD / 2, range.size_});
+  for (auto&& chunk : nd->chunk_)
+    if (inside(range, chunk.range_))
+      return cb(
+          chunk.data_.substr(range.start_ - chunk.range_.start_, range.size_));
+  nd->read_request_.push_back({range, cb});
+  download(range);
 }
 
 void FileSystem::invalidate(FileId root) {
@@ -461,7 +512,11 @@ void FileSystem::remove(FileId parent, const char* name,
 void FileSystem::release(FileId inode, DeleteItemCallback cb) {
   std::lock_guard<mutex> lock(node_data_mutex_);
   auto it = created_node_.find(inode);
-  if (it == created_node_.end()) return cb(nullptr);
+  if (it == created_node_.end()) {
+    auto node = get(inode);
+    node->chunk_.clear();
+    return cb(nullptr);
+  }
   auto node = std::move(it->second);
   created_node_.erase(it);
   auto parent_node = get(node->parent_);
