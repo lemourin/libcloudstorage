@@ -514,6 +514,7 @@ void FileSystem::release(FileId inode, DeleteItemCallback cb) {
   auto it = created_node_.find(inode);
   if (it == created_node_.end()) {
     auto node = get(inode);
+    std::lock_guard<mutex> lock(node->mutex_);
     node->chunk_.clear();
     return cb(nullptr);
   }
