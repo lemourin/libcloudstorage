@@ -113,37 +113,29 @@ After cloud providers are added, the file system can be mount using:
 Cloud Browser:
 ==============
 
-Optionally, you can build an example program which provides easy graphics user  
-interface for all the features implemented in `libcloudstorage`. Related cloud  
-browser `./configure` options are:
+When `--with-examples`  flag is passed  to `./configure`, Cloud  Browser  will  
+be  built. It  provides  easy  graphics user  interface  for  all the features  
+implemented in `libcloudstorage`.
 
-* `--with-examples`
+Cloud Browser dependencies:
 
-   enables  the  build of  cloud  browser  and  few other  examples;  requires  
-   `Qt5Core`,  `Qt5Gui`,  `Qt5Quick`;  when `libffmpegthumbnailer`  is  found,  
-   cloud browser will  generate fallback thumbnails if  cloud provider doesn't  
-   provide any
+* `Qt5Core`, `Qt5Gui`, `Qt5Quick`
 
-* `--with-vlc`
+* `kirigami` (https://github.com/KDE/kirigami)
 
-   cloud  browser will  use `vlc`  to play  media files;  requires `libvlcpp`,  
-   `libvlc`, `Qt5Widgets`
+* `Qt5WebView`
 
-* `--with-qtmultimediawidgets`
+  when found, Cloud Browser will use it to present the authorization scheme
 
-   cloud browser  will use  `Qt5MultimediaWidget` based  player to  play media  
-   files; requires `Qt5Widgets`, `Qt5Multimedia`, `Qt5MultimediaWidgets`
+* `libffmpegthumbnailer` 
 
-* `--with-qmlplayer`
-
-   cloud  browser   will  use  `qml`   based  player  to  play   media  files;  
-   requires  `Qt5Multimedia`; if  user  doesn't specify  any of  `--with-vlc`,  
-   `--with-qtmultimediawidgets`, `qml` player will be used
+  when  found,  Cloud  Browser  will generate  fallback  thumbnails  if  cloud  
+  provider doesn't provide any
 
 Screenshot:
 
-  <a href="https://i.imgur.com/yqiydaD.png">
-    <img src="https://i.imgur.com/yqiydaD.png" width="480" height="270" />
+  <a href="https://i.imgur.com/NsbNvfX.png">
+    <img src="https://i.imgur.com/NsbNvfX.png" width="640" />
   </a>
 
 TODO:
