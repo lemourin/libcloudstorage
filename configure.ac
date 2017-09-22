@@ -113,7 +113,7 @@ AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 
 HAVE_QT=0
-HAVE_QTWEBENGINE=0
+HAVE_QTWEBVIEW=0
 HAVE_THUMBNAILER=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
@@ -126,10 +126,10 @@ AS_IF([test "x$with_examples" = "xyes"], [
     AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
     AC_DEFINE(WITH_QT)
   ], [HAVE_QT=0])
-  PKG_CHECK_MODULES([qtwebengine], [Qt5WebEngine], [
-    HAVE_QTWEBENGINE=1
-    AC_DEFINE(WITH_QTWEBENGINE)
-  ], [HAVE_QTWEBENGINE=0])
+  PKG_CHECK_MODULES([qtwebview], [Qt5WebView], [
+    HAVE_QTWEBVIEW=1
+    AC_DEFINE(WITH_QTWEBVIEW)
+  ], [HAVE_QTWEBVIEW=0])
   PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer], [
     HAVE_THUMBNAILER=1
     AC_DEFINE(WITH_THUMBNAILER)
@@ -137,7 +137,7 @@ AS_IF([test "x$with_examples" = "xyes"], [
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
-AM_CONDITIONAL([WITH_QTWEBENGINE], [test "$HAVE_QTWEBENGINE" -eq 1])
+AM_CONDITIONAL([WITH_QTWEBVIEW], [test "$HAVE_QTWEBVIEW" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 
 AC_OUTPUT
