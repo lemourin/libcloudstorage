@@ -1,4 +1,4 @@
-import QtWebEngine 1.1
+import QtWebView 1.0
 
-WebEngineView {
+WebView {
 }

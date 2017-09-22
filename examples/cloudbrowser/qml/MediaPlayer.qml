@@ -1,34 +1,39 @@
-import QtQuick 2.0
+import QtQuick 2.7
 import QtMultimedia 5.6
+import org.kde.kirigami 2.0 as Kirigami
+import libcloudstorage 1.0
 
-Item {
-    property MediaPlayer mediaplayer: mediaPlayer
-    property VideoOutput videooutput: videoOutput
+Kirigami.ScrollablePage {
+  property CloudItem item
 
-    MediaPlayer {
-        id: mediaPlayer
-        source: window.currentMedia
-        onStatusChanged: {
-            if (status == MediaPlayer.EndOfMedia) {
-                videoOutput.visible = false;
-                window.playNext();
-            } else if (status == MediaPlayer.InvalidMedia)
-                window.hidePlayer();
-        }
+  id: page
+  title: "Play"
+
+  anchors.fill: parent
+
+  GetUrlRequest {
+    id: url_request
+    context: cloud
+    item: page.item
+  }
+
+  MediaPlayer {
+    id: mediaPlayer
+    source: url_request.source
+    onSourceChanged: console.log(source)
+    autoPlay: true
+  }
+  VideoOutput {
+    source: mediaPlayer
+    anchors.fill: parent
+    Rectangle {
+      anchors.fill: parent
+      color: "black"
+      z: -1
     }
-    VideoOutput {
-        MouseArea {
-            anchors.fill: parent
-        }
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            z: -1
-        }
-        id: videoOutput
-        source: mediaPlayer
-        anchors.fill: parent
-        visible: false
-    }
-
+  }
+  Rectangle {
+    anchors.fill: parent
+    color: "black"
+  }
 }

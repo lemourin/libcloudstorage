@@ -10,10 +10,7 @@ cloudbrowser_SOURCES = main.cpp
 cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
-	Window.cpp Window.h \
-	Callback.cpp Callback.h \
-	MediaPlayer.cpp MediaPlayer.h \
-	MockProvider.cpp MockProvider.h \
+	CloudContext.cpp CloudContext.h \
 	Exec.cpp Exec.h \
 	resources.cpp
 
@@ -25,33 +22,11 @@ libcloudbrowser_la_LIBADD = \
 	../../src/libcloudstorage.la \
 	$(qt_LIBS)
 
-if WITH_VLC
+if WITH_QTWEBVIEW
 libcloudbrowser_la_CXXFLAGS += \
-	$(libvlcpp_CFLAGS) \
-	$(libvlc_CFLAGS) \
-	$(qtwidgets_CFLAGS)
+	$(qtwebview_CFLAGS)
 libcloudbrowser_la_LIBADD += \
-	$(libvlcpp_LIBS) \
-	$(libvlc_LIBS) \
-	$(qtwidgets_LIBS)
-endif
-if WITH_QTMULTIMEDIAWIDGETS
-libcloudbrowser_la_CXXFLAGS += \
-	$(qtmultimediawidgets_CFLAGS)
-libcloudbrowser_la_LIBADD += \
-	$(qtmultimediawidgets_LIBS)
-endif
-if WITH_QMLPLAYER
-libcloudbrowser_la_CXXFLAGS += \
-	$(qtmultimedia_CFLAGS)
-libcloudbrowser_la_LIBADD += \
-	$(qtmultimedia_LIBS)
-endif
-if WITH_QTWEBENGINE
-libcloudbrowser_la_CXXFLAGS += \
-	$(qtwebengine_CFLAGS)
-libcloudbrowser_la_LIBADD += \
-	$(qtwebengine_LIBS)
+	$(qtwebview_LIBS)
 endif
 if WITH_THUMBNAILER
 libcloudbrowser_la_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
@@ -61,30 +36,39 @@ libcloudbrowser_la_SOURCES += \
 endif
 
 nodist_libcloudbrowser_la_SOURCES = \
-	Window.moc.cpp \
-	MediaPlayer.moc.cpp
+	CloudContext.moc.cpp
 
 DEPS_res = \
+	qtquickcontrols2.conf \
 	qml/main.qml \
 	qml/WebView.qml \
-	qml/WebKit.qml \
 	qml/MediaPlayer.qml \
-	qml/ActionButton.qml \
-	qml/ActionTextButton.qml \
+	qml/RegisterPage.qml \
+	qml/RemoveProvider.qml \
+	qml/ProviderEntry.qml \
+	qml/ItemPage.qml \
 	resources/directory.png \
 	resources/file.png \
 	resources/image.png \
 	resources/video.png \
 	resources/audio.png \
 	resources/cloud.png \
+	resources/providers/google.png \
+	resources/providers/onedrive.png \
+	resources/providers/dropbox.png \
+	resources/providers/amazon.png \
+	resources/providers/amazons3.png \
+	resources/providers/box.png \
+	resources/providers/pcloud.png \
+	resources/providers/mega.png \
+	resources/providers/webdav.png \
+	resources/providers/youtube.png \
+	resources/providers/yandex.png \
 	resources/amazons3_login.html \
-	resources/amazons3_success.html \
 	resources/default_error.html \
 	resources/default_success.html \
 	resources/mega_login.html \
-	resources/mega_success.html \
-	resources/webdav_login.html \
-	resources/webdav_success.html
+	resources/webdav_login.html
 
 %.moc.cpp: %.h
 	$(MOC) -o $@ $<

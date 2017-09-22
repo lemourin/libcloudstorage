@@ -1,387 +1,106 @@
-import QtQuick 2.5
-import QtQuick.Controls 1.0
-import QtQuick.Dialogs 1.2
-import QtQuick.Controls.Styles 1.4
+import QtQuick 2.7
+import QtQuick.Controls 2.0 as Controls
+import QtQuick.Layouts 1.2
+import org.kde.kirigami 2.0 as Kirigami
+import libcloudstorage 1.0
 
-Item {
-    property int padding: 5
+Kirigami.ApplicationWindow {
+  id: root
+  header: Kirigami.ApplicationHeader {}
 
-    id: root
+  CloudContext {
+    property var list_request
+    property var currently_moved
+    property variant request: []
 
-    Rectangle {
-        anchors.fill: parent
-        color: "white"
+    id: cloud
+    onUserProvidersChanged: {
+      root.globalDrawer.actions = root.actions();
     }
 
-    Gradient {
-        id: colors
-        GradientStop { position: 0.0; color: "#8EE2FE" }
-        GradientStop { position: 0.66; color: "#7ED2EE" }
+    function list(title, item) {
+      pageStack.push(listDirectoryPage, {title: title, item: item});
+    }
+  }
+
+  function actions() {
+    var ret = [settings.createObject(root.globalDrawer)], i;
+    for (i = 0; i < cloud.userProviders.length; i++) {
+      var props = {
+        provider: cloud.userProviders[i],
+        iconName: "qrc:/resources/providers/" + cloud.userProviders[i].type + ".png"
+      };
+      ret.push(providerAction.createObject(root.globalDrawer, props));
+    }
+    return ret;
+  }
+
+  globalDrawer: Kirigami.GlobalDrawer {
+    Component {
+      id: settings
+      Kirigami.Action {
+        text: "Settings"
+        Kirigami.Action {
+          text: "Add Cloud Provider"
+          onTriggered: {
+            pageStack.clear();
+            pageStack.push(addProviderPage)
+          }
+        }
+        Kirigami.Action {
+          text: "Remove Cloud Provider"
+          onTriggered: {
+            pageStack.clear();
+            pageStack.push(removeProviderPage);
+          }
+        }
+      }
+    }
+    Component {
+      id: providerAction
+      Kirigami.Action {
+        property variant provider
+        text: provider.label
+        onTriggered: {
+          pageStack.clear();
+          cloud.currently_moved = null;
+          cloud.list(provider.label, cloud.root(provider));
+        }
+      }
     }
 
-    Item {
-        id: leftSide
-        width: 0.3 * root.width
-        height: parent.height
-        ListView {
-            id: cloudView
-            focus: true
-            anchors.top: parent.top
-            anchors.bottom: help.top
-            anchors.margins: padding
-            anchors.left: parent.left
-            width: parent.width
-            model: cloudModel
-            clip: true
-            delegate: Component {
-                MouseArea {
-                    property string text: modelData
+    title: "Cloud Browser"
+    titleIcon: "qrc:/resources/cloud.png"
+    actions: root.actions()
+  }
+  contextDrawer: Kirigami.ContextDrawer {
+    id: contextDrawer
+  }
+  pageStack.initialPage: mainPageComponent
 
-                    width: cloudView.width
-                    height: cloudView.height * 0.15
-                    Text {
-                        anchors.centerIn: parent
-                        fontSizeMode: Text.Fit
-                        text: modelData
-                        font.pointSize: 32
-                    }
-                    onClicked: {
-                        cloudView.currentIndex = index;
-                        cloudView.focus = false;
-                        window.initializeCloud(modelData);
-                    }
-                }
-            }
-            highlight: Rectangle {
-                color: "lightgray"
-            }
-
-            Keys.onPressed: {
-                if (event.key === Qt.Key_Return) {
-                    window.initializeCloud(currentItem.text);
-                    cloudView.focus = false;
-                }
-            }
-        }
-        Rectangle {
-            id: help
-            anchors.margins: padding
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            border.color: "black"
-            radius: padding
-            color: "grey"
-            width: content.width + 2 * padding
-            height: content.height + 2 * padding
-
-            Column {
-                id: content
-                x: padding
-                y: padding
-
-                Row {
-                    Column {
-                        width: childrenRect.width + padding
-                        Row { Text { text: "D" } }
-                        Row { Text { text: "Q" } }
-                        Row { Text { text: "P" } }
-                        Row { Text { text: "DEL" } }
-                        Row { Text { text: "M" } }
-                        Row { Text { text: "F5" } }
-                    }
-                    Column {
-                        Row { Text { text: "Download a file" } }
-                        Row { Text { text: "Quit a file" } }
-                        Row { Text { text: "Pause file" } }
-                        Row { Text { text: "Delete file" } }
-                        Row { Text { text: "Move file" } }
-                        Row { Text { text: "Refresh" } }
-                    }
-                }
-                Row {
-                    ProgressBar {
-                        id: downloadProgress
-                        visible: false
-                        width: content.width
-                        height: 0.05 * root.height
-                        style: ProgressBarStyle {
-                            background: Rectangle {
-                                color: "lightgray"
-                                border.color: "gray"
-                                border.width: 1
-                            }
-                            progress: Rectangle {
-                                color: "lightsteelblue"
-                                border.color: "steelblue"
-                            }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Download"
-                        }
-                    }
-                }
-                Row {
-                    ProgressBar {
-                        id: uploadProgress
-                        visible: false
-                        width: content.width
-                        height: 0.05 * root.height
-                        style: downloadProgress.style
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Upload"
-                        }
-                    }
-                }
-            }
-        }
+  Component {
+    id: addProviderPage
+    RegisterPage {
     }
+  }
 
-    Connections {
-        target: window
-        onOpenBrowser: {
-            browser.visible = true;
-            browser.url = "";
-            browser.url = url;
-        }
-        onCloseBrowser: {
-            if (browser.visible) directory.focus = true;
-            browser.visible = false;
-        }
-        onRunListDirectory: {
-            directory.visible = true;
-            directory.focus = true;
-        }
-        onUploadProgressChanged: {
-            uploadProgress.visible = total != 0;
-            uploadProgress.value = now / total;
-        }
-        onDownloadProgressChanged: {
-            downloadProgress.visible = total != 0;
-            downloadProgress.value = now / total;
-        }
-        onCurrentItemChanged: {
-            directory.currentIndex = index;
-        }
-        onPlayQmlPlayer: player.item.mediaplayer.play()
-        onStopQmlPlayer: player.item.mediaplayer.stop()
-        onPauseQmlPlayer: {
-            if (player.item.mediaplayer.playbackState ===
-                    MediaPlayer.PausedState)
-                player.item.mediaplayer.play();
-            else
-                player.item.mediaplayer.pause();
-        }
-        onShowQmlPlayer: player.item.videooutput.visible = true
-        onHideQmlPlayer: player.item.videooutput.visible = false
+  Component {
+    id: removeProviderPage
+    RemoveProvider {
     }
+  }
 
-    ListView {
-        id: directory
-        anchors.left: leftSide.right
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.bottom: buttons.top
-        anchors.margins: padding
-        model: directoryModel
-        clip: true
-        delegate: Component {
-            MouseArea {
-                property int thumbnailWidth: thumbnailHeight
-                property int thumbnailHeight: root.height * 0.1
-                property int padding: root.padding
-                property bool isDirectory: display.is_directory
-                property string name: display.name
-
-                id: fileEntry
-                height: thumbnailHeight + 2 * padding
-                width: directory.width
-                onClicked: {
-                    directory.currentIndex = index;
-                    if (isDirectory)
-                        window.changeCurrentDirectory(index);
-                    else
-                        window.play(index);
-                }
-
-                Row {
-                    id: row
-                    x: padding
-                    y: padding
-                    Item {
-                        width: fileEntry.thumbnailWidth
-                        height: fileEntry.thumbnailHeight
-                        Image {
-                            anchors.centerIn: parent
-                            width: parent.width - 2 * padding
-                            height: parent.height - 2 * padding
-                            source: display.icon
-                        }
-                    }
-                    Image {
-                        width: fileEntry.thumbnailWidth
-                        height: fileEntry.thumbnailHeight
-                        source: display.thumbnail
-                    }
-                    Item {
-                        height: fileEntry.thumbnailHeight
-                        width: fileEntry.width -
-                               2 * (fileEntry.thumbnailWidth + padding)
-                        Text {
-                            x: fileEntry.padding
-                            id: text
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            height: contentHeight
-                            text: display.name
-                            fontSizeMode: Text.Fit
-                            font.pointSize: 16
-                            wrapMode: Text.Wrap
-                        }
-                    }
-                }
-            }
-        }
-        highlight: Rectangle {
-            color: "lightgray"
-        }
-
-        Keys.onPressed: {
-            if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Back) {
-                if (!window.goBack()) {
-                    directory.focus = false;
-                    cloudView.focus = true;
-                    browser.visible = false;
-                }
-            }
-            else if (event.key === Qt.Key_Return && currentIndex != -1) {
-                if (currentItem.isDirectory)
-                    window.changeCurrentDirectory(currentIndex);
-                else
-                    window.play(currentIndex);
-            } else if (event.key === Qt.Key_D && currentIndex != -1) {
-                downloadFileDialog.visible = true;
-                downloadFileDialog.file = currentIndex;
-                downloadFileDialog.open();
-            } else if (event.key === Qt.Key_F5)
-                window.listDirectory();
-            else if (event.key === Qt.Key_Delete && currentIndex != -1)
-                window.deleteItem(currentIndex);
-            else if (event.key === Qt.Key_M) {
-                window.markMovedItem(currentIndex)
-            }
-        }
-        FileDialog {
-            property var file
-
-            id: downloadFileDialog
-            selectFolder: true
-            onAccepted: window.downloadFile(file, fileUrl)
-            modality: Qt.NonModal
-        }
+  Component {
+    id: listDirectoryPage
+    ItemPage {
     }
+  }
 
-    MouseArea {
-        anchors.fill: parent
-        onPressed: {
-            if (!cloudView.focus)
-                directory.focus = true;
-            mouse.accepted = false;
-        }
+  Component {
+    id: mainPageComponent
+    Kirigami.ScrollablePage {
+      anchors.fill: parent
+      title: "Select Cloud Provider"
     }
-
-    Item {
-        id: buttons
-        anchors.left: leftSide.right
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        Component.onCompleted: height = childrenRect.height
-        ActionButton {
-            id: downloadButton
-            visible: uploadButton.visible
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            text: "Download"
-            onClicked: {
-                if (directory.currentIndex != -1) {
-                    downloadFileDialog.visible = true;
-                    downloadFileDialog.file = directory.currentIndex;
-                    downloadFileDialog.open();
-                }
-            }
-        }
-
-        ActionButton {
-            id: uploadButton
-            visible: !cloudView.focus
-            anchors.bottom: parent.bottom
-            anchors.right: downloadButton.left
-            text: "Upload"
-            FileDialog {
-                id: fileDialog
-                onAccepted: window.uploadFile(fileDialog.fileUrl)
-            }
-            onClicked: fileDialog.visible = true
-        }
-
-        ActionTextButton {
-            id: createDirectoryButton
-            visible: uploadButton.visible
-            anchors.bottom: parent.bottom
-            anchors.right: uploadButton.left
-            text: "Create\ndirectory"
-            placeholdertext: "Name"
-            onClicked: window.createDirectory(displaytext)
-        }
-
-        ActionTextButton {
-            id: renameButton
-            visible: uploadButton.visible
-            anchors.bottom: parent.bottom
-            anchors.right: createDirectoryButton.left
-            text: "Change\nname"
-            textfield: directory.currentItem ? directory.currentItem.name : ""
-            onClicked: window.renameItem(directory.currentIndex, displaytext)
-        }
-
-        ActionButton {
-            visible: window.movedItem != ""
-            anchors.margins: padding
-            anchors.right: renameButton.left
-            anchors.bottom: parent.bottom
-            text: "Moving " + window.movedItem
-        }
-    }
-
-    Loader {
-        id: player
-        anchors.fill: parent
-        source: "MediaPlayer.qml"
-    }
-
-    MouseArea {
-        property string url
-
-        id: browser
-        visible: false
-        anchors.fill: parent
-        enabled: visible
-        onUrlChanged: webview.item.url = url
-        Rectangle {
-            anchors.fill: parent
-            color: "green"
-        }
-        Text {
-            anchors.centerIn: parent
-            text: "<a href=\"" + browser.url + "\">Authorize library</a>"
-            wrapMode: Text.Wrap
-            onLinkActivated: Qt.openUrlExternally(link)
-        }
-        Loader {
-            id: webview
-            source: qtwebengine ? "WebView.qml" : "WebKit.qml"
-            anchors.fill: parent
-        }
-    }
+  }
 }

@@ -112,15 +112,6 @@ AC_SUBST(SOCKET_LIBS)
 AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 
-AC_ARG_WITH([vlc], AS_HELP_STRING([--with-vlc]))
-AM_CONDITIONAL([WITH_VLC], [test "x$with_vlc" = "xyes"])
-
-AC_ARG_WITH([qtmultimediawidgets], AS_HELP_STRING([--with-qtmultimediawidgets]))
-AM_CONDITIONAL([WITH_QTMULTIMEDIAWIDGETS], [test "x$with_qtmultimediawidgets" = "xyes"])
-
-AC_ARG_WITH([qmlplayer], AS_HELP_STRING([--with-qmlplayer]))
-AM_CONDITIONAL([WITH_QMLPLAYER], [test "x$with_qmlplayer" = "xyes"])
-
 HAVE_QT=0
 HAVE_QTWEBENGINE=0
 HAVE_THUMBNAILER=0
@@ -143,18 +134,6 @@ AS_IF([test "x$with_examples" = "xyes"], [
     HAVE_THUMBNAILER=1
     AC_DEFINE(WITH_THUMBNAILER)
   ], [HAVE_THUMBNAILER=0])
-  AS_IF([test "x$with_vlc" = "xyes"], [
-    PKG_CHECK_MODULES([libvlcpp], [libvlcpp])
-    PKG_CHECK_MODULES([libvlc], [libvlc])
-    PKG_CHECK_MODULES([qtwidgets], [Qt5Widgets])
-    AC_DEFINE(WITH_VLC)
-  ], [test "x$with_qtmultimediawidgets" = "xyes"], [
-    PKG_CHECK_MODULES([qtmultimediawidgets], [Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets])
-    AC_DEFINE(WITH_QTMULTIMEDIAWIDGETS)
-  ], [
-    PKG_CHECK_MODULES([qtmultimedia], [Qt5Multimedia], [], [HAVE_QT=0])
-    AC_DEFINE(WITH_QMLPLAYER)
-  ])
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])

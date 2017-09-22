@@ -2,10 +2,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/WebView.qml</file>
-        <file>qml/WebKit.qml</file>
         <file>qml/MediaPlayer.qml</file>
-        <file>qml/ActionButton.qml</file>
-        <file>qml/ActionTextButton.qml</file>
         <file>resources/directory.png</file>
         <file>resources/file.png</file>
         <file>resources/image.png</file>
@@ -13,12 +10,25 @@
         <file>resources/audio.png</file>
         <file>resources/cloud.png</file>
         <file>resources/amazons3_login.html</file>
-        <file>resources/amazons3_success.html</file>
         <file>resources/default_error.html</file>
         <file>resources/default_success.html</file>
         <file>resources/mega_login.html</file>
-        <file>resources/mega_success.html</file>
         <file>resources/webdav_login.html</file>
-        <file>resources/webdav_success.html</file>
+        <file>qml/RegisterPage.qml</file>
+        <file>resources/providers/google.png</file>
+        <file>resources/providers/amazon.png</file>
+        <file>resources/providers/amazons3.png</file>
+        <file>resources/providers/box.png</file>
+        <file>resources/providers/dropbox.png</file>
+        <file>resources/providers/mega.png</file>
+        <file>resources/providers/onedrive.png</file>
+        <file>resources/providers/pcloud.png</file>
+        <file>resources/providers/webdav.png</file>
+        <file>resources/providers/yandex.png</file>
+        <file>resources/providers/youtube.png</file>
+        <file>qml/ProviderEntry.qml</file>
+        <file>qml/ItemPage.qml</file>
+        <file>qml/RemoveProvider.qml</file>
+        <file>qtquickcontrols2.conf</file>
     </qresource>
 </RCC>

@@ -20,93 +20,64 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
-#ifdef WITH_QMLPLAYER
 #include <QGuiApplication>
-#else
-#include <QApplication>
-#endif
 
-#ifdef WITH_QTWEBENGINE
-#include <QtWebEngine>
+#ifdef WITH_QTWEBVIEW
+#include <QtWebView>
 #endif
 
 #include <QDebug>
 #include <QIcon>
-#include <QResizeEvent>
+#include <QImageReader>
+#include <QQmlApplicationEngine>
 #include <iostream>
 
-#include "MediaPlayer.h"
-#include "Window.h"
+#include "CloudContext.h"
 
-#ifndef WITH_QMLPLAYER
-
-class MainWidget : public QWidget {
- public:
-  MainWidget()
-      : media_player_(MediaPlayer::instance(this)),
-        window_(media_player_.get()),
-        container_(createWindowContainer(&window_, this)) {
-    const char* stylesheet = "background-color:black;";
-
-    setStyleSheet(stylesheet);
-    container_->setFocus();
-
-    media_player_->setStyleSheet(stylesheet);
-    media_player_->show();
-
-    connect(&window_, &Window::showWidgetPlayer, this,
-            [this]() { container_->hide(); });
-    connect(&window_, &Window::hideWidgetPlayer, this,
-            [this]() { container_->show(); });
-  }
-
- protected:
-  void resizeEvent(QResizeEvent* e) override {
-    QWidget::resizeEvent(e);
-    media_player_->resize(e->size());
-    container_->resize(e->size());
-  }
-
-  void keyPressEvent(QKeyEvent* e) override {
-    QWidget::keyPressEvent(e);
-    if (e->isAccepted()) return;
-    if (e->key() == Qt::Key_Q) {
-      window_.stop();
-      container_->setFocus();
-    } else if (e->key() == Qt::Key_P)
-      media_player_->pause();
-  }
-
- private:
-  std::unique_ptr<MediaPlayer> media_player_;
-  Window window_;
-  QWidget* container_;
-};
-
-#endif
+void register_types() {
+  qRegisterMetaType<
+      cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>>();
+  qRegisterMetaType<cloudstorage::EitherError<void>>();
+  qRegisterMetaType<cloudstorage::EitherError<std::string>>();
+  qRegisterMetaType<cloudstorage::EitherError<cloudstorage::IItem>>();
+  qmlRegisterType<CloudContext>("libcloudstorage", 1, 0, "CloudContext");
+  qmlRegisterType<ListDirectoryRequest>("libcloudstorage", 1, 0,
+                                        "ListDirectoryRequest");
+  qmlRegisterType<GetThumbnailRequest>("libcloudstorage", 1, 0,
+                                       "GetThumbnailRequest");
+  qmlRegisterType<GetUrlRequest>("libcloudstorage", 1, 0, "GetUrlRequest");
+  qmlRegisterType<CreateDirectoryRequest>("libcloudstorage", 1, 0,
+                                          "CreateDirectoryRequest");
+  qmlRegisterType<DeleteItemRequest>("libcloudstorage", 1, 0,
+                                     "DeleteItemRequest");
+  qmlRegisterType<RenameItemRequest>("libcloudstorage", 1, 0,
+                                     "RenameItemRequest");
+  qmlRegisterType<MoveItemRequest>("libcloudstorage", 1, 0, "MoveItemRequest");
+  qmlRegisterType<UploadItemRequest>("libcloudstorage", 1, 0,
+                                     "UploadItemRequest");
+  qmlRegisterType<DownloadItemRequest>("libcloudstorage", 1, 0,
+                                       "DownloadItemRequest");
+  qmlRegisterUncreatableType<CloudItem>("libcloudstorage", 1, 0, "CloudItem",
+                                        "uncreatable type");
+}
 
 int exec_cloudbrowser(int argc, char** argv) {
   try {
     Q_INIT_RESOURCE(resources);
-#ifdef WITH_QMLPLAYER
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication app(argc, argv);
-#else
-    QApplication app(argc, argv);
+
+#ifdef WITH_QTWEBVIEW
+    QtWebView::initialize();
 #endif
-#ifdef WITH_QTWEBENGINE
-    QtWebEngine::initialize();
-#endif
-#ifdef WITH_QMLPLAYER
-    Window window(nullptr);
-#else
-    MainWidget window;
-#endif
+
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
     app.setWindowIcon(QPixmap(":/resources/cloud.png"));
 
-    window.resize(800, 600);
-    window.show();
+    register_types();
+
+    QQmlApplicationEngine engine(QUrl("qrc:/qml/main.qml"));
 
     int ret = app.exec();
 
