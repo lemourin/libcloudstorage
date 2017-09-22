@@ -63,7 +63,7 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
           if (!fault_tolerant(e.left()->code_))
             return request->done(e.left());
           else
-            return request->done({});
+            return request->done(result_);
         }
         try {
           std::string page_token = "";
