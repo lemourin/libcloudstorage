@@ -444,7 +444,8 @@ void GetThumbnailRequest::update() {
 
       void done(EitherError<void> e) {
 #ifdef WITH_THUMBNAILER
-        if (e.left()) {
+        if (e.left() && (item_->type() == IItem::FileType::Image ||
+                         item_->type() == IItem::FileType::Video)) {
           auto provider = provider_;
           auto item = item_;
           auto notifier = notifier_;
