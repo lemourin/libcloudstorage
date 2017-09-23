@@ -132,6 +132,11 @@ Cloud Browser dependencies:
   when  found,  Cloud  Browser  will generate  fallback  thumbnails  if  cloud  
   provider doesn't provide any
 
+* `vlc-qt` (https://github.com/vlc-qt/vlc-qt)
+
+  when  found, Cloud  Browser  will  use  vlc-based  media  player instead  of  
+  QtMultimedia-based one
+
 Screenshot:
 
   <a href="https://i.imgur.com/NsbNvfX.png">
