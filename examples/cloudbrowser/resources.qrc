@@ -30,5 +30,7 @@
         <file>qml/ItemPage.qml</file>
         <file>qml/RemoveProvider.qml</file>
         <file>qtquickcontrols2.conf</file>
+        <file>qml/QtPlayer.qml</file>
+        <file>qml/VlcPlayer.qml</file>
     </qresource>
 </RCC>

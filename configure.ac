@@ -115,6 +115,7 @@ AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 HAVE_QT=0
 HAVE_QTWEBVIEW=0
 HAVE_THUMBNAILER=0
+HAVE_VLC_QT=0
 
 AS_IF([test "x$with_examples" = "xyes"], [
   PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
@@ -134,10 +135,15 @@ AS_IF([test "x$with_examples" = "xyes"], [
     HAVE_THUMBNAILER=1
     AC_DEFINE(WITH_THUMBNAILER)
   ], [HAVE_THUMBNAILER=0])
+  PKG_CHECK_MODULES([vlcqt], [libVLCQtQml], [
+    HAVE_VLC_QT=1
+    AC_DEFINE(WITH_VLC_QT)
+  ], [HAVE_VLC_QT=0])
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBVIEW], [test "$HAVE_QTWEBVIEW" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
+AM_CONDITIONAL([WITH_VLC_QT], [test "$HAVE_VLC_QT" -eq 1])
 
 AC_OUTPUT

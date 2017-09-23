@@ -28,11 +28,11 @@
 
 #include <QDebug>
 #include <QIcon>
-#include <QImageReader>
 #include <QQmlApplicationEngine>
-#include <iostream>
+#include <QQmlContext>
 
 #include "CloudContext.h"
+#include "Utility/Utility.h"
 
 void register_types() {
   qRegisterMetaType<
@@ -78,6 +78,16 @@ int exec_cloudbrowser(int argc, char** argv) {
     register_types();
 
     QQmlApplicationEngine engine(QUrl("qrc:/qml/main.qml"));
+#ifdef WITH_QTWEBVIEW
+    engine.rootContext()->setContextProperty("qtwebview", true);
+#else
+    engine.rootContext()->setContextProperty("qtwebview", false);
+#endif
+#ifdef WITH_VLC_QT
+    engine.rootContext()->setContextProperty("vlcqt", true);
+#else
+    engine.rootContext()->setContextProperty("vlcqt", false);
+#endif
 
     int ret = app.exec();
 
@@ -85,7 +95,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     return ret;
   } catch (const std::exception& e) {
-    std::cerr << "Exception: " << e.what() << "\n";
+    cloudstorage::util::log("Exception: ", e.what());
     return 1;
   }
 }

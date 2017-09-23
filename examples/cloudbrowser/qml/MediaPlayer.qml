@@ -1,9 +1,8 @@
 import QtQuick 2.7
-import QtMultimedia 5.6
 import org.kde.kirigami 2.0 as Kirigami
 import libcloudstorage 1.0
 
-Kirigami.ScrollablePage {
+Kirigami.Page {
   property CloudItem item
 
   id: page
@@ -17,23 +16,24 @@ Kirigami.ScrollablePage {
     item: page.item
   }
 
-  MediaPlayer {
-    id: mediaPlayer
-    source: url_request.source
-    onSourceChanged: console.log(source)
-    autoPlay: true
-  }
-  VideoOutput {
-    source: mediaPlayer
-    anchors.fill: parent
-    Rectangle {
+  Component {
+    id: vlc_player
+    VlcPlayer {
       anchors.fill: parent
-      color: "black"
-      z: -1
+      source: url_request.source
     }
   }
-  Rectangle {
+
+  Component {
+    id: qt_player
+    QtPlayer {
+      anchors.fill: parent
+      source: url_request.source
+    }
+  }
+
+  Loader {
     anchors.fill: parent
-    color: "black"
+    sourceComponent: vlcqt ? vlc_player : qt_player
   }
 }

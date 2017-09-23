@@ -34,6 +34,10 @@ libcloudbrowser_la_LIBADD += $(libffmpegthumbnailer_LIBS)
 libcloudbrowser_la_SOURCES += \
 	GenerateThumbnail.cpp GenerateThumbnail.h
 endif
+if WITH_VLC_QT
+libcloudbrowser_la_CXXFLAGS += $(vlcqt_CFLAGS)
+libcloudbrowser_la_LIBADD += $(vlcqt_LIBS)
+endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	CloudContext.moc.cpp
@@ -43,6 +47,8 @@ DEPS_res = \
 	qml/main.qml \
 	qml/WebView.qml \
 	qml/MediaPlayer.qml \
+	qml/VlcPlayer.qml \
+	qml/QtPlayer.qml \
 	qml/RegisterPage.qml \
 	qml/RemoveProvider.qml \
 	qml/ProviderEntry.qml \
