@@ -10,6 +10,7 @@
 #include <deque>
 #include <future>
 #include <mutex>
+#include <streambuf>
 #include "ICloudProvider.h"
 #include "IHttpServer.h"
 
@@ -439,6 +440,14 @@ class CloudContext : public QObject {
     CloudContext* ctx_;
   };
 
+  class DebugStream : public std::streambuf {
+   public:
+    std::streambuf::int_type overflow(int_type ch) override;
+
+   private:
+    QString current_line_;
+  };
+
   void receivedCode(std::string provider, std::string code);
   cloudstorage::ICloudProvider::Pointer provider(
       const std::string& name, const std::string& label,
@@ -446,6 +455,7 @@ class CloudContext : public QObject {
   cloudstorage::ICloudProvider* provider(const std::string& label) const;
 
   mutable std::mutex mutex_;
+  DebugStream debug_stream_;
   std::shared_ptr<cloudstorage::IHttpServerFactory> http_server_factory_;
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;
   std::shared_ptr<cloudstorage::IHttp> http_;

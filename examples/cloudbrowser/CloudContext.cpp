@@ -66,6 +66,7 @@ CloudContext::CloudContext(QObject* parent)
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           util::make_unique<MicroHttpdServerFactory>())),
       http_(util::make_unique<curl::CurlHttp>()) {
+  util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
   auto providers = settings.value("providers").toList();
@@ -85,7 +86,10 @@ CloudContext::CloudContext(QObject* parent)
   }
 }
 
-CloudContext::~CloudContext() { save(); }
+CloudContext::~CloudContext() {
+  save();
+  util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
+}
 
 void CloudContext::save() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -854,4 +858,14 @@ IHttpServer::Pointer ServerWrapperFactory::create(
     IHttpServer::ICallback::Pointer callback, const std::string& session_id,
     IHttpServer::Type) {
   return util::make_unique<HttpServerWrapper>(callback_, callback, session_id);
+}
+
+std::streambuf::int_type CloudContext::DebugStream::overflow(int_type ch) {
+  if (ch == '\n') {
+    qDebug() << current_line_;
+    current_line_ = "";
+  } else {
+    current_line_ += static_cast<char>(ch);
+  }
+  return 1;
 }
