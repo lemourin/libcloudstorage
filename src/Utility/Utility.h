@@ -60,6 +60,13 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
+template <class T, class U = T>
+T exchange(T& obj, U&& new_value) {
+  T old_value = std::move(obj);
+  obj = std::forward<U>(new_value);
+  return old_value;
+}
+
 std::string to_lower(std::string);
 std::string remove_whitespace(const std::string& str);
 Range parse_range(const std::string& str);
