@@ -77,7 +77,7 @@ class Listener : public IRequest<EitherError<void>>,
     if (status_ != IN_PROGRESS) return;
     status_ = CANCELLED;
     error_ = {IHttpRequest::Aborted, ""};
-    auto callback = std::move(callback_);
+    auto callback = util::exchange(callback_, nullptr);
     lock.unlock();
     if (callback) callback(error_, this);
     finish();
@@ -101,8 +101,6 @@ class Listener : public IRequest<EitherError<void>>,
     std::lock_guard<std::mutex> lock(mutex_);
     return status_;
   }
-
-  Callback callback() const { return callback_; }
 
  protected:
   int status_;
@@ -129,7 +127,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     }
     if (r->getLink()) link_ = r->getLink();
     node_ = r->getNodeHandle();
-    auto callback = std::move(callback_);
+    auto callback = util::exchange(callback_, nullptr);
     lock.unlock();
     if (callback) {
       if (e->getErrorCode() == 0)
@@ -150,8 +148,8 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
 
   void cancel() override {
     std::unique_lock<std::mutex> lock(mutex_);
-    auto mega = std::move(mega_);
-    auto transfer = std::move(transfer_);
+    auto mega = util::exchange(mega_, nullptr);
+    auto transfer = util::exchange(transfer_, 0);
     upload_callback_ = nullptr;
     download_callback_ = nullptr;
     lock.unlock();
@@ -202,7 +200,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       error_ = {e->getErrorCode(), e->getErrorString()};
       status_ = FAILURE;
     }
-    auto callback = std::move(callback_);
+    auto callback = util::exchange(callback_, nullptr);
     lock.unlock();
     if (callback) {
       if (e->getErrorCode() == 0)
