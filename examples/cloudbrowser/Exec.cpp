@@ -79,14 +79,14 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     QQmlApplicationEngine engine(QUrl("qrc:/qml/main.qml"));
 #ifdef WITH_QTWEBVIEW
-    engine.rootContext()->setContextProperty("qtwebview", true);
+    engine.rootContext()->setContextProperty("qtwebview", QVariant(true));
 #else
-    engine.rootContext()->setContextProperty("qtwebview", false);
+    engine.rootContext()->setContextProperty("qtwebview", QVariant(false));
 #endif
 #ifdef WITH_VLC_QT
-    engine.rootContext()->setContextProperty("vlcqt", true);
+    engine.rootContext()->setContextProperty("vlcqt", QVariant(true));
 #else
-    engine.rootContext()->setContextProperty("vlcqt", false);
+    engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
 
     int ret = app.exec();
