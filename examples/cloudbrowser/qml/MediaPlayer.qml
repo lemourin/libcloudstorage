@@ -15,20 +15,7 @@ Kirigami.Page {
     id: url_request
     context: cloud
     item: page.item
-  }
-
-  Component {
-    id: vlc_player
-    VlcPlayer {
-      source: url_request.source
-    }
-  }
-
-  Component {
-    id: qt_player
-    QtPlayer {
-      source: url_request.source
-    }
+    onSourceChanged: if (player.item) player.item.source = source
   }
 
   MouseArea {
@@ -38,7 +25,9 @@ Kirigami.Page {
     Loader {
       id: player
       anchors.fill: parent
-      sourceComponent: vlcqt ? vlc_player : qt_player
+      asynchronous: true
+      source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
+      onStatusChanged: if (status === Loader.Ready) item.source = url_request.source;
     }
     onClicked: {
       playing ^= 1;

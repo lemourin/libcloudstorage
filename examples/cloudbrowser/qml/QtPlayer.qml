@@ -6,7 +6,7 @@ Item {
   property real position: player.position / player.duration
 
   function set_position(p) {
-    player.position = p * player.duration;
+    player.seek(p * player.duration);
   }
 
   function pause() {
