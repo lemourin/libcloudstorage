@@ -286,14 +286,14 @@ Kirigami.ScrollablePage {
             anchors.fill: parent
             running: thumbnail.item && !thumbnail.done
           }
-          Kirigami.Icon {
+          Image {
             anchors.fill: parent
             anchors.margins: 5
             source: modelData.type === "directory" ?
-                      "folder" :
+                      "qrc:/resources/" + modelData.type + ".png" :
                       (!thumbnail.done ? "" :
                                          (thumbnail.source ?
-                                            thumbnail.source :
+                                            "file://" + thumbnail.source :
                                             "qrc:/resources/" + modelData.type + ".png"))
           }
           MouseArea {
