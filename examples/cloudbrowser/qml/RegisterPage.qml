@@ -14,14 +14,13 @@ Kirigami.ScrollablePage {
       id: webview_page
       title: "Authorization"
       anchors.fill: parent
-      WebView {
+      onUrlChanged: if (view.item) view.item.url = url
+      Loader {
         id: view
         anchors.fill: parent
-        url: webview_page.url
-        /*onContentsSizeChanged: {
-          if (parent.width < view.contentsSize.width)
-            zoomFactor = parent.width / view.contentsSize.width;
-        } */
+        asynchronous: true
+        source: "WebView.qml"
+        onStatusChanged: if (status === Loader.Ready) item.url = webview_page.url;
       }
     }
   }
