@@ -37,7 +37,10 @@ Kirigami.ScrollablePage {
     model: cloud.providers
     delegate: Kirigami.BasicListItem {
       onClicked: {
-        root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
+        if (qtwebview)
+          root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
+        else
+          Qt.openUrlExternally(cloud.authorizationUrl(modelData));
       }
       contentItem: ProviderEntry {
         image_width: 120
