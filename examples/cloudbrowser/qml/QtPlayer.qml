@@ -1,15 +1,28 @@
 import QtQuick 2.0
 import QtMultimedia 5.6
 
-MouseArea {
-  property alias source: mediaPlayer.source
+Item {
+  property alias source: player.source
+  property real position: player.position / player.duration
+
+  function set_position(p) {
+    player.position = p * player.duration;
+  }
+
+  function pause() {
+    player.pause();
+  }
+
+  function play() {
+    player.play();
+  }
 
   MediaPlayer {
-    id: mediaPlayer
+    id: player
     autoPlay: true
   }
   VideoOutput {
-    source: mediaPlayer
+    source: player
     anchors.fill: parent
   }
 }
