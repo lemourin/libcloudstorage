@@ -122,7 +122,7 @@ void Request<T>::cancel() {
         p->auth_callbacks_.erase(it);
       }
       if (p->auth_callbacks_.empty() && p->current_authorization_) {
-        auto auth = std::move(p->current_authorization_);
+        auto auth = util::exchange(p->current_authorization_, nullptr);
         lock.unlock();
         auth->cancel();
       }
@@ -149,14 +149,14 @@ T Request<T>::result() {
 template <typename T>
 typename Request<T>::Wrapper::Pointer Request<T>::run() {
   if (!resolver_) throw std::runtime_error("resolver not set");
-  std::move(resolver_)(this->shared_from_this());
+  util::exchange(resolver_, nullptr)(this->shared_from_this());
   return util::make_unique<Wrapper>(this->shared_from_this());
 }
 
 template <class T>
 void Request<T>::done(const T& t) {
   if (!callback_) throw std::runtime_error("no callback");
-  std::move(callback_)(t);
+  util::exchange(callback_, nullptr)(t);
   value_.set_value(t);
 }
 
