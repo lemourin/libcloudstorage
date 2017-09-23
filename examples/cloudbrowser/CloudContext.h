@@ -6,7 +6,6 @@
 #include <QQmlListProperty>
 #include <QQmlParserStatus>
 #include <QVariantList>
-#include <cmath>
 #include <condition_variable>
 #include <deque>
 #include <future>
@@ -78,6 +77,7 @@ class Request : public QObject, public QQmlParserStatus {
  private:
   CloudContext* context_;
   std::atomic_bool done_;
+
   Q_OBJECT
 };
 
