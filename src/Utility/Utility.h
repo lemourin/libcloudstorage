@@ -114,6 +114,8 @@ void log(First&& t, Rest&&... rest) {
 
 }  // namespace priv
 
+void log_stream(std::unique_ptr<std::ostream> stream);
+
 template <class... Args>
 void log(Args&&... t) {
   std::lock_guard<std::mutex> lock(priv::stream_mutex);

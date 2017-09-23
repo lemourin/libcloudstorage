@@ -428,5 +428,10 @@ const char* libcloudstorage_ascii_art() {
                                                              |___/      )";
 }
 
+void log_stream(std::unique_ptr<std::ostream> stream) {
+  std::lock_guard<std::mutex> lock(priv::stream_mutex);
+  priv::stream = std::move(stream);
+}
+
 }  // namespace util
 }  // namespace cloudstorage
