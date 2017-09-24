@@ -9,7 +9,6 @@
 
 #include "CloudProvider/CloudProvider.h"
 #include "ICloudStorage.h"
-#include "Utility/CurlHttp.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
