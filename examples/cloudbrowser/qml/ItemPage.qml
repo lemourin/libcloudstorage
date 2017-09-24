@@ -294,7 +294,7 @@ Kirigami.ScrollablePage {
                       "qrc:/resources/" + modelData.type + ".png" :
                       (!thumbnail.done ? "" :
                                          (thumbnail.source ?
-                                            "file://" + thumbnail.source :
+                                            thumbnail.source :
                                             "qrc:/resources/" + modelData.type + ".png"))
           }
           MouseArea {

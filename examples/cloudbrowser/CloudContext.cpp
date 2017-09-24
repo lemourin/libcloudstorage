@@ -425,7 +425,7 @@ void GetThumbnailRequest::update() {
       QDir::tempPath() + "/" + sanitize(item_->filename()) + "-thumbnail";
   QFile file(path);
   if (file.exists() && file.size() > 0) {
-    source_ = path;
+    source_ = QUrl::fromLocalFile(path).toString();
     set_done(true);
     emit sourceChanged();
   } else {
@@ -436,7 +436,7 @@ void GetThumbnailRequest::update() {
               if (e.left())
                 return util::log("getThumbnailAsync", e.left()->code_,
                                  e.left()->description_);
-              source_ = path;
+              source_ = QUrl::fromLocalFile(path).toString();
               emit sourceChanged();
             });
     class DownloadThumbnailCallback : public DownloadCallback {
