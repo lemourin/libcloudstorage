@@ -272,7 +272,8 @@ Kirigami.ScrollablePage {
         if (modelData.type === "directory")
           cloud.list(modelData.filename, modelData);
       }
-      contentItem: Row {
+      Row {
+        anchors.left: parent.left
         GetThumbnailRequest {
           id: thumbnail
           context: cloud
@@ -335,5 +336,4 @@ Kirigami.ScrollablePage {
       }
     }
   }
-
 }
