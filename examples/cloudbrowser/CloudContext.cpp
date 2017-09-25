@@ -153,6 +153,7 @@ void CloudContext::removeProvider(QVariant provider) {
     provider_ = r;
   }
   emit userProvidersChanged();
+  save();
 }
 
 QString CloudContext::pretty(QString provider) const {
