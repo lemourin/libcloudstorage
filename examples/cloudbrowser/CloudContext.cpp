@@ -338,6 +338,8 @@ QString CloudItem::type() const {
       return "video";
     case IItem::FileType::Directory:
       return "directory";
+    default:
+      return "";
   }
 }
 
