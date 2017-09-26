@@ -28,7 +28,7 @@ Kirigami.ScrollablePage {
   Connections {
     target: cloud
     onReceivedCode: {
-      root.pageStack.pop();
+      root.pageStack.replace(mainPageComponent);
     }
   }
 
