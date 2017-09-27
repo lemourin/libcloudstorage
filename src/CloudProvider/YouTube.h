@@ -34,8 +34,6 @@ class YouTube : public CloudProvider {
  public:
   YouTube();
 
-  void initialize(InitData&&) override;
-  Hints hints() const override;
   std::string name() const override;
   std::string endpoint() const override;
 
@@ -67,8 +65,6 @@ class YouTube : public CloudProvider {
    public:
     std::string authorizeLibraryUrl() const override;
   };
-
-  std::string youtube_dl_url_;
 };
 
 }  // namespace cloudstorage

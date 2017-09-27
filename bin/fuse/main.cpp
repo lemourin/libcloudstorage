@@ -117,7 +117,6 @@ cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
   init_data.token_ = config["token"].asString();
   init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
   init_data.hints_["access_token"] = config["access_token"].asString();
-  init_data.hints_["youtube_dl_url"] = config["youtube_dl_url"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
   return ICloudStorage::create()->provider(config["type"].asString(),
                                            std::move(init_data));

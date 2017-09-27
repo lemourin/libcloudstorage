@@ -168,21 +168,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
 }  // namespace
 
 YouTube::YouTube()
-    : CloudProvider(util::make_unique<Auth>()),
-      youtube_dl_url_("http://youtube-dl.appspot.com") {}
-
-void YouTube::initialize(InitData&& data) {
-  setWithHint(data.hints_, "youtube_dl_url",
-              [this](std::string url) { youtube_dl_url_ = url; });
-  CloudProvider::initialize(std::move(data));
-}
-
-ICloudProvider::Hints YouTube::hints() const {
-  Hints result = {{"youtube_dl_url", youtube_dl_url_}};
-  auto t = CloudProvider::hints();
-  result.insert(t.begin(), t.end());
-  return result;
-}
+    : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string YouTube::name() const { return "youtube"; }
 
