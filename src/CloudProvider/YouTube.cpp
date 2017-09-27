@@ -24,6 +24,7 @@
 #include "YouTube.h"
 
 #include <json/json.h>
+#include <algorithm>
 #include <cstring>
 
 #include "Request/DownloadFileRequest.h"
@@ -68,6 +69,102 @@ std::string to_string(YouTubeItem item) {
   return util::to_base64(Json::FastWriter().write(json));
 }
 
+EitherError<std::string> descramble(const std::string& scrambled,
+                                    std::stringstream& stream) {
+  auto find_descrambler = [](std::stringstream& stream) {
+    auto player = stream.str();
+    const std::string descrambler_search = ".set(\"signature\",";
+    auto it = player.find(descrambler_search);
+    if (it == std::string::npos)
+      throw std::logic_error("can't find descrambler name");
+    stream.seekg(it + descrambler_search.length());
+    std::string descrambler;
+    std::getline(stream, descrambler, '(');
+    return descrambler;
+  };
+  auto find_helper = [](const std::string& code, std::stringstream& stream) {
+    auto player = stream.str();
+    auto helper = code.substr(0, code.find_first_of('.'));
+    const std::string helper_search = "var " + helper + "={";
+    auto it = player.find(helper_search);
+    if (it == std::string::npos)
+      throw std::logic_error("can't find helper functions");
+    stream.seekg(it + helper_search.length());
+    std::string result;
+    int cnt = 1;
+    char c;
+    while (cnt != 0 && stream.read(&c, 1)) {
+      if (c == '{')
+        cnt++;
+      else if (c == '}')
+        cnt--;
+      if (cnt != 0) result += c;
+    }
+    return result;
+  };
+  auto transformations = [](const std::string& helper) {
+    std::stringstream stream(helper);
+    std::unordered_map<std::string, std::string> result;
+    while (stream) {
+      std::string key, value;
+      stream >> std::ws;
+      std::getline(stream, key, ':');
+      std::getline(stream, value, '}');
+      if (stream) result[key] = value;
+      std::string dummy;
+      std::getline(stream, dummy, ',');
+    }
+    return result;
+  };
+  auto find_descrambler_code = [](const std::string& name,
+                                  std::stringstream& stream) {
+    auto player = stream.str();
+    const std::string function_search = name + "=function(a){";
+    auto it = player.find(function_search);
+    if (it == std::string::npos)
+      throw std::logic_error("can't find descrambler definition");
+    stream.seekg(it + function_search.length());
+    std::string code;
+    std::getline(stream, code, ';');
+    std::getline(stream, code, '}');
+    return code.substr(0, code.find_last_of(';') + 1);
+  };
+  auto transform = [](std::string code, const std::string& function,
+                      const std::unordered_map<std::string, std::string>& t) {
+    std::stringstream stream(function);
+    std::string operation;
+    while (std::getline(stream, operation, ';')) {
+      std::stringstream stream(operation);
+      std::string func_name, arg, dummy;
+      std::getline(stream, dummy, '.');
+      std::getline(stream, func_name, '(');
+      std::getline(stream, dummy, ',');
+      std::getline(stream, arg, ')');
+      auto func = t.find(func_name);
+      if (func == t.end())
+        throw std::logic_error("invalid transformation function");
+      auto value = std::stol(arg);
+      if (func->second.find("splice") != std::string::npos)
+        code.erase(0, value);
+      else if (func->second.find("reverse") != std::string::npos)
+        std::reverse(code.begin(), code.end());
+      else if (func->second.find("a[0]=a[b%a.length];") != std::string::npos)
+        std::swap(code[0], code[value % code.length()]);
+      else
+        throw std::logic_error("unknown transformation");
+    }
+    return code;
+  };
+  try {
+    auto descrambler = find_descrambler(stream);
+    auto function = find_descrambler_code(descrambler, stream);
+    return transform(scrambled, function,
+                     transformations(find_helper(function, stream)));
+  } catch (const std::exception& e) {
+    return Error{IHttpRequest::Failure, e.what()};
+  }
+}
+
 }  // namespace
 
 YouTube::YouTube()
@@ -109,26 +206,6 @@ ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
       ->run();
 }
 
-IHttpRequest::Pointer YouTube::getItemUrlRequest(const IItem& item,
-                                                 std::ostream&) const {
-  auto request = http()->create(youtube_dl_url_ + "/api/info", "GET");
-  auto id_data = from_string(item.id());
-  request->setParameter("format", id_data.audio ? "bestaudio" : "best");
-  request->setParameter("url", "http://youtube.com/watch?v=" + id_data.id);
-  return request;
-}
-
-std::string YouTube::getItemUrlResponse(const IItem&,
-                                        const IHttpRequest::HeaderParameters&,
-                                        std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-  for (auto v : response["info"]["formats"])
-    if (v["format_id"] == response["info"]["format_id"])
-      return v["url"].asString();
-  throw std::logic_error("invalid response");
-}
-
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   return std::make_shared<Request<EitherError<IItem>>>(
@@ -167,20 +244,74 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       ->run();
 }
 
-IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
-                                                  std::ostream&) const {
-  auto id_data = from_string(full_id);
-  if (!id_data.playlist) {
-    auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
-    request->setParameter("part", "contentDetails,snippet");
-    request->setParameter("id", id_data.id);
-    return request;
-  } else {
-    auto request = http()->create(endpoint() + "/youtube/v3/playlists", "GET");
-    request->setParameter("part", "contentDetails,snippet");
-    request->setParameter("id", id_data.id);
-    return request;
-  }
+ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
+    IItem::Pointer item, GetItemUrlCallback callback) {
+  auto get_config = [](std::stringstream& stream) {
+    std::string page = stream.str();
+    std::string player_str = "ytplayer.config = ";
+    auto it = page.find(player_str);
+    if (it == std::string::npos)
+      throw std::logic_error("ytplayer.config not found");
+    stream.seekg(it + player_str.length());
+    Json::Value json;
+    stream >> json;
+    return json;
+  };
+  auto get_url = [=](Request<EitherError<std::string>>::Pointer r,
+                     Json::Value json) {
+    std::string url;
+    std::stringstream stream(
+        json["args"]["url_encoded_fmt_stream_map"].asString());
+    std::getline(stream, url, ',');
+    std::stringstream ss(url);
+    std::string token, signature, scrambled_signature, video_url;
+    while (std::getline(ss, token, '&')) {
+      std::stringstream stream(token);
+      std::string key, value;
+      std::getline(stream, key, '=');
+      std::getline(stream, value, '=');
+      if (key == "s")
+        scrambled_signature = value;
+      else if (key == "sig")
+        signature = "&signature=" + value;
+      else if (key == "url")
+        video_url = util::Url::unescape(value);
+    }
+    if (video_url.empty()) throw std::logic_error("url not found");
+    if (scrambled_signature.empty()) return r->done(video_url + signature);
+    r->send(
+        [=](util::Output) {
+          return http()->create("http://youtube.com" +
+                                json["assets"]["js"].asString());
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          auto signature = descramble(scrambled_signature, e.right()->output());
+          if (signature.left())
+            r->done(signature.left());
+          else
+            r->done(video_url + "&signature=" + *signature.right());
+        });
+  };
+  return std::make_shared<Request<EitherError<std::string>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<std::string>>::Pointer r) {
+               r->send(
+                   [=](util::Output) {
+                     return http()->create("http://youtube.com/watch?v=" +
+                                           from_string(item->id()).id);
+                   },
+                   [=](EitherError<Response> e) {
+                     if (e.left()) return r->done(e.left());
+                     try {
+                       auto json = get_config(e.right()->output());
+                       get_url(r, json);
+                     } catch (const std::exception& e) {
+                       r->done(Error{IHttpRequest::Failure, e.what()});
+                     }
+                   });
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer YouTube::listDirectoryRequest(

@@ -50,10 +50,8 @@ class YouTube : public CloudProvider {
                                                  Range) override;
 
  private:
-  IHttpRequest::Pointer getItemUrlRequest(
-      const IItem&, std::ostream& input_stream) const override;
-  IHttpRequest::Pointer getItemDataRequest(
-      const std::string&, std::ostream& input_stream) const override;
+  GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
+                                             GetItemUrlCallback) override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
@@ -62,9 +60,6 @@ class YouTube : public CloudProvider {
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
-  std::string getItemUrlResponse(const IItem&,
-                                 const IHttpRequest::HeaderParameters&,
-                                 std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&, std::string kind, bool audio) const;
 
