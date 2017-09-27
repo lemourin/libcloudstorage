@@ -167,8 +167,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
 
 }  // namespace
 
-YouTube::YouTube()
-    : CloudProvider(util::make_unique<Auth>()) {}
+YouTube::YouTube() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string YouTube::name() const { return "youtube"; }
 
@@ -245,23 +244,31 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
   };
   auto get_url = [=](Request<EitherError<std::string>>::Pointer r,
                      Json::Value json) {
-    std::string url;
     std::stringstream stream(
-        json["args"]["url_encoded_fmt_stream_map"].asString());
-    std::getline(stream, url, ',');
-    std::stringstream ss(url);
-    std::string token, signature, scrambled_signature, video_url;
-    while (std::getline(ss, token, '&')) {
-      std::stringstream stream(token);
-      std::string key, value;
-      std::getline(stream, key, '=');
-      std::getline(stream, value, '=');
-      if (key == "s")
-        scrambled_signature = value;
-      else if (key == "sig")
-        signature = "&signature=" + value;
-      else if (key == "url")
-        video_url = util::Url::unescape(value);
+        item->type() == IItem::FileType::Audio
+            ? json["args"]["adaptive_fmts"].asString()
+            : json["args"]["url_encoded_fmt_stream_map"].asString());
+    std::string token, signature, scrambled_signature, url, video_url;
+    while (std::getline(stream, url, ',')) {
+      std::stringstream ss(url);
+      std::string type;
+      while (std::getline(ss, token, '&')) {
+        std::stringstream stream(token);
+        std::string key, value;
+        std::getline(stream, key, '=');
+        std::getline(stream, value, '=');
+        if (key == "s")
+          scrambled_signature = value;
+        else if (key == "sig")
+          signature = "&signature=" + value;
+        else if (key == "type")
+          type = value;
+        else if (key == "url")
+          video_url = util::Url::unescape(value);
+      }
+      auto type_str =
+          item->type() == IItem::FileType::Video ? "video" : "audio";
+      if (type.find(type_str) != std::string::npos) break;
     }
     if (video_url.empty()) throw std::logic_error("url not found");
     if (scrambled_signature.empty()) return r->done(video_url + signature);
