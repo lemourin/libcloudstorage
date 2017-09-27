@@ -28,7 +28,8 @@ Kirigami.ScrollablePage {
   Connections {
     target: cloud
     onReceivedCode: {
-      root.pageStack.replace(mainPageComponent);
+      if (root.pageStack.currentItem.title === "Authorization")
+        root.pageStack.pop();
     }
   }
 
