@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QQmlEngine>
 #include <QSettings>
 #include <QUrl>
 #include "ICloudStorage.h"
@@ -363,8 +364,10 @@ QQmlListProperty<CloudItem> ListDirectoryRequest::list() {
       },
       [](QQmlListProperty<CloudItem>* lst, int idx) {
         auto t = reinterpret_cast<ListDirectoryRequest*>(lst->data);
-        return new CloudItem(t->item_->provider(),
-                             t->list_[static_cast<size_t>(idx)]);
+        auto item = new CloudItem(t->item_->provider(),
+                                  t->list_[static_cast<size_t>(idx)]);
+        QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
+        return item;
       });
   return r;
 }
