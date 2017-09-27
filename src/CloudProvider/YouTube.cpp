@@ -262,12 +262,12 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
         else if (key == "sig")
           signature = "&signature=" + value;
         else if (key == "type")
-          type = value;
+          type = util::Url::unescape(value);
         else if (key == "url")
           video_url = util::Url::unescape(value);
       }
       auto type_str =
-          item->type() == IItem::FileType::Video ? "video" : "audio";
+          item->type() == IItem::FileType::Video ? "video" : "audio/webm";
       if (type.find(type_str) != std::string::npos) break;
     }
     if (video_url.empty()) throw std::logic_error("url not found");
