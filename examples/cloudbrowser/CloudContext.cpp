@@ -20,8 +20,6 @@
 
 using namespace cloudstorage;
 
-const uint16_t HTTP_PORT = 12345;
-
 namespace {
 
 class DownloadCallback : public IDownloadFileCallback {
