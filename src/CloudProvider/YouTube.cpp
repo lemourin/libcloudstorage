@@ -307,6 +307,22 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
       ->run();
 }
 
+IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
+                                                  std::ostream&) const {
+  auto id_data = from_string(full_id);
+  if (!id_data.playlist) {
+    auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
+    request->setParameter("part", "contentDetails,snippet");
+    request->setParameter("id", id_data.id);
+    return request;
+  } else {
+    auto request = http()->create(endpoint() + "/youtube/v3/playlists", "GET");
+    request->setParameter("part", "contentDetails,snippet");
+    request->setParameter("id", id_data.id);
+    return request;
+  }
+}
+
 IHttpRequest::Pointer YouTube::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY_ID) {
