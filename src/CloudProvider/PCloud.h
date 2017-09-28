@@ -41,7 +41,8 @@ class PCloud : public CloudProvider {
   void authorizeRequest(IHttpRequest& r) const override;
 
   DownloadFileRequest::Pointer downloadFileAsync(
-      IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range);
+      IItem::Pointer i, IDownloadFileCallback::Pointer cb,
+      Range range) override;
 
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;

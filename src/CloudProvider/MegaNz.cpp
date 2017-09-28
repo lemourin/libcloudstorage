@@ -160,7 +160,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     Listener::cancel();
   }
 
-  void onTransferStart(MegaApi* mega, MegaTransfer* transfer) {
+  void onTransferStart(MegaApi* mega, MegaTransfer* transfer) override {
     std::lock_guard<std::mutex> lock(mutex_);
     if (status_ == CANCELLED) {
       mega->cancelTransfer(transfer);

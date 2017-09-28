@@ -75,7 +75,7 @@ class YandexDisk : public CloudProvider {
                                   std::istream&) const override;
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
-                                         std::istream& response) const;
+                                         std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
   void authorizeRequest(IHttpRequest&) const override;
