@@ -283,8 +283,7 @@ void FileSystem::getattr(const std::string& path, GetItemCallback callback) {
 
 void FileSystem::get_path(FileId node, const std::string& path,
                           GetItemCallback callback) {
-  if (path.empty() || path == "/")
-    return callback(std::static_pointer_cast<INode>(get(node)));
+  if (path.empty() || path == "/") return getattr(node, callback);
   auto it = path.find_first_of('/', 1);
   auto filename =
       it == std::string::npos ? path.substr(1) : path.substr(1, it - 1);
