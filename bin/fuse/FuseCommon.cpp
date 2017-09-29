@@ -108,9 +108,25 @@ std::vector<IFileSystem::ProviderEntry> providers(
   return std::move(providers);
 }
 
-std::string default_temporary_directory() { return "/tmp/"; }
+std::string default_temporary_directory() {
+#ifdef _WIN32
+  const char *temp = getenv("TEMP");
+  return temp ? std::string(temp) + "\\" : ".\\";
+#else
+  return "/tmp/";
+#endif
+}
 
-std::string default_home_directory() { return getenv("HOME"); }
+std::string default_home_directory() {
+#ifdef _WIN32
+  const char *drive = getenv("Homedrive");
+  const char *path = getenv("Homepath");
+  return (drive && path) ? std::string(drive) + path : ".";
+#else
+  const char *home = getenv("HOME");
+  return home ? home : ".";
+#endif
+}
 
 template <class Backend>
 int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
