@@ -70,17 +70,23 @@ AS_IF([test "x$with_microhttpd" != "xno"], [
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "$HAVE_MICROHTTPD" -eq 1])
 
 HAVE_FUSE=0
+HAVE_LEGACY_FUSE=0
 AC_ARG_WITH([fuse], AS_HELP_STRING([--with-fuse]))
 AS_IF([test "x$with_fuse" != "xno"], [
   PKG_CHECK_MODULES([fuse], [fuse3], [
     HAVE_FUSE=1
     AC_DEFINE(WITH_FUSE)
   ], [
-    HAVE_FUSE=0
-    AS_IF([test "x$with_fuse" = "xyes"], [AC_MSG_ERROR([fuse3 not found])])
+    PKG_CHECK_MODULES([fuse2], [fuse], [
+      HAVE_LEGACY_FUSE=1
+      AC_DEFINE(WITH_LEGACY_FUSE)
+    ], [
+      AS_IF([test "x$with_fuse" = "xyes"], [AC_MSG_ERROR([fuse3 not found])])
+    ])
   ])
 ])
 AM_CONDITIONAL([WITH_FUSE], [test "$HAVE_FUSE" -eq 1])
+AM_CONDITIONAL([WITH_LEGACY_FUSE], [test "$HAVE_LEGACY_FUSE" -eq 1])
 
 case "${host_os}" in
   *mingw32*)
