@@ -203,9 +203,10 @@ fuse_operations high_level_operations() {
 }
 
 int fuse_parse_cmdline(struct fuse_args *args, fuse_cmdline_opts *opts) {
-  fuse_parse_cmdline(args, &opts->mountpoint, &opts->singlethread,
-                     &opts->foreground);
+  int ret = fuse_parse_cmdline(args, &opts->mountpoint, &opts->singlethread,
+                               &opts->foreground);
   opts->singlethread ^= 1;
+  return ret;
 }
 
 void fuse_cmdline_help() {}
