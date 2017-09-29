@@ -130,6 +130,10 @@ std::string default_home_directory() {
 
 template <class Backend>
 int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
+  if (!opts->mountpoint) {
+    std::cerr << "missing mountpoint\n";
+    return 1;
+  }
   auto ctx = new IFileSystem *;
   Backend fuse(args, opts->mountpoint, ctx);
   fuse_daemonize(opts->foreground);
