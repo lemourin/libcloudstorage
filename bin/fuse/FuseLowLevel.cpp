@@ -6,7 +6,9 @@
 #include <iostream>
 #include <sstream>
 
-#include "FuseHighLevel.h"
+#include "FuseCommon.h"
+#include "IFileSystem.h"
+#include "Utility/CurlHttp.h"
 #include "Utility/Utility.h"
 
 namespace cloudstorage {
@@ -194,6 +196,48 @@ fuse_lowlevel_ops low_level_operations() {
   operations.mknod = mknod;
   operations.release = release;
   return operations;
+}
+
+FuseLowLevel::FuseLowLevel(fuse_args *args, const char *mountpoint,
+                           void *userdata) {
+  auto operations = cloudstorage::low_level_operations();
+  session_ = fuse_session_new(args, &operations, sizeof(operations), userdata);
+  fuse_set_signal_handlers(session_);
+  fuse_session_mount(session_, mountpoint);
+}
+
+FuseLowLevel::~FuseLowLevel() {
+  fuse_session_unmount(session_);
+  fuse_remove_signal_handlers(session_);
+  fuse_session_destroy(session_);
+}
+
+int FuseLowLevel::run(bool singlethread, bool clone_fd) const {
+  return singlethread ? fuse_session_loop(session_)
+                      : fuse_session_loop_mt(session_, clone_fd);
+}
+
+int fuse_lowlevel(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
+  auto ctx = new IFileSystem *;
+  FuseLowLevel fuse(args, opts->mountpoint, ctx);
+  fuse_daemonize(opts->foreground);
+  auto http = std::make_shared<curl::CurlHttp>();
+  auto temporary_directory = json["temporary_directory"].asString();
+  if (temporary_directory.empty())
+    temporary_directory = default_temporary_directory();
+  auto p = providers(json["providers"], http, temporary_directory);
+  *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
+                             temporary_directory)
+             .release();
+  int ret = fuse.run(opts->singlethread, opts->clone_fd);
+  for (size_t i = 0; i < p.size(); i++) {
+    json["providers"][int(i)]["token"] = p[i].provider_->token();
+    json["providers"][int(i)]["access_token"] =
+        p[i].provider_->hints()["access_token"];
+  }
+  delete *ctx;
+  delete ctx;
+  return ret;
 }
 
 }  // namespace cloudstorage

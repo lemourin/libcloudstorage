@@ -2,7 +2,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
 	-I$(top_srcdir)/src \
-	$(fuse_CFLAGS) \
 	$(libjsoncpp_CFLAGS)
 
 AM_LDFLAGS = \
@@ -12,12 +11,23 @@ AM_LDFLAGS = \
 bin_PROGRAMS = libcloudstorage-fuse
 
 libcloudstorage_fuse_SOURCES = \
-	main.cpp \
-	FuseLowLevel.h FuseLowLevel.cpp \
-	FuseHighLevel.h FuseHighLevel.cpp	
+	FuseCommon.h FuseCommon.cpp \
+	main.cpp
 
 libcloudstorage_fuse_LDADD = \
 	../../src/libcloudstorage.la \
-	$(fuse_LIBS) \
 	$(libjsoncpp_LIBS)
 
+if WITH_FUSE
+AM_CXXFLAGS += $(fuse_CFLAGS)
+libcloudstorage_fuse_SOURCES += \
+	FuseLowLevel.h FuseLowLevel.cpp
+libcloudstorage_fuse_LDADD += $(fuse_LIBS)
+endif
+
+if WITH_LEGACY_FUSE
+AM_CXXFLAGS += $(fuse2_CFLAGS)
+libcloudstorage_fuse_SOURCES += \
+	FuseHighLevel.h FuseHighLevel.cpp
+libcloudstorage_fuse_LDADD += $(fuse2_LIBS)
+endif
