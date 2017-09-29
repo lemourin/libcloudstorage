@@ -18,7 +18,6 @@ struct FuseLowLevel {
 };
 
 fuse_lowlevel_ops low_level_operations();
-int fuse_lowlevel(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json);
 
 }  // namespace cloudstorage
 

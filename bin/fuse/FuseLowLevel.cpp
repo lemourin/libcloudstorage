@@ -217,27 +217,4 @@ int FuseLowLevel::run(bool singlethread, bool clone_fd) const {
                       : fuse_session_loop_mt(session_, clone_fd);
 }
 
-int fuse_lowlevel(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
-  auto ctx = new IFileSystem *;
-  FuseLowLevel fuse(args, opts->mountpoint, ctx);
-  fuse_daemonize(opts->foreground);
-  auto http = std::make_shared<curl::CurlHttp>();
-  auto temporary_directory = json["temporary_directory"].asString();
-  if (temporary_directory.empty())
-    temporary_directory = default_temporary_directory();
-  auto p = providers(json["providers"], http, temporary_directory);
-  *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
-                             temporary_directory)
-             .release();
-  int ret = fuse.run(opts->singlethread, opts->clone_fd);
-  for (size_t i = 0; i < p.size(); i++) {
-    json["providers"][int(i)]["token"] = p[i].provider_->token();
-    json["providers"][int(i)]["access_token"] =
-        p[i].provider_->hints()["access_token"];
-  }
-  delete *ctx;
-  delete ctx;
-  return ret;
-}
-
 }  // namespace cloudstorage

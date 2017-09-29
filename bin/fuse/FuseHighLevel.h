@@ -32,7 +32,6 @@ struct FuseHighLevel {
 int fuse_parse_cmdline(struct fuse_args *, fuse_cmdline_opts *);
 void fuse_cmdline_help();
 fuse_operations high_level_operations();
-int fuse_highlevel(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json);
 
 }  // namespace cloudstorage
 
