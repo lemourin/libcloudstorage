@@ -87,8 +87,8 @@ Optional dependency notes:
 FUSE:
 =====
 
-In `bin/fuse`  there is  implemented a  user space  file system  using `fuse3`  
-(https://github.com/libfuse/libfuse) library. It will be build when `fuse3` is  
+In `bin/fuse`  there is  implemented a  user space  file  system  using `fuse`  
+(https://github.com/libfuse/libfuse) library. It will be  build when `fuse` is  
 found  (unless explicitly  disabled  with `--with-fuse=no`).  The file  system  
 is  implemented  using `libfuse`'s  low  level  api;  however high  level  api  
 implementation is  also provided. The  file system supports  moving, renaming,  
@@ -98,6 +98,11 @@ asynchronous  I/O to  its full  potency. It  doesn't cache  files anywhere  by
 itself which implies no local storage  overhead. Most cloud providers are fast  
 enough when it comes to watching  videos; with `mega.nz` being the fastest and  
 `Google Drive` being the slowest.
+
+## Windows:
+
+It is possible  to run `libcloudstorage-fuse` under  `Windows` using `Dokan`'s  
+(https://github.com/dokan-dev/dokany) `fuse` wrapper.
 
 ## Usage:
 
