@@ -60,7 +60,6 @@ struct Range {
 };
 
 const Range FullRange = {Range::Begin, Range::Full};
-const Range InvalidRange = {-1ULL, 0};
 
 /**
  * Class representing pending request. When there is no reference to the

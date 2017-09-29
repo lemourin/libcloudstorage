@@ -128,7 +128,7 @@ std::string remove_whitespace(const std::string& str) {
 Range parse_range(const std::string& r) {
   std::string str = remove_whitespace(r);
   size_t l = strlen("bytes=");
-  if (str.substr(0, l) != "bytes=") return InvalidRange;
+  if (str.substr(0, l) != "bytes=") return {0, 0};
   std::string n1, n2;
   size_t it = l;
   while (it < r.length() && str[it] != '-') n1 += str[it++];
