@@ -77,10 +77,10 @@ DEPS_res = \
 	resources/webdav_login.html
 
 %.moc.cpp: %.h
-	$(MOC) -o $@ $<
+	$(AM_V_GEN)$(MOC) -o $@ $<
 
 resources.cpp: resources.qrc $(DEPS_res)
-	$(RCC) --name resources -o $@ $<
+	$(AM_V_GEN)$(RCC) --name resources -o $@ $<
 
 EXTRA_DIST = resources.qrc $(DEPS_res)
 
