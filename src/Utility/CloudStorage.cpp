@@ -28,6 +28,7 @@
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
+#include "CloudProvider/HubiC.h"
 #include "CloudProvider/OneDrive.h"
 #include "CloudProvider/PCloud.h"
 #include "CloudProvider/WebDav.h"
@@ -175,6 +176,7 @@ CloudStorage::CloudStorage() {
   add([]() { return std::make_shared<WebDav>(); });
   add([]() { return std::make_shared<AmazonS3>(); });
   add([]() { return std::make_shared<PCloud>(); });
+  add([]() { return std::make_shared<HubiC>(); });
 #ifdef WITH_MEGA
   add([]() { return std::make_shared<MegaNz>(); });
 #endif

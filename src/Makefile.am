@@ -28,6 +28,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/YandexDisk.cpp \
 	CloudProvider/WebDav.cpp \
 	CloudProvider/PCloud.cpp \
+	CloudProvider/HubiC.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -63,6 +64,7 @@ noinst_HEADERS = \
 	CloudProvider/YandexDisk.h \
 	CloudProvider/WebDav.h \
 	CloudProvider/PCloud.h \
+	CloudProvider/HubiC.h \
 	Request/HttpCallback.h \
 	Request/AuthorizeRequest.h \
 	Request/Request.h \

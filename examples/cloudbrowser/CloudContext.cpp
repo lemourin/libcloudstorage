@@ -164,6 +164,7 @@ QString CloudContext::pretty(QString provider) const {
       {"box", "Box"},
       {"dropbox", "Dropbox"},
       {"google", "Google Drive"},
+      {"hubic", "hubiC"},
       {"mega", "Mega"},
       {"onedrive", "One Drive"},
       {"pcloud", "pCloud"},

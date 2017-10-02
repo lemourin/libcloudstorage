@@ -32,5 +32,6 @@
         <file>qtquickcontrols2.conf</file>
         <file>qml/QtPlayer.qml</file>
         <file>qml/VlcPlayer.qml</file>
+        <file>resources/providers/hubic.png</file>
     </qresource>
 </RCC>
