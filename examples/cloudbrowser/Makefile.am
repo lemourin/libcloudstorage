@@ -11,8 +11,7 @@ cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
 	CloudContext.cpp CloudContext.h \
-	Exec.cpp Exec.h \
-	resources.cpp
+	Exec.cpp Exec.h
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
@@ -23,10 +22,8 @@ libcloudbrowser_la_LIBADD = \
 	$(qt_LIBS)
 
 if WITH_QTWEBVIEW
-libcloudbrowser_la_CXXFLAGS += \
-	$(qtwebview_CFLAGS)
-libcloudbrowser_la_LIBADD += \
-	$(qtwebview_LIBS)
+libcloudbrowser_la_CXXFLAGS += $(qtwebview_CFLAGS)
+libcloudbrowser_la_LIBADD += $(qtwebview_LIBS)
 endif
 if WITH_THUMBNAILER
 libcloudbrowser_la_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
@@ -40,7 +37,8 @@ libcloudbrowser_la_LIBADD += $(vlcqt_LIBS)
 endif
 
 nodist_libcloudbrowser_la_SOURCES = \
-	CloudContext.moc.cpp
+	CloudContext.moc.cpp \
+	resources.cpp
 
 DEPS_res = \
 	qtquickcontrols2.conf \
@@ -84,4 +82,5 @@ resources.cpp: resources.qrc $(DEPS_res)
 
 EXTRA_DIST = resources.qrc $(DEPS_res)
 
-BUILT_SOURCES = $(nodist_cloudbrowser_SOURCES)
+BUILT_SOURCES = $(nodist_libcloudbrowser_la_SOURCES)
+CLEANFILES = $(BUILT_SOURCES)
