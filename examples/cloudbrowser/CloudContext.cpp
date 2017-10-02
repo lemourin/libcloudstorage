@@ -137,7 +137,9 @@ QObject* CloudContext::root(QVariant provider) {
   auto label = provider.toMap()["label"].toString().toStdString();
   for (auto&& i : provider_)
     if (i.label_ == label) {
-      return new CloudItem(i.provider_, i.provider_->rootDirectory(), this);
+      auto item = new CloudItem(i.provider_, i.provider_->rootDirectory());
+      QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
+      return item;
     }
   return nullptr;
 }
