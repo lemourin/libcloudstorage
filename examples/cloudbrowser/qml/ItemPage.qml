@@ -228,6 +228,7 @@ Kirigami.ScrollablePage {
     footer: Kirigami.ItemViewHeader {
       title: ""
       visible: cloud.request.length > 0
+      width: parent.width
       height: 150
       ListView {
         anchors.fill: parent
@@ -237,7 +238,8 @@ Kirigami.ScrollablePage {
           width: parent.width
           height: 40
           Item {
-            width: 300
+            anchors.left: parent.left
+            anchors.right: icon.left
             height: parent.height
             clip: true
             Kirigami.Label {
@@ -247,6 +249,7 @@ Kirigami.ScrollablePage {
             }
           }
           Kirigami.Icon {
+            id: icon
             anchors.right: progress.left
             anchors.margins: 10
             width: 20
@@ -255,6 +258,8 @@ Kirigami.ScrollablePage {
           }
           Controls.ProgressBar {
             id: progress
+            anchors.right: parent.right
+            anchors.margins: 10
             from: 0
             to: modelData.total
             value: modelData.now
