@@ -629,6 +629,7 @@ void RenameItemRequest::update() {
   connect(object, &RequestNotifier::finishedItem, this,
           [=](EitherError<IItem> e) {
             set_done(true);
+            name_ = "";
             emit itemRenamed();
             if (e.left())
               return util::log("RenameItem", e.left()->code_,
