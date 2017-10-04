@@ -51,6 +51,18 @@ std::string CryptoPP::hmac_sha256(const std::string& key,
   return result;
 }
 
+std::string CryptoPP::hmac_sha1(const std::string& key,
+                                const std::string& message) {
+  std::string mac;
+  ::CryptoPP::HMAC<::CryptoPP::SHA1> hmac((byte*)key.c_str(), key.length());
+  ::CryptoPP::StringSource(
+      message, true,
+      new ::CryptoPP::HashFilter(hmac, new ::CryptoPP::StringSink(mac)));
+  std::string result;
+  ::CryptoPP::StringSource(mac, true, new ::CryptoPP::StringSink(result));
+  return result;
+}
+
 std::string CryptoPP::hex(const std::string& hash) {
   std::string result;
   ::CryptoPP::StringSource(

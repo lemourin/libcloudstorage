@@ -33,6 +33,8 @@ class CryptoPP : public ICrypto {
   std::string sha256(const std::string& message) override;
   std::string hmac_sha256(const std::string& key,
                           const std::string& message) override;
+  std::string hmac_sha1(const std::string& key,
+                        const std::string& message) override;
   std::string hex(const std::string& hash) override;
 };
 

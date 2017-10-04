@@ -54,6 +54,14 @@ class ICrypto {
    */
   virtual std::string hmac_sha256(const std::string& key,
                                   const std::string& message) = 0;
+  /**
+   * Computes HMAC-SHA1
+   * @param key
+   * @param message
+   * @return HMAC-SHA1 hash
+   */
+  virtual std::string hmac_sha1(const std::string& key,
+                                const std::string& message) = 0;
 
   /**
    * Converts hash to hex string.
