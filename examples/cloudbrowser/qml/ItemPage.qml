@@ -280,6 +280,7 @@ Kirigami.ScrollablePage {
       }
       Row {
         anchors.left: parent.left
+        anchors.right: parent.right
         GetThumbnailRequest {
           id: thumbnail
           context: cloud
