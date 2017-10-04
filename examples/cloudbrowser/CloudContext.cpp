@@ -670,6 +670,8 @@ void MoveItemRequest::update() {
   connect(
       object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
         set_done(true);
+        set_source(nullptr);
+        set_destination(nullptr);
         emit itemMoved();
         if (e.left())
           return util::log("MoveItem", e.left()->code_, e.left()->description_);
