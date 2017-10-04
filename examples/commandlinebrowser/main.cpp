@@ -153,7 +153,7 @@ int main(int, char**) {
             auto url_request =
                 current_provider->getItemUrlAsync(item)->result();
             if (auto url = url_request.right())
-              std::cout << "url: " << url << "\n";
+              std::cout << "url: " << *url << "\n";
           }
         }
       }
