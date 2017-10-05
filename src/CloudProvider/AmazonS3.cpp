@@ -39,11 +39,6 @@ using ItemId = std::pair<std::string, std::string>;
 
 namespace {
 
-template <class T>
-void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
-            ItemId dest_id, ItemId source_id,
-            std::function<void(EitherError<void>)> complete);
-
 std::string to_string(ItemId str) {
   Json::Value json;
   json["b"] = str.first;
@@ -64,102 +59,6 @@ std::string escapePath(const std::string& str) {
       i++;
     }
   return result;
-}
-
-template <class T>
-void remove(typename Request<T>::Pointer r,
-            std::shared_ptr<std::vector<IItem::Pointer>> lst,
-            std::function<void(EitherError<void>)> complete) {
-  if (lst->empty()) return complete(nullptr);
-  auto item = lst->back();
-  lst->pop_back();
-  r->subrequest(r->provider()->deleteItemAsync(item, [=](EitherError<void> e) {
-    if (e.left())
-      complete(e.left());
-    else
-      remove<T>(r, lst, complete);
-  }));
-}
-
-template <class T>
-void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
-            std::shared_ptr<std::vector<IItem::Pointer>> lst, ItemId dest_id,
-            ItemId source_id, std::function<void(EitherError<void>)> complete) {
-  if (lst->empty()) return complete(nullptr);
-  auto item = lst->back();
-  lst->pop_back();
-  rename<T>(r, http, region, lst, dest_id, source_id, [=](EitherError<void> e) {
-    if (e.left())
-      complete(e.left());
-    else
-      rename<T>(r, http, region,
-                {dest_id.first, dest_id.second + "/" + item->filename()},
-                AmazonS3::extract(item->id()), complete);
-  });
-}
-
-template <class T>
-void rename(typename Request<T>::Pointer r, IHttp* http, std::string region,
-            ItemId dest_id, ItemId source_id,
-            std::function<void(EitherError<void>)> complete) {
-  auto finalize = [=]() {
-    r->request(
-        [=](util::Output) {
-          return http->create("https://" + source_id.first + ".s3." + region +
-                                  ".amazonaws.com/" +
-                                  escapePath(source_id.second),
-                              "DELETE");
-        },
-        [=](EitherError<Response> e) {
-          if (e.left())
-            complete(e.left());
-          else
-            complete(nullptr);
-        });
-  };
-  auto rename_one = [=](std::function<void(EitherError<void>)> complete,
-                        bool directory) {
-    r->request(
-        [=](util::Output) {
-          auto request = http->create(
-              "https://" + dest_id.first + ".s3." + region + ".amazonaws.com/" +
-                  escapePath(dest_id.second) + (directory ? "/" : ""),
-              "PUT");
-          if (!directory)
-            request->setHeaderParameter(
-                "x-amz-copy-source",
-                escapePath("/" + source_id.first + "/" + source_id.second));
-          return request;
-        },
-        [=](EitherError<Response> e) {
-          if (e.left())
-            complete(e.left());
-          else
-            finalize();
-        });
-  };
-  if (source_id.second.empty() || source_id.second.back() == '/') {
-    auto item = std::make_shared<Item>(
-        "", to_string(source_id), IItem::UnknownSize, IItem::UnknownTimeStamp,
-        IItem::FileType::Directory);
-    r->subrequest(r->provider()->listDirectoryAsync(
-        item, [=](EitherError<std::vector<IItem::Pointer>> e) {
-          rename<T>(r, http, region, e.right(), dest_id, source_id,
-                    [=](EitherError<void> e) {
-                      if (e.left()) return complete(e.left());
-                      rename_one(
-                          [=](EitherError<void> e) {
-                            if (e.left())
-                              complete(e.left());
-                            else
-                              finalize();
-                          },
-                          true);
-                    });
-        }));
-  } else {
-    rename_one(complete, false);
-  }
 }
 
 std::string currentDate() {
