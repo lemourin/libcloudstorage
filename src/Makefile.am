@@ -42,7 +42,8 @@ libcloudstorage_la_SOURCES = \
 	Request/MoveItemRequest.cpp \
 	Request/RenameItemRequest.cpp \
 	Request/ExchangeCodeRequest.cpp \
-	Request/GetItemUrlRequest.cpp
+	Request/GetItemUrlRequest.cpp \
+	Request/RecursiveRequest.cpp
 
 noinst_HEADERS = \
 	IAuth.h \
@@ -76,7 +77,8 @@ noinst_HEADERS = \
 	Request/MoveItemRequest.h \
 	Request/RenameItemRequest.h \
 	Request/ExchangeCodeRequest.h \
-	Request/GetItemUrlRequest.h
+	Request/GetItemUrlRequest.h \
+	Request/RecursiveRequest.h
 
 libcloudstorage_la_HEADERS = \
 	IItem.h \
