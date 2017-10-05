@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iomanip>
 
+#include "Request/RecursiveRequest.h"
 #include "Utility/Utility.h"
 
 using namespace std::placeholders;
@@ -285,36 +286,24 @@ IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
 
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  return std::make_shared<Request<EitherError<void>>>(
-             shared_from_this(), callback,
-             [=](Request<EitherError<void>>::Pointer r) {
-               auto release = [=] {
-                 r->request(
-                     [=](util::Output) {
-                       auto data = extract(item->id());
-                       return http()->create("https://" + data.first + ".s3." +
-                                                 region() + ".amazonaws.com/" +
-                                                 escapePath(data.second),
-                                             "DELETE");
-                     },
-                     [=](EitherError<Response> e) {
-                       r->done(e.left() ? e.left() : nullptr);
-                     });
-               };
-               if (item->type() == IItem::FileType::Directory) {
-                 r->subrequest(r->provider()->listDirectoryAsync(
-                     item, [=](EitherError<std::vector<IItem::Pointer>> e) {
-                       if (e.left()) return r->done(e.left());
-                       remove<EitherError<void>>(r, e.right(),
-                                                 [=](EitherError<void> e) {
-                                                   if (e.left())
-                                                     return r->done(e.left());
-                                                   release();
-                                                 });
-                     }));
-               } else
-                 release();
-             })
+  using Request = RecursiveRequest<EitherError<void>>;
+  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
+                     Request::CompleteCallback complete) {
+    auto id = extract(item->id());
+    r->request(
+        [=](util::Output) {
+          return http()->create("https://" + id.first + ".s3." + region() +
+                                    ".amazonaws.com/" + escapePath(id.second),
+                                "DELETE");
+        },
+        [=](EitherError<Response> e) {
+          if (e.left())
+            complete(e.left());
+          else
+            complete(nullptr);
+        });
+  };
+  return std::make_shared<Request>(shared_from_this(), item, callback, visitor)
       ->run();
 }
 
