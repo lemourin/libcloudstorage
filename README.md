@@ -17,6 +17,7 @@ Supported cloud providers:
 * `mega.nz`
 * `AmazonS3`
 * `pCloud`
+* `hubiC`
 * `YouTube` (partial)
 
 Supported operations on files:
