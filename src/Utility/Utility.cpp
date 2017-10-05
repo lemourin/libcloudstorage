@@ -36,8 +36,6 @@
 #include <sstream>
 #include <unordered_map>
 
-const uint32_t CHUNK_SIZE = 1024;
-
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
