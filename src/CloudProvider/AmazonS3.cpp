@@ -212,26 +212,45 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
 ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  return std::make_shared<Request<EitherError<IItem>>>(
-             shared_from_this(), callback,
-             [=](Request<EitherError<IItem>>::Pointer r) {
-               auto data = AmazonS3::extract(destination->id());
-               rename<EitherError<IItem>>(
-                   r, http(), region(),
-                   {data.first, data.second + source->filename()},
-                   AmazonS3::extract(source->id()), [=](EitherError<void> e) {
-                     if (e.left()) return r->done(e.left());
-                     auto path =
-                         data.second + source->filename() +
-                         (source->type() == IItem::FileType::Directory ? "/"
-                                                                       : "");
-                     auto nitem = std::make_shared<Item>(
-                         source->filename(), to_string({data.first, path}),
-                         source->size(), source->timestamp(), source->type());
-                     nitem->set_url(getUrl(*nitem));
-                     r->done(std::static_pointer_cast<IItem>(nitem));
-                   });
-             })
+  using Request = RecursiveRequest<EitherError<IItem>>;
+  auto source_id = extract(source->id());
+  auto destination_id = extract(destination->id());
+  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
+                     Request::CompleteCallback callback) {
+    auto id = extract(item->id());
+    auto l = getPath("/" + source_id.second).length();
+    std::string new_path = destination_id.second + id.second.substr(l);
+    r->request(
+        [=](util::Output) {
+          auto request =
+              http()->create("https://" + id.first + ".s3." + region() +
+                                 ".amazonaws.com/" + new_path,
+                             "PUT");
+          if (item->type() != IItem::FileType::Directory)
+            request->setHeaderParameter("x-amz-copy-source",
+                                        id.first + "/" + escapePath(id.second));
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return callback(e.left());
+          r->request(
+              [=](util::Output) {
+                return http()->create("https://" + id.first + ".s3." +
+                                          region() + ".amazonaws.com/" +
+                                          escapePath(id.second),
+                                      "DELETE");
+              },
+              [=](EitherError<Response> e) {
+                if (e.left()) return callback(e.left());
+                IItem::Pointer renamed = std::make_shared<Item>(
+                    getFilename(new_path), to_string({id.first, new_path}),
+                    item->size(), item->timestamp(), item->type());
+                callback(renamed);
+              });
+        });
+  };
+  return std::make_shared<Request>(shared_from_this(), source, callback,
+                                   visitor)
       ->run();
 }
 
