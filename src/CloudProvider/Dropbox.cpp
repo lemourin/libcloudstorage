@@ -146,7 +146,6 @@ IHttpRequest::Pointer Dropbox::getItemDataRequest(const std::string& id,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = id;
-  parameter["include_media_info"] = true;
   input << Json::FastWriter().write(parameter);
   return request;
 }
@@ -173,7 +172,6 @@ IHttpRequest::Pointer Dropbox::listDirectoryRequest(
 
   Json::Value parameter;
   parameter["path"] = item.id();
-  parameter["include_media_info"] = true;
   input_stream << Json::FastWriter().write(parameter);
   return request;
 }
@@ -279,15 +277,7 @@ IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
 
 IItem::Pointer Dropbox::toItem(const Json::Value& v) {
   IItem::FileType type = IItem::FileType::Unknown;
-  if (v[".tag"].asString() == "folder")
-    type = IItem::FileType::Directory;
-  else {
-    std::string file_type = v["media_info"]["metadata"][".tag"].asString();
-    if (file_type == "video")
-      type = IItem::FileType::Video;
-    else if (file_type == "photo")
-      type = IItem::FileType::Image;
-  }
+  if (v[".tag"].asString() == "folder") type = IItem::FileType::Directory;
   return util::make_unique<Item>(
       v["name"].asString(), v["path_display"].asString(),
       v.isMember("size") ? v["size"].asUInt64() : IItem::UnknownSize,
