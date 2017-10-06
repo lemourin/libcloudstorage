@@ -109,7 +109,6 @@ CurlHttp::Worker::~Worker() {
 
 void CurlHttp::Worker::work() {
   auto handle = curl_multi_init();
-  curl_multi_setopt(handle, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
   while (!done_ || !pending_.empty()) {
     std::unique_lock<std::mutex> lock(lock_);
     nonempty_.wait(lock, [=]() {
