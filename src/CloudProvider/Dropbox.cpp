@@ -163,7 +163,8 @@ IHttpRequest::Pointer Dropbox::deleteItemRequest(
 
 IHttpRequest::Pointer Dropbox::createDirectoryRequest(
     const IItem& item, const std::string& name, std::ostream& input) const {
-  auto request = http()->create(endpoint() + "/2/files/create_folder", "POST");
+  auto request =
+      http()->create(endpoint() + "/2/files/create_folder_v2", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = item.id() + "/" + name;
