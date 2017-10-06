@@ -175,7 +175,7 @@ IHttpRequest::Pointer Dropbox::createDirectoryRequest(
 IHttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
                                                const IItem& destination,
                                                std::ostream& stream) const {
-  auto request = http()->create(endpoint() + "/2/files/move", "POST");
+  auto request = http()->create(endpoint() + "/2/files/move_v2", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["from_path"] = source.id();
