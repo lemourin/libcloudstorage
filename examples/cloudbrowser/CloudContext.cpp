@@ -745,10 +745,10 @@ void UploadItemRequest::update() {
   connect(object, &RequestNotifier::finishedItem, this,
           [=](EitherError<IItem> e) {
             set_done(true);
+            emit uploadComplete();
             if (e.left())
               return util::log("UploadItem", e.left()->code_,
                                e.left()->description_);
-            emit uploadComplete();
           });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
@@ -791,10 +791,10 @@ void DownloadItemRequest::update() {
   connect(object, &RequestNotifier::finishedVoid, this,
           [=](EitherError<void> e) {
             set_done(true);
+            emit downloadComplete();
             if (e.left())
               return util::log("DownloadItem", e.left()->code_,
                                e.left()->description_);
-            emit downloadComplete();
           });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
