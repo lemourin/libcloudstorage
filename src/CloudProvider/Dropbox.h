@@ -39,6 +39,9 @@ class Dropbox : public CloudProvider {
   IItem::Pointer rootDirectory() const override;
   bool reauthorize(int code,
                    const IHttpRequest::HeaderParameters&) const override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string& filename,
+      IUploadFileCallback::Pointer) override;
 
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;
@@ -47,10 +50,6 @@ class Dropbox : public CloudProvider {
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
-  IHttpRequest::Pointer uploadFileRequest(const IItem& directory,
-                                          const std::string& filename,
-                                          std::ostream&,
-                                          std::ostream&) const override;
   IHttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer getThumbnailRequest(
@@ -75,15 +74,12 @@ class Dropbox : public CloudProvider {
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
                                          std::istream& response) const override;
-  IItem::Pointer uploadFileResponse(const IItem& parent,
-                                    const std::string& filename, uint64_t,
-                                    std::istream& response) const override;
 
   void authorizeRequest(IHttpRequest&) const override;
 
- private:
   static IItem::Pointer toItem(const Json::Value&);
 
+ private:
   class Auth : public cloudstorage::Auth {
    public:
     Auth();

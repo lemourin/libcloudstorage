@@ -32,8 +32,65 @@
 #include "Request/Request.h"
 
 const std::string DROPBOXAPI_ENDPOINT = "https://api.dropboxapi.com";
+const int CHUNK_SIZE = 60 * 1024 * 1024;
 
 namespace cloudstorage {
+
+namespace {
+void upload(Request<EitherError<IItem>>::Pointer r,
+            const std::string& session_id, const std::string& path, int sent,
+            IUploadFileCallback* callback) {
+  int size = callback->size();
+  auto length = std::make_shared<int>(0);
+  r->send(
+      [=](util::Output stream) {
+        std::vector<char> buffer(CHUNK_SIZE);
+        if (sent < size) *length = callback->putData(buffer.data(), CHUNK_SIZE);
+        std::string upload_url =
+            "https://content.dropboxapi.com/2/files/upload_session";
+        Json::Value json;
+        if (sent == 0)
+          upload_url += "/start";
+        else if (sent + *length >= size) {
+          json["commit"]["path"] = path;
+          json["commit"]["mode"] = "overwrite";
+          upload_url += "/finish";
+        } else
+          upload_url += "/append_v2";
+        auto request = r->provider()->http()->create(upload_url, "POST");
+        if (sent != 0) {
+          json["cursor"]["session_id"] = session_id;
+          json["cursor"]["offset"] = sent;
+        }
+        request->setHeaderParameter("Content-Type", "application/octet-stream");
+        auto argument = Json::FastWriter().write(json);
+        argument.pop_back();
+        request->setHeaderParameter("Dropbox-API-Arg", argument);
+        stream->write(buffer.data(), *length);
+        return request;
+      },
+      [=](EitherError<Response> e) {
+        if (e.left()) return r->done(e.left());
+        try {
+          Json::Value json;
+          e.right()->output() >> json;
+          if (sent < size)
+            upload(
+                r,
+                session_id.empty() ? json["session_id"].asString() : session_id,
+                path, sent + *length, callback);
+          else
+            r->done(Dropbox::toItem(json));
+        } catch (std::exception) {
+          r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+        }
+      },
+      [] { return std::make_shared<std::stringstream>(); },
+      std::make_shared<std::stringstream>(), nullptr,
+      [=](uint64_t, uint64_t now) { callback->progress(size, sent + now); },
+      true);
+}
+}  // namespace
 
 Dropbox::Dropbox() : CloudProvider(util::make_unique<Auth>()) {}
 
@@ -50,6 +107,18 @@ IItem::Pointer Dropbox::rootDirectory() const {
 bool Dropbox::reauthorize(int code,
                           const IHttpRequest::HeaderParameters&) const {
   return code == IHttpRequest::Bad || code == IHttpRequest::Unauthorized;
+}
+
+ICloudProvider::UploadFileRequest::Pointer Dropbox::uploadFileAsync(
+    IItem::Pointer parent, const std::string& filename,
+    IUploadFileCallback::Pointer cb) {
+  auto callback = cb.get();
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               upload(r, "", parent->id() + "/" + filename, 0, callback);
+             })
+      ->run();
 }
 
 IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
@@ -111,17 +180,6 @@ IHttpRequest::Pointer Dropbox::listDirectoryRequest(
 
 void Dropbox::authorizeRequest(IHttpRequest& r) const {
   r.setHeaderParameter("Authorization", "Bearer " + token());
-}
-
-IHttpRequest::Pointer Dropbox::uploadFileRequest(const IItem& item,
-                                                 const std::string& filename,
-                                                 std::ostream&,
-                                                 std::ostream&) const {
-  auto request =
-      http()->create("https://content.dropboxapi.com/1/files_put/auto" +
-                         item.id() + "/" + filename,
-                     "PUT");
-  return request;
 }
 
 IHttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& item,
@@ -187,7 +245,7 @@ IHttpRequest::Pointer Dropbox::moveItemRequest(const IItem& source,
 IHttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
                                                  const std::string& name,
                                                  std::ostream& stream) const {
-  auto request = http()->create(endpoint() + "/2/files/move", "POST");
+  auto request = http()->create(endpoint() + "/2/files/move_v2", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["from_path"] = item.id();
@@ -207,16 +265,6 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     next_page_token = response["cursor"].asString();
   }
   return result;
-}
-
-IItem::Pointer Dropbox::uploadFileResponse(const IItem&,
-                                           const std::string& name, uint64_t,
-                                           std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-  return util::make_unique<Item>(
-      name, response["path"].asString(), response["bytes"].asInt64(),
-      std::chrono::system_clock::now(), IItem::FileType::Unknown);
 }
 
 IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
