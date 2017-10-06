@@ -37,7 +37,8 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 namespace {
-void upload(Request<EitherError<IItem>>::Pointer r, int sent,
+void upload(Request<EitherError<IItem>>::Pointer r,
+            const std::string& upload_url, int sent,
             IUploadFileCallback* callback, Json::Value response) {
   int size = callback->size();
   auto length = std::make_shared<int>(0);
@@ -48,8 +49,7 @@ void upload(Request<EitherError<IItem>>::Pointer r, int sent,
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
         *length = callback->putData(buffer.data(), CHUNK_SIZE);
-        auto request = r->provider()->http()->create(
-            response["uploadUrl"].asString(), "PUT");
+        auto request = r->provider()->http()->create(upload_url, "PUT");
         std::stringstream content_range;
         content_range << "bytes " << sent << "-" << sent + *length - 1 << "/"
                       << size;
@@ -62,7 +62,7 @@ void upload(Request<EitherError<IItem>>::Pointer r, int sent,
         try {
           Json::Value json;
           e.right()->output() >> json;
-          upload(r, sent + *length, callback, json);
+          upload(r, upload_url, sent + *length, callback, json);
         } catch (std::exception) {
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
@@ -100,7 +100,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                      try {
                        Json::Value response;
                        e.right()->output() >> response;
-                       upload(r, 0, callback, response);
+                       upload(r, response["uploadUrl"].asString(), 0, callback,
+                              response);
                      } catch (std::exception) {
                        r->done(Error{IHttpRequest::Failure,
                                      e.right()->output().str()});
