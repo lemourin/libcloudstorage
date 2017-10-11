@@ -117,6 +117,8 @@ Kirigami.ApplicationWindow {
         for (i = 0; i < cloud.request.length; i++)
           if (cloud.request[i] !== upload_request)
             lst.push(cloud.request[i]);
+          else
+            upload_request.destroy();
         cloud.request = lst;
         if (list) list.update();
       }
@@ -135,6 +137,8 @@ Kirigami.ApplicationWindow {
         for (i = 0; i < cloud.request.length; i++)
           if (cloud.request[i] !== download_request)
             lst.push(cloud.request[i]);
+          else
+            download_request.destroy();
         cloud.request = lst;
       }
     }
