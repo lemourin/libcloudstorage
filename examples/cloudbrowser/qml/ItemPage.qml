@@ -17,41 +17,6 @@ Kirigami.ScrollablePage {
     }
   }
 
-  Component {
-    id: upload_component
-    UploadItemRequest {
-      property bool upload: true
-
-      id: upload_request
-      context: cloud
-      onUploadComplete: {
-        var lst = [], i;
-        for (i = 0; i < cloud.request.length; i++)
-          if (cloud.request[i] !== upload_request)
-            lst.push(cloud.request[i]);
-        cloud.request = lst;
-        list.update();
-      }
-    }
-  }
-
-  Component {
-    id: download_component
-    DownloadItemRequest {
-      property bool upload: false
-
-      id: download_request
-      context: cloud
-      onDownloadComplete: {
-        var lst = [], i;
-        for (i = 0; i < cloud.request.length; i++)
-          if (cloud.request[i] !== download_request)
-            lst.push(cloud.request[i]);
-        cloud.request = lst;
-      }
-    }
-  }
-
   contextualActions: [
     Kirigami.Action {
       visible: list_view.currentItem && (list_view.currentItem.item.type === "audio" ||
@@ -200,7 +165,11 @@ Kirigami.ScrollablePage {
       selectExisting: true
       selectFolder: false
       onAccepted: {
-        var r = upload_component.createObject(cloud, {parent: page.item, path: fileUrl});
+        var r = upload_component.createObject(cloud, {
+                                                parent: page.item,
+                                                path: fileUrl,
+                                                list: list
+                                              });
         var req = cloud.request;
         req.push(r);
         cloud.request = req;

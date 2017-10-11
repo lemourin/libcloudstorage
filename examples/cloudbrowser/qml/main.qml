@@ -103,4 +103,40 @@ Kirigami.ApplicationWindow {
       title: "Select Cloud Provider"
     }
   }
+
+  Component {
+    id: upload_component
+    UploadItemRequest {
+      property bool upload: true
+      property var list
+
+      id: upload_request
+      context: cloud
+      onUploadComplete: {
+        var lst = [], i;
+        for (i = 0; i < cloud.request.length; i++)
+          if (cloud.request[i] !== upload_request)
+            lst.push(cloud.request[i]);
+        cloud.request = lst;
+        if (list) list.update();
+      }
+    }
+  }
+
+  Component {
+    id: download_component
+    DownloadItemRequest {
+      property bool upload: false
+
+      id: download_request
+      context: cloud
+      onDownloadComplete: {
+        var lst = [], i;
+        for (i = 0; i < cloud.request.length; i++)
+          if (cloud.request[i] !== download_request)
+            lst.push(cloud.request[i]);
+        cloud.request = lst;
+      }
+    }
+  }
 }
