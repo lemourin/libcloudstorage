@@ -1,6 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CXXFLAGS = -I$(top_srcdir)/src
+AM_CXXFLAGS = \
+	$(libjsoncpp_CFLAGS) \
+	-I$(top_srcdir)/src
 
 check_LTLIBRARIES = libgtest.la libgmock.la
 
