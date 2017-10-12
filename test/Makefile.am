@@ -17,9 +17,13 @@ libgmock_la_CXXFLAGS = \
 	-I$(top_srcdir)/test/googletest/googlemock
 
 check_PROGRAMS = main
+
 main_SOURCES = \
 	main.cpp \
 	CloudProvider/GoogleDriveTest.cpp
+
+check_HEADERS = \
+	Utility/HttpMock.h
 
 main_LDFLAGS = -pthread
 
