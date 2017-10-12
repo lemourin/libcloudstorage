@@ -257,14 +257,18 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
                     if (IHttpRequest::isSuccess(response.http_code_)) {
                       auto size = std::atoll(
                           response.headers_["content-length"].c_str());
-                      auto nnode = std::make_shared<Node>(
-                          n->provider(), n->item(), node, (uint64_t)size);
+                      auto nnode =
+                          std::make_shared<Node>(n->provider(), n->item(), node,
+                                                 static_cast<uint64_t>(size));
                       this->set(node, nnode);
                       cb(std::static_pointer_cast<INode>(nnode));
                     } else
-                      cb(Error{IHttpRequest::ServiceUnavailable,
-                               "size unknown"});
+                      cb(Error{response.http_code_,
+                               std::static_pointer_cast<std::stringstream>(
+                                   response.error_stream_)
+                                   ->str()});
                   },
+                  std::make_shared<std::stringstream>(),
                   std::make_shared<std::stringstream>(),
                   std::make_shared<std::stringstream>());
         } else
@@ -348,70 +352,76 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
 
 void FileSystem::read(FileId node, size_t offset, size_t sz,
                       DownloadItemCallback cb) {
-  auto nd = get(node);
-  if (nd->size() == IItem::UnknownSize || nd->size() == 0 || !nd->provider())
-    return cb(std::string());
-  if (nd->item()->id() == AUTH_ITEM_ID) {
-    auto data = authorize_file(nd->provider()->authorizeLibraryUrl());
-    auto start = std::min<size_t>(offset, data.size() - 1);
-    auto size = std::min<size_t>(data.size() - start, sz);
-    auto d = data.substr(start, size);
-    return cb(d);
-  }
-  auto fit = [=](Range r) {
-    r.start_ = std::min<size_t>(r.start_, (size_t)nd->size() - 1);
-    r.size_ = std::min<size_t>(r.size_, (size_t)nd->size() - r.start_);
-    return r;
-  };
-  Range range = fit({offset, sz});
-  std::unique_lock<mutex> lock(nd->mutex_);
-  auto inside = [=](Range r1, Range r2) {
-    r1 = fit(r1);
-    r2 = fit(r2);
-    return r1.start_ >= r2.start_ &&
-           r1.start_ + r1.size_ <= r2.start_ + r2.size_;
-  };
-  auto download = [=](Range range) {
-    for (auto&& download_range : nd->pending_download_)
-      if (inside(range, download_range)) return;
-    range = fit({range.start_, std::max<size_t>(range.size_, READ_AHEAD)});
-    nd->pending_download_.push_back(range);
-    download_item_async(
-        nd->provider(), nd->item(), range, [=](EitherError<std::string> e) {
-          std::unique_lock<mutex> lock(nd->mutex_);
-          auto requests = nd->read_request_;
-          for (auto&& read : requests)
-            if (inside(read.range_, range)) {
-              if (e.left())
-                read.callback_(e.left());
-              else
-                read.callback_(e.right()->substr(
-                    read.range_.start_ - range.start_, read.range_.size_));
-              auto it = std::find(nd->read_request_.begin(),
-                                  nd->read_request_.end(), read);
-              nd->read_request_.erase(it);
+  getattr(node, [=](EitherError<INode> e) {
+    if (e.left()) return cb(e.left());
+    auto nd = std::static_pointer_cast<Node>(e.right());
+    if (nd->size() == IItem::UnknownSize || nd->size() == 0 || !nd->provider())
+      return cb(std::string());
+    if (nd->item()->id() == AUTH_ITEM_ID) {
+      auto data = authorize_file(nd->provider()->authorizeLibraryUrl());
+      auto start = std::min<size_t>(offset, data.size() - 1);
+      auto size = std::min<size_t>(data.size() - start, sz);
+      auto d = data.substr(start, size);
+      return cb(d);
+    }
+    auto fit = [=](Range r) {
+      r.start_ =
+          std::min<size_t>(r.start_, static_cast<size_t>(nd->size() - 1));
+      r.size_ =
+          std::min<size_t>(r.size_, static_cast<size_t>(nd->size() - r.start_));
+      return r;
+    };
+    Range range = fit({offset, sz});
+    std::unique_lock<mutex> lock(nd->mutex_);
+    auto inside = [=](Range r1, Range r2) {
+      r1 = fit(r1);
+      r2 = fit(r2);
+      return r1.start_ >= r2.start_ &&
+             r1.start_ + r1.size_ <= r2.start_ + r2.size_;
+    };
+    auto download = [=](Range range) {
+      for (auto&& download_range : nd->pending_download_)
+        if (inside(range, download_range)) return;
+      range = fit({range.start_, std::max<size_t>(range.size_, READ_AHEAD)});
+      nd->pending_download_.push_back(range);
+      download_item_async(
+          nd->provider(), nd->item(), range, [=](EitherError<std::string> e) {
+            std::unique_lock<mutex> lock(nd->mutex_);
+            auto requests = nd->read_request_;
+            for (auto&& read : requests)
+              if (inside(read.range_, range)) {
+                if (e.left())
+                  read.callback_(e.left());
+                else
+                  read.callback_(e.right()->substr(
+                      read.range_.start_ - range.start_, read.range_.size_));
+                auto it = std::find(nd->read_request_.begin(),
+                                    nd->read_request_.end(), read);
+                nd->read_request_.erase(it);
+              }
+            auto it = std::find(nd->pending_download_.begin(),
+                                nd->pending_download_.end(), range);
+            nd->pending_download_.erase(it);
+            if (e.right()) {
+              nd->chunk_.push_back({range, std::move(*e.right())});
+              if (nd->chunk_.size() >= CACHED_CHUNK_COUNT)
+                nd->chunk_.pop_front();
             }
-          auto it = std::find(nd->pending_download_.begin(),
-                              nd->pending_download_.end(), range);
-          nd->pending_download_.erase(it);
-          if (e.right()) {
-            nd->chunk_.push_back({range, std::move(*e.right())});
-            if (nd->chunk_.size() >= CACHED_CHUNK_COUNT) nd->chunk_.pop_front();
-          }
-        });
-  };
-  bool read_ahead = true;
-  for (auto&& chunk : nd->chunk_)
-    if (inside(Range{range.start_ + READ_AHEAD / 2, READ_AHEAD / 2},
-               chunk.range_))
-      read_ahead = false;
-  if (read_ahead) download(Range{range.start_ + READ_AHEAD / 2, range.size_});
-  for (auto&& chunk : nd->chunk_)
-    if (inside(range, chunk.range_))
-      return cb(
-          chunk.data_.substr(range.start_ - chunk.range_.start_, range.size_));
-  nd->read_request_.push_back({range, cb});
-  download(range);
+          });
+    };
+    bool read_ahead = true;
+    for (auto&& chunk : nd->chunk_)
+      if (inside(Range{range.start_ + READ_AHEAD / 2, READ_AHEAD / 2},
+                 chunk.range_))
+        read_ahead = false;
+    if (read_ahead) download(Range{range.start_ + READ_AHEAD / 2, range.size_});
+    for (auto&& chunk : nd->chunk_)
+      if (inside(range, chunk.range_))
+        return cb(chunk.data_.substr(range.start_ - chunk.range_.start_,
+                                     range.size_));
+    nd->read_request_.push_back({range, cb});
+    download(range);
+  });
 }
 
 void FileSystem::invalidate(FileId root) {
