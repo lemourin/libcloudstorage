@@ -34,6 +34,42 @@ const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
 
 namespace cloudstorage {
 
+namespace {
+
+std::string exported_mime_type(const std::string& type) {
+  if (type == "application/vnd.google-apps.document")
+    return "application/"
+           "vnd.openxmlformats-officedocument.wordprocessingml.document";
+  else if (type == "application/vnd.google-apps.spreadsheet")
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  else if (type == "application/vnd.google-apps.drawing")
+    return "image/png";
+  else if (type == "application/vnd.google-apps.presentation")
+    return "application/"
+           "vnd.openxmlformats-officedocument.presentationml.presentation";
+  else if (type == "application/vnd.google-apps.script")
+    return "application/vnd.google-apps.script+json";
+  else
+    return "";
+}
+
+std::string exported_extension(const std::string& type) {
+  if (type == "application/vnd.google-apps.document")
+    return ".docx";
+  else if (type == "application/vnd.google-apps.spreadsheet")
+    return ".xlsx";
+  else if (type == "application/vnd.google-apps.drawing")
+    return ".png";
+  else if (type == "application/vnd.google-apps.presentation")
+    return ".pptx";
+  else if (type == "application/vnd.google-apps.script")
+    return ".json";
+  else
+    return "";
+}
+
+}  // namespace
+
 GoogleDrive::GoogleDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string GoogleDrive::name() const { return "google"; }
@@ -48,8 +84,15 @@ IHttpRequest::Pointer GoogleDrive::getItemUrlRequest(
 std::string GoogleDrive::getItemUrlResponse(
     const IItem& item, const IHttpRequest::HeaderParameters&,
     std::istream&) const {
-  return endpoint() + "/drive/v3/files/" + item.id() +
-         "?alt=media&access_token=" + access_token();
+  const Item& i = static_cast<const Item&>(item);
+  if (isGoogleMimeType(i.mime_type())) {
+    return endpoint() + "/drive/v3/files/" + item.id() +
+           "/export?access_token=" + access_token() +
+           "&mimeType=" + exported_mime_type(i.mime_type());
+  } else {
+    return endpoint() + "/drive/v3/files/" + item.id() +
+           "?alt=media&access_token=" + access_token();
+  }
 }
 
 IHttpRequest::Pointer GoogleDrive::getItemDataRequest(const std::string& id,
@@ -103,10 +146,18 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
 
 IHttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& item,
                                                        std::ostream&) const {
-  IHttpRequest::Pointer request =
-      http()->create(endpoint() + "/drive/v3/files/" + item.id(), "GET");
-  request->setParameter("alt", "media");
-  return request;
+  const Item& i = static_cast<const Item&>(item);
+  if (isGoogleMimeType(i.mime_type())) {
+    IHttpRequest::Pointer request = http()->create(
+        endpoint() + "/drive/v3/files/" + item.id() + "/export", "GET");
+    request->setParameter("mimeType", exported_mime_type(i.mime_type()));
+    return request;
+  } else {
+    IHttpRequest::Pointer request =
+        http()->create(endpoint() + "/drive/v3/files/" + item.id(), "GET");
+    request->setParameter("alt", "media");
+    return request;
+  }
 }
 
 IHttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
@@ -173,9 +224,7 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   Json::Value response;
   stream >> response;
   std::vector<IItem::Pointer> result;
-  for (Json::Value v : response["files"])
-    if (!isGoogleMimeType(v["mimeType"].asString()))
-      result.push_back(toItem(v));
+  for (Json::Value v : response["files"]) result.push_back(toItem(v));
 
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
@@ -204,7 +253,10 @@ IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
 
 IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(
-      v["name"].asString(), v["id"].asString(),
+      v["name"].asString() + (isGoogleMimeType(v["mimeType"].asString())
+                                  ? exported_extension(v["mimeType"].asString())
+                                  : ""),
+      v["id"].asString(),
       v.isMember("size") ? std::atoll(v["size"].asString().c_str())
                          : IItem::UnknownSize,
       util::parse_time(v["modifiedTime"].asString()),
@@ -216,6 +268,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   else if (thumnail_url.empty())
     thumnail_url = v["iconLink"].asString();
   item->set_thumbnail_url(thumnail_url);
+  item->set_mime_type(v["mimeType"].asString());
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
   item->set_parents(parents);

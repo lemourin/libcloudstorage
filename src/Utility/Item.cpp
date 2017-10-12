@@ -112,6 +112,10 @@ void Item::set_parents(const std::vector<std::string>& parents) {
   parents_ = parents;
 }
 
+std::string Item::mime_type() const { return mime_type_; }
+
+void Item::set_mime_type(const std::string& mime) { mime_type_ = mime; }
+
 IItem::FileType Item::fromMimeType(const std::string& mime_type) {
   std::string type = mime_type.substr(0, mime_type.find_first_of('/'));
   if (type == "audio")

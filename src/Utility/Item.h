@@ -63,6 +63,9 @@ class Item : public IItem {
   const std::vector<std::string>& parents() const;
   void set_parents(const std::vector<std::string>&);
 
+  std::string mime_type() const;
+  void set_mime_type(const std::string&);
+
   static FileType fromMimeType(const std::string& mime_type);
   static FileType fromExtension(const std::string& filename);
 
@@ -76,6 +79,7 @@ class Item : public IItem {
   std::string thumbnail_url_;
   FileType type_;
   bool is_hidden_;
+  std::string mime_type_;
   std::vector<std::string> parents_;
 };
 
