@@ -37,6 +37,10 @@ class GoogleDrive : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
 
+  ICloudProvider::DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer file, IDownloadFileCallback::Pointer callback,
+      Range range);
+
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer getItemUrlRequest(

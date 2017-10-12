@@ -27,10 +27,13 @@
 #include <algorithm>
 #include <sstream>
 
+#include "Request/DownloadFileRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
 const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
+
+using namespace std::placeholders;
 
 namespace cloudstorage {
 
@@ -158,6 +161,27 @@ IHttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& item,
     request->setParameter("alt", "media");
     return request;
   }
+}
+
+ICloudProvider::DownloadFileRequest::Pointer GoogleDrive::downloadFileAsync(
+    IItem::Pointer file, IDownloadFileCallback::Pointer callback, Range range) {
+  auto f = std::static_pointer_cast<Item>(file);
+  if (isGoogleMimeType(f->mime_type()) && range != FullRange) {
+    return std::make_shared<Request<EitherError<void>>>(
+               shared_from_this(),
+               [=](EitherError<void> e) { callback->done(e); },
+               [](Request<EitherError<void>>::Pointer r) {
+                 r->done(
+                     Error{IHttpRequest::ServiceUnavailable,
+                           "can't download sub-range of google specific file"});
+
+               })
+        ->run();
+  }
+  return std::make_shared<cloudstorage::DownloadFileRequest>(
+             shared_from_this(), std::move(file), std::move(callback), range,
+             std::bind(&CloudProvider::downloadFileRequest, this, _1, _2))
+      ->run();
 }
 
 IHttpRequest::Pointer GoogleDrive::deleteItemRequest(const IItem& item,
