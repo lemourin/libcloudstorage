@@ -1,5 +1,5 @@
 /*****************************************************************************
- * main.cpp
+ * GoogleDriveTest.cpp
  *
  *****************************************************************************
  * Copyright (C) 2016-2016 VideoLAN
@@ -21,9 +21,5 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+TEST(GoogleDriveTest, ListDirectoryTest) { ASSERT_EQ(0, 0); }
