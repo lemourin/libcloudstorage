@@ -27,6 +27,7 @@
 #include <array>
 #include <sstream>
 
+#include "IRequest.h"
 #include "Utility.h"
 
 const uint32_t MAX_URL_LENGTH = 1024;
@@ -45,10 +46,24 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
                       &data->http_code_);
   if (!data->error_stream_ ||
       data->callback_->isSuccess(static_cast<int>(data->http_code_),
-                                 data->response_headers_))
-    data->stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
-  else
+                                 data->response_headers_)) {
+    auto range_it = data->query_headers_.find("Range");
+    auto accept_it = data->response_headers_.find("accept-ranges");
+    if (range_it != data->query_headers_.end() &&
+        (accept_it == data->response_headers_.end() ||
+         accept_it->second == "none")) {
+      auto range = util::parse_range(range_it->second);
+      auto begin = std::max<size_t>(range.start_, data->received_bytes_);
+      auto end = std::min<size_t>(range.start_ + range.size_,
+                                  data->received_bytes_ + size * nmemb);
+      if (begin < end)
+        data->stream_->write(ptr + begin - data->received_bytes_,
+                             static_cast<std::streamsize>(end - begin));
+    } else
+      data->stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
+  } else
     data->error_stream_->write(ptr, static_cast<std::streamsize>(size * nmemb));
+  data->received_bytes_ += size * nmemb;
   return size * nmemb;
 }
 
@@ -226,6 +241,7 @@ RequestData::Pointer CurlHttpRequest::prepare(
   auto cb_data =
       util::make_unique<RequestData>(RequestData{init(),
                                                  headerParametersToList(),
+                                                 headerParameters(),
                                                  {},
                                                  data,
                                                  response,
@@ -233,6 +249,7 @@ RequestData::Pointer CurlHttpRequest::prepare(
                                                  callback,
                                                  complete,
                                                  follow_redirect(),
+                                                 0,
                                                  0});
   auto handle = cb_data->handle_.get();
   curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb_data.get());
