@@ -60,6 +60,8 @@ class IHttpRequest {
   static constexpr int Unknown = 700;
   static constexpr int Failure = 800;
 
+  virtual ~IHttpRequest() = default;
+
   class ICallback {
    public:
     using Pointer = std::shared_ptr<ICallback>;
