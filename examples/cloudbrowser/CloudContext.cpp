@@ -125,6 +125,7 @@ QVariantList CloudContext::userProviders() const {
 
 QString CloudContext::authorizationUrl(QString provider) const {
   ICloudProvider::InitData data;
+  data.permission_ = ICloudProvider::Permission::ReadWrite;
   data.hints_["state"] = provider.toStdString();
   return ICloudStorage::create()
       ->provider(provider.toStdString().c_str(), std::move(data))
@@ -244,6 +245,7 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
     void done(const ICloudProvider&, EitherError<void>) override {}
   };
   ICloudProvider::InitData data;
+  data.permission_ = ICloudProvider::Permission::ReadWrite;
   data.token_ = token.token_;
   data.hints_["temporary_directory"] =
       QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();

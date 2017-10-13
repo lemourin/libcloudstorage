@@ -89,6 +89,7 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
     void done(const ICloudProvider &, EitherError<void>) override {}
   };
   ICloudProvider::InitData init_data;
+  init_data.permission_ = ICloudProvider::Permission::ReadWrite;
   init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
   init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
@@ -203,6 +204,7 @@ int fuse_run(int argc, char **argv) {
     for (auto &&p : storage->providers()) {
       ICloudProvider::InitData init_data;
       init_data.hints_["state"] = p;
+      init_data.permission_ = ICloudProvider::Permission::ReadWrite;
       std::cerr << "\n";
       std::cerr
           << p << ": "
