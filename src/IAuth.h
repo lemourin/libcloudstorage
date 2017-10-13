@@ -62,6 +62,9 @@ class IAuth {
   virtual std::string redirect_uri() const = 0;
   virtual void set_redirect_uri(const std::string&) = 0;
 
+  virtual ICloudProvider::Permission permission() const = 0;
+  virtual void set_permission(ICloudProvider::Permission) = 0;
+
   virtual std::string state() const = 0;
   virtual void set_state(const std::string&) = 0;
 

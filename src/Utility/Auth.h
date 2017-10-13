@@ -83,6 +83,9 @@ class Auth : public IAuth {
   Token* access_token() const override;
   void set_access_token(Token::Pointer) override;
 
+  ICloudProvider::Permission permission() const override;
+  void set_permission(ICloudProvider::Permission) override;
+
   IHttp* http() const override;
 
   IHttpServer::Pointer awaitAuthorizationCode(std::string code_parameter_name,
@@ -105,6 +108,7 @@ class Auth : public IAuth {
   std::string login_page_;
   std::string success_page_;
   std::string error_page_;
+  ICloudProvider::Permission permission_;
   Token::Pointer access_token_;
   IHttp* http_;
   IHttpServerFactory* http_server_;

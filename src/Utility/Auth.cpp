@@ -138,6 +138,10 @@ void Auth::set_access_token(Token::Pointer token) {
   access_token_ = std::move(token);
 }
 
+ICloudProvider::Permission Auth::permission() const { return permission_; }
+
+void Auth::set_permission(ICloudProvider::Permission p) { permission_ = p; }
+
 IHttp* Auth::http() const { return http_; }
 
 IHttpServer::Pointer Auth::awaitAuthorizationCode(

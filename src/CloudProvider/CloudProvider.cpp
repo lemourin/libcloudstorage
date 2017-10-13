@@ -154,6 +154,7 @@ void CloudProvider::initialize(InitData&& data) {
   setWithHint(data.hints_, "access_token",
               [&t](std::string v) { t->token_ = v; });
   auth()->set_access_token(std::move(t));
+  auth()->set_permission(data.permission_);
 
   setWithHint(data.hints_, "client_id",
               [this](std::string v) { auth()->set_client_id(v); });

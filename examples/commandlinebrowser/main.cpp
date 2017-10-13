@@ -88,6 +88,7 @@ int main(int, char**) {
         auto provider = ICloudStorage::create()->provider(
             provider_name,
             {token,
+             ICloudProvider::Permission::ReadWrite,
              std::unique_ptr<Callback>(new Callback(filename)),
              nullptr,
              nullptr,

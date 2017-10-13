@@ -79,6 +79,12 @@ class ICloudProvider {
     virtual void done(const ICloudProvider&, EitherError<void>) = 0;
   };
 
+  enum class Permission {
+    ReadMetaData,  // list files
+    Read,          // read files
+    ReadWrite      // modify files
+  };
+
   /**
    * Struct which provides initialization data for the cloud provider.
    */
@@ -89,6 +95,11 @@ class ICloudProvider {
      * if it isn't.
      */
     std::string token_;
+
+    /**
+     * Permission level which will be requested by the cloud provider.
+     */
+    Permission permission_;
 
     /**
      * Callback which will manage future authorization process.
