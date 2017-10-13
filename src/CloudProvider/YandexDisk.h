@@ -82,8 +82,7 @@ class YandexDisk : public CloudProvider {
 
   class Auth : public cloudstorage::Auth {
    public:
-    Auth();
-
+    void initialize(IHttp*, IHttpServerFactory*) override;
     std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(

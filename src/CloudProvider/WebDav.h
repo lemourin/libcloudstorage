@@ -96,8 +96,6 @@ class WebDav : public CloudProvider {
 
   class Auth : public cloudstorage::Auth {
    public:
-    Auth();
-
     std::string authorizeLibraryUrl() const override;
 
     IHttpRequest::Pointer exchangeAuthorizationCodeRequest(

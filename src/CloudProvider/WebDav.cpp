@@ -265,8 +265,6 @@ bool WebDav::unpackCredentials(const std::string& code) {
     return false;
 }
 
-WebDav::Auth::Auth() {}
-
 std::string WebDav::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login?state=" + state();
 }

@@ -912,8 +912,6 @@ IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
   return token;
 }
 
-MegaNz::Auth::Auth() {}
-
 std::string MegaNz::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login?state=" + state();
 }

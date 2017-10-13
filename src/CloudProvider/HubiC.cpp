@@ -332,10 +332,13 @@ std::string HubiC::openstack_token() const {
   return openstack_token_;
 }
 
-HubiC::Auth::Auth() {
-  set_client_id("api_hubic_kHQ5NUmE2yAAeiWfXPwQy2T53M6RP2fe");
-  set_client_secret(
-      "Xk1ezMMSGNeU4r0wv3jutleYX9XvXmgg8XVElJjqoDvlDw0KsC9U2tkSxJxYof8V");
+void HubiC::Auth::initialize(IHttp *http, IHttpServerFactory *factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    set_client_id("api_hubic_kHQ5NUmE2yAAeiWfXPwQy2T53M6RP2fe");
+    set_client_secret(
+        "Xk1ezMMSGNeU4r0wv3jutleYX9XvXmgg8XVElJjqoDvlDw0KsC9U2tkSxJxYof8V");
+  }
 }
 
 std::string HubiC::Auth::authorizeLibraryUrl() const {

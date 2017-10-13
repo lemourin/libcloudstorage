@@ -299,11 +299,14 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   return std::move(item);
 }
 
-GoogleDrive::Auth::Auth() {
-  set_client_id(
-      "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent."
-      "com");
-  set_client_secret("1f0FG5ch-kKOanTAv1Bqdp9U");
+void GoogleDrive::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    set_client_id(
+        "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent."
+        "com");
+    set_client_secret("1f0FG5ch-kKOanTAv1Bqdp9U");
+  }
 }
 
 std::string GoogleDrive::Auth::authorizeLibraryUrl() const {

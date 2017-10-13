@@ -249,9 +249,17 @@ void YandexDisk::authorizeRequest(IHttpRequest& request) const {
   request.setHeaderParameter("Authorization", "OAuth " + token());
 }
 
-YandexDisk::Auth::Auth() {
-  set_client_id("04d700d432884c4381c07e760213ed8a");
-  set_client_secret("197f9693caa64f0ebb51d201110074f9");
+void YandexDisk::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    if (permission() == Permission::ReadWrite) {
+      set_client_id("04d700d432884c4381c07e760213ed8a");
+      set_client_secret("197f9693caa64f0ebb51d201110074f9");
+    } else {
+      set_client_id("7000dc1c529c4791a3510231233b7865");
+      set_client_secret("3879feb4f5aa4d8b971fe5c5ebfa5e25");
+    }
+  }
 }
 
 std::string YandexDisk::Auth::authorizeLibraryUrl() const {

@@ -542,8 +542,6 @@ std::string AmazonS3::getUrl(const Item& item) const {
   return request->url() + "?" + parameters;
 }
 
-AmazonS3::Auth::Auth() {}
-
 std::string AmazonS3::Auth::authorizeLibraryUrl() const {
   return redirect_uri() + "/login?state=" + state();
 }

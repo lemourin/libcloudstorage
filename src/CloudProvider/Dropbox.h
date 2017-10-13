@@ -82,8 +82,7 @@ class Dropbox : public CloudProvider {
  private:
   class Auth : public cloudstorage::Auth {
    public:
-    Auth();
-
+    void initialize(IHttp*, IHttpServerFactory*) override;
     std::string authorizeLibraryUrl() const override;
     Token::Pointer fromTokenString(const std::string&) const override;
 

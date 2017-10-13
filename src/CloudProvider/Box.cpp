@@ -219,9 +219,12 @@ IItem::Pointer Box::toItem(const Json::Value& v) const {
   return std::move(item);
 }
 
-Box::Auth::Auth() {
-  set_client_id("zmiv9tv13hunxhyjk16zqv8dmdw0d773");
-  set_client_secret("IZ0T8WsUpJin7Qt3rHMf7qDAIFAkYZ0R");
+void Box::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    set_client_id("zmiv9tv13hunxhyjk16zqv8dmdw0d773");
+    set_client_secret("IZ0T8WsUpJin7Qt3rHMf7qDAIFAkYZ0R");
+  }
 }
 
 std::string Box::Auth::authorizeLibraryUrl() const {

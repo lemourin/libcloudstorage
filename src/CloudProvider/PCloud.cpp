@@ -219,9 +219,17 @@ IItem::Pointer PCloud::toItem(const Json::Value& v) const {
   return std::move(item);
 }
 
-PCloud::Auth::Auth() {
-  set_client_id("EDEqpUpRnFF");
-  set_client_secret("PQLFPbyObs5IzeUdXF7VcfkuAPs7");
+void PCloud::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    if (permission() == Permission::ReadWrite) {
+      set_client_id("EDEqpUpRnFF");
+      set_client_secret("PQLFPbyObs5IzeUdXF7VcfkuAPs7");
+    } else {
+      set_client_id("voX062WaS7m");
+      set_client_secret("kpTzRFiWEBRVFrRy79ufPQQGMqTX");
+    }
+  }
 }
 
 std::string PCloud::Auth::authorizeLibraryUrl() const {

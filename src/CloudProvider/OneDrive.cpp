@@ -222,9 +222,12 @@ std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
   return result;
 }
 
-OneDrive::Auth::Auth() {
-  set_client_id("56a1d60f-ea71-40e9-a489-b87fba12a23e");
-  set_client_secret("zJRAsd0o4E9c33q4OLc7OhY");
+void OneDrive::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
+  cloudstorage::Auth::initialize(http, factory);
+  if (client_id().empty()) {
+    set_client_id("56a1d60f-ea71-40e9-a489-b87fba12a23e");
+    set_client_secret("zJRAsd0o4E9c33q4OLc7OhY");
+  }
 }
 
 std::string OneDrive::Auth::authorizeLibraryUrl() const {
