@@ -16,7 +16,6 @@
         <file>resources/webdav_login.html</file>
         <file>qml/RegisterPage.qml</file>
         <file>resources/providers/google.png</file>
-        <file>resources/providers/amazon.png</file>
         <file>resources/providers/amazons3.png</file>
         <file>resources/providers/box.png</file>
         <file>resources/providers/dropbox.png</file>

@@ -60,7 +60,6 @@ DEPS_res = \
 	resources/providers/google.png \
 	resources/providers/onedrive.png \
 	resources/providers/dropbox.png \
-	resources/providers/amazon.png \
 	resources/providers/amazons3.png \
 	resources/providers/box.png \
 	resources/providers/pcloud.png \

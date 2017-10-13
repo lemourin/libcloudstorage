@@ -10,7 +10,6 @@ Supported cloud providers:
 * `GoogleDrive`
 * `OneDrive`
 * `Dropbox`
-* `AmazonDrive`
 * `box.com`
 * `YandexDisk`
 * `WebDAV`

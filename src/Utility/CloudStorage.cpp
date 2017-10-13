@@ -23,7 +23,6 @@
 
 #include "CloudStorage.h"
 
-#include "CloudProvider/AmazonDrive.h"
 #include "CloudProvider/AmazonS3.h"
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
@@ -169,7 +168,6 @@ CloudStorage::CloudStorage() {
   add([]() { return std::make_shared<GoogleDrive>(); });
   add([]() { return std::make_shared<OneDrive>(); });
   add([]() { return std::make_shared<Dropbox>(); });
-  add([]() { return std::make_shared<AmazonDrive>(); });
   add([]() { return std::make_shared<Box>(); });
   add([]() { return std::make_shared<YouTube>(); });
   add([]() { return std::make_shared<YandexDisk>(); });
