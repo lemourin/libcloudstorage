@@ -308,7 +308,13 @@ GoogleDrive::Auth::Auth() {
 
 std::string GoogleDrive::Auth::authorizeLibraryUrl() const {
   std::string response_type = "code";
-  std::string scope = GOOGLEAPI_ENDPOINT + "/auth/drive";
+  std::string scope;
+  if (permission() == Permission::ReadMetaData)
+    scope = "https://www.googleapis.com/auth/drive.metadata.readonly";
+  else if (permission() == Permission::Read)
+    scope = "https://www.googleapis.com/auth/drive.readonly";
+  else
+    scope = "https://www.googleapis.com/auth/drive";
   std::string url = "https://accounts.google.com/o/oauth2/auth?";
   url += "response_type=" + response_type + "&";
   url += "client_id=" + client_id() + "&";

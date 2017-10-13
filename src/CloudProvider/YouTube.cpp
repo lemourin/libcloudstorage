@@ -436,7 +436,7 @@ IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/youtube"
+         "&scope=https://www.googleapis.com/auth/youtube.readonly"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
          state();

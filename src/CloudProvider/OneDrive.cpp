@@ -230,7 +230,11 @@ OneDrive::Auth::Auth() {
 std::string OneDrive::Auth::authorizeLibraryUrl() const {
   std::string result =
       std::string("https://login.live.com/oauth20_authorize.srf?");
-  std::string scope = "wl.signin%20wl.offline_access%20onedrive.readwrite";
+  std::string scope = "wl.signin%20wl.offline_access%20";
+  if (permission() == ICloudProvider::Permission::ReadWrite)
+    scope += "onedrive.readwrite";
+  else
+    scope += "onedrive.readonly";
   std::string response_type = "code";
   result += "client_id=" + client_id() + "&";
   result += "scope=" + scope + "&";
