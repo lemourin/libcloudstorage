@@ -1,0 +1,28 @@
+language: cpp
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - sourceline: 'deb http://ppa.launchpad.net/lemourin/libcloudstorage/ubuntu trusty main'
+    packages:
+    - g++-7
+    - libmega-dev
+    - libjsoncpp-dev
+    - libcurl-dev
+    - libtinyxml2-dev
+    - libmicrohttpd-dev
+    - libcrypto++-dev
+
+before_install:
+  - CC=gcc-7
+  - CXX=g++-7
+
+script:
+  - ./bootstrap
+  - ./configure
+  - make
+      CXXFLAGS="-pedantic -Wall -Werror -Wextra -g -O0 -fsanitize=address"
+      LDFLAGS="-static-libasan -fsanitize=address"
+  - make check LDFLAGS=-lasan
+  - cat test/test-suite.log
