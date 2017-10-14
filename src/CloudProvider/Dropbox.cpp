@@ -63,15 +63,15 @@ void upload(Request<EitherError<IItem>>::Pointer r,
           json["cursor"]["offset"] = sent;
         }
         request->setHeaderParameter("Content-Type", "application/octet-stream");
-        request->setHeaderParameter("Dropbox-API-Arg", util::to_string(json));
+        request->setHeaderParameter("Dropbox-API-Arg",
+                                    util::json::to_string(json));
         stream->write(buffer.data(), *length);
         return request;
       },
       [=](EitherError<Response> e) {
         if (e.left()) return r->done(e.left());
         try {
-          Json::Value json;
-          e.right()->output() >> json;
+          auto json = util::json::from_stream(e.right()->output());
           if (sent < size)
             upload(
                 r,
@@ -126,16 +126,14 @@ IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = item.id();
-  input << util::to_string(parameter);
+  input << util::json::to_string(parameter);
   return request;
 }
 
 std::string Dropbox::getItemUrlResponse(const IItem&,
                                         const IHttpRequest::HeaderParameters&,
                                         std::istream& output) const {
-  Json::Value response;
-  output >> response;
-  return response["link"].asString();
+  return util::json::from_stream(output)["link"].asString();
 }
 
 IHttpRequest::Pointer Dropbox::getItemDataRequest(const std::string& id,
@@ -144,14 +142,12 @@ IHttpRequest::Pointer Dropbox::getItemDataRequest(const std::string& id,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = id;
-  input << util::to_string(parameter);
+  input << util::json::to_string(parameter);
   return request;
 }
 
 IItem::Pointer Dropbox::getItemDataResponse(std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-  return toItem(response);
+  return toItem(util::json::from_stream(stream));
 }
 
 IHttpRequest::Pointer Dropbox::listDirectoryRequest(
@@ -170,7 +166,7 @@ IHttpRequest::Pointer Dropbox::listDirectoryRequest(
 
   Json::Value parameter;
   parameter["path"] = item.id();
-  input_stream << util::to_string(parameter);
+  input_stream << util::json::to_string(parameter);
   return request;
 }
 
@@ -185,7 +181,8 @@ IHttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& item,
   request->setHeaderParameter("Content-Type", "");
   Json::Value parameter;
   parameter["path"] = item.id();
-  request->setHeaderParameter("Dropbox-API-arg", util::to_string(parameter));
+  request->setHeaderParameter("Dropbox-API-arg",
+                              util::json::to_string(parameter));
   return request;
 }
 
@@ -197,7 +194,8 @@ IHttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& item,
 
   Json::Value parameter;
   parameter["path"] = item.id();
-  request->setHeaderParameter("Dropbox-API-arg", util::to_string(parameter));
+  request->setHeaderParameter("Dropbox-API-arg",
+                              util::json::to_string(parameter));
   return request;
 }
 
@@ -248,9 +246,7 @@ IHttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
 
 std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
-  Json::Value response;
-  stream >> response;
-
+  auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["entries"]) result.push_back(toItem(v));
   if (response["has_more"].asBool()) {
@@ -262,9 +258,7 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
 IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
                                                 const std::string&,
                                                 std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  auto item = toItem(json);
+  auto item = toItem(util::json::from_stream(response));
   static_cast<Item*>(item.get())->set_type(IItem::FileType::Directory);
   return item;
 }
@@ -322,11 +316,8 @@ IHttpRequest::Pointer Dropbox::Auth::refreshTokenRequest(std::ostream&) const {
 
 IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-
   Token::Pointer token = util::make_unique<Token>();
-  token->token_ = response["access_token"].asString();
+  token->token_ = util::json::from_stream(stream)["access_token"].asString();
   token->refresh_token_ = token->token_;
   token->expires_in_ = -1;
   return token;

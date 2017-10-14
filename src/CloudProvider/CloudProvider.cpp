@@ -209,7 +209,7 @@ std::string ICloudProvider::serializeSession(const std::string& token,
   root_json["hints"] = hints_json;
   root_json["token"] = token;
 
-  return util::to_string(root_json);
+  return util::json::to_string(root_json);
 }
 
 bool ICloudProvider::deserializeSession(const std::string& serialized_data,
@@ -217,8 +217,8 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
   try {
     std::string token_tmp;
     Hints hints_tmp;
-    Json::Value unserialized_json;
-    std::stringstream(serialized_data) >> unserialized_json;
+    Json::Value unserialized_json =
+        util::json::from_stream(std::stringstream(serialized_data));
     for (const auto& key : unserialized_json["hints"]) {
       std::string hint_key = key.asString();
       hints_tmp[hint_key] = unserialized_json["hints"][hint_key].asString();
@@ -363,12 +363,12 @@ std::string CloudProvider::getFilename(const std::string& path) {
 std::pair<std::string, std::string> CloudProvider::credentialsFromString(
     const std::string& str) {
   try {
-    Json::Value json;
-    std::stringstream(util::from_base64(str)) >> json;
+    auto json =
+        util::json::from_stream(std::stringstream(util::from_base64(str)));
     std::string username = json["username"].asString();
     std::string password = json["password"].asString();
     return {username, password};
-  } catch (std::exception) {
+  } catch (Json::Exception) {
     return {};
   }
 }

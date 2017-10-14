@@ -907,7 +907,7 @@ IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
   Json::Value json;
   json["username"] = data.first;
   json["password"] = passwordHash(data.second);
-  token->token_ = util::to_base64(util::to_string(json));
+  token->token_ = util::to_base64(util::json::to_string(json));
   token->refresh_token_ = token->token_;
   return token;
 }

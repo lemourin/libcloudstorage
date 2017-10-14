@@ -69,8 +69,7 @@ IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
 std::string PCloud::getItemUrlResponse(const IItem&,
                                        const IHttpRequest::HeaderParameters&,
                                        std::istream& response) const {
-  Json::Value json;
-  response >> json;
+  auto json = util::json::from_stream(response);
   return "https://" + json["hosts"][0].asString() + json["path"].asString();
 }
 
@@ -92,17 +91,13 @@ IHttpRequest::Pointer PCloud::getItemDataRequest(const std::string& id,
 }
 
 IItem::Pointer PCloud::getItemDataResponse(std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json["metadata"]);
+  return toItem(util::json::from_stream(response)["metadata"]);
 }
 
 IItem::Pointer PCloud::uploadFileResponse(const IItem&, const std::string&,
                                           uint64_t,
                                           std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json["metadata"][0]);
+  return toItem(util::json::from_stream(response)["metadata"][0]);
 }
 
 IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
@@ -194,8 +189,7 @@ IHttpRequest::Pointer PCloud::renameItemRequest(const IItem& item,
 
 std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
     const IItem&, std::istream& response, std::string&) const {
-  Json::Value json;
-  response >> json;
+  auto json = util::json::from_stream(response);
   std::vector<IItem::Pointer> result;
   for (auto&& v : json["metadata"]["contents"]) result.push_back(toItem(v));
   return result;
@@ -252,8 +246,7 @@ IHttpRequest::Pointer PCloud::Auth::refreshTokenRequest(std::ostream&) const {
 
 IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
-  Json::Value json;
-  stream >> json;
+  auto json = util::json::from_stream(stream);
   if (!json.isMember("access_token")) throw std::logic_error("no access token");
   return util::make_unique<Token>(Token{json["access_token"].asString(),
                                         json["access_token"].asString(), -1});

@@ -43,7 +43,7 @@ std::string to_string(ItemId str) {
   Json::Value json;
   json["b"] = str.first;
   json["p"] = str.second;
-  return util::to_base64(util::to_string(json));
+  return util::to_base64(util::json::to_string(json));
 }
 
 std::string escapePath(const std::string& str) {
@@ -95,7 +95,7 @@ std::string AmazonS3::token() const {
   json["username"] = access_id();
   json["password"] = secret();
   json["region"] = region();
-  return util::to_base64(util::to_string(json));
+  return util::to_base64(util::json::to_string(json));
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }
@@ -511,24 +511,24 @@ std::string AmazonS3::region() const {
 
 std::pair<std::string, std::string> AmazonS3::extract(const std::string& str) {
   try {
-    Json::Value json;
-    std::stringstream(util::from_base64(str)) >> json;
+    auto json =
+        util::json::from_stream(std::stringstream(util::from_base64(str)));
     return {json["b"].asString(), json["p"].asString()};
-  } catch (std::exception) {
+  } catch (Json::Exception) {
     return {};
   }
 }
 
 bool AmazonS3::unpackCredentials(const std::string& code) {
-  auto lock = auth_lock();
   try {
-    Json::Value json;
-    std::stringstream(util::from_base64(code)) >> json;
+    auto lock = auth_lock();
+    auto json =
+        util::json::from_stream(std::stringstream(util::from_base64(code)));
     access_id_ = json["username"].asString();
     secret_ = json["password"].asString();
     region_ = json["region"].asString();
     return true;
-  } catch (std::exception) {
+  } catch (Json::Exception) {
     return false;
   }
 }

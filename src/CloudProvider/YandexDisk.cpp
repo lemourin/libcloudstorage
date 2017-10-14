@@ -60,9 +60,7 @@ IHttpRequest::Pointer YandexDisk::getItemUrlRequest(const IItem& item,
 std::string YandexDisk::getItemUrlResponse(
     const IItem&, const IHttpRequest::HeaderParameters&,
     std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return json["href"].asString();
+  return util::json::from_stream(response)["href"].asString();
 }
 
 IHttpRequest::Pointer YandexDisk::getItemDataRequest(const std::string& id,
@@ -73,9 +71,7 @@ IHttpRequest::Pointer YandexDisk::getItemDataRequest(const std::string& id,
 }
 
 IItem::Pointer YandexDisk::getItemDataResponse(std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json);
+  return toItem(util::json::from_stream(response));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
@@ -103,10 +99,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
         [=](EitherError<Response> e) {
           if (e.left()) f(e.left());
           try {
-            Json::Value response;
-            e.right()->output() >> response;
-            f(response["href"].asString());
-          } catch (std::exception) {
+            f(util::json::from_stream(e.right()->output())["href"].asString());
+          } catch (Json::Exception) {
             f(Error{IHttpRequest::Failure, e.right()->output().str()});
           }
         });
@@ -220,8 +214,7 @@ IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
 
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["_embedded"]["items"])
     result.push_back(toItem(v));
@@ -284,8 +277,7 @@ IHttpRequest::Pointer YandexDisk::Auth::refreshTokenRequest(
 
 IAuth::Token::Pointer YandexDisk::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   auto token = util::make_unique<Token>();
   token->expires_in_ = -1;
   token->token_ = response["access_token"].asString();

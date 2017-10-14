@@ -98,11 +98,10 @@ FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
 
 FileId::FileId(const std::string& str) : folder_() {
   try {
-    Json::Value json;
-    std::stringstream(util::from_base64(str)) >> json;
+    auto json = json::from_stream(std::stringstream(util::from_base64(str)));
     folder_ = json["t"].asBool();
     id_ = json["id"].asString();
-  } catch (std::exception) {
+  } catch (Json::Exception) {
   }
 }
 
@@ -110,7 +109,7 @@ FileId::operator std::string() const {
   Json::Value json;
   json["t"] = folder_;
   json["id"] = id_;
-  return util::to_base64(util::to_string(json));
+  return util::to_base64(json::to_string(json));
 }
 
 std::string to_lower(std::string str) {
@@ -417,10 +416,27 @@ std::string error_page(const std::string&) {
          "</html>";
 }
 
-std::string to_string(const Json::Value& json) {
+std::string json::to_string(const Json::Value& json) {
   Json::StreamWriterBuilder stream;
   stream["indentation"] = "";
   return Json::writeString(stream, json);
+}
+
+Json::Value json::from_stream(std::istream&& stream) {
+  return from_stream(static_cast<std::istream&>(stream));
+}
+
+Json::Value json::from_stream(std::istream& stream) {
+  Json::CharReaderBuilder factory;
+  std::stringstream sstream;
+  sstream << stream.rdbuf();
+  std::string str = sstream.str();
+  std::unique_ptr<Json::CharReader> reader(factory.newCharReader());
+  Json::Value json;
+  std::string error;
+  if (!reader->parse(str.data(), str.data() + str.size(), &json, &error))
+    throw Json::Exception(error);
+  return json;
 }
 
 const char* libcloudstorage_ascii_art() {

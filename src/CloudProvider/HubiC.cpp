@@ -90,9 +90,7 @@ IHttpRequest::Pointer HubiC::createDirectoryRequest(const IItem &item,
 }
 
 IItem::Pointer HubiC::getItemDataResponse(std::istream &response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json[0]);
+  return toItem(util::json::from_stream(response)[0]);
 }
 
 std::string HubiC::getItemUrlResponse(const IItem &item,
@@ -131,8 +129,7 @@ AuthorizeRequest::Pointer HubiC::authorizeAsync() {
           [=](EitherError<Response> e) {
             if (e.left()) return complete(e.left());
             try {
-              Json::Value response;
-              e.right()->output() >> response;
+              auto response = util::json::from_stream(e.right()->output());
               auto lock = auth_lock();
               openstack_endpoint_ = response["endpoint"].asString();
               openstack_token_ = response["token"].asString();
@@ -290,8 +287,7 @@ IHttpRequest::Pointer HubiC::getItemUrlRequest(const IItem &item,
 
 std::vector<IItem::Pointer> HubiC::listDirectoryResponse(
     const IItem &, std::istream &stream, std::string &next_page_token) const {
-  Json::Value json;
-  stream >> json;
+  auto json = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (auto &&v : json)
     if (!v.isMember("subdir")) {
@@ -372,16 +368,14 @@ IHttpRequest::Pointer HubiC::Auth::refreshTokenRequest(
 
 IAuth::Token::Pointer HubiC::Auth::exchangeAuthorizationCodeResponse(
     std::istream &stream) const {
-  Json::Value json;
-  stream >> json;
+  auto json = util::json::from_stream(stream);
   return util::make_unique<Token>(Token{json["access_token"].asString(),
                                         json["refresh_token"].asString(), -1});
 }
 
 IAuth::Token::Pointer HubiC::Auth::refreshTokenResponse(
     std::istream &data) const {
-  Json::Value response;
-  data >> response;
+  auto response = util::json::from_stream(data);
   Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = access_token()->refresh_token_;

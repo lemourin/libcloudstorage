@@ -138,7 +138,7 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
   request_data["parents"].append(item.id());
   prefix_stream << "--" << separator << "\r\n"
                 << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-                << util::to_string(request_data) << "\r\n"
+                << util::json::to_string(request_data) << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Type: \r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--\r\n";
@@ -236,15 +236,12 @@ IHttpRequest::Pointer GoogleDrive::renameItemRequest(
 }
 
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json);
+  return toItem(util::json::from_stream(response));
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["files"]) result.push_back(toItem(v));
 
@@ -352,9 +349,7 @@ IHttpRequest::Pointer GoogleDrive::Auth::refreshTokenRequest(
 
 IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& data) const {
-  Json::Value response;
-  data >> response;
-
+  auto response = util::json::from_stream(data);
   Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
@@ -364,8 +359,7 @@ IAuth::Token::Pointer GoogleDrive::Auth::exchangeAuthorizationCodeResponse(
 
 IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
     std::istream& data) const {
-  Json::Value response;
-  data >> response;
+  auto response = util::json::from_stream(data);
   Token::Pointer token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = access_token()->refresh_token_;

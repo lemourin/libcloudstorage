@@ -84,7 +84,11 @@ std::string from_base64(const std::string&);
 std::string login_page(const std::string& provider);
 std::string success_page(const std::string& provider);
 std::string error_page(const std::string& provider);
+namespace json {
 std::string to_string(const Json::Value&);
+Json::Value from_stream(std::istream&&);
+Json::Value from_stream(std::istream&);
+}  // namespace json
 const char* libcloudstorage_ascii_art();
 
 class Url {

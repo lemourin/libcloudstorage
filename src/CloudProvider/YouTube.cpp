@@ -53,13 +53,11 @@ struct YouTubeItem {
 
 YouTubeItem from_string(const std::string& id) {
   try {
-    Json::Value json;
-    std::stringstream(util::from_base64(id)) >> json;
-
+    auto json =
+        util::json::from_stream(std::stringstream(util::from_base64(id)));
     return {json["audio"].asBool(), json["playlist"].asBool(),
             json["id"].asString()};
-
-  } catch (std::exception) {
+  } catch (Json::Exception) {
     return {};
   }
 }
@@ -69,7 +67,7 @@ std::string to_string(YouTubeItem item) {
   json["audio"] = item.audio;
   json["playlist"] = item.playlist;
   json["id"] = item.id;
-  return util::to_base64(util::to_string(json));
+  return util::to_base64(util::json::to_string(json));
 }
 
 EitherError<std::string> descramble(const std::string& scrambled,
@@ -241,9 +239,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     if (it == std::string::npos)
       throw std::logic_error("ytplayer.config not found");
     stream.seekg(it + player_str.length());
-    Json::Value json;
-    stream >> json;
-    return json;
+    return util::json::from_stream(stream);
   };
   auto get_url = [=](Request<EitherError<std::string>>::Pointer r,
                      Json::Value json) {
@@ -361,16 +357,14 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
 
 IItem::Pointer YouTube::getItemDataResponse(std::istream& stream,
                                             bool audio) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   return toItem(response["items"][0], response["kind"].asString(), audio);
 }
 
 std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     const IItem& directory, std::istream& stream,
     std::string& next_page_token) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   bool audio = from_string(directory.id()).audio;
   std::string name_prefix = !audio ? "" : AUDIO_DIRECTORY + " ";

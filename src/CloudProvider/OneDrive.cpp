@@ -60,8 +60,7 @@ void upload(Request<EitherError<IItem>>::Pointer r,
       [=](EitherError<Response> e) {
         if (e.left()) return r->done(e.left());
         try {
-          Json::Value json;
-          e.right()->output() >> json;
+          auto json = util::json::from_stream(e.right()->output());
           upload(r, upload_url, sent + *length, callback, json);
         } catch (std::exception) {
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
@@ -98,8 +97,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                    [=](EitherError<Response> e) {
                      if (e.left()) return r->done(e.left());
                      try {
-                       Json::Value response;
-                       e.right()->output() >> response;
+                       auto response =
+                           util::json::from_stream(e.right()->output());
                        upload(r, response["uploadUrl"].asString(), 0, callback,
                               response);
                      } catch (std::exception) {
@@ -186,9 +185,7 @@ IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
 }
 
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json);
+  return toItem(util::json::from_stream(response));
 }
 
 IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
@@ -214,8 +211,7 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
 std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   std::vector<IItem::Pointer> result;
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   for (Json::Value v : response["value"]) result.push_back(toItem(v));
   if (response.isMember("@odata.nextLink"))
     next_page_token = response["@odata.nextLink"].asString();
@@ -272,10 +268,8 @@ IHttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
 
 IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-
-  Token::Pointer token = util::make_unique<Token>();
+  auto response = util::json::from_stream(stream);
+  auto token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();
@@ -284,9 +278,8 @@ IAuth::Token::Pointer OneDrive::Auth::exchangeAuthorizationCodeResponse(
 
 IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-  Token::Pointer token = util::make_unique<Token>();
+  auto response = util::json::from_stream(stream);
+  auto token = util::make_unique<Token>();
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = response["refresh_token"].asString();
   token->expires_in_ = response["expires_in"].asInt();

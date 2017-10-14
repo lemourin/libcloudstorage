@@ -101,7 +101,7 @@ IHttpRequest::Pointer Box::uploadFileRequest(
   json["parent"] = parent;
   prefix_stream << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"attributes\"\r\n\r\n"
-                << util::to_string(json) << "\r\n"
+                << util::json::to_string(json) << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"file\"; filename=\""
                 << util::Url::escapeHeader(filename) << "\"\r\n"
@@ -112,9 +112,7 @@ IHttpRequest::Pointer Box::uploadFileRequest(
 
 IItem::Pointer Box::uploadFileResponse(const IItem&, const std::string&,
                                        uint64_t, std::istream& response) const {
-  Json::Value json;
-  response >> json;
-  return toItem(json["entries"][0]);
+  return toItem(util::json::from_stream(response)["entries"][0]);
 }
 
 IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
@@ -186,16 +184,12 @@ IHttpRequest::Pointer Box::renameItemRequest(const IItem& item,
 }
 
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
-  auto item = toItem(response);
-  return item;
+  return toItem(util::json::from_stream(stream));
 }
 
 std::vector<IItem::Pointer> Box::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["entries"]) result.push_back(toItem(v));
   int offset = response["offset"].asInt();
@@ -254,8 +248,7 @@ IHttpRequest::Pointer Box::Auth::refreshTokenRequest(
 
 IAuth::Token::Pointer Box::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   return util::make_unique<Token>(Token{response["access_token"].asString(),
                                         response["refresh_token"].asString(),
                                         -1});
@@ -263,8 +256,7 @@ IAuth::Token::Pointer Box::Auth::exchangeAuthorizationCodeResponse(
 
 IAuth::Token::Pointer Box::Auth::refreshTokenResponse(
     std::istream& stream) const {
-  Json::Value response;
-  stream >> response;
+  auto response = util::json::from_stream(stream);
   return util::make_unique<Token>(Token{response["access_token"].asString(),
                                         response["refresh_token"].asString(),
                                         -1});
