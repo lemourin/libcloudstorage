@@ -34,4 +34,3 @@ build*
 libcloudstorage*
 .clang_complete
 .vscode
-test/googletest
