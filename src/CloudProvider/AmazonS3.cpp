@@ -43,7 +43,7 @@ std::string to_string(ItemId str) {
   Json::Value json;
   json["b"] = str.first;
   json["p"] = str.second;
-  return util::to_base64(Json::FastWriter().write(json));
+  return util::to_base64(util::to_string(json));
 }
 
 std::string escapePath(const std::string& str) {
@@ -95,7 +95,7 @@ std::string AmazonS3::token() const {
   json["username"] = access_id();
   json["password"] = secret();
   json["region"] = region();
-  return util::to_base64(Json::FastWriter().write(json));
+  return util::to_base64(util::to_string(json));
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }

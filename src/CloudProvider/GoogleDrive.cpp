@@ -136,11 +136,9 @@ IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
   Json::Value request_data;
   request_data["name"] = filename;
   request_data["parents"].append(item.id());
-  std::string json_data = Json::FastWriter().write(request_data);
-  json_data.pop_back();
   prefix_stream << "--" << separator << "\r\n"
                 << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-                << json_data << "\r\n"
+                << util::to_string(request_data) << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Type: \r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--\r\n";

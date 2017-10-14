@@ -37,7 +37,7 @@ std::string id(std::shared_ptr<ICloudProvider> p, IItem::Pointer i) {
   Json::Value json;
   if (p) json["p"] = p->name();
   json["i"] = i->filename() + i->id();
-  return Json::FastWriter().write(json);
+  return util::to_string(json);
 }
 
 }  // namespace

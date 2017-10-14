@@ -99,11 +99,9 @@ IHttpRequest::Pointer Box::uploadFileRequest(
   Json::Value parent;
   parent["id"] = FileId(directory.id()).id_;
   json["parent"] = parent;
-  std::string json_data = Json::FastWriter().write(json);
-  json_data.pop_back();
   prefix_stream << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"attributes\"\r\n\r\n"
-                << json_data << "\r\n"
+                << util::to_string(json) << "\r\n"
                 << "--" << separator << "\r\n"
                 << "Content-Disposition: form-data; name=\"file\"; filename=\""
                 << util::Url::escapeHeader(filename) << "\"\r\n"

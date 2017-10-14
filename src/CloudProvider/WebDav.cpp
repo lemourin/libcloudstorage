@@ -75,7 +75,7 @@ std::string WebDav::token() const {
   json["username"] = user_;
   json["password"] = password_;
   json["webdav_url"] = webdav_url_;
-  return util::to_base64(Json::FastWriter().write(json));
+  return util::to_base64(util::to_string(json));
 }
 
 AuthorizeRequest::Pointer WebDav::authorizeAsync() {

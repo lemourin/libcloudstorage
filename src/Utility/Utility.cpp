@@ -108,7 +108,7 @@ FileId::operator std::string() const {
   Json::Value json;
   json["t"] = folder_;
   json["id"] = id_;
-  return util::to_base64(Json::FastWriter().write(json));
+  return util::to_base64(util::to_string(json));
 }
 
 std::string to_lower(std::string str) {
@@ -413,6 +413,12 @@ std::string error_page(const std::string&) {
          "'/error');"
          "</script>"
          "</html>";
+}
+
+std::string to_string(const Json::Value& json) {
+  Json::StreamWriterBuilder stream;
+  stream["indentation"] = "";
+  return Json::writeString(stream, json);
 }
 
 const char* libcloudstorage_ascii_art() {

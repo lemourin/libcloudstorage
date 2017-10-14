@@ -63,9 +63,7 @@ void upload(Request<EitherError<IItem>>::Pointer r,
           json["cursor"]["offset"] = sent;
         }
         request->setHeaderParameter("Content-Type", "application/octet-stream");
-        auto argument = Json::FastWriter().write(json);
-        argument.pop_back();
-        request->setHeaderParameter("Dropbox-API-Arg", argument);
+        request->setHeaderParameter("Dropbox-API-Arg", util::to_string(json));
         stream->write(buffer.data(), *length);
         return request;
       },
@@ -128,7 +126,7 @@ IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = item.id();
-  input << Json::FastWriter().write(parameter);
+  input << util::to_string(parameter);
   return request;
 }
 
@@ -146,7 +144,7 @@ IHttpRequest::Pointer Dropbox::getItemDataRequest(const std::string& id,
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value parameter;
   parameter["path"] = id;
-  input << Json::FastWriter().write(parameter);
+  input << util::to_string(parameter);
   return request;
 }
 
@@ -172,7 +170,7 @@ IHttpRequest::Pointer Dropbox::listDirectoryRequest(
 
   Json::Value parameter;
   parameter["path"] = item.id();
-  input_stream << Json::FastWriter().write(parameter);
+  input_stream << util::to_string(parameter);
   return request;
 }
 
@@ -187,9 +185,7 @@ IHttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& item,
   request->setHeaderParameter("Content-Type", "");
   Json::Value parameter;
   parameter["path"] = item.id();
-  std::string str = Json::FastWriter().write(parameter);
-  str.pop_back();
-  request->setHeaderParameter("Dropbox-API-arg", str);
+  request->setHeaderParameter("Dropbox-API-arg", util::to_string(parameter));
   return request;
 }
 
@@ -201,9 +197,7 @@ IHttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& item,
 
   Json::Value parameter;
   parameter["path"] = item.id();
-  std::string str = Json::FastWriter().write(parameter);
-  str.pop_back();
-  request->setHeaderParameter("Dropbox-API-arg", str);
+  request->setHeaderParameter("Dropbox-API-arg", util::to_string(parameter));
   return request;
 }
 

@@ -66,7 +66,7 @@ std::string to_string(YouTubeItem item) {
   json["audio"] = item.audio;
   json["playlist"] = item.playlist;
   json["id"] = item.id;
-  return util::to_base64(Json::FastWriter().write(json));
+  return util::to_base64(util::to_string(json));
 }
 
 EitherError<std::string> descramble(const std::string& scrambled,

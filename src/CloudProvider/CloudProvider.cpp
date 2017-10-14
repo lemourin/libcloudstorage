@@ -209,9 +209,7 @@ std::string ICloudProvider::serializeSession(const std::string& token,
   root_json["hints"] = hints_json;
   root_json["token"] = token;
 
-  Json::FastWriter fastWriter;
-  fastWriter.omitEndingLineFeed();
-  return fastWriter.write(root_json);
+  return util::to_string(root_json);
 }
 
 bool ICloudProvider::deserializeSession(const std::string& serialized_data,

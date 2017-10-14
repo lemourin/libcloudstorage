@@ -33,6 +33,10 @@
 #include "IHttpServer.h"
 #include "IItem.h"
 
+namespace Json {
+class Value;
+}  // namespace Json
+
 namespace cloudstorage {
 
 struct Range;
@@ -80,6 +84,7 @@ std::string from_base64(const std::string&);
 std::string login_page(const std::string& provider);
 std::string success_page(const std::string& provider);
 std::string error_page(const std::string& provider);
+std::string to_string(const Json::Value&);
 const char* libcloudstorage_ascii_art();
 
 class Url {
