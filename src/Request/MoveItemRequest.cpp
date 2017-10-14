@@ -44,7 +44,7 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
               try {
                 request->done(p->moveItemResponse(*source, *destination,
                                                   e.right()->output()));
-              } catch (std::exception) {
+              } catch (const std::exception&) {
                 request->done(
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }

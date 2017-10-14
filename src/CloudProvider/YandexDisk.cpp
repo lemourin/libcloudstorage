@@ -100,7 +100,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           if (e.left()) f(e.left());
           try {
             f(util::json::from_stream(e.right()->output())["href"].asString());
-          } catch (Json::Exception) {
+          } catch (const Json::Exception&) {
             f(Error{IHttpRequest::Failure, e.right()->output().str()});
           }
         });

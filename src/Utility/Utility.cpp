@@ -101,7 +101,7 @@ FileId::FileId(const std::string& str) : folder_() {
     auto json = json::from_stream(std::stringstream(util::from_base64(str)));
     folder_ = json["t"].asBool();
     id_ = json["id"].asString();
-  } catch (Json::Exception) {
+  } catch (const Json::Exception&) {
   }
 }
 

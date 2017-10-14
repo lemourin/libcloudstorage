@@ -148,7 +148,7 @@ AuthorizeRequest::Pointer HubiC::authorizeAsync() {
                     if (e.left()) return complete(e.left());
                     complete(nullptr);
                   });
-            } catch (std::exception) {
+            } catch (const Json::Exception &) {
               complete(Error{IHttpRequest::Failure, e.right()->output().str()});
             }
           });

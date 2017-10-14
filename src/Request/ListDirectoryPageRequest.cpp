@@ -51,7 +51,7 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
                 auto lst = r->provider()->listDirectoryResponse(
                     *directory, e.right()->output(), next_token);
                 r->done(PageData{lst, next_token});
-              } catch (std::exception) {
+              } catch (const std::exception&) {
                 r->done(
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }

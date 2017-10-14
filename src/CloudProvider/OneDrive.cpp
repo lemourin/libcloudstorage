@@ -62,7 +62,7 @@ void upload(Request<EitherError<IItem>>::Pointer r,
         try {
           auto json = util::json::from_stream(e.right()->output());
           upload(r, upload_url, sent + *length, callback, json);
-        } catch (std::exception) {
+        } catch (const Json::Exception&) {
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       },
@@ -101,7 +101,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                            util::json::from_stream(e.right()->output());
                        upload(r, response["uploadUrl"].asString(), 0, callback,
                               response);
-                     } catch (std::exception) {
+                     } catch (const Json::Exception&) {
                        r->done(Error{IHttpRequest::Failure,
                                      e.right()->output().str()});
                      }

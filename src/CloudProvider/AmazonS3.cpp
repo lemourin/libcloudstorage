@@ -514,7 +514,7 @@ std::pair<std::string, std::string> AmazonS3::extract(const std::string& str) {
     auto json =
         util::json::from_stream(std::stringstream(util::from_base64(str)));
     return {json["b"].asString(), json["p"].asString()};
-  } catch (Json::Exception) {
+  } catch (const Json::Exception&) {
     return {};
   }
 }
@@ -528,7 +528,7 @@ bool AmazonS3::unpackCredentials(const std::string& code) {
     secret_ = json["password"].asString();
     region_ = json["region"].asString();
     return true;
-  } catch (Json::Exception) {
+  } catch (const Json::Exception&) {
     return false;
   }
 }

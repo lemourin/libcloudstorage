@@ -58,7 +58,7 @@ void UploadFileRequest::resolve(Request::Pointer request,
           request->done(provider()->uploadFileResponse(*directory, filename,
                                                        stream_wrapper_.size_,
                                                        e.right()->output()));
-        } catch (std::exception) {
+        } catch (const std::exception&) {
           request->done(
               Error{IHttpRequest::Failure, e.right()->output().str()});
         }

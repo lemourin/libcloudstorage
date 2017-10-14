@@ -79,7 +79,7 @@ void upload(Request<EitherError<IItem>>::Pointer r,
                 path, sent + *length, callback);
           else
             r->done(Dropbox::toItem(json));
-        } catch (std::exception) {
+        } catch (const Json::Exception&) {
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       },

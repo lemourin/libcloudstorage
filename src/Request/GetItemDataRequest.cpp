@@ -40,7 +40,7 @@ GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
               try {
                 request->done(
                     provider()->getItemDataResponse(r.right()->output()));
-              } catch (std::exception) {
+              } catch (const std::exception&) {
                 request->done(
                     Error{IHttpRequest::Failure, r.right()->output().str()});
               }

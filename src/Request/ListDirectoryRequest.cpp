@@ -77,7 +77,7 @@ void ListDirectoryRequest::work(IItem::Pointer directory,
           else {
             request->done(result_);
           }
-        } catch (std::exception) {
+        } catch (const std::exception&) {
           request->done(
               Error{IHttpRequest::Failure, e.right()->output().str()});
         }

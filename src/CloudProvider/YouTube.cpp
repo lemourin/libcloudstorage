@@ -57,7 +57,7 @@ YouTubeItem from_string(const std::string& id) {
         util::json::from_stream(std::stringstream(util::from_base64(id)));
     return {json["audio"].asBool(), json["playlist"].asBool(),
             json["id"].asString()};
-  } catch (Json::Exception) {
+  } catch (const Json::Exception&) {
     return {};
   }
 }
@@ -161,7 +161,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
     auto function = find_descrambler_code(descrambler, stream);
     return transform(scrambled, function,
                      transformations(find_helper(function, stream)));
-  } catch (const std::exception& e) {
+  } catch (const std::logic_error& e) {
     return Error{IHttpRequest::Failure, e.what()};
   }
 }
@@ -214,7 +214,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                      try {
                        r->done(getItemDataResponse(e.right()->output(),
                                                    id_data.audio));
-                     } catch (std::exception) {
+                     } catch (const Json::Exception&) {
                        r->done(Error{IHttpRequest::Failure,
                                      e.right()->output().str()});
                      }

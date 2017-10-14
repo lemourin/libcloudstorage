@@ -262,7 +262,7 @@ bool WebDav::unpackCredentials(const std::string& code) {
     password_ = json["password"].asString();
     webdav_url_ = json["webdav_url"].asString();
     return true;
-  } catch (std::exception) {
+  } catch (const Json::Exception&) {
     return false;
   }
 }

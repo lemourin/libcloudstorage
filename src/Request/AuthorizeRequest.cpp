@@ -130,7 +130,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
              auth->set_access_token(auth->refreshTokenResponse(r->output()));
              lock.unlock();
              return complete(nullptr);
-           } catch (std::exception) {
+           } catch (const std::exception&) {
              return complete(Error{IHttpRequest::Failure, r->output().str()});
            }
          } else if ((!IHttpRequest::isClientError(e.left()->code_) &&
@@ -156,7 +156,7 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
                            e.right()->output()));
                    lock.unlock();
                    complete(nullptr);
-                 } catch (std::exception) {
+                 } catch (const std::exception&) {
                    complete(
                        Error{IHttpRequest::Failure, e.right()->output().str()});
                  }

@@ -227,7 +227,7 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
     token = token_tmp;
     hints = hints_tmp;
     return true;
-  } catch (const std::exception&) {
+  } catch (const Json::Exception&) {
     return false;
   }
 }
@@ -368,7 +368,7 @@ std::pair<std::string, std::string> CloudProvider::credentialsFromString(
     std::string username = json["username"].asString();
     std::string password = json["password"].asString();
     return {username, password};
-  } catch (Json::Exception) {
+  } catch (const Json::Exception&) {
     return {};
   }
 }

@@ -57,7 +57,7 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                   static_cast<Item*>(item.get())->set_url(url);
                   r->done(url);
                 }
-              } catch (std::exception) {
+              } catch (const std::exception&) {
                 r->done(
                     Error{IHttpRequest::Failure, e.right()->output().str()});
               }
