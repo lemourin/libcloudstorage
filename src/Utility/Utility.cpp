@@ -97,10 +97,12 @@ std::mutex stream_mutex;
 FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
 
 FileId::FileId(const std::string& str) : folder_() {
-  Json::Value json;
-  if (Json::Reader().parse(util::from_base64(str), json)) {
+  try {
+    Json::Value json;
+    std::stringstream(util::from_base64(str)) >> json;
     folder_ = json["t"].asBool();
     id_ = json["id"].asString();
+  } catch (std::exception) {
   }
 }
 

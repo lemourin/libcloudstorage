@@ -255,14 +255,16 @@ void WebDav::authorizeRequest(IHttpRequest& r) const {
 
 bool WebDav::unpackCredentials(const std::string& code) {
   auto lock = auth_lock();
-  Json::Value json;
-  if (Json::Reader().parse(util::from_base64(code), json)) {
+  try {
+    Json::Value json;
+    std::stringstream(util::from_base64(code)) >> json;
     user_ = json["username"].asString();
     password_ = json["password"].asString();
     webdav_url_ = json["webdav_url"].asString();
     return true;
-  } else
+  } catch (std::exception) {
     return false;
+  }
 }
 
 std::string WebDav::Auth::authorizeLibraryUrl() const {

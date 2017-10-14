@@ -52,11 +52,14 @@ struct YouTubeItem {
 };
 
 YouTubeItem from_string(const std::string& id) {
-  Json::Value json;
-  if (Json::Reader().parse(util::from_base64(id), json)) {
+  try {
+    Json::Value json;
+    std::stringstream(util::from_base64(id)) >> json;
+
     return {json["audio"].asBool(), json["playlist"].asBool(),
             json["id"].asString()};
-  } else {
+
+  } catch (std::exception) {
     return {};
   }
 }
@@ -367,10 +370,7 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     const IItem& directory, std::istream& stream,
     std::string& next_page_token) const {
   Json::Value response;
-  Json::Reader().parse(static_cast<const std::stringstream&>(std::stringstream()
-                                                             << stream.rdbuf())
-                           .str(),
-                       response);
+  stream >> response;
   std::vector<IItem::Pointer> result;
   bool audio = from_string(directory.id()).audio;
   std::string name_prefix = !audio ? "" : AUDIO_DIRECTORY + " ";

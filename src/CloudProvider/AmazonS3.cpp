@@ -510,22 +510,25 @@ std::string AmazonS3::region() const {
 }
 
 std::pair<std::string, std::string> AmazonS3::extract(const std::string& str) {
-  Json::Value json;
-  if (Json::Reader().parse(util::from_base64(str), json))
+  try {
+    Json::Value json;
+    std::stringstream(util::from_base64(str)) >> json;
     return {json["b"].asString(), json["p"].asString()};
-  else
+  } catch (std::exception) {
     return {};
+  }
 }
 
 bool AmazonS3::unpackCredentials(const std::string& code) {
   auto lock = auth_lock();
-  Json::Value json;
-  if (Json::Reader().parse(util::from_base64(code), json)) {
+  try {
+    Json::Value json;
+    std::stringstream(util::from_base64(code)) >> json;
     access_id_ = json["username"].asString();
     secret_ = json["password"].asString();
     region_ = json["region"].asString();
     return true;
-  } else {
+  } catch (std::exception) {
     return false;
   }
 }
