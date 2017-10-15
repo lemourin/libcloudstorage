@@ -278,12 +278,12 @@ IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     file.open(QFile::ReadOnly);
     ctx_->receivedCode(state, code);
     return util::response_from_string(request, IHttpRequest::Ok, {},
-                                      file.readAll().toStdString());
+                                      file.readAll().constData());
   } else if (request.url() == "/login" && state) {
     QFile file(QString(":/resources/") + state + "_login.html");
     file.open(QFile::ReadOnly);
     return util::response_from_string(request, IHttpRequest::Ok, {},
-                                      file.readAll().toStdString());
+                                      file.readAll().constData());
   } else
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       "Bad request");
