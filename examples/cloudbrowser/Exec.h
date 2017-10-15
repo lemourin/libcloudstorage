@@ -20,5 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
+#ifndef EXEC_H
+#define EXEC_H
 
 int exec_cloudbrowser(int argc, char** argv);
+
+#endif  // EXEC_H
