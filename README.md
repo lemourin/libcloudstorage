@@ -1,6 +1,7 @@
 # libcloudstorage
 [![Build Status](https://travis-ci.org/lemourin/libcloudstorage.svg?branch=master)](https://travis-ci.org/lemourin/libcloudstorage)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/14018/badge.svg)](https://scan.coverity.com/projects/lemourin-libcloudstorage)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/927fdff765294da3964e92194193d2b4)](https://www.codacy.com/app/lemourin/libcloudstorage?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lemourin/libcloudstorage&amp;utm_campaign=Badge_Grade)
 
 A `C++`  library providing access to  files located in various  cloud services  
 licensed under `GNU LGPLv2.1`. It is  focused on the basic operations on those  
