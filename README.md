@@ -1,4 +1,5 @@
 # libcloudstorage
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/927fdff765294da3964e92194193d2b4)](https://www.codacy.com/app/lemourin/libcloudstorage?utm_source=github.com&utm_medium=referral&utm_content=lemourin/libcloudstorage&utm_campaign=badger)
 [![Build Status](https://travis-ci.org/lemourin/libcloudstorage.svg?branch=master)](https://travis-ci.org/lemourin/libcloudstorage)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/14018/badge.svg)](https://scan.coverity.com/projects/lemourin-libcloudstorage)
 
