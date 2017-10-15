@@ -5,6 +5,7 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     - sourceline: 'deb http://ppa.launchpad.net/lemourin/libcloudstorage/ubuntu trusty main'
+    - sourceline: 'deb http://ppa.launchpad.net/beineri/opt-qt591-trusty/ubuntu trusty main'
     packages:
     - g++-7
     - libmega-dev
@@ -14,14 +15,18 @@ addons:
     - libtinyxml2-dev
     - libmicrohttpd-dev
     - libcrypto++-dev
+    - libffmpegthumbnailer-dev
+    - qt59base
+    - qt59declarative
 
 before_install:
   - CC=gcc-7
   - CXX=g++-7
 
 script:
+  - . /opt/qt59/bin/qt59-env.sh
   - ./bootstrap
-  - ./configure
+  - ./configure --with-examples
   - make
       CXXFLAGS="-pedantic -Wall -Werror -Wextra -g -O0 -fsanitize=address"
       LDFLAGS="-static-libasan -fsanitize=address"
