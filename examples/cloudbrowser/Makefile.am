@@ -18,8 +18,8 @@ libcloudbrowser_la_CXXFLAGS = \
 	$(qt_CFLAGS)
 
 libcloudbrowser_la_LIBADD = \
-	../../src/libcloudstorage.la \
-	$(qt_LIBS)
+	$(qt_LIBS) \
+	../../src/libcloudstorage.la
 
 if WITH_QTWEBVIEW
 libcloudbrowser_la_CXXFLAGS += $(qtwebview_CFLAGS)
