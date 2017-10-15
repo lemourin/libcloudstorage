@@ -8,6 +8,7 @@ addons:
     packages:
     - g++-7
     - libmega-dev
+    - libfuse3-dev
     - libjsoncpp-dev
     - libcurl-dev
     - libtinyxml2-dev
