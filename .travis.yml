@@ -1,11 +1,15 @@
 language: cpp
 
+env:
+  global:
+  - secure: xm+0q1h0D4T9P2Ifj7zIvt2NTajjsFiCBHayfku5sDeRH/lD2ouFX1oHAo0RhwZJsZJb/ztmvoiFwl4VfpnREQDS2+96cUvspmKBcoX0AMWyeEDW9TDH+0LSYhyQF4JzJwmZfhOHO+8smapXwp+Tt1MuUQ9JAoy6R9Dw/B/Qh34zjR2olLzGWlHu1FXahpQs4QyvcQGbXEP851KLNrGPyM/GT5e7uDRq709xX1dZTpP1ju4TBBqM2V2OIQxGrelrZGxJJkHUbaKq8po8q/oK7XbMo13kQBxvMYRaOPpAmQ/2Gd8GlL2qTeJHXRx9a+TNOrrh0ePqFjlaa2eygSUmem1PJbiYO+WYJCfwOvz+jWZlHKcgexOMWfQG/uuhh5caHlHY13cq3oeaLz6QZ6JUvEIyTa5anG9zETNHnzEVv3pNfd7n9fE3WiZlo+kqQB3ygJgF8lLVl1kan+ZLwIGiLpf5jZLni3lS9BLle59PsGILXJErM2H26LNQilD7wDbfnnCBbIcyQsrwsni6ESIBiQ5pNFJtQ44Ohz2mIykLRtmuJzSk6rKNcM/2YsauceNG9ktgfd7b7otEbrHOmeynLXgQjgvinwOtG73wrt34P95dUkuiHKhJI8YyPaqdiRvIQFNgvepsSMeo5T+W6OdnIsD0OWWHxueeVNWGPK9OZsw=
+
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
-    - sourceline: 'deb http://ppa.launchpad.net/lemourin/libcloudstorage/ubuntu trusty main'
-    - sourceline: 'deb http://ppa.launchpad.net/beineri/opt-qt591-trusty/ubuntu trusty main'
+    - sourceline: deb http://ppa.launchpad.net/lemourin/libcloudstorage/ubuntu trusty main
+    - sourceline: deb http://ppa.launchpad.net/beineri/opt-qt591-trusty/ubuntu trusty main
     packages:
     - g++-7
     - libmega-dev
@@ -18,17 +22,26 @@ addons:
     - libffmpegthumbnailer-dev
     - qt59base
     - qt59declarative
+  coverity_scan:
+    project:
+      name: lemourin/libcloudstorage
+      description: Build submitted via Travis CI
+    notification_email: pawel.wegner95@gmail.com
+    build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template
+    build_command: make -j 4
+    branch_pattern: master
 
 before_install:
-  - CC=gcc-7
-  - CXX=g++-7
-
-script:
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - . /opt/qt59/bin/qt59-env.sh
   - ./bootstrap
   - ./configure --with-examples
-  - make
+      CC=gcc-7
+      CXX=g++-7
       CXXFLAGS="-pedantic -Wall -Werror -Wextra -g -O0 -fsanitize=address"
       LDFLAGS="-static-libasan -fsanitize=address"
-  - make check LDFLAGS=-lasan
+
+script:
+  - make -j 4
+  - make check CXXFLAGS=-Wno-error -j 4
   - cat test/test-suite.log
