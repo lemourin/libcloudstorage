@@ -111,7 +111,10 @@ IHttpRequest::Pointer GoogleDrive::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   IHttpRequest::Pointer request =
       http()->create(endpoint() + "/drive/v3/files", "GET");
-  request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
+  if (item.id() == "shared")
+    request->setParameter("q", "sharedWithMe");
+  else
+    request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
   request->setParameter("fields",
                         "files(id,name,thumbnailLink,trashed,"
                         "mimeType,iconLink,parents,size,modifiedTime),kind,"
@@ -240,10 +243,15 @@ IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
 }
 
 std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
-    const IItem&, std::istream& stream, std::string& next_page_token) const {
+    const IItem& item, std::istream& stream,
+    std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
   std::vector<IItem::Pointer> result;
   for (Json::Value v : response["files"]) result.push_back(toItem(v));
+  if (item.id() == rootDirectory()->id())
+    result.push_back(util::make_unique<Item>(
+        "shared", "shared", IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::FileType::Directory));
 
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
