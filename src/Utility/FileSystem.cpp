@@ -255,6 +255,17 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
               ->send(
                   [=](IHttpRequest::Response response) {
                     if (IHttpRequest::isSuccess(response.http_code_)) {
+                      if (response.headers_.find("content-length") ==
+                          response.headers_.end())
+                        return this->download_item_async(
+                            n->provider(), n->item(), FullRange,
+                            [=](EitherError<std::string> e) {
+                              if (e.left()) return cb(e.left());
+                              auto nnode = std::make_shared<Node>(
+                                  n->provider(), n->item(), node,
+                                  e.right()->size());
+                              cb(std::static_pointer_cast<INode>(nnode));
+                            });
                       auto size = std::atoll(
                           response.headers_["content-length"].c_str());
                       auto nnode =
