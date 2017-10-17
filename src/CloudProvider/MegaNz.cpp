@@ -139,7 +139,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
   }
 
   std::string link_;
-  MegaHandle node_;
+  MegaHandle node_ = 0;
 };
 
 class TransferListener : public mega::MegaTransferListener, public Listener {
@@ -607,7 +607,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         std::array<char, BUFFER_SIZE> buffer;
         while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
           if (r->is_cancelled()) {
-            std::remove(cache.c_str());
+            (void)std::remove(cache.c_str());
             return r->done(Error{IHttpRequest::Aborted, ""});
           }
           mega_cache.write(buffer.data(), length);
@@ -615,7 +615,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       }
       auto listener = Listener::make<TransferListener>(
           [=](EitherError<void> e, Listener* listener) {
-            std::remove(cache.c_str());
+            (void)std::remove(cache.c_str());
             if (e.left()) return r->done(e.left());
             std::unique_ptr<MegaNode> node(mega_->getNodeByHandle(
                 static_cast<TransferListener*>(listener)->node_));
@@ -655,7 +655,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
               cache_file.read(buffer.data(), BUFFER_SIZE);
               callback->receivedData(buffer.data(), cache_file.gcount());
             } while (cache_file.gcount() > 0);
-            std::remove(cache.c_str());
+            (void)std::remove(cache.c_str());
             r->done(nullptr);
           },
           this);

@@ -86,7 +86,7 @@ FileSystem::CreatedNode::CreatedNode(FileId parent, const std::string& filename,
           std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc) {}
 
 FileSystem::CreatedNode::~CreatedNode() {
-  std::remove(cache_filename_.c_str());
+  (void)std::remove(cache_filename_.c_str());
 }
 
 FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
@@ -397,11 +397,12 @@ void FileSystem::read(FileId node, size_t offset, size_t sz,
                       read.range_.start_ - range.start_, read.range_.size_));
                 auto it = std::find(nd->read_request_.begin(),
                                     nd->read_request_.end(), read);
-                nd->read_request_.erase(it);
+                if (it != nd->read_request_.end()) nd->read_request_.erase(it);
               }
             auto it = std::find(nd->pending_download_.begin(),
                                 nd->pending_download_.end(), range);
-            nd->pending_download_.erase(it);
+            if (it != nd->pending_download_.end())
+              nd->pending_download_.erase(it);
             if (e.right()) {
               nd->chunk_.push_back({range, std::move(*e.right())});
               if (nd->chunk_.size() >= CACHED_CHUNK_COUNT)
