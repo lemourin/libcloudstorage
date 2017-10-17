@@ -38,8 +38,10 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
               std::bind(&AuthorizeRequest::resolve, this, _1, callback)),
       state_(provider()->auth()->state()),
       server_cancelled_() {
-  if (!provider()->auth_callback())
-    throw std::logic_error("CloudProvider's callback can't be null.");
+  if (!provider()->auth_callback()) {
+    util::log("CloudProvider's callback can't be null.");
+    std::terminate();
+  }
 }
 
 AuthorizeRequest::~AuthorizeRequest() { cancel(); }
