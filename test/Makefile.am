@@ -28,7 +28,8 @@ main_SOURCES = \
 	CloudProvider/GoogleDriveTest.cpp
 
 check_HEADERS = \
-	Utility/HttpMock.h
+	Utility/HttpMock.h \
+	Utility/HttpServerMock.h
 
 main_LDFLAGS = -pthread
 
