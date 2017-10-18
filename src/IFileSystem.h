@@ -28,6 +28,8 @@ class IFileSystem {
    public:
     using Pointer = std::shared_ptr<INode>;
 
+    virtual ~INode() = default;
+
     virtual FileId inode() const = 0;
     virtual std::chrono::system_clock::time_point timestamp() const = 0;
     virtual uint64_t size() const = 0;
