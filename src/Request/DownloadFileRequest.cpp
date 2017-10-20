@@ -54,8 +54,21 @@ void DownloadFileRequest::resolve(Request::Pointer request, IItem::Pointer file,
       [=](EitherError<Response> e) {
         if (e.left())
           request->done(e.left());
-        else
+        else {
+          if (range != FullRange) {
+            auto it = e.right()->headers().find("content-range");
+            std::stringstream range_stream;
+            range_stream << "bytes " << range.start_ << "-"
+                         << range.start_ + range.size_ - 1 << "/"
+                         << file->size();
+            if (it == e.right()->headers().end() ||
+                it->second != range_stream.str())
+              return request->done(
+                  Error{IHttpRequest::ServiceUnavailable,
+                        "invalid range header response: " + it->second});
+          }
           request->done(nullptr);
+        }
       },
       []() { return std::make_shared<std::stringstream>(); },
       std::make_shared<std::ostream>(&stream_wrapper_),
@@ -98,8 +111,21 @@ void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
         [=](EitherError<Response> e) {
           if (e.left())
             cb(e.left());
-          else
-            cb(nullptr);
+          else {
+            if (range != FullRange) {
+              auto it = e.right()->headers().find("content-range");
+              std::stringstream range_stream;
+              range_stream << "bytes " << range.start_ << "-"
+                           << range.start_ + range.size_ - 1 << "/"
+                           << file->size();
+              if (it == e.right()->headers().end() ||
+                  it->second != range_stream.str())
+                return r->done(
+                    Error{IHttpRequest::ServiceUnavailable,
+                          "invalid range header response: " + it->second});
+            }
+            r->done(nullptr);
+          }
         },
         [] { return std::make_shared<std::stringstream>(); },
         std::make_shared<std::ostream>(&stream_wrapper_),
