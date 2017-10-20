@@ -645,10 +645,8 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
   if (!p || !item) return cb(Error{IHttpRequest::ServiceUnavailable, ""});
   class Callback : public IDownloadFileCallback {
    public:
-    Callback(DownloadItemCallback cb, size_t size)
-        : start_(std::chrono::system_clock::now()),
-          callback_(cb),
-          size_(size) {}
+    Callback(DownloadItemCallback cb)
+        : start_(std::chrono::system_clock::now()), callback_(cb) {}
 
     void receivedData(const char* data, uint32_t length) override {
       buffer_ += std::string(data, length);
@@ -660,7 +658,6 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
                                         start_)
               .count());
       if (e.left()) return callback_(e.left());
-      buffer_.resize(std::min<size_t>(buffer_.size(), size_));
       callback_(buffer_);
     }
 
@@ -670,13 +667,10 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
     std::chrono::system_clock::time_point start_;
     std::string buffer_;
     DownloadItemCallback callback_;
-    size_t size_;
   };
   log("requesting", item->filename(), range.start_, "-",
       range.start_ + range.size_ - 1);
-  add({p,
-       p->downloadFileAsync(item, util::make_unique<Callback>(cb, range.size_),
-                            range)});
+  add({p, p->downloadFileAsync(item, util::make_unique<Callback>(cb), range)});
 }
 
 void FileSystem::get_url_async(std::shared_ptr<ICloudProvider> p,
