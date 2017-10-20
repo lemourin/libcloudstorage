@@ -48,10 +48,8 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
       data->callback_->isSuccess(static_cast<int>(data->http_code_),
                                  data->response_headers_)) {
     auto range_it = data->query_headers_.find("Range");
-    auto accept_it = data->response_headers_.find("accept-ranges");
     if (range_it != data->query_headers_.end() &&
-        (accept_it == data->response_headers_.end() ||
-         accept_it->second == "none")) {
+        data->http_code_ != IHttpRequest::Partial) {
       auto range = util::parse_range(range_it->second);
       auto begin = std::max<size_t>(range.start_, data->received_bytes_);
       auto end = std::min<size_t>(range.start_ + range.size_,
@@ -83,8 +81,9 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
     for (auto&& c : header_name) c = std::tolower(c);
     std::stringstream stream(header.substr(pos + 1));
     std::string header_value, token;
-    while (stream >> token) header_value += token;
-    (*header_data)[header_name] = header_value;
+    while (stream >> token) header_value += token + " ";
+    (*header_data)[header_name] =
+        header_value.substr(0, header_value.size() - 1);
   }
   return size * nitems;
 }
