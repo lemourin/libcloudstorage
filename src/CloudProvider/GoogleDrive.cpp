@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "Request/DownloadFileRequest.h"
+#include "Request/UploadFileRequest.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -67,6 +68,17 @@ std::string exported_extension(const std::string& type) {
     return ".pptx";
   else if (type == "application/vnd.google-apps.script")
     return ".json";
+  else
+    return "";
+}
+
+std::string google_extension_to_mime_type(const std::string& ext) {
+  if (ext == ".docx")
+    return "application/vnd.google-apps.document";
+  else if (ext == ".xlsx")
+    return "application/vnd.google-apps.spreadsheet";
+  else if (ext == ".pptx")
+    return "application/vnd.google-apps.presentation";
   else
     return "";
 }
@@ -126,26 +138,8 @@ IHttpRequest::Pointer GoogleDrive::listDirectoryRequest(
 IHttpRequest::Pointer GoogleDrive::uploadFileRequest(
     const IItem& f, const std::string& filename, std::ostream& prefix_stream,
     std::ostream& suffix_stream) const {
-  const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
-  const Item& item = static_cast<const Item&>(f);
-  IHttpRequest::Pointer request =
-      http()->create(endpoint() + "/upload/drive/v3/files", "POST");
-  request->setHeaderParameter("Content-Type",
-                              "multipart/related; boundary=" + separator);
-  request->setParameter("uploadType", "multipart");
-  request->setParameter("fields",
-                        "id,name,thumbnailLink,trashed,"
-                        "mimeType,iconLink,parents,size,modifiedTime");
-  Json::Value request_data;
-  request_data["name"] = filename;
-  request_data["parents"].append(item.id());
-  prefix_stream << "--" << separator << "\r\n"
-                << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-                << util::json::to_string(request_data) << "\r\n"
-                << "--" << separator << "\r\n"
-                << "Content-Type: \r\n\r\n";
-  suffix_stream << "\r\n--" << separator << "--\r\n";
-  return request;
+  return upload(f, endpoint() + "/upload/drive/v3/files", "POST", filename,
+                prefix_stream, suffix_stream);
 }
 
 IHttpRequest::Pointer GoogleDrive::downloadFileRequest(const IItem& item,
@@ -182,6 +176,57 @@ ICloudProvider::DownloadFileRequest::Pointer GoogleDrive::downloadFileAsync(
   return std::make_shared<cloudstorage::DownloadFileRequest>(
              shared_from_this(), std::move(file), std::move(callback), range,
              std::bind(&CloudProvider::downloadFileRequest, this, _1, _2))
+      ->run();
+}
+
+ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
+    IItem::Pointer directory, const std::string& filename,
+    IUploadFileCallback::Pointer cb) {
+  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+    r->subrequest(listDirectoryAsync(directory, [=](EitherError<
+                                                    std::vector<IItem::Pointer>>
+                                                        e) {
+      if (e.left()) return r->done(e.left());
+      IItem::Pointer item = nullptr;
+      int cnt = 0;
+      for (auto&& i : *e.right())
+        if (i->filename() == filename) {
+          item = i;
+          cnt++;
+        }
+      auto stream_wrapper = std::make_shared<UploadStreamWrapper>(
+          std::bind(&IUploadFileCallback::putData, cb.get(), _1, _2),
+          cb->size());
+      if (cnt != 1)
+        return cloudstorage::UploadFileRequest::resolve(
+            r, stream_wrapper, directory, filename, cb);
+      r->send(
+          [=](util::Output) {
+            cb->reset();
+            stream_wrapper->reset();
+            return upload(*directory,
+                          endpoint() + "/upload/drive/v3/files/" + item->id(),
+                          "PATCH", filename, stream_wrapper->prefix_,
+                          stream_wrapper->suffix_);
+          },
+          [=](EitherError<Response> e) {
+            if (e.left()) return r->done(e.left());
+            try {
+              r->done(r->provider()->uploadFileResponse(*directory, filename,
+                                                        stream_wrapper->size_,
+                                                        e.right()->output()));
+            } catch (const std::exception&) {
+              r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+            }
+          },
+          [=] { return std::make_shared<std::iostream>(stream_wrapper.get()); },
+          std::make_shared<std::stringstream>(), nullptr,
+          std::bind(&IUploadFileCallback::progress, cb, _1, _2), true);
+    }));
+  };
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },
+             resolve)
       ->run();
 }
 
@@ -258,6 +303,40 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   return result;
 }
 
+IHttpRequest::Pointer GoogleDrive::upload(const IItem& f,
+                                          const std::string& url,
+                                          const std::string& method,
+                                          const std::string& filename,
+                                          std::ostream& prefix_stream,
+                                          std::ostream& suffix_stream) const {
+  const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
+  const Item& item = static_cast<const Item&>(f);
+  IHttpRequest::Pointer request = http()->create(url, method);
+  request->setHeaderParameter("Content-Type",
+                              "multipart/related; boundary=" + separator);
+  request->setParameter("uploadType", "multipart");
+  request->setParameter("fields",
+                        "id,name,thumbnailLink,trashed,"
+                        "mimeType,iconLink,parents,size,modifiedTime");
+  Json::Value request_data;
+  auto it = filename.find_last_of('.');
+  if (it != std::string::npos) {
+    auto mime = google_extension_to_mime_type(filename.substr(it));
+    if (!mime.empty()) request_data["mimeType"] = mime;
+  }
+  if (method == "POST") {
+    request_data["name"] = filename;
+    request_data["parents"].append(item.id());
+  }
+  prefix_stream << "--" << separator << "\r\n"
+                << "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+                << util::json::to_string(request_data) << "\r\n"
+                << "--" << separator << "\r\n"
+                << "Content-Type: \r\n\r\n";
+  suffix_stream << "\r\n--" << separator << "--\r\n";
+  return request;
+}
+
 bool GoogleDrive::isGoogleMimeType(const std::string& mime_type) const {
   std::vector<std::string> types = {"application/vnd.google-apps.document",
                                     "application/vnd.google-apps.drawing",
@@ -280,14 +359,16 @@ IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
 
 IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(
-      v["name"].asString() + (isGoogleMimeType(v["mimeType"].asString())
-                                  ? exported_extension(v["mimeType"].asString())
-                                  : ""),
-      v["id"].asString(),
+      v["name"].asString(), v["id"].asString(),
       v.isMember("size") ? std::atoll(v["size"].asString().c_str())
                          : IItem::UnknownSize,
       util::parse_time(v["modifiedTime"].asString()),
       toFileType(v["mimeType"].asString()));
+  if (isGoogleMimeType(v["mimeType"].asString()) &&
+      item->filename().find('.') == std::string::npos) {
+    item->set_filename(item->filename() +
+                       exported_extension(v["mimeType"].asString()));
+  }
   item->set_hidden(v["trashed"].asBool());
   std::string thumnail_url = v["thumbnailLink"].asString();
   if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))

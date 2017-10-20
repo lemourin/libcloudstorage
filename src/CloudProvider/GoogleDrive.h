@@ -40,6 +40,9 @@ class GoogleDrive : public CloudProvider {
   ICloudProvider::DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer file, IDownloadFileCallback::Pointer callback,
       Range range) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string&,
+      IUploadFileCallback::Pointer) override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;
@@ -69,6 +72,12 @@ class GoogleDrive : public CloudProvider {
                                  std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+
+  IHttpRequest::Pointer upload(const IItem& f, const std::string& url,
+                               const std::string& method,
+                               const std::string& filename,
+                               std::ostream& prefix_stream,
+                               std::ostream& suffix_stream) const;
 
   bool isGoogleMimeType(const std::string& mime_type) const;
   IItem::FileType toFileType(const std::string& mime_type) const;

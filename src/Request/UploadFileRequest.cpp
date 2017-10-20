@@ -34,36 +34,35 @@ UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
                                      const std::string& filename,
                                      UploadFileRequest::ICallback::Pointer cb)
     : Request(p, [=](EitherError<IItem> e) { cb->done(e); },
-              std::bind(&UploadFileRequest::resolve, this, _1, directory,
-                        filename, cb.get())),
-      stream_wrapper_(std::bind(&ICallback::putData, cb.get(), _1, _2),
-                      cb->size()) {}
+              std::bind(&UploadFileRequest::resolve, _1,
+                        std::make_shared<UploadStreamWrapper>(
+                            std::bind(&ICallback::putData, cb.get(), _1, _2),
+                            cb->size()),
+                        directory, filename, cb)) {}
 
-UploadFileRequest::~UploadFileRequest() { cancel(); }
-
-void UploadFileRequest::resolve(Request::Pointer request,
+void UploadFileRequest::resolve(Request::Pointer r,
+                                UploadStreamWrapper::Pointer stream_wrapper,
                                 IItem::Pointer directory, std::string filename,
-                                ICallback* callback) {
-  send(
+                                ICallback::Pointer callback) {
+  r->send(
       [=](util::Output) {
         callback->reset();
-        stream_wrapper_.reset();
-        return provider()->uploadFileRequest(*directory, filename,
-                                             stream_wrapper_.prefix_,
-                                             stream_wrapper_.suffix_);
+        stream_wrapper->reset();
+        return r->provider()->uploadFileRequest(*directory, filename,
+                                                stream_wrapper->prefix_,
+                                                stream_wrapper->suffix_);
       },
       [=](EitherError<Response> e) {
-        if (e.left()) return request->done(e.left());
+        if (e.left()) return r->done(e.left());
         try {
-          request->done(provider()->uploadFileResponse(*directory, filename,
-                                                       stream_wrapper_.size_,
-                                                       e.right()->output()));
+          r->done(r->provider()->uploadFileResponse(*directory, filename,
+                                                    stream_wrapper->size_,
+                                                    e.right()->output()));
         } catch (const std::exception&) {
-          request->done(
-              Error{IHttpRequest::Failure, e.right()->output().str()});
+          r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       },
-      [=] { return std::make_shared<std::iostream>(&stream_wrapper_); },
+      [=] { return std::make_shared<std::iostream>(stream_wrapper.get()); },
       std::make_shared<std::stringstream>(), nullptr,
       std::bind(&UploadFileRequest::ICallback::progress, callback, _1, _2),
       true);
