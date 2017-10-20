@@ -365,7 +365,8 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
       util::parse_time(v["modifiedTime"].asString()),
       toFileType(v["mimeType"].asString()));
   if (isGoogleMimeType(v["mimeType"].asString()) &&
-      item->filename().find('.') == std::string::npos) {
+      (item->filename().find('.') == std::string::npos ||
+       item->extension() != exported_extension(v["mimeType"].asString()))) {
     item->set_filename(item->filename() +
                        exported_extension(v["mimeType"].asString()));
   }
