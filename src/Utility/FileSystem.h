@@ -30,8 +30,9 @@ class FileSystem : public IFileSystem {
     using Pointer = std::shared_ptr<Node>;
 
     Node();
-    Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item, FileId inode,
-         uint64_t size);
+    Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item, FileId parent,
+         FileId inode, uint64_t size);
+    ~Node();
 
     FileId inode() const override;
     std::chrono::system_clock::time_point timestamp() const override;
@@ -63,12 +64,15 @@ class FileSystem : public IFileSystem {
     mutex mutex_;
     std::shared_ptr<ICloudProvider> provider_;
     IItem::Pointer item_;
+    FileId parent_;
     FileId inode_;
     uint64_t size_;
     std::shared_ptr<IGenericRequest> upload_request_;
     std::vector<ReadRequest> read_request_;
     std::vector<Range> pending_download_;
     std::deque<Chunk> chunk_;
+    std::string cache_filename_;
+    std::unique_ptr<std::fstream> store_;
   };
 
   FileSystem(const std::vector<ProviderEntry> &, IHttp::Pointer http,
@@ -89,30 +93,18 @@ class FileSystem : public IFileSystem {
               const char *newname, RenameItemCallback) override;
   void mkdir(FileId parent, const char *name, GetItemCallback) override;
   void remove(FileId parent, const char *name, DeleteItemCallback) override;
-  void release(FileId, DeleteItemCallback) override;
+  void fsync(FileId, DataSynchronizedCallback) override;
   std::string sanitize(const std::string &) override;
 
  private:
-  struct CreatedNode {
-    using Pointer = std::unique_ptr<CreatedNode>;
-
-    CreatedNode(FileId parent, const std::string &filename,
-                const std::string &cache_filename);
-    ~CreatedNode();
-
-    FileId parent_;
-    std::string filename_;
-    std::string cache_filename_;
-    std::fstream store_;
-  };
-
   struct RequestData {
     std::shared_ptr<ICloudProvider> provider_;
     std::shared_ptr<IGenericRequest> request_;
   };
 
   void add(RequestData r);
-  Node::Pointer add(std::shared_ptr<ICloudProvider>, IItem::Pointer);
+  Node::Pointer add(std::shared_ptr<ICloudProvider>, FileId parent,
+                    IItem::Pointer);
 
   void set(FileId, Node::Pointer);
 
@@ -139,7 +131,6 @@ class FileSystem : public IFileSystem {
   std::unordered_map<FileId, Node::Pointer> node_map_;
   std::unordered_map<std::string, Node::Pointer> node_id_map_;
   std::unordered_map<FileId, std::unordered_set<FileId>> node_directory_;
-  std::unordered_map<FileId, CreatedNode::Pointer> created_node_;
   std::unordered_map<std::string, FileId> auth_node_;
   FileId next_;
   std::deque<RequestData> request_data_;

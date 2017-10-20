@@ -21,6 +21,7 @@ class IFileSystem {
   using GetItemCallback = std::function<void(EitherError<INode>)>;
   using DownloadItemCallback = std::function<void(EitherError<std::string>)>;
   using WriteDataCallback = std::function<void(EitherError<uint32_t>)>;
+  using DataSynchronizedCallback = std::function<void(EitherError<void>)>;
 
   static constexpr int NotEmpty = 1001;
 
@@ -74,7 +75,7 @@ class IFileSystem {
 
   virtual void remove(FileId parent, const char *name, DeleteItemCallback) = 0;
 
-  virtual void release(FileId, DeleteItemCallback) = 0;
+  virtual void fsync(FileId, DataSynchronizedCallback) = 0;
 };
 
 }  // namespace cloudstorage

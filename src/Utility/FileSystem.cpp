@@ -45,8 +45,12 @@ std::string id(std::shared_ptr<ICloudProvider> p, IItem::Pointer i) {
 FileSystem::Node::Node() : inode_(), size_() {}
 
 FileSystem::Node::Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
-                       FileId inode, uint64_t size)
-    : provider_(p), item_(item), inode_(inode), size_(size) {}
+                       FileId parent, FileId inode, uint64_t size)
+    : provider_(p), item_(item), parent_(parent), inode_(inode), size_(size) {}
+
+FileSystem::Node::~Node() {
+  if (store_) (void)std::remove(cache_filename_.c_str());
+}
 
 FileSystem::FileId FileSystem::Node::inode() const { return inode_; }
 
@@ -76,19 +80,6 @@ void FileSystem::Node::set_upload_request(std::shared_ptr<IGenericRequest> r) {
   upload_request_ = r;
 }
 
-FileSystem::CreatedNode::CreatedNode(FileId parent, const std::string& filename,
-                                     const std::string& cache_filename)
-    : parent_(parent),
-      filename_(filename),
-      cache_filename_(cache_filename),
-      store_(
-          cache_filename,
-          std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc) {}
-
-FileSystem::CreatedNode::~CreatedNode() {
-  (void)std::remove(cache_filename_.c_str());
-}
-
 FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
                        IHttp::Pointer http,
                        const std::string& temporary_directory)
@@ -100,18 +91,20 @@ FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
           std::launch::async, std::bind(&FileSystem::cancelled, this))),
       cleanup_(std::async(std::launch::async,
                           std::bind(&FileSystem::cleanup, this))) {
-  add(nullptr, util::make_unique<cloudstorage::Item>(
-                   "/", "root", IItem::UnknownSize, IItem::UnknownTimeStamp,
-                   IItem::FileType::Directory));
+  add(nullptr, 0, util::make_unique<cloudstorage::Item>(
+                      "/", "root", IItem::UnknownSize, IItem::UnknownTimeStamp,
+                      IItem::FileType::Directory));
   std::unordered_set<FileId> root_directory;
   for (auto&& entry : provider) {
     IItem::Pointer item = util::make_unique<cloudstorage::Item>(
         entry.label_, entry.provider_->rootDirectory()->id(),
         IItem::UnknownSize, IItem::UnknownTimeStamp,
         IItem::FileType::Directory);
-    root_directory.insert(add(entry.provider_, item)->inode());
+    auto provider_id = add(entry.provider_, 1, item)->inode();
+    root_directory.insert(provider_id);
     auth_node_[entry.label_] =
-        add(entry.provider_, auth_item(entry.provider_->name()))->inode();
+        add(entry.provider_, provider_id, auth_item(entry.provider_->name()))
+            ->inode();
   }
   node_directory_[1] = root_directory;
 }
@@ -173,12 +166,12 @@ void FileSystem::add(RequestData r) {
 }
 
 FileSystem::Node::Pointer FileSystem::add(std::shared_ptr<ICloudProvider> p,
-                                          IItem::Pointer i) {
+                                          FileId parent, IItem::Pointer i) {
   std::lock_guard<mutex> lock(node_data_mutex_);
   auto it = node_id_map_.find(id(p, i));
   if (it == std::end(node_id_map_)) {
     auto idx = next_++;
-    auto node = std::make_shared<Node>(p, i, idx, i->size());
+    auto node = std::make_shared<Node>(p, i, parent, idx, i->size());
     node_map_[idx] = node;
     node_id_map_[id(p, i)] = node;
     return node;
@@ -208,18 +201,20 @@ IFileSystem::FileId FileSystem::mknod(FileId parent, const char* name) {
   std::lock_guard<mutex> lock(node_data_mutex_);
   auto p = get(parent);
   if (!p->provider()) return 0;
-  auto idx = next_++;
-  created_node_[idx] = util::make_unique<CreatedNode>(
-      parent, name,
-      temporary_directory_ + "cloudstorage" + std::to_string(idx));
-  set(idx, std::make_shared<Node>(
-               p->provider(),
-               std::make_shared<Item>(name, "", 0, IItem::UnknownTimeStamp,
-                                      IItem::FileType::Unknown),
-               idx, 0));
-  auto it = node_directory_.find(parent);
-  if (it != node_directory_.end()) it->second.insert(idx);
-  return idx;
+  auto node = add(p->provider(), parent,
+                  std::make_shared<Item>(name, "", 0, IItem::UnknownTimeStamp,
+                                         IItem::FileType::Unknown));
+  node->cache_filename_ =
+      temporary_directory_ + "cloudstorage" + std::to_string(node->inode());
+  node->store_ = util::make_unique<std::fstream>(
+      node->cache_filename_,
+      std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
+  {
+    std::lock_guard<mutex> lock(node_data_mutex_);
+    auto it = node_directory_.find(node->parent_);
+    if (it != node_directory_.end()) it->second.insert(node->inode());
+  }
+  return node->inode();
 }
 
 FileSystem::Node::Pointer FileSystem::get(FileId node) {
@@ -262,15 +257,16 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
                             [=](EitherError<std::string> e) {
                               if (e.left()) return cb(e.left());
                               auto nnode = std::make_shared<Node>(
-                                  n->provider(), n->item(), node,
+                                  n->provider(), n->item(), n->parent_, node,
                                   e.right()->size());
+                              this->set(node, nnode);
                               cb(std::static_pointer_cast<INode>(nnode));
                             });
                       auto size = std::atoll(
                           response.headers_["content-length"].c_str());
-                      auto nnode =
-                          std::make_shared<Node>(n->provider(), n->item(), node,
-                                                 static_cast<uint64_t>(size));
+                      auto nnode = std::make_shared<Node>(
+                          n->provider(), n->item(), n->parent_, node,
+                          static_cast<uint64_t>(size));
                       this->set(node, nnode);
                       cb(std::static_pointer_cast<INode>(nnode));
                     } else
@@ -311,18 +307,25 @@ void FileSystem::get_path(FileId node, const std::string& path,
 
 void FileSystem::write(FileId inode, const char* data, uint32_t size,
                        uint64_t offset, WriteDataCallback callback) {
-  std::lock_guard<mutex> lock(node_data_mutex_);
-  auto it = created_node_.find(inode);
-  if (it == created_node_.end())
-    return callback(Error{IHttpRequest::ServiceUnavailable,
-                          "can't write over already present files"});
-  const auto& n = it->second;
-  n->store_.seekp(offset);
-  n->store_.write(data, size);
-  if (!n->store_)
-    return callback(0);
-  else
-    return callback(size);
+  getattr(inode, [=](EitherError<INode> e) {
+    if (e.left()) return callback(0);
+    auto n = static_cast<Node*>(e.right().get());
+    std::lock_guard<mutex> lock(n->mutex_);
+    if (!n->store_) {
+      n->cache_filename_ =
+          temporary_directory_ + "cloudstorage" + std::to_string(n->inode());
+      n->store_ = util::make_unique<std::fstream>(
+          n->cache_filename_,
+          std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
+    }
+    util::log("writing", e.right()->filename());
+    n->store_->seekp(offset);
+    n->store_->write(data, size);
+    if (!n->store_)
+      return callback(0);
+    else
+      return callback(size);
+  });
 }
 
 void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
@@ -343,7 +346,7 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
         if (auto lst = e.right()) {
           std::unordered_set<FileId> ret;
           for (auto&& i : *lst)
-            ret.insert(this->add(nd->provider(), i)->inode());
+            ret.insert(this->add(nd->provider(), node, i)->inode());
           {
             std::lock_guard<mutex> lock(node_data_mutex_);
             node_directory_[node] = ret;
@@ -354,7 +357,7 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
         } else {
           auto item = auth_item(nd->provider()->authorizeLibraryUrl());
           cb(std::vector<INode::Pointer>(
-              1, std::make_shared<Node>(nd->provider(), item,
+              1, std::make_shared<Node>(nd->provider(), item, node,
                                         auth_node_[nd->provider()->name()],
                                         item->size())));
         }
@@ -450,6 +453,10 @@ void FileSystem::invalidate(FileId root) {
 
 void FileSystem::rename(FileId parent, const char* name, FileId newparent,
                         const char* newname, RenameItemCallback callback) {
+  if (newname != sanitize(newname))
+    return callback(
+        Error{IHttpRequest::ServiceUnavailable, "invalid new name"});
+  util::log("renaming", name, "to", newname);
   lookup(parent, name, [=](EitherError<INode> e) {
     if (e.left()) return callback(e.left());
     auto parent_node = this->get(parent);
@@ -477,8 +484,8 @@ void FileSystem::rename(FileId parent, const char* name, FileId newparent,
             if (nit != std::end(node_directory_))
               nit->second.insert(node->inode());
             this->set(node->inode(),
-                      std::make_shared<Node>(p, e.right(), node->inode(),
-                                             node->size()));
+                      std::make_shared<Node>(p, e.right(), node->parent_,
+                                             node->inode(), node->size()));
           }
           callback(e);
         });
@@ -506,9 +513,7 @@ void FileSystem::remove(FileId parent, const char* name,
       return callback(Error{IHttpRequest::ServiceUnavailable, ""});
     this->add({node->provider(),
                node->provider()->deleteItemAsync(node->item(),
-                                                 [=](EitherError<void> e) {
-                                                   if (e.left())
-                                                     return callback(e.left());
+                                                 [=](EitherError<void>) {
                                                    update_lists(node);
                                                    callback(nullptr);
                                                  })});
@@ -529,40 +534,30 @@ void FileSystem::remove(FileId parent, const char* name,
   });
 }
 
-void FileSystem::release(FileId inode, DeleteItemCallback cb) {
-  std::lock_guard<mutex> lock(node_data_mutex_);
-  auto it = created_node_.find(inode);
-  if (it == created_node_.end()) {
-    auto node = get(inode);
-    std::lock_guard<mutex> lock(node->mutex_);
-    node->chunk_.clear();
-    return cb(nullptr);
-  }
-  auto node = std::move(it->second);
-  created_node_.erase(it);
+void FileSystem::fsync(FileId inode, DataSynchronizedCallback cb) {
+  auto node = get(inode);
   auto parent_node = get(node->parent_);
   auto p = parent_node->provider();
   if (!p) return cb(Error{IHttpRequest::ServiceUnavailable, ""});
+  {
+    std::lock_guard<mutex> lock(node->mutex_);
+    if (!node->store_) return cb(nullptr);
+  }
   class UploadCallback : public IUploadFileCallback {
    public:
     UploadCallback(FileSystem* ctx, std::shared_ptr<ICloudProvider> provider,
-                   FileId inode, CreatedNode::Pointer node,
-                   DeleteItemCallback cb)
-        : fuse_(ctx),
-          provider_(provider),
-          inode_(inode),
-          node_(std::move(node)),
-          callback_(cb) {
-      node_->store_.seekg(0, std::ios::end);
-      size_ = node_->store_.tellg();
-      node_->store_.seekg(std::ios::beg);
+                   Node::Pointer node, DeleteItemCallback cb)
+        : fuse_(ctx), provider_(provider), node_(node), callback_(cb) {
+      node_->store_->seekg(0, std::ios::end);
+      size_ = node_->store_->tellg();
+      node_->store_->seekg(std::ios::beg);
     }
 
-    void reset() override { node_->store_.seekg(std::ios::beg); }
+    void reset() override { node_->store_->seekg(std::ios::beg); }
 
     uint32_t putData(char* data, uint32_t maxlength) override {
-      node_->store_.read(data, maxlength);
-      return node_->store_.gcount();
+      node_->store_->read(data, maxlength);
+      return node_->store_->gcount();
     }
 
     uint64_t size() override { return size_; }
@@ -570,33 +565,32 @@ void FileSystem::release(FileId inode, DeleteItemCallback cb) {
     void done(EitherError<IItem> e) override {
       if (e.left()) return callback_(e.left());
       std::lock_guard<mutex> lock(fuse_->node_data_mutex_);
-      fuse_->set(inode_, std::make_shared<Node>(provider_, e.right(), inode_,
-                                                e.right()->size()));
+      fuse_->set(node_->inode_,
+                 std::make_shared<Node>(provider_, e.right(), node_->parent_,
+                                        node_->inode_, e.right()->size()));
       callback_(nullptr);
     }
 
     void progress(uint64_t, uint64_t now) override {
       std::lock_guard<mutex> lock(fuse_->node_data_mutex_);
-      auto node = fuse_->get(inode_);
+      auto node = fuse_->get(node_->inode_);
       node->set_size(now);
-      fuse_->set(inode_, node);
+      fuse_->set(node_->inode_, node);
     }
 
    private:
     FileSystem* fuse_;
     std::shared_ptr<ICloudProvider> provider_;
-    FileId inode_;
-    CreatedNode::Pointer node_;
+    Node::Pointer node_;
     DeleteItemCallback callback_;
     uint64_t size_;
   };
-  auto filename = node->filename_;
+  auto filename = node->filename();
+  log("fsync", filename);
   std::shared_ptr<IGenericRequest> upload_request = p->uploadFileAsync(
       parent_node->item(), filename,
-      util::make_unique<UploadCallback>(this, p, inode, std::move(node), cb));
-  auto fake_node = get(inode);
-  fake_node->set_upload_request(upload_request);
-  set(inode, fake_node);
+      util::make_unique<UploadCallback>(this, p, std::move(node), cb));
+  get(inode)->set_upload_request(upload_request);
   add({p, upload_request});
 }
 
@@ -609,7 +603,7 @@ void FileSystem::mkdir(FileId parent, const char* name,
        p->createDirectoryAsync(node->item(), name, [=](EitherError<IItem> e) {
          if (e.left()) return callback(e.left());
          std::lock_guard<mutex> lock(node_data_mutex_);
-         auto node = this->add(p, e.right());
+         auto node = this->add(p, parent, e.right());
          auto it = node_directory_.find(parent);
          if (it != node_directory_.end()) it->second.insert(node->inode());
          callback(std::static_pointer_cast<INode>(node));
@@ -678,7 +672,8 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
     DownloadItemCallback callback_;
     size_t size_;
   };
-  log("requesting", range.start_, "-", range.start_ + range.size_ - 1);
+  log("requesting", item->filename(), range.start_, "-",
+      range.start_ + range.size_ - 1);
   add({p,
        p->downloadFileAsync(item, util::make_unique<Callback>(cb, range.size_),
                             range)});

@@ -38,18 +38,21 @@ void opendir(fuse_req_t req, fuse_ino_t, struct fuse_file_info *fi) {
 }
 
 void open(fuse_req_t req, fuse_ino_t, struct fuse_file_info *fi) {
-  fi->keep_cache = true;
   fuse_reply_open(req, fi);
 }
 
-void release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *) {
-  context(req)->release(ino, [=](EitherError<void> e) {
+void fsync(fuse_req_t req, fuse_ino_t ino, int, struct fuse_file_info *) {
+  context(req)->fsync(ino, [=](EitherError<void> e) {
     if (e.left()) {
-      log("release:", e.left()->code_, e.left()->description_);
+      log("fsync:", e.left()->code_, e.left()->description_);
       fuse_reply_err(req, EINVAL);
     } else
       fuse_reply_err(req, 0);
   });
+}
+
+void flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *f) {
+  fsync(req, ino, 0, f);
 }
 
 void read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
@@ -156,12 +159,17 @@ void remove(fuse_req_t req, fuse_ino_t parent, const char *name) {
 }
 
 void mknod(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t, dev_t) {
+  if (name != context(req)->sanitize(name)) {
+    fuse_reply_err(req, EINVAL);
+    return;
+  }
+  log("mknod:", parent, name);
   auto inode = context(req)->mknod(parent, name);
   fuse_entry_param entry = {};
   entry.ino = inode;
   entry.attr.st_mode = S_IFREG | 0644;
-  entry.attr_timeout = DBL_MAX;
-  entry.entry_timeout = DBL_MAX;
+  entry.attr_timeout = 0;
+  entry.entry_timeout = 0;
   entry.generation = 1;
   fuse_reply_entry(req, &entry);
 }
@@ -194,7 +202,8 @@ fuse_lowlevel_ops low_level_operations() {
   operations.unlink = remove;
   operations.write = write;
   operations.mknod = mknod;
-  operations.release = release;
+  operations.fsync = fsync;
+  operations.flush = flush;
   return operations;
 }
 
