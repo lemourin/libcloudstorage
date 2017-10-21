@@ -258,8 +258,22 @@ std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
 IItem::Pointer Dropbox::createDirectoryResponse(const IItem&,
                                                 const std::string&,
                                                 std::istream& response) const {
-  auto item = toItem(util::json::from_stream(response));
+  auto item = toItem(util::json::from_stream(response)["metadata"]);
   static_cast<Item*>(item.get())->set_type(IItem::FileType::Directory);
+  return item;
+}
+
+IItem::Pointer Dropbox::renameItemResponse(const IItem& i, const std::string&,
+                                           std::istream& response) const {
+  auto item = toItem(util::json::from_stream(response)["metadata"]);
+  static_cast<Item*>(item.get())->set_type(i.type());
+  return item;
+}
+
+IItem::Pointer Dropbox::moveItemResponse(const IItem& source, const IItem&,
+                                         std::istream& response) const {
+  auto item = toItem(util::json::from_stream(response)["metadata"]);
+  static_cast<Item*>(item.get())->set_type(source.type());
   return item;
 }
 

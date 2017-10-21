@@ -74,7 +74,11 @@ class Dropbox : public CloudProvider {
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
                                          std::istream& response) const override;
-
+  IItem::Pointer renameItemResponse(const IItem& old_item,
+                                    const std::string& name,
+                                    std::istream& response) const override;
+  IItem::Pointer moveItemResponse(const IItem&, const IItem&,
+                                  std::istream&) const override;
   void authorizeRequest(IHttpRequest&) const override;
 
   static IItem::Pointer toItem(const Json::Value&);
