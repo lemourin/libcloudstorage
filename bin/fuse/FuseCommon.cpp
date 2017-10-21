@@ -216,7 +216,9 @@ int fuse_run(int argc, char **argv) {
         std::make_shared<cloudstorage::HttpServerCallback>(result), "",
         IHttpServer::Type::Authorization);
     auto key = result.get_future().get();
-    auto provider = storage->provider(key.state_, {});
+    ICloudProvider::InitData data;
+    data.permission_ = ICloudProvider::Permission::ReadWrite;
+    auto provider = storage->provider(key.state_, std::move(data));
     if (!provider) return 1;
     auto ret = provider->exchangeCodeAsync(key.code_)->result();
     if (auto token = ret.right()) {

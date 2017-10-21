@@ -185,7 +185,9 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
-  auto p = ICloudStorage::create()->provider(provider, {});
+  ICloudProvider::InitData data;
+  data.permission_ = ICloudProvider::Permission::ReadWrite;
+  auto p = ICloudStorage::create()->provider(provider, std::move(data));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     if (e.left())
       return util::log("exchangeCodeAsync", e.left()->code_,
