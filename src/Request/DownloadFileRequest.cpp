@@ -55,7 +55,7 @@ void DownloadFileRequest::resolve(Request::Pointer request, IItem::Pointer file,
         if (e.left())
           request->done(e.left());
         else {
-          if (range != FullRange) {
+          if (range != FullRange && file->size() != IItem::UnknownSize) {
             auto it = e.right()->headers().find("content-range");
             std::stringstream range_stream;
             range_stream << "bytes " << range.start_ << "-"
@@ -112,7 +112,7 @@ void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
           if (e.left())
             cb(e.left());
           else {
-            if (range != FullRange) {
+            if (range != FullRange && file->size() != IItem::UnknownSize) {
               auto it = e.right()->headers().find("content-range");
               std::stringstream range_stream;
               range_stream << "bytes " << range.start_ << "-"
