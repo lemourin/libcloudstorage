@@ -25,6 +25,7 @@ check_PROGRAMS = main
 
 main_SOURCES = \
 	main.cpp \
+	CloudProvider/CloudProviderTest.cpp \
 	CloudProvider/GoogleDriveTest.cpp
 
 check_HEADERS = \
