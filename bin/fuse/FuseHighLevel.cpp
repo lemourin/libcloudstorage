@@ -170,17 +170,21 @@ int write(const char *path, const char *data, size_t size, off_t offset,
   return ret.get_future().get();
 }
 
-int release(const char *path, struct fuse_file_info *) {
+int fsync(const char *path, int, struct fuse_file_info *) {
   std::promise<int> ret;
   auto ctx = context();
   ctx->getattr(path, [&](EitherError<IFileSystem::INode> e) {
     if (e.left()) return ret.set_value(-ENOENT);
-    ctx->release(e.right()->inode(), [&](EitherError<void> e) {
+    ctx->fsync(e.right()->inode(), [&](EitherError<void> e) {
       if (e.left()) return ret.set_value(-EIO);
       ret.set_value(0);
     });
   });
   return ret.get_future().get();
+}
+
+int flush(const char *path, struct fuse_file_info *fi) {
+  return fsync(path, 0, fi);
 }
 
 }  // namespace
@@ -198,7 +202,7 @@ fuse_operations high_level_operations() {
   operations.unlink = remove;
   operations.write = write;
   operations.mknod = mknod;
-  operations.release = release;
+  operations.fsync = fsync;
   return operations;
 }
 
