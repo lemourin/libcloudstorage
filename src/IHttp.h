@@ -48,6 +48,7 @@ class IHttpRequest {
   };
 
   static constexpr int Ok = 200;
+  static constexpr int Accepted = 202;
   static constexpr int Partial = 206;
   static constexpr int MultiStatus = 207;
   static constexpr int Bad = 400;
