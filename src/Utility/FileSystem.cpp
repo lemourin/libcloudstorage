@@ -318,7 +318,7 @@ void FileSystem::write(FileId inode, const char* data, uint32_t size,
           n->cache_filename_,
           std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
     }
-    util::log("writing", e.right()->filename());
+    util::log("writing", e.right()->filename(), offset, "-", offset + size - 1);
     n->store_->seekp(offset);
     n->store_->write(data, size);
     if (!n->store_)
