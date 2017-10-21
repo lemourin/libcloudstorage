@@ -42,7 +42,7 @@ std::string id(std::shared_ptr<ICloudProvider> p, IItem::Pointer i) {
 
 }  // namespace
 
-FileSystem::Node::Node() : inode_(), size_() {}
+FileSystem::Node::Node() : parent_(), inode_(), size_() {}
 
 FileSystem::Node::Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
                        FileId parent, FileId inode, uint64_t size)
