@@ -36,6 +36,8 @@ namespace cloudstorage {
 
 Response::Response(IHttpRequest::Response r) : http_(r) {}
 
+int Response::http_code() const { return http_.http_code_; }
+
 const IHttpRequest::HeaderParameters& Response::headers() const {
   return http_.headers_;
 }
