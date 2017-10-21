@@ -35,6 +35,35 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
+namespace {
+
+template <class T>
+void check_status(typename Request<EitherError<T>>::Pointer r,
+                  const std::string& href, EitherError<T> result) {
+  r->request(
+      [=](util::Output) { return r->provider()->http()->create(href); },
+      [=](EitherError<Response> e) {
+        if (e.left()) return r->done(e.left());
+        try {
+          auto json = util::json::from_stream(e.right()->output());
+          if (json.isMember("status")) {
+            if (json["status"].asString() == "in-progress")
+              check_status(r, href, result);
+            else if (json["status"].asString() == "success")
+              r->done(result);
+            else
+              r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          } else {
+            r->done(result);
+          }
+        } catch (const Json::Exception&) {
+          r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+        }
+      });
+}
+
+}  // namespace
+
 YandexDisk::YandexDisk() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string YandexDisk::name() const { return "yandex"; }
@@ -78,6 +107,110 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
   return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
                                                       range)
+      ->run();
+}
+
+ICloudProvider::RenameItemRequest::Pointer YandexDisk::renameItemAsync(
+    IItem::Pointer item, const std::string& name, RenameItemCallback cb) {
+  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          auto request =
+              http()->create(endpoint() + "/v1/disk/resources/move", "POST");
+          request->setParameter("from", item->id());
+          request->setParameter("path", getPath(item->id()) + "/" + name);
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          try {
+            auto json = util::json::from_stream(e.right()->output());
+            if (json.isMember("href"))
+              check_status<IItem>(
+                  r, json["href"].asString(),
+                  std::static_pointer_cast<IItem>(std::make_shared<Item>(
+                      name, getPath(item->id()) + "/" + name, item->size(),
+                      item->timestamp(), item->type())));
+            else
+              r->done(toItem(json));
+          } catch (const Json::Exception&) {
+            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          }
+        });
+  };
+  return std::make_shared<Request<EitherError<IItem>>>(shared_from_this(), cb,
+                                                       resolve)
+      ->run();
+}
+
+ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
+    IItem::Pointer source, IItem::Pointer destination, MoveItemCallback cb) {
+  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          auto request =
+              http()->create(endpoint() + "/v1/disk/resources/move", "POST");
+          request->setParameter("from", source->id());
+          request->setParameter(
+              "path",
+              destination->id() + (destination->id().back() == '/' ? "" : "/") +
+                  source->filename());
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          try {
+            auto json = util::json::from_stream(e.right()->output());
+            if (json.isMember("href"))
+              check_status<IItem>(
+                  r, json["href"].asString(),
+                  std::static_pointer_cast<IItem>(std::make_shared<Item>(
+                      source->filename(),
+                      destination->id() +
+                          (destination->id().back() == '/' ? "" : "/") +
+                          source->filename(),
+                      source->size(), source->timestamp(), source->type())));
+            else
+              r->done(toItem(json));
+          } catch (const Json::Exception&) {
+            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          }
+        });
+  };
+  return std::make_shared<Request<EitherError<IItem>>>(shared_from_this(), cb,
+                                                       resolve)
+      ->run();
+}
+
+ICloudProvider::DeleteItemRequest::Pointer YandexDisk::deleteItemAsync(
+    IItem::Pointer item, DeleteItemCallback cb) {
+  auto resolve = [=](Request<EitherError<void>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          auto request =
+              http()->create(endpoint() + "/v1/disk/resources", "DELETE");
+          request->setParameter("path", item->id());
+          request->setParameter("permamently", "true");
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          try {
+            if (e.right()->http_code() == IHttpRequest::Accepted)
+              check_status<void>(
+                  r,
+                  util::json::from_stream(e.right()->output())["href"]
+                      .asString(),
+                  nullptr);
+            else
+              r->done(nullptr);
+          } catch (const Json::Exception&) {
+            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          }
+        });
+  };
+  return std::make_shared<Request<EitherError<void>>>(shared_from_this(), cb,
+                                                      resolve)
       ->run();
 }
 
@@ -167,14 +300,6 @@ IHttpRequest::Pointer YandexDisk::listDirectoryRequest(
   return request;
 }
 
-IHttpRequest::Pointer YandexDisk::deleteItemRequest(const IItem& item,
-                                                    std::ostream&) const {
-  auto request = http()->create(endpoint() + "/v1/disk/resources", "DELETE");
-  request->setParameter("path", item.id());
-  request->setParameter("permamently", "true");
-  return request;
-}
-
 IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
                                                   const IItem& destination,
                                                   std::ostream&) const {
@@ -185,22 +310,6 @@ IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
                             (destination.id().back() == '/' ? "" : "/") +
                             source.filename());
   return request;
-}
-
-IHttpRequest::Pointer YandexDisk::renameItemRequest(const IItem& item,
-                                                    const std::string& name,
-                                                    std::ostream&) const {
-  auto request = http()->create(endpoint() + "/v1/disk/resources/move", "POST");
-  request->setParameter("from", item.id());
-  request->setParameter("path", getPath(item.id()) + "/" + name);
-  return request;
-}
-
-IItem::Pointer YandexDisk::renameItemResponse(const IItem& item,
-                                              const std::string& name,
-                                              std::istream&) const {
-  return util::make_unique<Item>(name, getPath(item.id()) + "/" + name,
-                                 item.size(), item.timestamp(), item.type());
 }
 
 IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,

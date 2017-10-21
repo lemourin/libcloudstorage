@@ -41,6 +41,14 @@ class YandexDisk : public CloudProvider {
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,
                                                  Range) override;
+  RenameItemRequest::Pointer renameItemAsync(IItem::Pointer item,
+                                             const std::string&,
+                                             RenameItemCallback) override;
+  MoveItemRequest::Pointer moveItemAsync(IItem::Pointer source,
+                                         IItem::Pointer destination,
+                                         MoveItemCallback) override;
+  DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
+                                             DeleteItemCallback) override;
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
@@ -55,12 +63,8 @@ class YandexDisk : public CloudProvider {
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
-  IHttpRequest::Pointer deleteItemRequest(
-      const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
                                         std::ostream&) const override;
-  IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
-                                          std::ostream&) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
@@ -68,9 +72,6 @@ class YandexDisk : public CloudProvider {
   std::string getItemUrlResponse(const IItem&,
                                  const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
-  IItem::Pointer renameItemResponse(const IItem& old_item,
-                                    const std::string& name,
-                                    std::istream& response) const override;
   IItem::Pointer moveItemResponse(const IItem&, const IItem&,
                                   std::istream&) const override;
   IItem::Pointer createDirectoryResponse(const IItem& parent,
