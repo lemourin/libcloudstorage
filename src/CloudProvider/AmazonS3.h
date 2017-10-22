@@ -47,6 +47,7 @@ class AmazonS3 : public CloudProvider {
   std::string token() const override;
   std::string name() const override;
   std::string endpoint() const override;
+  IItem::Pointer rootDirectory() const override;
 
   AuthorizeRequest::Pointer authorizeAsync() override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
@@ -83,12 +84,13 @@ class AmazonS3 : public CloudProvider {
 
   void authorizeRequest(IHttpRequest&) const override;
   bool reauthorize(int, const IHttpRequest::HeaderParameters&) const override;
+  bool isSuccess(int code,
+                 const IHttpRequest::HeaderParameters&) const override;
 
   std::string access_id() const;
   std::string secret() const;
   std::string region() const;
-
-  static std::pair<std::string, std::string> extract(const std::string&);
+  std::string bucket() const;
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -111,6 +113,7 @@ class AmazonS3 : public CloudProvider {
   std::string access_id_;
   std::string secret_;
   std::string region_;
+  std::string bucket_;
 };
 
 }  // namespace cloudstorage

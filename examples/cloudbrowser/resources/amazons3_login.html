@@ -30,7 +30,7 @@
           var json = {
             username: $('#inputAccessKey').val(),
             password: $('#inputSecretKey').val(),
-            region: $('#inputRegion').val()
+            bucket: $('#inputBucketName').val()
           };
           var code = window.btoa(JSON.stringify(json));
           window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
@@ -42,8 +42,8 @@
         S3 requires generating an access and a secret token in order to be used in external applications. To generate those
         tokens, go to "My security credentials", then "Access Keys" and create them.</h5><br/>
       <form class="form-horizontal" onsubmit="return submitData()">
-        <div class="form-group"><label for="inputRegion" class="col-sm-2 control-label">Region</label>
-          <div class="col-sm-10"><select id="inputRegion" class="form-control"><option value="ap-northeast-1">Asia Pacific (Tokyo)</option><option value="ap-northeast-2">Asia Pacific (Seoul)</option><option value="ap-south-1">Asia Pacific (Mumbai)</option><option value="ap-southeast-1">Asia Pacific (Singapore)</option><option value="ap-southeast-2">Asia Pacific (Sydney)</option><option value="ca-central-1">Canada (Central)</option><option value="eu-central-1">EU (Frankfurt)</option><option value="eu-west-1">EU (Ireland)</option><option value="eu-west-2">EU (London)</option><option value="sa-east-1">South America (São Paulo)</option><option value="us-east-1">US East (N. Virginia)</option><option value="us-east-2">US East (Ohio)</option><option value="us-west-1">US West (N. California)</option><option value="us-west-2">US West (Oregon)</option></select></div>
+        <div class="form-group"><label for="inputBucketName" class="col-sm-2 control-label">Bucket Name</label>
+          <div class="col-sm-10"><input type="text" class="form-control" id="inputBucketName" placeholder="Bucket Name"></div>
         </div>
         <div class="form-group"><label for="inputAccessKey" class="col-sm-2 control-label">Access Key</label>
           <div class="col-sm-10"><input type="text" class="form-control" id="inputAccessKey" placeholder="Access Key ID"></div>
