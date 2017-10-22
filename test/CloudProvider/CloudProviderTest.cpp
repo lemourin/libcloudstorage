@@ -23,6 +23,8 @@
 
 #include "gtest/gtest.h"
 
+#include <json/json.h>
+#include <fstream>
 #include <future>
 #include "ICloudProvider.h"
 #include "ICloudStorage.h"
@@ -32,34 +34,30 @@ using namespace cloudstorage;
 
 const int FILE_CNT = 2;
 
-const std::unordered_map<std::string, std::string> token = {
-    {"google",
-     "1/sdRsxv1qR3VjK_OA2f5upRb1U4xYR_1bItVaaIeiJrTXo9xtsZ5tlhvl1rIit-Q-"},
-    {"onedrive",
-     "MCa7kRygh1tZgKYHdqf4jPvArEd4z!Q0uB4EKVfNBMb4y8LIB!isKyU6KGsv!EZ!"
-     "qEbYhPS4VxaNpFm594E5jAYtXc5goGJaXHSNcBcY32PjZiwhJlF4kMNJc9pgrgFVi0kvQ3RLz"
-     "9SWAFletCVAWn*QWAOR!U*"
-     "wTFhCCfoA4ES9tf4eEtWOkTScti7ZOlvD4TQUSR4uNjY5LRgxvHAlN6lN!Nnw25*"
-     "QIXV9AizNuhq6h0OwiTb4Jv0oxaxD3Y46MBQioreb33YIS01Vq0P6cJGquGnrdfouapbUGPld"
-     "A*0ZACkt18Cn3LSXNFO2!P*"
-     "qbaLHXQrn6M6KLfaJFHJ8S6oo1ypZTNBtbqvK9UJeqyfFS24liwGPnlWE3Dv7hsSvSl*"
-     "uKIbKSK2ClAwVp7bkM02Q$"},
-    {"dropbox",
-     "eBwCIXpXbVAAAAAAAAAACiipLN07D3Yvz1b7M5bymk0HbpCYDy4d_z-o154nfGuN"},
-    {"hubic",
-     "gna2fXGzmOa0mCGXXVLPnE5NwGvnF7rYXDDv3bX2F1LMr1PCFuQJovuTZOKnHb8N"},
-    {"mega",
-     "eyJwYXNzd29yZCI6IjVQR245QzJ5cjExTTZGa01zQ3VHUmciLCJ1c2VybmFtZSI6ImxpYmNsb"
-     "3Vkc3RvcmFnZTFAZ21haWwuY29tIn0="},
-    {"webdav",
-     "eyJwYXNzd29yZCI6ImxpYmNsb3Vkc3RvcmFnZTEiLCJ1c2VybmFtZSI6ImxpYmNsb3Vkc3Rvc"
-     "mFnZSIsIndlYmRhdl91cmwiOiJodHRwczovL3dlYmRhdi55YW5kZXguY29tIn0="},
-    {"yandex", "AQAAAAAhRTtdAANV3-fj9f5XGE9CpYhXXNju78I"},
-    {"pcloud", "XdQ6ZEDEqpUpRnFFZDIhrE7Z86tiqN3o4hfsF1ifo8YaK4nR138X"}};
-
+#ifdef TOKEN_FILE
 #ifdef WITH_CURL
 
 #include "Utility/CurlHttp.h"
+
+class TokenData {
+ public:
+  TokenData() {
+    try {
+      json_ = util::json::from_stream(std::fstream(TOKEN_FILE));
+    } catch (const Json::Exception&) {
+      util::log("invalid token file", TOKEN_FILE);
+      std::terminate();
+    }
+  }
+
+  std::string token(const std::string& name) const {
+    return json_[name].asString();
+  }
+
+ private:
+  Json::Value json_;
+
+} token_data;
 
 class UploadFile : public IUploadFileCallback {
  public:
@@ -114,10 +112,16 @@ class CloudProviderTest : public ::testing::Test {
 
     ICloudProvider::InitData data;
     data.callback_ = util::make_unique<AuthCallback>();
-    data.token_ = token.find(name)->second;
+    data.token_ = token_data.token(name);
     auto p = ICloudStorage::create()->provider(name, std::move(data));
     initialize(p.get(), root_path);
     return p;
+  }
+
+  static void release(ICloudProvider* p) {
+    auto json = util::json::from_stream(std::ifstream(TOKEN_FILE));
+    json[p->name()] = p->token();
+    std::ofstream(TOKEN_FILE) << json;
   }
 
   static void initialize(ICloudProvider* p, const std::string& path) {
@@ -288,9 +292,11 @@ class CloudProviderTest : public ::testing::Test {
   static void check_same(IItem::Pointer data, IItem::Pointer item) {
     ASSERT_EQ(data->filename(), item->filename());
     ASSERT_EQ(data->id(), item->id());
-    ASSERT_EQ(data->timestamp(), item->timestamp());
-    ASSERT_EQ(data->size(), item->size());
     ASSERT_EQ(data->type(), item->type());
+    if (item->timestamp() != IItem::UnknownTimeStamp)
+      ASSERT_EQ(data->timestamp(), item->timestamp());
+    if (item->size() != IItem::UnknownSize)
+      ASSERT_EQ(data->size(), item->size());
   }
 
   static void directory_data(ICloudProvider* p, const std::string& path) {
@@ -310,19 +316,22 @@ class CloudProviderTest : public ::testing::Test {
   }
 };
 
-#define CloudProvider(name, provider_name, path)            \
-  class name : public CloudProviderTest {                   \
-   public:                                                  \
-    static void SetUpTestCase() {                           \
-      path_ = path;                                         \
-      provider_ = create(provider_name, path);              \
-    }                                                       \
-    static void TearDownTestCase() { provider_ = nullptr; } \
-                                                            \
-    static ICloudProvider::Pointer provider_;               \
-    static std::string path_;                               \
-  };                                                        \
-  ICloudProvider::Pointer name::provider_;                  \
+#define CloudProvider(name, provider_name, path) \
+  class name : public CloudProviderTest {        \
+   public:                                       \
+    static void SetUpTestCase() {                \
+      path_ = path;                              \
+      provider_ = create(provider_name, path);   \
+    }                                            \
+    static void TearDownTestCase() {             \
+      release(provider_.get());                  \
+      provider_ = nullptr;                       \
+    }                                            \
+                                                 \
+    static ICloudProvider::Pointer provider_;    \
+    static std::string path_;                    \
+  };                                             \
+  ICloudProvider::Pointer name::provider_;       \
   std::string name::path_;
 
 #define TEST_SET_F(name, provider_name, path)                                 \
@@ -353,9 +362,12 @@ TEST_SET(HubiCProvider, "hubic");
 TEST_SET(WebDAVProvider, "webdav");
 TEST_SET(YandexProvider, "yandex");
 TEST_SET(PCloudProvider, "pcloud");
+TEST_SET(BoxProvider, "box");
+TEST_SET(AmazonS3Provider, "amazons3");
 
 #ifdef WITH_MEGA
 TEST_SET(MegaProvider, "mega");
 #endif  // WITH_MEGA
 
 #endif  // WITH_CURL
+#endif  // TOKEN_FILE

@@ -88,6 +88,11 @@ AS_IF([test "x$with_fuse" != "xno"], [
 AM_CONDITIONAL([WITH_FUSE], [test "$HAVE_FUSE" -eq 1])
 AM_CONDITIONAL([WITH_LEGACY_FUSE], [test "$HAVE_LEGACY_FUSE" -eq 1])
 
+AC_ARG_ENABLE([token-file], AC_HELP_STRING([--enable-token-file], [path to the json file with tokens]))
+AS_IF([test "x$enable_token_file" != "x"], [
+  AC_DEFINE_UNQUOTED(TOKEN_FILE, "${enable_token_file}")
+])
+
 case "${host_os}" in
   *mingw32*)
     SYS=mingw32
