@@ -1,3 +1,4 @@
+#include <json/json.h>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -18,10 +19,14 @@ const std::string HELP_MESSAGE =
     "info: get file info\n"
     "help: this message\n";
 
+#ifdef TOKEN_FILE
+const std::string token_file = TOKEN_FILE;
+#else
+const std::string token_file = ".libcloudstorage-token.json";
+#endif  // TOKEN_FILE
+
 class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
  public:
-  Callback(std::string drive_file) : drive_file_(drive_file) {}
-
   Status userConsentRequired(
       const cloudstorage::ICloudProvider& provider) override {
     std::cout << "Required consent at url: \n";
@@ -35,13 +40,12 @@ class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
       std::cout << "authorization error " << e.left()->code_ << ": "
                 << e.left()->description_ << "\n";
     } else {
-      std::fstream file(drive_file_, std::fstream::out);
-      file << provider.token();
+      Json::Value json;
+      std::ifstream(token_file) >> json;
+      json[provider.name()] = provider.token();
+      std::ofstream(token_file) << json;
     }
   }
-
- private:
-  std::string drive_file_;
 };
 
 IItem::Pointer getChild(ICloudProvider* provider, IItem::Pointer item,
@@ -82,14 +86,15 @@ int main(int, char**) {
       if (current_provider == nullptr) {
         std::string provider_name;
         line >> provider_name;
-        std::string filename = provider_name + ".txt";
         std::string token;
-        std::fstream(filename, std::fstream::in) >> token;
+        Json::Value json;
+        std::fstream(token_file, std::fstream::in) >> json;
+        token = json[provider_name].asString();
         auto provider = ICloudStorage::create()->provider(
             provider_name,
             {token,
              ICloudProvider::Permission::ReadWrite,
-             std::unique_ptr<Callback>(new Callback(filename)),
+             std::unique_ptr<Callback>(new Callback()),
              nullptr,
              nullptr,
              nullptr,
