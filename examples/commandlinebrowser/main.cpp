@@ -41,7 +41,10 @@ class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
                 << e.left()->description_ << "\n";
     } else {
       Json::Value json;
-      std::ifstream(token_file) >> json;
+      try {
+        json = cloudstorage::util::json::from_stream(std::ifstream(token_file));
+      } catch (const Json::Exception&) {
+      }
       json[provider.name()] = provider.token();
       std::ofstream(token_file) << json;
     }
@@ -55,6 +58,16 @@ IItem::Pointer getChild(ICloudProvider* provider, IItem::Pointer item,
   for (auto i : *lst)
     if (i->filename() == filename) return i;
   return nullptr;
+}
+
+std::string read_token(const std::string& provider_name) {
+  try {
+    auto json =
+        cloudstorage::util::json::from_stream(std::ifstream(token_file));
+    return json[provider_name].asString();
+  } catch (const Json::Exception&) {
+    return "";
+  }
 }
 
 int main(int, char**) {
@@ -86,10 +99,7 @@ int main(int, char**) {
       if (current_provider == nullptr) {
         std::string provider_name;
         line >> provider_name;
-        std::string token;
-        Json::Value json;
-        std::fstream(token_file, std::fstream::in) >> json;
-        token = json[provider_name].asString();
+        std::string token = read_token(provider_name);
         auto provider = ICloudStorage::create()->provider(
             provider_name,
             {token,
