@@ -397,9 +397,6 @@ std::string success_page(const std::string&) {
          "<body>Success.</body>"
          "<script>"
          "  $.ajax({ 'data': { 'accepted': 'true' } });"
-         "  history.replaceState({}, null, "
-         "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-         "'/success');"
          "</script>"
          "</html>";
 }
@@ -409,9 +406,6 @@ std::string error_page(const std::string&) {
          "<body>Error.</body>"
          "<script>"
          "  $.ajax({ 'data': { 'accepted': 'false' } });"
-         "  history.replaceState({}, null,"
-         "location.pathname.split(\"/\").slice(0,-1).join(\"/\") + "
-         "'/error');"
          "</script>"
          "</html>";
 }
