@@ -194,10 +194,12 @@ int fuse_run(int argc, char **argv) {
 #endif
     return 0;
   }
-  std::stringstream stream;
-  stream << std::ifstream(options.config_file).rdbuf();
   Json::Value json;
-  stream >> json;
+  try {
+    json = cloudstorage::util::json::from_stream(
+        std::ifstream(options.config_file));
+  } catch (const Json::Exception &) {
+  }
   if (options.provider_label) {
     std::cerr << cloudstorage::util::libcloudstorage_ascii_art() << "\n";
     auto storage = ICloudStorage::create();
