@@ -67,6 +67,7 @@ DEPS_res = \
 	resources/providers/webdav.png \
 	resources/providers/youtube.png \
 	resources/providers/yandex.png \
+	resources/providers/gphotos.png \
 	resources/amazons3_login.html \
 	resources/default_error.html \
 	resources/default_success.html \

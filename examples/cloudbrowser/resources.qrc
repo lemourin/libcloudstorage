@@ -32,5 +32,6 @@
         <file>qml/QtPlayer.qml</file>
         <file>qml/VlcPlayer.qml</file>
         <file>resources/providers/hubic.png</file>
+        <file>resources/providers/gphotos.png</file>
     </qresource>
 </RCC>

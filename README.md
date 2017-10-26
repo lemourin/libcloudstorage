@@ -22,6 +22,7 @@ Supported cloud providers:
 * `AmazonS3`
 * `pCloud`
 * `hubiC`
+* `Google Photos` (partial)
 * `YouTube` (partial)
 
 Supported operations on files:
