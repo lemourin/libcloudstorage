@@ -120,9 +120,8 @@ void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
                            << file->size();
               if (it == e.right()->headers().end() ||
                   it->second != range_stream.str())
-                return r->done(
-                    Error{IHttpRequest::ServiceUnavailable,
-                          "invalid range header response: " + it->second});
+                return r->done(Error{IHttpRequest::ServiceUnavailable,
+                                     "invalid range header response"});
             }
             r->done(nullptr);
           }
