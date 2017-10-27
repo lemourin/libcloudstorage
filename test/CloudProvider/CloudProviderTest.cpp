@@ -332,7 +332,7 @@ class CloudProviderTest : public ::testing::Test {
     static std::string path_;                    \
   };                                             \
   ICloudProvider::Pointer name::provider_;       \
-  std::string name::path_;
+  std::string name::path_
 
 #define TEST_SET_F(name, provider_name, path)                                 \
   CloudProvider(name, provider_name, path);                                   \
@@ -355,18 +355,18 @@ class CloudProviderTest : public ::testing::Test {
 
 #define TEST_SET(name, provider_name) TEST_SET_F(name, provider_name, "/root")
 
-TEST_SET(GoogleProvider, "google");
-TEST_SET(OneDriveProvider, "onedrive");
-TEST_SET(DropboxProvider, "dropbox");
-TEST_SET(HubiCProvider, "hubic");
-TEST_SET(WebDAVProvider, "webdav");
-TEST_SET(YandexProvider, "yandex");
-TEST_SET(PCloudProvider, "pcloud");
-TEST_SET(BoxProvider, "box");
-TEST_SET(AmazonS3Provider, "amazons3");
+TEST_SET(GoogleProvider, "google")
+TEST_SET(OneDriveProvider, "onedrive")
+TEST_SET(DropboxProvider, "dropbox")
+TEST_SET(HubiCProvider, "hubic")
+TEST_SET(WebDAVProvider, "webdav")
+TEST_SET(YandexProvider, "yandex")
+TEST_SET(PCloudProvider, "pcloud")
+TEST_SET(BoxProvider, "box")
+TEST_SET(AmazonS3Provider, "amazons3")
 
 #ifdef WITH_MEGA
-TEST_SET(MegaProvider, "mega");
+TEST_SET(MegaProvider, "mega")
 #endif  // WITH_MEGA
 
 #endif  // WITH_CURL
