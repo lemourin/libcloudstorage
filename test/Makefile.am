@@ -8,13 +8,26 @@ AM_CXXFLAGS = \
 
 check_LTLIBRARIES = libgtest.la libgmock.la
 
-libgtest_la_SOURCES = googletest/googletest/src/gtest-all.cc
+libgtest_la_SOURCES = \
+	googletest/googletest/src/gtest.cc \
+	googletest/googletest/src/gtest-death-test.cc \
+	googletest/googletest/src/gtest-filepath.cc \
+	googletest/googletest/src/gtest-port.cc \
+	googletest/googletest/src/gtest-printers.cc \
+	googletest/googletest/src/gtest-test-part.cc \
+	googletest/googletest/src/gtest-typed-test.cc
 
 libgtest_la_CXXFLAGS = \
 	-I$(top_srcdir)/test/googletest/googletest \
 	-I$(top_srcdir)/test/googletest/googletest/include
 
-libgmock_la_SOURCES = googletest/googlemock/src/gmock-all.cc
+libgmock_la_SOURCES = \
+	googletest/googlemock/src/gmock-cardinalities.cc \
+	googletest/googlemock/src/gmock-internal-utils.cc \
+	googletest/googlemock/src/gmock-matchers.cc \
+	googletest/googlemock/src/gmock-matchers.cc \
+	googletest/googlemock/src/gmock-spec-builders.cc \
+	googletest/googlemock/src/gmock.cc
 
 libgmock_la_CXXFLAGS = \
 	$(libgtest_la_CXXFLAGS) \
