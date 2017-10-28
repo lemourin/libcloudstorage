@@ -886,7 +886,7 @@ IHttpServer::Pointer ServerWrapperFactory::create(
 }
 
 std::streambuf::int_type CloudContext::DebugStream::overflow(int_type ch) {
-  if (ch == '\n') {
+  if (ch == '\n' || current_line_.length() > 100) {
     qDebug() << current_line_;
     current_line_ = "";
   } else {
