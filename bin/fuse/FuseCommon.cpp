@@ -106,7 +106,7 @@ std::vector<IFileSystem::ProviderEntry> providers(
   for (auto &&p : data)
     providers.push_back(
         {p["label"].asString(), create(http, temporary_directory, p)});
-  return std::move(providers);
+  return providers;
 }
 
 std::string default_temporary_directory() {

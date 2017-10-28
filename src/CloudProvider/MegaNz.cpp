@@ -380,7 +380,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     std::unique_lock<std::mutex> lock(buffer->response_mutex_);
     buffer->response_ = nullptr;
   });
-  return std::move(response);
+  return response;
 }
 
 MegaNz::MegaNz()
