@@ -101,6 +101,7 @@ Kirigami.ApplicationWindow {
     Kirigami.ScrollablePage {
       anchors.fill: parent
       title: "Select Cloud Provider"
+      Item {}
     }
   }
 
