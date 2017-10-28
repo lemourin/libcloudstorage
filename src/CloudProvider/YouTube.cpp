@@ -144,7 +144,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
       auto func = t.find(func_name);
       if (func == t.end())
         throw std::logic_error("invalid transformation function");
-      auto value = std::stol(arg);
+      auto value = std::stoull(arg);
       if (func->second.find("splice") != std::string::npos)
         code.erase(0, value);
       else if (func->second.find("reverse") != std::string::npos)

@@ -133,8 +133,8 @@ Range parse_range(const std::string& r) {
   while (it < r.length() && str[it] != '-') n1 += str[it++];
   it++;
   while (it < r.length()) n2 += str[it++];
-  auto begin = n1.empty() ? 0 : (uint64_t)atoll(n1.c_str());
-  auto end = n2.empty() ? Range::Full : (uint64_t)atoll(n2.c_str());
+  auto begin = n1.empty() ? 0 : stoull(n1);
+  auto end = n2.empty() ? Range::Full : stoull(n2);
   return {begin, end == Range::Full ? Range::Full : (end - begin + 1)};
 }
 

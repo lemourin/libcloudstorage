@@ -184,9 +184,9 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
   if (content) {
     auto item = std::make_shared<Item>(
         title->GetText(), to_string({album->GetText(), id->GetText()}),
-        std::stol(size->GetText()),
+        std::stoull(size->GetText()),
         std::chrono::system_clock::time_point(
-            std::chrono::milliseconds(std::stol(timestamp->GetText()))),
+            std::chrono::milliseconds(std::stoull(timestamp->GetText()))),
         IItem::FileType::Image);
     item->set_thumbnail_url(content->Attribute("url"));
     item->set_url(content->Attribute("url"));
@@ -195,9 +195,9 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
   } else {
     auto item = std::make_shared<Item>(
         title->GetText(), to_string({id->GetText(), ""}),
-        album_size ? std::stol(album_size->GetText()) : IItem::UnknownSize,
+        album_size ? std::stoull(album_size->GetText()) : IItem::UnknownSize,
         std::chrono::system_clock::time_point(
-            std::chrono::milliseconds(std::stol(timestamp->GetText()))),
+            std::chrono::milliseconds(std::stoull(timestamp->GetText()))),
         IItem::FileType::Directory);
     return item;
   }

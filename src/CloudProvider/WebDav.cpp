@@ -223,7 +223,7 @@ IItem::Pointer WebDav::toItem(const tinyxml2::XMLNode* node) const {
   auto size = IItem::UnknownSize;
   auto timestamp = IItem::UnknownTimeStamp;
   if (auto size_element = prop->FirstChildElement("d:getcontentlength"))
-    if (auto text = size_element->GetText()) size = std::atoll(text);
+    if (auto text = size_element->GetText()) size = std::stoull(text);
   if (auto timestamp_element = prop->FirstChildElement("d:getlastmodified"))
     if (auto text = timestamp_element->GetText()) timestamp = parse_time(text);
   auto lock = auth_lock();

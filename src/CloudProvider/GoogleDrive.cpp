@@ -360,7 +360,7 @@ IItem::FileType GoogleDrive::toFileType(const std::string& mime_type) const {
 IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(
       v["name"].asString(), v["id"].asString(),
-      v.isMember("size") ? std::atoll(v["size"].asString().c_str())
+      v.isMember("size") ? std::stoull(v["size"].asString())
                          : IItem::UnknownSize,
       util::parse_time(v["modifiedTime"].asString()),
       toFileType(v["mimeType"].asString()));

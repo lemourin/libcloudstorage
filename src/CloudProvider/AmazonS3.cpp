@@ -298,7 +298,7 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
                    if (auto size_element =
                            contents_element->FirstChildElement("Size"))
                      if (auto text = size_element->GetText())
-                       size = std::atoll(text);
+                       size = std::stoull(text);
                    if (auto time_element =
                            contents_element->FirstChildElement("LastModified"))
                      if (auto text = time_element->GetText())
@@ -368,7 +368,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
          child; child = child->NextSiblingElement("Contents")) {
       auto size_element = child->FirstChildElement("Size");
       if (!size_element) throw std::logic_error("invalid xml");
-      auto size = std::atoll(size_element->GetText());
+      auto size = std::stoull(size_element->GetText());
       auto key_element = child->FirstChildElement("Key");
       if (!key_element) throw std::logic_error("invalid xml");
       std::string id = key_element->GetText();

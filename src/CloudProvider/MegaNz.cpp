@@ -351,7 +351,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       "invalid request");
   std::string filename = util::from_base64(file);
-  auto size = (uint64_t)std::atoll(size_parameter);
+  auto size = std::stoull(size_parameter);
   auto name = filename.substr(filename.find_last_of('/') + 1);
   auto extension = filename.substr(filename.find_last_of('.') + 1);
   std::unordered_map<std::string, std::string> headers = {
