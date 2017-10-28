@@ -44,6 +44,11 @@ class CloudStorage : public ICloudStorage {
  private:
   void add(CloudProviderFactory);
 
+  template <class T>
+  void add() {
+    add([]() { return std::make_shared<T>(); });
+  }
+
   std::map<std::string, CloudProviderFactory> providers_;
 };
 

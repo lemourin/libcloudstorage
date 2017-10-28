@@ -166,19 +166,19 @@ class CloudProviderWrapper : public ICloudProvider {
 }  // namespace
 
 CloudStorage::CloudStorage() {
-  add([]() { return std::make_shared<GoogleDrive>(); });
-  add([]() { return std::make_shared<OneDrive>(); });
-  add([]() { return std::make_shared<Dropbox>(); });
-  add([]() { return std::make_shared<Box>(); });
-  add([]() { return std::make_shared<YouTube>(); });
-  add([]() { return std::make_shared<YandexDisk>(); });
-  add([]() { return std::make_shared<WebDav>(); });
-  add([]() { return std::make_shared<AmazonS3>(); });
-  add([]() { return std::make_shared<PCloud>(); });
-  add([]() { return std::make_shared<HubiC>(); });
-  add([]() { return std::make_shared<GooglePhotos>(); });
+  add<GoogleDrive>();
+  add<OneDrive>();
+  add<Dropbox>();
+  add<Box>();
+  add<YouTube>();
+  add<YandexDisk>();
+  add<WebDav>();
+  add<AmazonS3>();
+  add<PCloud>();
+  add<HubiC>();
+  add<GooglePhotos>();
 #ifdef WITH_MEGA
-  add([]() { return std::make_shared<MegaNz>(); });
+  add<MegaNz>();
 #endif
 }
 
