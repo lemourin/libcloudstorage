@@ -65,7 +65,7 @@ CloudContext::CloudContext(QObject* parent)
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           util::make_unique<MicroHttpdServerFactory>())),
       http_(util::make_unique<curl::CurlHttp>()) {
-  // util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
+  util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
   auto providers = settings.value("providers").toList();

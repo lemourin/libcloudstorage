@@ -33,7 +33,7 @@ class GooglePhotos : public CloudProvider {
   GooglePhotos();
   std::string name() const override;
   std::string endpoint() const override;
-  IItem::Pointer rootDirectory() const override;  
+  IItem::Pointer rootDirectory() const override;
   bool reauthorize(int code,
                    const IHttpRequest::HeaderParameters&) const override;
 
