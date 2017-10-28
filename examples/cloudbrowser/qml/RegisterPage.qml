@@ -34,13 +34,16 @@ Kirigami.ScrollablePage {
   }
 
   ListView {
+    id: list
     model: cloud.providers
     delegate: Kirigami.BasicListItem {
+      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "white"
       onClicked: {
         if (qtwebview)
           root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
         else
           Qt.openUrlExternally(cloud.authorizationUrl(modelData));
+        list.currentIndex = index;
       }
       contentItem: ProviderEntry {
         image_width: 120

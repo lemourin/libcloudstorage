@@ -8,9 +8,12 @@ Kirigami.ScrollablePage {
   title: "Remove Provider"
 
   ListView {
+    id: list
     model: cloud.userProviders
     delegate: Kirigami.BasicListItem {
+      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "white"
       onClicked: {
+        list.currentIndex = index;
         cloud.removeProvider(modelData);
       }
       contentItem: ProviderEntry {
