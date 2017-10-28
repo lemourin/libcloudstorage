@@ -23,6 +23,7 @@ Kirigami.ScrollablePage {
                                          list_view.currentItem.item.type === "video" ||
                                          list_view.currentItem.item.type === "image")
       text: "Play"
+      iconName: "media-playback-start"
       onTriggered: {
         contextDrawer.drawerOpen = false;
         pageStack.push(media_player, {item: list_view.currentItem.item});
@@ -31,12 +32,13 @@ Kirigami.ScrollablePage {
     Kirigami.Action {
       visible: list_view.currentItem
       text: "Rename"
+      iconName: "edit-cut"
       onTriggered: {
         list_view.currentEdit = list_view.currentIndex;
       }
     },
     Kirigami.Action {
-      iconName: "folder"
+      iconName: "folder-new"
       text: "Create Directory"
       onTriggered: {
         list_view.currentIndex = -1;
@@ -46,6 +48,7 @@ Kirigami.ScrollablePage {
     Kirigami.Action {
       visible: list_view.currentItem
       text: "Delete"
+      iconName: "edit-delete"
       onTriggered: {
         list.done = false;
         delete_request.item = list_view.currentItem.item;
@@ -54,6 +57,7 @@ Kirigami.ScrollablePage {
     Kirigami.Action {
       visible: list_view.currentItem && !cloud.currently_moved
       text: "Move"
+      iconName: "folder-move"
       onTriggered: {
         cloud.list_request = list;
         cloud.currently_moved = list_view.currentItem.item;
@@ -62,6 +66,7 @@ Kirigami.ScrollablePage {
     Kirigami.Action {
       visible: cloud.currently_moved
       text: "Move " + (cloud.currently_moved ? cloud.currently_moved.filename : "") + " here"
+      iconName: "dialog-apply"
       onTriggered: {
         move_request.source = cloud.currently_moved;
         move_request.destination = page.item;
@@ -74,6 +79,7 @@ Kirigami.ScrollablePage {
     Kirigami.Action {
       visible: cloud.currently_moved
       text: "Cancel move"
+      iconName: "dialog-cancel"
       onTriggered: {
         cloud.currently_moved = null;
         cloud.list_request = null;
@@ -81,12 +87,12 @@ Kirigami.ScrollablePage {
     },
     Kirigami.Action {
       text: "Upload File"
-      iconName: "go-up"
+      iconName: "edit-add"
       onTriggered: upload_dialog.open()
     },
     Kirigami.Action {
       visible: list_view.currentItem && list_view.currentItem.item.type !== "directory"
-      iconName: "go-down"
+      iconName: "document-save"
       text: "Download " + (list_view.currentItem ? list_view.currentItem.item.filename : "")
       onTriggered: download_dialog.open();
     }

@@ -45,6 +45,7 @@ Kirigami.ApplicationWindow {
         text: "Settings"
         Kirigami.Action {
           text: "Add Cloud Provider"
+          iconName: "edit-add"
           onTriggered: {
             pageStack.clear();
             pageStack.push(addProviderPage)
@@ -52,6 +53,7 @@ Kirigami.ApplicationWindow {
         }
         Kirigami.Action {
           text: "Remove Cloud Provider"
+          iconName: "edit-delete"
           onTriggered: {
             pageStack.clear();
             pageStack.push(removeProviderPage);
