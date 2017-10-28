@@ -170,9 +170,11 @@ Kirigami.ScrollablePage {
                                                 path: fileUrl,
                                                 list: list
                                               });
-        var req = cloud.request;
-        req.push(r);
-        cloud.request = req;
+        if (r.done === false) {
+          var req = cloud.request;
+          req.push(r);
+          cloud.request = req;
+        }
       }
     }
 
@@ -184,9 +186,11 @@ Kirigami.ScrollablePage {
                                                   item: list_view.currentItem.item,
                                                   path: fileUrl + "/" + list_view.currentItem.item.filename
                                                 });
-        var req = cloud.request;
-        req.push(r);
-        cloud.request = req;
+        if (r.done === false) {
+          var req = cloud.request;
+          req.push(r);
+          cloud.request = req;
+        }
       }
     }
 
