@@ -402,6 +402,7 @@ class CloudContext : public QObject {
  signals:
   void userProvidersChanged();
   void receivedCode(QString provider);
+  void errorOccurred(QString operation, int code, QString description);
 
  private:
   struct Provider {

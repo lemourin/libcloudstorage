@@ -17,6 +17,9 @@ Kirigami.ApplicationWindow {
     onUserProvidersChanged: {
       root.globalDrawer.actions = root.actions();
     }
+    onErrorOccurred: {
+      root.showPassiveNotification("Error " + code + ": " + operation + (description ? " " + description : ""));
+    }
 
     function list(title, item) {
       pageStack.push(listDirectoryPage, {title: title, item: item});
