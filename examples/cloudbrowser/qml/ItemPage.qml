@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import org.kde.kirigami 2.1 as Kirigami
 import QtQuick.Controls 2.0 as Controls
+import QtQuick.Templates 2.0 as Templates
 import QtQuick.Dialogs 1.2
 import QtQuick.Layouts 1.2
 import libcloudstorage 1.0
@@ -221,7 +222,7 @@ Kirigami.ScrollablePage {
             anchors.right: icon.left
             height: parent.height
             clip: true
-            Kirigami.Label {
+            Templates.Label {
               anchors.fill: parent
               anchors.margins: 10
               text: modelData.filename
@@ -251,7 +252,7 @@ Kirigami.ScrollablePage {
       property alias text_control: text
 
       id: item
-      highlighted: focus && ListView.isCurrentItem
+      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "white"
       onClicked: {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
@@ -283,12 +284,12 @@ Kirigami.ScrollablePage {
                                             thumbnail.source :
                                             "qrc:/resources/" + modelData.type + ".png"))
           }
-          MouseArea {
+          MultiPointTouchArea {
             anchors.fill: parent
-            onClicked: list_view.currentIndex = index;
+            onPressed: list_view.currentIndex = index;
           }
         }
-        Kirigami.Label {
+        Templates.Label {
           anchors.verticalCenter: parent.verticalCenter
           text: modelData.filename
           visible: list_view.currentEdit !== index

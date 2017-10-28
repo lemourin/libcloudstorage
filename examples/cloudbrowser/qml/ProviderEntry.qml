@@ -1,4 +1,5 @@
 import QtQuick 2.7
+import QtQuick.Templates 2.0 as Templates
 import org.kde.kirigami 2.1 as Kirigami
 
 Row {
@@ -18,7 +19,7 @@ Row {
       source: "qrc:/resources/providers/" + provider + ".png"
     }
   }
-  Kirigami.Label {
+  Templates.Label {
     anchors.verticalCenter: parent.verticalCenter
     text: label === "" ? cloud.pretty(provider) : label
   }
