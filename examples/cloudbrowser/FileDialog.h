@@ -1,0 +1,54 @@
+#ifndef FILEDIALOG_H
+#define FILEDIALOG_H
+
+#include <QAndroidActivityResultReceiver>
+#include <QAndroidJniObject>
+#include <QDebug>
+#include <QObject>
+#include <QtAndroid>
+
+class FileDialog : public QObject {
+ public:
+  Q_PROPERTY(bool selectFolder READ selectFolder WRITE setSelectFolder NOTIFY
+                 selectFolderChanged)
+  Q_PROPERTY(bool selectExisting READ selectExisting WRITE setSelectExisting
+                 NOTIFY selectExistingChanged)
+  Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY fileUrlChanged)
+
+  FileDialog();
+
+  bool selectFolder() const { return select_folder_; }
+  void setSelectFolder(bool);
+
+  bool selectExisting() const { return select_existing_; }
+  void setSelectExisting(bool);
+
+  QString fileUrl() const { return file_url_; }
+  void setFileUrl(QString);
+
+  Q_INVOKABLE void open();
+
+ signals:
+  void accepted();
+  void selectFolderChanged();
+  void selectExistingChanged();
+  void fileUrlChanged();
+
+ private:
+  class ActivityReceiver : public QAndroidActivityResultReceiver {
+   public:
+    ActivityReceiver(FileDialog*);
+    void handleActivityResult(int request_code, int result_code,
+                              const QAndroidJniObject& data) override;
+
+   private:
+    FileDialog* file_dialog_;
+  } result_receiver_;
+  bool select_folder_;
+  bool select_existing_;
+  QString file_url_;
+
+  Q_OBJECT
+};
+
+#endif  // FILEDIALOG_H
