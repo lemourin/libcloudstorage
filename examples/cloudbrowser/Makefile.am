@@ -11,7 +11,8 @@ cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
 	CloudContext.cpp CloudContext.h \
-	Exec.cpp Exec.h
+	Exec.cpp Exec.h \
+	File.cpp File.h
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
@@ -51,6 +52,9 @@ DEPS_res = \
 	qml/RemoveProvider.qml \
 	qml/ProviderEntry.qml \
 	qml/ItemPage.qml \
+	qml/FileDialog.qml \
+	qml/QtFileDialog.qml \
+	qml/AndroidFileDialog.qml \
 	resources/directory.png \
 	resources/file.png \
 	resources/image.png \

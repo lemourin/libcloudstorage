@@ -2,7 +2,6 @@ import QtQuick 2.7
 import org.kde.kirigami 2.1 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import QtQuick.Templates 2.0 as Templates
-import QtQuick.Dialogs 1.2
 import QtQuick.Layouts 1.2
 import libcloudstorage 1.0
 
@@ -175,6 +174,7 @@ Kirigami.ScrollablePage {
         var r = upload_component.createObject(cloud, {
                                                 parent: page.item,
                                                 path: fileUrl,
+                                                filename: upload_dialog.filename,
                                                 list: list
                                               });
         if (r.done === false) {
@@ -188,10 +188,13 @@ Kirigami.ScrollablePage {
     FileDialog {
       id: download_dialog
       selectFolder: true
+      selectExisting: true
+      filename: list_view.currentItem ? list_view.currentItem.item.filename : ""
       onAccepted: {
         var r = download_component.createObject(cloud, {
                                                   item: list_view.currentItem.item,
-                                                  path: fileUrl + "/" + list_view.currentItem.item.filename
+                                                  path: fileUrl,
+                                                  filename: download_dialog.filename
                                                 });
         if (r.done === false) {
           var req = cloud.request;

@@ -264,7 +264,8 @@ class UploadItemRequest : public Request {
   Q_PROPERTY(
       CloudItem* parent READ parent WRITE set_parent NOTIFY parentChanged)
   Q_PROPERTY(QString path READ path WRITE set_path NOTIFY pathChanged)
-  Q_PROPERTY(QString filename READ filename NOTIFY pathChanged)
+  Q_PROPERTY(
+      QString filename READ filename WRITE set_filename NOTIFY filenameChanged)
   Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
   Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
 
@@ -276,7 +277,8 @@ class UploadItemRequest : public Request {
   QString path() const { return path_; }
   void set_path(QString);
 
-  QString filename() const;
+  QString filename() const { return filename_; }
+  void set_filename(QString);
 
   qint64 total() const { return total_; }
   qint64 now() const { return now_; }
@@ -286,12 +288,14 @@ class UploadItemRequest : public Request {
  signals:
   void parentChanged();
   void pathChanged();
+  void filenameChanged();
   void progressChanged();
   void uploadComplete();
 
  private:
   CloudItem* parent_ = nullptr;
   QString path_;
+  QString filename_;
   qint64 total_ = 0;
   qint64 now_ = 0;
 
@@ -302,7 +306,8 @@ class DownloadItemRequest : public Request {
  public:
   Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
   Q_PROPERTY(QString path READ path WRITE set_path NOTIFY pathChanged)
-  Q_PROPERTY(QString filename READ filename NOTIFY pathChanged)
+  Q_PROPERTY(
+      QString filename READ filename WRITE set_filename NOTIFY filenameChanged)
   Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
   Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
 
@@ -314,7 +319,8 @@ class DownloadItemRequest : public Request {
   QString path() const { return path_; }
   void set_path(QString path);
 
-  QString filename() const;
+  QString filename() const { return filename_; }
+  void set_filename(QString);
 
   qint64 total() const { return total_; }
   qint64 now() const { return now_; }
@@ -324,12 +330,14 @@ class DownloadItemRequest : public Request {
  signals:
   void itemChanged();
   void pathChanged();
+  void filenameChanged();
   void progressChanged();
   void downloadComplete();
 
  private:
   CloudItem* item_ = nullptr;
   QString path_;
+  QString filename_;
   qint64 total_ = 0;
   qint64 now_ = 0;
 

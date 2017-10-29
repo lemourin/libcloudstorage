@@ -28,11 +28,15 @@
 #endif
 
 #include <QDebug>
+#include <QDir>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlEngine>
 
+#ifdef __ANDROID__
+#include "FileDialog.h"
+#endif
 #include "CloudContext.h"
 #include "Utility/Utility.h"
 
@@ -59,6 +63,9 @@ void register_types() {
                                      "UploadItemRequest");
   qmlRegisterType<DownloadItemRequest>("libcloudstorage", 1, 0,
                                        "DownloadItemRequest");
+#ifdef __ANDROID__
+  qmlRegisterType<FileDialog>("libcloudstorage", 1, 0, "AndroidFileDialog");
+#endif
   qmlRegisterUncreatableType<CloudItem>("libcloudstorage", 1, 0, "CloudItem",
                                         "uncreatable type");
 }
@@ -90,6 +97,13 @@ int exec_cloudbrowser(int argc, char** argv) {
 #else
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
+#ifdef __ANDROID__
+    engine.rootContext()->setContextProperty("android", QVariant(true));
+#else
+    engine.rootContext()->setContextProperty("android", QVariant(false));
+#endif
+
+    engine.rootContext()->setContextProperty("seperator", QDir::separator());
 
     int ret = app.exec();
 

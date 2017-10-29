@@ -14,6 +14,8 @@ class FileDialog : public QObject {
   Q_PROPERTY(bool selectExisting READ selectExisting WRITE setSelectExisting
                  NOTIFY selectExistingChanged)
   Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY fileUrlChanged)
+  Q_PROPERTY(
+      QString filename READ filename WRITE setFilename NOTIFY filenameChanged)
 
   FileDialog();
 
@@ -26,6 +28,9 @@ class FileDialog : public QObject {
   QString fileUrl() const { return file_url_; }
   void setFileUrl(QString);
 
+  QString filename() const { return filename_; }
+  void setFilename(QString);
+
   Q_INVOKABLE void open();
 
  signals:
@@ -33,6 +38,7 @@ class FileDialog : public QObject {
   void selectFolderChanged();
   void selectExistingChanged();
   void fileUrlChanged();
+  void filenameChanged();
 
  private:
   class ActivityReceiver : public QAndroidActivityResultReceiver {
@@ -47,6 +53,7 @@ class FileDialog : public QObject {
   bool select_folder_;
   bool select_existing_;
   QString file_url_;
+  QString filename_;
 
   Q_OBJECT
 };

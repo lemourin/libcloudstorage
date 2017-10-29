@@ -9,6 +9,7 @@
 #include <QQmlEngine>
 #include <QSettings>
 #include <QUrl>
+#include "File.h"
 #include "ICloudStorage.h"
 #include "Utility/CurlHttp.h"
 #include "Utility/MicroHttpdServer.h"
@@ -24,8 +25,8 @@ namespace {
 
 class DownloadCallback : public IDownloadFileCallback {
  public:
-  DownloadCallback(RequestNotifier* notifier, QString path)
-      : notifier_(notifier), file_(path), path_(path) {
+  DownloadCallback(RequestNotifier* notifier, QUrl path)
+      : notifier_(notifier), file_(path.toString()) {
     file_.open(QFile::WriteOnly);
   }
 
@@ -39,6 +40,7 @@ class DownloadCallback : public IDownloadFileCallback {
   }
 
   void done(EitherError<void> e) override {
+    file_.close();
     emit notifier_->finishedVoid(e);
     emit notifier_->progressChanged(0, 0);
     notifier_->deleteLater();
@@ -46,17 +48,9 @@ class DownloadCallback : public IDownloadFileCallback {
 
  protected:
   RequestNotifier* notifier_;
-  QFile file_;
-  QString path_;
+  QString name_;
+  File file_;
 };
-
-QString sanitize(const QString& name) {
-  const QString forbidden = "~\"#%&*:<>?/\\{|}";
-  QString result;
-  for (auto&& c : name)
-    if (forbidden.indexOf(c) == -1) result += c;
-  return result;
-}
 
 }  // namespace
 
@@ -439,8 +433,8 @@ void GetThumbnailRequest::set_item(CloudItem* item) {
 void GetThumbnailRequest::update() {
   if (!item() || !context()) return;
   set_done(false);
-  auto path =
-      QDir::tempPath() + "/" + sanitize(item_->filename()) + "-thumbnail";
+  auto path = QDir::tempPath() + QDir::separator() +
+              sanitize(item_->filename()) + "-thumbnail";
   QFile file(path);
   if (file.exists() && file.size() > 0) {
     source_ = QUrl::fromLocalFile(path).toString();
@@ -458,12 +452,28 @@ void GetThumbnailRequest::update() {
               source_ = QUrl::fromLocalFile(path).toString();
               emit sourceChanged();
             });
-    class DownloadThumbnailCallback : public DownloadCallback {
+    class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
-      DownloadThumbnailCallback(RequestNotifier* notifier, QString path,
+      DownloadThumbnailCallback(RequestNotifier* notifier, QUrl path,
+                                QString filename,
                                 std::shared_ptr<ICloudProvider> p,
                                 IItem::Pointer item)
-          : DownloadCallback(notifier, path), provider_(p), item_(item) {}
+          : notifier_(notifier),
+            path_(path.toLocalFile() + QDir::separator() + filename),
+            file_(path_),
+            provider_(p),
+            item_(item) {
+        file_.open(QFile::WriteOnly);
+      }
+
+      void receivedData(const char* data, uint32_t length) override {
+        file_.write(data, static_cast<qint64>(length));
+      }
+
+      void progress(uint64_t total, uint64_t now) override {
+        emit notifier_->progressChanged(static_cast<qint64>(total),
+                                        static_cast<qint64>(now));
+      }
 
       void done(EitherError<void> e) {
 #ifdef WITH_THUMBNAILER
@@ -471,8 +481,8 @@ void GetThumbnailRequest::update() {
                          item_->type() == IItem::FileType::Video)) {
           auto provider = provider_;
           auto item = item_;
-          auto notifier = notifier_;
           auto path = path_;
+          auto notifier = notifier_;
           std::thread([provider, item, notifier, path] {
             auto r = provider->getItemUrlAsync(item)->result();
             if (r.left()) {
@@ -501,13 +511,20 @@ void GetThumbnailRequest::update() {
       }
 
      private:
+      RequestNotifier* notifier_;
+      QString path_;
+      QFile file_;
       std::shared_ptr<ICloudProvider> provider_;
       IItem::Pointer item_;
     };
     auto p = item()->provider();
-    auto r = p->getThumbnailAsync(item()->item(),
-                                  util::make_unique<DownloadThumbnailCallback>(
-                                      object, path, p, item()->item()));
+    auto r = p->getThumbnailAsync(
+        item()->item(),
+        util::make_unique<DownloadThumbnailCallback>(
+            object,
+            QUrl::fromLocalFile(QDir::tempPath() + QDir::separator())
+                .toString(),
+            sanitize(item_->filename()) + "-thumbnail", p, item()->item()));
     context()->add(p, std::move(r));
   }
 }
@@ -720,10 +737,15 @@ void UploadItemRequest::set_path(QString path) {
   emit pathChanged();
 }
 
-QString UploadItemRequest::filename() const { return QUrl(path_).fileName(); }
+void UploadItemRequest::set_filename(QString filename) {
+  if (filename_ == filename) return;
+  filename_ = filename;
+  emit filenameChanged();
+}
 
 void UploadItemRequest::update() {
-  if (!context() || !parent() || path().isEmpty()) return;
+  if (!context() || !parent() || path().isEmpty() || filename().isEmpty())
+    return;
   set_done(false);
   class UploadCallback : public IUploadFileCallback {
    public:
@@ -754,7 +776,7 @@ void UploadItemRequest::update() {
 
    private:
     RequestNotifier* notifier_;
-    QFile file_;
+    File file_;
   };
   auto object = new RequestNotifier;
   connect(
@@ -772,9 +794,9 @@ void UploadItemRequest::update() {
             emit progressChanged();
           });
   auto p = parent()->provider();
-  auto r = p->uploadFileAsync(
-      parent()->item(), QUrl(path()).fileName().toStdString(),
-      util::make_unique<UploadCallback>(object, QUrl(path()).toLocalFile()));
+  auto r =
+      p->uploadFileAsync(parent()->item(), filename().toStdString(),
+                         util::make_unique<UploadCallback>(object, path()));
   context()->add(p, std::move(r));
 }
 
@@ -797,7 +819,11 @@ void DownloadItemRequest::set_path(QString path) {
   emit pathChanged();
 }
 
-QString DownloadItemRequest::filename() const { return QUrl(path_).fileName(); }
+void DownloadItemRequest::set_filename(QString filename) {
+  if (filename_ == filename) return;
+  filename_ = filename;
+  emit filenameChanged();
+}
 
 void DownloadItemRequest::update() {
   if (!context() || !item() || path().isEmpty()) return;
@@ -817,13 +843,10 @@ void DownloadItemRequest::update() {
             now_ = now;
             emit progressChanged();
           });
-  auto path = QUrl(this->path()).toString(QUrl::RemoveFilename);
-  auto filename = QUrl(this->path()).fileName();
   auto p = item()->provider();
   auto r = p->downloadFileAsync(
       item()->item(),
-      util::make_unique<DownloadCallback>(
-          object, QUrl(path + sanitize(filename)).toLocalFile()));
+      util::make_unique<DownloadCallback>(object, this->path()));
   context()->add(p, std::move(r));
 }
 
