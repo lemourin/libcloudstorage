@@ -203,6 +203,7 @@ fuse_operations high_level_operations() {
   operations.write = write;
   operations.mknod = mknod;
   operations.fsync = fsync;
+  operations.flush = flush;
   return operations;
 }
 
