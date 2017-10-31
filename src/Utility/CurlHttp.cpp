@@ -267,8 +267,11 @@ RequestData::Pointer CurlHttpRequest::prepare(
   } else if (method_ == "HEAD") {
     curl_easy_setopt(handle, CURLOPT_NOBODY, 1L);
   } else if (method_ != "GET") {
-    if (stream_length(*data) > 0)
+    if (stream_length(*data) > 0) {
       curl_easy_setopt(handle, CURLOPT_UPLOAD, static_cast<long>(true));
+      curl_easy_setopt(handle, CURLOPT_INFILESIZE,
+                       static_cast<long>(stream_length(*data)));
+    }
     curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, method_.c_str());
   }
   return cb_data;
