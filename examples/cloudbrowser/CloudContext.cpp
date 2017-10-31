@@ -23,6 +23,17 @@ using namespace cloudstorage;
 
 namespace {
 
+QString sanitize(const QString& name) {
+  const QString forbidden = "~\"#%&*:<>?/\\{|}";
+  QString result;
+  for (auto&& c : name)
+    if (forbidden.indexOf(c) == -1)
+      result += c;
+    else
+      result += '_';
+  return result;
+}
+
 class DownloadCallback : public IDownloadFileCallback {
  public:
   DownloadCallback(RequestNotifier* notifier, QUrl path)
