@@ -34,3 +34,4 @@ build*
 libcloudstorage*
 .clang_complete
 .vscode
+*.pro.user
