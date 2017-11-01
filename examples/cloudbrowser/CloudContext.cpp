@@ -486,7 +486,7 @@ void GetThumbnailRequest::update() {
                                         static_cast<qint64>(now));
       }
 
-      void done(EitherError<void> e) {
+      void done(EitherError<void> e) override {
 #ifdef WITH_THUMBNAILER
         if (e.left() && (item_->type() == IItem::FileType::Image ||
                          item_->type() == IItem::FileType::Video)) {
