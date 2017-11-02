@@ -488,6 +488,7 @@ class CloudContext : public QObject {
   Q_OBJECT
 };
 
+Q_DECLARE_METATYPE(CloudItem*)
 Q_DECLARE_METATYPE(cloudstorage::IItem::Pointer)
 Q_DECLARE_METATYPE(
     cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>)
