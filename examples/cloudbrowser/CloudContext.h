@@ -4,7 +4,6 @@
 #include <QMap>
 #include <QObject>
 #include <QQmlListProperty>
-#include <QQmlParserStatus>
 #include <QVariantList>
 #include <condition_variable>
 #include <deque>
@@ -52,7 +51,7 @@ class CloudItem : public QObject {
   Q_OBJECT
 };
 
-class Request : public QObject, public QQmlParserStatus {
+class Request : public QObject {
  public:
   Q_PROPERTY(CloudContext* context READ context WRITE set_context NOTIFY
                  contextChanged)
@@ -65,9 +64,6 @@ class Request : public QObject, public QQmlParserStatus {
 
   bool done() const { return done_; }
   void set_done(bool);
-
-  void classBegin() override;
-  void componentComplete() override;
 
   Q_INVOKABLE virtual void update() = 0;
 

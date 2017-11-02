@@ -410,7 +410,9 @@ void ListDirectoryRequest::update() {
   context()->add(item_->provider(), std::move(r));
 }
 
-Request::Request(QObject* parent) : QObject(parent), context_(), done_() {}
+Request::Request(QObject* parent) : QObject(parent), context_(), done_() {
+  connect(this, &Request::contextChanged, this, &Request::update);
+}
 
 void Request::set_context(CloudContext* ctx) {
   if (context_ == ctx) return;
@@ -423,12 +425,6 @@ void Request::set_done(bool done) {
   done_ = done;
   emit doneChanged();
 }
-
-void Request::classBegin() {
-  connect(this, &Request::contextChanged, this, &Request::update);
-}
-
-void Request::componentComplete() {}
 
 GetThumbnailRequest::GetThumbnailRequest(QObject* parent) : Request(parent) {
   connect(this, &GetThumbnailRequest::itemChanged, this,
