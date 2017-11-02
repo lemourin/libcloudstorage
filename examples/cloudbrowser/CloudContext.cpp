@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QQmlEngine>
+#include <QSaveFile>
 #include <QSettings>
 #include <QUrl>
 #include "File.h"
@@ -493,32 +494,34 @@ void GetThumbnailRequest::update() {
     emit sourceChanged();
   } else {
     auto object = new RequestNotifier;
-    connect(object, &RequestNotifier::finishedVoid, this,
-            [=](EitherError<void> e) {
+    connect(object, &RequestNotifier::finishedString, this,
+            [=](EitherError<std::string> e) {
               set_done(true);
               if (e.left())
                 return emit context()->errorOccurred(
                     "GetThumbnail", e.left()->code_,
                     e.left()->description_.c_str());
-              source_ = QUrl::fromLocalFile(path).toString();
-              emit sourceChanged();
+              QSaveFile file(path);
+              if (!file.open(QFile::WriteOnly))
+                return emit context()->errorOccurred("GetThumbnail",
+                                                     IHttpRequest::Failure,
+                                                     "couldn't save thumbnail");
+              file.write(e.right()->data(),
+                         static_cast<qint64>(e.right()->size()));
+              if (file.commit()) {
+                source_ = QUrl::fromLocalFile(path).toString();
+                emit sourceChanged();
+              }
             });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
-      DownloadThumbnailCallback(RequestNotifier* notifier, QUrl path,
-                                QString filename,
+      DownloadThumbnailCallback(RequestNotifier* notifier,
                                 std::shared_ptr<ICloudProvider> p,
                                 IItem::Pointer item)
-          : notifier_(notifier),
-            path_(path.toLocalFile() + QDir::separator() + filename),
-            file_(path_),
-            provider_(p),
-            item_(item) {
-        file_.open(QFile::WriteOnly);
-      }
+          : notifier_(notifier), provider_(p), item_(item) {}
 
       void receivedData(const char* data, uint32_t length) override {
-        file_.write(data, static_cast<qint64>(length));
+        data_ += std::string(data, length);
       }
 
       void progress(uint64_t total, uint64_t now) override {
@@ -532,50 +535,41 @@ void GetThumbnailRequest::update() {
                          item_->type() == IItem::FileType::Video)) {
           auto provider = provider_;
           auto item = item_;
-          auto path = path_;
           auto notifier = notifier_;
-          std::thread([provider, item, notifier, path] {
+          std::thread([provider, item, notifier] {
             auto r = provider->getItemUrlAsync(item)->result();
             if (r.left()) {
-              emit notifier->finishedVoid(r.left());
+              emit notifier->finishedString(r.left());
               return notifier->deleteLater();
             }
             auto e = generate_thumbnail(*r.right());
             if (e.left()) {
-              emit notifier->finishedVoid(e.left());
+              emit notifier->finishedString(e.left());
               return notifier->deleteLater();
             }
-            {
-              QFile file(path);
-              file.open(QFile::WriteOnly);
-              file.write(e.right()->data(),
-                         static_cast<qint64>(e.right()->size()));
-            }
-            emit notifier->finishedVoid(nullptr);
+            emit notifier->finishedString(e.right());
             notifier->deleteLater();
           }).detach();
           return;
         }
 #endif
-        emit notifier_->finishedVoid(e);
+        if (e.left())
+          emit notifier_->finishedString(e.left());
+        else
+          emit notifier_->finishedString(std::move(data_));
         notifier_->deleteLater();
       }
 
      private:
       RequestNotifier* notifier_;
-      QString path_;
-      QFile file_;
+      std::string data_;
       std::shared_ptr<ICloudProvider> provider_;
       IItem::Pointer item_;
     };
     auto p = item()->provider();
-    auto r = p->getThumbnailAsync(
-        item()->item(),
-        util::make_unique<DownloadThumbnailCallback>(
-            object,
-            QUrl::fromLocalFile(QDir::tempPath() + QDir::separator())
-                .toString(),
-            sanitize(item_->filename()) + "-thumbnail", p, item()->item()));
+    auto r = p->getThumbnailAsync(item()->item(),
+                                  util::make_unique<DownloadThumbnailCallback>(
+                                      object, p, item()->item()));
     context()->add(p, std::move(r));
   }
 }
