@@ -1,6 +1,7 @@
 #ifndef CLOUD_CONTEXT_H
 #define CLOUD_CONTEXT_H
 
+#include <QAbstractListModel>
 #include <QMap>
 #include <QObject>
 #include <QQmlListProperty>
@@ -17,6 +18,7 @@ class CloudContext;
 
 class RequestNotifier : public QObject {
  signals:
+  void addedItem(cloudstorage::IItem::Pointer);
   void finishedList(
       cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>);
   void finishedVoid(cloudstorage::EitherError<void>);
@@ -78,27 +80,43 @@ class Request : public QObject {
   Q_OBJECT
 };
 
+class ListDirectoryModel : public QAbstractListModel {
+ public:
+  void set_provider(std::shared_ptr<cloudstorage::ICloudProvider>);
+  void add(cloudstorage::IItem::Pointer);
+  void clear();
+
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int) const override;
+  QHash<int, QByteArray> roleNames() const override;
+
+ private:
+  std::shared_ptr<cloudstorage::ICloudProvider> provider_;
+  std::vector<cloudstorage::IItem::Pointer> list_;
+  Q_OBJECT
+};
+
 class ListDirectoryRequest : public Request {
  public:
   Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
-  Q_PROPERTY(QQmlListProperty<CloudItem> list READ list NOTIFY listChanged)
+  Q_PROPERTY(ListDirectoryModel* list READ list CONSTANT)
 
   ListDirectoryRequest(QObject* = nullptr);
 
   CloudItem* item() const { return item_; }
   void set_item(CloudItem*);
 
-  QQmlListProperty<CloudItem> list();
+  ListDirectoryModel* list();
 
   void update() override;
 
  signals:
-  void listChanged();
   void itemChanged();
 
  private:
   CloudItem* item_ = nullptr;
-  std::vector<cloudstorage::IItem::Pointer> list_;
+  bool first_listed_ = false;
+  ListDirectoryModel list_;
 
   Q_OBJECT
 };
@@ -470,6 +488,7 @@ class CloudContext : public QObject {
   Q_OBJECT
 };
 
+Q_DECLARE_METATYPE(cloudstorage::IItem::Pointer)
 Q_DECLARE_METATYPE(
     cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>)
 Q_DECLARE_METATYPE(cloudstorage::EitherError<void>)

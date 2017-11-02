@@ -368,6 +368,37 @@ QString CloudItem::type() const {
   }
 }
 
+void ListDirectoryModel::set_provider(std::shared_ptr<ICloudProvider> p) {
+  provider_ = p;
+}
+
+void ListDirectoryModel::add(IItem::Pointer t) {
+  beginInsertRows(QModelIndex(), rowCount(), rowCount());
+  list_.push_back(t);
+  endInsertRows();
+}
+
+void ListDirectoryModel::clear() {
+  beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
+  list_.clear();
+  endRemoveRows();
+}
+
+int ListDirectoryModel::rowCount(const QModelIndex&) const {
+  return static_cast<int>(list_.size());
+}
+
+QVariant ListDirectoryModel::data(const QModelIndex& id, int) const {
+  if (static_cast<uint32_t>(id.row()) >= list_.size()) return QVariant();
+  auto item = new CloudItem(provider_, list_[static_cast<size_t>(id.row())]);
+  QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
+  return QVariant::fromValue(item);
+}
+
+QHash<int, QByteArray> ListDirectoryModel::roleNames() const {
+  return {{Qt::DisplayRole, "modelData"}};
+}
+
 ListDirectoryRequest::ListDirectoryRequest(QObject* parent) : Request(parent) {
   connect(this, &ListDirectoryRequest::itemChanged, this,
           &ListDirectoryRequest::update);
@@ -376,25 +407,11 @@ ListDirectoryRequest::ListDirectoryRequest(QObject* parent) : Request(parent) {
 void ListDirectoryRequest::set_item(CloudItem* item) {
   if (item_ == item) return;
   item_ = item;
-  emit contextChanged();
+  list_.set_provider(item ? item->provider() : nullptr);
+  emit itemChanged();
 }
 
-QQmlListProperty<CloudItem> ListDirectoryRequest::list() {
-  QQmlListProperty<CloudItem> r(
-      this, this,
-      [](QQmlListProperty<CloudItem>* lst) -> int {
-        auto t = reinterpret_cast<ListDirectoryRequest*>(lst->data);
-        return static_cast<int>(t->list_.size());
-      },
-      [](QQmlListProperty<CloudItem>* lst, int idx) {
-        auto t = reinterpret_cast<ListDirectoryRequest*>(lst->data);
-        auto item = new CloudItem(t->item_->provider(),
-                                  t->list_[static_cast<size_t>(idx)]);
-        QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
-        return item;
-      });
-  return r;
-}
+ListDirectoryModel* ListDirectoryRequest::list() { return &list_; }
 
 void ListDirectoryRequest::update() {
   if (!item() || !context()) return;
@@ -407,14 +424,33 @@ void ListDirectoryRequest::update() {
               return emit context()->errorOccurred(
                   "ListDirectory", r.left()->code_,
                   r.left()->description_.c_str());
-            list_ = *r.right();
-            emit listChanged();
           });
+  connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
+    if (!first_listed_) {
+      first_listed_ = true;
+      list_.clear();
+    }
+    list_.add(item);
+  });
+  class ListDirectoryCallback : public IListDirectoryCallback {
+   public:
+    ListDirectoryCallback(RequestNotifier* r) : notifier_(r) {}
+
+    void receivedItem(IItem::Pointer item) override {
+      notifier_->addedItem(item);
+    }
+
+    void done(EitherError<std::vector<IItem::Pointer>> r) override {
+      emit notifier_->finishedList(r);
+      notifier_->deleteLater();
+    }
+
+   private:
+    RequestNotifier* notifier_;
+  };
+  first_listed_ = false;
   auto r = item_->provider()->listDirectoryAsync(
-      item_->item(), [object](EitherError<std::vector<IItem::Pointer>> r) {
-        emit object->finishedList(r);
-        object->deleteLater();
-      });
+      item_->item(), util::make_unique<ListDirectoryCallback>(object));
   context()->add(item_->provider(), std::move(r));
 }
 
@@ -442,7 +478,7 @@ GetThumbnailRequest::GetThumbnailRequest(QObject* parent) : Request(parent) {
 void GetThumbnailRequest::set_item(CloudItem* item) {
   if (item_ == item) return;
   item_ = item;
-  emit contextChanged();
+  emit itemChanged();
 }
 
 void GetThumbnailRequest::update() {

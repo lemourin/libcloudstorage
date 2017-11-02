@@ -41,6 +41,7 @@
 #include "Utility/Utility.h"
 
 void register_types() {
+  qRegisterMetaType<cloudstorage::IItem::Pointer>();
   qRegisterMetaType<
       cloudstorage::EitherError<std::vector<cloudstorage::IItem::Pointer>>>();
   qRegisterMetaType<cloudstorage::EitherError<void>>();
