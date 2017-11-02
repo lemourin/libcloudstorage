@@ -343,6 +343,14 @@ CloudItem::CloudItem(std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
                      QObject* parent)
     : QObject(parent), provider_(p), item_(item) {}
 
+QString CloudItem::filename() const {
+#ifdef __ANDROID__
+  return sanitize(QString(item_->filename().c_str()).toLatin1());
+#else
+  return item_->filename().c_str();
+#endif
+}
+
 QString CloudItem::type() const {
   switch (item_->type()) {
     case IItem::FileType::Unknown:

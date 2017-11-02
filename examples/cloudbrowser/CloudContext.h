@@ -41,7 +41,7 @@ class CloudItem : public QObject {
   std::shared_ptr<cloudstorage::ICloudProvider> provider() const {
     return provider_;
   }
-  QString filename() const { return item_->filename().c_str(); }
+  QString filename() const;
   uint64_t size() const { return item_->size(); }
   QString type() const;
 
