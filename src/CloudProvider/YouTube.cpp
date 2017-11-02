@@ -170,6 +170,12 @@ EitherError<std::string> descramble(const std::string& scrambled,
 
 YouTube::YouTube() : CloudProvider(util::make_unique<Auth>()) {}
 
+IItem::Pointer YouTube::rootDirectory() const {
+  return util::make_unique<Item>("/", "e30K", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
+                                 IItem::FileType::Directory);
+}
+
 std::string YouTube::name() const { return "youtube"; }
 
 std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }

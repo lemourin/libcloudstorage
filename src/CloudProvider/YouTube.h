@@ -34,6 +34,7 @@ class YouTube : public CloudProvider {
  public:
   YouTube();
 
+  IItem::Pointer rootDirectory() const override;
   std::string name() const override;
   std::string endpoint() const override;
 
