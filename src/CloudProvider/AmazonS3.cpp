@@ -77,6 +77,7 @@ std::string currentDateAndTime() {
 AmazonS3::AmazonS3() : CloudProvider(util::make_unique<Auth>()) {}
 
 void AmazonS3::initialize(InitData&& init_data) {
+  if (init_data.token_.empty()) init_data.token_ = ENCODED_JSON;
   unpackCredentials(init_data.token_);
   CloudProvider::initialize(std::move(init_data));
 }

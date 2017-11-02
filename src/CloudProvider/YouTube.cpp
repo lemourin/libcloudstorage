@@ -171,7 +171,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
 YouTube::YouTube() : CloudProvider(util::make_unique<Auth>()) {}
 
 IItem::Pointer YouTube::rootDirectory() const {
-  return util::make_unique<Item>("/", "e30K", IItem::UnknownSize,
+  return util::make_unique<Item>("/", ENCODED_JSON, IItem::UnknownSize,
                                  IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
