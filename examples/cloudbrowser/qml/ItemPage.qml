@@ -124,7 +124,7 @@ Kirigami.ScrollablePage {
 
   Controls.BusyIndicator {
     anchors.centerIn: parent
-    enabled: running
+    enabled: false
     running: !list.done
     width: 200
     height: 200
