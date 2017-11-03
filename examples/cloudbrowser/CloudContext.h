@@ -55,27 +55,16 @@ class CloudItem : public QObject {
 
 class Request : public QObject {
  public:
-  Q_PROPERTY(CloudContext* context READ context WRITE set_context NOTIFY
-                 contextChanged)
   Q_PROPERTY(bool done READ done WRITE set_done NOTIFY doneChanged)
-
-  Request(QObject* = nullptr);
-
-  CloudContext* context() const { return context_; }
-  void set_context(CloudContext*);
 
   bool done() const { return done_; }
   void set_done(bool);
 
-  Q_INVOKABLE virtual void update() = 0;
-
  signals:
-  void contextChanged();
   void doneChanged();
 
  private:
-  CloudContext* context_;
-  std::atomic_bool done_;
+  bool done_;
 
   Q_OBJECT
 };
@@ -98,23 +87,16 @@ class ListDirectoryModel : public QAbstractListModel {
 
 class ListDirectoryRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
   Q_PROPERTY(ListDirectoryModel* list READ list CONSTANT)
-
-  ListDirectoryRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem*);
 
   ListDirectoryModel* list();
 
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem*);
 
  signals:
   void itemChanged();
 
  private:
-  CloudItem* item_ = nullptr;
   bool first_listed_ = false;
   ListDirectoryModel list_;
 
@@ -123,23 +105,15 @@ class ListDirectoryRequest : public Request {
 
 class GetThumbnailRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
   Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
 
-  GetThumbnailRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem*);
-
   QString source() const { return source_; }
-  void update() override;
+  Q_INVOKABLE void update(CloudContext* context, CloudItem* item);
 
  signals:
   void sourceChanged();
-  void itemChanged();
 
  private:
-  CloudItem* item_ = nullptr;
   QString source_;
 
   Q_OBJECT
@@ -147,23 +121,15 @@ class GetThumbnailRequest : public Request {
 
 class GetUrlRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
   Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
 
-  GetUrlRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem*);
-
   QString source() const { return source_; }
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem*);
 
  signals:
-  void itemChanged();
   void sourceChanged();
 
  private:
-  CloudItem* item_ = nullptr;
   QString source_;
 
   Q_OBJECT
@@ -171,145 +137,65 @@ class GetUrlRequest : public Request {
 
 class CreateDirectoryRequest : public Request {
  public:
-  Q_PROPERTY(
-      CloudItem* parent READ parent WRITE set_parent NOTIFY parentChanged)
-  Q_PROPERTY(QString name READ name WRITE set_name NOTIFY nameChanged)
-
-  CreateDirectoryRequest(QObject* = nullptr);
-
-  CloudItem* parent() const { return parent_; }
-  void set_parent(CloudItem*);
-
-  QString name() const { return name_; }
-  void set_name(QString);
-
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem* parent, QString name);
 
  signals:
-  void parentChanged();
-  void nameChanged();
   void createdDirectory();
 
  private:
-  CloudItem* parent_ = nullptr;
-  QString name_;
-
   Q_OBJECT
 };
 
 class DeleteItemRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
-
-  DeleteItemRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem* item);
-
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem*);
 
  signals:
-  void itemChanged();
   void itemDeleted();
 
  private:
-  CloudItem* item_ = nullptr;
-
   Q_OBJECT
 };
 
 class RenameItemRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
-  Q_PROPERTY(QString name READ name WRITE set_name NOTIFY nameChanged)
-
-  RenameItemRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem* item);
-
-  QString name() const { return name_; }
-  void set_name(QString);
-
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem* item, QString name);
 
  signals:
-  void itemChanged();
-  void nameChanged();
   void itemRenamed();
 
  private:
-  CloudItem* item_ = nullptr;
-  QString name_;
   Q_OBJECT
 };
 
 class MoveItemRequest : public Request {
  public:
-  Q_PROPERTY(
-      CloudItem* source READ source WRITE set_source NOTIFY sourceChanged)
-  Q_PROPERTY(CloudItem* destination READ destination WRITE set_destination
-                 NOTIFY destinationChanged)
-
-  MoveItemRequest(QObject* = nullptr);
-
-  CloudItem* source() const { return source_; }
-  void set_source(CloudItem*);
-
-  CloudItem* destination() const { return destination_; }
-  void set_destination(CloudItem*);
-
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem* source,
+                          CloudItem* destination);
 
  signals:
-  void sourceChanged();
-  void destinationChanged();
   void itemMoved();
 
  private:
-  CloudItem* source_ = nullptr;
-  CloudItem* destination_ = nullptr;
-
   Q_OBJECT
 };
 
 class UploadItemRequest : public Request {
  public:
-  Q_PROPERTY(
-      CloudItem* parent READ parent WRITE set_parent NOTIFY parentChanged)
-  Q_PROPERTY(QString path READ path WRITE set_path NOTIFY pathChanged)
-  Q_PROPERTY(
-      QString filename READ filename WRITE set_filename NOTIFY filenameChanged)
   Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
   Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
-
-  UploadItemRequest(QObject* = nullptr);
-
-  CloudItem* parent() const { return parent_; }
-  void set_parent(CloudItem*);
-
-  QString path() const { return path_; }
-  void set_path(QString);
-
-  QString filename() const { return filename_; }
-  void set_filename(QString);
 
   qint64 total() const { return total_; }
   qint64 now() const { return now_; }
 
-  void update() override;
+  Q_INVOKABLE void update(CloudContext* context, CloudItem* parent,
+                          QString path, QString filename);
 
  signals:
-  void parentChanged();
-  void pathChanged();
-  void filenameChanged();
   void progressChanged();
   void uploadComplete();
 
  private:
-  CloudItem* parent_ = nullptr;
-  QString path_;
-  QString filename_;
   qint64 total_ = 0;
   qint64 now_ = 0;
 
@@ -318,40 +204,19 @@ class UploadItemRequest : public Request {
 
 class DownloadItemRequest : public Request {
  public:
-  Q_PROPERTY(CloudItem* item READ item WRITE set_item NOTIFY itemChanged)
-  Q_PROPERTY(QString path READ path WRITE set_path NOTIFY pathChanged)
-  Q_PROPERTY(
-      QString filename READ filename WRITE set_filename NOTIFY filenameChanged)
   Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
   Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
-
-  DownloadItemRequest(QObject* = nullptr);
-
-  CloudItem* item() const { return item_; }
-  void set_item(CloudItem* item);
-
-  QString path() const { return path_; }
-  void set_path(QString path);
-
-  QString filename() const { return filename_; }
-  void set_filename(QString);
 
   qint64 total() const { return total_; }
   qint64 now() const { return now_; }
 
-  void update() override;
+  Q_INVOKABLE void update(CloudContext*, CloudItem* item, QString path);
 
  signals:
-  void itemChanged();
-  void pathChanged();
-  void filenameChanged();
   void progressChanged();
   void downloadComplete();
 
  private:
-  CloudItem* item_ = nullptr;
-  QString path_;
-  QString filename_;
   qint64 total_ = 0;
   qint64 now_ = 0;
 

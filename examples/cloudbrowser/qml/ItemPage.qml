@@ -51,7 +51,7 @@ Kirigami.ScrollablePage {
       iconName: "edit-delete"
       onTriggered: {
         list.done = false;
-        delete_request.item = list_view.currentItem.item;
+        delete_request.update(cloud, list_view.currentItem.item);
       }
     },
     Kirigami.Action {
@@ -68,8 +68,7 @@ Kirigami.ScrollablePage {
       text: "Move " + (cloud.currently_moved ? cloud.currently_moved.filename : "") + " here"
       iconName: "dialog-apply"
       onTriggered: {
-        move_request.source = cloud.currently_moved;
-        move_request.destination = page.item;
+        move_request.update(cloud, cloud.currently_moved, page.item);
         list.done = false;
         if (cloud.list_request)
           cloud.list_request.done = false;
@@ -109,15 +108,13 @@ Kirigami.ScrollablePage {
       Controls.Button {
         CreateDirectoryRequest {
           id: create_directory
-          context: cloud
-          parent: item
-          onCreatedDirectory: list.update()
+          onCreatedDirectory: list.update(cloud, page.item)
         }
 
         anchors.horizontalCenter: parent.horizontalCenter
         text: "Create"
         onClicked: {
-          create_directory.name = directory_name.text;
+          create_directory.update(cloud, item, directory_name.text);
           list.done = false;
           create_directory_sheet.close();
         }
@@ -137,32 +134,29 @@ Kirigami.ScrollablePage {
     property int currentEdit: -1
 
     ListDirectoryRequest {
+      property CloudItem item: page.item
+
       id: list
-      context: cloud
-      item: page.item
+      Component.onCompleted: update(cloud, item)
     }
 
     DeleteItemRequest {
       id: delete_request
-      context: cloud
-      onItemDeleted: list.update()
+      onItemDeleted: list.update(cloud, page.item)
     }
 
     RenameItemRequest {
       id: rename_request
-      context: cloud
-      onItemRenamed: list.update()
+      onItemRenamed: list.update(cloud, page.item)
     }
 
     MoveItemRequest {
       id: move_request
-      context: cloud
       onItemMoved: {
-        if (cloud.list_request) {
-          cloud.list_request.update();
-          cloud.list_request = null;
-        }
-        list.update();
+        if (cloud.list_request)
+          cloud.list_request.update(cloud, cloud.list_request.item);
+        cloud.list_request = null;
+        list.update(cloud, page.item);
       }
     }
 
@@ -172,11 +166,10 @@ Kirigami.ScrollablePage {
       selectFolder: false
       onAccepted: {
         var r = upload_component.createObject(cloud, {
-                                                parent: page.item,
-                                                path: fileUrl,
                                                 filename: upload_dialog.filename,
                                                 list: list
                                               });
+        r.update(cloud, page.item, fileUrl, upload_dialog.filename);
         if (r.done === false) {
           var req = cloud.request;
           req.push(r);
@@ -192,10 +185,9 @@ Kirigami.ScrollablePage {
       filename: list_view.currentItem ? list_view.currentItem.item.filename : ""
       onAccepted: {
         var r = download_component.createObject(cloud, {
-                                                  item: list_view.currentItem.item,
-                                                  path: fileUrl,
                                                   filename: download_dialog.filename
                                                 });
+        r.update(cloud, list_view.currentItem.item, fileUrl);
         if (r.done === false) {
           var req = cloud.request;
           req.push(r);
@@ -266,8 +258,7 @@ Kirigami.ScrollablePage {
         anchors.right: parent.right
         GetThumbnailRequest {
           id: thumbnail
-          context: cloud
-          item: modelData.type !== "directory" ? modelData : null
+          Component.onCompleted: update(cloud, modelData)
         }
         Item {
           id: image
@@ -275,7 +266,7 @@ Kirigami.ScrollablePage {
           height: 50
           Controls.BusyIndicator {
             anchors.fill: parent
-            running: thumbnail.item && !thumbnail.done
+            running: !thumbnail.done
           }
           Image {
             anchors.fill: parent
@@ -299,7 +290,7 @@ Kirigami.ScrollablePage {
         }
         RowLayout {
           visible: list_view.currentEdit === index
-          onVisibleChanged: if (visible) text.text = modelData.filename
+          onVisibleChanged: if (visible && modelData) text.text = modelData.filename
           width: parent.width - image.width
           Controls.TextField {
             id: text
@@ -318,8 +309,7 @@ Kirigami.ScrollablePage {
             onClicked: {
               list_view.currentEdit = -1;
               list.done = false;
-              rename_request.item = modelData;
-              rename_request.name = text.text;
+              rename_request.update(cloud, modelData, text.text);
             }
           }
         }

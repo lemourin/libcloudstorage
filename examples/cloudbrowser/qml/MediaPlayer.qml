@@ -13,9 +13,8 @@ Kirigami.Page {
 
   GetUrlRequest {
     id: url_request
-    context: cloud
-    item: page.item
     onSourceChanged: if (player.item) player.item.source = source
+    Component.onCompleted: update(cloud, page.item)
   }
 
   MouseArea {

@@ -113,11 +113,11 @@ Kirigami.ApplicationWindow {
   Component {
     id: upload_component
     UploadItemRequest {
+      property string filename
       property bool upload: true
       property var list
 
       id: upload_request
-      context: cloud
       onUploadComplete: {
         var lst = [], i;
         for (i = 0; i < cloud.request.length; i++)
@@ -126,7 +126,7 @@ Kirigami.ApplicationWindow {
           else
             upload_request.destroy();
         cloud.request = lst;
-        if (list) list.update();
+        if (list) list.update(cloud, list.item);
       }
     }
   }
@@ -134,10 +134,10 @@ Kirigami.ApplicationWindow {
   Component {
     id: download_component
     DownloadItemRequest {
+      property string filename
       property bool upload: false
 
       id: download_request
-      context: cloud
       onDownloadComplete: {
         var lst = [], i;
         for (i = 0; i < cloud.request.length; i++)
