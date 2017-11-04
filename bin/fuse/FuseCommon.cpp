@@ -30,15 +30,19 @@ using pointer = std::unique_ptr<T, std::function<void(T *)>>;
 struct options {
   ~options() {
     free(config_file);
-    free(provider_label);
+    free(add_provider_label);
+    free(remove_provider_label);
   }
   char *config_file;
-  char *provider_label;
+  char *add_provider_label;
+  char *remove_provider_label;
+  int list_providers;
 };
 
-const struct fuse_opt option_spec[] = {OPTION("--config=%s", config_file),
-                                       OPTION("--add=%s", provider_label),
-                                       FUSE_OPT_END};
+const struct fuse_opt option_spec[] = {
+    OPTION("--config=%s", config_file), OPTION("--add=%s", add_provider_label),
+    OPTION("--remove=%s", remove_provider_label),
+    OPTION("--list", list_providers), FUSE_OPT_END};
 }  // namespace
 
 struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i) {
@@ -178,7 +182,9 @@ int fuse_run(int argc, char **argv) {
   if (fuse_parse_cmdline(args.get(), opts.get()) != 0) return 1;
   if (opts->show_help) {
     std::cerr << util::libcloudstorage_ascii_art() << "\n\n";
-    std::cerr << "    --add=provider_label   add cloud provider with label\n";
+    std::cerr << "    --add=label            add cloud provider with label\n";
+    std::cerr << "    --remove=label         remove cloud provider\n";
+    std::cerr << "    --list                 list cloud providers\n";
     std::cerr << "    --config=config_path   path to configuration file\n";
     std::cerr << "                           (default: "
                  "~/.libcloudstorage-fuse.json)\n";
@@ -200,7 +206,13 @@ int fuse_run(int argc, char **argv) {
         std::ifstream(options.config_file));
   } catch (const Json::Exception &) {
   }
-  if (options.provider_label) {
+  if (options.add_provider_label) {
+    for (auto p : json["providers"])
+      if (p["label"].asString() == options.add_provider_label) {
+        std::cerr << "Provider with label " << options.add_provider_label
+                  << " already exists.\n";
+        return 1;
+      }
     std::cerr << cloudstorage::util::libcloudstorage_ascii_art() << "\n";
     auto storage = ICloudStorage::create();
     for (auto &&p : storage->providers()) {
@@ -225,7 +237,7 @@ int fuse_run(int argc, char **argv) {
     auto ret = provider->exchangeCodeAsync(key.code_)->result();
     if (auto token = ret.right()) {
       Json::Value p;
-      p["label"] = options.provider_label;
+      p["label"] = options.add_provider_label;
       p["type"] = provider->name();
       p["token"] = token->token_;
       p["access_token"] = token->access_token_;
@@ -234,6 +246,30 @@ int fuse_run(int argc, char **argv) {
     } else
       std::cerr << "error " << ret.left()->code_ << ": "
                 << ret.left()->description_ << "\n";
+    return 0;
+  } else if (options.remove_provider_label) {
+    Json::Value providers(Json::arrayValue);
+    bool removed = false;
+    for (auto p : json["providers"])
+      if (p["label"].asString() != options.remove_provider_label)
+        providers.append(p);
+      else {
+        removed = true;
+      }
+    if (removed) {
+      json["providers"] = providers;
+      std::ofstream(options.config_file) << json;
+    } else {
+      std::cerr << "Failed to remove " << options.remove_provider_label << "\n";
+      return 1;
+    }
+    return 0;
+  } else if (options.list_providers) {
+    std::cout << std::setw(20) << std::left << "TYPE"
+              << "LABEL\n";
+    for (auto p : json["providers"])
+      std::cout << std::setw(20) << std::left << p["type"].asString()
+                << p["label"].asString() << "\n";
     return 0;
   }
   int ret = 0;
