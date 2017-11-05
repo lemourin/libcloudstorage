@@ -5,8 +5,25 @@ import org.kde.kirigami 2.0 as Kirigami
 import libcloudstorage 1.0
 
 Kirigami.ApplicationWindow {
+  property bool visible_player: false
+  property bool drawer_state: false
   id: root
-  header: Kirigami.ApplicationHeader {}
+
+  onVisible_playerChanged: {
+    if (visible_player) {
+      drawer_state = globalDrawer.drawerOpen;
+      globalDrawer.drawerOpen = false;
+    } else {
+      globalDrawer.drawerOpen = drawer_state;
+    }
+  }
+
+  header: visible_player ? null : header
+
+  Kirigami.ApplicationHeader {
+    id: header
+    width: parent.width
+  }
 
   CloudContext {
     property var list_request
@@ -39,6 +56,7 @@ Kirigami.ApplicationWindow {
   }
 
   globalDrawer: Kirigami.GlobalDrawer {
+    handleVisible: !visible_player
     Component {
       id: settings
       Kirigami.Action {
@@ -82,6 +100,8 @@ Kirigami.ApplicationWindow {
     id: contextDrawer
   }
   pageStack.initialPage: mainPageComponent
+  pageStack.interactive: !visible_player
+  pageStack.defaultColumnWidth: 10000
 
   Component {
     id: addProviderPage
@@ -149,4 +169,6 @@ Kirigami.ApplicationWindow {
       }
     }
   }
+
+  Component.onCompleted: pageStack.separatorVisible = false
 }

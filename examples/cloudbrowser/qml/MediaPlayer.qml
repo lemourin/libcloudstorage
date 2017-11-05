@@ -7,9 +7,12 @@ Kirigami.Page {
   property CloudItem item
 
   id: page
-  title: "Play"
-
-  anchors.fill: parent
+  leftPadding: 0
+  rightPadding: 0
+  topPadding: 0
+  bottomPadding: 0
+  title: item.filename
+  onIsCurrentPageChanged: if (!isCurrentPage) root.visible_player = false;
 
   GetUrlRequest {
     id: url_request
@@ -21,6 +24,12 @@ Kirigami.Page {
     property bool playing: true
 
     anchors.fill: parent
+
+    Rectangle {
+      anchors.fill: parent
+      color: "black"
+    }
+
     Loader {
       id: player
       anchors.fill: parent
@@ -36,19 +45,38 @@ Kirigami.Page {
         player.item.pause();
     }
   }
-  MouseArea {
-    height: 20
-    anchors.bottom: parent.bottom
+  Row {
     anchors.left: parent.left
     anchors.right: parent.right
-    Controls.ProgressBar {
-      anchors.fill: parent
-      from: 0
-      to: 1
-      value: player.item.position
+    anchors.bottom: parent.bottom
+    height: 50
+    MouseArea {
+      anchors.margins: 10
+      anchors.verticalCenter: parent.verticalCenter
+      height: parent.height
+      width: parent.width - fullscreen.width
+      Controls.ProgressBar {
+        opacity: 0.3
+        anchors.fill: parent
+        from: 0
+        to: 1
+        value: player.item.position
+      }
+      onClicked: {
+        player.item.set_position(mouse.x / width);
+      }
     }
-    onClicked: {
-      player.item.set_position(mouse.x / width);
+    Kirigami.Icon {
+      id: fullscreen
+      anchors.margins: 10
+      width: height
+      height: parent.height
+      source: "view-fullscreen"
+
+      MouseArea {
+        anchors.fill: parent
+        onClicked: root.visible_player ^= 1
+      }
     }
   }
 }
