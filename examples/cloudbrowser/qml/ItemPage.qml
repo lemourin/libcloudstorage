@@ -252,6 +252,8 @@ Kirigami.ScrollablePage {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
           cloud.list(modelData.filename, modelData);
+        else
+          root.contextDrawer.drawerOpen = true;
       }
       Row {
         anchors.left: parent.left
