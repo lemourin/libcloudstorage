@@ -103,6 +103,7 @@ Kirigami.ScrollablePage {
       anchors.centerIn: parent
       Controls.TextField {
         id: directory_name
+        color: "black"
         placeholderText: "New Directory"
       }
       Controls.Button {
