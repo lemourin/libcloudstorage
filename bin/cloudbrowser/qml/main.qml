@@ -13,8 +13,10 @@ Kirigami.ApplicationWindow {
     if (visible_player) {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
+      root.showFullScreen();
     } else {
       globalDrawer.drawerOpen = drawer_state;
+      root.showNormal();
     }
   }
 

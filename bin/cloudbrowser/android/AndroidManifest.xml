@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <manifest package="org.videolan.cloudbrowser" xmlns:android="http://schemas.android.com/apk/res/android" android:versionName="1.0" android:versionCode="1" android:installLocation="auto">
-    <application android:hardwareAccelerated="true" android:name="org.qtproject.qt5.android.bindings.QtApplication" android:label="Cloud Browser" android:icon="@drawable/icon" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+    <application android:hardwareAccelerated="true" android:name="org.qtproject.qt5.android.bindings.QtApplication" android:label="Cloud Browser" android:icon="@drawable/icon">
         <activity android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation" android:name="org.videolan.cloudbrowser.CloudBrowser" android:label="Cloud Browser" android:screenOrientation="unspecified" android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
