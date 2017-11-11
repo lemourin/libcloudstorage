@@ -109,8 +109,8 @@ AC_CONFIG_FILES([
   test/Makefile
   bin/Makefile
   bin/fuse/Makefile
+  bin/cloudbrowser/Makefile
   examples/Makefile
-  examples/cloudbrowser/Makefile
   examples/commandlinebrowser/Makefile
 ])
 
@@ -127,34 +127,48 @@ HAVE_QT=0
 HAVE_QTWEBVIEW=0
 HAVE_THUMBNAILER=0
 HAVE_VLC_QT=0
+HAVE_CLOUDBROWSER=0
 
-AS_IF([test "x$with_examples" = "xyes"], [
-  PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
-    HAVE_QT=1
-    QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
-    QT_HOST_PATH="$(eval $PKG_CONFIG --variable=host_bins Qt5Core)"
-    AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
-    AC_PATH_PROGS(RCC, [rcc-qt5 rcc], rcc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
-    AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
-    AC_DEFINE(WITH_QT)
-  ], [HAVE_QT=0])
-  PKG_CHECK_MODULES([qtwebview], [Qt5WebView], [
-    HAVE_QTWEBVIEW=1
-    AC_DEFINE(WITH_QTWEBVIEW)
-  ], [HAVE_QTWEBVIEW=0])
-  PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer], [
-    HAVE_THUMBNAILER=1
-    AC_DEFINE(WITH_THUMBNAILER)
-  ], [HAVE_THUMBNAILER=0])
-  PKG_CHECK_MODULES([vlcqt], [libVLCQtQml], [
-    HAVE_VLC_QT=1
-    AC_DEFINE(WITH_VLC_QT)
-  ], [HAVE_VLC_QT=0])
+AC_ARG_WITH([cloudbrowser], AS_HELP_STRING([--with-cloudbrowser]))
+AS_IF([test "x$with_cloudbrowser" != "xno"], [
+  AS_IF([test "$HAVE_CURL" -eq 1 -a "$HAVE_MICROHTTPD" -eq 1], [
+    PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
+      HAVE_QT=1
+      HAVE_CLOUDBROWSER=1
+      QT_PATH="$(eval $PKG_CONFIG --variable=exec_prefix Qt5Core)"
+      QT_HOST_PATH="$(eval $PKG_CONFIG --variable=host_bins Qt5Core)"
+      AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
+      AC_PATH_PROGS(RCC, [rcc-qt5 rcc], rcc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
+      AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
+      AC_DEFINE(WITH_QT)
+    ], [
+      HAVE_QT=0
+      AS_IF([test "x$with_cloudbrowser" = "xyes"], [AC_MSG_ERROR([cloudbrowser requires qt])])
+    ])
+    PKG_CHECK_MODULES([qtwebview], [Qt5WebView], [
+      HAVE_QTWEBVIEW=1
+      AC_DEFINE(WITH_QTWEBVIEW)
+    ], [HAVE_QTWEBVIEW=0])
+    PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer], [
+      HAVE_THUMBNAILER=1
+      AC_DEFINE(WITH_THUMBNAILER)
+    ], [HAVE_THUMBNAILER=0])
+    PKG_CHECK_MODULES([vlcqt], [libVLCQtQml], [
+      HAVE_VLC_QT=1
+      AC_DEFINE(WITH_VLC_QT)
+    ], [HAVE_VLC_QT=0])
+  ], [
+    AS_IF([test "x$with_cloudbrowser" = "xyes"], [
+      AS_IF([test "$HAVE_CURL" -eq 0], [AC_MSG_ERROR([cloudbrowser requires curl])])
+      AS_IF([test "$HAVE_MICROHTTPD" -eq 0], [AC_MSG_ERROR([cloudbrowser requires microhttpd])])
+    ])
+  ])
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBVIEW], [test "$HAVE_QTWEBVIEW" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 AM_CONDITIONAL([WITH_VLC_QT], [test "$HAVE_VLC_QT" -eq 1])
+AM_CONDITIONAL([WITH_CLOUDBROWSER], [test "$HAVE_CLOUDBROWSER" -eq 1])
 
 AC_OUTPUT

@@ -124,9 +124,10 @@ After cloud providers are added, the file system can be mount using:
 Cloud Browser:
 ==============
 
-When `--with-examples`  flag is passed  to `./configure`, Cloud  Browser  will  
-be  built. It  provides  easy  graphics user  interface  for  all the features  
-implemented in `libcloudstorage`.
+In `bin/cloudbrowser`  there is  a program which  provides easy  graphics user  
+interface for  all the features  implemented in `libcloudstorage`. It  will be  
+built  when  its  dependencies  are found,  unless  explicitly  disabled  with  
+`--with-cloudbrowser=no`.
 
 Cloud Browser dependencies:
 

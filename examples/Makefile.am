@@ -5,9 +5,5 @@ if WITH_MICROHTTPD
 
 SUBDIRS = commandlinebrowser
 
-if WITH_QT
-SUBDIRS += cloudbrowser
-endif
-
 endif
 endif
