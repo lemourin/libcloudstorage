@@ -15,7 +15,7 @@ void AndroidUtility::openWebPage(QString url) {
 }
 
 void AndroidUtility::closeWebPage() {
-  QAndroidJniObject::callStaticObjectMethod(
+  QAndroidJniObject::callStaticMethod<void>(
       "org/videolan/cloudbrowser/CloudBrowser", "closeWebPage",
       "(Landroid/content/Intent;)V", intent_.object());
 }
