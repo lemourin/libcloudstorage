@@ -33,7 +33,8 @@ SOURCES += \
     ../GenerateThumbnail.cpp \
     ../Exec.cpp \
     ../FileDialog.cpp \
-    ../File.cpp
+    ../File.cpp \
+    ../AndroidUtility.cpp
 
 SOURCES += \
     ../../../src/Utility/CloudStorage.cpp \
@@ -80,12 +81,14 @@ RESOURCES += \
 DISTFILES += \
     AndroidManifest.xml \
     Workaround.qml \
-    src/org/videolan/cloudbrowser/CloudBrowser.java
+    src/org/videolan/cloudbrowser/CloudBrowser.java \
+    src/org/videolan/cloudbrowser/AuthView.java
 
 HEADERS += \
     ../CloudContext.h \
     ../FileDialog.h \
-    ../File.h
+    ../File.h \
+    ../AndroidUtility.h
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 

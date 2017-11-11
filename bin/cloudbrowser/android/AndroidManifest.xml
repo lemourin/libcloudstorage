@@ -42,7 +42,7 @@
                           application still try to draw after
                           "applicationStateChanged(Qt::ApplicationSuspended)"
                           signal is sent! -->
-            <meta-data android:name="android.app.background_running" android:value="false"/>
+            <meta-data android:name="android.app.background_running" android:value="true"/>
             <!-- Background running -->
 
             <!-- auto screen scale factor -->
@@ -57,6 +57,10 @@
                 -->
             <meta-data android:name="android.app.extract_android_style" android:value="minimal"/>
             <!-- extract android style -->
+    </activity>
+
+    <activity android:name="org.videolan.cloudbrowser.AuthView" android:label="Cloud Browser">
+        <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --"/>
     </activity>
 
     <!-- For adding service(s) please check: https://wiki.qt.io/AndroidServices -->

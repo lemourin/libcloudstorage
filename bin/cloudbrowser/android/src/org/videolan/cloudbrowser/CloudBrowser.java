@@ -2,6 +2,8 @@ package org.videolan.cloudbrowser;
 
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.Activity;
+import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -16,6 +18,7 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
     private static NotificationManager m_notificationManager;
     private static Notification.Builder m_builder;
     private static CloudBrowser m_instance;
+    public static AuthView m_authView;
 
     public static class FileOutput {
         public ParcelFileDescriptor m_descriptor;
@@ -45,6 +48,20 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
         intent.putExtra(Intent.EXTRA_TITLE, filename);
         intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         return intent;
+    }
+
+    public static Intent openWebPage(String url) {
+        Intent intent = new Intent(m_instance, AuthView.class);
+        intent.putExtra("address", url);
+        return intent;
+    }
+
+    public static void closeWebPage(Intent intent) {
+        if (m_authView != null) {
+            m_authView.setResult(1, intent);
+            m_authView.finish();
+            m_authView = null;
+        }
     }
 
     public static FileOutput openWrite(String uri) throws IOException {

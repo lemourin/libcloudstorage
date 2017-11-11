@@ -35,6 +35,7 @@
 #include <QQmlEngine>
 
 #ifdef __ANDROID__
+#include "AndroidUtility.h"
 #include "FileDialog.h"
 #endif
 #include "CloudContext.h"
@@ -99,7 +100,8 @@ int exec_cloudbrowser(int argc, char** argv) {
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
 #ifdef __ANDROID__
-    engine.rootContext()->setContextProperty("android", QVariant(true));
+    AndroidUtility android_utility;
+    engine.rootContext()->setContextProperty("android", &android_utility);
 #else
     engine.rootContext()->setContextProperty("android", QVariant(false));
 #endif
