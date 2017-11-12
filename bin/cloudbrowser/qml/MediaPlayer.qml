@@ -6,6 +6,7 @@ import libcloudstorage 1.0
 Kirigami.Page {
   property CloudItem item
   property bool handle_state
+  property bool playing: true
 
   id: page
   leftPadding: 0
@@ -22,6 +23,29 @@ Kirigami.Page {
       root.globalDrawer.handleVisible = false;
     }
   }
+  onPlayingChanged: {
+    if (playing)
+      player.item.play();
+    else
+      player.item.pause();
+  }
+
+  function print_timestamp(d) {
+    d /= 1000;
+    var hours = Math.floor(d / 3600);
+    d %= 3600;
+    var minutes = Math.floor(d / 60);
+    d %= 60;
+    var seconds = Math.floor(d);
+
+    if (hours > 0 && minutes.toString().length == 1)
+      minutes = "0" + minutes;
+
+    if (seconds.toString().length == 1)
+      seconds = "0" + seconds;
+
+    return (hours > 0 ? hours + ":" : "") + minutes + ":" + seconds;
+  }
 
   GetUrlRequest {
     id: url_request
@@ -30,9 +54,16 @@ Kirigami.Page {
   }
 
   MouseArea {
-    property bool playing: true
+    id: mouse_area
 
     anchors.fill: parent
+    hoverEnabled: true
+
+    onClicked: {
+      if (page.state === "overlay_visible" &&
+          Date.now() - timer.last_visible >= 2 * timer.interval)
+        playing ^= 1;
+    }
 
     Rectangle {
       anchors.fill: parent
@@ -46,45 +77,156 @@ Kirigami.Page {
       source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
       onStatusChanged: if (status === Loader.Ready) item.source = url_request.source;
     }
-    onClicked: {
-      playing ^= 1;
-      if (playing)
-        player.item.play();
-      else
-        player.item.pause();
+
+    Timer {
+      property real epsilon: 0.1
+      property int idle_duration: 2000
+      property int previous_x
+      property int previous_y
+      property int cnt
+      property real last_visible
+
+      function sqr(x) { return x * x; }
+
+      id: timer
+      interval: 100
+      running: true
+      repeat: true
+      onTriggered: {
+        var dist = sqr(previous_x - parent.mouseX) + sqr(previous_y - parent.mouseY);
+        if (dist > epsilon) {
+          cnt = 0;
+          if (page.state === "overlay_invisible") {
+            page.state = "overlay_visible";
+            last_visible = Date.now();
+          }
+        } else if (page.state === "overlay_visible") {
+          if (!controls.containsMouse && page.playing)
+            cnt++;
+          if (cnt >= idle_duration / interval) {
+            page.state = "overlay_invisible";
+            cnt = 0;
+          }
+        }
+        previous_x = parent.mouseX;
+        previous_y = parent.mouseY;
+      }
+    }
+
+    Component.onCompleted: {
+      timer.previous_x = mouseX;
+      timer.previous_y = mouseY;
     }
   }
-  Row {
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    height: 50
-    MouseArea {
-      anchors.margins: 10
-      anchors.verticalCenter: parent.verticalCenter
-      height: parent.height
-      width: parent.width - fullscreen.width
-      Controls.ProgressBar {
-        opacity: 0.3
-        anchors.fill: parent
-        from: 0
-        to: 1
-        value: player.item.position
+
+  state: "overlay_visible"
+
+  states: [
+    State {
+      name: "overlay_visible"
+      PropertyChanges {
+        target: controls
+        y: page.height - controls.height
       }
-      onClicked: {
-        player.item.set_position(mouse.x / width);
+    },
+    State {
+      name: "overlay_invisible"
+      PropertyChanges {
+        target: controls
+        y: page.height
       }
     }
-    Kirigami.Icon {
-      id: fullscreen
-      anchors.margins: 10
-      width: height
-      height: parent.height
-      source: "view-fullscreen"
+  ]
 
-      MouseArea {
-        anchors.fill: parent
-        onClicked: root.visible_player ^= 1
+  transitions: [
+    Transition {
+      from: "overlay_invisible"
+      to: "overlay_visible"
+      PropertyAnimation {
+        properties: "y"
+        duration: 250
+      }
+    },
+    Transition {
+      from: "overlay_visible"
+      to: "overlay_invisible"
+      PropertyAnimation {
+        properties: "y"
+        duration: 250
+      }
+    }
+  ]
+
+  MouseArea {
+    id: controls
+    hoverEnabled: true
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 50
+    Rectangle {
+      anchors.fill: parent
+      color: "black"
+      opacity: 0.5
+    }
+    Row {
+      anchors.fill: parent
+      Kirigami.Icon {
+        id: play_button
+        width: height
+        height: parent.height
+        source: playing ? "media-playback-pause" : "media-playback-start"
+        MouseArea {
+          anchors.fill: parent
+          onClicked: playing ^= 1
+        }
+      }
+      Item {
+        id: current_time
+        width: 1.5 * height
+        height: parent.height
+        Text {
+          anchors.centerIn: parent
+          color: "white"
+          text: player.item ? print_timestamp(player.item.time) : ""
+        }
+      }
+      Item {
+        height: parent.height
+        width: parent.width - fullscreen.width - play_button.width - current_time.width - total_time.width
+        Controls.ProgressBar {
+          anchors.verticalCenter: parent.verticalCenter
+          height: parent.height * 0.5
+          width: parent.width
+          from: 0
+          to: 1
+          value: player.item.position
+        }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: player.item.set_position(mouse.x / width);
+        }
+      }
+      Item {
+        id: total_time
+        width: 1.5 * height
+        height: parent.height
+        Text {
+          anchors.centerIn: parent
+          color: "white"
+          text: player.item ? print_timestamp(player.item.duration) : ""
+        }
+      }
+      Kirigami.Icon {
+        id: fullscreen
+        anchors.margins: 10
+        width: height
+        height: parent.height
+        source: "view-fullscreen"
+
+        MouseArea {
+          anchors.fill: parent
+          onClicked: root.visible_player ^= 1
+        }
       }
     }
   }

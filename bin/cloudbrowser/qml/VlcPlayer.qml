@@ -6,6 +6,8 @@ Item {
   property alias player: player
   property alias position: player.position
   property bool buffering: player.state === Vlc.Buffering || player.state === Vlc.Opening
+  property int time: player.time
+  property int duration: player.length
 
   function set_position(p) {
     player.position = p;
