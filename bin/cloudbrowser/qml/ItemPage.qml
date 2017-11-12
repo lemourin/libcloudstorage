@@ -7,6 +7,7 @@ import libcloudstorage 1.0
 
 Kirigami.ScrollablePage {
   property CloudItem item
+  property bool detailed_options: !android || root.height > root.width
 
   id: page
   anchors.fill: parent
@@ -30,7 +31,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem
+      visible: list_view.currentItem && detailed_options
       text: "Rename"
       iconName: "edit-cut"
       onTriggered: {
@@ -38,6 +39,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
+      visible: detailed_options
       iconName: "folder-new"
       text: "Create Directory"
       onTriggered: {
@@ -46,7 +48,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem
+      visible: list_view.currentItem && detailed_options
       text: "Delete"
       iconName: "edit-delete"
       onTriggered: {
@@ -55,7 +57,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem && !cloud.currently_moved
+      visible: list_view.currentItem && !cloud.currently_moved && detailed_options
       text: "Move"
       iconName: "folder-move"
       onTriggered: {
@@ -64,7 +66,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: cloud.currently_moved
+      visible: cloud.currently_moved && detailed_options
       text: "Move " + (cloud.currently_moved ? cloud.currently_moved.filename : "") + " here"
       iconName: "dialog-apply"
       onTriggered: {
@@ -76,7 +78,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: cloud.currently_moved
+      visible: cloud.currently_moved && detailed_options
       text: "Cancel move"
       iconName: "dialog-cancel"
       onTriggered: {
