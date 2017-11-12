@@ -4,6 +4,7 @@ import QtMultimedia 5.6
 Item {
   property alias source: player.source
   property real position: player.position / player.duration
+  property bool buffering: player.status === MediaPlayer.Loading || player.status === MediaPlayer.Buffering
 
   function set_position(p) {
     player.seek(p * player.duration);

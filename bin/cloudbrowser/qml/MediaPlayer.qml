@@ -88,4 +88,13 @@ Kirigami.Page {
       }
     }
   }
+
+  Controls.BusyIndicator {
+    id: indicator
+    anchors.centerIn: parent
+    enabled: false
+    running: player.item ? player.item.buffering : true
+    width: 200
+    height: 200
+  }
 }
