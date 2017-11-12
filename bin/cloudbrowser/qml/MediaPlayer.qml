@@ -5,6 +5,7 @@ import libcloudstorage 1.0
 
 Kirigami.Page {
   property CloudItem item
+  property bool handle_state
 
   id: page
   leftPadding: 0
@@ -12,7 +13,15 @@ Kirigami.Page {
   topPadding: 0
   bottomPadding: 0
   title: item.filename
-  onIsCurrentPageChanged: if (!isCurrentPage) root.visible_player = false;
+  onIsCurrentPageChanged: {
+    if (!isCurrentPage) {
+      root.visible_player = false;
+      root.globalDrawer.handleVisible = handle_state;
+    } else {
+      handle_state = root.globalDrawer.handleVisible;
+      root.globalDrawer.handleVisible = false;
+    }
+  }
 
   GetUrlRequest {
     id: url_request

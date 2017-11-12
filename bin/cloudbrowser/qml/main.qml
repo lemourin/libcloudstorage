@@ -58,7 +58,6 @@ Kirigami.ApplicationWindow {
   }
 
   globalDrawer: Kirigami.GlobalDrawer {
-    handleVisible: !visible_player
     Component {
       id: settings
       Kirigami.Action {
