@@ -95,6 +95,7 @@ Kirigami.ApplicationWindow {
 
     title: "Cloud Browser"
     titleIcon: "qrc:/resources/cloud.png"
+    drawerOpen: true
     actions: root.actions()
   }
   contextDrawer: Kirigami.ContextDrawer {
