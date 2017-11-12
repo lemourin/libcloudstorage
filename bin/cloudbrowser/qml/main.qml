@@ -24,7 +24,7 @@ Kirigami.ApplicationWindow {
 
   Kirigami.ApplicationHeader {
     id: header
-    width: parent.width
+    width: root.width
   }
 
   CloudContext {
