@@ -234,6 +234,7 @@ Kirigami.Page {
         width: 1.5 * height
         height: parent.height
         Text {
+          visible: progress.visible
           anchors.centerIn: parent
           color: "white"
           text: player.item ? print_timestamp(player.item.time) : ""
@@ -244,12 +245,14 @@ Kirigami.Page {
         width: parent.width - fullscreen.width - play_button.width - 
                current_time.width - total_time.width - autoplay_icon.width - next_button.width
         Controls.ProgressBar {
+          id: progress
           anchors.verticalCenter: parent.verticalCenter
           height: parent.height * 0.5
           width: parent.width
           from: 0
           to: 1
           value: player.item ? player.item.position : 0
+          visible: width > 200
         }
         MouseArea {
           anchors.fill: parent
@@ -261,6 +264,7 @@ Kirigami.Page {
         width: 1.5 * height
         height: parent.height
         Text {
+          visible: progress.visible
           anchors.centerIn: parent
           color: "white"
           text: player.item ? print_timestamp(player.item.duration) : ""
