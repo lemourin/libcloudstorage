@@ -12,6 +12,19 @@ Kirigami.ScrollablePage {
   id: page
   anchors.fill: parent
 
+  function playable_type(type) {
+    return type === "audio" || type === "video" || type === "image";
+  }
+
+  function nextRequested() {
+    while (list_view.currentIndex + 1 < list_view.count) {
+      list_view.currentIndex++;
+      if (playable_type(list_view.currentItem.item.type))
+        return list_view.currentItem.item;
+    }
+    return null;
+  }
+
   Component {
     id: media_player
     MediaPlayer {
@@ -20,14 +33,13 @@ Kirigami.ScrollablePage {
 
   contextualActions: [
     Kirigami.Action {
-      visible: list_view.currentItem && (list_view.currentItem.item.type === "audio" ||
-                                         list_view.currentItem.item.type === "video" ||
-                                         list_view.currentItem.item.type === "image")
+      id: play_action
+      visible: list_view.currentItem && playable_type(list_view.currentItem.item.type)
       text: "Play"
       iconName: "media-playback-start"
       onTriggered: {
         contextDrawer.drawerOpen = false;
-        pageStack.push(media_player, {item: list_view.currentItem.item});
+        pageStack.push(media_player, {item: list_view.currentItem.item, item_page: page});
       }
     },
     Kirigami.Action {

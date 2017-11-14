@@ -545,13 +545,14 @@ void GetUrlRequest::update(CloudContext* context, CloudItem* item) {
   auto object = new RequestNotifier;
   connect(object, &RequestNotifier::finishedString, this,
           [=](EitherError<std::string> e) {
-            set_done(true);
-            if (e.left())
-              return emit context->errorOccurred(
-                  "GetItemUrl", e.left()->code_,
-                  e.left()->description_.c_str());
-            source_ = e.right()->c_str();
+            if (e.left()) {
+              source_ = "";
+              emit context->errorOccurred("GetItemUrl", e.left()->code_,
+                                          e.left()->description_.c_str());
+            } else
+              source_ = e.right()->c_str();
             emit sourceChanged();
+            set_done(true);
           });
   auto p = item->provider();
   auto r =

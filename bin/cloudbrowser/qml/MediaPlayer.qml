@@ -5,8 +5,10 @@ import libcloudstorage 1.0
 
 Kirigami.Page {
   property CloudItem item
+  property Kirigami.Page item_page
   property bool handle_state
   property bool playing: true
+  property bool autoplay: false
 
   id: page
   leftPadding: 0
@@ -47,10 +49,36 @@ Kirigami.Page {
     return (hours > 0 ? hours + ":" : "") + minutes + ":" + seconds;
   }
 
+  function ended() {
+    if (autoplay) {
+      var next = item_page.nextRequested();
+      if (next)
+        item = next;
+      else
+        root.pageStack.pop();
+    } else {
+      root.pageStack.pop();
+    }
+  }
+
+  onItemChanged: url_request.update(cloud, item)
+
   GetUrlRequest {
     id: url_request
-    onSourceChanged: if (player.item) player.item.source = source
-    Component.onCompleted: update(cloud, page.item)
+    onDoneChanged: {
+      if (done && source === "")
+        ended();
+    }
+  }
+
+  Connections {
+    id: connections
+    target: null
+    onEndedChanged: {
+      if (target.ended) {
+        ended();
+      }
+    }
   }
 
   MouseArea {
@@ -75,7 +103,12 @@ Kirigami.Page {
       anchors.fill: parent
       asynchronous: true
       source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
-      onStatusChanged: if (status === Loader.Ready) item.source = url_request.source;
+      onStatusChanged: {
+        if (status === Loader.Ready) {
+          item.source = Qt.binding(function() { return url_request.source; });
+          connections.target = item;
+        }
+      }
     }
 
     Timer {
@@ -192,14 +225,15 @@ Kirigami.Page {
       }
       Item {
         height: parent.height
-        width: parent.width - fullscreen.width - play_button.width - current_time.width - total_time.width
+        width: parent.width - fullscreen.width - play_button.width - 
+               current_time.width - total_time.width - autoplay_icon.width
         Controls.ProgressBar {
           anchors.verticalCenter: parent.verticalCenter
           height: parent.height * 0.5
           width: parent.width
           from: 0
           to: 1
-          value: player.item.position
+          value: player.item ? player.item.position : 0
         }
         MouseArea {
           anchors.fill: parent
@@ -214,6 +248,20 @@ Kirigami.Page {
           anchors.centerIn: parent
           color: "white"
           text: player.item ? print_timestamp(player.item.duration) : ""
+        }
+      }
+      Kirigami.Icon {
+        id: autoplay_icon
+        anchors.margins: 10
+        width: height
+        height: parent.height
+        source: "media-playlist-shuffle"
+        selected: autoplay
+        opacity: autoplay ? 1 : 0.5
+
+        MouseArea {
+          anchors.fill: parent
+          onClicked: autoplay ^= 1
         }
       }
       Kirigami.Icon {

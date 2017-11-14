@@ -6,6 +6,7 @@ Item {
   property real position: player.position / player.duration
   property bool buffering: player.status === MediaPlayer.Loading ||
                            player.status === MediaPlayer.Stalled
+  property bool ended: player.status === MediaPlayer.EndOfMedia
   property int time: duration * position
   property int duration: player.duration
 
