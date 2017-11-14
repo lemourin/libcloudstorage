@@ -81,8 +81,8 @@ Kirigami.Page {
     Timer {
       property real epsilon: 0.1
       property int idle_duration: 2000
-      property int previous_x
-      property int previous_y
+      property real previous_x
+      property real previous_y
       property int cnt
       property real last_visible
 
