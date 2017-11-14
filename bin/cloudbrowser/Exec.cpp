@@ -88,7 +88,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     register_types();
 
-    QQmlApplicationEngine engine(QUrl("qrc:/qml/main.qml"));
+    QQmlApplicationEngine engine;
 #ifdef WITH_QTWEBVIEW
     engine.rootContext()->setContextProperty("qtwebview", QVariant(true));
 #else
@@ -107,6 +107,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 #endif
 
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
+    engine.load(QUrl("qrc:/qml/main.qml"));
 
     int ret = app.exec();
 

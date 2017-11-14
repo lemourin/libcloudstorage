@@ -213,6 +213,22 @@ Kirigami.Page {
           onClicked: playing ^= 1
         }
       }
+      Kirigami.Icon {
+        id: next_button
+        width: height
+        height: parent.height
+        source: "media-skip-forward"
+        MouseArea {
+          anchors.fill: parent
+          onClicked: {
+            var next = item_page.nextRequested();
+            if (next)
+              item = next;
+            else
+              root.pageStack.pop();
+          }
+        }
+      }
       Item {
         id: current_time
         width: 1.5 * height
@@ -226,7 +242,7 @@ Kirigami.Page {
       Item {
         height: parent.height
         width: parent.width - fullscreen.width - play_button.width - 
-               current_time.width - total_time.width - autoplay_icon.width
+               current_time.width - total_time.width - autoplay_icon.width - next_button.width
         Controls.ProgressBar {
           anchors.verticalCenter: parent.verticalCenter
           height: parent.height * 0.5

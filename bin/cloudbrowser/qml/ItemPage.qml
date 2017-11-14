@@ -7,7 +7,6 @@ import libcloudstorage 1.0
 
 Kirigami.ScrollablePage {
   property CloudItem item
-  property bool detailed_options: !android || root.height > root.width
 
   id: page
   anchors.fill: parent

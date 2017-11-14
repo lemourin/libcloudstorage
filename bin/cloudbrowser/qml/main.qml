@@ -7,6 +7,8 @@ import libcloudstorage 1.0
 Kirigami.ApplicationWindow {
   property bool visible_player: false
   property bool drawer_state: false
+  property bool detailed_options: !android || root.height > root.width
+
   id: root
 
   onVisible_playerChanged: {
