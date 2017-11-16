@@ -56,7 +56,7 @@ struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i) {
   else if (i->type() != IItem::FileType::Directory)
     ret.st_size = 1LL << 32;
   ret.st_mode =
-      (i->type() == IItem::FileType::Directory ? S_IFDIR : S_IFREG) | 0644;
+      (i->type() == IItem::FileType::Directory ? S_IFDIR : S_IFREG) | 0744;
   ret.st_ino = i->inode();
   return ret;
 }
