@@ -20,6 +20,7 @@ namespace cloudstorage {
 
 const int READ_AHEAD = 2 * 1024 * 1024;
 const int CACHED_CHUNK_COUNT = 4;
+const auto CACHE_DIRECTORY_DURATION = std::chrono::seconds(10);
 
 class FileSystem : public IFileSystem {
  public:
@@ -131,6 +132,8 @@ class FileSystem : public IFileSystem {
   std::unordered_map<FileId, Node::Pointer> node_map_;
   std::unordered_map<std::string, Node::Pointer> node_id_map_;
   std::unordered_map<FileId, std::unordered_set<FileId>> node_directory_;
+  std::unordered_map<FileId, std::chrono::system_clock::time_point>
+      node_timestamp_;
   std::unordered_map<std::string, FileId> auth_node_;
   FileId next_;
   std::deque<RequestData> request_data_;

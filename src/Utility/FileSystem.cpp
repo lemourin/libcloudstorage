@@ -331,11 +331,17 @@ void FileSystem::write(FileId inode, const char* data, uint32_t size,
 void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
   {
     std::lock_guard<mutex> lock(node_data_mutex_);
-    auto it = node_directory_.find(node);
-    if (it != std::end(node_directory_)) {
-      std::vector<INode::Pointer> ret;
-      for (auto&& r : it->second) ret.push_back(get(r));
-      return cb(ret);
+    auto node_timestamp_it = node_timestamp_.find(node);
+    if (node == 1 ||
+        (node_timestamp_it != node_timestamp_.end() &&
+         std::chrono::system_clock::now() - node_timestamp_it->second <
+             CACHE_DIRECTORY_DURATION)) {
+      auto it = node_directory_.find(node);
+      if (it != std::end(node_directory_)) {
+        std::vector<INode::Pointer> ret;
+        for (auto&& r : it->second) ret.push_back(get(r));
+        return cb(ret);
+      }
     }
   }
   auto nd = get(node);
@@ -350,6 +356,7 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
           {
             std::lock_guard<mutex> lock(node_data_mutex_);
             node_directory_[node] = ret;
+            node_timestamp_[node] = std::chrono::system_clock::now();
           }
           std::vector<INode::Pointer> nodes;
           for (auto&& r : ret) nodes.push_back(this->get(r));
