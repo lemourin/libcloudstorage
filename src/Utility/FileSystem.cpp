@@ -501,6 +501,7 @@ void FileSystem::rename(FileId parent, const char* name, FileId newparent,
 
 void FileSystem::remove(FileId parent, const char* name,
                         DeleteItemCallback callback) {
+  util::log("removing", name);
   auto update_lists = [=](Node::Pointer node) {
     std::lock_guard<mutex> lock(node_data_mutex_);
     auto it = node_directory_.find(parent);
@@ -519,11 +520,14 @@ void FileSystem::remove(FileId parent, const char* name,
     if (!node->provider())
       return callback(Error{IHttpRequest::ServiceUnavailable, ""});
     this->add({node->provider(),
-               node->provider()->deleteItemAsync(node->item(),
-                                                 [=](EitherError<void>) {
-                                                   update_lists(node);
-                                                   callback(nullptr);
-                                                 })});
+               node->provider()->deleteItemAsync(
+                   node->item(), [=](EitherError<void> e) {
+                     if (e.left())
+                       log("remove failed", e.left()->code_,
+                           e.left()->description_);
+                     update_lists(node);
+                     callback(nullptr);
+                   })});
   };
   lookup(parent, name, [=](EitherError<INode> e) {
     if (e.left()) return callback(e.left());
@@ -575,6 +579,7 @@ void FileSystem::fsync(FileId inode, DataSynchronizedCallback cb) {
       fuse_->set(node_->inode_,
                  std::make_shared<Node>(provider_, e.right(), node_->parent_,
                                         node_->inode_, e.right()->size()));
+      log("fsynced", node_->filename());
       callback_(nullptr);
     }
 
