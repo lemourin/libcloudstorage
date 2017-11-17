@@ -287,6 +287,7 @@ Kirigami.ScrollablePage {
           Image {
             anchors.fill: parent
             anchors.margins: 5
+            mipmap: true
             source: modelData.type === "directory" ?
                       "qrc:/resources/" + modelData.type + ".png" :
                       (!thumbnail.done ? "" :

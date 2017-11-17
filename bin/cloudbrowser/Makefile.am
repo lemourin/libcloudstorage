@@ -55,12 +55,22 @@ DEPS_res = \
 	qml/FileDialog.qml \
 	qml/QtFileDialog.qml \
 	qml/AndroidFileDialog.qml \
+	qml/AboutView.qml \
 	resources/directory.png \
 	resources/file.png \
 	resources/image.png \
 	resources/video.png \
 	resources/audio.png \
 	resources/cloud.png \
+	resources/vlc.png \
+	resources/kde.png \
+	resources/qt.png \
+	resources/vlc-qt.png \
+	resources/gnu.png \
+	resources/jsoncpp.png \
+	resources/curl.png \
+	resources/cryptopp.png \
+	resources/tinyxml2.png \
 	resources/providers/google.png \
 	resources/providers/onedrive.png \
 	resources/providers/dropbox.png \
@@ -72,6 +82,7 @@ DEPS_res = \
 	resources/providers/youtube.png \
 	resources/providers/yandex.png \
 	resources/providers/gphotos.png \
+	resources/providers/hubic.png \
 	resources/amazons3_login.html \
 	resources/default_error.html \
 	resources/default_success.html \

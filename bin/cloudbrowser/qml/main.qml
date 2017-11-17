@@ -80,6 +80,14 @@ Kirigami.ApplicationWindow {
             pageStack.push(removeProviderPage);
           }
         }
+        Kirigami.Action {
+          text: "About"
+          iconName: "help-about"
+          onTriggered: {
+            pageStack.clear();
+            pageStack.push(aboutView);
+          }
+        }
       }
     }
     Component {
@@ -122,6 +130,12 @@ Kirigami.ApplicationWindow {
   Component {
     id: listDirectoryPage
     ItemPage {
+    }
+  }
+
+  Component {
+    id: aboutView
+    AboutView {
     }
   }
 

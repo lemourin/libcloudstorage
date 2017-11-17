@@ -36,5 +36,15 @@
         <file>qml/FileDialog.qml</file>
         <file>qml/QtFileDialog.qml</file>
         <file>qml/AndroidFileDialog.qml</file>
+        <file>qml/AboutView.qml</file>
+        <file>resources/kde.png</file>
+        <file>resources/qt.png</file>
+        <file>resources/vlc.png</file>
+        <file>resources/vlc-qt.png</file>
+        <file>resources/gnu.png</file>
+        <file>resources/curl.png</file>
+        <file>resources/jsoncpp.png</file>
+        <file>resources/tinyxml2.png</file>
+        <file>resources/cryptopp.png</file>
     </qresource>
 </RCC>
