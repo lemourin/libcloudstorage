@@ -66,6 +66,7 @@ DEPS_res = \
 	resources/curl.png \
 	resources/cryptopp.png \
 	resources/tinyxml2.png \
+	resources/ffmpeg.png \
 	resources/providers/google.png \
 	resources/providers/onedrive.png \
 	resources/providers/dropbox.png \

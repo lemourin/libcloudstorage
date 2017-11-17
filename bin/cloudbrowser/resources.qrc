@@ -41,5 +41,6 @@
         <file>resources/jsoncpp.png</file>
         <file>resources/tinyxml2.png</file>
         <file>resources/cryptopp.png</file>
+        <file>resources/ffmpeg.png</file>
     </qresource>
 </RCC>

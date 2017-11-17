@@ -25,6 +25,11 @@ Kirigami.ScrollablePage {
         icon_source: "qrc:/resources/qt.png"
       }
       ListElement {
+        name: "ffmpegthumbnailer"
+        url: "https://github.com/dirkvdb/ffmpegthumbnailer"
+        icon_source: "qrc:/resources/ffmpeg.png"
+      }
+      ListElement {
         name: "vlc-qt"
         url: "https://github.com/vlc-qt/vlc-qt"
         icon_source: "qrc:/resources/vlc-qt.png"
