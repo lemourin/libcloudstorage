@@ -3,11 +3,6 @@
         <file>qml/main.qml</file>
         <file>qml/WebView.qml</file>
         <file>qml/MediaPlayer.qml</file>
-        <file>resources/directory.png</file>
-        <file>resources/file.png</file>
-        <file>resources/image.png</file>
-        <file>resources/video.png</file>
-        <file>resources/audio.png</file>
         <file>resources/cloud.png</file>
         <file>resources/amazons3_login.html</file>
         <file>resources/default_error.html</file>

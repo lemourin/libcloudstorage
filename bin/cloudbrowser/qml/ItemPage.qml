@@ -284,16 +284,31 @@ Kirigami.ScrollablePage {
             anchors.fill: parent
             running: !thumbnail.done
           }
+          Kirigami.Icon {
+            function type_to_icon() {
+              if (modelData.type === "directory")
+                return "folder";
+              else if (modelData.type === "image")
+                return "image";
+              else if (modelData.type === "video")
+                return "video";
+              else if (modelData.type === "audio")
+                return "audio-x-generic";
+              else
+                return "gtk-file";
+            }
+
+            id: item_icon
+            anchors.fill: parent
+            anchors.margins: 5
+            visible: thumbnail.done && (modelData.type === "directory" || !thumbnail.source)
+            source: type_to_icon(modelData.type)
+          }
           Image {
             anchors.fill: parent
             anchors.margins: 5
-            mipmap: true
-            source: modelData.type === "directory" ?
-                      "qrc:/resources/" + modelData.type + ".png" :
-                      (!thumbnail.done ? "" :
-                                         (thumbnail.source ?
-                                            thumbnail.source :
-                                            "qrc:/resources/" + modelData.type + ".png"))
+            visible: thumbnail.done && thumbnail.source && !item_icon.visible
+            source: thumbnail.source
           }
           MultiPointTouchArea {
             anchors.fill: parent

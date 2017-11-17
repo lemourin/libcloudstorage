@@ -56,11 +56,6 @@ DEPS_res = \
 	qml/QtFileDialog.qml \
 	qml/AndroidFileDialog.qml \
 	qml/AboutView.qml \
-	resources/directory.png \
-	resources/file.png \
-	resources/image.png \
-	resources/video.png \
-	resources/audio.png \
 	resources/cloud.png \
 	resources/vlc.png \
 	resources/kde.png \
