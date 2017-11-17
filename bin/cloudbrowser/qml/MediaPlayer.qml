@@ -196,6 +196,7 @@ Kirigami.Page {
     anchors.left: parent.left
     anchors.right: parent.right
     height: 50
+    onClicked: timer.cnt = 0
     Rectangle {
       anchors.fill: parent
       color: "black"
@@ -210,7 +211,10 @@ Kirigami.Page {
         source: playing ? "media-playback-pause" : "media-playback-start"
         MouseArea {
           anchors.fill: parent
-          onClicked: playing ^= 1
+          onClicked: {
+            playing ^= 1;
+            timer.cnt = 0;
+          }
         }
       }
       Kirigami.Icon {
@@ -226,6 +230,7 @@ Kirigami.Page {
               item = next;
             else
               root.pageStack.pop();
+            timer.cnt = 0;
           }
         }
       }
@@ -256,7 +261,11 @@ Kirigami.Page {
         }
         MouseArea {
           anchors.fill: parent
-          onClicked: player.item.set_position(mouse.x / width);
+          onClicked: {
+            player.item.set_position(mouse.x / width);
+            timer.cnt = 0;
+          }
+          enabled: progress.visible
         }
       }
       Item {
@@ -281,7 +290,10 @@ Kirigami.Page {
 
         MouseArea {
           anchors.fill: parent
-          onClicked: autoplay ^= 1
+          onClicked: {
+            autoplay ^= 1;
+            timer.cnt = 0;
+          }
         }
       }
       Kirigami.Icon {
@@ -293,7 +305,10 @@ Kirigami.Page {
 
         MouseArea {
           anchors.fill: parent
-          onClicked: root.visible_player ^= 1
+          onClicked: {
+            root.visible_player ^= 1;
+            timer.cnt = 0;
+          }
         }
       }
     }
