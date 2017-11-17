@@ -134,7 +134,7 @@ Kirigami.Page {
             last_visible = Date.now();
           }
         } else if (page.state === "overlay_visible") {
-          if (!controls.containsMouse && page.playing)
+          if ((!controls.containsMouse || android) && page.playing && !player.item.buffering)
             cnt++;
           if (cnt >= idle_duration / interval) {
             page.state = "overlay_invisible";
