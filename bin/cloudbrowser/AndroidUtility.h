@@ -9,6 +9,8 @@ class AndroidUtility : public QObject {
  public:
   Q_INVOKABLE void openWebPage(QString url);
   Q_INVOKABLE void closeWebPage();
+  Q_INVOKABLE void landscapeOrientation();
+  Q_INVOKABLE void defaultOrientation();
 
  private:
   QAndroidJniObject intent_;

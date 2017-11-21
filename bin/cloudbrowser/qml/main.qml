@@ -15,9 +15,11 @@ Kirigami.ApplicationWindow {
     if (visible_player) {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
+      if (android) android.landscapeOrientation();
       root.showFullScreen();
     } else {
       globalDrawer.drawerOpen = drawer_state;
+      if (android) android.defaultOrientation();
       root.showNormal();
     }
   }

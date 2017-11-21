@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.provider.OpenableColumns;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
+import android.content.pm.ActivityInfo;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,6 +33,14 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
 
     public CloudBrowser() {
         m_instance = this;
+    }
+
+    public static void setDefaultOrientation() {
+        m_instance.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+    }
+
+    public static void setLandScapeOrientation() {
+        m_instance.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
 
     public static Intent openFileDialog() {

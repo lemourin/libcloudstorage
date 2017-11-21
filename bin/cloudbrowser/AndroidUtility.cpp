@@ -20,5 +20,16 @@ void AndroidUtility::closeWebPage() {
       "(Landroid/content/Intent;)V", intent_.object());
 }
 
+void AndroidUtility::landscapeOrientation() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "setLandScapeOrientation",
+      "()V");
+}
+
+void AndroidUtility::defaultOrientation() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "setDefaultOrientation", "()V");
+}
+
 void AndroidUtility::ResultReceiver::handleActivityResult(
     int, int, const QAndroidJniObject &) {}
