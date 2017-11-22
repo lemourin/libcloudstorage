@@ -107,6 +107,8 @@ Kirigami.Page {
         if (status === Loader.Ready) {
           item.source = Qt.binding(function() { return url_request.source; });
           connections.target = item;
+        } else if (status === Loader.Error) {
+          cloud.errorOccurred("LoadPlayer", 500, source);
         }
       }
     }
@@ -134,7 +136,8 @@ Kirigami.Page {
             last_visible = Date.now();
           }
         } else if (page.state === "overlay_visible") {
-          if ((!controls.containsMouse || android) && page.playing && !player.item.buffering)
+          if ((!controls.containsMouse || android)
+              && page.playing && player.item && !player.item.buffering)
             cnt++;
           if (cnt >= idle_duration / interval) {
             page.state = "overlay_invisible";
