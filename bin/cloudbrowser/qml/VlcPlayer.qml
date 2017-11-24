@@ -10,6 +10,8 @@ Item {
   property int time: player.time
   property int duration: player.length
 
+  signal error(int error, string errorString)
+
   function set_position(p) {
     player.position = p;
   }
@@ -24,6 +26,10 @@ Item {
 
   VlcPlayer {
     id: player
+    onStateChanged: {
+      if (state === Vlc.Error)
+        error(500, "Error occurred")
+    }
   }
   VlcVideoOutput {
     id: video

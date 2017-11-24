@@ -10,6 +10,8 @@ Item {
   property int time: duration * position
   property int duration: player.duration
 
+  signal error(int error, string errorString)
+
   function set_position(p) {
     player.seek(p * player.duration);
   }
@@ -25,6 +27,7 @@ Item {
   MediaPlayer {
     id: player
     autoPlay: true
+    onError: container.error(error, errorString)
   }
   VideoOutput {
     source: player

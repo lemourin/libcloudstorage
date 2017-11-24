@@ -79,6 +79,9 @@ Kirigami.Page {
         ended();
       }
     }
+    onError: {
+      cloud.errorOccurred("MediaPlayer", error, errorString);
+    }
   }
 
   MouseArea {

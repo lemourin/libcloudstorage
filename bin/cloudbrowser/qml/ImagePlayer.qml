@@ -6,10 +6,16 @@ AnimatedImage {
   property bool buffering: status !== AnimatedImage.Ready
   property int duration: 0
 
+  signal error(int error, string errorString)
+
   function play() {}
   function pause() {}
 
   anchors.fill: parent
   fillMode: AnimatedImage.PreserveAspectFit
   playing: status == AnimatedImage.Ready
+  onStatusChanged: {
+    if (status === AnimatedImage.Error)
+      error(500, "Error occurred")
+  }
 }
