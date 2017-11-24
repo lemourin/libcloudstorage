@@ -89,7 +89,8 @@ Kirigami.Page {
 
     onClicked: {
       if (page.state === "overlay_visible" &&
-          Date.now() - timer.last_visible >= 2 * timer.interval)
+          Date.now() - timer.last_visible >= 2 * timer.interval &&
+          (item.type === "video" || item.type === "audio"))
         playing ^= 1;
     }
 
@@ -102,13 +103,32 @@ Kirigami.Page {
       id: player
       anchors.fill: parent
       asynchronous: true
-      source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
+      source: page.item.type === "video" || page.item.type === "audio" ?
+                (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml") : ""
+      sourceComponent: page.item.type === "image" ? image_component : null
       onStatusChanged: {
         if (status === Loader.Ready) {
           item.source = Qt.binding(function() { return url_request.source; });
           connections.target = item;
         } else if (status === Loader.Error) {
           cloud.errorOccurred("LoadPlayer", 500, source);
+        }
+      }
+
+      Component {
+        id: image_component
+        AnimatedImage {
+          property real position
+          property bool ended
+          property bool buffering: status !== AnimatedImage.Ready
+          property int duration: 0
+
+          function play() {}
+          function pause() {}
+
+          anchors.fill: parent
+          fillMode: AnimatedImage.PreserveAspectFit
+          playing: status == AnimatedImage.Ready
         }
       }
     }
@@ -193,6 +213,14 @@ Kirigami.Page {
     }
   ]
 
+  Kirigami.Icon {
+    anchors.centerIn: parent
+    width: 200
+    height: 200
+    visible: page.item.type === "audio"
+    source: "audio-x-generic"
+  }
+
   MouseArea {
     id: controls
     hoverEnabled: true
@@ -212,6 +240,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         source: playing ? "media-playback-pause" : "media-playback-start"
+        visible: item.type === "video" || item.type === "audio"
         MouseArea {
           anchors.fill: parent
           onClicked: {
@@ -250,7 +279,7 @@ Kirigami.Page {
       }
       Item {
         height: parent.height
-        width: parent.width - fullscreen.width - play_button.width - 
+        width: parent.width - fullscreen.width - play_button.width * play_button.visible -
                current_time.width - total_time.width - autoplay_icon.width - next_button.width
         Controls.ProgressBar {
           id: progress
@@ -260,7 +289,7 @@ Kirigami.Page {
           from: 0
           to: 1
           value: player.item ? player.item.position : 0
-          visible: width > 200
+          visible: width > 200 && player.item && player.item.duration > 0
         }
         MouseArea {
           anchors.fill: parent
@@ -287,12 +316,14 @@ Kirigami.Page {
         anchors.margins: 10
         width: height
         height: parent.height
-        source: "media-playlist-shuffle"
+        source: item.type === "audio" || item.type === "video" ?
+                  "media-playlist-shuffle" : ""
         selected: autoplay
         opacity: autoplay ? 1 : 0.5
 
         MouseArea {
           anchors.fill: parent
+          enabled: autoplay_icon.source !== ""
           onClicked: {
             autoplay ^= 1;
             timer.cnt = 0;
