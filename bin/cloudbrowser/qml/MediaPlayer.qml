@@ -104,31 +104,13 @@ Kirigami.Page {
       anchors.fill: parent
       asynchronous: true
       source: page.item.type === "video" || page.item.type === "audio" ?
-                (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml") : ""
-      sourceComponent: page.item.type === "image" ? image_component : null
+                (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml") : "ImagePlayer.qml"
       onStatusChanged: {
         if (status === Loader.Ready) {
           item.source = Qt.binding(function() { return url_request.source; });
           connections.target = item;
         } else if (status === Loader.Error) {
           cloud.errorOccurred("LoadPlayer", 500, source);
-        }
-      }
-
-      Component {
-        id: image_component
-        AnimatedImage {
-          property real position
-          property bool ended
-          property bool buffering: status !== AnimatedImage.Ready
-          property int duration: 0
-
-          function play() {}
-          function pause() {}
-
-          anchors.fill: parent
-          fillMode: AnimatedImage.PreserveAspectFit
-          playing: status == AnimatedImage.Ready
         }
       }
     }

@@ -48,6 +48,7 @@ DEPS_res = \
 	qml/MediaPlayer.qml \
 	qml/VlcPlayer.qml \
 	qml/QtPlayer.qml \
+	qml/ImagePlayer.qml \
 	qml/RegisterPage.qml \
 	qml/RemoveProvider.qml \
 	qml/ProviderEntry.qml \
