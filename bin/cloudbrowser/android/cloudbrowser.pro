@@ -1,6 +1,6 @@
 TEMPLATE = app
 CONFIG += c++11
-QT += quick webview androidextras svg
+QT += quick webview androidextras svg network
 
 DEFINES += WITH_THUMBNAILER WITH_CURL WITH_CRYPTOPP WITH_MEGA WITH_MICROHTTPD
 
@@ -94,6 +94,8 @@ ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 
 ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/arm-linux-androideabi/lib/libc++_shared.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libssl.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libcrypto.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libjsoncpp.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libmicrohttpd.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcurl.so \
