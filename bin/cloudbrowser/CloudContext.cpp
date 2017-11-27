@@ -35,6 +35,24 @@ QString sanitize(const QString& name) {
   return result;
 }
 
+class DownloadToString : public IDownloadFileCallback {
+ public:
+  void receivedData(const char* data, uint32_t length) override {
+    data_ += std::string(data, length);
+  }
+
+  void progress(uint64_t, uint64_t) override {
+  }
+
+  void done(EitherError<void> e) override {
+  }
+
+  const std::string& data() const { return data_; }
+
+ private:
+  std::string data_;
+};
+
 class DownloadCallback : public IDownloadFileCallback {
  public:
   DownloadCallback(RequestNotifier* notifier, QUrl path)
@@ -500,6 +518,20 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
             auto r = provider->getItemUrlAsync(item)->result();
             if (r.left()) {
               emit notifier->finishedString(r.left());
+              return notifier->deleteLater();
+            }
+            if (item->type() == IItem::FileType::Image) {
+              if (item->size() < 2 * 1024 * 1024) {
+                auto downloader = std::make_shared<DownloadToString>();
+                auto e = provider->downloadFileAsync(item, downloader)->result();
+                if (e.left())
+                  emit notifier->finishedString(e.left());
+                else
+                  emit notifier->finishedString(downloader->data());
+              } else {
+                emit notifier->finishedString(Error{IHttpRequest::ServiceUnavailable,
+                                                    "image too big"});
+              }
               return notifier->deleteLater();
             }
             auto e = generate_thumbnail(*r.right());
