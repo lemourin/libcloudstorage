@@ -18,7 +18,6 @@ Kirigami.ScrollablePage {
       Loader {
         id: view
         anchors.fill: parent
-        asynchronous: true
         source: "WebView.qml"
         onStatusChanged: if (status === Loader.Ready) item.url = webview_page.url;
       }
