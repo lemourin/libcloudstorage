@@ -44,7 +44,7 @@ class DownloadToString : public IDownloadFileCallback {
   void progress(uint64_t, uint64_t) override {
   }
 
-  void done(EitherError<void> e) override {
+  void done(EitherError<void>) override {
   }
 
   const std::string& data() const { return data_; }
