@@ -106,7 +106,10 @@ Kirigami.ScrollablePage {
       visible: list_view.currentItem && list_view.currentItem.item.type !== "directory"
       iconName: "document-save"
       text: "Download " + (list_view.currentItem ? list_view.currentItem.item.filename : "")
-      onTriggered: download_dialog.open();
+      onTriggered: {
+        download_dialog.filename = list_view.currentItem.item.filename;
+        download_dialog.open();
+      }
     }
   ]
 
@@ -196,7 +199,6 @@ Kirigami.ScrollablePage {
       id: download_dialog
       selectFolder: true
       selectExisting: true
-      filename: list_view.currentItem ? list_view.currentItem.item.filename : ""
       onAccepted: {
         var r = download_component.createObject(cloud, {
                                                   filename: download_dialog.filename
