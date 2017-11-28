@@ -41,11 +41,9 @@ class DownloadToString : public IDownloadFileCallback {
     data_ += std::string(data, length);
   }
 
-  void progress(uint64_t, uint64_t) override {
-  }
+  void progress(uint64_t, uint64_t) override {}
 
-  void done(EitherError<void>) override {
-  }
+  void done(EitherError<void>) override {}
 
   const std::string& data() const { return data_; }
 
@@ -523,14 +521,15 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
             if (item->type() == IItem::FileType::Image) {
               if (item->size() < 2 * 1024 * 1024) {
                 auto downloader = std::make_shared<DownloadToString>();
-                auto e = provider->downloadFileAsync(item, downloader)->result();
+                auto e =
+                    provider->downloadFileAsync(item, downloader)->result();
                 if (e.left())
                   emit notifier->finishedString(e.left());
                 else
                   emit notifier->finishedString(downloader->data());
               } else {
-                emit notifier->finishedString(Error{IHttpRequest::ServiceUnavailable,
-                                                    "image too big"});
+                emit notifier->finishedString(
+                    Error{IHttpRequest::ServiceUnavailable, "image too big"});
               }
               return notifier->deleteLater();
             }
