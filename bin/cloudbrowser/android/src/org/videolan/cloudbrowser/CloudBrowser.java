@@ -11,6 +11,7 @@ import android.provider.OpenableColumns;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.content.pm.ActivityInfo;
+import android.util.Log;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -73,16 +74,24 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
         }
     }
 
+    public static Uri stringToUri(String uri) {
+        String basename = uri.substring(0, uri.lastIndexOf('/') + 1);
+        String filename = uri.substring(uri.lastIndexOf('/') + 1);
+        return Uri.parse(basename + Uri.encode(Uri.decode(filename)));
+    }
+
     public static FileOutput openWrite(String uri) throws IOException {
         FileOutput file = new FileOutput();
-        file.m_descriptor = m_instance.getContentResolver().openFileDescriptor(Uri.parse(uri.replace(" ", "%20")), "w");
+        file.m_descriptor = m_instance.getContentResolver().
+            openFileDescriptor(stringToUri(uri), "w");
         file.m_stream = new FileOutputStream(file.m_descriptor.getFileDescriptor());
         return file;
     }
 
     public static FileInput openRead(String uri) throws IOException {
         FileInput file = new FileInput();
-        file.m_descriptor = m_instance.getContentResolver().openFileDescriptor(Uri.parse(uri.replace(" ", "%20")), "r");
+        file.m_descriptor = m_instance.getContentResolver().
+            openFileDescriptor(stringToUri(uri), "r");
         file.m_stream = new FileInputStream(file.m_descriptor.getFileDescriptor());
         return file;
     }
@@ -103,11 +112,13 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
     }
 
     public static String filename(Uri uri) {
-        Cursor cursor = m_instance.getContentResolver().query(uri, null, null, null, null, null);
+        Cursor cursor = m_instance.getContentResolver().
+            query(uri, null, null, null, null, null);
         String result = "";
         try {
             if (cursor != null && cursor.moveToFirst())
-                result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                result = cursor.getString(
+                    cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
         } finally {
             cursor.close();
         }
