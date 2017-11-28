@@ -4,7 +4,8 @@ import QtMultimedia 5.6
 Item {
   property alias source: player.source
   property real position: player.position / player.duration
-  property bool buffering: player.status === MediaPlayer.Stalled
+  property bool buffering: player.status === MediaPlayer.Loading ||
+                           player.status === MediaPlayer.Stalled
   property bool ended: player.status === MediaPlayer.EndOfMedia
   property int time: duration * position
   property int duration: player.duration
