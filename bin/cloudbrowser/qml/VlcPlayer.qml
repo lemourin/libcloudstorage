@@ -26,6 +26,7 @@ Item {
 
   VlcPlayer {
     id: player
+    autoplay: true
     onStateChanged: {
       if (state === Vlc.Error)
         error(500, "Error occurred")
