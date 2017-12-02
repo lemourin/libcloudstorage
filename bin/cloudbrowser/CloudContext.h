@@ -282,6 +282,7 @@ class CloudContext : public QObject {
   Q_INVOKABLE QObject* root(QVariant provider);
   Q_INVOKABLE void removeProvider(QVariant provider);
   Q_INVOKABLE QString pretty(QString provider) const;
+  Q_INVOKABLE QVariantMap readUrl(QString url) const;
 
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);

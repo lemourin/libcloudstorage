@@ -207,6 +207,19 @@ QString CloudContext::pretty(QString provider) const {
     return "";
 }
 
+QVariantMap CloudContext::readUrl(QString url) const {
+  util::Url result(url.toStdString());
+  QVariantMap r;
+  r["protocol"] = result.protocol().c_str();
+  r["host"] = result.host().c_str();
+  for (auto str : QString(result.query().c_str()).split('&')) {
+    auto lst = str.split('=');
+    if (lst.size() == 2)
+      r[lst[0]] = util::Url::unescape(lst[1].toStdString()).c_str();
+  }
+  return r;
+}
+
 void CloudContext::add(std::shared_ptr<ICloudProvider> p,
                        std::shared_ptr<IGenericRequest> r) {
   pool_.add(p, r);
