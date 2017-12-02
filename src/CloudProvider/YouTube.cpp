@@ -322,12 +322,10 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     if (best_audio.url.empty()) throw std::logic_error("audio url not found");
     if (best_video.scrambled_signature.empty() &&
         best_audio.scrambled_signature.empty()) {
-      auto video_url = best_video.url + "&signature=" + best_video.signature;
-      auto audio_url = best_audio.url + "&signature=" + best_audio.signature;
       if (!data.high_quality)
-        return r->done(data.audio ? audio_url : video_url);
+        return r->done(data.audio ? best_audio.url : best_video.url);
       else
-        return r->done(combine(video_url, audio_url));
+        return r->done(combine(best_video.url, best_audio.url));
     }
     r->send(
         [=](util::Output) {
