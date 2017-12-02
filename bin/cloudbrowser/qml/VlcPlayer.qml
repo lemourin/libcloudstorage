@@ -5,6 +5,7 @@ Item {
   property alias source: player.url
   property alias player: player
   property alias position: player.position
+  property bool playing: player.state === Vlc.Playing
   property bool buffering: player.state === Vlc.Buffering || player.state === Vlc.Opening
   property bool ended: player.state === Vlc.Ended
   property int time: player.time
@@ -26,7 +27,7 @@ Item {
 
   VlcPlayer {
     id: player
-    autoplay: true
+    autoplay: false
     onStateChanged: {
       if (state === Vlc.Error)
         error(500, "Error occurred")

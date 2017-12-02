@@ -9,6 +9,9 @@ Kirigami.Page {
   property bool handle_state
   property bool playing: true
   property bool autoplay: false
+  property bool video_suspended: false
+  property bool audio_suspended: false
+  property bool separate_av: false
 
   id: page
   leftPadding: 0
@@ -26,10 +29,15 @@ Kirigami.Page {
     }
   }
   onPlayingChanged: {
-    if (playing)
+    if (playing) {
       player.item.play();
-    else
+      audio_player.item.play();
+    } else {
+      video_suspended = false;
+      audio_suspended = false;
       player.item.pause();
+      audio_player.item.pause();
+    }
   }
 
   function print_timestamp(d) {
@@ -61,10 +69,50 @@ Kirigami.Page {
     }
   }
 
+  function set_url() {
+    if (!player.item) return;
+    var d = cloud.readUrl(url_request.source);
+    if (d.protocol === "cloudstorage") {
+      if (d.host === "youtube") {
+        player.item.source = d.video;
+        audio_player.item.source = d.audio;
+        separate_av = true;
+      }
+    } else {
+      player.item.source = url_request.source;
+      separate_av = false;
+    }
+    if (playing) {
+      player.item.play();
+      audio_player.item.play();
+    }
+  }
+
+  function update_players() {
+    if (!playing || !separate_av) return;
+    if (!audio_suspended && player.item.playing && !audio_player.item.playing) {
+      player.item.pause();
+      video_suspended = true;
+    }
+    if (!video_suspended && !player.item.playing && audio_player.item.playing) {
+      audio_player.item.pause();
+      audio_suspended = true;
+    }
+    if (player.item.playing && audio_suspended) {
+      audio_suspended = false;
+      audio_player.item.play();
+    }
+    if (audio_player.item.playing && video_suspended) {
+      video_suspended = false;
+      player.item.play();
+    }
+  }
+
   onItemChanged: url_request.update(cloud, item)
 
   GetUrlRequest {
     id: url_request
+    onSourceChanged: set_url()
     onDoneChanged: {
       if (done && source === "")
         ended();
@@ -74,6 +122,7 @@ Kirigami.Page {
   Connections {
     id: connections
     target: null
+    onPlayingChanged: update_players()
     onEndedChanged: {
       if (target.ended) {
         ended();
@@ -82,6 +131,12 @@ Kirigami.Page {
     onError: {
       cloud.errorOccurred("MediaPlayer", error, errorString);
     }
+  }
+
+  Connections {
+    id: audio_connections
+    target: null
+    onPlayingChanged: update_players()
   }
 
   MouseArea {
@@ -110,11 +165,20 @@ Kirigami.Page {
                 (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml") : "ImagePlayer.qml"
       onStatusChanged: {
         if (status === Loader.Ready) {
-          item.source = Qt.binding(function() { return url_request.source; });
+          set_url();
           connections.target = item;
         } else if (status === Loader.Error) {
           cloud.errorOccurred("LoadPlayer", 500, source);
         }
+      }
+    }
+
+    Loader {
+      id: audio_player
+      source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
+      onStatusChanged: {
+        if (status === Loader.Ready)
+          audio_connections.target = item;
       }
     }
 
@@ -280,6 +344,7 @@ Kirigami.Page {
           anchors.fill: parent
           onClicked: {
             player.item.set_position(mouse.x / width);
+            audio_player.item.set_position(mouse.x / width);
             timer.cnt = 0;
           }
           enabled: progress.visible

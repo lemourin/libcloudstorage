@@ -4,6 +4,8 @@ import QtMultimedia 5.6
 Item {
   property alias source: player.source
   property real position: player.position / player.duration
+  property bool playing: player.playbackState === MediaPlayer.PlayingState &&
+                         player.bufferProgress === 1.0
   property bool buffering: player.status === MediaPlayer.Loading ||
                            player.status === MediaPlayer.Stalled
   property bool ended: player.status === MediaPlayer.EndOfMedia
@@ -28,7 +30,7 @@ Item {
 
   MediaPlayer {
     id: player
-    autoPlay: true
+    autoPlay: false
     onError: container.error(error, errorString)
   }
   VideoOutput {
