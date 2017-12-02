@@ -41,7 +41,9 @@ Kirigami.ApplicationWindow {
       root.globalDrawer.actions = root.actions();
     }
     onErrorOccurred: {
-      root.showPassiveNotification("Error " + code + ": " + operation + (description ? " " + description : ""));
+      if (operation !== "GetThumbnail")
+        root.showPassiveNotification("Error " + code + ": " +
+                                     operation + (description ? " " + description : ""));
     }
 
     function list(title, item) {
