@@ -41,6 +41,10 @@
 #include "CloudContext.h"
 #include "Utility/Utility.h"
 
+#ifdef WITH_VLC_QT
+#include <VLCQtQml/Qml.h>
+#endif
+
 void register_types() {
   qRegisterMetaType<cloudstorage::IItem::Pointer>();
   qRegisterMetaType<
@@ -70,6 +74,9 @@ void register_types() {
 #endif
   qmlRegisterUncreatableType<CloudItem>("libcloudstorage", 1, 0, "CloudItem",
                                         "uncreatable type");
+#ifdef WITH_VLC_QT
+  VlcQml::registerTypes();
+#endif
 }
 
 int exec_cloudbrowser(int argc, char** argv) {
