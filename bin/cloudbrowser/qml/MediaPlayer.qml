@@ -9,9 +9,9 @@ Kirigami.Page {
   property bool handle_state
   property bool playing: true
   property bool autoplay: false
-  property bool video_suspended: false
-  property bool audio_suspended: false
   property bool separate_av: false
+  property bool video_paused: false
+  property bool audio_paused: false
 
   id: page
   leftPadding: 0
@@ -33,8 +33,6 @@ Kirigami.Page {
       player.item.play();
       audio_player.item.play();
     } else {
-      video_suspended = false;
-      audio_suspended = false;
       player.item.pause();
       audio_player.item.pause();
     }
@@ -88,22 +86,24 @@ Kirigami.Page {
     }
   }
 
-  function update_players() {
-    if (!playing || !separate_av) return;
-    if (!audio_suspended && player.item.playing && !audio_player.item.playing) {
-      player.item.pause();
-      video_suspended = true;
+  function position_changed() {
+    if (!separate_av || !playing) return;
+    var diff = (audio_player.item.position - player.item.position) * player.item.duration;
+    if (Math.abs(diff) > 500 && audio_player.item.playing && player.item.playing) {
+      if (audio_player.item.position > player.item.position) {
+        audio_paused = true;
+        audio_player.item.pause();
+      } else {
+        video_paused = true;
+        player.item.pause();
+      }
     }
-    if (!video_suspended && !player.item.playing && audio_player.item.playing) {
-      audio_player.item.pause();
-      audio_suspended = true;
-    }
-    if (player.item.playing && audio_suspended) {
-      audio_suspended = false;
+    if (audio_paused && player.item.position >= audio_player.item.position) {
+      audio_paused = false;
       audio_player.item.play();
     }
-    if (audio_player.item.playing && video_suspended) {
-      video_suspended = false;
+    if (video_paused && audio_player.item.position >= player.item.position) {
+      video_paused = false;
       player.item.play();
     }
   }
@@ -122,7 +122,7 @@ Kirigami.Page {
   Connections {
     id: connections
     target: null
-    onPlayingChanged: update_players()
+    onPositionChanged: position_changed()
     onEndedChanged: {
       if (target.ended) {
         ended();
@@ -134,9 +134,9 @@ Kirigami.Page {
   }
 
   Connections {
-    id: audio_connections
-    target: null
-    onPlayingChanged: update_players()
+    id: audio_connection
+    target: audio_player.item
+    onPositionChanged: position_changed()
   }
 
   MouseArea {
@@ -176,10 +176,6 @@ Kirigami.Page {
     Loader {
       id: audio_player
       source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
-      onStatusChanged: {
-        if (status === Loader.Ready)
-          audio_connections.target = item;
-      }
     }
 
     Timer {
