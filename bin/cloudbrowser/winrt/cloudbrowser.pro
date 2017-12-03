@@ -23,6 +23,8 @@ INCLUDEPATH = \
 
 LIBS += \
     -L$$MSVC_TOOLCHAIN_PATH/lib \
+    -lVLCQtCore \
+    -lVLCQtQml \
     -llibcurl \
     -llibmicrohttpd-dll \
     -ljsoncpp \
