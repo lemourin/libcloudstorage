@@ -2,7 +2,7 @@ TEMPLATE = app
 CONFIG += c++11
 QT += quick webview androidextras svg network
 
-DEFINES += WITH_THUMBNAILER WITH_CURL WITH_CRYPTOPP WITH_MEGA WITH_MICROHTTPD
+DEFINES += WITH_THUMBNAILER WITH_CURL WITH_CRYPTOPP WITH_MEGA WITH_MICROHTTPD WITH_VLC_QT
 
 ANDROID_TOOLCHAIN_PATH = $$(ANDROID_TOOLCHAIN_PATH)
 
@@ -25,7 +25,8 @@ INCLUDEPATH = \
 LIBS += \
     -L$$ANDROID_TOOLCHAIN_PATH/lib \
     -L$$ANDROID_TOOLCHAIN_PATH/arm-linux-androideabi/lib/ \
-    -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer
+    -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
+    -lVLCQtQml -lVLCQtCore -lvlcjni
 
 SOURCES += \
     ../main.cpp \
@@ -113,4 +114,5 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libswresample.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavutil.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libpng16.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libffmpegthumbnailer.so
+    $$ANDROID_TOOLCHAIN_PATH/lib/libffmpegthumbnailer.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so
