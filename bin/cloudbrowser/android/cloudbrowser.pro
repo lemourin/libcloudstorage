@@ -82,6 +82,9 @@ RESOURCES += \
 DISTFILES += \
     AndroidManifest.xml \
     Workaround.qml \
+    res/drawable-hdpi/icon.png \
+    res/drawable-ldpi/icon.png \
+    android/res/drawable-mdpi/icon.png \
     src/org/videolan/cloudbrowser/CloudBrowser.java \
     src/org/videolan/cloudbrowser/AuthView.java
 
