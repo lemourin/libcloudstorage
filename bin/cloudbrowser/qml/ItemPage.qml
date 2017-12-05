@@ -328,6 +328,7 @@ Kirigami.ScrollablePage {
           visible: list_view.currentEdit === index
           onVisibleChanged: if (visible && modelData) text.text = modelData.filename
           width: parent.width - image.width
+          height: parent.height
           Controls.TextField {
             id: text
             anchors.verticalCenter: parent.verticalCenter
