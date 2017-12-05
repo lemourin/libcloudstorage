@@ -119,7 +119,7 @@ Kirigami.ScrollablePage {
       anchors.centerIn: parent
       Controls.TextField {
         id: directory_name
-        color: "black"
+        color: Kirigami.Theme.textColor
         placeholderText: "New Directory"
       }
       Controls.Button {
@@ -263,7 +263,8 @@ Kirigami.ScrollablePage {
       property alias text_control: text
 
       id: item
-      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "white"
+      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
+                                                Kirigami.Theme.backgroundColor
       onClicked: {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
@@ -320,6 +321,7 @@ Kirigami.ScrollablePage {
         Templates.Label {
           anchors.verticalCenter: parent.verticalCenter
           text: modelData.filename
+          color: Kirigami.Theme.textColor
           visible: list_view.currentEdit !== index
         }
         RowLayout {
@@ -333,6 +335,7 @@ Kirigami.ScrollablePage {
             anchors.left: parent.left
             anchors.right: rename_button.left
             Layout.alignment: Qt.AlignLeft
+            color: Kirigami.Theme.textColor
           }
           Controls.Button {
             id: rename_button

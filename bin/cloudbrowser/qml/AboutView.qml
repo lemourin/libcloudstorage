@@ -85,6 +85,7 @@ Kirigami.ScrollablePage {
           anchors.right: parent.right
           anchors.margins: 15
           text: name
+          color: Kirigami.Theme.textColor
         }
       }
     }

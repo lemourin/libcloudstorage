@@ -38,7 +38,8 @@ Kirigami.ScrollablePage {
     id: list
     model: cloud.providers
     delegate: Kirigami.BasicListItem {
-      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "white"
+      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
+                                                Kirigami.Theme.backgroundColor
       onClicked: {
         if (qtwebview)
           root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
