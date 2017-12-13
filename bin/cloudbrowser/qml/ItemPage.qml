@@ -10,6 +10,14 @@ Kirigami.ScrollablePage {
 
   id: page
   anchors.fill: parent
+  supportsRefreshing: true
+
+  onRefreshingChanged: {
+    if (refreshing) {
+      list.update(cloud, item);
+      refreshing = false;
+    }
+  }
 
   function playable_type(type) {
     return type === "audio" || type === "video" || type === "image";
