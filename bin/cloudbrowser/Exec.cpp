@@ -33,6 +33,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QtQml>
 
 #ifdef __ANDROID__
 #include "AndroidUtility.h"
@@ -82,7 +83,9 @@ void register_types() {
 int exec_cloudbrowser(int argc, char** argv) {
   try {
     Q_INIT_RESOURCE(resources);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
     QGuiApplication app(argc, argv);
 
 #ifdef WITH_QTWEBVIEW
