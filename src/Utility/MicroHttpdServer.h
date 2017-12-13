@@ -91,6 +91,7 @@ class MicroHttpdServer : public IHttpServer {
 
 class MicroHttpdServerFactory : public IHttpServerFactory {
  public:
+  MicroHttpdServerFactory();
   IHttpServer::Pointer create(IHttpServer::ICallback::Pointer, uint16_t port);
   IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
                               const std::string& session_id,

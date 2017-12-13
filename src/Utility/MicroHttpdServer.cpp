@@ -161,6 +161,15 @@ MicroHttpdServer::IResponse::Pointer MicroHttpdServer::Request::response(
                                      std::move(cb));
 }
 
+MicroHttpdServerFactory::MicroHttpdServerFactory() {
+  MHD_set_panic_func(
+      [](void*, const char* file, unsigned int line, const char* reason) {
+        util::log(file, line, reason);
+        exit(0);
+      },
+      nullptr);
+}
+
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, uint16_t port) {
   return util::make_unique<MicroHttpdServer>(cb, port);
