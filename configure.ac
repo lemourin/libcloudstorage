@@ -13,6 +13,7 @@ LT_INIT([win32-dll shared disable-static])
 AC_PROG_CXX
 
 AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_17([noext], [optional])
 
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
 PKG_CHECK_MODULES([libtinyxml2], [tinyxml2])
@@ -119,6 +120,12 @@ AS_IF([test "${SYS}" = "mingw32"], [
   SOCKET_LIBS="-lws2_32"
 ])
 AC_SUBST(SOCKET_LIBS)
+
+FILESYSTEM_LIBS=""
+AC_CHECK_HEADERS(experimental/filesystem, [
+  FILESYSTEM_LIBS="-lstdc++fs"
+])
+AC_SUBST(FILESYSTEM_LIBS)
 
 AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])

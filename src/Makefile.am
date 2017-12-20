@@ -6,7 +6,8 @@ AM_CXXFLAGS = \
 
 AM_LDFLAGS = \
 	-no-undefined \
-	$(SOCKET_LIBS)
+	$(SOCKET_LIBS) \
+	$(FILESYSTEM_LIBS)
 
 libcloudstorage_ladir = $(includedir)/cloudstorage
 lib_LTLIBRARIES = libcloudstorage.la
