@@ -30,6 +30,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/PCloud.cpp \
 	CloudProvider/HubiC.cpp \
 	CloudProvider/GooglePhotos.cpp \
+	CloudProvider/LocalDrive.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -66,6 +67,7 @@ noinst_HEADERS = \
 	CloudProvider/PCloud.h \
 	CloudProvider/HubiC.h \
 	CloudProvider/GooglePhotos.h \
+	CloudProvider/LocalDrive.h \
 	Request/HttpCallback.h \
 	Request/AuthorizeRequest.h \
 	Request/Request.h \

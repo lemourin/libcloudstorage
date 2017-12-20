@@ -41,6 +41,8 @@
 #include "CloudProvider/MegaNz.h"
 #endif
 
+#include "CloudProvider/LocalDrive.h"
+
 namespace cloudstorage {
 
 namespace {
@@ -177,6 +179,9 @@ CloudStorage::CloudStorage() {
   add<PCloud>();
   add<HubiC>();
   add<GooglePhotos>();
+#ifdef WITH_LOCALDRIVE
+  add<LocalDrive>();
+#endif
 #ifdef WITH_MEGA
   add<MegaNz>();
 #endif

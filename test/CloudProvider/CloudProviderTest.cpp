@@ -26,6 +26,7 @@
 #include <json/json.h>
 #include <fstream>
 #include <future>
+#include "CloudProvider/LocalDrive.h"
 #include "ICloudProvider.h"
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
@@ -368,6 +369,10 @@ TEST_SET(AmazonS3Provider, "amazons3")
 #ifdef WITH_MEGA
 TEST_SET(MegaProvider, "mega")
 #endif  // WITH_MEGA
+
+#ifdef WITH_LOCALDRIVE
+TEST_SET(LocalDriveProvider, "local")
+#endif  // WITH_LOCALDRIVE
 
 #endif  // WITH_CURL
 #endif  // TOKEN_FILE

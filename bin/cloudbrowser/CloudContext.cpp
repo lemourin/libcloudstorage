@@ -199,7 +199,8 @@ QString CloudContext::pretty(QString provider) const {
       {"webdav", "WebDAV"},
       {"yandex", "Yandex Drive"},
       {"youtube", "YouTube"},
-      {"gphotos", "Google Photos"}};
+      {"gphotos", "Google Photos"},
+      {"local", "Local Drive"}};
   auto it = name_map.find(provider.toStdString());
   if (it != name_map.end())
     return it->second.c_str();
