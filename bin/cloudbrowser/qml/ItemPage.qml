@@ -71,7 +71,7 @@ Kirigami.ScrollablePage {
       text: "Delete"
       iconName: "edit-delete"
       onTriggered: {
-        list.done = false;
+        refreshing = true;
         delete_request.update(cloud, list_view.currentItem.item);
       }
     },
@@ -90,7 +90,7 @@ Kirigami.ScrollablePage {
       iconName: "dialog-apply"
       onTriggered: {
         move_request.update(cloud, cloud.currently_moved, page.item);
-        list.done = false;
+        refreshing = true;
         if (cloud.list_request)
           cloud.list_request.done = false;
         cloud.currently_moved = null;
@@ -133,14 +133,13 @@ Kirigami.ScrollablePage {
       Controls.Button {
         CreateDirectoryRequest {
           id: create_directory
-          onCreatedDirectory: list.update(cloud, page.item)
+          onCreatedDirectory: refreshing = true
         }
 
         anchors.horizontalCenter: parent.horizontalCenter
         text: "Create"
         onClicked: {
           create_directory.update(cloud, item, directory_name.text);
-          list.done = false;
           create_directory_sheet.close();
         }
       }
@@ -167,12 +166,12 @@ Kirigami.ScrollablePage {
 
     DeleteItemRequest {
       id: delete_request
-      onItemDeleted: list.update(cloud, page.item)
+      onItemDeleted: refreshing = true
     }
 
     RenameItemRequest {
       id: rename_request
-      onItemRenamed: list.update(cloud, page.item)
+      onItemRenamed: refreshing = true
     }
 
     MoveItemRequest {
@@ -181,7 +180,7 @@ Kirigami.ScrollablePage {
         if (cloud.list_request)
           cloud.list_request.update(cloud, cloud.list_request.item);
         cloud.list_request = null;
-        list.update(cloud, page.item);
+        refreshing = true;
       }
     }
 
@@ -354,7 +353,7 @@ Kirigami.ScrollablePage {
             text: "Rename"
             onClicked: {
               list_view.currentEdit = -1;
-              list.done = false;
+              refreshing = true;
               rename_request.update(cloud, modelData, text.text);
             }
           }
