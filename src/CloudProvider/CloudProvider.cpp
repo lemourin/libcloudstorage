@@ -28,7 +28,10 @@
 #include <fstream>
 #include <sstream>
 
+#include "Utility/CryptoPP.h"
+#include "Utility/CurlHttp.h"
 #include "Utility/Item.h"
+#include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
 
 #include "Request/CreateDirectoryRequest.h"
@@ -43,18 +46,6 @@
 #include "Request/MoveItemRequest.h"
 #include "Request/RenameItemRequest.h"
 #include "Request/UploadFileRequest.h"
-
-#ifdef WITH_CRYPTOPP
-#include "Utility/CryptoPP.h"
-#endif
-
-#ifdef WITH_CURL
-#include "Utility/CurlHttp.h"
-#endif
-
-#ifdef WITH_MICROHTTPD
-#include "Utility/MicroHttpdServer.h"
-#endif
 
 using namespace std::placeholders;
 

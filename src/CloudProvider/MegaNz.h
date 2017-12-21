@@ -24,6 +24,8 @@
 #ifndef MEGANZ_H
 #define MEGANZ_H
 
+#ifdef WITH_MEGA
+
 #include "CloudProvider.h"
 
 #include <megaapi.h>
@@ -150,5 +152,7 @@ class MegaNz : public CloudProvider {
 };
 
 }  // namespace cloudstorage
+
+#endif  // WITH_MEGA
 
 #endif  // MEGANZ_H

@@ -24,6 +24,8 @@
 #ifndef CURLHTTP_H
 #define CURLHTTP_H
 
+#ifdef WITH_CURL
+
 #include <curl/curl.h>
 #include <atomic>
 #include <cctype>
@@ -145,4 +147,5 @@ class CurlHttpRequest : public IHttpRequest,
 
 }  // namespace cloudstorage
 
+#endif  // WITH_CURL
 #endif  // CURLHTTP_H

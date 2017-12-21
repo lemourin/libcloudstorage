@@ -18,6 +18,9 @@ libcloudstorage_la_SOURCES = \
 	Utility/Item.cpp \
 	Utility/FileSystem.cpp \
 	Utility/Utility.cpp \
+	Utility/CryptoPP.cpp \
+	Utility/CurlHttp.cpp \
+	Utility/MicroHttpdServer.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -30,6 +33,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/PCloud.cpp \
 	CloudProvider/HubiC.cpp \
 	CloudProvider/GooglePhotos.cpp \
+	CloudProvider/MegaNz.cpp \
 	CloudProvider/LocalDrive.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
@@ -55,6 +59,9 @@ noinst_HEADERS = \
 	Utility/Item.h \
 	Utility/FileSystem.h \
 	Utility/Utility.h \
+	Utility/CryptoPP.h \
+	Utility/CurlHttp.h \
+	Utility/MicroHttpdServer.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
@@ -67,6 +74,7 @@ noinst_HEADERS = \
 	CloudProvider/PCloud.h \
 	CloudProvider/HubiC.h \
 	CloudProvider/GooglePhotos.h \
+	CloudProvider/MegaNz.h \
 	CloudProvider/LocalDrive.h \
 	Request/HttpCallback.h \
 	Request/AuthorizeRequest.h \
@@ -102,29 +110,21 @@ libcloudstorage_la_LIBADD = \
 if WITH_MEGA
 AM_CXXFLAGS += $(libmega_CFLAGS)
 libcloudstorage_la_LIBADD += $(libmega_LIBS)
-libcloudstorage_la_SOURCES += CloudProvider/MegaNz.cpp
-noinst_HEADERS += CloudProvider/MegaNz.h
 endif
 
 if WITH_CRYPTOPP
 AM_CXXFLAGS += $(libcryptopp_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcryptopp_LIBS)
-libcloudstorage_la_SOURCES += Utility/CryptoPP.cpp
-noinst_HEADERS += Utility/CryptoPP.h
 endif
 
 if WITH_CURL
 AM_CXXFLAGS += $(libcurl_CFLAGS)
 libcloudstorage_la_LIBADD += $(libcurl_LIBS)
-libcloudstorage_la_SOURCES += Utility/CurlHttp.cpp
-noinst_HEADERS += Utility/CurlHttp.h
 endif
 
 if WITH_MICROHTTPD
 AM_CXXFLAGS += $(libmicrohttpd_CFLAGS)
 libcloudstorage_la_LIBADD += $(libmicrohttpd_LIBS)
-libcloudstorage_la_SOURCES += Utility/MicroHttpdServer.cpp
-noinst_HEADERS += Utility/MicroHttpdServer.h
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

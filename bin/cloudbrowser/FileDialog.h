@@ -1,6 +1,8 @@
 #ifndef FILEDIALOG_H
 #define FILEDIALOG_H
 
+#ifdef __ANDROID__
+
 #include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
 #include <QDebug>
@@ -58,4 +60,5 @@ class FileDialog : public QObject {
   Q_OBJECT
 };
 
+#endif  // __ANDROID__
 #endif  // FILEDIALOG_H

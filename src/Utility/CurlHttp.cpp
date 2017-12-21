@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifdef WITH_CURL
+
 #include "CurlHttp.h"
 
 #include <json/json.h>
@@ -324,3 +326,5 @@ IHttpRequest::Pointer CurlHttp::create(const std::string& url,
 }  // namespace curl
 
 }  // namespace cloudstorage
+
+#endif  // WITH_CURL

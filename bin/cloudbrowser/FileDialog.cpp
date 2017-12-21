@@ -1,3 +1,5 @@
+#ifdef __ANDROID__
+
 #include "FileDialog.h"
 
 #include <QAndroidActivityResultReceiver>
@@ -61,3 +63,5 @@ void FileDialog::ActivityReceiver::handleActivityResult(
   file_dialog_->setFileUrl(uri.toString());
   emit file_dialog_->accepted();
 }
+
+#endif  // __ANDROID__

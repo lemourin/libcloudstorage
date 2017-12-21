@@ -29,6 +29,7 @@
 #include "CloudProvider/LocalDrive.h"
 #include "ICloudProvider.h"
 #include "ICloudStorage.h"
+#include "Utility/CurlHttp.h"
 #include "Utility/Utility.h"
 
 using namespace cloudstorage;
@@ -37,8 +38,6 @@ const int FILE_CNT = 2;
 
 #ifdef TOKEN_FILE
 #ifdef WITH_CURL
-
-#include "Utility/CurlHttp.h"
 
 class TokenData {
  public:

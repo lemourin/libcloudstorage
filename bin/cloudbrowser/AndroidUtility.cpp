@@ -1,3 +1,5 @@
+#ifdef __ANDROID__
+
 #include "AndroidUtility.h"
 
 #include <QAndroidJniObject>
@@ -33,3 +35,5 @@ void AndroidUtility::defaultOrientation() {
 
 void AndroidUtility::ResultReceiver::handleActivityResult(
     int, int, const QAndroidJniObject &) {}
+
+#endif  // __ANDROID__

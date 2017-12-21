@@ -24,6 +24,8 @@
 #ifndef CRYPTOPP_H
 #define CRYPTOPP_H
 
+#ifdef WITH_CRYPTOPP
+
 #include "ICrypto.h"
 
 namespace cloudstorage {
@@ -39,5 +41,7 @@ class CryptoPP : public ICrypto {
 };
 
 }  // namespace cloudstroage
+
+#endif  // WITH_CRYPTOPP
 
 #endif  // CRYPTOPP_H

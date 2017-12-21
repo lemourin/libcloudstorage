@@ -1,3 +1,5 @@
+#ifdef WITH_FUSE
+
 #include "FuseLowLevel.h"
 
 #include <cassert>
@@ -227,3 +229,5 @@ int FuseLowLevel::run(bool singlethread, bool clone_fd) const {
 }
 
 }  // namespace cloudstorage
+
+#endif  // WITH_FUSE

@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifdef WITH_MEGA
+
 #include "MegaNz.h"
 
 #include "IAuth.h"
@@ -935,3 +937,5 @@ IAuth::Token::Pointer MegaNz::Auth::refreshTokenResponse(std::istream&) const {
 }
 
 }  // namespace cloudstorage
+
+#endif  // WITH_MEGA

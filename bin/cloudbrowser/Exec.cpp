@@ -35,11 +35,9 @@
 #include <QQmlEngine>
 #include <QtQml>
 
-#ifdef __ANDROID__
 #include "AndroidUtility.h"
-#include "FileDialog.h"
-#endif
 #include "CloudContext.h"
+#include "FileDialog.h"
 #include "Utility/Utility.h"
 
 #ifdef WITH_VLC_QT

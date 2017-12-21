@@ -11,6 +11,9 @@ cloudbrowser_LDADD = libcloudbrowser.la
 
 libcloudbrowser_la_SOURCES = \
 	CloudContext.cpp CloudContext.h \
+	GenerateThumbnail.cpp GenerateThumbnail.h \
+	AndroidUtility.cpp AndroidUtility.h \
+	FileDialog.cpp FileDialog.h \
 	Exec.cpp Exec.h \
 	File.cpp File.h
 
@@ -29,8 +32,6 @@ endif
 if WITH_THUMBNAILER
 libcloudbrowser_la_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
 libcloudbrowser_la_LIBADD += $(libffmpegthumbnailer_LIBS)
-libcloudbrowser_la_SOURCES += \
-	GenerateThumbnail.cpp GenerateThumbnail.h
 endif
 if WITH_VLC_QT
 libcloudbrowser_la_CXXFLAGS += $(vlcqt_CFLAGS)

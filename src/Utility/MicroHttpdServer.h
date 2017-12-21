@@ -24,6 +24,8 @@
 #ifndef MICRO_HTTPD_SERVER_H
 #define MICRO_HTTPD_SERVER_H
 
+#ifdef WITH_MICROHTTPD
+
 #include <microhttpd.h>
 
 #include "IHttpServer.h"
@@ -100,4 +102,5 @@ class MicroHttpdServerFactory : public IHttpServerFactory {
 
 }  // namespace cloudstorage
 
+#endif  // WITH_MICROHTTPD
 #endif  // MICRO_HTTPD_SERVER_H

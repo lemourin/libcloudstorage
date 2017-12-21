@@ -11,14 +11,11 @@
 #include <QSettings>
 #include <QUrl>
 #include "File.h"
+#include "GenerateThumbnail.h"
 #include "ICloudStorage.h"
 #include "Utility/CurlHttp.h"
 #include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
-
-#ifdef WITH_THUMBNAILER
-#include "GenerateThumbnail.h"
-#endif
 
 using namespace cloudstorage;
 

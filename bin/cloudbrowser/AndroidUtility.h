@@ -1,6 +1,8 @@
 #ifndef ANDROIDUTILITY_H
 #define ANDROIDUTILITY_H
 
+#ifdef __ANDROID__
+
 #include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
 #include <QObject>
@@ -23,4 +25,5 @@ class AndroidUtility : public QObject {
   Q_OBJECT
 };
 
+#endif  // __ANDROID__
 #endif  // ANDROIDUTILITY_H

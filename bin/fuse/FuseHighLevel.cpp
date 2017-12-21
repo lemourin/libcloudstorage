@@ -1,3 +1,5 @@
+#ifdef WITH_LEGACY_FUSE
+
 #include "FuseHighLevel.h"
 
 #include <cstring>
@@ -237,3 +239,5 @@ int FuseHighLevel::run(bool singlethread, bool) const {
 }
 
 }  // namespace cloudstorage
+
+#endif  // WITH_LEGACY_FUSE

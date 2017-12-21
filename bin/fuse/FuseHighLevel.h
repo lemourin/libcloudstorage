@@ -1,6 +1,8 @@
 #ifndef FUSE_HIGH_LEVEL_H
 #define FUSE_HIGH_LEVEL_H
 
+#ifdef WITH_LEGACY_FUSE
+
 #define FUSE_USE_VERSION 27
 #include <fuse.h>
 
@@ -35,4 +37,5 @@ fuse_operations high_level_operations();
 
 }  // namespace cloudstorage
 
+#endif  // WITH_LEGACY_FUSE
 #endif  // FUSE_HIGH_LEVEL_H

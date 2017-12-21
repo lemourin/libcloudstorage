@@ -23,6 +23,8 @@
 #ifndef GENERATE_THUMBNAIL_H
 #define GENERATE_THUMBNAIL_H
 
+#ifdef WITH_THUMBNAILER
+
 #include "IRequest.h"
 
 namespace cloudstorage {
@@ -31,4 +33,5 @@ EitherError<std::string> generate_thumbnail(const std::string& url);
 
 }  // namespace cloudstorage
 
+#endif  // WITH_THUMBNAILER
 #endif  // GENERATE_THUMBNAIL_H

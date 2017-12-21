@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifdef WITH_CRYPTOPP
+
 #include "CryptoPP.h"
 
 #include <cryptopp/cryptlib.h>
@@ -72,3 +74,5 @@ std::string CryptoPP::hex(const std::string& hash) {
 }
 
 }  // namespace cloudstorage
+
+#endif  // WITH_CRYPTOPP

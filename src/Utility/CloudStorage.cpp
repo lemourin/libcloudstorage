@@ -29,6 +29,8 @@
 #include "CloudProvider/GoogleDrive.h"
 #include "CloudProvider/GooglePhotos.h"
 #include "CloudProvider/HubiC.h"
+#include "CloudProvider/LocalDrive.h"
+#include "CloudProvider/MegaNz.h"
 #include "CloudProvider/OneDrive.h"
 #include "CloudProvider/PCloud.h"
 #include "CloudProvider/WebDav.h"
@@ -36,12 +38,6 @@
 #include "CloudProvider/YouTube.h"
 
 #include "Utility/Utility.h"
-
-#ifdef WITH_MEGA
-#include "CloudProvider/MegaNz.h"
-#endif
-
-#include "CloudProvider/LocalDrive.h"
 
 namespace cloudstorage {
 
