@@ -23,8 +23,7 @@
 #ifndef LOCALDRIVE_H
 #define LOCALDRIVE_H
 
-#ifdef HAVE_CXX17
-#ifdef HAVE_EXPERIMENTAL_FILESYSTEM
+#ifdef HAVE_BOOST_FILESYSTEM_HPP
 
 #define WITH_LOCALDRIVE
 
@@ -102,7 +101,5 @@ class LocalDrive : public CloudProvider {
 
 }  // namespace cloudstorage
 
-#endif  // HAVE_EXPERIMENTAL_FILESYSTEM
-#endif  // HAVE_CXX17
-
+#endif  // HAVE_BOOST_FILESYSTEM_HPP
 #endif  // LOCALDRIVE_H

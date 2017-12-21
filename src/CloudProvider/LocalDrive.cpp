@@ -25,12 +25,15 @@
 #ifdef WITH_LOCALDRIVE
 
 #include <json/json.h>
-#include <experimental/filesystem>
-#include <fstream>
+#include <algorithm>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <codecvt>
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = boost::filesystem;
+using error_code = boost::system::error_code;
 
 namespace cloudstorage {
 
@@ -43,16 +46,25 @@ bool is_hidden(const fs::directory_entry &e) {
          e.path().filename() == "lost+found";
 }
 
+std::string to_string(const fs::path &path) {
+  return path.string(std::codecvt_utf8<wchar_t>());
+}
+
+fs::path from_string(const std::string &string) {
+  return fs::path(string, std::codecvt_utf8<wchar_t>());
+}
+
 void list_directory(
     const LocalDrive &p, IItem::Pointer item,
     std::function<void(EitherError<std::vector<IItem::Pointer>>)> done,
     std::function<void(IItem::Pointer)> received_item = [](IItem::Pointer) {}) {
   std::vector<IItem::Pointer> vector;
-  std::error_code ec;
+  error_code ec;
   auto directory = fs::directory_iterator(p.path(item), ec);
   if (ec) return done(Error{ec.value(), ec.message()});
   for (auto &&e : directory) {
-    auto timestamp = fs::last_write_time(e.path(), ec);
+    auto timestamp = std::chrono::system_clock::from_time_t(
+        fs::last_write_time(e.path(), ec));
     if (ec) timestamp = IItem::UnknownTimeStamp;
     auto size = fs::file_size(e.path(), ec);
     if (ec) size = IItem::UnknownSize;
@@ -60,7 +72,7 @@ void list_directory(
     if (ec) is_directory = false;
     if (!is_hidden(e)) {
       auto item = std::make_shared<Item>(
-          e.path().filename(), e.path().c_str(), size, timestamp,
+          to_string(e.path().filename()), to_string(e.path()), size, timestamp,
           is_directory ? IItem::FileType::Directory : IItem::FileType::Unknown);
       received_item(item);
       vector.push_back(item);
@@ -126,7 +138,7 @@ LocalDrive::GetItemUrlRequest::Pointer LocalDrive::getItemUrlAsync(
   return request<EitherError<std::string>>(
       [=](EitherError<std::string> e) { callback(e); },
       [=](Request<EitherError<std::string>>::Pointer r) {
-        r->done("file://" + path(item));
+        r->done("file:///" + path(item));
       });
 }
 
@@ -136,7 +148,7 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
   return request<EitherError<void>>(
       [=](EitherError<void> e) { callback->done(e); },
       [=](Request<EitherError<void>>::Pointer r) {
-        std::ifstream stream(path(item));
+        fs::ifstream stream(from_string(path(item)), std::ios::binary);
         std::vector<char> buffer(BUFFER_SIZE);
         stream.seekg(0, std::ios::end);
         auto range =
@@ -147,8 +159,9 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
         stream.seekg(range.start_);
         size_t bytes_read = 0;
         while (bytes_read < range.size_) {
-          if (!stream.read(buffer.data(),
-                           std::min(BUFFER_SIZE, range.size_ - bytes_read)))
+          if (!stream.read(
+                  buffer.data(),
+                  std::min<size_t>(BUFFER_SIZE, range.size_ - bytes_read)))
             return r->done(Error{IHttpRequest::Failure, "couldn't read file"});
           callback->receivedData(buffer.data(), stream.gcount());
           bytes_read += stream.gcount();
@@ -164,10 +177,10 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback->done(e); },
       [=](Request<EitherError<IItem>>::Pointer r) {
-        auto path = fs::path(this->path(parent)) / name;
+        auto path = from_string(this->path(parent)) / name;
         size_t bytes_read = 0, size = callback->size();
         std::vector<char> buffer(BUFFER_SIZE);
-        std::ofstream stream(path);
+        fs::ofstream stream(path, std::ios::binary);
         while (bytes_read < size) {
           auto cnt = callback->putData(buffer.data(), BUFFER_SIZE);
           bytes_read += cnt;
@@ -176,7 +189,7 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
           callback->progress(size, bytes_read);
         }
         r->done(std::static_pointer_cast<IItem>(std::make_shared<Item>(
-            name, path.c_str(), size, std::chrono::system_clock::now(),
+            name, to_string(path), size, std::chrono::system_clock::now(),
             IItem::FileType::Unknown)));
       });
 }
@@ -186,7 +199,7 @@ LocalDrive::DeleteItemRequest::Pointer LocalDrive::deleteItemAsync(
   return request<EitherError<void>>(
       [=](EitherError<void> e) { callback(e); },
       [=](Request<EitherError<void>>::Pointer r) {
-        std::error_code error;
+        error_code error;
         fs::remove_all(path(item), error);
         if (error)
           r->done(Error{error.value(), error.message()});
@@ -201,14 +214,14 @@ LocalDrive::CreateDirectoryRequest::Pointer LocalDrive::createDirectoryAsync(
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback(e); },
       [=](Request<EitherError<IItem>>::Pointer r) {
-        std::error_code error;
+        error_code error;
         auto path = fs::path(this->path(parent)) / name;
         fs::create_directory(path, error);
         if (error)
           r->done(Error{error.value(), error.message()});
         else
           r->done(std::static_pointer_cast<IItem>(std::make_shared<Item>(
-              name, path.c_str(), IItem::UnknownSize,
+              name, to_string(path), IItem::UnknownSize,
               std::chrono::system_clock::now(), IItem::FileType::Directory)));
       });
 }
@@ -221,14 +234,14 @@ LocalDrive::MoveItemRequest::Pointer LocalDrive::moveItemAsync(
       [=](Request<EitherError<IItem>>::Pointer r) {
         fs::path path(this->path(source));
         fs::path new_path(fs::path(this->path(destination)) / path.filename());
-        std::error_code error;
+        error_code error;
         fs::rename(path, new_path, error);
         if (error)
           r->done(Error{error.value(), error.message()});
         else
           r->done(std::static_pointer_cast<IItem>(std::make_shared<Item>(
-              source->filename(), new_path, source->size(), source->timestamp(),
-              source->type())));
+              source->filename(), to_string(new_path), source->size(),
+              source->timestamp(), source->type())));
       });
 }
 
@@ -239,13 +252,14 @@ LocalDrive::RenameItemRequest::Pointer LocalDrive::renameItemAsync(
       [=](Request<EitherError<IItem>>::Pointer r) {
         fs::path path(this->path(item));
         fs::path new_path(path.parent_path() / name);
-        std::error_code error;
+        error_code error;
         fs::rename(path, new_path, error);
         if (error)
           r->done(Error{error.value(), error.message()});
         else
-          r->done(std::static_pointer_cast<IItem>(std::make_shared<Item>(
-              name, new_path, item->size(), item->timestamp(), item->type())));
+          r->done(std::static_pointer_cast<IItem>(
+              std::make_shared<Item>(name, to_string(new_path), item->size(),
+                                     item->timestamp(), item->type())));
       });
 }
 
@@ -255,17 +269,18 @@ LocalDrive::GetItemDataRequest::Pointer LocalDrive::getItemDataAsync(
       [=](EitherError<IItem> e) { callback(e); },
       [=](Request<EitherError<IItem>>::Pointer r) {
         fs::path path(id);
-        std::error_code error;
+        error_code error;
         fs::status(path, error);
         if (error) return r->done(Error{error.value(), error.message()});
         auto size = fs::file_size(path, error);
         if (error) size = IItem::UnknownSize;
-        auto timestamp = fs::last_write_time(path, error);
+        auto timestamp = std::chrono::system_clock::from_time_t(
+            fs::last_write_time(path, error));
         if (error) timestamp = IItem::UnknownTimeStamp;
         bool directory = fs::is_directory(path, error);
         if (error) directory = false;
         r->done(std::static_pointer_cast<IItem>(std::make_shared<Item>(
-            path.filename(), path.c_str(), size, timestamp,
+            to_string(path.filename()), to_string(path), size, timestamp,
             directory ? IItem::FileType::Directory
                       : IItem::FileType::Unknown)));
       });
