@@ -9,7 +9,8 @@ DEFINES += \
     WITH_QTWEBVIEW \
     WITH_MEGA \
     WITH_THUMBNAILER \
-    WITH_VLC_QT
+    WITH_VLC_QT \
+    HAVE_BOOST_FILESYSTEM_HPP
 
 MSVC_TOOLCHAIN_PATH = $$(MSVC_TOOLCHAIN_PATH)
 
@@ -32,6 +33,8 @@ LIBS += \
     -lmega \
     -lcares \
     -lcryptlib \
+    -lboost_system \
+    -lboost_filesystem \
     -lshlwapi \
     -lssleay32 \
     -llibeay32 \
@@ -75,6 +78,7 @@ SOURCES += \
     ../../../src/CloudProvider/PCloud.cpp \
     ../../../src/CloudProvider/HubiC.cpp \
     ../../../src/CloudProvider/GooglePhotos.cpp \
+    ../../../src/CloudProvider/LocalDrive.cpp \
     ../../../src/Request/Request.cpp \
     ../../../src/Request/HttpCallback.cpp \
     ../../../src/Request/AuthorizeRequest.cpp \

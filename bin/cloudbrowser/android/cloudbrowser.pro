@@ -2,7 +2,14 @@ TEMPLATE = app
 CONFIG += c++11
 QT += quick webview androidextras svg network
 
-DEFINES += WITH_THUMBNAILER WITH_CURL WITH_CRYPTOPP WITH_MEGA WITH_MICROHTTPD WITH_VLC_QT
+DEFINES += \
+    WITH_THUMBNAILER \
+    WITH_CURL \
+    WITH_CRYPTOPP \
+    WITH_MEGA \
+    WITH_MICROHTTPD \
+    WITH_VLC_QT \
+    HAVE_BOOST_FILESYSTEM_HPP
 
 ANDROID_TOOLCHAIN_PATH = $$(ANDROID_TOOLCHAIN_PATH)
 
@@ -26,6 +33,7 @@ LIBS += \
     -L$$ANDROID_TOOLCHAIN_PATH/lib \
     -L$$ANDROID_TOOLCHAIN_PATH/arm-linux-androideabi/lib/ \
     -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
+    -lboost_filesystem -lboost_system \
     -lVLCQtQml -lVLCQtCore -lvlcjni
 
 SOURCES += \
@@ -55,6 +63,7 @@ SOURCES += \
     ../../../src/CloudProvider/PCloud.cpp \
     ../../../src/CloudProvider/HubiC.cpp \
     ../../../src/CloudProvider/GooglePhotos.cpp \
+    ../../../src/CloudProvider/LocalDrive.cpp \
     ../../../src/Request/Request.cpp \
     ../../../src/Request/HttpCallback.cpp \
     ../../../src/Request/AuthorizeRequest.cpp \
@@ -84,7 +93,7 @@ DISTFILES += \
     Workaround.qml \
     res/drawable-hdpi/icon.png \
     res/drawable-ldpi/icon.png \
-    android/res/drawable-mdpi/icon.png \
+    res/drawable-mdpi/icon.png \
     src/org/videolan/cloudbrowser/CloudBrowser.java \
     src/org/videolan/cloudbrowser/AuthView.java
 
@@ -118,4 +127,6 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavutil.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libpng16.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libffmpegthumbnailer.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libboost_system.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libboost_filesystem.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so
