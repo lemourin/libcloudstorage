@@ -348,6 +348,7 @@ class CloudContext : public QObject {
   std::shared_ptr<cloudstorage::IHttpServerFactory> http_server_factory_;
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;
   std::shared_ptr<cloudstorage::IHttp> http_;
+  std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
   RequestPool pool_;
   std::vector<Provider> provider_;
 

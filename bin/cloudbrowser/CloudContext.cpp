@@ -83,7 +83,8 @@ CloudContext::CloudContext(QObject* parent)
     : QObject(parent),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           util::make_unique<MicroHttpdServerFactory>())),
-      http_(util::make_unique<curl::CurlHttp>()) {
+      http_(util::make_unique<curl::CurlHttp>()),
+      thread_pool_(IThreadPool::create(1)) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
@@ -270,12 +271,24 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
 
     IHttpServer::Pointer create(IHttpServer::ICallback::Pointer cb,
                                 const std::string& session_id,
-                                IHttpServer::Type type) {
+                                IHttpServer::Type type) override {
       return factory_->create(cb, session_id, type);
     }
 
    private:
     std::shared_ptr<IHttpServerFactory> factory_;
+  };
+  class ThreadPoolWrapper : public IThreadPool {
+   public:
+    ThreadPoolWrapper(std::shared_ptr<IThreadPool> thread_pool)
+        : thread_pool_(thread_pool) {}
+
+    void schedule(std::function<void()> f) override {
+      thread_pool_->schedule(f);
+    }
+
+   private:
+    std::shared_ptr<IThreadPool> thread_pool_;
   };
   class AuthCallback : public ICloudProvider::IAuthCallback {
    public:
@@ -296,6 +309,7 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   data.http_engine_ = util::make_unique<HttpWrapper>(http_);
   data.http_server_ =
       util::make_unique<HttpServerFactoryWrapper>(http_server_factory_);
+  data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool_);
   data.callback_ = util::make_unique<AuthCallback>();
   return ICloudStorage::create()->provider(name, std::move(data));
 }
