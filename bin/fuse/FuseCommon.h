@@ -54,9 +54,6 @@ std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
     const Json::Value &data, std::shared_ptr<IHttp> http,
     const std::string &temporary_directory);
 
-std::string default_temporary_directory();
-std::string default_home_directory();
-
 int fuse_run(int argc, char **argv);
 
 }  // namespace cloudstorage

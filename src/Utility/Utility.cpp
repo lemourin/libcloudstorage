@@ -354,6 +354,28 @@ IHttpServer::IResponse::Pointer response_from_string(
                           util::make_unique<DataProvider>(data));
 }
 
+std::string temporary_directory() {
+#ifdef _WIN32
+  const char* temp = getenv("TEMP");
+  return temp ? std::string(temp) + "\\" : ".\\";
+#else
+  return "/tmp/";
+#endif
+}
+
+std::string home_directory() {
+#ifdef _WIN32
+  const char* drive = getenv("Homedrive");
+  const char* path = getenv("Homepath");
+  return (drive && path) ? std::string(drive) + path : ".";
+#elif __ANDROID__
+  return "/storage/emulated/0/";
+#else
+  const char* home = getenv("HOME");
+  return home ? home : ".";
+#endif
+}
+
 std::string login_page(const std::string&) {
   return "<html>" + CDN +
          "<body>"

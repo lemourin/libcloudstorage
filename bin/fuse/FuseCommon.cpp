@@ -113,26 +113,6 @@ std::vector<IFileSystem::ProviderEntry> providers(
   return providers;
 }
 
-std::string default_temporary_directory() {
-#ifdef _WIN32
-  const char *temp = getenv("TEMP");
-  return temp ? std::string(temp) + "\\" : ".\\";
-#else
-  return "/tmp/";
-#endif
-}
-
-std::string default_home_directory() {
-#ifdef _WIN32
-  const char *drive = getenv("Homedrive");
-  const char *path = getenv("Homepath");
-  return (drive && path) ? std::string(drive) + path : ".";
-#else
-  const char *home = getenv("HOME");
-  return home ? home : ".";
-#endif
-}
-
 template <class Backend>
 int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   if (!opts->mountpoint) {
@@ -145,7 +125,7 @@ int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   auto http = std::make_shared<curl::CurlHttp>();
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty())
-    temporary_directory = default_temporary_directory();
+    temporary_directory = util::temporary_directory();
   auto p = providers(json["providers"], http, temporary_directory);
   *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
                              temporary_directory)
@@ -172,7 +152,7 @@ int fuse_run(int argc, char **argv) {
     return 1;
   if (!options.config_file)
     options.config_file = strdup(
-        (cloudstorage::default_home_directory() + "/.libcloudstorage-fuse.json")
+        (cloudstorage::util::home_directory() + "/.libcloudstorage-fuse.json")
             .c_str());
   pointer<fuse_cmdline_opts> opts(new fuse_cmdline_opts{},
                                   [](fuse_cmdline_opts *opts) {

@@ -117,6 +117,9 @@ IHttpServer::IResponse::Pointer response_from_string(
     const IHttpServer::IRequest&, int code,
     const IHttpServer::IResponse::Headers&, const std::string&);
 
+std::string temporary_directory();
+std::string home_directory();
+
 namespace priv {
 extern std::mutex stream_mutex;
 extern std::unique_ptr<std::ostream> stream;
