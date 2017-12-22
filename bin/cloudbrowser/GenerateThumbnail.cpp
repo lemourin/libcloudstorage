@@ -26,6 +26,7 @@
 #include "GenerateThumbnail.h"
 
 #include <libffmpegthumbnailer/videothumbnailer.h>
+#include <cstring>
 
 #include "IHttp.h"
 #include "IRequest.h"
@@ -36,7 +37,12 @@ EitherError<std::string> generate_thumbnail(const std::string& url) {
   try {
     std::vector<uint8_t> buffer;
     ffmpegthumbnailer::VideoThumbnailer thumbnailer;
-    thumbnailer.generateThumbnail(url, ThumbnailerImageType::Png, buffer);
+    std::string effective_url = url;
+    const char* file = "file:///";
+    const auto length = strlen(file);
+    if (url.substr(0, length) == file) effective_url = url.substr(length);
+    thumbnailer.generateThumbnail(effective_url, ThumbnailerImageType::Png,
+                                  buffer);
     auto ptr = reinterpret_cast<const char*>(buffer.data());
     return std::string(ptr, ptr + buffer.size());
   } catch (const std::exception& e) {
