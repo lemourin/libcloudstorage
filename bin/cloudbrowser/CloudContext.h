@@ -182,11 +182,9 @@ class MoveItemRequest : public Request {
 
 class UploadItemRequest : public Request {
  public:
-  Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
-  Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
+  Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
 
-  qint64 total() const { return total_; }
-  qint64 now() const { return now_; }
+  qreal progress() const { return progress_; }
 
   Q_INVOKABLE void update(CloudContext* context, CloudItem* parent,
                           QString path, QString filename);
@@ -196,19 +194,16 @@ class UploadItemRequest : public Request {
   void uploadComplete();
 
  private:
-  qint64 total_ = 0;
-  qint64 now_ = 0;
+  qreal progress_ = 0;
 
   Q_OBJECT
 };
 
 class DownloadItemRequest : public Request {
  public:
-  Q_PROPERTY(qint64 total READ total NOTIFY progressChanged)
-  Q_PROPERTY(qint64 now READ now NOTIFY progressChanged)
+  Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
 
-  qint64 total() const { return total_; }
-  qint64 now() const { return now_; }
+  qreal progress() const { return progress_; }
 
   Q_INVOKABLE void update(CloudContext*, CloudItem* item, QString path);
 
@@ -217,8 +212,7 @@ class DownloadItemRequest : public Request {
   void downloadComplete();
 
  private:
-  qint64 total_ = 0;
-  qint64 now_ = 0;
+  qreal progress_ = 0;
 
   Q_OBJECT
 };

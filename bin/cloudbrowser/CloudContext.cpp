@@ -740,9 +740,11 @@ void UploadItemRequest::update(CloudContext* context, CloudItem* parent,
       });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
-            total_ = total;
-            now_ = now;
-            emit progressChanged();
+            qreal nprogress = static_cast<qreal>(now) / total;
+            if (qAbs(progress_ - nprogress) > 0.01) {
+              progress_ = nprogress;
+              emit progressChanged();
+            }
           });
   auto p = parent->provider();
   auto r = p->uploadFileAsync(parent->item(), filename.toStdString(),
@@ -764,9 +766,11 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
       });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
-            total_ = total;
-            now_ = now;
-            emit progressChanged();
+            qreal nprogress = static_cast<qreal>(now) / total;
+            if (qAbs(progress_ - nprogress) > 0.01) {
+              progress_ = nprogress;
+              emit progressChanged();
+            }
           });
   auto p = item->provider();
   auto r = p->downloadFileAsync(

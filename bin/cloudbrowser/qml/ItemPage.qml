@@ -257,8 +257,8 @@ Kirigami.ScrollablePage {
             anchors.right: parent.right
             anchors.margins: 10
             from: 0
-            to: modelData.total
-            value: modelData.now
+            to: 1
+            value: modelData.progress
           }
         }
       }
