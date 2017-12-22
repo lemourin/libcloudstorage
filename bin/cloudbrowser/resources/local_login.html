@@ -26,6 +26,9 @@
     </nav>
     <div class="container center-block">
       <script>
+        $('#inputPath').ready(function() {
+            $('#inputPath').val(url('?').hint);
+        });
         function submitData() {
           var json = {
             path: $('#inputPath').val(),

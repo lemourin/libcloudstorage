@@ -308,7 +308,8 @@ std::string LocalDrive::path(IItem::Pointer item) const {
 }
 
 std::string LocalDrive::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
+  return redirect_uri() + "/login?state=" + state() +
+         "&hint=" + util::Url::escape(util::home_directory());
 }
 
 IHttpRequest::Pointer LocalDrive::Auth::exchangeAuthorizationCodeRequest(
