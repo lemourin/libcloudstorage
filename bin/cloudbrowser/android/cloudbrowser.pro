@@ -51,6 +51,7 @@ SOURCES += \
     ../../../src/Utility/Item.cpp \
     ../../../src/Utility/FileSystem.cpp \
     ../../../src/Utility/Utility.cpp \
+    ../../../src/Utility/ThreadPool.cpp \
     ../../../src/CloudProvider/CloudProvider.cpp \
     ../../../src/CloudProvider/GoogleDrive.cpp \
     ../../../src/CloudProvider/OneDrive.cpp \

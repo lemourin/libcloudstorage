@@ -55,6 +55,7 @@ class CloudProvider : public ICloudProvider,
   ICrypto* crypto() const;
   IHttp* http() const;
   IHttpServerFactory* http_server() const;
+  IThreadPool* thread_pool() const;
   IAuthCallback* auth_callback() const;
 
   virtual bool isSuccess(int code, const IHttpRequest::HeaderParameters&) const;
@@ -295,6 +296,7 @@ class CloudProvider : public ICloudProvider,
   ICrypto::Pointer crypto_;
   IHttp::Pointer http_;
   IHttpServerFactory::Pointer http_server_;
+  IThreadPool::Pointer thread_pool_;
   AuthorizeRequest::Pointer current_authorization_;
   std::unordered_map<IGenericRequest*,
                      std::vector<AuthorizeRequest::AuthorizeCompleted>>

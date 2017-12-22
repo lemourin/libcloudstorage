@@ -21,6 +21,7 @@ libcloudstorage_la_SOURCES = \
 	Utility/CryptoPP.cpp \
 	Utility/CurlHttp.cpp \
 	Utility/MicroHttpdServer.cpp \
+	Utility/ThreadPool.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -62,6 +63,7 @@ noinst_HEADERS = \
 	Utility/CryptoPP.h \
 	Utility/CurlHttp.h \
 	Utility/MicroHttpdServer.h \
+	Utility/ThreadPool.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
@@ -101,7 +103,8 @@ libcloudstorage_la_HEADERS = \
 	ICrypto.h \
 	IHttp.h \
 	IHttpServer.h \
-	IFileSystem.h
+	IFileSystem.h \
+	IThreadPool.h
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \

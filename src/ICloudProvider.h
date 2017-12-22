@@ -34,6 +34,7 @@
 #include "IHttpServer.h"
 #include "IItem.h"
 #include "IRequest.h"
+#include "IThreadPool.h"
 
 namespace cloudstorage {
 
@@ -120,6 +121,11 @@ class ICloudProvider {
      * Provides interface for creating http server.
      */
     IHttpServerFactory::Pointer http_server_;
+
+    /**
+     * Provides thread pool used for file system operations.
+     */
+    IThreadPool::Pointer thread_pool_;
 
     /**
     * Various hints which can be retrieved by some previous run with

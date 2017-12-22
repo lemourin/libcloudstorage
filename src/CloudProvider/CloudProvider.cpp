@@ -140,6 +140,7 @@ void CloudProvider::initialize(InitData&& data) {
   crypto_ = std::move(data.crypto_engine_);
   http_ = std::move(data.http_engine_);
   http_server_ = std::move(data.http_server_);
+  thread_pool_ = std::move(data.thread_pool_);
 
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
@@ -174,6 +175,8 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_server_)
     http_server_ = util::make_unique<MicroHttpdServerFactory>();
 #endif
+
+  if (!thread_pool_) thread_pool_ = IThreadPool::create(1);
 
   if (!http_) throw std::runtime_error("No http module specified.");
   if (!http_server_)
@@ -262,6 +265,8 @@ IHttp* CloudProvider::http() const { return http_.get(); }
 IHttpServerFactory* CloudProvider::http_server() const {
   return http_server_.get();
 }
+
+IThreadPool* CloudProvider::thread_pool() const { return thread_pool_.get(); }
 
 bool CloudProvider::isSuccess(int code,
                               const IHttpRequest::HeaderParameters&) const {
