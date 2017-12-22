@@ -7,7 +7,6 @@
 #include <string>
 #include "FuseCommon.h"
 #include "IFileSystem.h"
-#include "Utility/CurlHttp.h"
 #include "Utility/Utility.h"
 
 namespace cloudstorage {

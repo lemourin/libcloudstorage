@@ -1,8 +1,6 @@
 #include "FuseCommon.h"
 
 #include "ICloudStorage.h"
-#include "Utility/CurlHttp.h"
-#include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
 
 #ifdef WITH_FUSE
@@ -122,7 +120,7 @@ int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   auto ctx = new IFileSystem *;
   Backend fuse(args, opts->mountpoint, ctx);
   fuse_daemonize(opts->foreground);
-  auto http = std::make_shared<curl::CurlHttp>();
+  std::shared_ptr<IHttp> http = IHttp::create();
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty())
     temporary_directory = util::temporary_directory();
@@ -206,7 +204,7 @@ int fuse_run(int argc, char **argv) {
           << "\n";
     }
     std::promise<cloudstorage::HttpServerData> result;
-    auto server = cloudstorage::MicroHttpdServerFactory().create(
+    auto server = cloudstorage::IHttpServerFactory::create()->create(
         std::make_shared<cloudstorage::HttpServerCallback>(result), "",
         IHttpServer::Type::Authorization);
     auto key = result.get_future().get();

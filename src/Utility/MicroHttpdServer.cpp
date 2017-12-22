@@ -73,6 +73,10 @@ void http_request_completed(void*, MHD_Connection*, void** con_cls,
 
 }  // namespace
 
+IHttpServerFactory::Pointer IHttpServerFactory::create() {
+  return util::make_unique<MicroHttpdServerFactory>();
+}
+
 MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
                                      const IResponse::Headers& headers,
                                      int size,
@@ -185,6 +189,14 @@ IHttpServer::Pointer MicroHttpdServerFactory::create(
                                                          : FILE_PROVIDER_PORT);
 }
 
+}  // namespace cloudstorage
+
+#else
+
+#include "IHttpServer.h"
+
+namespace cloudstorage {
+IHttpServerFactory::Pointer IHttpServerFactory::create() { return nullptr; }
 }  // namespace cloudstorage
 
 #endif  // WITH_MICROHTTPD

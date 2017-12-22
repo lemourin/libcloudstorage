@@ -29,8 +29,11 @@
 #include <cryptopp/hex.h>
 #include <cryptopp/hmac.h>
 #include <cryptopp/sha.h>
+#include "Utility/Utility.h"
 
 namespace cloudstorage {
+
+ICrypto::Pointer ICrypto::create() { return util::make_unique<CryptoPP>(); }
 
 std::string CryptoPP::sha256(const std::string& message) {
   ::CryptoPP::SHA256 hash;
@@ -73,6 +76,14 @@ std::string CryptoPP::hex(const std::string& hash) {
   return result;
 }
 
+}  // namespace cloudstorage
+
+#else
+
+#include "ICrypto.h"
+
+namespace cloudstorage {
+ICrypto::Pointer ICrypto::create() { return nullptr; }
 }  // namespace cloudstorage
 
 #endif  // WITH_CRYPTOPP

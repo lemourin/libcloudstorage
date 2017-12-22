@@ -187,6 +187,8 @@ class IHttp {
   virtual IHttpRequest::Pointer create(const std::string& url,
                                        const std::string& method = "GET",
                                        bool follow_redirect = true) const = 0;
+
+  static IHttp::Pointer create();
 };
 
 }  // namespace cloudstorage

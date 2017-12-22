@@ -13,8 +13,6 @@
 #include "File.h"
 #include "GenerateThumbnail.h"
 #include "ICloudStorage.h"
-#include "Utility/CurlHttp.h"
-#include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
 
 using namespace cloudstorage;
@@ -82,8 +80,8 @@ class DownloadCallback : public IDownloadFileCallback {
 CloudContext::CloudContext(QObject* parent)
     : QObject(parent),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
-          util::make_unique<MicroHttpdServerFactory>())),
-      http_(util::make_unique<curl::CurlHttp>()),
+          IHttpServerFactory::create())),
+      http_(IHttp::create()),
       thread_pool_(IThreadPool::create(1)) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);

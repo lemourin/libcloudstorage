@@ -28,10 +28,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "Utility/CryptoPP.h"
-#include "Utility/CurlHttp.h"
 #include "Utility/Item.h"
-#include "Utility/MicroHttpdServer.h"
 #include "Utility/Utility.h"
 
 #include "Request/CreateDirectoryRequest.h"
@@ -164,16 +161,15 @@ void CloudProvider::initialize(InitData&& data) {
               [this](std::string v) { auth()->set_error_page(v); });
 
 #ifdef WITH_CRYPTOPP
-  if (!crypto_) crypto_ = util::make_unique<CryptoPP>();
+  if (!crypto_) crypto_ = ICrypto::create();
 #endif
 
 #ifdef WITH_CURL
-  if (!http_) http_ = util::make_unique<curl::CurlHttp>();
+  if (!http_) http_ = IHttp::create();
 #endif
 
 #ifdef WITH_MICROHTTPD
-  if (!http_server_)
-    http_server_ = util::make_unique<MicroHttpdServerFactory>();
+  if (!http_server_) http_server_ = IHttpServerFactory::create();
 #endif
 
   if (!thread_pool_) thread_pool_ = IThreadPool::create(1);

@@ -100,6 +100,8 @@ class IHttpServerFactory {
   virtual IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
                                       const std::string& session_id,
                                       IHttpServer::Type) = 0;
+
+  static IHttpServerFactory::Pointer create();
 };
 
 }  // namespace cloudstorage

@@ -37,6 +37,8 @@ const uint32_t POLL_TIMEOUT = 100;
 
 namespace cloudstorage {
 
+IHttp::Pointer IHttp::create() { return util::make_unique<curl::CurlHttp>(); }
+
 namespace curl {
 
 namespace {
@@ -325,6 +327,14 @@ IHttpRequest::Pointer CurlHttp::create(const std::string& url,
 
 }  // namespace curl
 
+}  // namespace cloudstorage
+
+#else
+
+#include "IHttp.h"
+
+namespace cloudstorage {
+IHttp::Pointer IHttp::create() { return nullptr; }
 }  // namespace cloudstorage
 
 #endif  // WITH_CURL

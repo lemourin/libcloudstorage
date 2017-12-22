@@ -29,7 +29,6 @@
 #include "CloudProvider/LocalDrive.h"
 #include "ICloudProvider.h"
 #include "ICloudStorage.h"
-#include "Utility/CurlHttp.h"
 #include "Utility/Utility.h"
 
 using namespace cloudstorage;
@@ -275,7 +274,7 @@ class CloudProviderTest : public ::testing::Test {
     ASSERT_NE(item, nullptr);
     auto lnk = p->getItemUrlAsync(item)->result().right();
     ASSERT_NE(lnk, nullptr);
-    auto http = util::make_unique<curl::CurlHttp>();
+    auto http = IHttp::create();
     auto request = http->create(*lnk, "HEAD", true);
     std::promise<IHttpRequest::Response> response_promise;
     request->send(

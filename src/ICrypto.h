@@ -70,6 +70,8 @@ class ICrypto {
    * @return hex string
    */
   virtual std::string hex(const std::string& hash) = 0;
+
+  static ICrypto::Pointer create();
 };
 
 }  // namespace cloudstorage
