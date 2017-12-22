@@ -71,7 +71,6 @@ Kirigami.ScrollablePage {
       text: "Delete"
       iconName: "edit-delete"
       onTriggered: {
-        refreshing = true;
         delete_request.update(cloud, list_view.currentItem.item);
       }
     },
@@ -90,7 +89,6 @@ Kirigami.ScrollablePage {
       iconName: "dialog-apply"
       onTriggered: {
         move_request.update(cloud, cloud.currently_moved, page.item);
-        refreshing = true;
         if (cloud.list_request)
           cloud.list_request.done = false;
         cloud.currently_moved = null;
@@ -353,7 +351,6 @@ Kirigami.ScrollablePage {
             text: "Rename"
             onClicked: {
               list_view.currentEdit = -1;
-              refreshing = true;
               rename_request.update(cloud, modelData, text.text);
             }
           }
