@@ -168,6 +168,8 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
         stream.seekg(range.start_);
         size_t bytes_read = 0;
         while (bytes_read < range.size_) {
+          if (r->is_cancelled())
+            return r->done(Error{IHttpRequest::Aborted, ""});
           if (!stream.read(
                   buffer.data(),
                   std::min<size_t>(BUFFER_SIZE, range.size_ - bytes_read)))
@@ -191,6 +193,8 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
         std::vector<char> buffer(BUFFER_SIZE);
         fs::ofstream stream(path, std::ios::binary);
         while (bytes_read < size) {
+          if (r->is_cancelled())
+            return r->done(Error{IHttpRequest::Aborted, ""});
           auto cnt = callback->putData(buffer.data(), BUFFER_SIZE);
           bytes_read += cnt;
           if (!stream.write(buffer.data(), cnt))
@@ -348,7 +352,7 @@ void LocalDrive::ensureInitialized(typename Request<T>::Pointer r,
     if (e.left())
       r->done(e.left());
     else
-      on_success();
+      thread_pool()->schedule(on_success);
   };
   if (path().empty())
     r->reauthorize(f);
