@@ -32,6 +32,10 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace fs = boost::filesystem;
 using error_code = boost::system::error_code;
 
@@ -42,8 +46,13 @@ const size_t BUFFER_SIZE = 1024;
 namespace {
 
 bool is_hidden(const fs::directory_entry &e) {
+#ifdef _WIN32
+  return GetFileAttributesW(e.path().c_str()) &
+         (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM);
+#else
   return e.path().filename().c_str()[0] == '.' ||
          e.path().filename() == "lost+found";
+#endif
 }
 
 std::string to_string(const fs::path &path) {
