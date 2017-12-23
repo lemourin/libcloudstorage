@@ -10,6 +10,7 @@
 #include <QSaveFile>
 #include <QSettings>
 #include <QUrl>
+#include <unordered_set>
 #include "File.h"
 #include "GenerateThumbnail.h"
 #include "ICloudStorage.h"
@@ -232,11 +233,15 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
                                 e.left()->description_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      int cnt = 0;
+      std::unordered_set<std::string> names;
       for (auto&& i : provider_)
-        if (i.provider_->name() == provider) cnt++;
-      auto label = (pretty(provider.c_str()) + " #" + QString::number(cnt + 1))
-                       .toStdString();
+        if (i.provider_->name() == provider) names.insert(i.label_);
+      auto name = [=](const std::string& p, int cnt) {
+        return (pretty(p.c_str()) + " #" + QString::number(cnt)).toStdString();
+      };
+      int cnt = 1;
+      while (names.find(name(provider, cnt)) != names.end()) cnt++;
+      auto label = name(provider, cnt);
       provider_.push_back({label, this->provider(provider, label, *e.right())});
     }
     save();
