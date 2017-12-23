@@ -315,8 +315,8 @@ Kirigami.Page {
         id: current_time
         width: 1.5 * height
         height: parent.height
+        visible: parent.width > 600
         Text {
-          visible: progress.visible
           anchors.centerIn: parent
           color: "white"
           text: player.item ? print_timestamp(player.item.time) : ""
@@ -325,17 +325,18 @@ Kirigami.Page {
       Item {
         height: parent.height
         width: parent.width - fullscreen.width - play_button.width * play_button.visible -
-               current_time.width - total_time.width - autoplay_icon.width - next_button.width
+               current_time.width * current_time.visible - total_time.width * total_time.visible -
+               autoplay_icon.width - next_button.width
         Controls.Slider {
           id: progress
           anchors.verticalCenter: parent.verticalCenter
           height: parent.height * 0.5
           width: parent.width
           value: player.item ? player.item.position : 0
-          visible: width > 150 && player.item && player.item.duration > 0
+          visible: player.item && player.item.duration > 0
           onMoved: {
             player.item.set_position(value);
-            player.item.set_position(value);
+            audio_player.item.set_position(value);
             timer.cnt = 0;
           }
         }
@@ -344,8 +345,8 @@ Kirigami.Page {
         id: total_time
         width: 1.5 * height
         height: parent.height
+        visible: current_time.visible
         Text {
-          visible: progress.visible
           anchors.centerIn: parent
           color: "white"
           text: player.item ? print_timestamp(player.item.duration) : ""
