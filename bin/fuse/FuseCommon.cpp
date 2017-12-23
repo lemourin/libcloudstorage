@@ -89,6 +89,13 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
                                std::shared_ptr<IThreadPool> thread_pool,
                                std::string temporary_directory,
                                Json::Value config) {
+  class DummyServerFactory : public IHttpServerFactory {
+   public:
+    IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
+                                const std::string &, IHttpServer::Type) {
+      return nullptr;
+    }
+  };
   class AuthCallback : public ICloudProvider::IAuthCallback {
     Status userConsentRequired(const ICloudProvider &) override {
       return Status::None;
@@ -100,6 +107,7 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
   init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
   init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
+  init_data.http_server_ = util::make_unique<DummyServerFactory>();
   init_data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool);
   init_data.hints_["access_token"] = config["access_token"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
