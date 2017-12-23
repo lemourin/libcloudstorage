@@ -65,6 +65,10 @@ IHttpRequest::Pointer HttpWrapper::create(const std::string &url,
   return http_->create(url, method, follow_redirect);
 }
 
+void ThreadPoolWrapper::schedule(std::function<void()> f) {
+  thread_pool_->schedule(f);
+}
+
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest &request) {
   auto code = request.get("code");
@@ -82,6 +86,7 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
 }
 
 ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
+                               std::shared_ptr<IThreadPool> thread_pool,
                                std::string temporary_directory,
                                Json::Value config) {
   class AuthCallback : public ICloudProvider::IAuthCallback {
@@ -95,6 +100,7 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
   init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
   init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
+  init_data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool);
   init_data.hints_["access_token"] = config["access_token"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
   return ICloudStorage::create()->provider(config["type"].asString(),
@@ -103,11 +109,12 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
 
 std::vector<IFileSystem::ProviderEntry> providers(
     const Json::Value &data, std::shared_ptr<IHttp> http,
+    std::shared_ptr<IThreadPool> thread_pool,
     const std::string &temporary_directory) {
   std::vector<IFileSystem::ProviderEntry> providers;
   for (auto &&p : data)
-    providers.push_back(
-        {p["label"].asString(), create(http, temporary_directory, p)});
+    providers.push_back({p["label"].asString(),
+                         create(http, thread_pool, temporary_directory, p)});
   return providers;
 }
 
@@ -121,10 +128,11 @@ int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   Backend fuse(args, opts->mountpoint, ctx);
   fuse_daemonize(opts->foreground);
   std::shared_ptr<IHttp> http = IHttp::create();
+  std::shared_ptr<IThreadPool> thread_pool = IThreadPool::create(1);
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty())
     temporary_directory = util::temporary_directory();
-  auto p = providers(json["providers"], http, temporary_directory);
+  auto p = providers(json["providers"], http, thread_pool, temporary_directory);
   *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
                              temporary_directory)
              .release();

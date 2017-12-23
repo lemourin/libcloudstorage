@@ -30,6 +30,17 @@ class HttpWrapper : public IHttp {
   std::shared_ptr<IHttp> http_;
 };
 
+class ThreadPoolWrapper : public IThreadPool {
+ public:
+  ThreadPoolWrapper(std::shared_ptr<IThreadPool> thread_pool)
+      : thread_pool_(thread_pool) {}
+
+  void schedule(std::function<void()> f) override;
+
+ private:
+  std::shared_ptr<IThreadPool> thread_pool_;
+};
+
 struct HttpServerData {
   std::string code_;
   std::string state_;
@@ -47,11 +58,12 @@ class HttpServerCallback : public IHttpServer::ICallback {
 };
 
 struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i);
-cloudstorage::ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
-                                             std::string temporary_directory,
-                                             Json::Value config);
+cloudstorage::ICloudProvider::Pointer create(
+    std::shared_ptr<IHttp> http, std::shared_ptr<IThreadPool> thread_pool,
+    std::string temporary_directory, Json::Value config);
 std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
     const Json::Value &data, std::shared_ptr<IHttp> http,
+    std::shared_ptr<IThreadPool> thread_pool,
     const std::string &temporary_directory);
 
 int fuse_run(int argc, char **argv);
