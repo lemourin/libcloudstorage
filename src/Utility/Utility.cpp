@@ -36,6 +36,15 @@
 #include <sstream>
 #include <unordered_map>
 
+#ifdef _WIN32
+#include <windows.h>
+
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#define WINRT
+#endif
+
+#endif
+
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
@@ -92,7 +101,7 @@ namespace priv {
 std::unique_ptr<std::ostream> stream =
     util::make_unique<std::ostream>(std::cout.rdbuf());
 std::mutex stream_mutex;
-}
+}  // namespace priv
 
 FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
 
@@ -355,7 +364,9 @@ IHttpServer::IResponse::Pointer response_from_string(
 }
 
 std::string temporary_directory() {
-#ifdef _WIN32
+#ifdef WINRT
+  return ".\\";
+#elif _WIN32
   const char* temp = getenv("TEMP");
   return temp ? std::string(temp) + "\\" : ".\\";
 #else
@@ -364,12 +375,14 @@ std::string temporary_directory() {
 }
 
 std::string home_directory() {
-#ifdef _WIN32
+#ifdef WINRT
+  return ".";
+#elif _WIN32
   const char* drive = getenv("Homedrive");
   const char* path = getenv("Homepath");
   return (drive && path) ? std::string(drive) + path : ".";
 #elif __ANDROID__
-  return "/storage/emulated/0/";
+  return "/storage/emulated/0";
 #else
   const char* home = getenv("HOME");
   return home ? home : ".";
