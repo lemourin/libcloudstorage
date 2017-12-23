@@ -33,8 +33,8 @@
 const std::string VIDEO_EXTENSIONS[] = {
     "3g2", "3gp", "asf", "avi", "flv", "m4v", "mkv", "mov",
     "mp4", "mpg", "rm",  "srt", "swf", "vob", "wmv", "webm"};
-const std::string AUDIO_EXTENSIONS[] = {"aif", "iff", "m3u", "m4a", "mid",
-                                        "mp3", "mpa", "wav", "wma"};
+const std::string AUDIO_EXTENSIONS[] = {"aif", "flac", "iff", "m3u", "m4a",
+                                        "mid", "mp3",  "mpa", "wav", "wma"};
 const std::string IMAGE_EXTENSIONS[] = {
     "bmp", "dds", "gif",  "jpg", "png", "psd", "pspimage", "tga",
     "thm", "tif", "tiff", "yuv", "ai",  "eps", "ps",       "svg"};
