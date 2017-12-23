@@ -326,24 +326,18 @@ Kirigami.Page {
         height: parent.height
         width: parent.width - fullscreen.width - play_button.width * play_button.visible -
                current_time.width - total_time.width - autoplay_icon.width - next_button.width
-        Controls.ProgressBar {
+        Controls.Slider {
           id: progress
           anchors.verticalCenter: parent.verticalCenter
           height: parent.height * 0.5
           width: parent.width
-          from: 0
-          to: 1
           value: player.item ? player.item.position : 0
-          visible: width > 200 && player.item && player.item.duration > 0
-        }
-        MouseArea {
-          anchors.fill: parent
-          onClicked: {
-            player.item.set_position(mouse.x / width);
-            audio_player.item.set_position(mouse.x / width);
+          visible: width > 150 && player.item && player.item.duration > 0
+          onMoved: {
+            player.item.set_position(value);
+            player.item.set_position(value);
             timer.cnt = 0;
           }
-          enabled: progress.visible
         }
       }
       Item {
