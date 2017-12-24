@@ -63,7 +63,6 @@ class MegaNz : public CloudProvider {
 
   std::string name() const override;
   std::string endpoint() const override;
-  IItem::Pointer rootDirectory() const override;
   Hints hints() const override;
 
   const std::atomic_bool& authorized() const { return authorized_; }
@@ -120,6 +119,8 @@ class MegaNz : public CloudProvider {
 
   void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
   void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
+
+  std::unique_ptr<mega::MegaNode> node(const std::string& id) const;
 
   class Auth : public cloudstorage::Auth {
    public:
