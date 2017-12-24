@@ -38,7 +38,11 @@ EitherError<std::string> generate_thumbnail(const std::string& url) {
     std::vector<uint8_t> buffer;
     ffmpegthumbnailer::VideoThumbnailer thumbnailer;
     std::string effective_url = url;
+#ifdef _WIN32
     const char* file = "file:///";
+#else
+    const char* file = "file://";
+#endif
     const auto length = strlen(file);
     if (url.substr(0, length) == file) effective_url = url.substr(length);
     thumbnailer.generateThumbnail(effective_url, ThumbnailerImageType::Png,
