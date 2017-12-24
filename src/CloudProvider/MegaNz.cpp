@@ -615,6 +615,10 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
           mega_cache.write(buffer.data(), length);
         }
       }
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (!node)
+        return r->done(Error{IHttpRequest::NotFound, "node not found"});
       auto listener = Listener::make<TransferListener>(
           [=](EitherError<void> e, Listener* listener) {
             (void)std::remove(cache.c_str());
@@ -626,8 +630,6 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
           this);
       listener->upload_callback_ = callback;
       r->subrequest(listener);
-      std::unique_ptr<mega::MegaNode> node(
-          mega_->getNodeByPath(item->id().c_str()));
       mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
                          listener.get());
 
@@ -643,6 +645,10 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
   auto resolver = [=](Request<EitherError<void>>::Pointer r) {
     ensureAuthorized<EitherError<void>>(r, [=] {
+      std::unique_ptr<mega::MegaNode> node(
+          mega_->getNodeByPath(item->id().c_str()));
+      if (!node)
+        return r->done(Error{IHttpRequest::NotFound, "node not found"});
       std::string cache = temporaryFileName();
       auto listener = Listener::make<RequestListener>(
           [=](EitherError<void> e, Listener*) {
@@ -662,8 +668,6 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
           },
           this);
       r->subrequest(listener);
-      std::unique_ptr<mega::MegaNode> node(
-          mega_->getNodeByPath(item->id().c_str()));
       mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
     });
   };
@@ -811,6 +815,8 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
     ensureAuthorized<EitherError<void>>(r, [=] {
       std::unique_ptr<mega::MegaNode> node(
           mega_->getNodeByPath(item->id().c_str()));
+      if (!node)
+        return r->done(Error{IHttpRequest::NotFound, "node not found"});
       auto listener = Listener::make<TransferListener>(
           [=](EitherError<void> e, Listener*) { r->done(e); }, this);
       listener->download_callback_ = callback;
