@@ -70,6 +70,11 @@ bool GooglePhotos::reauthorize(int code,
   return code == IHttpRequest::Forbidden || CloudProvider::reauthorize(code, h);
 }
 
+ICloudProvider::OperationSet GooglePhotos::supportedOperations() const {
+  return GetItem | ListDirectory | UploadFile | ListDirectoryPage |
+         DownloadFile;
+}
+
 IHttpRequest::Pointer GooglePhotos::getItemDataRequest(
     const std::string &id_str, std::ostream &) const {
   if (id_str == rootDirectory()->id()) return nullptr;

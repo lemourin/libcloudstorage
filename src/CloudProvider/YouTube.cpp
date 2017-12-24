@@ -223,6 +223,11 @@ std::string YouTube::name() const { return "youtube"; }
 
 std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
+ICloudProvider::OperationSet YouTube::supportedOperations() const {
+  return GetItem | ListDirectoryPage | ListDirectory | DownloadFile |
+         GetItemUrl;
+}
+
 ICloudProvider::ListDirectoryPageRequest::Pointer
 YouTube::listDirectoryPageAsync(IItem::Pointer directory,
                                 const std::string& token,

@@ -36,6 +36,7 @@ class GooglePhotos : public CloudProvider {
   IItem::Pointer rootDirectory() const override;
   bool reauthorize(int code,
                    const IHttpRequest::HeaderParameters&) const override;
+  OperationSet supportedOperations() const override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;

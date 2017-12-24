@@ -37,6 +37,7 @@ class YouTube : public CloudProvider {
   IItem::Pointer rootDirectory() const override;
   std::string name() const override;
   std::string endpoint() const override;
+  OperationSet supportedOperations() const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;

@@ -57,6 +57,10 @@ class CloudProviderWrapper : public ICloudProvider {
 
   std::string endpoint() const override { return p_->endpoint(); }
 
+  OperationSet supportedOperations() const override {
+    return p_->supportedOperations();
+  }
+
   std::string authorizeLibraryUrl() const override {
     return p_->authorizeLibraryUrl();
   }

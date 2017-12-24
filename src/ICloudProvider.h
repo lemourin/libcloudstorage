@@ -57,6 +57,8 @@ class ICloudProvider {
   using MoveItemRequest = IRequest<EitherError<IItem>>;
   using RenameItemRequest = IRequest<EitherError<IItem>>;
 
+  using OperationSet = uint32_t;
+
   class IAuthCallback {
    public:
     using Pointer = std::shared_ptr<IAuthCallback>;
@@ -84,6 +86,20 @@ class ICloudProvider {
     ReadMetaData,  // list files
     Read,          // read files
     ReadWrite      // modify files
+  };
+
+  enum Operation {
+    ExchangeCode = 1 << 0,
+    GetItemUrl = 1 << 1,
+    ListDirectoryPage = 1 << 2,
+    ListDirectory = 1 << 3,
+    GetItem = 1 << 4,
+    DownloadFile = 1 << 5,
+    UploadFile = 1 << 6,
+    DeleteItem = 1 << 7,
+    CreateDirectory = 1 << 8,
+    MoveItem = 1 << 9,
+    RenameItem = 1 << 10
   };
 
   /**
@@ -176,6 +192,15 @@ class ICloudProvider {
    */
   static bool deserializeSession(const std::string& serialized_data,
                                  std::string& token, Hints& hints);
+
+  /**
+   * Returns bit or of operations supported by the cloud provider. Trying to
+   * do an unsupported operation will return an error with code
+   * IHttpRequest::Aborted.
+   *
+   * @return bit or of operations supported by the cloud provider
+   */
+  virtual OperationSet supportedOperations() const = 0;
 
   /**
    * Token which should be saved and reused as a parameter to

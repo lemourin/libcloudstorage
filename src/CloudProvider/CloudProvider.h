@@ -52,6 +52,7 @@ class CloudProvider : public ICloudProvider,
   std::string authorizeLibraryUrl() const override;
   std::string token() const override;
   IItem::Pointer rootDirectory() const override;
+  OperationSet supportedOperations() const override;
   ICrypto* crypto() const;
   IHttp* http() const;
   IHttpServerFactory* http_server() const;

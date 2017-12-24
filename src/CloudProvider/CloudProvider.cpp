@@ -250,6 +250,12 @@ IItem::Pointer CloudProvider::rootDirectory() const {
                                  IItem::FileType::Directory);
 }
 
+ICloudProvider::OperationSet CloudProvider::supportedOperations() const {
+  return ExchangeCode | GetItemUrl | ListDirectoryPage | ListDirectory |
+         GetItem | DownloadFile | UploadFile | DeleteItem | CreateDirectory |
+         MoveItem | RenameItem;
+}
+
 ICloudProvider::IAuthCallback* CloudProvider::auth_callback() const {
   return callback_.get();
 }
