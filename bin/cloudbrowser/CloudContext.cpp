@@ -223,6 +223,11 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
   pool_.add(p, r);
 }
 
+QString CloudContext::thumbnail_path(const QString& filename) {
+  return QDir::tempPath() + QDir::separator() + sanitize(filename) +
+         "-thumbnail";
+}
+
 void CloudContext::receivedCode(std::string provider, std::string code) {
   ICloudProvider::InitData data;
   data.permission_ = ICloudProvider::Permission::ReadWrite;
@@ -507,8 +512,7 @@ void Request::set_done(bool done) {
 void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   if (item->type() == "directory") return set_done(true);
   set_done(false);
-  auto path = QDir::tempPath() + QDir::separator() +
-              sanitize(item->filename()) + "-thumbnail";
+  auto path = CloudContext::thumbnail_path(item->filename());
   QFile file(path);
   if (file.exists() && file.size() > 0) {
     source_ = QUrl::fromLocalFile(path).toString();

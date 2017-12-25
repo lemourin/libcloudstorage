@@ -5,7 +5,8 @@ import libcloudstorage 1.0
 
 Kirigami.Page {
   property CloudItem item
-  property Kirigami.Page item_page
+  property string icon
+  property var item_page
   property bool handle_state
   property bool playing: true
   property bool autoplay: false
@@ -29,6 +30,7 @@ Kirigami.Page {
     }
   }
   onPlayingChanged: {
+    update_notification();
     if (playing) {
       player.item.play();
       audio_player.item.play();
@@ -36,6 +38,29 @@ Kirigami.Page {
       player.item.pause();
       audio_player.item.pause();
     }
+  }
+  Component.onCompleted: {
+    root.player_count++;
+    update_notification();
+  }
+  Component.onDestruction: {
+    root.player_count--;
+    if (android && root.player_count === 0)
+      android.hidePlayerNotification();
+  }
+
+  function next() {
+    player.item.source = audio_player.item.source = "";
+    var next = item_page.nextRequested();
+    if (next)
+      item = next;
+    else
+      root.pageStack.pop();
+  }
+
+  function update_notification() {
+    if (android)
+      android.showPlayerNotification(playing, item.filename, item_page.label);
   }
 
   function print_timestamp(d) {
@@ -57,11 +82,7 @@ Kirigami.Page {
 
   function ended() {
     if (autoplay) {
-      var next = item_page.nextRequested();
-      if (next)
-        item = next;
-      else
-        root.pageStack.pop();
+      next();
     } else {
       root.pageStack.pop();
     }
@@ -108,7 +129,10 @@ Kirigami.Page {
     }
   }
 
-  onItemChanged: url_request.update(cloud, item)
+  onItemChanged: {
+    url_request.update(cloud, item);
+    update_notification();
+  }
 
   GetUrlRequest {
     id: url_request
@@ -137,6 +161,18 @@ Kirigami.Page {
     id: audio_connection
     target: audio_player.item
     onPositionChanged: position_changed()
+  }
+
+  Connections {
+    target: android
+    onNotify: {
+      if (action === "PLAY")
+        playing = true;
+      else if (action === "PAUSE")
+        playing = false;
+      else if (action === "NEXT")
+        next();
+    }
   }
 
   MouseArea {
@@ -302,12 +338,8 @@ Kirigami.Page {
         MouseArea {
           anchors.fill: parent
           onClicked: {
-            var next = item_page.nextRequested();
-            if (next)
-              item = next;
-            else
-              root.pageStack.pop();
             timer.cnt = 0;
+            next();
           }
         }
       }

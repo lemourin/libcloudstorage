@@ -111,7 +111,8 @@ int exec_cloudbrowser(int argc, char** argv) {
     AndroidUtility android_utility;
     engine.rootContext()->setContextProperty("android", &android_utility);
 #else
-    engine.rootContext()->setContextProperty("android", QVariant(false));
+    engine.rootContext()->setContextProperty(
+        "android", QVariant::fromValue<QObject*>(nullptr));
 #endif
 
     engine.rootContext()->setContextProperty("seperator", QDir::separator());

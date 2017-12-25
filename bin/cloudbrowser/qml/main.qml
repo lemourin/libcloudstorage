@@ -8,6 +8,7 @@ Kirigami.ApplicationWindow {
   property bool visible_player: false
   property bool drawer_state: false
   property bool detailed_options: !android || root.height > root.width
+  property int player_count: 0
 
   id: root
 
@@ -46,8 +47,8 @@ Kirigami.ApplicationWindow {
                                      operation + (description ? " " + description : ""));
     }
 
-    function list(title, item) {
-      pageStack.push(listDirectoryPage, {title: title, item: item});
+    function list(title, label, item) {
+      pageStack.push(listDirectoryPage, {title: title, item: item, label: label});
     }
   }
 
@@ -102,7 +103,7 @@ Kirigami.ApplicationWindow {
         onTriggered: {
           pageStack.clear();
           cloud.currently_moved = null;
-          cloud.list(provider.label, cloud.root(provider));
+          cloud.list(provider.label, provider.label, cloud.root(provider));
         }
       }
     }

@@ -1,26 +1,20 @@
 package org.videolan.cloudbrowser;
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.Activity;
 import android.os.Bundle;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.content.pm.ActivityInfo;
-import android.util.Log;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import org.qtproject.qt5.android.bindings.QtActivity;
 
-public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity {
-    private static NotificationManager m_notificationManager;
-    private static Notification.Builder m_builder;
+public class CloudBrowser extends QtActivity {
     private static CloudBrowser m_instance;
-    public static AuthView m_authView;
+    public static AuthView m_auth_view;
 
     public static class FileOutput {
         public ParcelFileDescriptor m_descriptor;
@@ -34,6 +28,22 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
 
     public CloudBrowser() {
         m_instance = this;
+    }
+
+    @Override
+    public void onCreate(Bundle state) {
+        super.onCreate(state);
+        NotificationHelper.initialize();
+    }
+
+    @Override
+    public void onDestroy() {
+        NotificationHelper.release();
+        super.onDestroy();
+    }
+
+    public static CloudBrowser instance() {
+        return m_instance;
     }
 
     public static void setDefaultOrientation() {
@@ -67,10 +77,10 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
     }
 
     public static void closeWebPage(Intent intent) {
-        if (m_authView != null) {
-            m_authView.setResult(1, intent);
-            m_authView.finish();
-            m_authView = null;
+        if (m_auth_view != null) {
+            m_auth_view.setResult(1, intent);
+            m_auth_view.finish();
+            m_auth_view = null;
         }
     }
 
@@ -143,17 +153,5 @@ public class CloudBrowser extends org.qtproject.qt5.android.bindings.QtActivity 
     public static void closeRead(FileInput file) throws IOException {
         file.m_stream.close();
         file.m_descriptor.close();
-    }
-
-    public static void notify(String content_text, String title) {
-        if (m_notificationManager == null) {
-            m_notificationManager = (NotificationManager)m_instance.getSystemService(Context.NOTIFICATION_SERVICE);
-            m_builder = new Notification.Builder(m_instance);
-            m_builder.setSmallIcon(R.drawable.icon);
-            m_builder.setContentTitle(title);
-        }
-
-        m_builder.setContentText(content_text);
-        m_notificationManager.notify(1, m_builder.build());
     }
 }

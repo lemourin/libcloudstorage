@@ -9,10 +9,19 @@
 
 class AndroidUtility : public QObject {
  public:
+  AndroidUtility();
+  ~AndroidUtility();
+
   Q_INVOKABLE void openWebPage(QString url);
   Q_INVOKABLE void closeWebPage();
   Q_INVOKABLE void landscapeOrientation();
   Q_INVOKABLE void defaultOrientation();
+  Q_INVOKABLE void showPlayerNotification(bool playing, QString filename,
+                                          QString title);
+  Q_INVOKABLE void hidePlayerNotification();
+
+ signals:
+  void notify(QString action);
 
  private:
   QAndroidJniObject intent_;

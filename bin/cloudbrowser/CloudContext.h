@@ -282,6 +282,8 @@ class CloudContext : public QObject {
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);
 
+  static QString thumbnail_path(const QString& filename);
+
  signals:
   void userProvidersChanged();
   void receivedCode(QString provider);

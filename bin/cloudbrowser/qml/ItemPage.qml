@@ -7,6 +7,7 @@ import libcloudstorage 1.0
 
 Kirigami.ScrollablePage {
   property CloudItem item
+  property string label
 
   id: page
   anchors.fill: parent
@@ -275,7 +276,7 @@ Kirigami.ScrollablePage {
       onClicked: {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
-          cloud.list(modelData.filename, modelData);
+          cloud.list(modelData.filename, page.label, modelData);
         else
           root.contextDrawer.drawerOpen = true;
       }
