@@ -100,15 +100,12 @@ int main(int, char**) {
         std::string provider_name;
         line >> provider_name;
         std::string token = read_token(provider_name);
-        auto provider = ICloudStorage::create()->provider(
-            provider_name,
-            {token,
-             ICloudProvider::Permission::ReadWrite,
-             std::unique_ptr<Callback>(new Callback()),
-             nullptr,
-             nullptr,
-             nullptr,
-             {}});
+        ICloudProvider::InitData data;
+        data.token_ = token;
+        data.permission_ = ICloudProvider::Permission::ReadWrite;
+        data.callback_ = std::unique_ptr<Callback>(new Callback());
+        auto provider =
+            ICloudStorage::create()->provider(provider_name, std::move(data));
         if (provider) {
           prompt += provider_name + "/";
           current_directory = provider->rootDirectory();
