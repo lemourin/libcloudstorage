@@ -50,7 +50,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem && detailed_options
+      visible: list_view.currentItem && detailed_options && item.supports("rename")
       text: "Rename"
       iconName: "edit-cut"
       onTriggered: {
@@ -58,7 +58,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: detailed_options
+      visible: detailed_options && item.supports("mkdir")
       iconName: "folder-new"
       text: "Create Directory"
       onTriggered: {
@@ -67,7 +67,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem && detailed_options
+      visible: list_view.currentItem && detailed_options && item.supports("delete")
       text: "Delete"
       iconName: "edit-delete"
       onTriggered: {
@@ -75,7 +75,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: list_view.currentItem && !cloud.currently_moved && detailed_options
+      visible: list_view.currentItem && !cloud.currently_moved && detailed_options && item.supports("move")
       text: "Move"
       iconName: "folder-move"
       onTriggered: {
@@ -84,7 +84,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: cloud.currently_moved && detailed_options
+      visible: cloud.currently_moved && detailed_options && item.supports("move")
       text: "Move " + (cloud.currently_moved ? cloud.currently_moved.filename : "") + " here"
       iconName: "dialog-apply"
       onTriggered: {
@@ -95,7 +95,7 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
-      visible: cloud.currently_moved && detailed_options
+      visible: cloud.currently_moved && detailed_options && item.supports("move")
       text: "Cancel move"
       iconName: "dialog-cancel"
       onTriggered: {
@@ -104,12 +104,14 @@ Kirigami.ScrollablePage {
       }
     },
     Kirigami.Action {
+      visible: item.supports("upload")
       text: "Upload File"
       iconName: "edit-add"
       onTriggered: upload_dialog.open()
     },
     Kirigami.Action {
-      visible: list_view.currentItem && list_view.currentItem.item.type !== "directory"
+      visible: list_view.currentItem && list_view.currentItem.item.type !== "directory" &&
+               item.supports("download")
       iconName: "document-save"
       text: "Download " + (list_view.currentItem ? list_view.currentItem.item.filename : "")
       onTriggered: {

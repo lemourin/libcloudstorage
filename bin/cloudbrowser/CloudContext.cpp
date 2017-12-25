@@ -407,6 +407,23 @@ QString CloudItem::type() const {
   }
 }
 
+bool CloudItem::supports(QString operation) const {
+  if (operation == "delete")
+    return provider()->supportedOperations() & ICloudProvider::DeleteItem;
+  else if (operation == "upload")
+    return provider()->supportedOperations() & ICloudProvider::UploadFile;
+  else if (operation == "move")
+    return provider()->supportedOperations() & ICloudProvider::MoveItem;
+  else if (operation == "rename")
+    return provider()->supportedOperations() & ICloudProvider::RenameItem;
+  else if (operation == "mkdir")
+    return provider()->supportedOperations() & ICloudProvider::CreateDirectory;
+  else if (operation == "download")
+    return provider()->supportedOperations() & ICloudProvider::DownloadFile;
+  else
+    return true;
+}
+
 void ListDirectoryModel::set_provider(std::shared_ptr<ICloudProvider> p) {
   provider_ = p;
 }
