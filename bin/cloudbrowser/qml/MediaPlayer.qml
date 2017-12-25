@@ -148,7 +148,7 @@ Kirigami.Page {
     target: null
     onPositionChanged: position_changed()
     onEndedChanged: {
-      if (target.ended) {
+      if (target.ended && target.source) {
         ended();
       }
     }
