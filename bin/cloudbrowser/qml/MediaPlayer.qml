@@ -170,8 +170,10 @@ Kirigami.Page {
         playing = true;
       else if (action === "PAUSE")
         playing = false;
-      else if (action === "NEXT")
+      else if (action === "NEXT") {
+        autoplay = true;
         next();
+      }
     }
   }
 
