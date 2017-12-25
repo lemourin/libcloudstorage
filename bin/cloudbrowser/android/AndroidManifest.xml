@@ -64,6 +64,7 @@
     </activity>
 
     <!-- For adding service(s) please check: https://wiki.qt.io/AndroidServices -->
+    <service android:name="org.videolan.cloudbrowser.NotificationService" android:stopWithTask="false"/>
 
     </application>
 

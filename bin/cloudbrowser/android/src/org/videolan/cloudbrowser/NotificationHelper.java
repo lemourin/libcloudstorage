@@ -15,7 +15,7 @@ public class NotificationHelper {
     private static final String ActionPlay = "PLAY";
     private static final String ActionPause = "PAUSE";
     private static final String ActionNext = "NEXT";
-    private static final int PlayerNotification = 1;
+    public static final int PlayerNotification = 1;
 
     private static native void callback(String action);
 
@@ -34,6 +34,10 @@ public class NotificationHelper {
         filter.addAction(ActionNext);
         CloudBrowser.instance().registerReceiver(new Receiver(), filter);
         hidePlayerNotification();
+
+        CloudBrowser.instance().startService(
+            new Intent(CloudBrowser.instance(), NotificationService.class)
+        );
     }
 
     public static void release() {
