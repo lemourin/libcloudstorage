@@ -31,7 +31,7 @@ INCLUDEPATH = \
 
 LIBS += \
     -L$$ANDROID_TOOLCHAIN_PATH/lib \
-    -L$$ANDROID_TOOLCHAIN_PATH/arm-linux-androideabi/lib/ \
+    -L$$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/ \
     -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
     -lboost_filesystem -lboost_system \
     -lVLCQtQml -lVLCQtCore -lvlcjni
@@ -119,7 +119,7 @@ HEADERS += \
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 
 ANDROID_EXTRA_LIBS = \
-    $$ANDROID_TOOLCHAIN_PATH/arm-linux-androideabi/lib/libc++_shared.so \
+    $$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/libc++_shared.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libssl.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcrypto.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libjsoncpp.so \
