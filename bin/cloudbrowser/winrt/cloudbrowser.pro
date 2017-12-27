@@ -112,5 +112,11 @@ DISTFILES += \
     assets/logo_44x44.png \
     assets/logo_150x150.png \
     assets/logo_620x300.png \
-    assets/logo_store.png \
-    Package.appxmanifest
+    assets/logo_store.png
+
+WINRT_MANIFEST.name = "Cloud Browser"
+WINRT_MANIFEST.background = lightBlue
+WINRT_MANIFEST.logo_store = assets/logo_store.png
+WINRT_MANIFEST.logo_small = assets/logo_44x44.png
+WINRT_MANIFEST.logo_150x150 = assets/logo_150x150.png
+WINRT_MANIFEST.logo_620x300 = assets/logo_620x300.png
