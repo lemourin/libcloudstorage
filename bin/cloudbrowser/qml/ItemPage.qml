@@ -293,7 +293,7 @@ Kirigami.ScrollablePage {
           height: 50
           Controls.BusyIndicator {
             anchors.fill: parent
-            running: !thumbnail.done
+            running: !item_icon.visible && !item_thumbnail.visible
           }
           Kirigami.Icon {
             function type_to_icon() {
@@ -316,6 +316,7 @@ Kirigami.ScrollablePage {
             source: type_to_icon(modelData.type)
           }
           Image {
+            id: item_thumbnail
             anchors.fill: parent
             anchors.margins: 5
             visible: thumbnail.done && thumbnail.source && !item_icon.visible
