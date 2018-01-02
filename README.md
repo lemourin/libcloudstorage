@@ -85,6 +85,11 @@ Optional dependency notes:
   when  not found,  `IHttpServer` interface  needs to  be implemented,  can be  
   explicitly disabled with `--with-microhttpd=no`
 
+* `boost-filesystem`
+
+  when  found,  `LocalDrive` provider  representing  local  directory will  be  
+  included, can be explicitly disabled with `--with-filesystem=no`
+
 * `mega`
 
   when  not  found,  `mega`  cloud  provider will  not  be  included,  can  be  

@@ -69,6 +69,17 @@ AS_IF([test "x$with_microhttpd" != "xno"], [
 ])
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "$HAVE_MICROHTTPD" -eq 1])
 
+FILESYSTEM_LIBS=""
+AC_ARG_WITH([filesystem], AS_HELP_STRING([--with-filesystem]))
+AS_IF([test "x$with_filesystem" != "xno"], [
+  AC_CHECK_HEADERS(boost/filesystem.hpp, [
+    FILESYSTEM_LIBS="-lboost_filesystem"
+  ], [
+    AS_IF([test "x$with_filesystem" = "xyes"], [AC_MSG_ERROR([boost-filesystem not found])])
+  ])
+])
+AC_SUBST(FILESYSTEM_LIBS)
+
 HAVE_FUSE=0
 HAVE_LEGACY_FUSE=0
 AC_ARG_WITH([fuse], AS_HELP_STRING([--with-fuse]))
@@ -119,12 +130,6 @@ AS_IF([test "${SYS}" = "mingw32"], [
   SOCKET_LIBS="-lws2_32"
 ])
 AC_SUBST(SOCKET_LIBS)
-
-FILESYSTEM_LIBS=""
-AC_CHECK_HEADERS(boost/filesystem.hpp, [
-  FILESYSTEM_LIBS="-lboost_filesystem"
-])
-AC_SUBST(FILESYSTEM_LIBS)
 
 AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
