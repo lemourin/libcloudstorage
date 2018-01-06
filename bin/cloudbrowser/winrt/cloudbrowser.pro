@@ -33,8 +33,6 @@ LIBS += \
     -lmega \
     -lcares \
     -lcryptlib \
-    -lboost_system \
-    -lboost_filesystem \
     -lshlwapi \
     -lssleay32 \
     -llibeay32 \
