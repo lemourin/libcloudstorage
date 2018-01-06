@@ -44,6 +44,8 @@
 #include "Request/RenameItemRequest.h"
 #include "Request/UploadFileRequest.h"
 
+#undef CreateDirectory
+
 using namespace std::placeholders;
 
 const std::string DEFAULT_STATE = "DEFAULT_STATE";
