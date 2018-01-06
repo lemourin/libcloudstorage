@@ -36,7 +36,7 @@ void FileDialog::setFilename(QString e) {
 
 void FileDialog::open() {
   QAndroidJniObject intent;
-  if (selectFolder()) {
+  if (!selectExisting()) {
     intent = QAndroidJniObject::callStaticObjectMethod(
         "org/videolan/cloudbrowser/CloudBrowser", "createFileDialog",
         "(Ljava/lang/String;)Landroid/content/Intent;",

@@ -188,7 +188,6 @@ Kirigami.ScrollablePage {
     FileDialog {
       id: upload_dialog
       selectExisting: true
-      selectFolder: false
       onAccepted: {
         var r = upload_component.createObject(cloud, {
                                                 filename: upload_dialog.filename,
@@ -205,8 +204,7 @@ Kirigami.ScrollablePage {
 
     FileDialog {
       id: download_dialog
-      selectFolder: true
-      selectExisting: true
+      selectExisting: false
       onAccepted: {
         var r = download_component.createObject(cloud, {
                                                   filename: download_dialog.filename

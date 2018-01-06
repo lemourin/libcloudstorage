@@ -218,6 +218,10 @@ QVariantMap CloudContext::readUrl(QString url) const {
   return r;
 }
 
+QString CloudContext::home() const {
+  return QUrl::fromLocalFile(util::home_directory().c_str()).toString();
+}
+
 void CloudContext::add(std::shared_ptr<ICloudProvider> p,
                        std::shared_ptr<IGenericRequest> r) {
   pool_.add(p, r);
