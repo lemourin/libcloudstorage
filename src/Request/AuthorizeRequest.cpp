@@ -173,7 +173,7 @@ SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)
                               AuthorizeRequest::AuthorizeCompleted complete) {
         if (p->auth_callback()->userConsentRequired(*p) !=
             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
-          return complete(Error{IHttpRequest::Failure, "not waiting for code"});
+          return complete(Error{IHttpRequest::Failure, "invalid credentials"});
         }
         auto code = [=](EitherError<std::string> code) {
           (void)r;

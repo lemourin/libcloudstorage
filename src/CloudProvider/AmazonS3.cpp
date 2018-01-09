@@ -136,7 +136,7 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
                 ICloudProvider::IAuthCallback::Status::
                     WaitForAuthorizationCode) {
               return complete(
-                  Error{IHttpRequest::Failure, "not waiting for code"});
+                  Error{IHttpRequest::Failure, "invalid credentials"});
             }
             auto code = [=](EitherError<std::string> code) {
               (void)r;

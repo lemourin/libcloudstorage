@@ -534,7 +534,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
             r->set_server(
                 r->provider()->auth()->requestAuthorizationCode(code));
           } else {
-            complete(Error{IHttpRequest::Aborted, "not waiting for code"});
+            complete(Error{IHttpRequest::Failure, "invalid credentials"});
           }
         });
       });
