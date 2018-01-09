@@ -56,7 +56,8 @@ SOURCES += \
     ../CloudContext.cpp \
     ../GenerateThumbnail.cpp \
     ../Exec.cpp \
-    ../File.cpp
+    ../File.cpp \
+    ../DesktopUtility.cpp
 
 SOURCES += \
     ../../../src/Utility/CloudStorage.cpp \
@@ -104,7 +105,9 @@ RESOURCES += \
 
 HEADERS += \
     ../CloudContext.h \
-    ../File.h
+    ../File.h \
+    ../DesktopUtility.h \
+    ../IPlatformUtility.h
 
 DISTFILES += \
     assets/logo_44x44.png \
