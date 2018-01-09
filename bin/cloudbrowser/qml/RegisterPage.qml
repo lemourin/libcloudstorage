@@ -27,8 +27,7 @@ Kirigami.ScrollablePage {
   Connections {
     target: cloud
     onReceivedCode: {
-      if (android)
-        android.closeWebPage();
+      platform.closeWebPage();
       if (root.pageStack.currentItem.title === "Authorization")
         root.pageStack.pop();
     }
@@ -43,13 +42,8 @@ Kirigami.ScrollablePage {
       onClicked: {
         if (qtwebview)
           root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
-        else {
-          if (android) {
-            android.openWebPage(cloud.authorizationUrl(modelData));
-          } else {
-            Qt.openUrlExternally(cloud.authorizationUrl(modelData));
-          }
-        }
+        else
+          platform.openWebPage(cloud.authorizationUrl(modelData));
         list.currentIndex = index;
       }
       contentItem: ProviderEntry {

@@ -6,22 +6,24 @@
 #include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
 #include <QObject>
+#include "IPlatformUtility.h"
 
-class AndroidUtility : public QObject {
+class AndroidUtility : public IPlatformUtility {
  public:
   AndroidUtility();
   ~AndroidUtility();
 
-  Q_INVOKABLE void openWebPage(QString url);
-  Q_INVOKABLE void closeWebPage();
-  Q_INVOKABLE void landscapeOrientation();
-  Q_INVOKABLE void defaultOrientation();
-  Q_INVOKABLE void showPlayerNotification(bool playing, QString filename,
-                                          QString title);
-  Q_INVOKABLE void hidePlayerNotification();
-
- signals:
-  void notify(QString action);
+  bool mobile() const override;
+  QString name() const override;
+  bool openWebPage(QString url) override;
+  void closeWebPage() override;
+  void landscapeOrientation() override;
+  void defaultOrientation() override;
+  void showPlayerNotification(bool playing, QString filename,
+                                          QString title) override;
+  void hidePlayerNotification() override;
+  void enableKeepScreenOn() override;
+  void disableKeepScreenOn() override;
 
  private:
   QAndroidJniObject intent_;
@@ -30,8 +32,6 @@ class AndroidUtility : public QObject {
     void handleActivityResult(int receiverRequestCode, int resultCode,
                               const QAndroidJniObject &data) override;
   } receiver_;
-
-  Q_OBJECT
 };
 
 #endif  // __ANDROID__

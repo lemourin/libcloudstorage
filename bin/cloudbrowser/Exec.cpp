@@ -35,9 +35,9 @@
 #include <QQmlEngine>
 #include <QtQml>
 
-#include "AndroidUtility.h"
 #include "CloudContext.h"
 #include "FileDialog.h"
+#include "IPlatformUtility.h"
 #include "Utility/Utility.h"
 
 #ifdef WITH_VLC_QT
@@ -107,14 +107,9 @@ int exec_cloudbrowser(int argc, char** argv) {
 #else
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
-#ifdef __ANDROID__
-    AndroidUtility android_utility;
-    engine.rootContext()->setContextProperty("android", &android_utility);
-#else
-    engine.rootContext()->setContextProperty(
-        "android", QVariant::fromValue<QObject*>(nullptr));
-#endif
-
+    IPlatformUtility::Pointer platform = IPlatformUtility::create();
+    engine.rootContext()->setContextProperty("platform",
+                                             platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
     engine.load(QUrl("qrc:/qml/main.qml"));
 

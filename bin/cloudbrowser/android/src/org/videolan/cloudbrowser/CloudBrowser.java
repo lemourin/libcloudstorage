@@ -2,11 +2,13 @@ package org.videolan.cloudbrowser;
 
 import android.os.Bundle;
 import android.content.Intent;
+import android.view.WindowManager;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.content.pm.ActivityInfo;
+import android.util.Log;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -52,6 +54,22 @@ public class CloudBrowser extends QtActivity {
 
     public static void setLandScapeOrientation() {
         m_instance.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+    }
+
+    public static void enableKeepScreenOn() {
+        m_instance.runOnUiThread(new Runnable() {
+            public void run() {
+                m_instance.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        });
+    }
+
+    public static void disableKeepScreenOn() {
+        m_instance.runOnUiThread(new Runnable() {
+            public void run() {
+                m_instance.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); 
+            }
+        });
     }
 
     public static Intent openFileDialog() {

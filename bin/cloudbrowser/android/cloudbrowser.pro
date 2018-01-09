@@ -114,7 +114,8 @@ HEADERS += \
     ../CloudContext.h \
     ../FileDialog.h \
     ../File.h \
-    ../AndroidUtility.h
+    ../AndroidUtility.h \
+    ../IPlatformUtility.h
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 

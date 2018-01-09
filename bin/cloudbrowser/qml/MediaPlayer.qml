@@ -22,11 +22,13 @@ Kirigami.Page {
   title: item.filename
   onIsCurrentPageChanged: {
     if (!isCurrentPage) {
+      platform.disableKeepScreenOn();
       root.visible_player = false;
       root.globalDrawer.handleVisible = handle_state;
     } else {
       handle_state = root.globalDrawer.handleVisible;
       root.globalDrawer.handleVisible = false;
+      platform.enableKeepScreenOn();
     }
   }
   onPlayingChanged: {
@@ -45,8 +47,8 @@ Kirigami.Page {
   }
   Component.onDestruction: {
     root.player_count--;
-    if (android && root.player_count === 0)
-      android.hidePlayerNotification();
+    if (root.player_count === 0)
+      platform.hidePlayerNotification();
   }
 
   function next() {
@@ -59,8 +61,7 @@ Kirigami.Page {
   }
 
   function update_notification() {
-    if (android)
-      android.showPlayerNotification(playing, item.filename, item_page.label);
+    platform.showPlayerNotification(playing, item.filename, item_page.label);
   }
 
   function print_timestamp(d) {
@@ -164,7 +165,7 @@ Kirigami.Page {
   }
 
   Connections {
-    target: android
+    target: platform
     onNotify: {
       if (action === "PLAY")
         playing = true;
@@ -239,7 +240,7 @@ Kirigami.Page {
             last_visible = Date.now();
           }
         } else if (page.state === "overlay_visible") {
-          if ((!controls.containsMouse || android)
+          if ((!controls.containsMouse || platform.mobile())
               && page.playing && player.item && !player.item.buffering)
             cnt++;
           if (cnt >= idle_duration / interval) {

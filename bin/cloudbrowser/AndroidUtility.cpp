@@ -9,6 +9,7 @@
 #include <QUrl>
 #include <QtAndroid>
 
+#include "Utility/Utility.h"
 #include "CloudContext.h"
 
 const int RECEIVER_CODE = 43;
@@ -19,9 +20,10 @@ AndroidUtility *android = nullptr;
 
 extern "C" {
 JNIEXPORT void JNICALL
-Java_org_videolan_cloudbrowser_NotificationHelper_callback(JNIEnv *env, jclass *,
+Java_org_videolan_cloudbrowser_NotificationHelper_callback(JNIEnv *env,
+                                                           jclass *,
                                                            jstring action) {
-  const char* str = env->GetStringUTFChars(action, nullptr);
+  const char *str = env->GetStringUTFChars(action, nullptr);
   emit android->notify(str);
   env->ReleaseStringUTFChars(action, str);
 }
@@ -31,13 +33,18 @@ AndroidUtility::AndroidUtility() { android = this; }
 
 AndroidUtility::~AndroidUtility() { android = nullptr; }
 
-void AndroidUtility::openWebPage(QString url) {
+bool AndroidUtility::mobile() const { return true; }
+
+QString AndroidUtility::name() const { return "android"; }
+
+bool AndroidUtility::openWebPage(QString url) {
   if (intent_.isValid()) closeWebPage();
   intent_ = QAndroidJniObject::callStaticObjectMethod(
       "org/videolan/cloudbrowser/CloudBrowser", "openWebPage",
       "(Ljava/lang/String;)Landroid/content/Intent;",
       QAndroidJniObject::fromString(url).object());
   QtAndroid::startActivity(intent_, RECEIVER_CODE, &receiver_);
+  return true;
 }
 
 void AndroidUtility::closeWebPage() {
@@ -75,7 +82,21 @@ void AndroidUtility::hidePlayerNotification() {
       "()V");
 }
 
+void AndroidUtility::enableKeepScreenOn() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "enableKeepScreenOn", "()V");
+}
+
+void AndroidUtility::disableKeepScreenOn() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "disableKeepScreenOn", "()V");
+}
+
 void AndroidUtility::ResultReceiver::handleActivityResult(
     int, int, const QAndroidJniObject &) {}
+
+IPlatformUtility::Pointer IPlatformUtility::create() {
+  return cloudstorage::util::make_unique<AndroidUtility>();
+}
 
 #endif  // __ANDROID__

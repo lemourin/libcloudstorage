@@ -8,7 +8,8 @@ Loader {
   signal accepted()
 
   id: loader
-  source: android ? "AndroidFileDialog.qml" : "QtFileDialog.qml"
+  source: platform.name() === "android" ? "AndroidFileDialog.qml" :
+                                          "QtFileDialog.qml"
   asynchronous: false
 
   onLoaded: {

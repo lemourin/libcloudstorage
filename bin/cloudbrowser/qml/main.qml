@@ -7,7 +7,7 @@ import libcloudstorage 1.0
 Kirigami.ApplicationWindow {
   property bool visible_player: false
   property bool drawer_state: false
-  property bool detailed_options: !android || root.height > root.width
+  property bool detailed_options: !platform.mobile || root.height > root.width
   property int player_count: 0
 
   id: root
@@ -16,11 +16,11 @@ Kirigami.ApplicationWindow {
     if (visible_player) {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
-      if (android) android.landscapeOrientation();
+      if (platform.mobile()) platform.landscapeOrientation();
       root.showFullScreen();
     } else {
       globalDrawer.drawerOpen = drawer_state;
-      if (android) android.defaultOrientation();
+      if (platform.mobile()) platform.defaultOrientation();
       root.showNormal();
     }
   }
