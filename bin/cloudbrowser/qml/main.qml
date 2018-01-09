@@ -5,10 +5,12 @@ import org.kde.kirigami 2.0 as Kirigami
 import libcloudstorage 1.0
 
 Kirigami.ApplicationWindow {
+  property bool include_ads: false
   property bool visible_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile || root.height > root.width
   property int player_count: 0
+  property int footer_height: include_ads ? 50 : 0
 
   id: root
 
@@ -17,10 +19,18 @@ Kirigami.ApplicationWindow {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
       if (platform.mobile()) platform.landscapeOrientation();
+      if (include_ads) {
+        platform.hideAd();
+        footer_height = 0;
+      }
       root.showFullScreen();
     } else {
       globalDrawer.drawerOpen = drawer_state;
       if (platform.mobile()) platform.defaultOrientation();
+      if (include_ads) {
+        platform.showAd();
+        footer_height = 50;
+      }
       root.showNormal();
     }
   }
@@ -112,13 +122,18 @@ Kirigami.ApplicationWindow {
     titleIcon: "qrc:/resources/cloud.png"
     drawerOpen: true
     actions: root.actions()
+    height: parent.height - footer_height
+    handle.anchors.bottomMargin: footer_height
   }
   contextDrawer: Kirigami.ContextDrawer {
     id: contextDrawer
+    height: parent.height - footer_height
+    handle.anchors.bottomMargin: footer_height
   }
   pageStack.initialPage: mainPageComponent
   pageStack.interactive: !visible_player
   pageStack.defaultColumnWidth: 10000
+  pageStack.anchors.bottomMargin: footer_height
 
   Component {
     id: addProviderPage
@@ -193,5 +208,9 @@ Kirigami.ApplicationWindow {
     }
   }
 
-  Component.onCompleted: pageStack.separatorVisible = false
+  Component.onCompleted: {
+    pageStack.separatorVisible = false;
+    if (include_ads)
+      platform.showAd();
+  }
 }

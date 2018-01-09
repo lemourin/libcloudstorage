@@ -1,6 +1,6 @@
 #include "DesktopUtility.h"
 
-#ifndef __ANDROID__
+#ifdef USE_DESKTOP_UTILITY
 
 #include <QDesktopServices>
 #include <QUrl>
@@ -29,8 +29,12 @@ void DesktopUtility::enableKeepScreenOn() {}
 
 void DesktopUtility::disableKeepScreenOn() {}
 
+void DesktopUtility::showAd() {}
+
+void DesktopUtility::hideAd() {}
+
 IPlatformUtility::Pointer IPlatformUtility::create() {
   return cloudstorage::util::make_unique<DesktopUtility>();
 }
 
-#endif  // __ANDROID__
+#endif  // USE_DESKTOP_UTILITY

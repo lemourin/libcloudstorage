@@ -46,6 +46,8 @@ class IPlatformUtility : public QObject {
   Q_INVOKABLE virtual void enableKeepScreenOn() = 0;
   Q_INVOKABLE virtual void disableKeepScreenOn() = 0;
   Q_INVOKABLE virtual void hidePlayerNotification() = 0;
+  Q_INVOKABLE virtual void showAd() = 0;
+  Q_INVOKABLE virtual void hideAd() = 0;
 
  signals:
   void notify(QString action);

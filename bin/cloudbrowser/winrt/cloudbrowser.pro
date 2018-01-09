@@ -1,6 +1,6 @@
 TEMPLATE = app
 CONFIG += c++11
-QT += quick webview svg network multimedia
+QT += quick webview svg network multimedia gui-private
 
 DEFINES += \
     WITH_MICROHTTPD \
@@ -9,13 +9,18 @@ DEFINES += \
     WITH_QTWEBVIEW \
     WITH_MEGA \
     WITH_THUMBNAILER \
-    WITH_VLC_QT \
-    HAVE_BOOST_FILESYSTEM_HPP
+    WITH_VLC_QT
 
 MSVC_TOOLCHAIN_PATH = $$(MSVC_TOOLCHAIN_PATH)
 
 isEmpty(MSVC_TOOLCHAIN_PATH) {
     error(MSVC_TOOLCHAIN_PATH environment variable not set.)
+}
+
+winrt {
+    QMAKE_CXXFLAGS += /ZW
+} else {
+    DEFINES += HAVE_BOOST_FILESYSTEM_HPP
 }
 
 INCLUDEPATH = \
@@ -57,7 +62,8 @@ SOURCES += \
     ../GenerateThumbnail.cpp \
     ../Exec.cpp \
     ../File.cpp \
-    ../DesktopUtility.cpp
+    ../DesktopUtility.cpp \
+    ../WinRTUtility.cpp
 
 SOURCES += \
     ../../../src/Utility/CloudStorage.cpp \
@@ -107,6 +113,7 @@ HEADERS += \
     ../CloudContext.h \
     ../File.h \
     ../DesktopUtility.h \
+    ../WinRTUtility.h \
     ../IPlatformUtility.h
 
 DISTFILES += \
@@ -121,3 +128,6 @@ WINRT_MANIFEST.logo_store = assets/logo_store.png
 WINRT_MANIFEST.logo_small = assets/logo_44x44.png
 WINRT_MANIFEST.logo_150x150 = assets/logo_150x150.png
 WINRT_MANIFEST.logo_620x300 = assets/logo_620x300.png
+WINRT_MANIFEST.capabilities = \
+    codeGeneration internetClient internetClientServer \
+    privateNetworkClientServer

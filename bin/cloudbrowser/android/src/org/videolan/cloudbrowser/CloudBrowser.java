@@ -2,6 +2,7 @@ package org.videolan.cloudbrowser;
 
 import android.os.Bundle;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.view.WindowManager;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
@@ -9,14 +10,26 @@ import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.content.pm.ActivityInfo;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import org.qtproject.qt5.android.bindings.QtActivity;
 
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdListener;
+
 public class CloudBrowser extends QtActivity {
     private static CloudBrowser m_instance;
     public static AuthView m_auth_view;
+    private ViewGroup m_view_group;
+    private RelativeLayout m_ad_view;
+    private boolean m_ad_view_visible = false;
 
     public static class FileOutput {
         public ParcelFileDescriptor m_descriptor;
@@ -32,10 +45,61 @@ public class CloudBrowser extends QtActivity {
         m_instance = this;
     }
 
+    private void updateAdView() {
+        if (m_ad_view != null && m_view_group != null)
+            m_view_group.removeView(m_ad_view);
+        if (!m_ad_view_visible) return;
+        final AdView ad = new AdView(this);
+        ad.setAdUnitId("ca-app-pub-9966958697007244/9093813086");
+        ad.setAdSize(new AdSize(AdSize.FULL_WIDTH, 50));
+        ad.setAdListener(new AdListener() {
+            private boolean m_loaded;
+
+            public void attach() {
+                if (!m_loaded && m_ad_view_visible) {
+                    m_loaded = true;
+                    m_ad_view = new RelativeLayout(CloudBrowser.this);
+                    RelativeLayout.LayoutParams ad_layout_params =
+                        new RelativeLayout.LayoutParams(
+                            RelativeLayout.LayoutParams.FILL_PARENT,
+                            RelativeLayout.LayoutParams.WRAP_CONTENT);
+                    ad_layout_params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                    m_ad_view.addView(ad, ad_layout_params);
+                    m_view_group.addView(m_ad_view, new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.FILL_PARENT,
+                        RelativeLayout.LayoutParams.FILL_PARENT));
+                }
+            }
+
+            public void onAdLoaded() {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        attach();
+                    }
+                });
+            }
+        });
+        ad.loadAd(new AdRequest.Builder().build());
+    }
+
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+
         NotificationHelper.initialize();
+        MobileAds.initialize(this, "ca-app-pub-9966958697007244~3913638593");
+
+        View view = getWindow().getDecorView().getRootView();
+        if (view instanceof ViewGroup) {
+            m_view_group = (ViewGroup) view;
+            updateAdView();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration config) {
+        super.onConfigurationChanged(config);
+        updateAdView();
     }
 
     @Override
@@ -46,6 +110,25 @@ public class CloudBrowser extends QtActivity {
 
     public static CloudBrowser instance() {
         return m_instance;
+    }
+
+    public static void showAd() {
+        m_instance.runOnUiThread(new Runnable() {
+            public void run() {
+                m_instance.m_ad_view_visible = true;
+                m_instance.updateAdView();
+            }
+        });
+    }
+
+    public static void hideAd() {
+        m_instance.runOnUiThread(new Runnable() {
+            public void run() {
+                m_instance.m_ad_view_visible = false;
+                if (m_instance.m_ad_view != null)
+                    m_instance.m_ad_view.setVisibility(View.INVISIBLE);
+            }
+        });
     }
 
     public static void setDefaultOrientation() {

@@ -1,17 +1,23 @@
-#ifndef ANDROIDUTILITY_H
-#define ANDROIDUTILITY_H
+#ifndef WINRT_UTILITY
+#define WINRT_UTILITY
 
-#ifdef __ANDROID__
+#ifdef _WIN32
+#include <windows.h>
 
-#include <QAndroidActivityResultReceiver>
-#include <QAndroidJniObject>
-#include <QObject>
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#define WINRT
+#endif
+
+#endif
+
+#ifdef WINRT
+
 #include "IPlatformUtility.h"
 
-class AndroidUtility : public IPlatformUtility {
+class WinRTUtility : public IPlatformUtility {
  public:
-  AndroidUtility();
-  ~AndroidUtility();
+  WinRTUtility();
+  ~WinRTUtility();
 
   bool mobile() const override;
   QString name() const override;
@@ -28,13 +34,9 @@ class AndroidUtility : public IPlatformUtility {
   void hideAd() override;
 
  private:
-  QAndroidJniObject intent_;
-  class ResultReceiver : public QAndroidActivityResultReceiver {
-   private:
-    void handleActivityResult(int receiverRequestCode, int resultCode,
-                              const QAndroidJniObject &data) override;
-  } receiver_;
+  Microsoft::Advertising::WinRT::UI::AdControl ^ ad_control_;
+  bool ad_control_attached_;
 };
 
-#endif  // __ANDROID__
-#endif  // ANDROIDUTILITY_H
+#endif  // WINRT
+#endif  // WINRT_UTILITY

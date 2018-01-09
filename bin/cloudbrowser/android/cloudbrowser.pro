@@ -108,6 +108,7 @@ DISTFILES += \
     src/org/videolan/cloudbrowser/AuthView.java \
     src/org/videolan/cloudbrowser/NotificationHelper.java \
     src/org/videolan/cloudbrowser/NotificationService.java \
+    build.gradle \
     project.properties
 
 HEADERS += \

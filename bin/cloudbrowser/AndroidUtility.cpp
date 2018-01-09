@@ -92,6 +92,16 @@ void AndroidUtility::disableKeepScreenOn() {
       "org/videolan/cloudbrowser/CloudBrowser", "disableKeepScreenOn", "()V");
 }
 
+void AndroidUtility::showAd() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "showAd", "()V");
+}
+
+void AndroidUtility::hideAd() {
+  QAndroidJniObject::callStaticMethod<void>(
+      "org/videolan/cloudbrowser/CloudBrowser", "hideAd", "()V");
+}
+
 void AndroidUtility::ResultReceiver::handleActivityResult(
     int, int, const QAndroidJniObject &) {}
 
