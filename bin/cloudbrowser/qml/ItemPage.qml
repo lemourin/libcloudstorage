@@ -271,6 +271,7 @@ Kirigami.ScrollablePage {
       id: item
       backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
                                                 Kirigami.Theme.backgroundColor
+      icon: ""
       onClicked: {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
