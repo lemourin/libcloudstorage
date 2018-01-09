@@ -61,7 +61,10 @@ Kirigami.Page {
   }
 
   function update_notification() {
-    platform.showPlayerNotification(playing, item.filename, item_page.label);
+    if (item.type === "audio" || item.type === "video")
+      platform.showPlayerNotification(playing, item.filename, item_page.label);
+    else
+      platform.hidePlayerNotification();
   }
 
   function print_timestamp(d) {
@@ -350,7 +353,7 @@ Kirigami.Page {
         id: current_time
         width: 1.5 * height
         height: parent.height
-        visible: parent.width > 600
+        visible: parent.width > 600 && (item.type === "video" || item.type === "audio")
         Text {
           anchors.centerIn: parent
           color: "white"
