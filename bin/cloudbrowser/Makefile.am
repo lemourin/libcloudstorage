@@ -13,9 +13,11 @@ libcloudbrowser_la_SOURCES = \
 	CloudContext.cpp CloudContext.h \
 	GenerateThumbnail.cpp GenerateThumbnail.h \
 	AndroidUtility.cpp AndroidUtility.h \
+	DesktopUtility.cpp DesktopUtility.h \
 	FileDialog.cpp FileDialog.h \
 	Exec.cpp Exec.h \
-	File.cpp File.h
+	File.cpp File.h \
+	IPlatformUtility.h
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
@@ -40,6 +42,9 @@ endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	CloudContext.moc.cpp \
+	File.moc.cpp \
+	FileDialog.moc.cpp \
+	IPlatformUtility.moc.cpp \
 	resources.cpp
 
 DEPS_res = \
