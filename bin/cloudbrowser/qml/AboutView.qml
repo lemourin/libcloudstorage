@@ -67,6 +67,7 @@ Kirigami.ScrollablePage {
     }
     delegate: Kirigami.BasicListItem {
       onClicked: Qt.openUrlExternally(url)
+      icon: ""
       RowLayout {
         anchors.left: parent.left
         anchors.right: parent.right

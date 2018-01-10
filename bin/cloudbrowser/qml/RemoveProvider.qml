@@ -11,6 +11,7 @@ Kirigami.ScrollablePage {
     id: list
     model: cloud.userProviders
     delegate: Kirigami.BasicListItem {
+      icon: ""
       backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
                                                 Kirigami.Theme.backgroundColor
       onClicked: {
