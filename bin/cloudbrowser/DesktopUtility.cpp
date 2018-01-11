@@ -33,4 +33,4 @@ IPlatformUtility::Pointer IPlatformUtility::create() {
   return cloudstorage::util::make_unique<DesktopUtility>();
 }
 
-#endif // __ANDROID__
+#endif  // __ANDROID__

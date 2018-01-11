@@ -9,8 +9,8 @@
 #include <QUrl>
 #include <QtAndroid>
 
-#include "Utility/Utility.h"
 #include "CloudContext.h"
+#include "Utility/Utility.h"
 
 const int RECEIVER_CODE = 43;
 

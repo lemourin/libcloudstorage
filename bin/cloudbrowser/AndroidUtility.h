@@ -20,7 +20,7 @@ class AndroidUtility : public IPlatformUtility {
   void landscapeOrientation() override;
   void defaultOrientation() override;
   void showPlayerNotification(bool playing, QString filename,
-                                          QString title) override;
+                              QString title) override;
   void hidePlayerNotification() override;
   void enableKeepScreenOn() override;
   void disableKeepScreenOn() override;
