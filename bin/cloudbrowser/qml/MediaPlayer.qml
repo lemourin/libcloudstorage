@@ -187,6 +187,13 @@ Kirigami.Page {
     anchors.fill: parent
     hoverEnabled: true
 
+    onContainsMouseChanged: {
+      if (state === "overlay_visible" || !mouse_area.containsMouse)
+        cloud.showCursor();
+      else if (state === "overlay_invisible" && mouse_area.containsMouse)
+        cloud.hideCursor();
+    }
+
     onClicked: {
       if (page.state === "overlay_visible" &&
           Date.now() - timer.last_visible >= 2 * timer.interval &&
@@ -281,6 +288,13 @@ Kirigami.Page {
       }
     }
   ]
+
+  onStateChanged: {
+    if (state === "overlay_visible")
+      cloud.showCursor();
+    else if (mouse_area.containsMouse)
+      cloud.hideCursor();
+  }
 
   transitions: [
     Transition {

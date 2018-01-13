@@ -1,8 +1,10 @@
 #include "CloudContext.h"
 
+#include <QCursor>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -220,6 +222,14 @@ QVariantMap CloudContext::readUrl(QString url) const {
 
 QString CloudContext::home() const {
   return QUrl::fromLocalFile(util::home_directory().c_str()).toString();
+}
+
+void CloudContext::hideCursor() const {
+  QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
+}
+
+void CloudContext::showCursor() const {
+  QGuiApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
 
 void CloudContext::add(std::shared_ptr<ICloudProvider> p,

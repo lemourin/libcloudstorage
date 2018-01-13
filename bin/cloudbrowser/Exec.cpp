@@ -108,8 +108,7 @@ int exec_cloudbrowser(int argc, char** argv) {
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
     IPlatformUtility::Pointer platform = IPlatformUtility::create();
-    engine.rootContext()->setContextProperty("platform",
-                                             platform.get());
+    engine.rootContext()->setContextProperty("platform", platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
     engine.load(QUrl("qrc:/qml/main.qml"));
 
