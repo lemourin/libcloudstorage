@@ -380,7 +380,7 @@ Kirigami.Page {
 
         id: volume_control
         source: volume_icon(volume_slider.value)
-        visible: (item.type === "video" || item.type === "audio") && page.width > 600
+        visible: (item.type === "video" || item.type === "audio") && page.width > 450
         MouseArea {
           id: volume_control_mouse_area
           anchors.fill: parent
@@ -476,7 +476,7 @@ Kirigami.Page {
         id: current_time
         width: 1.5 * height
         height: parent.height
-        visible: parent.width > 600 && (item.type === "video" || item.type === "audio")
+        visible: progress.visible
         Text {
           anchors.centerIn: parent
           color: "white"
@@ -496,12 +496,19 @@ Kirigami.Page {
           height: parent.height * 0.5
           width: parent.width
           value: player.item ? player.item.position : 0
-          visible: player.item && player.item.duration > 0
+          visible: player.item && player.item.duration > 0 && page.width > 600
           onMoved: {
             player.item.set_position(value);
             audio_player.item.set_position(value);
             timer.cnt = 0;
           }
+        }
+        Text {
+          visible: player.item && player.item.duration > 0 && !progress.visible
+          anchors.centerIn: parent
+          color: "white"
+          text: player.item ? print_timestamp(player.item.time) + " / " +
+                              print_timestamp(player.item.duration) : ""
         }
       }
       Item {
