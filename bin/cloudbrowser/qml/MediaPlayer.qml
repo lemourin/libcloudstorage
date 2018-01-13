@@ -244,7 +244,8 @@ Kirigami.Page {
           }
         } else if (page.state === "overlay_visible") {
           if ((!controls.containsMouse || platform.mobile())
-              && page.playing && player.item && !player.item.buffering)
+              && page.playing && player.item && !player.item.buffering
+              && !volume_slider.visible)
             cnt++;
           if (cnt >= idle_duration / interval) {
             page.state = "overlay_invisible";
@@ -310,7 +311,7 @@ Kirigami.Page {
 
   MouseArea {
     id: controls
-    hoverEnabled: true
+    hoverEnabled: !platform.mobile()
     anchors.left: parent.left
     anchors.right: parent.right
     height: 50
@@ -349,6 +350,114 @@ Kirigami.Page {
           }
         }
       }
+      Kirigami.Icon {
+        width: height
+        height: parent.height
+        function volume_icon(value) {
+          if (value === 0.0)
+            return "audio-volume-muted";
+          else if (value < 1.0/3)
+            return "audio-volume-low";
+          else if (value < 2.0/3)
+            return "audio-volume-medium";
+          else
+            return "audio-volume-high";
+        }
+
+        id: volume_control
+        source: volume_icon(volume_slider.value)
+        visible: (item.type === "video" || item.type === "audio") && page.width > 600
+        MouseArea {
+          id: volume_control_mouse_area
+          anchors.fill: parent
+          hoverEnabled: true
+          onContainsMouseChanged: {
+            volume_slider.timestamp = Date.now();
+            volume_slider.recently_hovered = true;
+          }
+          onPressed: {
+            timer.cnt = 0;
+            if (volume_slider.visible) {
+              if (volume_slider.value === 0)
+                volume_slider.value = root.last_volume;
+              else {
+                root.last_volume = volume_slider.value;
+                volume_slider.value = 0;
+              }
+              volume_slider.onMoved();
+            }
+          }
+        }
+      }
+      Controls.Slider {
+        property bool should_show: volume_control_mouse_area.containsMouse ||
+                                   volume_slider.hovered ||
+                                   volume_slider.pressed ||
+                                   (platform.mobile() && recently_hovered)
+        property real timestamp: 0
+        property bool recently_hovered: false
+
+        id: volume_slider
+        anchors.verticalCenter: parent.verticalCenter
+        visible: width !== 0
+        value: root.volume
+        hoverEnabled: !platform.mobile()
+        onHoveredChanged: {
+          volume_slider.timestamp = Date.now();
+          volume_slider.recently_hovered = true;
+        }
+        Timer {
+          running: true
+          repeat: true
+          interval: 500
+          onTriggered: {
+            volume_slider.recently_hovered = Date.now() - volume_slider.timestamp < 2000
+          }
+        }
+        onMoved: {
+          root.volume = value;
+          player.item.set_volume(value);
+          audio_player.item.set_volume(value);
+          volume_slider.timestamp = Date.now();
+          volume_slider.recently_hovered = true;
+          timer.cnt = 0;
+        }
+        state: should_show ? "volume_slider_visible" : "volume_slider_invisible"
+        states: [
+          State {
+            name: "volume_slider_visible"
+            PropertyChanges {
+              target: volume_slider
+              width: 100
+            }
+          },
+          State {
+            name: "volume_slider_invisible"
+            PropertyChanges {
+              target: volume_slider
+              width: 0
+            }
+          }
+        ]
+        transitions: [
+          Transition {
+            from: "volume_slider_invisible"
+            to: "volume_slider_visible"
+            PropertyAnimation {
+              properties: "width"
+              duration: 200
+            }
+          },
+          Transition {
+            from: "volume_slider_visible"
+            to: "volume_slider_invisible"
+            PropertyAnimation {
+              properties: "width"
+              duration: 200
+            }
+          }
+        ]
+      }
       Item {
         id: current_time
         width: 1.5 * height
@@ -363,6 +472,8 @@ Kirigami.Page {
       Item {
         height: parent.height
         width: parent.width - fullscreen.width - play_button.width * play_button.visible -
+               volume_control.width * volume_control.visible -
+               volume_slider.width * volume_slider.visible -
                current_time.width * current_time.visible - total_time.width * total_time.visible -
                autoplay_icon.width - next_button.width
         Controls.Slider {

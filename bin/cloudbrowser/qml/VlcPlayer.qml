@@ -5,6 +5,7 @@ Item {
   property alias source: player.url
   property alias player: player
   property alias position: player.position
+  property real volume: player.volume / 100.0
   property bool playing: player.state === Vlc.Playing
   property bool buffering: player.state === Vlc.Buffering || player.state === Vlc.Opening
   property bool ended: player.state === Vlc.Ended
@@ -12,6 +13,10 @@ Item {
   property int duration: player.length
 
   signal error(int error, string errorString)
+
+  function set_volume(v) {
+    player.volume = v * 100;
+  }
 
   function set_position(p) {
     player.position = p;
@@ -37,5 +42,9 @@ Item {
     id: video
     source: player
     anchors.fill: parent
+  }
+
+  Component.onCompleted: {
+    player.volume = 100;
   }
 }

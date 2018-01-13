@@ -9,10 +9,14 @@ Kirigami.ApplicationWindow {
   property bool visible_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile || root.height > root.width
+  property real volume: 1
+  property real last_volume: 1
   property int player_count: 0
   property int footer_height: include_ads ? 50 : 0
 
   id: root
+  width: 800
+  height: 600
 
   onVisible_playerChanged: {
     if (visible_player) {

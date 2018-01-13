@@ -4,6 +4,7 @@ import QtMultimedia 5.6
 Item {
   property alias source: player.source
   property real position: player.position / player.duration
+  property real volume: player.volume
   property bool playing: player.playbackState === MediaPlayer.PlayingState &&
                          player.bufferProgress === 1.0
   property bool buffering: player.status === MediaPlayer.Loading ||
@@ -15,6 +16,10 @@ Item {
   signal error(int error, string errorString)
 
   id: container
+
+  function set_volume(v) {
+    player.volume = v;
+  }
 
   function set_position(p) {
     player.seek(p * player.duration);
