@@ -13,6 +13,7 @@ Kirigami.Page {
   property bool separate_av: false
   property bool video_paused: false
   property bool audio_paused: false
+  property color button_color: "#BDBDBD"
 
   id: page
   leftPadding: 0
@@ -333,7 +334,7 @@ Kirigami.Page {
     Rectangle {
       anchors.fill: parent
       color: "black"
-      opacity: 0.5
+      opacity: 0.65
     }
     Row {
       anchors.fill: parent
@@ -341,6 +342,7 @@ Kirigami.Page {
         id: play_button
         width: height
         height: parent.height
+        color: button_color
         source: playing ? "media-playback-pause" : "media-playback-start"
         visible: item.type === "video" || item.type === "audio"
         MouseArea {
@@ -356,6 +358,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         source: "media-skip-forward"
+        color: button_color
         MouseArea {
           anchors.fill: parent
           onClicked: {
@@ -381,6 +384,7 @@ Kirigami.Page {
         id: volume_control
         source: volume_icon(volume_slider.value)
         visible: (item.type === "video" || item.type === "audio") && page.width > 450
+        color: button_color
         MouseArea {
           id: volume_control_mouse_area
           anchors.fill: parent
@@ -419,6 +423,23 @@ Kirigami.Page {
         onHoveredChanged: {
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
+        }
+        background: Rectangle {
+          x: volume_slider.leftPadding
+          y: volume_slider.topPadding + volume_slider.availableHeight / 2 - height / 2
+          implicitWidth: 200
+          implicitHeight: 4
+          width: volume_slider.availableWidth
+          height: implicitHeight
+          radius: 2
+          color: Kirigami.Theme.backgroundColor
+
+          Rectangle {
+            width: volume_slider.visualPosition * parent.width
+            height: parent.height
+            color: Kirigami.Theme.highlightColor
+            radius: 2
+          }
         }
         Timer {
           running: true
@@ -502,6 +523,23 @@ Kirigami.Page {
             audio_player.item.set_position(value);
             timer.cnt = 0;
           }
+          background: Rectangle {
+            x: progress.leftPadding
+            y: progress.topPadding + progress.availableHeight / 2 - height / 2
+            implicitWidth: 200
+            implicitHeight: 4
+            width: progress.availableWidth
+            height: implicitHeight
+            radius: 2
+            color: Kirigami.Theme.backgroundColor
+
+            Rectangle {
+              width: progress.visualPosition * parent.width
+              height: parent.height
+              color: Kirigami.Theme.highlightColor
+              radius: 2
+            }
+          }
         }
         Text {
           visible: player.item && player.item.duration > 0 && !progress.visible
@@ -529,8 +567,7 @@ Kirigami.Page {
         height: parent.height
         source: item.type === "audio" || item.type === "video" ?
                   "media-playlist-shuffle" : ""
-        selected: autoplay
-        opacity: autoplay ? 1 : 0.5
+        color: autoplay ? button_color : "#757575"
 
         MouseArea {
           anchors.fill: parent
@@ -546,6 +583,7 @@ Kirigami.Page {
         anchors.margins: 10
         width: height
         height: parent.height
+        color: button_color
         source: "view-fullscreen"
 
         MouseArea {
