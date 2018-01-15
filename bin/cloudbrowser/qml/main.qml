@@ -15,8 +15,8 @@ Kirigami.ApplicationWindow {
   property int footer_height: include_ads ? 50 : 0
 
   id: root
-  width: 800
-  height: 600
+  width: Math.min(800, screen.desktopAvailableWidth)
+  height: Math.min(600, screen.desktopAvailableHeight)
 
   onVisible_playerChanged: {
     if (visible_player) {
