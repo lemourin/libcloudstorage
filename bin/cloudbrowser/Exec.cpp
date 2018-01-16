@@ -96,6 +96,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     register_types();
 
+    IPlatformUtility::Pointer platform = IPlatformUtility::create();
     QQmlApplicationEngine engine;
 #ifdef WITH_QTWEBVIEW
     engine.rootContext()->setContextProperty("qtwebview", QVariant(true));
@@ -107,7 +108,6 @@ int exec_cloudbrowser(int argc, char** argv) {
 #else
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
-    IPlatformUtility::Pointer platform = IPlatformUtility::create();
     engine.rootContext()->setContextProperty("platform", platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
     engine.load(QUrl("qrc:/qml/main.qml"));
