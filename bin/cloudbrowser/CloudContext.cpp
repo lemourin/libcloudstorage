@@ -165,7 +165,7 @@ QVariantList CloudContext::userProviders() const {
 }
 
 bool CloudContext::includeAds() const {
-  return config_["include_ads"].toBool();
+  return config_.object()["include_ads"].toBool();
 }
 
 QString CloudContext::authorizationUrl(QString provider) const {
@@ -364,12 +364,12 @@ ICloudProvider::InitData CloudContext::init_data(
   ICloudProvider::InitData data;
   data.permission_ = ICloudProvider::Permission::ReadWrite;
   data.hints_["redirect_uri"] = "http://localhost:12345/" + name;
-  data.hints_["client_id"] = config_["keys"]
+  data.hints_["client_id"] = config_.object()["keys"]
                                  .toObject()[name.c_str()]
                                  .toObject()["client_id"]
                                  .toString()
                                  .toStdString();
-  data.hints_["client_secret"] = config_["keys"]
+  data.hints_["client_secret"] = config_.object()["keys"]
                                      .toObject()[name.c_str()]
                                      .toObject()["client_secret"]
                                      .toString()
