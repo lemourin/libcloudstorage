@@ -33,6 +33,14 @@ QString sanitize(const QString& name) {
   return result;
 }
 
+std::string first_url_part(const std::string& url) {
+  auto idx = url.find_first_of('/', 1);
+  if (idx == std::string::npos)
+    return url.substr(1);
+  else
+    return std::string(url.begin() + 1, url.begin() + idx);
+}
+
 class DownloadToString : public IDownloadFileCallback {
  public:
   void receivedData(const char* data, uint32_t length) override {
@@ -162,7 +170,6 @@ bool CloudContext::includeAds() const {
 
 QString CloudContext::authorizationUrl(QString provider) const {
   auto data = init_data(provider.toStdString());
-  data.hints_["state"] = provider.toStdString();
   return ICloudStorage::create()
       ->provider(provider.toStdString().c_str(), std::move(data))
       ->authorizeLibraryUrl()
@@ -335,8 +342,8 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   data.hints_["temporary_directory"] =
       QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
   data.hints_["access_token"] = token.access_token_;
+  data.hints_["file_url"] = "http://localhost:12345/" + util::to_base64(label);
   data.hints_["state"] = util::to_base64(label);
-  data.hints_["file_url"] = "http://localhost:12345";
   data.http_engine_ = util::make_unique<HttpWrapper>(http_);
   data.http_server_ =
       util::make_unique<HttpServerFactoryWrapper>(http_server_factory_);
@@ -356,6 +363,7 @@ ICloudProvider::InitData CloudContext::init_data(
     const std::string& name) const {
   ICloudProvider::InitData data;
   data.permission_ = ICloudProvider::Permission::ReadWrite;
+  data.hints_["redirect_uri"] = "http://localhost:12345/" + name;
   data.hints_["client_id"] = config_["keys"]
                                  .toObject()[name.c_str()]
                                  .toObject()["client_id"]
@@ -374,22 +382,21 @@ CloudContext::HttpServerCallback::HttpServerCallback(CloudContext* ctx)
 
 IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
-  auto state = request.get("state");
+  auto state = first_url_part(request.url());
   auto code = request.get("code");
-  if (code && state) {
+  if (code) {
     QFile file(":/resources/default_success.html");
     file.open(QFile::ReadOnly);
     ctx_->receivedCode(state, code);
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       file.readAll().constData());
-  } else if (request.url() == "/login" && state) {
-    QFile file(QString(":/resources/") + state + "_login.html");
+  } else if (QString(request.url().c_str()).endsWith("/login")) {
+    QFile file(":/resources/" + QString(state.c_str()) + "_login.html");
     file.open(QFile::ReadOnly);
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       file.readAll().constData());
   } else {
     std::string message = "error occurred\n";
-    if (!state) message += "state parameter is missing\n";
     if (!code) message += "code parameter is missing\n";
     if (request.get("error"))
       message += std::string(request.get("error")) + "\n";
@@ -857,10 +864,7 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
 
 IHttpServer::IResponse::Pointer DispatchCallback::handle(
     const IHttpServer::IRequest& r) {
-  auto state = r.get("state");
-  if (!state)
-    return util::response_from_string(r, IHttpRequest::Bad, {},
-                                      "state parameter missing");
+  auto state = first_url_part(r.url());
   auto cb = callback(state);
   if (!cb)
     return util::response_from_string(r, IHttpRequest::Bad, {},
