@@ -11,7 +11,7 @@ Kirigami.ScrollablePage {
     if (qtwebview)
       root.pageStack.push(webview, {url: url});
     else
-      platform.openWebPage(cloud.authorizationUrl(modelData));
+      platform.openWebPage(url);
   }
 
   Component {

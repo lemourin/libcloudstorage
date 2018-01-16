@@ -82,6 +82,11 @@ class DownloadCallback : public IDownloadFileCallback {
 
 CloudContext::CloudContext(QObject* parent)
     : QObject(parent),
+      config_([]() {
+        QFile file(":/config.json");
+        file.open(QFile::ReadOnly);
+        return QJsonDocument::fromJson(file.readAll());
+      }()),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           IHttpServerFactory::create())),
       http_(IHttp::create()),
@@ -104,13 +109,13 @@ CloudContext::CloudContext(QObject* parent)
         util::make_unique<HttpServerCallback>(this), p,
         IHttpServer::Type::Authorization));
   }
-  connect(
-      this, &CloudContext::errorOccurred, this,
-      [](QString operation, QVariantMap provider, int code, QString description) {
-        util::log("(" + provider["label"].toString().toStdString() + ")",
-                  operation.toStdString() + ":", code,
-                  description.toStdString());
-      });
+  connect(this, &CloudContext::errorOccurred, this,
+          [](QString operation, QVariantMap provider, int code,
+             QString description) {
+            util::log("(" + provider["label"].toString().toStdString() + ")",
+                      operation.toStdString() + ":", code,
+                      description.toStdString());
+          });
 }
 
 CloudContext::~CloudContext() {
@@ -151,9 +156,12 @@ QVariantList CloudContext::userProviders() const {
   return result;
 }
 
+bool CloudContext::includeAds() const {
+  return config_["include_ads"].toBool();
+}
+
 QString CloudContext::authorizationUrl(QString provider) const {
-  ICloudProvider::InitData data;
-  data.permission_ = ICloudProvider::Permission::ReadWrite;
+  auto data = init_data(provider.toStdString());
   data.hints_["state"] = provider.toStdString();
   return ICloudStorage::create()
       ->provider(provider.toStdString().c_str(), std::move(data))
@@ -198,7 +206,7 @@ QString CloudContext::pretty(QString provider) const {
       {"onedrive", "One Drive"},
       {"pcloud", "pCloud"},
       {"webdav", "WebDAV"},
-      {"yandex", "Yandex Drive"},
+      {"yandex", "Yandex Disk"},
       {"youtube", "YouTube"},
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"}};
@@ -245,13 +253,12 @@ QString CloudContext::thumbnail_path(const QString& filename) {
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
-  ICloudProvider::InitData data;
-  data.permission_ = ICloudProvider::Permission::ReadWrite;
-  auto p = ICloudStorage::create()->provider(provider, std::move(data));
+  auto p = ICloudStorage::create()->provider(provider, init_data(provider));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     if (e.left())
       return emit errorOccurred(
-          "ExchangeCode", QVariantMap({{"name", provider.c_str()}}),
+          "ExchangeCode", QVariantMap({{"name", provider.c_str()},
+                                       {"label", pretty(provider.c_str())}}),
           e.left()->code_, e.left()->description_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -323,8 +330,7 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
 
     void done(const ICloudProvider&, EitherError<void>) override {}
   };
-  ICloudProvider::InitData data;
-  data.permission_ = ICloudProvider::Permission::ReadWrite;
+  auto data = init_data(name);
   data.token_ = token.token_;
   data.hints_["temporary_directory"] =
       QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
@@ -346,6 +352,23 @@ ICloudProvider* CloudContext::provider(const std::string& label) const {
   return nullptr;
 }
 
+ICloudProvider::InitData CloudContext::init_data(
+    const std::string& name) const {
+  ICloudProvider::InitData data;
+  data.permission_ = ICloudProvider::Permission::ReadWrite;
+  data.hints_["client_id"] = config_["keys"]
+                                 .toObject()[name.c_str()]
+                                 .toObject()["client_id"]
+                                 .toString()
+                                 .toStdString();
+  data.hints_["client_secret"] = config_["keys"]
+                                     .toObject()[name.c_str()]
+                                     .toObject()["client_secret"]
+                                     .toString()
+                                     .toStdString();
+  return data;
+}
+
 CloudContext::HttpServerCallback::HttpServerCallback(CloudContext* ctx)
     : ctx_(ctx) {}
 
@@ -364,9 +387,16 @@ IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     file.open(QFile::ReadOnly);
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       file.readAll().constData());
-  } else
-    return util::response_from_string(request, IHttpRequest::Bad, {},
-                                      "Bad request");
+  } else {
+    std::string message = "error occurred\n";
+    if (!state) message += "state parameter is missing\n";
+    if (!code) message += "code parameter is missing\n";
+    if (request.get("error"))
+      message += std::string(request.get("error")) + "\n";
+    if (request.get("error_description"))
+      message += std::string(request.get("error_description")) + "\n";
+    return util::response_from_string(request, IHttpRequest::Bad, {}, message);
+  }
 }
 
 CloudContext::RequestPool::RequestPool()
@@ -486,8 +516,8 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
             set_done(true);
             if (r.left())
               return emit context->errorOccurred(
-                  "ListDirectory", item->provider().variant(),
-                  r.left()->code_, r.left()->description_.c_str());
+                  "ListDirectory", item->provider().variant(), r.left()->code_,
+                  r.left()->description_.c_str());
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
     if (!first_listed_) {
@@ -540,8 +570,8 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
               set_done(true);
               if (e.left())
                 return emit context->errorOccurred(
-                    "GetThumbnail", item->provider().variant(),
-                    e.left()->code_, e.left()->description_.c_str());
+                    "GetThumbnail", item->provider().variant(), e.left()->code_,
+                    e.left()->description_.c_str());
               QSaveFile file(path);
               if (!file.open(QFile::WriteOnly))
                 return emit context->errorOccurred(
@@ -728,8 +758,8 @@ void MoveItemRequest::update(CloudContext* context, CloudItem* source,
             emit itemMoved();
             if (e.left())
               return emit context->errorOccurred(
-                  "MoveItem", source->provider().variant(),
-                  e.left()->code_, e.left()->description_.c_str());
+                  "MoveItem", source->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
           });
   auto p = source->provider().provider_;
   auto r = p->moveItemAsync(source->item(), destination->item(),
@@ -808,8 +838,8 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
             emit downloadComplete();
             if (e.left())
               return emit context->errorOccurred(
-                  "DownloadItem", item->provider().variant(),
-                  e.left()->code_, e.left()->description_.c_str());
+                  "DownloadItem", item->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
           });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
@@ -829,7 +859,8 @@ IHttpServer::IResponse::Pointer DispatchCallback::handle(
     const IHttpServer::IRequest& r) {
   auto state = r.get("state");
   if (!state)
-    return util::response_from_string(r, IHttpRequest::Bad, {}, "bad request");
+    return util::response_from_string(r, IHttpRequest::Bad, {},
+                                      "state parameter missing");
   auto cb = callback(state);
   if (!cb)
     return util::response_from_string(r, IHttpRequest::Bad, {},

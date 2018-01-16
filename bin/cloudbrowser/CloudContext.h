@@ -2,6 +2,7 @@
 #define CLOUD_CONTEXT_H
 
 #include <QAbstractListModel>
+#include <QJsonDocument>
 #include <QMap>
 #include <QObject>
 #include <QQmlListProperty>
@@ -274,6 +275,7 @@ class CloudContext : public QObject {
   Q_PROPERTY(QStringList providers READ providers CONSTANT)
   Q_PROPERTY(
       QVariantList userProviders READ userProviders NOTIFY userProvidersChanged)
+  Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
 
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
@@ -282,6 +284,7 @@ class CloudContext : public QObject {
 
   QStringList providers() const;
   QVariantList userProviders() const;
+  bool includeAds() const;
 
   Q_INVOKABLE QString authorizationUrl(QString provider) const;
   Q_INVOKABLE QObject* root(QVariant provider);
@@ -348,8 +351,11 @@ class CloudContext : public QObject {
       const std::string& name, const std::string& label,
       cloudstorage::Token token) const;
   cloudstorage::ICloudProvider* provider(const std::string& label) const;
+  cloudstorage::ICloudProvider::InitData init_data(
+      const std::string& name) const;
 
   mutable std::mutex mutex_;
+  QJsonDocument config_;
   DebugStream debug_stream_;
   std::shared_ptr<cloudstorage::IHttpServerFactory> http_server_factory_;
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;

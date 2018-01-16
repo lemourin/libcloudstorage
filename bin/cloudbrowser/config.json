@@ -1,0 +1,41 @@
+{
+  "include_ads": false,
+  "keys": {
+    "box": {
+      "client_id": "8v59eo0k7cslcwilw4lu6ks53iga804i",
+      "client_secret": "nFQhObfGRzVjDZxXFooSNJ8TZykHBC5m"
+    },
+    "dropbox": {
+      "client_id": "djvvk4x5z7o1mjl",
+      "client_secret": "n8vr2nh47187s0t"
+    },
+    "google": {
+      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
+      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+    },
+    "gphotos": {
+      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
+      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+    },
+    "onedrive": {
+      "client_id": "57ef8298-899b-48e1-a3a8-e21168ec81c6",
+      "client_secret": "izJXJPZ1353(#hmzaiXC7;@"
+    },
+    "hubic": {
+      "client_id": "api_hubic_nhPlXdw0erx1bE1gMbEljQz9hEAGgmt2",
+      "client_secret": "UPqFIWnWYvKruvdwBoowwimyQODoMi3KWZuwWP0g7V5bAHJUgE4NHRr2CJFpixda"
+    },
+    "pcloud": {
+      "client_id": "YDVHLm8xYJm",
+      "client_secret": "cujMh9EXLwhxj3VCW1341y9CT6Ik"
+    },
+    "yandex": {
+      "client_id": "d8e5d26d6097441bbd8c3eeff7772643",
+      "client_secret": "3aac1fc76ee44f4586b1cb878111465f"
+    },
+    "youtube": {
+      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
+      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+    }
+  }
+}

@@ -5,7 +5,7 @@ import org.kde.kirigami 2.0 as Kirigami
 import libcloudstorage 1.0
 
 Kirigami.ApplicationWindow {
-  property bool include_ads: false
+  property bool include_ads: cloud.includeAds
   property bool visible_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile || root.height > root.width

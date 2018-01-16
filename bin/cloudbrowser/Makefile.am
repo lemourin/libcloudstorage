@@ -49,6 +49,7 @@ nodist_libcloudbrowser_la_SOURCES = \
 
 DEPS_res = \
 	qtquickcontrols2.conf \
+	config.json \
 	qml/main.qml \
 	qml/WebView.qml \
 	qml/MediaPlayer.qml \

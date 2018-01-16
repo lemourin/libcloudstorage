@@ -45,5 +45,6 @@
         <file>resources/cryptopp.png</file>
         <file>resources/ffmpeg.png</file>
         <file>qml/ImagePlayer.qml</file>
+        <file>config.json</file>
     </qresource>
 </RCC>
