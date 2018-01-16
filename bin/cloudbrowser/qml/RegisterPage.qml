@@ -7,6 +7,13 @@ Kirigami.ScrollablePage {
   anchors.fill: parent
   title: "Add Provider"
 
+  function open_auth(url) {
+    if (qtwebview)
+      root.pageStack.push(webview, {url: url});
+    else
+      platform.openWebPage(cloud.authorizationUrl(modelData));
+  }
+
   Component {
     id: webview
     Kirigami.Page {
@@ -41,10 +48,7 @@ Kirigami.ScrollablePage {
       backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
                                                 Kirigami.Theme.backgroundColor
       onClicked: {
-        if (qtwebview)
-          root.pageStack.push(webview, {url: cloud.authorizationUrl(modelData)});
-        else
-          platform.openWebPage(cloud.authorizationUrl(modelData));
+        open_auth(cloud.authorizationUrl(modelData));
         list.currentIndex = index;
       }
       contentItem: ProviderEntry {

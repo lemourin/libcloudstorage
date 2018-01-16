@@ -30,26 +30,36 @@ class RequestNotifier : public QObject {
   Q_OBJECT
 };
 
+struct Provider {
+  std::string label_;
+  std::shared_ptr<cloudstorage::ICloudProvider> provider_;
+
+  QVariantMap variant() const {
+    QVariantMap map;
+    map["label"] = label_.c_str();
+    map["type"] = provider_->name().c_str();
+    return map;
+  }
+};
+
 class CloudItem : public QObject {
  public:
   Q_PROPERTY(QString filename READ filename CONSTANT)
   Q_PROPERTY(uint64_t size READ size CONSTANT)
   Q_PROPERTY(QString type READ type CONSTANT)
 
-  CloudItem(std::shared_ptr<cloudstorage::ICloudProvider>,
-            cloudstorage::IItem::Pointer, QObject* parent = nullptr);
+  CloudItem(const Provider&, cloudstorage::IItem::Pointer,
+            QObject* parent = nullptr);
 
   cloudstorage::IItem::Pointer item() const { return item_; }
-  std::shared_ptr<cloudstorage::ICloudProvider> provider() const {
-    return provider_;
-  }
+  const Provider& provider() const { return provider_; }
   QString filename() const;
   uint64_t size() const { return item_->size(); }
   QString type() const;
   Q_INVOKABLE bool supports(QString operation) const;
 
  private:
-  std::shared_ptr<cloudstorage::ICloudProvider> provider_;
+  Provider provider_;
   cloudstorage::IItem::Pointer item_;
   Q_OBJECT
 };
@@ -72,7 +82,7 @@ class Request : public QObject {
 
 class ListDirectoryModel : public QAbstractListModel {
  public:
-  void set_provider(std::shared_ptr<cloudstorage::ICloudProvider>);
+  void set_provider(const Provider&);
   void add(cloudstorage::IItem::Pointer);
   void clear();
 
@@ -81,7 +91,7 @@ class ListDirectoryModel : public QAbstractListModel {
   QHash<int, QByteArray> roleNames() const override;
 
  private:
-  std::shared_ptr<cloudstorage::ICloudProvider> provider_;
+  Provider provider_;
   std::vector<cloudstorage::IItem::Pointer> list_;
   Q_OBJECT
 };
@@ -275,7 +285,7 @@ class CloudContext : public QObject {
 
   Q_INVOKABLE QString authorizationUrl(QString provider) const;
   Q_INVOKABLE QObject* root(QVariant provider);
-  Q_INVOKABLE void removeProvider(QVariant provider);
+  Q_INVOKABLE void removeProvider(QVariant label);
   Q_INVOKABLE QString pretty(QString provider) const;
   Q_INVOKABLE QVariantMap readUrl(QString url) const;
   Q_INVOKABLE QString home() const;
@@ -290,14 +300,10 @@ class CloudContext : public QObject {
  signals:
   void userProvidersChanged();
   void receivedCode(QString provider);
-  void errorOccurred(QString operation, int code, QString description);
+  void errorOccurred(QString operation, QVariantMap provider, int code,
+                     QString description);
 
  private:
-  struct Provider {
-    std::string label_;
-    std::shared_ptr<cloudstorage::ICloudProvider> provider_;
-  };
-
   class RequestPool {
    public:
     RequestPool();

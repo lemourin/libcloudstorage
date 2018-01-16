@@ -56,9 +56,18 @@ Kirigami.ApplicationWindow {
       root.globalDrawer.actions = root.actions();
     }
     onErrorOccurred: {
-      if (operation !== "GetThumbnail")
-        root.showPassiveNotification("Error " + code + ": " +
-                                     operation + (description ? " " + description : ""));
+      if (operation !== "GetThumbnail") {
+        var message = "(" + provider.label + ") " + operation + ": " + code + " " +
+            operation + (description ? " " + description : "")
+        if (code === 401) {
+          message = "Revoked credentials, please reauthenticate.";
+          pageStack.clear();
+          cloud.removeProvider(provider);
+          pageStack.push(addProviderPage);
+          pageStack.currentItem.open_auth(cloud.authorizationUrl(provider.type));
+        }
+        root.showPassiveNotification(message);
+      }
     }
 
     function list(title, label, item) {

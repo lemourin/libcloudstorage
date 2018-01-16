@@ -104,11 +104,13 @@ CloudContext::CloudContext(QObject* parent)
         util::make_unique<HttpServerCallback>(this), p,
         IHttpServer::Type::Authorization));
   }
-  connect(this, &CloudContext::errorOccurred, this,
-          [](QString operation, int code, QString description) {
-            util::log(operation.toStdString() + ":", code,
-                      description.toStdString());
-          });
+  connect(
+      this, &CloudContext::errorOccurred, this,
+      [](QString operation, QVariantMap provider, int code, QString description) {
+        util::log("(" + provider["label"].toString().toStdString() + ")",
+                  operation.toStdString() + ":", code,
+                  description.toStdString());
+      });
 }
 
 CloudContext::~CloudContext() {
@@ -164,7 +166,7 @@ QObject* CloudContext::root(QVariant provider) {
   auto label = provider.toMap()["label"].toString().toStdString();
   for (auto&& i : provider_)
     if (i.label_ == label) {
-      auto item = new CloudItem(i.provider_, i.provider_->rootDirectory());
+      auto item = new CloudItem(i, i.provider_->rootDirectory());
       QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
       return item;
     }
@@ -248,8 +250,9 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
   auto p = ICloudStorage::create()->provider(provider, std::move(data));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     if (e.left())
-      return emit errorOccurred("ExchangeCode", e.left()->code_,
-                                e.left()->description_.c_str());
+      return emit errorOccurred(
+          "ExchangeCode", QVariantMap({{"name", provider.c_str()}}),
+          e.left()->code_, e.left()->description_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
       std::unordered_set<std::string> names;
@@ -403,8 +406,7 @@ void CloudContext::RequestPool::add(std::shared_ptr<ICloudProvider> p,
   condition_.notify_one();
 }
 
-CloudItem::CloudItem(std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
-                     QObject* parent)
+CloudItem::CloudItem(const Provider& p, IItem::Pointer item, QObject* parent)
     : QObject(parent), provider_(p), item_(item) {}
 
 QString CloudItem::filename() const { return item_->filename().c_str(); }
@@ -427,25 +429,24 @@ QString CloudItem::type() const {
 }
 
 bool CloudItem::supports(QString operation) const {
+  auto provider = this->provider().provider_;
   if (operation == "delete")
-    return provider()->supportedOperations() & ICloudProvider::DeleteItem;
+    return provider->supportedOperations() & ICloudProvider::DeleteItem;
   else if (operation == "upload")
-    return provider()->supportedOperations() & ICloudProvider::UploadFile;
+    return provider->supportedOperations() & ICloudProvider::UploadFile;
   else if (operation == "move")
-    return provider()->supportedOperations() & ICloudProvider::MoveItem;
+    return provider->supportedOperations() & ICloudProvider::MoveItem;
   else if (operation == "rename")
-    return provider()->supportedOperations() & ICloudProvider::RenameItem;
+    return provider->supportedOperations() & ICloudProvider::RenameItem;
   else if (operation == "mkdir")
-    return provider()->supportedOperations() & ICloudProvider::CreateDirectory;
+    return provider->supportedOperations() & ICloudProvider::CreateDirectory;
   else if (operation == "download")
-    return provider()->supportedOperations() & ICloudProvider::DownloadFile;
+    return provider->supportedOperations() & ICloudProvider::DownloadFile;
   else
     return true;
 }
 
-void ListDirectoryModel::set_provider(std::shared_ptr<ICloudProvider> p) {
-  provider_ = p;
-}
+void ListDirectoryModel::set_provider(const Provider& p) { provider_ = p; }
 
 void ListDirectoryModel::add(IItem::Pointer t) {
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
@@ -485,8 +486,8 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
             set_done(true);
             if (r.left())
               return emit context->errorOccurred(
-                  "ListDirectory", r.left()->code_,
-                  r.left()->description_.c_str());
+                  "ListDirectory", item->provider().variant(),
+                  r.left()->code_, r.left()->description_.c_str());
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
     if (!first_listed_) {
@@ -512,9 +513,9 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
     RequestNotifier* notifier_;
   };
   first_listed_ = false;
-  auto r = item->provider()->listDirectoryAsync(
+  auto r = item->provider().provider_->listDirectoryAsync(
       item->item(), util::make_unique<ListDirectoryCallback>(object));
-  context->add(item->provider(), std::move(r));
+  context->add(item->provider().provider_, std::move(r));
 }
 
 void Request::set_done(bool done) {
@@ -534,24 +535,25 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
     emit sourceChanged();
   } else {
     auto object = new RequestNotifier;
-    connect(
-        object, &RequestNotifier::finishedString, this,
-        [=](EitherError<std::string> e) {
-          set_done(true);
-          if (e.left())
-            return emit context->errorOccurred("GetThumbnail", e.left()->code_,
-                                               e.left()->description_.c_str());
-          QSaveFile file(path);
-          if (!file.open(QFile::WriteOnly))
-            return emit context->errorOccurred("GetThumbnail",
-                                               IHttpRequest::Failure,
-                                               "couldn't save thumbnail");
-          file.write(e.right()->data(), static_cast<qint64>(e.right()->size()));
-          if (file.commit()) {
-            source_ = QUrl::fromLocalFile(path).toString();
-            emit sourceChanged();
-          }
-        });
+    connect(object, &RequestNotifier::finishedString, this,
+            [=](EitherError<std::string> e) {
+              set_done(true);
+              if (e.left())
+                return emit context->errorOccurred(
+                    "GetThumbnail", item->provider().variant(),
+                    e.left()->code_, e.left()->description_.c_str());
+              QSaveFile file(path);
+              if (!file.open(QFile::WriteOnly))
+                return emit context->errorOccurred(
+                    "GetThumbnail", item->provider().variant(),
+                    IHttpRequest::Failure, "couldn't save thumbnail");
+              file.write(e.right()->data(),
+                         static_cast<qint64>(e.right()->size()));
+              if (file.commit()) {
+                source_ = QUrl::fromLocalFile(path).toString();
+                emit sourceChanged();
+              }
+            });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
       DownloadThumbnailCallback(RequestNotifier* notifier,
@@ -620,7 +622,7 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
       std::shared_ptr<ICloudProvider> provider_;
       IItem::Pointer item_;
     };
-    auto p = item->provider();
+    auto p = item->provider().provider_;
     auto r = p->getThumbnailAsync(
         item->item(),
         util::make_unique<DownloadThumbnailCallback>(object, p, item->item()));
@@ -635,14 +637,15 @@ void GetUrlRequest::update(CloudContext* context, CloudItem* item) {
           [=](EitherError<std::string> e) {
             if (e.left()) {
               source_ = "";
-              emit context->errorOccurred("GetItemUrl", e.left()->code_,
-                                          e.left()->description_.c_str());
+              emit context->errorOccurred(
+                  "GetItemUrl", item->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
             } else
               source_ = e.right()->c_str();
             emit sourceChanged();
             set_done(true);
           });
-  auto p = item->provider();
+  auto p = item->provider().provider_;
   auto r =
       p->getItemUrlAsync(item->item(), [object](EitherError<std::string> e) {
         emit object->finishedString(e);
@@ -655,15 +658,16 @@ void CreateDirectoryRequest::update(CloudContext* context, CloudItem* parent,
                                     QString name) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(
-      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
-        set_done(true);
-        emit createdDirectory();
-        if (e.left())
-          return emit context->errorOccurred("CreateDirectory", e.left()->code_,
-                                             e.left()->description_.c_str());
-      });
-  auto p = parent->provider();
+  connect(object, &RequestNotifier::finishedItem, this,
+          [=](EitherError<IItem> e) {
+            set_done(true);
+            emit createdDirectory();
+            if (e.left())
+              return emit context->errorOccurred(
+                  "CreateDirectory", parent->provider().variant(),
+                  e.left()->code_, e.left()->description_.c_str());
+          });
+  auto p = parent->provider().provider_;
   auto r = p->createDirectoryAsync(parent->item(), name.toStdString(),
                                    [object](EitherError<IItem> e) {
                                      emit object->finishedItem(e);
@@ -675,15 +679,16 @@ void CreateDirectoryRequest::update(CloudContext* context, CloudItem* parent,
 void DeleteItemRequest::update(CloudContext* context, CloudItem* item) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(
-      object, &RequestNotifier::finishedVoid, this, [=](EitherError<void> e) {
-        set_done(true);
-        emit itemDeleted();
-        if (e.left())
-          return emit context->errorOccurred("DeleteItem", e.left()->code_,
-                                             e.left()->description_.c_str());
-      });
-  auto p = item->provider();
+  connect(object, &RequestNotifier::finishedVoid, this,
+          [=](EitherError<void> e) {
+            set_done(true);
+            emit itemDeleted();
+            if (e.left())
+              return emit context->errorOccurred(
+                  "DeleteItem", item->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
+          });
+  auto p = item->provider().provider_;
   auto r = p->deleteItemAsync(item->item(), [object](EitherError<void> e) {
     emit object->finishedVoid(e);
     object->deleteLater();
@@ -700,10 +705,11 @@ void RenameItemRequest::update(CloudContext* context, CloudItem* item,
             set_done(true);
             emit itemRenamed();
             if (e.left())
-              return context->errorOccurred("RenameItem", e.left()->code_,
-                                            e.left()->description_.c_str());
+              return context->errorOccurred(
+                  "RenameItem", item->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
           });
-  auto p = item->provider();
+  auto p = item->provider().provider_;
   auto r = p->renameItemAsync(item->item(), name.toStdString(),
                               [object](EitherError<IItem> e) {
                                 emit object->finishedItem(e);
@@ -722,9 +728,10 @@ void MoveItemRequest::update(CloudContext* context, CloudItem* source,
             emit itemMoved();
             if (e.left())
               return emit context->errorOccurred(
-                  "MoveItem", e.left()->code_, e.left()->description_.c_str());
+                  "MoveItem", source->provider().variant(),
+                  e.left()->code_, e.left()->description_.c_str());
           });
-  auto p = source->provider();
+  auto p = source->provider().provider_;
   auto r = p->moveItemAsync(source->item(), destination->item(),
                             [object](EitherError<IItem> e) {
                               emit object->finishedItem(e);
@@ -768,14 +775,15 @@ void UploadItemRequest::update(CloudContext* context, CloudItem* parent,
     File file_;
   };
   auto object = new RequestNotifier;
-  connect(
-      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
-        set_done(true);
-        emit uploadComplete();
-        if (e.left())
-          return emit context->errorOccurred("UploadItem", e.left()->code_,
-                                             e.left()->description_.c_str());
-      });
+  connect(object, &RequestNotifier::finishedItem, this,
+          [=](EitherError<IItem> e) {
+            set_done(true);
+            emit uploadComplete();
+            if (e.left())
+              return emit context->errorOccurred(
+                  "UploadItem", parent->provider().variant(), e.left()->code_,
+                  e.left()->description_.c_str());
+          });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
             qreal nprogress = static_cast<qreal>(now) / total;
@@ -784,7 +792,7 @@ void UploadItemRequest::update(CloudContext* context, CloudItem* parent,
               emit progressChanged();
             }
           });
-  auto p = parent->provider();
+  auto p = parent->provider().provider_;
   auto r = p->uploadFileAsync(parent->item(), filename.toStdString(),
                               util::make_unique<UploadCallback>(object, path));
   context->add(p, std::move(r));
@@ -794,14 +802,15 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
                                  QString path) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(
-      object, &RequestNotifier::finishedVoid, this, [=](EitherError<void> e) {
-        set_done(true);
-        emit downloadComplete();
-        if (e.left())
-          return emit context->errorOccurred("DownloadItem", e.left()->code_,
-                                             e.left()->description_.c_str());
-      });
+  connect(object, &RequestNotifier::finishedVoid, this,
+          [=](EitherError<void> e) {
+            set_done(true);
+            emit downloadComplete();
+            if (e.left())
+              return emit context->errorOccurred(
+                  "DownloadItem", item->provider().variant(),
+                  e.left()->code_, e.left()->description_.c_str());
+          });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
             qreal nprogress = static_cast<qreal>(now) / total;
@@ -810,7 +819,7 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
               emit progressChanged();
             }
           });
-  auto p = item->provider();
+  auto p = item->provider().provider_;
   auto r = p->downloadFileAsync(
       item->item(), util::make_unique<DownloadCallback>(object, path));
   context->add(p, std::move(r));
