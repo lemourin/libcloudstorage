@@ -239,7 +239,8 @@ void Request<T>::send(RequestFactory factory, RequestCompleted complete,
            this->reauthorize([=](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted)
-                 return complete(e.left());
+                 return complete(
+                     Error{IHttpRequest::Unauthorized, e.left()->description_});
                else
                  return complete(
                      Error{response.http_code_, error_stream->str()});
