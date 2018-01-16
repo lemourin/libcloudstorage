@@ -235,10 +235,10 @@ std::string OneDrive::Auth::authorizeLibraryUrl() const {
   else
     scope += "onedrive.readonly";
   std::string response_type = "code";
-  result += "client_id=" + client_id() + "&";
+  result += "client_id=" + util::Url::escape(client_id()) + "&";
   result += "scope=" + scope + "&";
   result += "response_type=" + response_type + "&";
-  result += "redirect_uri=" + redirect_uri() + "&";
+  result += "redirect_uri=" + util::Url::escape(redirect_uri()) + "&";
   result += "state=" + state();
   return result;
 }
@@ -247,10 +247,10 @@ IHttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& data) const {
   auto request =
       http()->create("https://login.live.com/oauth20_token.srf", "POST");
-  data << "client_id=" << client_id() << "&"
-       << "client_secret=" << client_secret() << "&"
-       << "redirect_uri=" << redirect_uri() << "&"
-       << "code=" << authorization_code() << "&"
+  data << "client_id=" << util::Url::escape(client_id()) << "&"
+       << "client_secret=" << util::Url::escape(client_secret()) << "&"
+       << "redirect_uri=" << util::Url::escape(redirect_uri()) << "&"
+       << "code=" << util::Url::escape(authorization_code()) << "&"
        << "grant_type=authorization_code";
   return request;
 }
@@ -259,10 +259,10 @@ IHttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
     std::ostream& data) const {
   IHttpRequest::Pointer request =
       http()->create("https://login.live.com/oauth20_token.srf", "POST");
-  data << "client_id=" << client_id() << "&"
-       << "client_secret=" << client_secret() << "&"
-       << "refresh_token=" << access_token()->refresh_token_ << "&"
-       << "grant_type=refresh_token";
+  data << "client_id=" << util::Url::escape(client_id()) << "&"
+       << "client_secret=" << util::Url::escape(client_secret()) << "&"
+       << "refresh_token=" << util::Url::escape(access_token()->refresh_token_)
+       << "&grant_type=refresh_token";
   return request;
 }
 
