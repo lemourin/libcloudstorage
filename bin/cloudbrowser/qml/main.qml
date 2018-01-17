@@ -35,7 +35,7 @@ Kirigami.ApplicationWindow {
         platform.showAd();
         footer_height = 50;
       }
-      root.showNormal();
+      root.show();
     }
   }
 
