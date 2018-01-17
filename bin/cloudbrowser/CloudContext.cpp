@@ -264,8 +264,9 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     if (e.left())
       return emit errorOccurred(
-          "ExchangeCode", QVariantMap({{"name", provider.c_str()},
-                                       {"label", pretty(provider.c_str())}}),
+          "ExchangeCode",
+          QVariantMap({{"name", provider.c_str()},
+                       {"label", pretty(provider.c_str())}}),
           e.left()->code_, e.left()->description_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -492,7 +493,7 @@ void ListDirectoryModel::add(IItem::Pointer t) {
 }
 
 void ListDirectoryModel::clear() {
-  beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
+  beginRemoveRows(QModelIndex(), 0, std::max<int>(rowCount() - 1, 0));
   list_.clear();
   endRemoveRows();
 }
@@ -518,12 +519,13 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
   list_.set_provider(item->provider());
   set_done(false);
   auto object = new RequestNotifier;
+  auto provider = item->provider().variant();
   connect(object, &RequestNotifier::finishedList, this,
           [=](EitherError<std::vector<IItem::Pointer>> r) {
             set_done(true);
             if (r.left())
               return emit context->errorOccurred(
-                  "ListDirectory", item->provider().variant(), r.left()->code_,
+                  "ListDirectory", provider, r.left()->code_,
                   r.left()->description_.c_str());
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
@@ -572,25 +574,26 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
     emit sourceChanged();
   } else {
     auto object = new RequestNotifier;
-    connect(object, &RequestNotifier::finishedString, this,
-            [=](EitherError<std::string> e) {
-              set_done(true);
-              if (e.left())
-                return emit context->errorOccurred(
-                    "GetThumbnail", item->provider().variant(), e.left()->code_,
-                    e.left()->description_.c_str());
-              QSaveFile file(path);
-              if (!file.open(QFile::WriteOnly))
-                return emit context->errorOccurred(
-                    "GetThumbnail", item->provider().variant(),
-                    IHttpRequest::Failure, "couldn't save thumbnail");
-              file.write(e.right()->data(),
-                         static_cast<qint64>(e.right()->size()));
-              if (file.commit()) {
-                source_ = QUrl::fromLocalFile(path).toString();
-                emit sourceChanged();
-              }
-            });
+    auto provider = item->provider().variant();
+    connect(
+        object, &RequestNotifier::finishedString, this,
+        [=](EitherError<std::string> e) {
+          set_done(true);
+          if (e.left())
+            return emit context->errorOccurred("GetThumbnail", provider,
+                                               e.left()->code_,
+                                               e.left()->description_.c_str());
+          QSaveFile file(path);
+          if (!file.open(QFile::WriteOnly))
+            return emit context->errorOccurred("GetThumbnail", provider,
+                                               IHttpRequest::Failure,
+                                               "couldn't save thumbnail");
+          file.write(e.right()->data(), static_cast<qint64>(e.right()->size()));
+          if (file.commit()) {
+            source_ = QUrl::fromLocalFile(path).toString();
+            emit sourceChanged();
+          }
+        });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
       DownloadThumbnailCallback(RequestNotifier* notifier,
@@ -670,13 +673,14 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
 void GetUrlRequest::update(CloudContext* context, CloudItem* item) {
   set_done(false);
   auto object = new RequestNotifier;
+  auto provider = item->provider().variant();
   connect(object, &RequestNotifier::finishedString, this,
           [=](EitherError<std::string> e) {
             if (e.left()) {
               source_ = "";
-              emit context->errorOccurred(
-                  "GetItemUrl", item->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
+              emit context->errorOccurred("GetItemUrl", provider,
+                                          e.left()->code_,
+                                          e.left()->description_.c_str());
             } else
               source_ = e.right()->c_str();
             emit sourceChanged();
@@ -695,15 +699,16 @@ void CreateDirectoryRequest::update(CloudContext* context, CloudItem* parent,
                                     QString name) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedItem, this,
-          [=](EitherError<IItem> e) {
-            set_done(true);
-            emit createdDirectory();
-            if (e.left())
-              return emit context->errorOccurred(
-                  "CreateDirectory", parent->provider().variant(),
-                  e.left()->code_, e.left()->description_.c_str());
-          });
+  auto provider = parent->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
+        set_done(true);
+        emit createdDirectory();
+        if (e.left())
+          return emit context->errorOccurred("CreateDirectory", provider,
+                                             e.left()->code_,
+                                             e.left()->description_.c_str());
+      });
   auto p = parent->provider().provider_;
   auto r = p->createDirectoryAsync(parent->item(), name.toStdString(),
                                    [object](EitherError<IItem> e) {
@@ -716,15 +721,16 @@ void CreateDirectoryRequest::update(CloudContext* context, CloudItem* parent,
 void DeleteItemRequest::update(CloudContext* context, CloudItem* item) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedVoid, this,
-          [=](EitherError<void> e) {
-            set_done(true);
-            emit itemDeleted();
-            if (e.left())
-              return emit context->errorOccurred(
-                  "DeleteItem", item->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
-          });
+  auto provider = item->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedVoid, this, [=](EitherError<void> e) {
+        set_done(true);
+        emit itemDeleted();
+        if (e.left())
+          return emit context->errorOccurred("DeleteItem", provider,
+                                             e.left()->code_,
+                                             e.left()->description_.c_str());
+      });
   auto p = item->provider().provider_;
   auto r = p->deleteItemAsync(item->item(), [object](EitherError<void> e) {
     emit object->finishedVoid(e);
@@ -737,15 +743,15 @@ void RenameItemRequest::update(CloudContext* context, CloudItem* item,
                                QString name) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedItem, this,
-          [=](EitherError<IItem> e) {
-            set_done(true);
-            emit itemRenamed();
-            if (e.left())
-              return context->errorOccurred(
-                  "RenameItem", item->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
-          });
+  auto provider = item->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
+        set_done(true);
+        emit itemRenamed();
+        if (e.left())
+          return context->errorOccurred("RenameItem", provider, e.left()->code_,
+                                        e.left()->description_.c_str());
+      });
   auto p = item->provider().provider_;
   auto r = p->renameItemAsync(item->item(), name.toStdString(),
                               [object](EitherError<IItem> e) {
@@ -759,15 +765,16 @@ void MoveItemRequest::update(CloudContext* context, CloudItem* source,
                              CloudItem* destination) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedItem, this,
-          [=](EitherError<IItem> e) {
-            set_done(true);
-            emit itemMoved();
-            if (e.left())
-              return emit context->errorOccurred(
-                  "MoveItem", source->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
-          });
+  auto provider = source->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
+        set_done(true);
+        emit itemMoved();
+        if (e.left())
+          return emit context->errorOccurred("MoveItem", provider,
+                                             e.left()->code_,
+                                             e.left()->description_.c_str());
+      });
   auto p = source->provider().provider_;
   auto r = p->moveItemAsync(source->item(), destination->item(),
                             [object](EitherError<IItem> e) {
@@ -812,15 +819,16 @@ void UploadItemRequest::update(CloudContext* context, CloudItem* parent,
     File file_;
   };
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedItem, this,
-          [=](EitherError<IItem> e) {
-            set_done(true);
-            emit uploadComplete();
-            if (e.left())
-              return emit context->errorOccurred(
-                  "UploadItem", parent->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
-          });
+  auto provider = parent->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedItem, this, [=](EitherError<IItem> e) {
+        set_done(true);
+        emit uploadComplete();
+        if (e.left())
+          return emit context->errorOccurred("UploadItem", provider,
+                                             e.left()->code_,
+                                             e.left()->description_.c_str());
+      });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
             qreal nprogress = static_cast<qreal>(now) / total;
@@ -839,15 +847,16 @@ void DownloadItemRequest::update(CloudContext* context, CloudItem* item,
                                  QString path) {
   set_done(false);
   auto object = new RequestNotifier;
-  connect(object, &RequestNotifier::finishedVoid, this,
-          [=](EitherError<void> e) {
-            set_done(true);
-            emit downloadComplete();
-            if (e.left())
-              return emit context->errorOccurred(
-                  "DownloadItem", item->provider().variant(), e.left()->code_,
-                  e.left()->description_.c_str());
-          });
+  auto provider = item->provider().variant();
+  connect(
+      object, &RequestNotifier::finishedVoid, this, [=](EitherError<void> e) {
+        set_done(true);
+        emit downloadComplete();
+        if (e.left())
+          return emit context->errorOccurred("DownloadItem", provider,
+                                             e.left()->code_,
+                                             e.left()->description_.c_str());
+      });
   connect(object, &RequestNotifier::progressChanged, this,
           [=](qint64 total, qint64 now) {
             qreal nprogress = static_cast<qreal>(now) / total;
