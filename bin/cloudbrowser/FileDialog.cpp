@@ -1,6 +1,27 @@
-#ifdef __ANDROID__
-
 #include "FileDialog.h"
+#include "File.h"
+
+IFileDialog::IFileDialog() : select_existing_() {}
+
+void IFileDialog::setSelectExisting(bool e) {
+  if (select_existing_ == e) return;
+  select_existing_ = e;
+  emit selectExistingChanged();
+}
+
+void IFileDialog::setUrl(QString e) {
+  if (url_ == e) return;
+  url_ = e;
+  emit urlChanged();
+}
+
+void IFileDialog::setFilename(QString e) {
+  if (filename_ == e) return;
+  filename_ = e;
+  emit filenameChanged();
+}
+
+#ifdef __ANDROID__
 
 #include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
@@ -9,30 +30,6 @@
 const int REQUEST_CODE = 42;
 
 FileDialog::FileDialog() : result_receiver_(this) {}
-
-void FileDialog::setSelectFolder(bool e) {
-  if (select_folder_ == e) return;
-  select_folder_ = e;
-  emit selectFolderChanged();
-}
-
-void FileDialog::setSelectExisting(bool e) {
-  if (select_existing_ == e) return;
-  select_existing_ = e;
-  emit selectExistingChanged();
-}
-
-void FileDialog::setFileUrl(QString e) {
-  if (file_url_ == e) return;
-  file_url_ = e;
-  emit fileUrlChanged();
-}
-
-void FileDialog::setFilename(QString e) {
-  if (filename_ == e) return;
-  filename_ = e;
-  emit filenameChanged();
-}
 
 void FileDialog::open() {
   QAndroidJniObject intent;
@@ -60,8 +57,66 @@ void FileDialog::ActivityReceiver::handleActivityResult(
       "org/videolan/cloudbrowser/CloudBrowser", "filename",
       "(Landroid/net/Uri;)Ljava/lang/String;", uri.object());
   file_dialog_->setFilename(filename.toString());
-  file_dialog_->setFileUrl(uri.toString());
-  emit file_dialog_->accepted();
+  file_dialog_->setUrl(uri.toString());
+  emit file_dialog_->ready();
 }
 
 #endif  // __ANDROID__
+
+#ifdef WINRT
+
+#include <collection.h>
+#include <ppltasks.h>
+#include <private/qeventdispatcher_winrt_p.h>
+#include <qfunctions_winrt.h>
+#include <QDebug>
+#include <QUrl>
+
+using namespace concurrency;
+using namespace Windows::Storage;
+using namespace Windows::Storage::Pickers;
+using namespace Platform;
+using namespace Platform::Collections;
+
+void FileDialog::open() {
+  QEventDispatcherWinRT::runOnXamlThread([this]() {
+    if (!selectExisting()) {
+      auto picker = ref new FileSavePicker();
+      picker->SuggestedFileName =
+          ref new String(filename().toStdWString().c_str());
+      auto idx = filename().lastIndexOf('.');
+      auto ext = idx != -1 ? filename().mid(idx) : "";
+      auto extensions = ref new Collections::Vector<String ^>();
+      extensions->Append(ref new String(ext.toStdWString().c_str()));
+      picker->FileTypeChoices->Insert("", extensions);
+      create_task(picker->PickSaveFileAsync()).then([this](StorageFile ^ file) {
+        if (file) {
+          auto path =
+              QUrl::fromLocalFile(QString::fromWCharArray(file->Path->Data()))
+                  .toString();
+          WinRTFile::register_file(path, file);
+          setUrl(path);
+          emit ready();
+        }
+      });
+    } else {
+      auto picker = ref new FileOpenPicker();
+      picker->FileTypeFilter->Append("*");
+      create_task(picker->PickSingleFileAsync())
+          .then([this](StorageFile ^ file) {
+            if (file) {
+              auto path = QUrl::fromLocalFile(
+                              QString::fromWCharArray(file->Path->Data()))
+                              .toString();
+              WinRTFile::register_file(path, file);
+              setFilename(path.mid(path.lastIndexOf('/') + 1));
+              setUrl(path);
+              emit ready();
+            }
+          });
+    }
+    return true;
+  });
+}
+
+#endif  // WINRT

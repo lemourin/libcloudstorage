@@ -18,6 +18,8 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
+#undef CreateDirectory
+
 using namespace cloudstorage;
 
 namespace {

@@ -14,6 +14,7 @@ libcloudbrowser_la_SOURCES = \
 	GenerateThumbnail.cpp GenerateThumbnail.h \
 	AndroidUtility.cpp AndroidUtility.h \
 	DesktopUtility.cpp DesktopUtility.h \
+	WinRTUtility.cpp WinRTUtility.h \
 	FileDialog.cpp FileDialog.h \
 	Exec.cpp Exec.h \
 	File.cpp File.h \
@@ -63,6 +64,7 @@ DEPS_res = \
 	qml/FileDialog.qml \
 	qml/QtFileDialog.qml \
 	qml/AndroidFileDialog.qml \
+	qml/WinRTFileDialog.qml \
 	qml/AboutView.qml \
 	resources/cloud.png \
 	resources/vlc.png \

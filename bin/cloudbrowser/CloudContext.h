@@ -1,6 +1,9 @@
 #ifndef CLOUD_CONTEXT_H
 #define CLOUD_CONTEXT_H
 
+#include "ICloudProvider.h"
+#include "IHttpServer.h"
+
 #include <QAbstractListModel>
 #include <QJsonDocument>
 #include <QMap>
@@ -12,8 +15,6 @@
 #include <future>
 #include <mutex>
 #include <streambuf>
-#include "ICloudProvider.h"
-#include "IHttpServer.h"
 
 class CloudContext;
 

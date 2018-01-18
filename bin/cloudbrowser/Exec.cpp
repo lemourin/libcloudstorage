@@ -39,6 +39,7 @@
 #include "FileDialog.h"
 #include "IPlatformUtility.h"
 #include "Utility/Utility.h"
+#include "WinRTUtility.h"
 
 #ifdef WITH_VLC_QT
 #include <VLCQtQml/Qml.h>
@@ -70,6 +71,9 @@ void register_types() {
                                        "DownloadItemRequest");
 #ifdef __ANDROID__
   qmlRegisterType<FileDialog>("libcloudstorage", 1, 0, "AndroidFileDialog");
+#endif
+#ifdef WINRT
+  qmlRegisterType<FileDialog>("libcloudstorage", 1, 0, "WinRTFileDialog");
 #endif
   qmlRegisterUncreatableType<CloudItem>("libcloudstorage", 1, 0, "CloudItem",
                                         "uncreatable type");

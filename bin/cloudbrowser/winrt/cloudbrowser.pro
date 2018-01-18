@@ -62,6 +62,7 @@ SOURCES += \
     ../GenerateThumbnail.cpp \
     ../Exec.cpp \
     ../File.cpp \
+    ../FileDialog.cpp \
     ../DesktopUtility.cpp \
     ../WinRTUtility.cpp
 
@@ -112,6 +113,7 @@ RESOURCES += \
 HEADERS += \
     ../CloudContext.h \
     ../File.h \
+    ../FileDialog.h \
     ../DesktopUtility.h \
     ../WinRTUtility.h \
     ../IPlatformUtility.h

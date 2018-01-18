@@ -46,5 +46,6 @@
         <file>resources/ffmpeg.png</file>
         <file>qml/ImagePlayer.qml</file>
         <file>config.json</file>
+        <file>qml/WinRTFileDialog.qml</file>
     </qresource>
 </RCC>

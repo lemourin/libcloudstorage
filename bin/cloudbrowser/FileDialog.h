@@ -1,46 +1,57 @@
 #ifndef FILEDIALOG_H
 #define FILEDIALOG_H
 
-#ifdef __ANDROID__
-
-#include <QAndroidActivityResultReceiver>
-#include <QAndroidJniObject>
-#include <QDebug>
 #include <QObject>
-#include <QtAndroid>
+#include <QString>
 
-class FileDialog : public QObject {
+#include "WinRTUtility.h"
+
+class IFileDialog : public QObject {
  public:
-  Q_PROPERTY(bool selectFolder READ selectFolder WRITE setSelectFolder NOTIFY
-                 selectFolderChanged)
   Q_PROPERTY(bool selectExisting READ selectExisting WRITE setSelectExisting
                  NOTIFY selectExistingChanged)
-  Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY fileUrlChanged)
   Q_PROPERTY(
       QString filename READ filename WRITE setFilename NOTIFY filenameChanged)
+  Q_PROPERTY(QString url READ url NOTIFY urlChanged)
 
-  FileDialog();
+  IFileDialog();
 
-  bool selectFolder() const { return select_folder_; }
-  void setSelectFolder(bool);
-
-  bool selectExisting() const { return select_existing_; }
-  void setSelectExisting(bool);
-
-  QString fileUrl() const { return file_url_; }
-  void setFileUrl(QString);
+  Q_INVOKABLE virtual void open() = 0;
 
   QString filename() const { return filename_; }
   void setFilename(QString);
 
-  Q_INVOKABLE void open();
+  bool selectExisting() const { return select_existing_; }
+  void setSelectExisting(bool);
+
+  QString url() const { return url_; }
+  void setUrl(QString);
 
  signals:
-  void accepted();
-  void selectFolderChanged();
+  void ready();
   void selectExistingChanged();
-  void fileUrlChanged();
+  void urlChanged();
   void filenameChanged();
+
+ private:
+  bool select_existing_;
+  QString url_;
+  QString filename_;
+
+  Q_OBJECT
+};
+
+#ifdef __ANDROID__
+
+#include <QAndroidActivityResultReceiver>
+#include <QAndroidJniObject>
+#include <QtAndroid>
+
+class FileDialog : public IFileDialog {
+ public:
+  FileDialog();
+
+  void open() override;
 
  private:
   class ActivityReceiver : public QAndroidActivityResultReceiver {
@@ -52,13 +63,17 @@ class FileDialog : public QObject {
    private:
     FileDialog* file_dialog_;
   } result_receiver_;
-  bool select_folder_;
-  bool select_existing_;
-  QString file_url_;
-  QString filename_;
-
-  Q_OBJECT
 };
 
 #endif  // __ANDROID__
+
+#ifdef WINRT
+
+class FileDialog : public IFileDialog {
+ public:
+  Q_INVOKABLE void open() override;
+};
+
+#endif  // WINRT
+
 #endif  // FILEDIALOG_H

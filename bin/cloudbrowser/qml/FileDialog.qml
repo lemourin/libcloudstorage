@@ -7,9 +7,17 @@ Loader {
 
   signal accepted()
 
+  function dialog(name) {
+    if (name === "android")
+      return "AndroidFileDialog.qml";
+    else if (name === "winrt")
+      return "WinRTFileDialog.qml";
+    else
+      return "QtFileDialog.qml";
+  }
+
   id: loader
-  source: platform.name() === "android" ? "AndroidFileDialog.qml" :
-                                          "QtFileDialog.qml"
+  source: dialog(platform.name())
   asynchronous: false
 
   onLoaded: {
