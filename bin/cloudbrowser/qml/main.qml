@@ -8,7 +8,7 @@ Kirigami.ApplicationWindow {
   property bool include_ads: cloud.includeAds
   property bool visible_player: false
   property bool drawer_state: false
-  property bool detailed_options: !platform.mobile || root.height > root.width
+  property bool detailed_options: !platform.mobile() || root.height > root.width
   property real volume: 1
   property real last_volume: 1
   property int player_count: 0
