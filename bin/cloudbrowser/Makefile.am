@@ -43,7 +43,6 @@ endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	CloudContext.moc.cpp \
-	File.moc.cpp \
 	FileDialog.moc.cpp \
 	IPlatformUtility.moc.cpp \
 	resources.cpp
