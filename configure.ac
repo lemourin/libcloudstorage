@@ -73,7 +73,7 @@ FILESYSTEM_LIBS=""
 AC_ARG_WITH([filesystem], AS_HELP_STRING([--with-filesystem]))
 AS_IF([test "x$with_filesystem" != "xno"], [
   AC_CHECK_HEADERS(boost/filesystem.hpp, [
-    FILESYSTEM_LIBS="-lboost_filesystem"
+    FILESYSTEM_LIBS="-lboost_system -lboost_filesystem"
   ], [
     AS_IF([test "x$with_filesystem" = "xyes"], [AC_MSG_ERROR([boost-filesystem not found])])
   ])
