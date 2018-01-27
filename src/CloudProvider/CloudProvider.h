@@ -280,8 +280,9 @@ class CloudProvider : public ICloudProvider,
 
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
-  static std::pair<std::string, std::string> credentialsFromString(
+  static Json::Value credentialsFromString(
       const std::string&);
+  static std::string credentialsToString(const Json::Value& json);
 
  protected:
   void setWithHint(const Hints& hints, const std::string& name,

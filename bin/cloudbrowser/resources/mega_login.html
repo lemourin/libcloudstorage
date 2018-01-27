@@ -31,7 +31,7 @@
             username: $('#inputEmail').val(),
             password: $('#inputPassword').val(),
           };
-          var code = window.btoa(JSON.stringify(json));
+          var code = window.btoa(encodeURIComponent(JSON.stringify(json)));
           window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
           return false;
         };

@@ -360,17 +360,17 @@ std::string CloudProvider::getFilename(const std::string& path) {
   return result.substr(result.find_last_of('/') + 1);
 }
 
-std::pair<std::string, std::string> CloudProvider::credentialsFromString(
-    const std::string& str) {
+Json::Value CloudProvider::credentialsFromString(const std::string& str) {
   try {
-    auto json =
-        util::json::from_stream(std::stringstream(util::from_base64(str)));
-    std::string username = json["username"].asString();
-    std::string password = json["password"].asString();
-    return {username, password};
+    return util::json::from_stream(
+        std::stringstream(util::Url::unescape(util::from_base64(str))));
   } catch (const Json::Exception&) {
     return {};
   }
+}
+
+std::string CloudProvider::credentialsToString(const Json::Value& json) {
+  return util::to_base64(util::Url::escape(util::json::to_string(json)));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(

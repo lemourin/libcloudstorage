@@ -76,7 +76,7 @@ std::string WebDav::token() const {
   json["username"] = user_;
   json["password"] = password_;
   json["webdav_url"] = webdav_url_;
-  return util::to_base64(util::json::to_string(json));
+  return credentialsToString(json);
 }
 
 AuthorizeRequest::Pointer WebDav::authorizeAsync() {
@@ -257,8 +257,7 @@ void WebDav::authorizeRequest(IHttpRequest& r) const {
 bool WebDav::unpackCredentials(const std::string& code) {
   auto lock = auth_lock();
   try {
-    auto json =
-        util::json::from_stream(std::stringstream(util::from_base64(code)));
+    auto json = credentialsFromString(code);
     user_ = json["username"].asString();
     password_ = json["password"].asString();
     webdav_url_ = json["webdav_url"].asString();

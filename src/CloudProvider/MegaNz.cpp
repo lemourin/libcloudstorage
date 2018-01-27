@@ -838,8 +838,8 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
               this);
           r->subrequest(auth_listener);
           auto data = credentialsFromString(token());
-          std::string mail = data.first;
-          std::string private_key = data.second;
+          std::string mail = data["username"].asString();
+          std::string private_key = data["password"].asString();
           std::unique_ptr<char[]> hash(
               mega_->getStringHash(private_key.c_str(), mail.c_str()));
           mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
@@ -904,9 +904,9 @@ IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
   auto data = credentialsFromString(code);
   IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
   Json::Value json;
-  json["username"] = data.first;
-  json["password"] = passwordHash(data.second);
-  token->token_ = util::to_base64(util::json::to_string(json));
+  json["username"] = data["username"].asString();
+  json["password"] = passwordHash(data["password"].asString());
+  token->token_ = credentialsToString(json);
   token->refresh_token_ = token->token_;
   return token;
 }

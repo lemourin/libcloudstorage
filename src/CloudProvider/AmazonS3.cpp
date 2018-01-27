@@ -87,7 +87,7 @@ std::string AmazonS3::token() const {
   json["username"] = access_id();
   json["password"] = secret();
   json["bucket"] = bucket();
-  return util::to_base64(util::json::to_string(json));
+  return credentialsToString(json);
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }
@@ -516,8 +516,7 @@ std::string AmazonS3::region() const {
 bool AmazonS3::unpackCredentials(const std::string& code) {
   try {
     auto lock = auth_lock();
-    auto json =
-        util::json::from_stream(std::stringstream(util::from_base64(code)));
+    auto json = credentialsFromString(code);
     access_id_ = json["username"].asString();
     secret_ = json["password"].asString();
     bucket_ = json["bucket"].asString();

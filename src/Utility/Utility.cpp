@@ -413,7 +413,7 @@ std::string login_page(const std::string&) {
          "        webdav_url: $('#webdav_url').val(),"
          "        path: $('#path').val()"
          "     };"
-         "     var str = window.btoa(JSON.stringify(json));"
+         "     var str = window.btoa(encodeURIComponent(JSON.stringify(json)));"
          "     $('#link').attr('href', location.pathname + '?code='"
          "                     + encodeURIComponent(str) + "
          "                     '&state=' +  url('?').state);"
