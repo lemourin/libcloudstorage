@@ -106,7 +106,8 @@ std::string LocalDrive::token() const {
 }
 
 void LocalDrive::initialize(ICloudProvider::InitData &&data) {
-  if (data.token_.empty()) data.token_ = ENCODED_JSON;
+  if (data.token_.empty())
+    data.token_ = credentialsToString(Json::Value(Json::objectValue));
   unpackCredentials(data.token_);
   CloudProvider::initialize(std::move(data));
 }

@@ -58,7 +58,8 @@ IItem::Pointer WebDav::rootDirectory() const {
 }
 
 void WebDav::initialize(InitData&& data) {
-  if (data.token_.empty()) data.token_ = ENCODED_JSON;
+  if (data.token_.empty())
+    data.token_ = credentialsToString(Json::Value(Json::objectValue));
   unpackCredentials(data.token_);
   CloudProvider::initialize(std::move(data));
 }

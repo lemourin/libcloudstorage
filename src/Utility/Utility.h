@@ -39,8 +39,6 @@ class Value;
 
 namespace cloudstorage {
 
-const std::string ENCODED_JSON = "e30K";
-
 struct Range;
 
 bool operator==(const Range&, const Range&);
