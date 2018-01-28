@@ -102,7 +102,7 @@ std::string LocalDrive::token() const {
   auto lock = auth_lock();
   Json::Value json;
   json["path"] = path_;
-  return util::to_base64(util::json::to_string(json));
+  return credentialsToString(json);
 }
 
 void LocalDrive::initialize(ICloudProvider::InitData &&data) {
@@ -306,8 +306,7 @@ LocalDrive::GetItemDataRequest::Pointer LocalDrive::getItemDataAsync(
 bool LocalDrive::unpackCredentials(const std::string &code) {
   auto lock = auth_lock();
   try {
-    auto json =
-        util::json::from_stream(std::stringstream(util::from_base64(code)));
+    auto json = credentialsFromString(code);
     path_ = json["path"].asString();
     return true;
   } catch (const Json::Exception &) {
