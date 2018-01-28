@@ -192,10 +192,10 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
   IItem::FileType type = IItem::FileType::Unknown;
   if (v.isMember("folder"))
     type = IItem::FileType::Directory;
-  else if (v.isMember("image") || v.isMember("photo"))
-    type = IItem::FileType::Image;
   else if (v.isMember("video"))
     type = IItem::FileType::Video;
+  else if (v.isMember("image") || v.isMember("photo"))
+    type = IItem::FileType::Image;
   else if (v.isMember("audio"))
     type = IItem::FileType::Audio;
   auto item = util::make_unique<Item>(
