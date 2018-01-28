@@ -9,6 +9,7 @@ Kirigami.ApplicationWindow {
   property bool visible_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile() || root.height > root.width
+  property bool auth_error_occurred: false
   property real volume: 1
   property real last_volume: 1
   property int player_count: 0
@@ -60,6 +61,7 @@ Kirigami.ApplicationWindow {
         var message = "(" + provider.label + ") " + operation + ": " + code + " " +
             operation + (description ? " " + description : "")
         if (code === 401) {
+          auth_error_occurred = true;
           message = "Revoked credentials, please reauthenticate.";
           pageStack.clear();
           cloud.removeProvider(provider);
@@ -71,12 +73,18 @@ Kirigami.ApplicationWindow {
     }
 
     function list(title, label, item) {
-      pageStack.push(listDirectoryPage, {title: title, item: item, label: label});
+      auth_error_occurred = false;
+      var obj = listDirectoryPage.createObject(null, {title: title, item: item, label: label});
+      if (!auth_error_occurred)
+        pageStack.push(obj);
     }
   }
 
   function actions() {
     var ret = [settings.createObject(root.globalDrawer)], i;
+    if (cloud.isFree) {
+      ret.push(supportAction.createObject(root.globalDrawer));
+    }
     for (i = 0; i < cloud.userProviders.length; i++) {
       var props = {
         provider: cloud.userProviders[i],
@@ -92,6 +100,7 @@ Kirigami.ApplicationWindow {
       id: settings
       Kirigami.Action {
         text: "Settings"
+        iconName: "settings-configure"
         Kirigami.Action {
           text: "Add Cloud Provider"
           iconName: "edit-add"
@@ -118,6 +127,18 @@ Kirigami.ApplicationWindow {
         }
       }
     }
+
+    Component {
+      id: supportAction
+      Kirigami.Action {
+        text: "Support this app"
+        iconName: "package-supported"
+        onTriggered: {
+          Qt.openUrlExternally(cloud.supportUrl(platform.name()));
+        }
+      }
+    }
+
     Component {
       id: providerAction
       Kirigami.Action {

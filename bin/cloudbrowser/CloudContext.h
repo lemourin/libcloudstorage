@@ -277,6 +277,7 @@ class CloudContext : public QObject {
   Q_PROPERTY(
       QVariantList userProviders READ userProviders NOTIFY userProvidersChanged)
   Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
+  Q_PROPERTY(bool isFree READ isFree CONSTANT)
 
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
@@ -286,6 +287,7 @@ class CloudContext : public QObject {
   QStringList providers() const;
   QVariantList userProviders() const;
   bool includeAds() const;
+  bool isFree() const;
 
   Q_INVOKABLE QString authorizationUrl(QString provider) const;
   Q_INVOKABLE QObject* root(QVariant provider);
@@ -295,6 +297,7 @@ class CloudContext : public QObject {
   Q_INVOKABLE QString home() const;
   Q_INVOKABLE void showCursor() const;
   Q_INVOKABLE void hideCursor() const;
+  Q_INVOKABLE QString supportUrl(QString name) const;
 
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);

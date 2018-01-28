@@ -1,5 +1,11 @@
 {
   "include_ads": false,
+  "is_free": false,
+  "support_url": {
+    "desktop": "https://code.videolan.org/videolan/libcloudstorage",
+    "winrt": "https://www.microsoft.com/en-us/store/p/cloud-storage-browser-pro/9ntbcn396cb5",
+    "android": "https://play.google.com/store/apps/details?id=org.videolan.cloudbrowser.pro"
+  },
   "keys": {
     "box": {
       "client_id": "8v59eo0k7cslcwilw4lu6ks53iga804i",

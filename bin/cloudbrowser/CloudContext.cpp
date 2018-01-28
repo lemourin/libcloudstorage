@@ -170,6 +170,10 @@ bool CloudContext::includeAds() const {
   return config_.object()["include_ads"].toBool();
 }
 
+bool CloudContext::isFree() const {
+  return config_.object()["is_free"].toBool();
+}
+
 QString CloudContext::authorizationUrl(QString provider) const {
   auto data = init_data(provider.toStdString());
   return ICloudStorage::create()
@@ -247,6 +251,10 @@ void CloudContext::hideCursor() const {
   QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
 }
 
+QString CloudContext::supportUrl(QString name) const {
+  return config_.object()["support_url"].toObject()[name].toString();
+}
+
 void CloudContext::showCursor() const {
   QGuiApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
@@ -266,9 +274,8 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     if (e.left())
       return emit errorOccurred(
-          "ExchangeCode",
-          QVariantMap({{"name", provider.c_str()},
-                       {"label", pretty(provider.c_str())}}),
+          "ExchangeCode", QVariantMap({{"name", provider.c_str()},
+                                       {"label", pretty(provider.c_str())}}),
           e.left()->code_, e.left()->description_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
