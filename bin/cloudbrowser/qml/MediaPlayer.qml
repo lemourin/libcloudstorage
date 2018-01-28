@@ -158,7 +158,7 @@ Kirigami.Page {
       }
     }
     onError: {
-      cloud.errorOccurred("MediaPlayer", error, errorString);
+      cloud.errorOccurred("MediaPlayer", null, error, errorString);
     }
   }
 
@@ -218,7 +218,7 @@ Kirigami.Page {
           set_url();
           connections.target = item;
         } else if (status === Loader.Error) {
-          cloud.errorOccurred("LoadPlayer", 500, source);
+          cloud.errorOccurred("LoadPlayer", null, 500, source);
         }
       }
     }

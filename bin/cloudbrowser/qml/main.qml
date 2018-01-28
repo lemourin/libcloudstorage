@@ -58,8 +58,11 @@ Kirigami.ApplicationWindow {
     }
     onErrorOccurred: {
       if (operation !== "GetThumbnail") {
-        var message = "(" + provider.label + ") " + operation + ": " + code + " " +
-            operation + (description ? " " + description : "")
+        var message = "";
+        if (provider.label) message += "(" + provider.label + ") ";
+        message +=
+            operation + ": " + code +
+            (description ? " " + description : "")
         if (code === 401) {
           auth_error_occurred = true;
           message = "Revoked credentials, please reauthenticate.";
