@@ -3,7 +3,7 @@
   "is_free": false,
   "support_url": {
     "desktop": "https://code.videolan.org/videolan/libcloudstorage",
-    "winrt": "https://www.microsoft.com/en-us/store/p/cloud-storage-browser-pro/9ntbcn396cb5",
+    "winrt": "ms-windows-store://pdp/?ProductId=9ntbcn396cb5",
     "android": "https://play.google.com/store/apps/details?id=org.videolan.cloudbrowser.pro"
   },
   "keys": {
