@@ -92,18 +92,6 @@ RESOURCES += \
 DISTFILES += \
     AndroidManifest.xml \
     Workaround.qml \
-    res/drawable-hdpi/icon.png \
-    res/drawable-ldpi/icon.png \
-    res/drawable-mdpi/icon.png \
-    res/drawable-hdpi/next.png \
-    res/drawable-ldpi/next.png \
-    res/drawable-mdpi/next.png \
-    res/drawable-hdpi/pause.png \
-    res/drawable-ldpi/pause.png \
-    res/drawable-mdpi/pause.png \
-    res/drawable-hdpi/play.png \
-    res/drawable-ldpi/play.png \
-    res/drawable-mdpi/play.png \
     src/org/videolan/cloudbrowser/CloudBrowser.java \
     src/org/videolan/cloudbrowser/AuthView.java \
     src/org/videolan/cloudbrowser/NotificationHelper.java \
