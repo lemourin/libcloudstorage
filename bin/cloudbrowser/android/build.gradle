@@ -52,10 +52,14 @@ android {
             renderscript.srcDirs = ['src']
             assets.srcDirs = ['assets']
             jniLibs.srcDirs = ['libs']
-       }
+        }
     }
 
     lintOptions {
         abortOnError false
+    }
+
+    defaultConfig {
+        applicationIdSuffix ".debug"
     }
 }
