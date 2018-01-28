@@ -8,6 +8,7 @@ Kirigami.ScrollablePage {
   title: "Add Provider"
 
   function open_auth(url) {
+    root.globalDrawer.drawerOpen = false;
     if (qtwebview)
       root.pageStack.push(webview, {url: url});
     else
