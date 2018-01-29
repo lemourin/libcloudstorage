@@ -366,7 +366,7 @@ void YandexDisk::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
 
 std::string YandexDisk::Auth::authorizeLibraryUrl() const {
   return "https://oauth.yandex.com/authorize?response_type=code&client_id=" +
-         client_id() + "&state=" + state();
+         client_id() + "&state=" + state() + "&redirect_uri=" + redirect_uri();
 }
 
 IHttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(
