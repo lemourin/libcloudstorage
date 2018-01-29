@@ -28,6 +28,7 @@ public class AuthView extends Activity {
                 Bundle extras = new Bundle();
                 extras.putBinder("android.support.customtabs.extra.SESSION", null);
                 intent.putExtras(extras);
+                setTitle("Cloud Browser Consent Screen");
                 startActivity(intent);
             }
         } else {
