@@ -2,28 +2,36 @@ package org.videolan.cloudbrowser;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.net.Uri;
+import android.content.Intent;
 
 public class AuthView extends Activity {
+    private boolean m_intent_run = false;
+
     public AuthView() {
         CloudBrowser.m_auth_view = this;
     }
 
     @Override
-    protected void onCreate(Bundle saved) {
-        super.onCreate(saved);
+    protected void onResume() {
+        super.onResume();
 
-        WebView webview = new WebView(this);
-        webview.getSettings().setJavaScriptEnabled(true);
-        webview.getSettings().setUserAgentString(
-            "Mozilla/5.0 (Linux; Android 4.0.4; Galaxy Nexus Build/IMM76B) " +
-            "AppleWebKit/535.19 (KHTML, like Gecko) " +
-            "Chrome/18.0.1025.133 Mobile Safari/535.19");
-        webview.getSettings().setBuiltInZoomControls(true);
-        webview.getSettings().setDisplayZoomControls(false);
-        webview.setWebViewClient(new WebViewClient());
-        webview.loadUrl(getIntent().getExtras().getCharSequence("address").toString());
-        setContentView(webview);
+        Bundle intent_extras = getIntent().getExtras();
+        CharSequence sequence = intent_extras == null ?
+            null : intent_extras.getCharSequence("address");
+        String url = sequence == null ? null : sequence.toString();
+
+        if (!m_intent_run) {
+            m_intent_run = true;
+            if (url != null) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                Bundle extras = new Bundle();
+                extras.putBinder("android.support.customtabs.extra.SESSION", null);
+                intent.putExtras(extras);
+                startActivity(intent);
+            }
+        } else {
+            finish();
+        }
     }
 }

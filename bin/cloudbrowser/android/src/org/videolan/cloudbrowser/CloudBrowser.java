@@ -177,9 +177,11 @@ public class CloudBrowser extends QtActivity {
         return intent;
     }
 
-    public static void closeWebPage(Intent intent) {
+    public static void closeWebPage(Intent i) {
         if (m_auth_view != null) {
-            m_auth_view.setResult(1, intent);
+            Intent intent = new Intent(m_instance, AuthView.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            m_auth_view.startActivity(intent);
             m_auth_view.finish();
             m_auth_view = null;
         }
