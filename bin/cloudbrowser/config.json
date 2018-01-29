@@ -8,40 +8,40 @@
   },
   "keys": {
     "box": {
-      "client_id": "8v59eo0k7cslcwilw4lu6ks53iga804i",
-      "client_secret": "nFQhObfGRzVjDZxXFooSNJ8TZykHBC5m"
+      "client_id": "zmiv9tv13hunxhyjk16zqv8dmdw0d773",
+      "client_secret": "IZ0T8WsUpJin7Qt3rHMf7qDAIFAkYZ0R"
     },
     "dropbox": {
-      "client_id": "djvvk4x5z7o1mjl",
-      "client_secret": "n8vr2nh47187s0t"
+      "client_id": "ktryxp68ae5cicj",
+      "client_secret": "6evu94gcxnmyr59"
     },
     "google": {
-      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
-      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+      "client_id": "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent.com",
+      "client_secret": "1f0FG5ch-kKOanTAv1Bqdp9U"
     },
     "gphotos": {
-      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
-      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+      "client_id": "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent.com",
+      "client_secret": "1f0FG5ch-kKOanTAv1Bqdp9U"
     },
     "onedrive": {
-      "client_id": "57ef8298-899b-48e1-a3a8-e21168ec81c6",
-      "client_secret": "izJXJPZ1353(#hmzaiXC7;@"
+      "client_id": "56a1d60f-ea71-40e9-a489-b87fba12a23e",
+      "client_secret": "zJRAsd0o4E9c33q4OLc7OhY"
     },
     "hubic": {
-      "client_id": "api_hubic_Z32tg7yWDuJdyvgXnLtgJy2tRSYvjycR",
-      "client_secret": "h2xCpeHq3PCYdyTZty8PBKEUbFbDSslycIimwhE5XbfFGuS4HYU93OiRQX5P40EO"
+      "client_id": "api_hubic_kHQ5NUmE2yAAeiWfXPwQy2T53M6RP2fe",
+      "client_secret": "Xk1ezMMSGNeU4r0wv3jutleYX9XvXmgg8XVElJjqoDvlDw0KsC9U2tkSxJxYof8V"
     },
     "pcloud": {
-      "client_id": "YDVHLm8xYJm",
-      "client_secret": "cujMh9EXLwhxj3VCW1341y9CT6Ik"
+      "client_id": "EDEqpUpRnFF",
+      "client_secret": "PQLFPbyObs5IzeUdXF7VcfkuAPs7"
     },
     "yandex": {
-      "client_id": "d8e5d26d6097441bbd8c3eeff7772643",
-      "client_secret": "3aac1fc76ee44f4586b1cb878111465f"
+      "client_id": "04d700d432884c4381c07e760213ed8a",
+      "client_secret": "197f9693caa64f0ebb51d201110074f9"
     },
     "youtube": {
-      "client_id": "459729347355-g3o92clv1gv6cihfs1qiermtpi6qve5u.apps.googleusercontent.com",
-      "client_secret": "bikmQtEfx8afovzaFruDBu04"
+      "client_id": "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent.com",
+      "client_secret": "1f0FG5ch-kKOanTAv1Bqdp9U"
     }
   }
 }
