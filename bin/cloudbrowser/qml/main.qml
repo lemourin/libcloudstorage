@@ -6,15 +6,16 @@ import libcloudstorage 1.0
 
 Kirigami.ApplicationWindow {
   property bool include_ads: cloud.includeAds
+  property bool ad_loaded: false
+  property bool ad_visible: include_ads
   property bool visible_player: false
-  property bool ad_visible: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile() || root.height > root.width
   property bool auth_error_occurred: false
   property real volume: 1
   property real last_volume: 1
   property int player_count: 0
-  property int footer_height: include_ads && ad_visible ? 50 : 0
+  property int footer_height: ad_loaded && ad_visible ? 50 : 0
 
   id: root
   width: Math.min(800, screen.desktopAvailableWidth)
@@ -27,7 +28,7 @@ Kirigami.ApplicationWindow {
       if (platform.mobile()) platform.landscapeOrientation();
       if (include_ads) {
         platform.hideAd();
-        footer_height = 0;
+        ad_visible = false;
       }
       root.showFullScreen();
     } else {
@@ -35,7 +36,7 @@ Kirigami.ApplicationWindow {
       if (platform.mobile()) platform.defaultOrientation();
       if (include_ads) {
         platform.showAd();
-        footer_height = 50;
+        ad_visible = true;
       }
       root.show();
     }
@@ -52,9 +53,9 @@ Kirigami.ApplicationWindow {
     target: platform
     onNotify: {
       if (action === "HIDE_AD")
-        ad_visible = false;
+        ad_loaded = false;
       else if (action === "SHOW_AD")
-        ad_visible = true;
+        ad_loaded = true;
     }
   }
 

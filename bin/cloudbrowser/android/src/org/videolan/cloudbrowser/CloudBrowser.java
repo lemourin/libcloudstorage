@@ -52,7 +52,6 @@ public class CloudBrowser extends QtActivity {
         final AdView ad = new AdView(this);
         ad.setAdUnitId("ca-app-pub-9966958697007244/9093813086");
         ad.setAdSize(new AdSize(AdSize.FULL_WIDTH, 50));
-        NotificationHelper.callback("HIDE_AD");
         ad.setAdListener(new AdListener() {
             private boolean m_loaded;
 
@@ -79,6 +78,10 @@ public class CloudBrowser extends QtActivity {
                         attach();
                     }
                 });
+            }
+
+            public void onAdFailedToLoad(int error) {
+                NotificationHelper.callback("HIDE_AD");
             }
         });
         ad.loadAd(new AdRequest.Builder().build());
