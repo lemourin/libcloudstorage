@@ -59,7 +59,7 @@
             <!-- extract android style -->
     </activity>
 
-    <activity android:name="org.videolan.cloudbrowser.AuthView" android:label="Cloud Browser">
+    <activity android:name="org.videolan.cloudbrowser.AuthView" android:label="Cloud Browser" android:theme="@android:style/Theme.Translucent.NoTitleBar">
         <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --"/>
     </activity>
 
