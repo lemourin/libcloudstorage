@@ -17,7 +17,7 @@ public class NotificationHelper {
     private static final String ActionNext = "NEXT";
     public static final int PlayerNotification = 1;
 
-    private static native void callback(String action);
+    public static native void callback(String action);
 
     private static class Receiver extends BroadcastReceiver {
         public void onReceive(Context ctx, Intent intent) {

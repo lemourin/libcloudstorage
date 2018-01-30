@@ -34,8 +34,23 @@ class WinRTUtility : public IPlatformUtility {
   void hideAd() override;
 
  private:
+  // clang-format off
+  ref class AdEventHandler sealed {
+   internal:
+    AdEventHandler(WinRTUtility*);
+    void onAdRefreshed(Platform::Object ^,
+                       Windows::UI::Xaml::RoutedEventArgs ^);
+    void onAdError(Platform::Object ^,
+                   Microsoft::Advertising::WinRT::UI::AdErrorEventArgs ^);
+
+   private:
+    WinRTUtility* winrt_;
+  };
+  // clang-format on
+
   Microsoft::Advertising::WinRT::UI::AdControl ^ ad_control_;
   bool ad_control_attached_;
+  AdEventHandler ^ ad_event_handler_;
 };
 
 #endif  // WINRT

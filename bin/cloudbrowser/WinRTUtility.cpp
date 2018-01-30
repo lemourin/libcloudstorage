@@ -17,18 +17,35 @@
 
 using namespace Microsoft::WRL;
 using namespace Platform;
+using namespace Windows::Foundation;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Microsoft::Advertising::WinRT::UI;
 
+WinRTUtility::AdEventHandler::AdEventHandler(WinRTUtility* winrt)
+    : winrt_(winrt) {}
+
+void WinRTUtility::AdEventHandler::onAdError(Object ^, AdErrorEventArgs ^) {
+  emit winrt_->notify("HIDE_AD");
+}
+
+void WinRTUtility::AdEventHandler::onAdRefreshed(Object ^, RoutedEventArgs ^) {
+  emit winrt_->notify("SHOW_AD");
+}
+
 WinRTUtility::WinRTUtility() : ad_control_attached_() {
   QEventDispatcherWinRT::runOnXamlThread([this]() {
+    ad_event_handler_ = ref new AdEventHandler(this);
     ad_control_ = ref new AdControl();
     ad_control_->ApplicationId = L"9nbkjrh757k7";
     ad_control_->AdUnitId = L"1100015829";
     ad_control_->Width = 320;
     ad_control_->Height = 50;
     ad_control_->VerticalAlignment = VerticalAlignment::Bottom;
+    ad_control_->AdRefreshed += ref new EventHandler<RoutedEventArgs ^>(
+        ad_event_handler_, &AdEventHandler::onAdRefreshed);
+    ad_control_->ErrorOccurred += ref new EventHandler<AdErrorEventArgs ^>(
+        ad_event_handler_, &AdEventHandler::onAdError);
     return true;
   });
 }
