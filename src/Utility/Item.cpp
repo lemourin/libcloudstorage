@@ -25,6 +25,7 @@
 
 #include "Utility/Utility.h"
 
+#include <json/json.h>
 #include <algorithm>
 #include <cctype>
 
@@ -83,6 +84,44 @@ IItem::TimeStamp Item::timestamp() const { return timestamp_; }
 size_t Item::size() const { return size_; }
 
 void Item::set_size(size_t size) { size_ = size; }
+
+std::string Item::toString() const {
+  Json::Value json;
+  json["filename"] = filename();
+  json["type"] = static_cast<int>(type());
+  json["id"] = id();
+  json["timestamp"] =
+      static_cast<Json::UInt64>(timestamp().time_since_epoch().count());
+  json["size"] = static_cast<Json::Int64>(size());
+  if (!mime_type().empty()) json["mime_type"] = mime_type();
+  if (!parents().empty()) {
+    Json::Value parent_list;
+    for (auto&& parent : parents()) parent_list.append(parent);
+    json["parents"] = parent_list;
+  }
+  if (is_hidden()) json["hidden"] = is_hidden();
+  if (!thumbnail_url().empty()) json["thumbnail_url"] = thumbnail_url();
+  if (!url().empty()) json["url"] = url();
+  return util::json::to_string(json);
+}
+
+IItem::Pointer IItem::fromString(const std::string& str) {
+  Json::Value json = util::json::from_string(str);
+  auto item = util::make_unique<Item>(
+      json["filename"].asString(), json["id"].asString(),
+      json["size"].asInt64(),
+      std::chrono::system_clock::time_point(
+          std::chrono::seconds(json["timestamp"].asUInt64())),
+      static_cast<IItem::FileType>(json["type"].asInt()));
+  item->set_thumbnail_url(json["thumbnail_url"].asString());
+  item->set_hidden(json["hidden"].asBool());
+  item->set_url(json["url"].asString());
+  item->set_mime_type(json["mime_type"].asString());
+  std::vector<std::string> parents;
+  for (auto&& p : json["parents"]) parents.push_back(p.asString());
+  item->set_parents(parents);
+  return item;
+}
 
 std::string Item::url() const {
   std::lock_guard<std::mutex> lock(mutex_);

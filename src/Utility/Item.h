@@ -48,6 +48,8 @@ class Item : public IItem {
   size_t size() const override;
   void set_size(size_t);
 
+  std::string toString() const override;
+
   std::string url() const;
   void set_url(std::string);
 

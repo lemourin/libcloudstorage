@@ -454,21 +454,24 @@ std::string json::to_string(const Json::Value& json) {
   return Json::writeString(stream, json);
 }
 
-Json::Value json::from_stream(std::istream&& stream) {
-  return from_stream(static_cast<std::istream&>(stream));
-}
-
-Json::Value json::from_stream(std::istream& stream) {
+Json::Value json::from_string(const std::string& str) {
   Json::CharReaderBuilder factory;
-  std::stringstream sstream;
-  sstream << stream.rdbuf();
-  std::string str = sstream.str();
   std::unique_ptr<Json::CharReader> reader(factory.newCharReader());
   Json::Value json;
   std::string error;
   if (!reader->parse(str.data(), str.data() + str.size(), &json, &error))
     throw Json::Exception(error);
   return json;
+}
+
+Json::Value json::from_stream(std::istream&& stream) {
+  return from_stream(static_cast<std::istream&>(stream));
+}
+
+Json::Value json::from_stream(std::istream& stream) {
+  std::stringstream sstream;
+  sstream << stream.rdbuf();
+  return from_string(sstream.str());
 }
 
 const char* libcloudstorage_ascii_art() {

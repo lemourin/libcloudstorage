@@ -86,6 +86,7 @@ std::string success_page(const std::string& provider);
 std::string error_page(const std::string& provider);
 namespace json {
 std::string to_string(const Json::Value&);
+Json::Value from_string(const std::string&);
 Json::Value from_stream(std::istream&&);
 Json::Value from_stream(std::istream&);
 }  // namespace json

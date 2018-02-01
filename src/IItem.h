@@ -50,6 +50,9 @@ class IItem {
 
   virtual bool is_hidden() const = 0;
   virtual FileType type() const = 0;
+
+  virtual std::string toString() const = 0;
+  static IItem::Pointer fromString(const std::string&);
 };
 
 }  // namespace cloudstorage
