@@ -15,6 +15,7 @@
 #include <future>
 #include <mutex>
 #include <streambuf>
+#include <unordered_set>
 
 class CloudContext;
 
@@ -87,6 +88,12 @@ class ListDirectoryModel : public QAbstractListModel {
   void set_provider(const Provider&);
   void add(cloudstorage::IItem::Pointer);
   void clear();
+  int find(cloudstorage::IItem::Pointer) const;
+  void insert(int idx, cloudstorage::IItem::Pointer);
+  void remove(int idx);
+  const std::vector<cloudstorage::IItem::Pointer>& list() const {
+    return list_;
+  }
 
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int) const override;
@@ -95,6 +102,7 @@ class ListDirectoryModel : public QAbstractListModel {
  private:
   Provider provider_;
   std::vector<cloudstorage::IItem::Pointer> list_;
+  std::unordered_set<std::string> id_;
   Q_OBJECT
 };
 
@@ -271,6 +279,25 @@ class ServerWrapperFactory : public cloudstorage::IHttpServerFactory {
   std::shared_ptr<cloudstorage::IHttpServer> http_server_;
 };
 
+struct ListDirectoryCacheKey {
+  std::string provider_label_;
+  std::string directory_id_;
+
+  bool operator==(const ListDirectoryCacheKey& d) const {
+    return std::tie(provider_label_, directory_id_) ==
+           std::tie(d.provider_label_, d.directory_id_);
+  }
+};
+
+namespace std {
+template <>
+struct hash<ListDirectoryCacheKey> {
+  size_t operator()(const ListDirectoryCacheKey& d) const {
+    return std::hash<std::string>()(d.provider_label_ + "$" + d.directory_id_);
+  }
+};
+}  // namespace std
+
 class CloudContext : public QObject {
  public:
   Q_PROPERTY(QStringList providers READ providers CONSTANT)
@@ -301,6 +328,11 @@ class CloudContext : public QObject {
 
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);
+
+  void cacheDirectory(CloudItem* directory,
+                      const std::vector<cloudstorage::IItem::Pointer>&);
+  std::vector<cloudstorage::IItem::Pointer> cachedDirectory(
+      CloudItem* directory);
 
   static QString thumbnail_path(const QString& filename);
 
@@ -367,6 +399,9 @@ class CloudContext : public QObject {
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
   RequestPool pool_;
   std::vector<Provider> provider_;
+  std::unordered_map<ListDirectoryCacheKey,
+                     std::vector<cloudstorage::IItem::Pointer>>
+      list_directory_cache_;
 
   Q_OBJECT
 };

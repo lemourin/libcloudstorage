@@ -264,6 +264,25 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
   pool_.add(p, r);
 }
 
+void CloudContext::cacheDirectory(CloudItem* directory,
+                                  const std::vector<IItem::Pointer>& lst) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  std::vector<std::string> data;
+  list_directory_cache_[{directory->provider().label_,
+                         directory->item()->id()}] = lst;
+}
+
+std::vector<IItem::Pointer> CloudContext::cachedDirectory(
+    CloudItem* directory) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto it = list_directory_cache_.find(
+      {directory->provider().label_, directory->item()->id()});
+  if (it == std::end(list_directory_cache_))
+    return {};
+  else
+    return it->second;
+}
+
 QString CloudContext::thumbnail_path(const QString& filename) {
   return QDir::tempPath() + QDir::separator() + sanitize(filename) +
          "-thumbnail";
@@ -498,12 +517,35 @@ void ListDirectoryModel::set_provider(const Provider& p) { provider_ = p; }
 void ListDirectoryModel::add(IItem::Pointer t) {
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
   list_.push_back(t);
+  id_.insert(t->id());
   endInsertRows();
 }
 
 void ListDirectoryModel::clear() {
   beginRemoveRows(QModelIndex(), 0, std::max<int>(rowCount() - 1, 0));
   list_.clear();
+  id_.clear();
+  endRemoveRows();
+}
+
+int ListDirectoryModel::find(IItem::Pointer item) const {
+  if (id_.find(item->id()) == std::end(id_)) return -1;
+  for (size_t i = 0; i < list_.size(); i++)
+    if (list_[i]->id() == item->id()) return i;
+  return -1;
+}
+
+void ListDirectoryModel::insert(int idx, IItem::Pointer item) {
+  beginInsertRows(QModelIndex(), idx, idx);
+  list_.insert(list_.begin() + idx, item);
+  id_.insert(item->id());
+  endInsertRows();
+}
+
+void ListDirectoryModel::remove(int idx) {
+  beginRemoveRows(QModelIndex(), idx, idx);
+  id_.erase(id_.find(list_[idx]->id()));
+  list_.erase(list_.begin() + idx);
   endRemoveRows();
 }
 
@@ -526,7 +568,17 @@ ListDirectoryModel* ListDirectoryRequest::list() { return &list_; }
 
 void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
   list_.set_provider(item->provider());
+
+  auto cached = context->cachedDirectory(item);
+  bool cache_found = !cached.empty();
+  if (!cached.empty()) {
+    list_.clear();
+    for (auto&& i : cached) list_.add(i);
+  } else {
+    first_listed_ = false;
+  }
   set_done(false);
+
   auto object = new RequestNotifier;
   auto provider = item->provider().variant();
   connect(object, &RequestNotifier::finishedList, this,
@@ -536,8 +588,25 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
               return emit context->errorOccurred(
                   "ListDirectory", provider, r.left()->code_,
                   r.left()->description_.c_str());
+            context->cacheDirectory(item, *r.right());
+            if (cache_found) {
+              std::unordered_set<std::string> id;
+              for (auto&& i : *r.right()) {
+                auto idx = list_.find(i);
+                if (idx == -1) list_.add(i);
+                id.insert(i->id());
+              }
+              for (size_t i = 0; i < list_.list().size();) {
+                if (id.find(list_.list()[i]->id()) == std::end(id)) {
+                  list_.remove(i);
+                } else {
+                  i++;
+                }
+              }
+            }
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
+    if (cache_found) return;
     if (!first_listed_) {
       first_listed_ = true;
       list_.clear();
@@ -560,7 +629,6 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
    private:
     RequestNotifier* notifier_;
   };
-  first_listed_ = false;
   auto r = item->provider().provider_->listDirectoryAsync(
       item->item(), util::make_unique<ListDirectoryCallback>(object));
   context->add(item->provider().provider_, std::move(r));
