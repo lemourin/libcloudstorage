@@ -305,6 +305,7 @@ class CloudContext : public QObject {
       QVariantList userProviders READ userProviders NOTIFY userProvidersChanged)
   Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
   Q_PROPERTY(bool isFree READ isFree CONSTANT)
+  Q_PROPERTY(qint64 cacheSize READ cacheSize NOTIFY cacheSizeChanged)
 
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
@@ -328,6 +329,11 @@ class CloudContext : public QObject {
   Q_INVOKABLE void showCursor() const;
   Q_INVOKABLE void hideCursor() const;
   Q_INVOKABLE QString supportUrl(QString name) const;
+  qint64 cacheSize() const;
+  Q_INVOKABLE void clearCache();
+
+  void addCacheSize(size_t);
+  qint64 updatedCacheSize() const;
 
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);
@@ -344,6 +350,7 @@ class CloudContext : public QObject {
   void receivedCode(QString provider);
   void errorOccurred(QString operation, QVariantMap provider, int code,
                      QString description);
+  void cacheSizeChanged();
 
  private:
   class RequestPool {
@@ -405,6 +412,7 @@ class CloudContext : public QObject {
   std::unordered_map<ListDirectoryCacheKey,
                      std::vector<cloudstorage::IItem::Pointer>>
       list_directory_cache_;
+  qint64 cache_size_;
 
   Q_OBJECT
 };

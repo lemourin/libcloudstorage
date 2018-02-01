@@ -101,7 +101,8 @@ CloudContext::CloudContext(QObject* parent)
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           IHttpServerFactory::create())),
       http_(IHttp::create()),
-      thread_pool_(IThreadPool::create(1)) {
+      thread_pool_(IThreadPool::create(1)),
+      cache_size_(updatedCacheSize()) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
@@ -298,6 +299,37 @@ void CloudContext::hideCursor() const {
 
 QString CloudContext::supportUrl(QString name) const {
   return config_.object()["support_url"].toObject()[name].toString();
+}
+
+qint64 CloudContext::cacheSize() const { return cache_size_; }
+
+void CloudContext::clearCache() {
+  QString path =
+      QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+  QDir dir(path);
+  for (auto&& d : dir.entryList()) {
+    if (d.endsWith("-thumbnail") || d == "cloudstorage_cache.json")
+      QFile(path + "/" + d).remove();
+  }
+  cache_size_ = 0;
+  emit cacheSizeChanged();
+}
+
+void CloudContext::addCacheSize(size_t size) {
+  cache_size_ += size;
+  emit cacheSizeChanged();
+}
+
+qint64 CloudContext::updatedCacheSize() const {
+  QString path =
+      QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+  QDir dir(path);
+  qint64 result = 0;
+  for (auto&& d : dir.entryList()) {
+    if (d.endsWith("-thumbnail") || d == "cloudstorage_cache.json")
+      result += QFile(path + "/" + d).size();
+  }
+  return result;
 }
 
 void CloudContext::showCursor() const {
@@ -713,6 +745,7 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
           file.write(e.right()->data(), static_cast<qint64>(e.right()->size()));
           if (file.commit()) {
             source_ = QUrl::fromLocalFile(path).toString();
+            context->addCacheSize(e.right()->size());
             emit sourceChanged();
           }
         });

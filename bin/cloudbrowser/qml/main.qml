@@ -133,6 +133,13 @@ Kirigami.ApplicationWindow {
           }
         }
         Kirigami.Action {
+          text: "Clear cache (" + (cloud.cacheSize / 1048576).toFixed(2) + " MB)"
+          iconName: "edit-paste-style"
+          onTriggered: {
+            cloud.clearCache();
+          }
+        }
+        Kirigami.Action {
           text: "About"
           iconName: "help-about"
           onTriggered: {
