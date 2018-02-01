@@ -257,6 +257,38 @@ ICloudProvider::DeleteItemRequest::Pointer HubiC::deleteItemAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer HubiC::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) { return http()->create(endpoint() + "/account"); },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          r->request(
+              [=](util::Output) {
+                return http()->create(endpoint() + "/account/usage");
+              },
+              [=](EitherError<Response> d) {
+                if (d.left()) return r->done(d.left());
+                try {
+                  auto json1 = util::json::from_stream(e.right()->output());
+                  auto json2 = util::json::from_stream(d.right()->output());
+                  GeneralData result;
+                  result.username_ = json1["email"].asString();
+                  result.space_total_ = json2["quota"].asUInt64();
+                  result.space_used_ = json2["used"].asUInt64();
+                  r->done(result);
+                } catch (const Json::Exception &e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer HubiC::getItemDataRequest(const std::string &id,
                                                 std::ostream &) const {
   auto r = http()->create(openstack_endpoint() + "/default");
@@ -342,7 +374,7 @@ std::string HubiC::Auth::authorizeLibraryUrl() const {
   if (!redirect.empty() && redirect.back() != '/') redirect += '/';
   return "https://api.hubic.com/oauth/auth?client_id=" + client_id() +
          "&response_type=code&redirect_uri=" + redirect + "&state=" + state() +
-         "&scope=credentials.r";
+         "&scope=credentials.r%2Caccount.r%2Cusage.r";
 }
 
 IHttpRequest::Pointer HubiC::Auth::exchangeAuthorizationCodeRequest(

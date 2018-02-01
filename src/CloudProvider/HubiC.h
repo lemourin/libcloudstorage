@@ -48,6 +48,7 @@ class HubiC : public CloudProvider {
                                              RenameItemCallback) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;
