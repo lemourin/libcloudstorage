@@ -329,8 +329,8 @@ std::vector<IItem::Pointer> CloudContext::cachedDirectory(
 }
 
 QString CloudContext::thumbnail_path(const QString& filename) {
-  return QDir::tempPath() + QDir::separator() + sanitize(filename) +
-         "-thumbnail";
+  return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
+         QDir::separator() + sanitize(filename) + "-thumbnail";
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
