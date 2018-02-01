@@ -161,6 +161,11 @@ class CloudProviderWrapper : public ICloudProvider {
     return p_->uploadFileAsync(parent, path, filename, callback);
   }
 
+  GeneralDataRequest::Pointer getGeneralDataAsync(
+      GeneralDataCallback callback) override {
+    return p_->getGeneralDataAsync(callback);
+  }
+
  private:
   std::shared_ptr<CloudProvider> p_;
 };

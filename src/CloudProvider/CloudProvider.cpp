@@ -457,6 +457,27 @@ ICloudProvider::UploadFileRequest::Pointer CloudProvider::uploadFileAsync(
       util::make_unique<::UploadFileCallback>(path, callback));
 }
 
+ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
+    GeneralDataCallback cb) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output stream) {
+          return r->provider()->getGeneralDataRequest(*stream);
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          try {
+            r->done(r->provider()->getGeneralDataResponse(e.right()->output()));
+          } catch (const std::exception&) {
+            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          }
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             cb, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                         std::ostream&) const {
   return nullptr;
@@ -513,6 +534,11 @@ IHttpRequest::Pointer CloudProvider::renameItemRequest(const IItem&,
   return nullptr;
 }
 
+IHttpRequest::Pointer CloudProvider::getGeneralDataRequest(
+    std::ostream&) const {
+  return nullptr;
+}
+
 IItem::Pointer CloudProvider::getItemDataResponse(std::istream&) const {
   return nullptr;
 }
@@ -532,6 +558,10 @@ IItem::Pointer CloudProvider::uploadFileResponse(const IItem&,
                                                  const std::string&, uint64_t,
                                                  std::istream& response) const {
   return getItemDataResponse(response);
+}
+
+GeneralData CloudProvider::getGeneralDataResponse(std::istream&) const {
+  return {};
 }
 
 std::string CloudProvider::getItemUrlResponse(

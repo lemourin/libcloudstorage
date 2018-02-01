@@ -56,6 +56,7 @@ class ICloudProvider {
   using CreateDirectoryRequest = IRequest<EitherError<IItem>>;
   using MoveItemRequest = IRequest<EitherError<IItem>>;
   using RenameItemRequest = IRequest<EitherError<IItem>>;
+  using GeneralDataRequest = IRequest<EitherError<GeneralData>>;
 
   using OperationSet = uint32_t;
 
@@ -462,6 +463,9 @@ class ICloudProvider {
       IItem::Pointer parent, const std::string& path,
       const std::string& filename,
       UploadFileCallback callback = [](EitherError<IItem>) {}) = 0;
+
+  virtual GeneralDataRequest::Pointer getGeneralDataAsync(
+      GeneralDataCallback = [](EitherError<GeneralData>) {}) = 0;
 };
 
 }  // namespace cloudstorage

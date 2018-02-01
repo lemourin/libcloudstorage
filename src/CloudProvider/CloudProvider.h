@@ -106,6 +106,7 @@ class CloudProvider : public ICloudProvider,
                                              const std::string& path,
                                              const std::string& filename,
                                              UploadFileCallback) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
 
   /**
    * Used by default implementation of getItemDataAsync.
@@ -204,6 +205,8 @@ class CloudProvider : public ICloudProvider,
                                                   const std::string& name,
                                                   std::ostream&) const;
 
+  virtual IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const;
+
   /**
    * Used by default implementation of getItemDataAsync, should translate
    * reponse into IItem object.
@@ -243,6 +246,7 @@ class CloudProvider : public ICloudProvider,
                                             const std::string& filename,
                                             uint64_t size,
                                             std::istream& response) const;
+  virtual GeneralData getGeneralDataResponse(std::istream& response) const;
 
   /**
    * Used by default implementation of createDirectoryAsync, should translate
@@ -280,8 +284,7 @@ class CloudProvider : public ICloudProvider,
 
   static std::string getPath(const std::string&);
   static std::string getFilename(const std::string& path);
-  static Json::Value credentialsFromString(
-      const std::string&);
+  static Json::Value credentialsFromString(const std::string&);
   static std::string credentialsToString(const Json::Value& json);
 
  protected:

@@ -41,6 +41,12 @@ class Either;
 template <class T>
 using EitherError = Either<Error, T>;
 
+struct GeneralData {
+  std::string username_;
+  uint64_t space_total_;
+  uint64_t space_used_;
+};
+
 struct PageData {
   std::vector<IItem::Pointer> items_;
   std::string next_token_;  // empty if no next page
@@ -236,6 +242,7 @@ using ListDirectoryCallback =
 using DownloadFileCallback = std::function<void(EitherError<void>)>;
 using UploadFileCallback = std::function<void(EitherError<IItem>)>;
 using GetThumbnailCallback = std::function<void(EitherError<void>)>;
+using GeneralDataCallback = std::function<void(EitherError<GeneralData>)>;
 
 }  // namespace cloudstorage
 
