@@ -120,6 +120,47 @@ ICloudProvider::UploadFileRequest::Pointer Dropbox::uploadFileAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer Dropbox::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          auto r = http()->create(endpoint() + "/2/users/get_current_account",
+                                  "POST");
+          r->setHeaderParameter("Content-Type", "");
+          return r;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          r->request(
+              [=](util::Output) {
+                auto r = http()->create(endpoint() + "/2/users/get_space_usage",
+                                        "POST");
+                r->setHeaderParameter("Content-Type", "");
+                return r;
+              },
+              [=](EitherError<Response> d) {
+                if (d.left()) return r->done(d.left());
+                try {
+                  auto json1 = util::json::from_stream(e.right()->output());
+                  auto json2 = util::json::from_stream(d.right()->output());
+                  GeneralData result;
+                  result.username_ = json1["email"].asString();
+                  result.space_total_ =
+                      json2["allocation"]["allocated"].asUInt64();
+                  result.space_used_ = json2["used"].asUInt64();
+                  r->done(result);
+                } catch (const Json::Exception& e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer Dropbox::getItemUrlRequest(const IItem& item,
                                                  std::ostream& input) const {
   auto request =
