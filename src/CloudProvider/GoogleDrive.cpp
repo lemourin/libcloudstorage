@@ -283,6 +283,12 @@ IHttpRequest::Pointer GoogleDrive::renameItemRequest(
   return request;
 }
 
+IHttpRequest::Pointer GoogleDrive::getGeneralDataRequest(std::ostream&) const {
+  auto request = http()->create(endpoint() + "/drive/v3/about");
+  request->setParameter("fields", "user,storageQuota");
+  return request;
+}
+
 IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
   return toItem(util::json::from_stream(response));
 }
@@ -301,6 +307,15 @@ std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
   return result;
+}
+
+GeneralData GoogleDrive::getGeneralDataResponse(std::istream& response) const {
+  auto json = util::json::from_stream(response);
+  GeneralData data;
+  data.space_total_ = std::stoull(json["storageQuota"]["limit"].asString());
+  data.space_used_ = std::stoull(json["storageQuota"]["usage"].asString());
+  data.username_ = json["user"]["emailAddress"].asString();
+  return data;
 }
 
 IHttpRequest::Pointer GoogleDrive::upload(const IItem& f,

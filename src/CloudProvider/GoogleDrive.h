@@ -65,6 +65,7 @@ class GoogleDrive : public CloudProvider {
                                         std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
                                           std::ostream&) const override;
+  IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
   std::string getItemUrlResponse(const IItem& item,
@@ -72,6 +73,7 @@ class GoogleDrive : public CloudProvider {
                                  std::istream& response) const override;
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+  GeneralData getGeneralDataResponse(std::istream& response) const override;
 
   IHttpRequest::Pointer upload(const IItem& f, const std::string& url,
                                const std::string& method,
