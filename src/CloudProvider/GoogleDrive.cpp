@@ -371,12 +371,9 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
                        exported_extension(v["mimeType"].asString()));
   }
   item->set_hidden(v["trashed"].asBool());
-  std::string thumnail_url = v["thumbnailLink"].asString();
-  if (!thumnail_url.empty() && isGoogleMimeType(v["mimeType"].asString()))
-    thumnail_url += "&access_token=" + access_token();
-  else if (thumnail_url.empty())
-    thumnail_url = v["iconLink"].asString();
-  item->set_thumbnail_url(thumnail_url);
+  item->set_thumbnail_url(v.isMember("thumbnailLink")
+                              ? v["thumbnailLink"].asString()
+                              : v["iconLink"].asString());
   item->set_mime_type(v["mimeType"].asString());
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
