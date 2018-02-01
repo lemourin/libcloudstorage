@@ -24,6 +24,7 @@
 #include "Dropbox.h"
 
 #include <json/json.h>
+#include <algorithm>
 #include <sstream>
 
 #include "Utility/Item.h"
@@ -188,6 +189,11 @@ IHttpRequest::Pointer Dropbox::downloadFileRequest(const IItem& item,
 
 IHttpRequest::Pointer Dropbox::getThumbnailRequest(const IItem& item,
                                                    std::ostream&) const {
+  const std::vector<std::string> supported_extensions = {
+      "jpg", "jpeg", "png", "tiff", "tif", "gif", "bmp"};
+  if (std::find(supported_extensions.begin(), supported_extensions.end(),
+                item.extension()) == supported_extensions.end())
+    return nullptr;
   auto request = http()->create(
       "https://content.dropboxapi.com/2/files/get_thumbnail", "POST");
   request->setHeaderParameter("Content-Type", "");
