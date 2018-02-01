@@ -436,7 +436,13 @@ IItem::Pointer YouTube::getItemDataResponse(std::istream& stream, bool audio,
 std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     const IItem& directory, std::istream& stream,
     std::string& next_page_token) const {
-  auto response = util::json::from_stream(stream);
+  std::unique_ptr<Json::CharReader> reader(
+      Json::CharReaderBuilder().newCharReader());
+  std::stringstream sstream;
+  sstream << stream.rdbuf();
+  std::string str = sstream.str();
+  Json::Value response;
+  reader->parse(str.data(), str.data() + str.size(), &response, nullptr);
   std::vector<IItem::Pointer> result;
   bool audio = from_string(directory.id()).audio;
   bool high_quality = from_string(directory.id()).high_quality;
