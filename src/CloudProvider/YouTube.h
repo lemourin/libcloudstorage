@@ -38,13 +38,10 @@ class YouTube : public CloudProvider {
   std::string name() const override;
   std::string endpoint() const override;
   OperationSet supportedOperations() const override;
+  bool isSuccess(int, const IHttpRequest::HeaderParameters&) const override;
 
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
-  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
-      IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
-  ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer item, IListDirectoryCallback::Pointer callback) override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,
                                                  Range) override;

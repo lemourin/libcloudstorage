@@ -35,17 +35,12 @@ class ListDirectoryRequest
   using ICallback = IListDirectoryCallback;
 
   ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
-                       ICallback::Pointer,
-                       std::function<bool(int)> fault_tolerant = [](int) {
-                         return false;
-                       });
+                       ICallback::Pointer);
   ~ListDirectoryRequest();
 
  private:
-  void resolve(Request::Pointer, IItem::Pointer directory, ICallback* cb,
-               std::function<bool(int)> fault_tolerant);
-  void work(IItem::Pointer directory, std::string page_token, ICallback*,
-            std::function<bool(int)> fault_tolerant);
+  void resolve(Request::Pointer, IItem::Pointer directory, ICallback* cb);
+  void work(IItem::Pointer directory, std::string page_token, ICallback*);
 
   std::vector<IItem::Pointer> result_;
 };

@@ -29,8 +29,7 @@ namespace cloudstorage {
 
 ListDirectoryPageRequest::ListDirectoryPageRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
-    const std::string& token, ListDirectoryPageCallback completed,
-    std::function<bool(int)> fault_tolerant)
+    const std::string& token, ListDirectoryPageCallback completed)
     : Request(p, completed, [=](Request<EitherError<PageData>>::Pointer r) {
         if (directory->type() != IItem::FileType::Directory)
           return r->done(Error{IHttpRequest::Bad, "file not a directory"});
@@ -40,12 +39,7 @@ ListDirectoryPageRequest::ListDirectoryPageRequest(
                                                          *input);
             },
             [=](EitherError<Response> e) {
-              if (e.left()) {
-                if (!fault_tolerant(e.left()->code_))
-                  return r->done(e.left());
-                else
-                  return r->done(PageData{{}, ""});
-              }
+              if (e.left()) return r->done(e.left());
               try {
                 std::string next_token;
                 auto lst = r->provider()->listDirectoryResponse(

@@ -228,22 +228,9 @@ ICloudProvider::OperationSet YouTube::supportedOperations() const {
          GetItemUrl;
 }
 
-ICloudProvider::ListDirectoryPageRequest::Pointer
-YouTube::listDirectoryPageAsync(IItem::Pointer directory,
-                                const std::string& token,
-                                ListDirectoryPageCallback complete) {
-  return std::make_shared<cloudstorage::ListDirectoryPageRequest>(
-             shared_from_this(), directory, token, complete,
-             [](int code) { return code == IHttpRequest::NotFound; })
-      ->run();
-}
-
-ICloudProvider::ListDirectoryRequest::Pointer YouTube::listDirectoryAsync(
-    IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  return std::make_shared<cloudstorage::ListDirectoryRequest>(
-             shared_from_this(), std::move(item), std::move(callback),
-             [](int code) { return code == IHttpRequest::NotFound; })
-      ->run();
+bool YouTube::isSuccess(int code,
+                        const IHttpRequest::HeaderParameters& h) const {
+  return CloudProvider::isSuccess(code, h) || code == IHttpRequest::NotFound;
 }
 
 ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(

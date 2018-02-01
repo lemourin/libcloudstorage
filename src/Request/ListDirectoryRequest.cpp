@@ -29,49 +29,44 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
-ListDirectoryRequest::ListDirectoryRequest(
-    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
-    ICallback::Pointer cb, std::function<bool(int)> fault_tolerant)
+ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
+                                           IItem::Pointer directory,
+                                           ICallback::Pointer cb)
     : Request(p,
               [=](EitherError<std::vector<IItem::Pointer>> e) { cb->done(e); },
               std::bind(&ListDirectoryRequest::resolve, this, _1, directory,
-                        cb.get(), fault_tolerant)) {}
+                        cb.get())) {}
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
 void ListDirectoryRequest::resolve(Request::Pointer request,
                                    IItem::Pointer directory,
-                                   ICallback* callback,
-                                   std::function<bool(int)> fault_tolerant) {
+                                   ICallback* callback) {
   if (directory->type() != IItem::FileType::Directory)
     request->done(
         Error{IHttpRequest::Forbidden, "trying to list non directory"});
   else
-    work(directory, "", callback, fault_tolerant);
+    work(directory, "", callback);
 }
 
 void ListDirectoryRequest::work(IItem::Pointer directory,
-                                std::string page_token, ICallback* callback,
-                                std::function<bool(int)> fault_tolerant) {
+                                std::string page_token, ICallback* callback) {
   auto request = this->shared_from_this();
   this->request(
       [=](util::Output i) {
         return provider()->listDirectoryRequest(*directory, page_token, *i);
       },
       [=](EitherError<Response> e) {
-        if (e.left() && !fault_tolerant(e.left()->code_))
-          return request->done(e.left());
+        if (e.left()) return request->done(e.left());
         try {
-          std::stringstream dummy_output;
-          auto& output = e.left() ? dummy_output : e.right()->output();
           std::string page_token = "";
           for (auto& t : request->provider()->listDirectoryResponse(
-                   *directory, output, page_token)) {
+                   *directory, e.right()->output(), page_token)) {
             callback->receivedItem(t);
             result_.push_back(t);
           }
           if (!page_token.empty())
-            work(directory, page_token, callback, fault_tolerant);
+            work(directory, page_token, callback);
           else {
             request->done(result_);
           }

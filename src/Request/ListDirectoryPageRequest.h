@@ -31,10 +31,7 @@ namespace cloudstorage {
 class ListDirectoryPageRequest : public Request<EitherError<PageData>> {
  public:
   ListDirectoryPageRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                           const std::string&, ListDirectoryPageCallback,
-                           std::function<bool(int)> fault_tolerant = [](int) {
-                             return false;
-                           });
+                           const std::string&, ListDirectoryPageCallback);
 };
 
 }  // namespace cloudstorage
