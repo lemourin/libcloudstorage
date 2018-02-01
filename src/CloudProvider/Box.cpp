@@ -115,6 +115,15 @@ IItem::Pointer Box::uploadFileResponse(const IItem&, const std::string&,
   return toItem(util::json::from_stream(response)["entries"][0]);
 }
 
+GeneralData Box::getGeneralDataResponse(std::istream& response) const {
+  auto json = util::json::from_stream(response);
+  GeneralData data;
+  data.space_used_ = json["space_used"].asUInt64();
+  data.space_total_ = json["space_amount"].asUInt64();
+  data.username_ = json["login"].asString();
+  return data;
+}
+
 IHttpRequest::Pointer Box::downloadFileRequest(const IItem& item,
                                                std::ostream&) const {
   return http()->create(
@@ -181,6 +190,10 @@ IHttpRequest::Pointer Box::renameItemRequest(const IItem& item,
   json["name"] = name;
   input << json;
   return request;
+}
+
+IHttpRequest::Pointer Box::getGeneralDataRequest(std::ostream&) const {
+  return http()->create(endpoint() + "/2.0/users/me");
 }
 
 IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
