@@ -128,6 +128,10 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
       error_ = {e->getErrorCode(), e->getErrorString()};
     }
     if (r->getLink()) link_ = r->getLink();
+    if (r->getMegaAccountDetails()) {
+      space_total_ = r->getMegaAccountDetails()->getStorageMax();
+      space_used_ = r->getMegaAccountDetails()->getStorageUsed();
+    }
     node_ = r->getNodeHandle();
     auto callback = util::exchange(callback_, nullptr);
     lock.unlock();
@@ -140,6 +144,8 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
     condition_.notify_all();
   }
 
+  uint64_t space_total_ = 0;
+  uint64_t space_used_ = 0;
   std::string link_;
   MegaHandle node_ = 0;
 };
@@ -800,6 +806,32 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
   };
   return std::make_shared<Request<EitherError<PageData>>>(shared_from_this(),
                                                           complete, resolver)
+      ->run();
+}
+
+ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    ensureAuthorized<EitherError<GeneralData>>(r, [=] {
+      auto listener = Listener::make<RequestListener>(
+          [=](EitherError<void> e, Listener* listener) {
+            if (e.left()) return r->done(e.left());
+            GeneralData result;
+            result.username_ =
+                credentialsFromString(token())["username"].asString();
+            result.space_total_ =
+                static_cast<RequestListener*>(listener)->space_total_;
+            result.space_used_ =
+                static_cast<RequestListener*>(listener)->space_used_;
+            r->done(result);
+          },
+          this);
+      r->subrequest(listener);
+      mega()->getAccountDetails(listener.get());
+    });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
       ->run();
 }
 
