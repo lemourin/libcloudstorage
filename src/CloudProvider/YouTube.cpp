@@ -462,9 +462,10 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
     }
     next_page_token = "real_playlist";
   } else {
-    for (const Json::Value& v : response["items"])
-      result.push_back(
-          toItem(v, response["kind"].asString(), audio, high_quality));
+    for (const Json::Value& v : response["items"]) {
+      auto item = toItem(v, response["kind"].asString(), audio, high_quality);
+      if (!item->thumbnail_url().empty()) result.push_back(item);
+    }
   }
   if (response.isMember("nextPageToken"))
     next_page_token = response["nextPageToken"].asString();
@@ -479,8 +480,8 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
   return result;
 }
 
-IItem::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
-                               bool audio, bool high_quality) const {
+Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
+                              bool audio, bool high_quality) const {
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString(),
