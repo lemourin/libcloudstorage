@@ -11,6 +11,7 @@
 #include <QQmlEngine>
 #include <QSaveFile>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QUrl>
 #include <unordered_set>
 #include "File.h"
@@ -126,11 +127,54 @@ CloudContext::CloudContext(QObject* parent)
                       operation.toStdString() + ":", code,
                       description.toStdString());
           });
+  loadCachedDirectories();
 }
 
 CloudContext::~CloudContext() {
   save();
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
+}
+
+void CloudContext::loadCachedDirectories() {
+  QFile file(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
+             "/cloudstorage_cache.json");
+  if (file.open(QFile::ReadOnly)) {
+    QJsonObject json = QJsonDocument::fromBinaryData(file.readAll()).object();
+    for (auto directory : json["directory"].toArray()) {
+      auto json = directory.toObject();
+      std::vector<IItem::Pointer> items;
+      for (auto item : json["list"].toArray()) {
+        try {
+          items.push_back(IItem::fromString(item.toString().toStdString()));
+        } catch (const std::exception& e) {
+          qDebug() << e.what();
+        }
+      }
+      list_directory_cache_[{json["label"].toString().toStdString(),
+                             json["id"].toString().toStdString()}] = items;
+    }
+  }
+}
+
+void CloudContext::saveCachedDirectories() {
+  QJsonArray cache;
+  for (auto&& d : list_directory_cache_) {
+    QJsonObject object;
+    QJsonArray array;
+    for (auto&& d : d.second) {
+      array.append(d->toString().c_str());
+    }
+    object["label"] = d.first.provider_label_.c_str();
+    object["id"] = d.first.directory_id_.c_str();
+    object["list"] = array;
+    cache.append(object);
+  }
+  QJsonObject json;
+  json["directory"] = cache;
+  QFile file(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
+             "/cloudstorage_cache.json");
+  if (file.open(QFile::WriteOnly))
+    file.write(QJsonDocument(json).toBinaryData());
 }
 
 void CloudContext::save() {
@@ -146,6 +190,7 @@ void CloudContext::save() {
     array.append(dict);
   }
   settings.setValue("providers", array);
+  saveCachedDirectories();
 }
 
 QStringList CloudContext::providers() const {

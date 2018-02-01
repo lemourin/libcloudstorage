@@ -309,6 +309,9 @@ class CloudContext : public QObject {
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
 
+  void loadCachedDirectories();
+  void saveCachedDirectories();
+
   void save();
 
   QStringList providers() const;
