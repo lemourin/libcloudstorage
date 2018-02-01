@@ -116,7 +116,8 @@ IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
       http()->create(endpoint() + "/v1.0/drive/items/" + id, "GET");
   request->setParameter("select",
                         "name,folder,audio,image,photo,video,id,size,"
-                        "lastModifiedDateTime,@content.downloadUrl");
+                        "lastModifiedDateTime,thumbnails,@content.downloadUrl");
+  request->setParameter("expand", "thumbnails");
   return request;
 }
 
@@ -127,7 +128,8 @@ IHttpRequest::Pointer OneDrive::listDirectoryRequest(
       endpoint() + "/v1.0/drive/items/" + item.id() + "/children", "GET");
   request->setParameter("select",
                         "name,folder,audio,image,photo,video,id,size,"
-                        "lastModifiedDateTime,@content.downloadUrl");
+                        "lastModifiedDateTime,thumbnails,@content.downloadUrl");
+  request->setParameter("expand", "thumbnails");
   return request;
 }
 
@@ -202,8 +204,7 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
       v["name"].asString(), v["id"].asString(), v["size"].asUInt64(),
       util::parse_time(v["lastModifiedDateTime"].asString()), type);
   item->set_url(v["@content.downloadUrl"].asString());
-  item->set_thumbnail_url(endpoint() + "/v1.0/drive/items/" + item->id() +
-                          "/thumbnails/0/small/content");
+  item->set_thumbnail_url(v["thumbnails"][0]["small"]["url"].asString());
   return std::move(item);
 }
 
