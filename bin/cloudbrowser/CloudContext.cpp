@@ -343,10 +343,13 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
 
 void CloudContext::cacheDirectory(CloudItem* directory,
                                   const std::vector<IItem::Pointer>& lst) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  std::vector<std::string> data;
-  list_directory_cache_[{directory->provider().label_,
-                         directory->item()->id()}] = lst;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<std::string> data;
+    list_directory_cache_[{directory->provider().label_,
+                           directory->item()->id()}] = lst;
+  }
+  thread_pool_->schedule([=] { saveCachedDirectories(); });
 }
 
 std::vector<IItem::Pointer> CloudContext::cachedDirectory(
