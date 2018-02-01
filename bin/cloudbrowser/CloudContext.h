@@ -342,6 +342,7 @@ class CloudContext : public QObject {
                       const std::vector<cloudstorage::IItem::Pointer>&);
   std::vector<cloudstorage::IItem::Pointer> cachedDirectory(
       CloudItem* directory);
+  void schedule(std::function<void()>);
 
   static QString thumbnail_path(const QString& filename);
 

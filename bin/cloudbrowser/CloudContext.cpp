@@ -349,7 +349,7 @@ void CloudContext::cacheDirectory(CloudItem* directory,
     list_directory_cache_[{directory->provider().label_,
                            directory->item()->id()}] = lst;
   }
-  thread_pool_->schedule([=] { saveCachedDirectories(); });
+  schedule([=] { saveCachedDirectories(); });
 }
 
 std::vector<IItem::Pointer> CloudContext::cachedDirectory(
@@ -361,6 +361,10 @@ std::vector<IItem::Pointer> CloudContext::cachedDirectory(
     return {};
   else
     return it->second;
+}
+
+void CloudContext::schedule(std::function<void()> f) {
+  thread_pool_->schedule(f);
 }
 
 QString CloudContext::thumbnail_path(const QString& filename) {
@@ -732,26 +736,28 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   } else {
     auto object = new RequestNotifier;
     auto provider = item->provider().variant();
-    connect(
-        object, &RequestNotifier::finishedString, this,
-        [=](EitherError<std::string> e) {
-          set_done(true);
-          if (e.left())
-            return emit context->errorOccurred("GetThumbnail", provider,
-                                               e.left()->code_,
-                                               e.left()->description_.c_str());
-          QSaveFile file(path);
-          if (!file.open(QFile::WriteOnly))
-            return emit context->errorOccurred("GetThumbnail", provider,
-                                               IHttpRequest::Failure,
-                                               "couldn't save thumbnail");
-          file.write(e.right()->data(), static_cast<qint64>(e.right()->size()));
-          if (file.commit()) {
-            source_ = QUrl::fromLocalFile(path).toString();
-            context->addCacheSize(e.right()->size());
-            emit sourceChanged();
-          }
-        });
+    connect(object, &RequestNotifier::finishedString, this,
+            [=](EitherError<std::string> e) {
+              set_done(true);
+              if (e.left())
+                return emit context->errorOccurred(
+                    "GetThumbnail", provider, e.left()->code_,
+                    e.left()->description_.c_str());
+              context->schedule([=] {
+                QSaveFile file(path);
+                if (!file.open(QFile::WriteOnly))
+                  return emit context->errorOccurred("GetThumbnail", provider,
+                                                     IHttpRequest::Failure,
+                                                     "couldn't save thumbnail");
+                file.write(e.right()->data(),
+                           static_cast<qint64>(e.right()->size()));
+                if (file.commit()) {
+                  source_ = QUrl::fromLocalFile(path).toString();
+                  context->addCacheSize(e.right()->size());
+                  emit sourceChanged();
+                }
+              });
+            });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
       DownloadThumbnailCallback(RequestNotifier* notifier,
