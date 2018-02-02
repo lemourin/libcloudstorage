@@ -280,12 +280,13 @@ class ServerWrapperFactory : public cloudstorage::IHttpServerFactory {
 };
 
 struct ListDirectoryCacheKey {
+  std::string provider_type_;
   std::string provider_label_;
   std::string directory_id_;
 
   bool operator==(const ListDirectoryCacheKey& d) const {
-    return std::tie(provider_label_, directory_id_) ==
-           std::tie(d.provider_label_, d.directory_id_);
+    return std::tie(provider_type_, provider_label_, directory_id_) ==
+           std::tie(d.provider_type_, d.provider_label_, d.directory_id_);
   }
 };
 
@@ -293,7 +294,8 @@ namespace std {
 template <>
 struct hash<ListDirectoryCacheKey> {
   size_t operator()(const ListDirectoryCacheKey& d) const {
-    return std::hash<std::string>()(d.provider_label_ + "$" + d.directory_id_);
+    return std::hash<std::string>()(d.provider_type_ + "#" + d.provider_label_ +
+                                    "$" + d.directory_id_);
   }
 };
 }  // namespace std

@@ -151,7 +151,8 @@ void CloudContext::loadCachedDirectories() {
           qDebug() << e.what();
         }
       }
-      list_directory_cache_[{json["label"].toString().toStdString(),
+      list_directory_cache_[{json["type"].toString().toStdString(),
+                             json["label"].toString().toStdString(),
                              json["id"].toString().toStdString()}] = items;
     }
   }
@@ -165,6 +166,7 @@ void CloudContext::saveCachedDirectories() {
     for (auto&& d : d.second) {
       array.append(d->toString().c_str());
     }
+    object["type"] = d.first.provider_type_.c_str();
     object["label"] = d.first.provider_label_.c_str();
     object["id"] = d.first.directory_id_.c_str();
     object["list"] = array;
@@ -231,8 +233,9 @@ QString CloudContext::authorizationUrl(QString provider) const {
 QObject* CloudContext::root(QVariant provider) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto label = provider.toMap()["label"].toString().toStdString();
+  auto type = provider.toMap()["type"].toString().toStdString();
   for (auto&& i : provider_)
-    if (i.label_ == label) {
+    if (i.label_ == label && i.provider_->name() == type) {
       auto item = new CloudItem(i, i.provider_->rootDirectory());
       QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
       return item;
@@ -244,9 +247,10 @@ void CloudContext::removeProvider(QVariant provider) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto label = provider.toMap()["label"].toString().toStdString();
+    auto type = provider.toMap()["type"].toString().toStdString();
     std::vector<Provider> r;
     for (auto&& i : provider_)
-      if (i.label_ != label) r.push_back(i);
+      if (i.label_ != label || i.provider_->name() != type) r.push_back(i);
     provider_ = r;
   }
   emit userProvidersChanged();
@@ -311,8 +315,12 @@ void CloudContext::clearCache() {
     if (d.endsWith("-thumbnail") || d == "cloudstorage_cache.json")
       QFile(path + "/" + d).remove();
   }
+
   cache_size_ = 0;
   emit cacheSizeChanged();
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  list_directory_cache_.clear();
 }
 
 void CloudContext::addCacheSize(size_t size) {
@@ -346,17 +354,22 @@ void CloudContext::cacheDirectory(CloudItem* directory,
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::string> data;
-    list_directory_cache_[{directory->provider().label_,
+    list_directory_cache_[{directory->provider().provider_->name(),
+                           directory->provider().label_,
                            directory->item()->id()}] = lst;
   }
-  schedule([=] { saveCachedDirectories(); });
+  schedule([=] {
+    std::lock_guard<std::mutex> lock(mutex_);
+    saveCachedDirectories();
+  });
 }
 
 std::vector<IItem::Pointer> CloudContext::cachedDirectory(
     CloudItem* directory) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto it = list_directory_cache_.find(
-      {directory->provider().label_, directory->item()->id()});
+  auto it = list_directory_cache_.find({directory->provider().provider_->name(),
+                                        directory->provider().label_,
+                                        directory->item()->id()});
   if (it == std::end(list_directory_cache_))
     return {};
   else
@@ -375,26 +388,32 @@ QString CloudContext::thumbnail_path(const QString& filename) {
 void CloudContext::receivedCode(std::string provider, std::string code) {
   auto p = ICloudStorage::create()->provider(provider, init_data(provider));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
+    QVariantMap provider_variant{{"type", provider.c_str()},
+                                 {"label", pretty(provider.c_str())}};
     if (e.left())
-      return emit errorOccurred(
-          "ExchangeCode", QVariantMap({{"name", provider.c_str()},
-                                       {"label", pretty(provider.c_str())}}),
-          e.left()->code_, e.left()->description_.c_str());
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
+      return emit errorOccurred("ExchangeCode", provider_variant,
+                                e.left()->code_,
+                                e.left()->description_.c_str());
+    std::shared_ptr<ICloudProvider> p =
+        this->provider(provider, "####", *e.right());
+    pool_.add(p, p->getGeneralDataAsync([=](EitherError<GeneralData> d) {
+      if (d.left())
+        return emit errorOccurred("GeneralData", provider_variant,
+                                  d.left()->code_,
+                                  d.left()->description_.c_str());
+      std::unique_lock<std::mutex> lock(mutex_);
       std::unordered_set<std::string> names;
       for (auto&& i : provider_)
         if (i.provider_->name() == provider) names.insert(i.label_);
-      auto name = [=](const std::string& p, int cnt) {
-        return (pretty(p.c_str()) + " #" + QString::number(cnt)).toStdString();
-      };
-      int cnt = 1;
-      while (names.find(name(provider, cnt)) != names.end()) cnt++;
-      auto label = name(provider, cnt);
-      provider_.push_back({label, this->provider(provider, label, *e.right())});
-    }
-    save();
-    emit userProvidersChanged();
+      if (names.find(d.right()->username_) == names.end()) {
+        provider_.push_back(
+            {d.right()->username_,
+             this->provider(provider, d.right()->username_, *e.right())});
+        lock.unlock();
+        save();
+        emit userProvidersChanged();
+      }
+    }));
   });
   pool_.add(std::move(p), std::move(r));
   emit receivedCode(provider.c_str());
