@@ -8,11 +8,6 @@ Kirigami.ScrollablePage {
   title: "Add Provider"
 
   function open_auth(url) {
-    if (!cloud.httpServerAvailable) {
-      root.showPassiveNotification("Couldn't initialize HTTP server. " +
-        "Make sure only one instance of Cloud Browser is running.");
-      return;
-    }
     root.globalDrawer.drawerOpen = false;
     if (qtwebview)
       root.pageStack.push(webview, {url: url});

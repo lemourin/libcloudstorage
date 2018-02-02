@@ -270,5 +270,10 @@ Kirigami.ApplicationWindow {
     pageStack.separatorVisible = false;
     if (include_ads)
       platform.showAd();
+    if (!cloud.httpServerAvailable) {
+      root.showPassiveNotification("Couldn't initialize HTTP server. " +
+        "Make sure only one instance of Cloud Browser is running and " +
+        "then restart the application.", Infinity);
+    }
   }
 }
