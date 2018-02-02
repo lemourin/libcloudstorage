@@ -71,7 +71,8 @@ Kirigami.ApplicationWindow {
     onErrorOccurred: {
       if (operation !== "GetThumbnail") {
         var message = "";
-        if (provider.label) message += "(" + provider.label + ") ";
+        if (provider.label)
+          message += "(" + cloud.pretty(provider.type) + ", " + provider.label + ") ";
         message +=
             operation + ": " + code +
             (description ? " " + description : "")
@@ -165,11 +166,12 @@ Kirigami.ApplicationWindow {
       id: providerAction
       Kirigami.Action {
         property variant provider
-        text: provider.label
+        text: "<b>" + cloud.pretty(provider.type) + "</b>" + "<br/><div>" +
+              provider.label + "</div>"
         onTriggered: {
           pageStack.clear();
           cloud.currently_moved = null;
-          cloud.list(provider.label, provider.label, cloud.root(provider));
+          cloud.list(cloud.pretty(provider.type), provider.label, cloud.root(provider));
         }
       }
     }

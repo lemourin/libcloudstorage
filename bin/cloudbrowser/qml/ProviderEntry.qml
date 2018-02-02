@@ -22,6 +22,7 @@ Row {
   Templates.Label {
     anchors.verticalCenter: parent.verticalCenter
     color: Kirigami.Theme.textColor
-    text: label === "" ? cloud.pretty(provider) : label
+    text: "<b>" + cloud.pretty(provider) + "</b>" + (label !== "" ?
+            "<br/><div>" + label + "</div>" : "")
   }
 }

@@ -124,7 +124,8 @@ CloudContext::CloudContext(QObject* parent)
   connect(this, &CloudContext::errorOccurred, this,
           [](QString operation, QVariantMap provider, int code,
              QString description) {
-            util::log("(" + provider["label"].toString().toStdString() + ")",
+            util::log("(" + provider["type"].toString().toStdString() + ", " +
+                          provider["label"].toString().toStdString() + ")",
                       operation.toStdString() + ":", code,
                       description.toStdString());
           });
