@@ -153,6 +153,14 @@ IHttpRequest::Pointer GooglePhotos::uploadFileRequest(
   return request;
 }
 
+IHttpRequest::Pointer GooglePhotos::getGeneralDataRequest(
+    std::ostream &) const {
+  auto r = http()->create(endpoint() + "/feed/api/user/default");
+  r->setParameter("fields",
+                  "gphoto:quotalimit,gphoto:quotacurrent,gphoto:nickname");
+  return r;
+}
+
 std::vector<IItem::Pointer> GooglePhotos::listDirectoryResponse(
     const IItem &, std::istream &stream, std::string &) const {
   std::stringstream sstream;
@@ -166,6 +174,27 @@ std::vector<IItem::Pointer> GooglePhotos::listDirectoryResponse(
        child = child->NextSiblingElement("entry")) {
     result.push_back(toItem(child));
   }
+  return result;
+}
+
+GeneralData GooglePhotos::getGeneralDataResponse(std::istream &response) const {
+  std::stringstream sstream;
+  sstream << response.rdbuf();
+  tinyxml2::XMLDocument document;
+  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
+      tinyxml2::XML_SUCCESS)
+    throw std::logic_error("invalid xml");
+  auto quota_limit =
+      document.RootElement()->FirstChildElement("gphoto:quotalimit");
+  auto quota_current =
+      document.RootElement()->FirstChildElement("gphoto:quotacurrent");
+  auto user = document.RootElement()->FirstChildElement("gphoto:nickname");
+  if (!quota_limit || !quota_current || !user)
+    throw std::logic_error("invalid xml");
+  GeneralData result;
+  result.space_total_ = std::stoull(quota_limit->GetText());
+  result.space_used_ = std::stoull(quota_current->GetText());
+  result.username_ = user->GetText();
   return result;
 }
 
