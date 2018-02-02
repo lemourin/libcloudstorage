@@ -304,6 +304,23 @@ LocalDrive::GetItemDataRequest::Pointer LocalDrive::getItemDataAsync(
       });
 }
 
+LocalDrive::GeneralDataRequest::Pointer LocalDrive::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  return request<EitherError<GeneralData>>(
+      [=](EitherError<GeneralData> e) { callback(e); },
+      [=](Request<EitherError<GeneralData>>::Pointer r) {
+        fs::path path(this->path());
+        error_code error;
+        auto space = fs::space(path, error);
+        if (error) return r->done(Error{error.value(), error.message()});
+        GeneralData data;
+        data.space_used_ = space.capacity - space.available;
+        data.space_total_ = space.capacity;
+        data.username_ = this->path();
+        r->done(data);
+      });
+}
+
 bool LocalDrive::unpackCredentials(const std::string &code) {
   auto lock = auth_lock();
   try {

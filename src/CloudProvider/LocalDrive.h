@@ -68,6 +68,8 @@ class LocalDrive : public CloudProvider {
                                              RenameItemCallback) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
+
   std::string path(IItem::Pointer) const;
 
  private:
