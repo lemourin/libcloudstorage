@@ -153,12 +153,53 @@ IHttpRequest::Pointer WebDav::renameItemRequest(const IItem& item,
   return request;
 }
 
+IHttpRequest::Pointer WebDav::getGeneralDataRequest(
+    std::ostream& stream) const {
+  auto request = http()->create(endpoint() + "/", "PROPFIND");
+  request->setHeaderParameter("Depth", "0");
+  request->setHeaderParameter("Content-Type", "text/xml");
+  stream << "<D:propfind xmlns:D=\"DAV:\">"
+            "  <D:prop>"
+            "    <D:quota-available-bytes/>"
+            "    <D:quota-used-bytes/>"
+            "  </D:prop>"
+            "</D:propfind>";
+  return request;
+}
+
 IItem::Pointer WebDav::uploadFileResponse(const IItem& item,
                                           const std::string& filename,
                                           uint64_t size, std::istream&) const {
   return util::make_unique<Item>(filename, item.id() + filename, size,
                                  std::chrono::system_clock::now(),
                                  IItem::FileType::Unknown);
+}
+
+GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
+  std::stringstream sstream;
+  sstream << stream.rdbuf();
+  tinyxml2::XMLDocument document;
+  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
+      tinyxml2::XML_SUCCESS)
+    throw std::logic_error("failed to parse xml");
+  auto response = document.RootElement()->FirstChildElement("d:response");
+  if (!response) throw std::logic_error("invalid xml");
+  auto propstat = response->FirstChildElement("d:propstat");
+  if (!propstat) throw std::logic_error("invalid xml");
+  auto prop = propstat->FirstChildElement("d:prop");
+  if (!prop) throw std::logic_error("invalid xml");
+  auto quota_used = prop->FirstChildElement("d:quota-used-bytes");
+  auto quota_available = prop->FirstChildElement("d:quota-available-bytes");
+  if (!quota_used || !quota_available) throw std::logic_error("invalid xml");
+  GeneralData data;
+  data.space_used_ = std::stoull(quota_used->GetText());
+  data.space_total_ = std::stoull(quota_available->GetText());
+  auto lock = auth_lock();
+  auto url = util::Url(webdav_url_);
+  data.username_ = url.protocol() + "://" + user_ + "@" + url.host() +
+                   (url.path().empty() ? "" : "/" + url.path()) +
+                   (url.query().empty() ? "" : "?" + url.query());
+  return data;
 }
 
 IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {
