@@ -358,7 +358,6 @@ IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
-  std::cerr << response;
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["_embedded"]["items"])
     result.push_back(toItem(v));
