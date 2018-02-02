@@ -77,7 +77,9 @@ OneDrive::OneDrive() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string OneDrive::name() const { return "onedrive"; }
 
-std::string OneDrive::endpoint() const { return "https://api.onedrive.com"; }
+std::string OneDrive::endpoint() const {
+  return "https://graph.microsoft.com/v1.0";
+}
 
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
     IItem::Pointer parent, const std::string& filename,
@@ -88,10 +90,10 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
              [=](Request<EitherError<IItem>>::Pointer r) {
                r->request(
                    [=](util::Output) {
-                     return http()->create(endpoint() + "/v1.0/drive/items/" +
+                     return http()->create(endpoint() + "/me/drive/items/" +
                                                parent->id() + ":/" +
                                                util::Url::escape(filename) +
-                                               ":/upload.createSession",
+                                               ":/createUploadSession",
                                            "POST");
                    },
                    [=](EitherError<Response> e) {
@@ -113,7 +115,7 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
 IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
                                                    std::ostream&) const {
   IHttpRequest::Pointer request =
-      http()->create(endpoint() + "/v1.0/drive/items/" + id, "GET");
+      http()->create(endpoint() + "/drive/items/" + id, "GET");
   request->setParameter("select",
                         "name,folder,audio,image,photo,video,id,size,"
                         "lastModifiedDateTime,thumbnails,@content.downloadUrl");
@@ -125,7 +127,7 @@ IHttpRequest::Pointer OneDrive::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (!page_token.empty()) return http()->create(page_token, "GET");
   auto request = http()->create(
-      endpoint() + "/v1.0/drive/items/" + item.id() + "/children", "GET");
+      endpoint() + "/drive/items/" + item.id() + "/children", "GET");
   request->setParameter("select",
                         "name,folder,audio,image,photo,video,id,size,"
                         "lastModifiedDateTime,thumbnails,@content.downloadUrl");
@@ -137,20 +139,19 @@ IHttpRequest::Pointer OneDrive::downloadFileRequest(const IItem& f,
                                                     std::ostream&) const {
   const Item& item = static_cast<const Item&>(f);
   auto request = http()->create(
-      endpoint() + "/v1.0/drive/items/" + item.id() + "/content", "GET");
+      endpoint() + "/drive/items/" + item.id() + "/content", "GET");
   return request;
 }
 
 IHttpRequest::Pointer OneDrive::deleteItemRequest(const IItem& item,
                                                   std::ostream&) const {
-  return http()->create(endpoint() + "/v1.0/drive/items/" + item.id(),
-                        "DELETE");
+  return http()->create(endpoint() + "/drive/items/" + item.id(), "DELETE");
 }
 
 IHttpRequest::Pointer OneDrive::createDirectoryRequest(
     const IItem& parent, const std::string& name, std::ostream& input) const {
   auto request = http()->create(
-      endpoint() + "/v1.0/drive/items/" + parent.id() + "/children", "POST");
+      endpoint() + "/drive/items/" + parent.id() + "/children", "POST");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
@@ -163,7 +164,7 @@ IHttpRequest::Pointer OneDrive::moveItemRequest(const IItem& source,
                                                 const IItem& destination,
                                                 std::ostream& stream) const {
   auto request =
-      http()->create(endpoint() + "/v1.0/drive/items/" + source.id(), "PATCH");
+      http()->create(endpoint() + "/drive/items/" + source.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   if (destination.id() == rootDirectory()->id())
@@ -178,7 +179,7 @@ IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
                                                   const std::string& name,
                                                   std::ostream& stream) const {
   auto request =
-      http()->create(endpoint() + "/v1.0/drive/items/" + item.id(), "PATCH");
+      http()->create(endpoint() + "/drive/items/" + item.id(), "PATCH");
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value json;
   json["name"] = name;
@@ -187,8 +188,7 @@ IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
 }
 
 IHttpRequest::Pointer OneDrive::getGeneralDataRequest(std::ostream&) const {
-  auto request = http()->create("https://graph.microsoft.com/v1.0/me/drive");
-  return request;
+  return http()->create(endpoint() + "/me/drive");
 }
 
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
@@ -217,7 +217,7 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
   auto item = util::make_unique<Item>(
       v["name"].asString(), v["id"].asString(), v["size"].asUInt64(),
       util::parse_time(v["lastModifiedDateTime"].asString()), type);
-  item->set_url(v["@content.downloadUrl"].asString());
+  item->set_url(v["@microsoft.graph.downloadUrl"].asString());
   item->set_thumbnail_url(v["thumbnails"][0]["small"]["url"].asString());
   return std::move(item);
 }
