@@ -122,7 +122,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     return ret;
   } catch (const std::exception& e) {
-    cloudstorage::util::log("Exception: ", e.what());
+    cloudstorage::util::log("Exception:", e.what());
     return 1;
   }
 }

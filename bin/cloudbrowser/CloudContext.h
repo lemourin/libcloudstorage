@@ -274,6 +274,8 @@ class ServerWrapperFactory : public cloudstorage::IHttpServerFactory {
       cloudstorage::IHttpServer::ICallback::Pointer,
       const std::string& session_id, cloudstorage::IHttpServer::Type) override;
 
+  bool serverAvailable() const { return http_server_ != nullptr; }
+
  private:
   std::shared_ptr<DispatchCallback> callback_;
   std::shared_ptr<cloudstorage::IHttpServer> http_server_;
@@ -308,6 +310,7 @@ class CloudContext : public QObject {
   Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
   Q_PROPERTY(bool isFree READ isFree CONSTANT)
   Q_PROPERTY(qint64 cacheSize READ cacheSize NOTIFY cacheSizeChanged)
+  Q_PROPERTY(bool httpServerAvailable READ httpServerAvailable CONSTANT)
 
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
@@ -321,6 +324,7 @@ class CloudContext : public QObject {
   QVariantList userProviders() const;
   bool includeAds() const;
   bool isFree() const;
+  bool httpServerAvailable() const;
 
   Q_INVOKABLE QString authorizationUrl(QString provider) const;
   Q_INVOKABLE QObject* root(QVariant provider);
@@ -406,7 +410,7 @@ class CloudContext : public QObject {
   mutable std::mutex mutex_;
   QJsonDocument config_;
   DebugStream debug_stream_;
-  std::shared_ptr<cloudstorage::IHttpServerFactory> http_server_factory_;
+  std::shared_ptr<ServerWrapperFactory> http_server_factory_;
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;
   std::shared_ptr<cloudstorage::IHttp> http_;
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;

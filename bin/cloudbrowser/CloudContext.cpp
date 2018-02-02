@@ -223,6 +223,10 @@ bool CloudContext::isFree() const {
   return config_.object()["is_free"].toBool();
 }
 
+bool CloudContext::httpServerAvailable() const {
+  return http_server_factory_->serverAvailable();
+}
+
 QString CloudContext::authorizationUrl(QString provider) const {
   auto data = init_data(provider.toStdString());
   return ICloudStorage::create()
