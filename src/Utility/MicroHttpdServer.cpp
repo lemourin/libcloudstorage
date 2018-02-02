@@ -156,10 +156,7 @@ MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
           MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, NULL, NULL,
           http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
           http_request_completed, this, MHD_OPTION_END)),
-      callback_(cb) {
-  if (!http_server_)
-    throw std::runtime_error("failed to initialize http server");
-}
+      callback_(cb) {}
 
 MicroHttpdServer::~MicroHttpdServer() {
   if (http_server_) MHD_stop_daemon(http_server_);
@@ -183,20 +180,19 @@ MicroHttpdServerFactory::MicroHttpdServerFactory() {
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, uint16_t port) {
-  return util::make_unique<MicroHttpdServer>(cb, port);
+  auto result = util::make_unique<MicroHttpdServer>(cb, port);
+  if (result->valid())
+    return result;
+  else
+    return nullptr;
 }
 
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, const std::string&,
     IHttpServer::Type type) {
-  try {
-    return create(cb,
-                  type == IHttpServer::Type::Authorization
-                      ? AUTHORIZATION_PORT
-                      : FILE_PROVIDER_PORT);
-  } catch (const std::exception&) {
-    return nullptr;
-  }
+  return create(cb,
+                type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
+                                                         : FILE_PROVIDER_PORT);
 }
 
 }  // namespace cloudstorage

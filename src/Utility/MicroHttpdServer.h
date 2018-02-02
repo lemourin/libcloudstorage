@@ -86,6 +86,8 @@ class MicroHttpdServer : public IHttpServer {
 
   ICallback::Pointer callback() const override { return callback_; }
 
+  bool valid() const { return http_server_; }
+
  private:
   MHD_Daemon* http_server_;
   ICallback::Pointer callback_;
