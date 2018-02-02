@@ -55,11 +55,14 @@ class YouTube : public CloudProvider {
 
   IHttpRequest::Pointer getItemDataRequest(const std::string& full_id,
                                            std::ostream&) const override;
+  IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
+
   IItem::Pointer getItemDataResponse(std::istream& response, bool audio,
                                      bool high_quality) const;
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
+  GeneralData getGeneralDataResponse(std::istream& response) const override;
 
   Item::Pointer toItem(const Json::Value&, std::string kind, bool audio,
                        bool high_quality) const;
