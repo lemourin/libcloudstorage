@@ -60,6 +60,7 @@ class AmazonS3 : public CloudProvider {
                                              RenameItemCallback) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
 
   IHttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                const std::string& name,

@@ -268,6 +268,19 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer AmazonS3::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    GeneralData data;
+    data.space_total_ = data.space_used_ = 0;
+    data.username_ = bucket();
+    r->done(data);
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
+      ->run();
+}
+
 ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   return std::make_shared<Request<EitherError<IItem>>>(
