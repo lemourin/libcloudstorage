@@ -375,9 +375,57 @@ std::string CloudProvider::credentialsToString(const Json::Value& json) {
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  return std::make_shared<cloudstorage::DownloadFileRequest>(
-             shared_from_this(), item, std::move(callback), FullRange,
-             std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2))
+  class DownloadCallback : public IDownloadFileCallback {
+   public:
+    DownloadCallback(IDownloadFileCallback::Pointer c,
+                     std::function<void(EitherError<void>)> continuation)
+        : callback_(c), continuation_(continuation) {}
+
+    void receivedData(const char* data, uint32_t length) override {
+      callback_->receivedData(data, length);
+    }
+
+    void done(EitherError<void> e) override { continuation_(e); }
+
+    void progress(uint64_t total, uint64_t now) override {
+      callback_->progress(total, now);
+    }
+
+   private:
+    IDownloadFileCallback::Pointer callback_;
+    std::function<void(EitherError<void>)> continuation_;
+  };
+  auto first_try = [=](Request<EitherError<void>>::Pointer r) {
+    return std::make_shared<DownloadCallback>(
+        callback, [=](EitherError<void> e) {
+          if (!e.left()) return r->done(nullptr);
+          if (e.left()->code_ == IHttpRequest::Aborted) return r->done(e);
+          r->subrequest(getItemDataAsync(item->id(), [=](EitherError<IItem> e) {
+            if (e.left()) return r->done(e.left());
+            Item* previous_item = static_cast<Item*>(item.get());
+            Item* current_item = static_cast<Item*>(e.right().get());
+            previous_item->set_thumbnail_url(current_item->thumbnail_url());
+            r->subrequest(
+                std::make_shared<cloudstorage::DownloadFileRequest>(
+                    shared_from_this(), e.right(),
+                    std::make_shared<DownloadCallback>(
+                        callback, [=](EitherError<void> e) { r->done(e); }),
+                    FullRange, std::bind(&CloudProvider::getThumbnailRequest,
+                                         this, _1, _2))
+                    ->run());
+          }));
+        });
+  };
+  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+    r->subrequest(
+        std::make_shared<cloudstorage::DownloadFileRequest>(
+            shared_from_this(), item, first_try(r), FullRange,
+            std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2))
+            ->run());
+  };
+  return std::make_shared<Request<EitherError<void>>>(
+             shared_from_this(),
+             [=](EitherError<void> e) { callback->done(e); }, resolver)
       ->run();
 }
 

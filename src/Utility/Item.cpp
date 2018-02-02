@@ -133,9 +133,15 @@ void Item::set_url(std::string url) {
   url_ = url;
 }
 
-std::string Item::thumbnail_url() const { return thumbnail_url_; }
+std::string Item::thumbnail_url() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return thumbnail_url_;
+}
 
-void Item::set_thumbnail_url(std::string url) { thumbnail_url_ = url; }
+void Item::set_thumbnail_url(std::string url) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  thumbnail_url_ = url;
+}
 
 bool Item::is_hidden() const { return is_hidden_; }
 
