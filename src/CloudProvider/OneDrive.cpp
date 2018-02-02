@@ -186,8 +186,22 @@ IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
   return request;
 }
 
+IHttpRequest::Pointer OneDrive::getGeneralDataRequest(std::ostream&) const {
+  auto request = http()->create("https://graph.microsoft.com/v1.0/me/drive");
+  return request;
+}
+
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
   return toItem(util::json::from_stream(response));
+}
+
+GeneralData OneDrive::getGeneralDataResponse(std::istream& response) const {
+  auto json = util::json::from_stream(response);
+  GeneralData result;
+  result.space_total_ = json["quota"]["total"].asUInt64();
+  result.space_used_ = json["quota"]["used"].asUInt64();
+  result.username_ = json["owner"]["user"]["displayName"].asString();
+  return result;
 }
 
 IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
@@ -227,13 +241,13 @@ void OneDrive::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
 }
 
 std::string OneDrive::Auth::authorizeLibraryUrl() const {
-  std::string result =
-      std::string("https://login.live.com/oauth20_authorize.srf?");
-  std::string scope = "wl.signin%20wl.offline_access%20";
+  std::string result = std::string(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?");
+  std::string scope = "offline_access%20";
   if (permission() == ICloudProvider::Permission::ReadWrite)
-    scope += "onedrive.readwrite";
+    scope += "files.readwrite";
   else
-    scope += "onedrive.readonly";
+    scope += "files.read";
   std::string response_type = "code";
   result += "client_id=" + util::Url::escape(client_id()) + "&";
   result += "scope=" + scope + "&";
@@ -245,8 +259,8 @@ std::string OneDrive::Auth::authorizeLibraryUrl() const {
 
 IHttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
     std::ostream& data) const {
-  auto request =
-      http()->create("https://login.live.com/oauth20_token.srf", "POST");
+  auto request = http()->create(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token", "POST");
   data << "client_id=" << util::Url::escape(client_id()) << "&"
        << "client_secret=" << util::Url::escape(client_secret()) << "&"
        << "redirect_uri=" << util::Url::escape(redirect_uri()) << "&"
@@ -257,8 +271,8 @@ IHttpRequest::Pointer OneDrive::Auth::exchangeAuthorizationCodeRequest(
 
 IHttpRequest::Pointer OneDrive::Auth::refreshTokenRequest(
     std::ostream& data) const {
-  IHttpRequest::Pointer request =
-      http()->create("https://login.live.com/oauth20_token.srf", "POST");
+  IHttpRequest::Pointer request = http()->create(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token", "POST");
   data << "client_id=" << util::Url::escape(client_id()) << "&"
        << "client_secret=" << util::Url::escape(client_secret()) << "&"
        << "refresh_token=" << util::Url::escape(access_token()->refresh_token_)
