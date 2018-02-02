@@ -161,7 +161,9 @@ MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
     throw std::runtime_error("failed to initialize http server");
 }
 
-MicroHttpdServer::~MicroHttpdServer() { MHD_stop_daemon(http_server_); }
+MicroHttpdServer::~MicroHttpdServer() {
+  if (http_server_) MHD_stop_daemon(http_server_);
+}
 
 MicroHttpdServer::IResponse::Pointer MicroHttpdServer::Request::response(
     int code, const IResponse::Headers& headers, int size,
