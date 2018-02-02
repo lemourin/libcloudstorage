@@ -171,7 +171,8 @@ Kirigami.ApplicationWindow {
         onTriggered: {
           pageStack.clear();
           cloud.currently_moved = null;
-          cloud.list(cloud.pretty(provider.type), provider.label, cloud.root(provider));
+          cloud.list(cloud.pretty(provider.type), cloud.pretty(provider.type),
+                     cloud.root(provider));
         }
       }
     }
