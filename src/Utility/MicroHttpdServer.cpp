@@ -156,7 +156,10 @@ MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
           MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, NULL, NULL,
           http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
           http_request_completed, this, MHD_OPTION_END)),
-      callback_(cb) {}
+      callback_(cb) {
+  if (!http_server_)
+    throw std::runtime_error("failed to initialize http server");
+}
 
 MicroHttpdServer::~MicroHttpdServer() { MHD_stop_daemon(http_server_); }
 
@@ -184,9 +187,14 @@ IHttpServer::Pointer MicroHttpdServerFactory::create(
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, const std::string&,
     IHttpServer::Type type) {
-  return create(cb,
-                type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
-                                                         : FILE_PROVIDER_PORT);
+  try {
+    return create(cb,
+                  type == IHttpServer::Type::Authorization
+                      ? AUTHORIZATION_PORT
+                      : FILE_PROVIDER_PORT);
+  } catch (const std::exception&) {
+    return nullptr;
+  }
 }
 
 }  // namespace cloudstorage
