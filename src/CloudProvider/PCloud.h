@@ -63,6 +63,7 @@ class PCloud : public CloudProvider {
                                         std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
                                           std::ostream&) const override;
+  IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
@@ -73,6 +74,7 @@ class PCloud : public CloudProvider {
   IItem::Pointer uploadFileResponse(const IItem& parent,
                                     const std::string& filename, uint64_t,
                                     std::istream& response) const override;
+  GeneralData getGeneralDataResponse(std::istream& response) const override;
 
   IItem::Pointer toItem(const Json::Value&) const;
 

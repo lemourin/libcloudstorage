@@ -100,6 +100,15 @@ IItem::Pointer PCloud::uploadFileResponse(const IItem&, const std::string&,
   return toItem(util::json::from_stream(response)["metadata"][0]);
 }
 
+GeneralData PCloud::getGeneralDataResponse(std::istream& response) const {
+  auto json = util::json::from_stream(response);
+  GeneralData data;
+  data.space_total_ = json["quota"].asUInt64();
+  data.space_used_ = json["usedquota"].asUInt64();
+  data.username_ = json["email"].asString();
+  return data;
+}
+
 IHttpRequest::Pointer PCloud::listDirectoryRequest(const IItem& item,
                                                    const std::string&,
                                                    std::ostream&) const {
@@ -185,6 +194,10 @@ IHttpRequest::Pointer PCloud::renameItemRequest(const IItem& item,
     request->setParameter("timeformat", "timestamp");
     return request;
   }
+}
+
+IHttpRequest::Pointer PCloud::getGeneralDataRequest(std::ostream&) const {
+  return http()->create(endpoint() + "/userinfo");
 }
 
 std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
