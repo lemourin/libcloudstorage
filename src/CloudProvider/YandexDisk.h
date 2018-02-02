@@ -52,6 +52,7 @@ class YandexDisk : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
 
   IHttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                const std::string& name,

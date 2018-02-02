@@ -275,6 +275,40 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer YandexDisk::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          return http()->create("https://login.yandex.ru/info");
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          r->request(
+              [=](util::Output) {
+                return http()->create(endpoint() + "/v1/disk");
+              },
+              [=](EitherError<Response> d) {
+                if (d.left()) return r->done(d.left());
+                try {
+                  auto json1 = util::json::from_stream(e.right()->output());
+                  auto json2 = util::json::from_stream(d.right()->output());
+                  GeneralData result;
+                  result.username_ = json1["login"].asString();
+                  result.space_total_ = json2["total_space"].asUInt64();
+                  result.space_used_ = json2["used_space"].asUInt64();
+                  r->done(result);
+                } catch (const Json::Exception& e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer YandexDisk::createDirectoryRequest(
     const IItem& parent, const std::string& name, std::ostream&) const {
   auto request = http()->create(endpoint() + "/v1/disk/resources/", "PUT");
@@ -324,6 +358,7 @@ IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
 std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
+  std::cerr << response;
   std::vector<IItem::Pointer> result;
   for (const Json::Value& v : response["_embedded"]["items"])
     result.push_back(toItem(v));
