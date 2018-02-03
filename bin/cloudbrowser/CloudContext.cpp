@@ -206,12 +206,7 @@ QStringList CloudContext::providers() const {
 QVariantList CloudContext::userProviders() const {
   std::lock_guard<std::mutex> lock(mutex_);
   QVariantList result;
-  for (auto&& i : provider_) {
-    QVariantMap v;
-    v["type"] = i.provider_->name().c_str();
-    v["label"] = i.label_.c_str();
-    result.push_back(v);
-  }
+  for (auto&& i : provider_) result.push_back(i.variant());
   return result;
 }
 
