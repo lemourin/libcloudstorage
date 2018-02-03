@@ -112,6 +112,36 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer OneDrive::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) { return http()->create(endpoint() + "/me/drive"); },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          r->request(
+              [=](util::Output) { return http()->create(endpoint() + "/me"); },
+              [=](EitherError<Response> d) {
+                if (d.left()) return r->done(d.left());
+                try {
+                  auto json1 = util::json::from_stream(e.right()->output());
+                  auto json2 = util::json::from_stream(d.right()->output());
+                  GeneralData result;
+                  result.space_total_ = json1["quota"]["total"].asUInt64();
+                  result.space_used_ = json1["quota"]["used"].asUInt64();
+                  result.username_ = json2["userPrincipalName"].asString();
+                  r->done(result);
+                } catch (const Json::Exception& e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer OneDrive::getItemDataRequest(const std::string& id,
                                                    std::ostream&) const {
   IHttpRequest::Pointer request =
@@ -187,21 +217,8 @@ IHttpRequest::Pointer OneDrive::renameItemRequest(const IItem& item,
   return request;
 }
 
-IHttpRequest::Pointer OneDrive::getGeneralDataRequest(std::ostream&) const {
-  return http()->create(endpoint() + "/me/drive");
-}
-
 IItem::Pointer OneDrive::getItemDataResponse(std::istream& response) const {
   return toItem(util::json::from_stream(response));
-}
-
-GeneralData OneDrive::getGeneralDataResponse(std::istream& response) const {
-  auto json = util::json::from_stream(response);
-  GeneralData result;
-  result.space_total_ = json["quota"]["total"].asUInt64();
-  result.space_used_ = json["quota"]["used"].asUInt64();
-  result.username_ = json["owner"]["user"]["displayName"].asString();
-  return result;
 }
 
 IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
@@ -243,7 +260,7 @@ void OneDrive::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
 std::string OneDrive::Auth::authorizeLibraryUrl() const {
   std::string result = std::string(
       "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?");
-  std::string scope = "offline_access%20";
+  std::string scope = "offline_access%20user.read%20";
   if (permission() == ICloudProvider::Permission::ReadWrite)
     scope += "files.readwrite";
   else

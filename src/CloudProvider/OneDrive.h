@@ -44,6 +44,7 @@ class OneDrive : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string& filename,
       IUploadFileCallback::Pointer) override;
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
 
   IHttpRequest::Pointer getItemDataRequest(
       const std::string&, std::ostream& input_stream) const override;
@@ -61,12 +62,10 @@ class OneDrive : public CloudProvider {
                                         std::ostream&) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
                                           std::ostream&) const override;
-  IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
 
   std::vector<IItem::Pointer> listDirectoryResponse(
       const IItem&, std::istream&, std::string&) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
-  GeneralData getGeneralDataResponse(std::istream& response) const override;
 
  private:
   class Auth : public cloudstorage::Auth {
