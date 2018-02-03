@@ -661,6 +661,9 @@ void ListDirectoryModel::match(const std::vector<IItem::Pointer>& lst) {
       list_.insert(list_.begin(), lst[i]);
       id_.insert(lst[i]->id());
       endInsertRows();
+    } else {
+      list_[idx] = lst[i];
+      emit dataChanged(createIndex(idx, 0), createIndex(idx, 0));
     }
     id.insert(lst[i]->id());
   }
