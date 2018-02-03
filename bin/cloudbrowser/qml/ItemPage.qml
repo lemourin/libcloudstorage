@@ -269,8 +269,8 @@ Kirigami.ScrollablePage {
       property alias text_control: text
 
       id: item
-      backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
-                                                Kirigami.Theme.backgroundColor
+      backgroundColor: (ListView.isCurrentItem && list_view.currentEdit === -1) ?
+                         Kirigami.Theme.highlightColor : Kirigami.Theme.backgroundColor
       icon: ""
       onClicked: {
         list_view.currentIndex = index;
