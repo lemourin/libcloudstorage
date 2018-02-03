@@ -153,14 +153,6 @@ IHttpRequest::Pointer GooglePhotos::uploadFileRequest(
   return request;
 }
 
-IHttpRequest::Pointer GooglePhotos::getGeneralDataRequest(
-    std::ostream &) const {
-  auto r = http()->create(endpoint() + "/feed/api/user/default");
-  r->setParameter("fields",
-                  "gphoto:quotalimit,gphoto:quotacurrent,gphoto:nickname");
-  return r;
-}
-
 std::vector<IItem::Pointer> GooglePhotos::listDirectoryResponse(
     const IItem &, std::istream &stream, std::string &) const {
   std::stringstream sstream;
@@ -177,31 +169,52 @@ std::vector<IItem::Pointer> GooglePhotos::listDirectoryResponse(
   return result;
 }
 
-GeneralData GooglePhotos::getGeneralDataResponse(std::istream &response) const {
-  std::stringstream sstream;
-  sstream << response.rdbuf();
-  tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("invalid xml");
-  auto quota_limit =
-      document.RootElement()->FirstChildElement("gphoto:quotalimit");
-  auto quota_current =
-      document.RootElement()->FirstChildElement("gphoto:quotacurrent");
-  auto user = document.RootElement()->FirstChildElement("gphoto:nickname");
-  if (!quota_limit || !quota_current || !user)
-    throw std::logic_error("invalid xml");
-  GeneralData result;
-  result.space_total_ = std::stoull(quota_limit->GetText());
-  result.space_used_ = std::stoull(quota_current->GetText());
-  result.username_ = user->GetText();
-  return result;
-}
-
 ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
   return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
                                                       range)
+      ->run();
+}
+
+ICloudProvider::GeneralDataRequest::Pointer GooglePhotos::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          auto r = http()->create(endpoint() + "/feed/api/user/default");
+          r->setParameter("alt", "json");
+          r->setParameter("fields", "gphoto:quotalimit,gphoto:quotacurrent");
+          return r;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          r->request(
+              [=](util::Output) {
+                return http()->create(
+                    "https://www.googleapis.com/plus/v1/people/me");
+              },
+              [=](EitherError<Response> d) {
+                if (d.left()) return r->done(d.left());
+                try {
+                  auto json1 = util::json::from_stream(e.right()->output());
+                  auto json2 = util::json::from_stream(d.right()->output());
+                  GeneralData result;
+                  result.space_total_ = std::stoull(
+                      json1["feed"]["gphoto$quotalimit"]["$t"].asString());
+                  result.space_used_ = std::stoull(
+                      json1["feed"]["gphoto$quotacurrent"]["$t"].asString());
+                  for (auto &&j : json2["emails"])
+                    if (j["type"].asString() == "account")
+                      result.username_ = j["value"].asString();
+                  r->done(result);
+                } catch (const Json::Exception &e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
+                                                             callback, resolver)
       ->run();
 }
 
@@ -240,7 +253,8 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
 std::string GooglePhotos::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://picasaweb.google.com/data/"
+         "&scope=https://picasaweb.google.com/data/+https://"
+         "www.googleapis.com/auth/plus.profile.emails.read"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
          state();
