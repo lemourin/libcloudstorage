@@ -220,6 +220,7 @@ Kirigami.ScrollablePage {
 
     id: list_view
     model: list.list
+    currentIndex: -1
     onCurrentIndexChanged: currentEdit = -1
     footerPositioning: ListView.OverlayFooter
     footer: Kirigami.ItemViewHeader {
