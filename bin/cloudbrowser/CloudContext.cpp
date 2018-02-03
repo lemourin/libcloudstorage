@@ -657,6 +657,27 @@ void ListDirectoryModel::remove(int idx) {
   endRemoveRows();
 }
 
+void ListDirectoryModel::match(const std::vector<IItem::Pointer>& lst) {
+  std::unordered_set<std::string> id;
+  for (size_t i = lst.size(); i-- > 0;) {
+    auto idx = find(lst[i]);
+    if (idx == -1) {
+      beginInsertRows(QModelIndex(), 0, 0);
+      list_.insert(list_.begin(), lst[i]);
+      id_.insert(lst[i]->id());
+      endInsertRows();
+    }
+    id.insert(lst[i]->id());
+  }
+  for (size_t i = 0; i < list().size();) {
+    if (id.find(list()[i]->id()) == std::end(id)) {
+      remove(i);
+    } else {
+      i++;
+    }
+  }
+}
+
 int ListDirectoryModel::rowCount(const QModelIndex&) const {
   return static_cast<int>(list_.size());
 }
@@ -680,10 +701,7 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
   auto cached = context->cachedDirectory(item);
   bool cache_found = !cached.empty();
   if (!cached.empty()) {
-    list_.clear();
-    for (auto&& i : cached) list_.add(i);
-  } else {
-    first_listed_ = false;
+    list_.match(cached);
   }
   set_done(false);
 
@@ -698,28 +716,11 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
                   r.left()->description_.c_str());
             context->cacheDirectory(item, *r.right());
             if (cache_found) {
-              std::unordered_set<std::string> id;
-              for (auto&& i : *r.right()) {
-                auto idx = list_.find(i);
-                if (idx == -1) list_.add(i);
-                id.insert(i->id());
-              }
-              for (size_t i = 0; i < list_.list().size();) {
-                if (id.find(list_.list()[i]->id()) == std::end(id)) {
-                  list_.remove(i);
-                } else {
-                  i++;
-                }
-              }
+              list_.match(*r.right());
             }
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
-    if (cache_found) return;
-    if (!first_listed_) {
-      first_listed_ = true;
-      list_.clear();
-    }
-    list_.add(item);
+    if (!cache_found) list_.add(item);
   });
   class ListDirectoryCallback : public IListDirectoryCallback {
    public:

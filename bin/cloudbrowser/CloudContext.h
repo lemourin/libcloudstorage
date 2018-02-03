@@ -94,6 +94,7 @@ class ListDirectoryModel : public QAbstractListModel {
   const std::vector<cloudstorage::IItem::Pointer>& list() const {
     return list_;
   }
+  void match(const std::vector<cloudstorage::IItem::Pointer>&);
 
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int) const override;
@@ -118,7 +119,6 @@ class ListDirectoryRequest : public Request {
   void itemChanged();
 
  private:
-  bool first_listed_ = false;
   ListDirectoryModel list_;
 
   Q_OBJECT
