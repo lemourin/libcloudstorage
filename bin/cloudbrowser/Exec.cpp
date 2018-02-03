@@ -100,6 +100,8 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     register_types();
 
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+
     IPlatformUtility::Pointer platform = IPlatformUtility::create();
     QQmlApplicationEngine engine;
 #ifdef WITH_QTWEBVIEW
