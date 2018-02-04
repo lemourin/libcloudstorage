@@ -766,27 +766,16 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                 return emit context->errorOccurred(
                     "GetThumbnail", provider, e.left()->code_,
                     e.left()->description_.c_str());
-              context->schedule([=] {
-                QSaveFile file(path);
-                if (!file.open(QFile::WriteOnly))
-                  return emit context->errorOccurred("GetThumbnail", provider,
-                                                     IHttpRequest::Failure,
-                                                     "couldn't save thumbnail");
-                file.write(e.right()->data(),
-                           static_cast<qint64>(e.right()->size()));
-                if (file.commit()) {
-                  source_ = QUrl::fromLocalFile(path).toString();
-                  context->addCacheSize(e.right()->size());
-                  emit sourceChanged();
-                }
-              });
+              source_ = QUrl::fromLocalFile(e.right()->c_str()).toString();
+              emit sourceChanged();
             });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
      public:
-      DownloadThumbnailCallback(RequestNotifier* notifier,
+      DownloadThumbnailCallback(CloudContext* context,
+                                RequestNotifier* notifier,
                                 std::shared_ptr<ICloudProvider> p,
                                 IItem::Pointer item)
-          : notifier_(notifier), provider_(p), item_(item) {}
+          : context_(context), notifier_(notifier), provider_(p), item_(item) {}
 
       void receivedData(const char* data, uint32_t length) override {
         data_ += std::string(data, length);
@@ -797,14 +786,41 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                                         static_cast<qint64>(now));
       }
 
+      static void submit(RequestNotifier* notifier, CloudContext* context,
+                         QString path, const std::string& data) {
+        auto e = save(path, data);
+        if (e.left()) {
+          notifier->finishedString(e.left());
+        } else {
+          context->addCacheSize(data.size());
+          notifier->finishedString(*e.right());
+        }
+        notifier->deleteLater();
+      }
+
+      static EitherError<std::string> save(QString path,
+                                           const std::string& data) {
+        QSaveFile file(path);
+        if (!file.open(QFile::WriteOnly))
+          return Error{IHttpRequest::Bad, "couldn't open file"};
+        file.write(data.c_str(), static_cast<qint64>(data.size()));
+        if (file.commit()) {
+          return path.toStdString();
+        } else {
+          return Error{IHttpRequest::Bad, "couldn't commit file"};
+        }
+      }
+
       void done(EitherError<void> e) override {
 #ifdef WITH_THUMBNAILER
         if (e.left() && (item_->type() == IItem::FileType::Image ||
                          item_->type() == IItem::FileType::Video)) {
+          auto path = CloudContext::thumbnail_path(item_->filename().c_str());
+          auto context = context_;
           auto provider = provider_;
           auto item = item_;
           auto notifier = notifier_;
-          std::thread([provider, item, notifier] {
+          std::thread([path, context, provider, item, notifier] {
             auto r = provider->getItemUrlAsync(item)->result();
             if (r.left()) {
               emit notifier->finishedString(r.left());
@@ -818,7 +834,7 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                 if (e.left())
                   emit notifier->finishedString(e.left());
                 else
-                  emit notifier->finishedString(downloader->data());
+                  return submit(notifier, context, path, downloader->data());
               } else {
                 emit notifier->finishedString(
                     Error{IHttpRequest::ServiceUnavailable, "image too big"});
@@ -830,29 +846,35 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
               emit notifier->finishedString(e.left());
               return notifier->deleteLater();
             }
-            emit notifier->finishedString(e.right());
-            notifier->deleteLater();
+            submit(notifier, context, path, *e.right());
           }).detach();
           return;
         }
 #endif
         if (e.left())
           emit notifier_->finishedString(e.left());
-        else
-          emit notifier_->finishedString(std::move(data_));
-        notifier_->deleteLater();
+        else {
+          auto context = context_;
+          auto notifier = notifier_;
+          auto path = CloudContext::thumbnail_path(item_->filename().c_str());
+          auto data = std::move(data_);
+          context_->schedule([context, notifier, path, data] {
+            submit(notifier, context, path, std::move(data));
+          });
+        }
       }
 
      private:
+      CloudContext* context_;
       RequestNotifier* notifier_;
       std::string data_;
       std::shared_ptr<ICloudProvider> provider_;
       IItem::Pointer item_;
     };
     auto p = item->provider().provider_;
-    auto r = p->getThumbnailAsync(
-        item->item(),
-        util::make_unique<DownloadThumbnailCallback>(object, p, item->item()));
+    auto r = p->getThumbnailAsync(item->item(),
+                                  util::make_unique<DownloadThumbnailCallback>(
+                                      context, object, p, item->item()));
     context->add(p, std::move(r));
   }
 }
