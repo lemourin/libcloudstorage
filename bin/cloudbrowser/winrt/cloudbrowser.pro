@@ -24,6 +24,7 @@ winrt {
 }
 
 INCLUDEPATH = \
+    ../src \
     ../../../src/ \
     $$MSVC_TOOLCHAIN_PATH/include
 
