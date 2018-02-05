@@ -19,6 +19,17 @@
 
 class CloudContext;
 
+struct ListDirectoryCacheKey {
+  std::string provider_type_;
+  std::string provider_label_;
+  std::string directory_id_;
+
+  bool operator==(const ListDirectoryCacheKey& d) const {
+    return std::tie(provider_type_, provider_label_, directory_id_) ==
+           std::tie(d.provider_type_, d.provider_label_, d.directory_id_);
+  }
+};
+
 class RequestNotifier : public QObject {
  signals:
   void addedItem(cloudstorage::IItem::Pointer);
@@ -61,6 +72,7 @@ class CloudItem : public QObject {
   uint64_t size() const { return item_->size(); }
   QString type() const;
   Q_INVOKABLE bool supports(QString operation) const;
+  ListDirectoryCacheKey key() const;
 
  private:
   Provider provider_;
@@ -77,6 +89,7 @@ class Request : public QObject {
 
  signals:
   void doneChanged();
+  void errorOccurred(QVariantMap provider, int code, QString description);
 
  private:
   bool done_;
@@ -118,6 +131,8 @@ class ListDirectoryRequest : public Request {
 
  signals:
   void itemChanged();
+  void finished(ListDirectoryCacheKey,
+                const std::vector<cloudstorage::IItem::Pointer>&);
 
  private:
   ListDirectoryModel list_;
@@ -134,6 +149,7 @@ class GetThumbnailRequest : public Request {
 
  signals:
   void sourceChanged();
+  void cacheFileAdded(quint64);
 
  private:
   QString source_;
@@ -282,17 +298,6 @@ class ServerWrapperFactory : public cloudstorage::IHttpServerFactory {
   std::shared_ptr<cloudstorage::IHttpServer> http_server_;
 };
 
-struct ListDirectoryCacheKey {
-  std::string provider_type_;
-  std::string provider_label_;
-  std::string directory_id_;
-
-  bool operator==(const ListDirectoryCacheKey& d) const {
-    return std::tie(provider_type_, provider_label_, directory_id_) ==
-           std::tie(d.provider_type_, d.provider_label_, d.directory_id_);
-  }
-};
-
 namespace std {
 template <>
 struct hash<ListDirectoryCacheKey> {
@@ -345,10 +350,10 @@ class CloudContext : public QObject {
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);
 
-  void cacheDirectory(CloudItem* directory,
+  void cacheDirectory(ListDirectoryCacheKey directory,
                       const std::vector<cloudstorage::IItem::Pointer>&);
   std::vector<cloudstorage::IItem::Pointer> cachedDirectory(
-      CloudItem* directory);
+      ListDirectoryCacheKey);
   void schedule(std::function<void()>);
 
   static QString thumbnail_path(const QString& filename);
