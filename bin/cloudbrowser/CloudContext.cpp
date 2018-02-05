@@ -759,14 +759,16 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   } else {
     auto object = new RequestNotifier;
     auto provider = item->provider().variant();
-    connect(object, &RequestNotifier::finishedString, this,
-            [=](EitherError<std::string> e) {
+    connect(object, &RequestNotifier::finishedVariant, this,
+            [=](EitherError<QVariant> e) {
               set_done(true);
               if (e.left())
                 return emit context->errorOccurred(
                     "GetThumbnail", provider, e.left()->code_,
                     e.left()->description_.c_str());
-              source_ = QUrl::fromLocalFile(e.right()->c_str()).toString();
+              auto map = e.right()->toMap();
+              context->addCacheSize(map["length"].toLongLong());
+              source_ = QUrl::fromLocalFile(map["path"].toString()).toString();
               emit sourceChanged();
             });
     class DownloadThumbnailCallback : public IDownloadFileCallback {
@@ -786,14 +788,16 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                                         static_cast<qint64>(now));
       }
 
-      static void submit(RequestNotifier* notifier, CloudContext* context,
-                         QString path, const std::string& data) {
+      static void submit(RequestNotifier* notifier, QString path,
+                         const std::string& data) {
         auto e = save(path, data);
         if (e.left()) {
-          notifier->finishedString(e.left());
+          emit notifier->finishedVariant(e.left());
         } else {
-          context->addCacheSize(data.size());
-          notifier->finishedString(*e.right());
+          QVariantMap result;
+          result["length"] = data.size();
+          result["path"] = e.right()->c_str();
+          emit notifier->finishedVariant(QVariant::fromValue(result));
         }
         notifier->deleteLater();
       }
@@ -816,14 +820,13 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
         if (e.left() && (item_->type() == IItem::FileType::Image ||
                          item_->type() == IItem::FileType::Video)) {
           auto path = CloudContext::thumbnail_path(item_->filename().c_str());
-          auto context = context_;
           auto provider = provider_;
           auto item = item_;
           auto notifier = notifier_;
-          std::thread([path, context, provider, item, notifier] {
+          std::thread([path, provider, item, notifier] {
             auto r = provider->getItemUrlAsync(item)->result();
             if (r.left()) {
-              emit notifier->finishedString(r.left());
+              emit notifier->finishedVariant(r.left());
               return notifier->deleteLater();
             }
             if (item->type() == IItem::FileType::Image) {
@@ -832,34 +835,33 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                 auto e =
                     provider->downloadFileAsync(item, downloader)->result();
                 if (e.left())
-                  emit notifier->finishedString(e.left());
+                  emit notifier->finishedVariant(e.left());
                 else
-                  return submit(notifier, context, path, downloader->data());
+                  return submit(notifier, path, downloader->data());
               } else {
-                emit notifier->finishedString(
+                emit notifier->finishedVariant(
                     Error{IHttpRequest::ServiceUnavailable, "image too big"});
               }
               return notifier->deleteLater();
             }
             auto e = generate_thumbnail(*r.right());
             if (e.left()) {
-              emit notifier->finishedString(e.left());
+              emit notifier->finishedVariant(e.left());
               return notifier->deleteLater();
             }
-            submit(notifier, context, path, *e.right());
+            submit(notifier, path, *e.right());
           }).detach();
           return;
         }
 #endif
         if (e.left())
-          emit notifier_->finishedString(e.left());
+          emit notifier_->finishedVariant(e.left());
         else {
-          auto context = context_;
           auto notifier = notifier_;
           auto path = CloudContext::thumbnail_path(item_->filename().c_str());
           auto data = std::move(data_);
-          context_->schedule([context, notifier, path, data] {
-            submit(notifier, context, path, std::move(data));
+          context_->schedule([notifier, path, data] {
+            submit(notifier, path, std::move(data));
           });
         }
       }

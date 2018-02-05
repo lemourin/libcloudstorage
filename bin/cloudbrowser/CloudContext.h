@@ -27,6 +27,7 @@ class RequestNotifier : public QObject {
   void finishedVoid(cloudstorage::EitherError<void>);
   void finishedString(cloudstorage::EitherError<std::string>);
   void finishedItem(cloudstorage::EitherError<cloudstorage::IItem>);
+  void finishedVariant(cloudstorage::EitherError<QVariant>);
   void progressChanged(qint64 total, qint64 now);
 
  private:
@@ -431,5 +432,6 @@ Q_DECLARE_METATYPE(
 Q_DECLARE_METATYPE(cloudstorage::EitherError<void>)
 Q_DECLARE_METATYPE(cloudstorage::EitherError<std::string>)
 Q_DECLARE_METATYPE(cloudstorage::EitherError<cloudstorage::IItem>)
+Q_DECLARE_METATYPE(cloudstorage::EitherError<QVariant>)
 
 #endif  // CLOUD_CONTEXT

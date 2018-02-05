@@ -52,6 +52,7 @@ void register_types() {
   qRegisterMetaType<cloudstorage::EitherError<void>>();
   qRegisterMetaType<cloudstorage::EitherError<std::string>>();
   qRegisterMetaType<cloudstorage::EitherError<cloudstorage::IItem>>();
+  qRegisterMetaType<cloudstorage::EitherError<QVariant>>();
   qmlRegisterType<CloudContext>("libcloudstorage", 1, 0, "CloudContext");
   qmlRegisterType<ListDirectoryRequest>("libcloudstorage", 1, 0,
                                         "ListDirectoryRequest");
