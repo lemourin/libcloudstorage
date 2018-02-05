@@ -767,7 +767,7 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                     "GetThumbnail", provider, e.left()->code_,
                     e.left()->description_.c_str());
               auto map = e.right()->toMap();
-              context->addCacheSize(map["length"].toLongLong());
+              context->addCacheSize(map["length"].toULongLong());
               source_ = QUrl::fromLocalFile(map["path"].toString()).toString();
               emit sourceChanged();
             });
@@ -795,7 +795,7 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
           emit notifier->finishedVariant(e.left());
         } else {
           QVariantMap result;
-          result["length"] = data.size();
+          result["length"] = QVariant::fromValue(data.size());
           result["path"] = e.right()->c_str();
           emit notifier->finishedVariant(QVariant::fromValue(result));
         }
