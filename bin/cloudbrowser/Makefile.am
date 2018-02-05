@@ -6,22 +6,33 @@ lib_LTLIBRARIES = libcloudbrowser.la
 AM_LDFLAGS = \
 	-no-undefined
 
-cloudbrowser_SOURCES = main.cpp
+cloudbrowser_SOURCES = src/main.cpp
 cloudbrowser_LDADD = libcloudbrowser.la
 
+noinst_HEADERS = \
+	src/CloudContext.h \
+	src/GenerateThumbnail.h \
+	src/AndroidUtility.h \
+	src/DesktopUtility.h \
+	src/WinRTUtility.h \
+	src/FileDialog.h \
+	src/Exec.h \
+	src/File.h \
+	src/IPlatformUtility.h
+
 libcloudbrowser_la_SOURCES = \
-	CloudContext.cpp CloudContext.h \
-	GenerateThumbnail.cpp GenerateThumbnail.h \
-	AndroidUtility.cpp AndroidUtility.h \
-	DesktopUtility.cpp DesktopUtility.h \
-	WinRTUtility.cpp WinRTUtility.h \
-	FileDialog.cpp FileDialog.h \
-	Exec.cpp Exec.h \
-	File.cpp File.h \
-	IPlatformUtility.h
+	src/CloudContext.cpp \
+	src/GenerateThumbnail.cpp \
+	src/AndroidUtility.cpp \
+	src/DesktopUtility.cpp \
+	src/WinRTUtility.cpp \
+	src/FileDialog.cpp \
+	src/Exec.cpp \
+	src/File.cpp
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/src \
+	-Isrc \
 	$(qt_CFLAGS)
 
 libcloudbrowser_la_LIBADD = \
@@ -42,9 +53,9 @@ libcloudbrowser_la_LIBADD += $(vlcqt_LIBS)
 endif
 
 nodist_libcloudbrowser_la_SOURCES = \
-	CloudContext.moc.cpp \
-	FileDialog.moc.cpp \
-	IPlatformUtility.moc.cpp \
+	src/CloudContext.moc.cpp \
+	src/FileDialog.moc.cpp \
+	src/IPlatformUtility.moc.cpp \
 	resources.cpp
 
 DEPS_res = \
