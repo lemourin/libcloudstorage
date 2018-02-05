@@ -24,6 +24,7 @@ QMAKE_INCDIR_POST =
 QMAKE_LIBS_PRIVATE =
 
 INCLUDEPATH = \
+    ../src \
     ../../../src/ \
     $$ANDROID_TOOLCHAIN_PATH/include \
     $$ANDROID_TOOLCHAIN_PATH/include/c++/4.9.x \
@@ -36,16 +37,53 @@ LIBS += \
     -lboost_filesystem -lboost_system \
     -lVLCQtQml -lVLCQtCore -lvlcjni
 
-SOURCES += \
-    ../main.cpp \
-    ../CloudContext.cpp \
-    ../GenerateThumbnail.cpp \
-    ../Exec.cpp \
-    ../FileDialog.cpp \
-    ../File.cpp \
-    ../AndroidUtility.cpp
+HEADERS += \
+    ../src/CloudContext.h \
+    ../src/CloudItem.h \
+    ../src/HttpServer.h \
+    ../src/Request/CloudRequest.h \
+    ../src/Request/ListDirectory.h \
+    ../src/Request/GetThumbnail.h \
+    ../src/Request/GetUrl.h \
+    ../src/Request/CreateDirectory.h \
+    ../src/Request/DeleteItem.h \
+    ../src/Request/RenameItem.h \
+    ../src/Request/MoveItem.h \
+    ../src/Request/UploadItem.h \
+    ../src/Request/DownloadItem.h \
+    ../src/GenerateThumbnail.h \
+    ../src/AndroidUtility.h \
+    ../src/DesktopUtility.h \
+    ../src/WinRTUtility.h \
+    ../src/FileDialog.h \
+    ../src/Exec.h \
+    ../src/File.h \
+    ../src/IPlatformUtility.h
 
 SOURCES += \
+    ../src/CloudContext.cpp \
+    ../src/CloudItem.cpp \
+    ../src/HttpServer.cpp \
+    ../src/Request/CloudRequest.cpp \
+    ../src/Request/ListDirectory.cpp \
+    ../src/Request/GetThumbnail.cpp \
+    ../src/Request/GetUrl.cpp \
+    ../src/Request/CreateDirectory.cpp \
+    ../src/Request/DeleteItem.cpp \
+    ../src/Request/RenameItem.cpp \
+    ../src/Request/MoveItem.cpp \
+    ../src/Request/UploadItem.cpp \
+    ../src/Request/DownloadItem.cpp \
+    ../src/GenerateThumbnail.cpp \
+    ../src/AndroidUtility.cpp \
+    ../src/DesktopUtility.cpp \
+    ../src/WinRTUtility.cpp \
+    ../src/FileDialog.cpp \
+    ../src/Exec.cpp \
+    ../src/File.cpp
+
+SOURCES += \
+    ../src/main.cpp \
     ../../../src/Utility/CloudStorage.cpp \
     ../../../src/Utility/Auth.cpp \
     ../../../src/Utility/Item.cpp \
@@ -98,13 +136,6 @@ DISTFILES += \
     src/org/videolan/cloudbrowser/NotificationService.java \
     build.gradle \
     project.properties
-
-HEADERS += \
-    ../CloudContext.h \
-    ../FileDialog.h \
-    ../File.h \
-    ../AndroidUtility.h \
-    ../IPlatformUtility.h
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 

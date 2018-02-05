@@ -56,17 +56,53 @@ LIBS += \
     -lws2_32 \
     -ladvapi32
 
-SOURCES += \
-    ../main.cpp \
-    ../CloudContext.cpp \
-    ../GenerateThumbnail.cpp \
-    ../Exec.cpp \
-    ../File.cpp \
-    ../FileDialog.cpp \
-    ../DesktopUtility.cpp \
-    ../WinRTUtility.cpp
+HEADERS += \
+    ../src/CloudContext.h \
+    ../src/CloudItem.h \
+    ../src/HttpServer.h \
+    ../src/Request/CloudRequest.h \
+    ../src/Request/ListDirectory.h \
+    ../src/Request/GetThumbnail.h \
+    ../src/Request/GetUrl.h \
+    ../src/Request/CreateDirectory.h \
+    ../src/Request/DeleteItem.h \
+    ../src/Request/RenameItem.h \
+    ../src/Request/MoveItem.h \
+    ../src/Request/UploadItem.h \
+    ../src/Request/DownloadItem.h \
+    ../src/GenerateThumbnail.h \
+    ../src/AndroidUtility.h \
+    ../src/DesktopUtility.h \
+    ../src/WinRTUtility.h \
+    ../src/FileDialog.h \
+    ../src/Exec.h \
+    ../src/File.h \
+    ../src/IPlatformUtility.h
 
 SOURCES += \
+    ../src/CloudContext.cpp \
+    ../src/CloudItem.cpp \
+    ../src/HttpServer.cpp \
+    ../src/Request/CloudRequest.cpp \
+    ../src/Request/ListDirectory.cpp \
+    ../src/Request/GetThumbnail.cpp \
+    ../src/Request/GetUrl.cpp \
+    ../src/Request/CreateDirectory.cpp \
+    ../src/Request/DeleteItem.cpp \
+    ../src/Request/RenameItem.cpp \
+    ../src/Request/MoveItem.cpp \
+    ../src/Request/UploadItem.cpp \
+    ../src/Request/DownloadItem.cpp \
+    ../src/GenerateThumbnail.cpp \
+    ../src/AndroidUtility.cpp \
+    ../src/DesktopUtility.cpp \
+    ../src/WinRTUtility.cpp \
+    ../src/FileDialog.cpp \
+    ../src/Exec.cpp \
+    ../src/File.cpp
+
+SOURCES += \
+    ../src/main.cpp \
     ../../../src/Utility/CloudStorage.cpp \
     ../../../src/Utility/Auth.cpp \
     ../../../src/Utility/Item.cpp \
@@ -109,14 +145,6 @@ SOURCES += \
 
 RESOURCES += \
     ../resources.qrc
-
-HEADERS += \
-    ../CloudContext.h \
-    ../File.h \
-    ../FileDialog.h \
-    ../DesktopUtility.h \
-    ../WinRTUtility.h \
-    ../IPlatformUtility.h
 
 DISTFILES += \
     assets/logo_44x44.png \
