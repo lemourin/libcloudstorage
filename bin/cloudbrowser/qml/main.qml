@@ -97,6 +97,13 @@ Kirigami.ApplicationWindow {
     }
   }
 
+  function elided(str, length) {
+    if (str.length <= length)
+      return str;
+    else
+      return str.substr(0, length) + "...";
+  }
+
   function actions() {
     var ret = [settings.createObject(root.globalDrawer)], i;
     if (cloud.isFree) {
@@ -168,7 +175,7 @@ Kirigami.ApplicationWindow {
       Kirigami.Action {
         property variant provider
         text: "<b>" + cloud.pretty(provider.type) + "</b>" + "<br/><div>" +
-              provider.label + "</div>"
+              elided(provider.label, 30) + "</div>"
         onTriggered: {
           pageStack.clear();
           cloud.currently_moved = null;
@@ -190,7 +197,7 @@ Kirigami.ApplicationWindow {
     height: parent.height - footer_height
     handle.anchors.bottomMargin: footer_height
     title: selected_item ?
-             selected_item.filename :
+             elided(selected_item.filename, 20) :
              "Actions"
   }
   pageStack.initialPage: mainPageComponent

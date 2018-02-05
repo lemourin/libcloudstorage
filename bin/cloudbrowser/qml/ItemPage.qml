@@ -333,11 +333,11 @@ Kirigami.ScrollablePage {
             anchors.left: parent.left
             anchors.right: icon.left
             height: parent.height
-            clip: true
             Templates.Label {
               anchors.fill: parent
               anchors.margins: 10
               text: modelData.filename
+              elide: Text.ElideRight
             }
           }
           Kirigami.Icon {
@@ -423,9 +423,11 @@ Kirigami.ScrollablePage {
         }
         Templates.Label {
           anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - image.width
           text: modelData.filename
           color: Kirigami.Theme.textColor
           visible: list_view.currentEdit !== index
+          elide: Text.ElideRight
         }
         RowLayout {
           visible: list_view.currentEdit === index
