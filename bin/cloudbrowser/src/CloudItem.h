@@ -23,7 +23,8 @@ struct Provider {
 class CloudItem : public QObject {
  public:
   Q_PROPERTY(QString filename READ filename CONSTANT)
-  Q_PROPERTY(uint64_t size READ size CONSTANT)
+  Q_PROPERTY(qint64 size READ size CONSTANT)
+  Q_PROPERTY(QString timestamp READ timestamp CONSTANT)
   Q_PROPERTY(QString type READ type CONSTANT)
 
   CloudItem(const Provider&, cloudstorage::IItem::Pointer,
@@ -32,7 +33,8 @@ class CloudItem : public QObject {
   cloudstorage::IItem::Pointer item() const { return item_; }
   const Provider& provider() const { return provider_; }
   QString filename() const;
-  uint64_t size() const { return item_->size(); }
+  qint64 size() const;
+  QString timestamp() const;
   QString type() const;
   Q_INVOKABLE bool supports(QString operation) const;
   ListDirectoryCacheKey key() const;

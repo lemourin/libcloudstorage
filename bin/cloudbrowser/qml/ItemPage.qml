@@ -13,6 +13,11 @@ Kirigami.ScrollablePage {
   anchors.fill: parent
   supportsRefreshing: true
 
+  onIsCurrentPageChanged: {
+    if (isCurrentPage)
+      root.selected_item = list_view.currentItem ? list_view.currentItem.item : null;
+  }
+
   onRefreshingChanged: {
     if (refreshing) {
       list.update(cloud, item);
@@ -114,13 +119,101 @@ Kirigami.ScrollablePage {
       visible: list_view.currentItem && list_view.currentItem.item.type !== "directory" &&
                item.supports("download")
       iconName: "document-save"
-      text: "Download " + (list_view.currentItem ? list_view.currentItem.item.filename : "")
+      text: "Download"
       onTriggered: {
         download_dialog.filename = list_view.currentItem.item.filename;
         download_dialog.open();
       }
+    },
+    Kirigami.Action {
+      visible: list_view.currentItem
+      iconName: "help-about"
+      text: "File information"
+      onTriggered: {
+        file_info_sheet.open();
+      }
     }
   ]
+
+  Kirigami.OverlaySheet {
+    id: file_info_sheet
+    Item {
+      implicitWidth: Math.min(page.width * 0.8, 400)
+      implicitHeight: childrenRect.height - 50
+      Text {
+        id: file_name
+        width: parent.width
+        font.pointSize: 18
+        padding: 10
+        text: root.selected_item ? root.selected_item.filename : ""
+        elide: Text.ElideRight
+        wrapMode: Text.Wrap
+      }
+      Column {
+        anchors.top: file_name.bottom
+        width: parent.implicitWidth * 0.8
+        anchors.horizontalCenter: parent.horizontalCenter
+        Rectangle {
+          width: parent.width
+          height: childrenRect.height
+          border.width: 1
+          anchors.leftMargin: 10
+          Column {
+            width: parent.width
+            Item {
+              visible: root.selected_item ? root.selected_item.size !== -1 : ""
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.margins: 10
+              height: 50
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                font.pointSize: 12
+                text: "size"
+              }
+              Text {
+                function show_size(size) {
+                  if (size < 1024)
+                    return size + " B";
+                  else if (size < 1024 * 1024)
+                    return (size / 1024).toFixed(2) + " KB";
+                  else if (size < 1024 * 1024 * 1024)
+                    return (size / (1024 * 1024)).toFixed(2) + " MB";
+                  else
+                    return (size / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+                }
+
+                font.pointSize: 16
+                text: root.selected_item ? show_size(root.selected_item.size) : ""
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+              }
+            }
+            Item {
+              visible: root.selected_item ? root.selected_item.timestamp !== "" : false
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.margins: 10
+              height: 50
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                font.pointSize: 12
+                text: "last modified"
+              }
+              Text {
+                font.pointSize: 16
+                text: root.selected_item ? root.selected_item.timestamp : ""
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   Kirigami.OverlaySheet {
     id: create_directory_sheet
@@ -221,6 +314,7 @@ Kirigami.ScrollablePage {
     id: list_view
     model: list.list
     currentIndex: -1
+    onCurrentItemChanged: root.selected_item = currentItem.item
     onCurrentIndexChanged: currentEdit = -1
     footerPositioning: ListView.OverlayFooter
     footer: Kirigami.ItemViewHeader {

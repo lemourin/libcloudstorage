@@ -2,6 +2,8 @@
 
 #include "Request/ListDirectory.h"
 
+#include <QDateTime>
+
 #undef CreateDirectory
 
 using namespace cloudstorage;
@@ -10,6 +12,24 @@ CloudItem::CloudItem(const Provider& p, IItem::Pointer item, QObject* parent)
     : QObject(parent), provider_(p), item_(item) {}
 
 QString CloudItem::filename() const { return item_->filename().c_str(); }
+
+qint64 CloudItem::size() const {
+  if (item_->size() == IItem::UnknownSize)
+    return -1;
+  else
+    return static_cast<qint64>(item_->size());
+}
+
+QString CloudItem::timestamp() const {
+  if (item_->timestamp() == IItem::UnknownTimeStamp)
+    return "";
+  else {
+    auto timestamp = std::chrono::system_clock::to_time_t(item_->timestamp());
+    QDateTime date;
+    date.setTime_t(timestamp);
+    return date.toString(Qt::SystemLocaleShortDate);
+  }
+}
 
 QString CloudItem::type() const {
   switch (item_->type()) {

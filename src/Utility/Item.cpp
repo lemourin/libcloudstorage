@@ -44,7 +44,7 @@ namespace cloudstorage {
 
 constexpr size_t IItem::UnknownSize;
 const IItem::TimeStamp IItem::UnknownTimeStamp =
-    std::chrono::system_clock::time_point::min();
+    std::chrono::system_clock::from_time_t(0);
 
 namespace {
 bool find(const std::string* array, int length, std::string str) {
@@ -90,8 +90,8 @@ std::string Item::toString() const {
   json["filename"] = filename();
   json["type"] = static_cast<int>(type());
   json["id"] = id();
-  json["timestamp"] =
-      static_cast<Json::UInt64>(timestamp().time_since_epoch().count());
+  json["timestamp"] = static_cast<Json::UInt64>(
+      std::chrono::system_clock::to_time_t(timestamp()));
   json["size"] = static_cast<Json::Int64>(size());
   if (!mime_type().empty()) json["mime_type"] = mime_type();
   if (!parents().empty()) {
@@ -110,8 +110,7 @@ IItem::Pointer IItem::fromString(const std::string& str) {
   auto item = util::make_unique<Item>(
       json["filename"].asString(), json["id"].asString(),
       json["size"].asInt64(),
-      std::chrono::system_clock::time_point(
-          std::chrono::seconds(json["timestamp"].asUInt64())),
+      std::chrono::system_clock::from_time_t(json["timestamp"].asUInt64()),
       static_cast<IItem::FileType>(json["type"].asInt()));
   item->set_thumbnail_url(json["thumbnail_url"].asString());
   item->set_hidden(json["hidden"].asBool());

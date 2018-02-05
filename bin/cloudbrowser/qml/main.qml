@@ -16,6 +16,7 @@ Kirigami.ApplicationWindow {
   property real last_volume: 1
   property int player_count: 0
   property int footer_height: ad_loaded && ad_visible ? 50 : 0
+  property CloudItem selected_item
 
   id: root
   width: Math.min(800, screen.desktopAvailableWidth)
@@ -188,6 +189,9 @@ Kirigami.ApplicationWindow {
     id: contextDrawer
     height: parent.height - footer_height
     handle.anchors.bottomMargin: footer_height
+    title: selected_item ?
+             selected_item.filename :
+             "Actions"
   }
   pageStack.initialPage: mainPageComponent
   pageStack.interactive: !visible_player
