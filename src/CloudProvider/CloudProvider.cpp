@@ -531,9 +531,9 @@ IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
   return nullptr;
 }
 
-IHttpRequest::Pointer CloudProvider::getItemUrlRequest(const IItem&,
-                                                       std::ostream&) const {
-  return nullptr;
+IHttpRequest::Pointer CloudProvider::getItemUrlRequest(
+    const IItem& item, std::ostream& stream) const {
+  return getItemDataRequest(item.id(), stream);
 }
 
 IHttpRequest::Pointer CloudProvider::listDirectoryRequest(const IItem&,
@@ -613,8 +613,9 @@ GeneralData CloudProvider::getGeneralDataResponse(std::istream&) const {
 }
 
 std::string CloudProvider::getItemUrlResponse(
-    const IItem&, const IHttpRequest::HeaderParameters&, std::istream&) const {
-  return "";
+    const IItem&, const IHttpRequest::HeaderParameters&,
+    std::istream& stream) const {
+  return std::static_pointer_cast<Item>(getItemDataResponse(stream))->url();
 }
 
 std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
