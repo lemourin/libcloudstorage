@@ -63,7 +63,7 @@ Kirigami.Page {
 
   function update_notification() {
     if (item.type === "audio" || item.type === "video")
-      platform.showPlayerNotification(playing, item.filename, item_page.label);
+      platform.showPlayerNotification(playing, item.filename, item_page ? item_page.label : "");
     else
       platform.hidePlayerNotification();
   }
