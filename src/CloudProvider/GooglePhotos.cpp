@@ -207,7 +207,7 @@ ICloudProvider::GeneralDataRequest::Pointer GooglePhotos::getGeneralDataAsync(
                     if (j["type"].asString() == "account")
                       result.username_ = j["value"].asString();
                   r->done(result);
-                } catch (const Json::Exception &e) {
+                } catch (const std::exception &e) {
                   r->done(Error{IHttpRequest::Failure, e.what()});
                 }
               });
