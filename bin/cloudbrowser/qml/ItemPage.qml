@@ -135,6 +135,17 @@ Kirigami.ScrollablePage {
     }
   ]
 
+  function show_size(size) {
+    if (size < 1024)
+      return size + " B";
+    else if (size < 1024 * 1024)
+      return (size / 1024).toFixed(2) + " KB";
+    else if (size < 1024 * 1024 * 1024)
+      return (size / (1024 * 1024)).toFixed(2) + " MB";
+    else
+      return (size / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+  }
+
   Kirigami.OverlaySheet {
     id: file_info_sheet
     Item {
@@ -149,66 +160,41 @@ Kirigami.ScrollablePage {
         elide: Text.ElideRight
         wrapMode: Text.Wrap
       }
-      Column {
+      ListView {
+        id: file_list
         anchors.top: file_name.bottom
-        width: parent.implicitWidth * 0.8
-        anchors.horizontalCenter: parent.horizontalCenter
-        Rectangle {
-          width: parent.width
-          height: childrenRect.height
-          border.width: 1
-          anchors.leftMargin: 10
-          Column {
-            width: parent.width
-            Item {
-              visible: root.selected_item ? root.selected_item.size !== -1 : ""
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.margins: 10
-              height: 50
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                font.pointSize: 12
-                text: "size"
-              }
-              Text {
-                function show_size(size) {
-                  if (size < 1024)
-                    return size + " B";
-                  else if (size < 1024 * 1024)
-                    return (size / 1024).toFixed(2) + " KB";
-                  else if (size < 1024 * 1024 * 1024)
-                    return (size / (1024 * 1024)).toFixed(2) + " MB";
-                  else
-                    return (size / (1024 * 1024 * 1024)).toFixed(2) + " GB";
-                }
-
-                font.pointSize: 16
-                text: root.selected_item ? show_size(root.selected_item.size) : ""
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-              }
-            }
-            Item {
-              visible: root.selected_item ? root.selected_item.timestamp !== "" : false
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.margins: 10
-              height: 50
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                font.pointSize: 12
-                text: "last modified"
-              }
-              Text {
-                font.pointSize: 16
-                text: root.selected_item ? root.selected_item.timestamp : ""
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-              }
-            }
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: childrenRect.height
+        boundsBehavior: Flickable.StopAtBounds
+        model: [
+          {
+            "name": "size",
+            "value": root.selected_item && root.selected_item.size !== -1 ?
+                       show_size(root.selected_item.size) : ""
+          },
+          {
+            "name": "last modified",
+            "value": root.selected_item && root.selected_item.timestamp !== -1 ?
+                       root.selected_item.timestamp : ""
+          }
+        ]
+        delegate: Kirigami.BasicListItem {
+          icon: ""
+          visible: modelData.value !== ""
+          anchors.margins: 10
+          height: visible ? 50 : 0
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            font.pointSize: 12
+            text: modelData.name
+          }
+          Text {
+            font.pointSize: 16
+            text: modelData.value
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
           }
         }
       }
