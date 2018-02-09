@@ -24,11 +24,13 @@ Kirigami.Page {
   onIsCurrentPageChanged: {
     if (!isCurrentPage) {
       platform.disableKeepScreenOn();
+      root.fullscreen_player = false;
       root.visible_player = false;
       root.globalDrawer.handleVisible = handle_state;
     } else {
       handle_state = root.globalDrawer.handleVisible;
       root.globalDrawer.handleVisible = false;
+      root.visible_player = true;
       platform.enableKeepScreenOn();
     }
   }
@@ -589,7 +591,7 @@ Kirigami.Page {
         MouseArea {
           anchors.fill: parent
           onClicked: {
-            root.visible_player ^= 1;
+            root.fullscreen_player ^= 1;
             timer.cnt = 0;
           }
         }

@@ -9,6 +9,7 @@ Kirigami.ApplicationWindow {
   property bool ad_loaded: false
   property bool ad_visible: include_ads
   property bool visible_player: false
+  property bool fullscreen_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile() || root.height > root.width
   property bool auth_error_occurred: false
@@ -22,8 +23,8 @@ Kirigami.ApplicationWindow {
   width: Math.min(800, screen.desktopAvailableWidth)
   height: Math.min(600, screen.desktopAvailableHeight)
 
-  onVisible_playerChanged: {
-    if (visible_player) {
+  onFullscreen_playerChanged: {
+    if (fullscreen_player) {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
       if (platform.mobile()) platform.landscapeOrientation();
@@ -43,7 +44,7 @@ Kirigami.ApplicationWindow {
     }
   }
 
-  header: visible_player ? null : header
+  header: fullscreen_player ? null : header
 
   Kirigami.ApplicationHeader {
     id: header
@@ -201,7 +202,7 @@ Kirigami.ApplicationWindow {
              "Actions"
   }
   pageStack.initialPage: mainPageComponent
-  pageStack.interactive: !visible_player
+  pageStack.interactive: !fullscreen_player
   pageStack.defaultColumnWidth: 10000
   pageStack.anchors.bottomMargin: footer_height
 
