@@ -23,6 +23,6 @@ Row {
     anchors.verticalCenter: parent.verticalCenter
     color: Kirigami.Theme.textColor
     text: "<b>" + cloud.pretty(provider) + "</b>" + (label !== "" ?
-            "<br/><div>" + label + "</div>" : "")
+            "<br/><div>" + elided(label, 30) + "</div>" : "")
   }
 }
