@@ -36,6 +36,72 @@ QString sanitize(const QString& name) {
 
 }  // namespace
 
+int ProviderListModel::rowCount(const QModelIndex&) const {
+  return provider_.size();
+}
+
+QVariant ProviderListModel::data(const QModelIndex& index, int) const {
+  return provider_[index.row()].variant();
+}
+
+QHash<int, QByteArray> ProviderListModel::roleNames() const {
+  return {{Qt::DisplayRole, "modelData"}};
+}
+
+void ProviderListModel::remove(QVariant provider) {
+  auto label = provider.toMap()["label"].toString().toStdString();
+  auto type = provider.toMap()["type"].toString().toStdString();
+  for (size_t i = 0; i < provider_.size();)
+    if (provider_[i].label_ == label &&
+        provider_[i].provider_->name() == type) {
+      beginRemoveRows(QModelIndex(), i, i);
+      provider_.erase(provider_.begin() + i);
+      endRemoveRows();
+      emit updated();
+    } else {
+      i++;
+    }
+}
+
+Provider ProviderListModel::provider(QVariant provider) const {
+  auto label = provider.toMap()["label"].toString().toStdString();
+  auto type = provider.toMap()["type"].toString().toStdString();
+  for (auto&& i : provider_)
+    if (i.label_ == label && i.provider_->name() == type) return i;
+  return {};
+}
+
+QVariantList ProviderListModel::dump() const {
+  QVariantList array;
+  for (auto&& p : provider_) {
+    QVariantMap dict;
+    dict["token"] = p.provider_->token().c_str();
+    dict["access_token"] = p.provider_->hints()["access_token"].c_str();
+    dict["type"] = p.provider_->name().c_str();
+    dict["label"] = p.label_.c_str();
+    array.append(dict);
+  }
+  return array;
+}
+
+void ProviderListModel::add(const Provider& p) {
+  std::unordered_set<std::string> names;
+  for (auto&& i : provider_)
+    if (i.provider_->name() == p.provider_->name()) names.insert(i.label_);
+  if (names.find(p.label_) == names.end()) {
+    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    provider_.push_back(p);
+    endInsertRows();
+    emit updated();
+  }
+}
+
+QVariantList ProviderListModel::variant() const {
+  QVariantList result;
+  for (auto&& p : provider_) result.push_back(p.variant());
+  return result;
+}
+
 CloudContext::CloudContext(QObject* parent)
     : QObject(parent),
       config_([]() {
@@ -55,7 +121,7 @@ CloudContext::CloudContext(QObject* parent)
   for (auto j : providers) {
     auto obj = j.toMap();
     auto label = obj["label"].toString().toStdString();
-    provider_.push_back(
+    user_provider_model_.add(
         {label,
          this->provider(obj["type"].toString().toStdString(), label,
                         Token{obj["token"].toString().toStdString(),
@@ -129,16 +195,7 @@ void CloudContext::saveCachedDirectories() {
 void CloudContext::save() {
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
-  QVariantList array;
-  for (auto&& p : provider_) {
-    QVariantMap dict;
-    dict["token"] = p.provider_->token().c_str();
-    dict["access_token"] = p.provider_->hints()["access_token"].c_str();
-    dict["type"] = p.provider_->name().c_str();
-    dict["label"] = p.label_.c_str();
-    array.append(dict);
-  }
-  settings.setValue("providers", array);
+  settings.setValue("providers", user_provider_model_.dump());
   saveCachedDirectories();
 }
 
@@ -148,11 +205,8 @@ QStringList CloudContext::providers() const {
   return list;
 }
 
-QVariantList CloudContext::userProviders() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  QVariantList result;
-  for (auto&& i : provider_) result.push_back(i.variant());
-  return result;
+ProviderListModel* CloudContext::userProviders() {
+  return &user_provider_model_;
 }
 
 bool CloudContext::includeAds() const {
@@ -177,28 +231,21 @@ QString CloudContext::authorizationUrl(QString provider) const {
 
 QObject* CloudContext::root(QVariant provider) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto label = provider.toMap()["label"].toString().toStdString();
-  auto type = provider.toMap()["type"].toString().toStdString();
-  for (auto&& i : provider_)
-    if (i.label_ == label && i.provider_->name() == type) {
-      auto item = new CloudItem(i, i.provider_->rootDirectory());
-      QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
-      return item;
-    }
-  return nullptr;
+  auto p = user_provider_model_.provider(provider);
+  if (p.provider_) {
+    auto item = new CloudItem(p, p.provider_->rootDirectory());
+    QQmlEngine::setObjectOwnership(item, QQmlEngine::JavaScriptOwnership);
+    return item;
+  } else {
+    return nullptr;
+  }
 }
 
 void CloudContext::removeProvider(QVariant provider) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto label = provider.toMap()["label"].toString().toStdString();
-    auto type = provider.toMap()["type"].toString().toStdString();
-    std::vector<Provider> r;
-    for (auto&& i : provider_)
-      if (i.label_ != label || i.provider_->name() != type) r.push_back(i);
-    provider_ = r;
+    user_provider_model_.remove(provider);
   }
-  emit userProvidersChanged();
   save();
 }
 
@@ -342,18 +389,13 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
         return emit errorOccurred("GeneralData", provider_variant,
                                   d.left()->code_,
                                   d.left()->description_.c_str());
-      std::unique_lock<std::mutex> lock(mutex_);
-      std::unordered_set<std::string> names;
-      for (auto&& i : provider_)
-        if (i.provider_->name() == provider) names.insert(i.label_);
-      if (names.find(d.right()->username_) == names.end()) {
-        provider_.push_back(
+      {
+        std::unique_lock<std::mutex> lock(mutex_);
+        user_provider_model_.add(
             {d.right()->username_,
              this->provider(provider, d.right()->username_, *e.right())});
-        lock.unlock();
-        save();
-        emit userProvidersChanged();
       }
+      save();
     }));
   });
   pool_.add(std::move(p), std::move(r));
@@ -423,13 +465,6 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool_);
   data.callback_ = util::make_unique<AuthCallback>();
   return ICloudStorage::create()->provider(name, std::move(data));
-}
-
-ICloudProvider* CloudContext::provider(const std::string& label) const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto&& i : provider_)
-    if (i.label_ == label) return i.provider_.get();
-  return nullptr;
 }
 
 ICloudProvider::InitData CloudContext::init_data(

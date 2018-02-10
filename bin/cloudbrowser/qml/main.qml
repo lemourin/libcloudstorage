@@ -61,15 +61,19 @@ Kirigami.ApplicationWindow {
     }
   }
 
+  Connections {
+    target: cloud.userProviders
+    onUpdated: {
+      root.globalDrawer.actions = root.actions(cloud.userProviders.variant());
+    }
+  }
+
   CloudContext {
     property var list_request
     property var currently_moved
     property variant request: []
 
     id: cloud
-    onUserProvidersChanged: {
-      root.globalDrawer.actions = root.actions();
-    }
     onErrorOccurred: {
       if (operation !== "GetThumbnail") {
         var message = "";
@@ -105,15 +109,15 @@ Kirigami.ApplicationWindow {
       return str.substr(0, length) + "...";
   }
 
-  function actions() {
+  function actions(userProviders) {
     var ret = [settings.createObject(root.globalDrawer)], i;
     if (cloud.isFree) {
       ret.push(supportAction.createObject(root.globalDrawer));
     }
-    for (i = 0; i < cloud.userProviders.length; i++) {
+    for (i = 0; i < userProviders.length; i++) {
       var props = {
-        provider: cloud.userProviders[i],
-        iconName: "qrc:/resources/providers/" + cloud.userProviders[i].type + ".png"
+        provider: userProviders[i],
+        iconName: "qrc:/resources/providers/" + userProviders[i].type + ".png"
       };
       ret.push(providerAction.createObject(root.globalDrawer, props));
     }
@@ -189,7 +193,7 @@ Kirigami.ApplicationWindow {
     title: "Cloud Browser"
     titleIcon: "qrc:/resources/cloud.png"
     drawerOpen: true
-    actions: root.actions()
+    actions: root.actions(cloud.userProviders.variant())
     height: parent.height - footer_height
     handle.anchors.bottomMargin: footer_height
   }

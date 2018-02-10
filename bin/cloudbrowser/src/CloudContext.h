@@ -4,8 +4,8 @@
 #include "CloudItem.h"
 #include "HttpServer.h"
 #include "ICloudProvider.h"
-#include "Request/ListDirectory.h"
 #include "Request/CloudRequest.h"
+#include "Request/ListDirectory.h"
 
 #include <QAbstractListModel>
 #include <QJsonDocument>
@@ -20,11 +20,33 @@
 #include <streambuf>
 #include <unordered_set>
 
+class CloudContext;
+
+class ProviderListModel : public QAbstractListModel {
+ public:
+  int rowCount(const QModelIndex& = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int role) const override;
+  QHash<int, QByteArray> roleNames() const override;
+
+  void add(const Provider&);
+  void remove(QVariant provider);
+  Provider provider(QVariant provider) const;
+
+  QVariantList dump() const;
+  Q_INVOKABLE QVariantList variant() const;
+
+ signals:
+  void updated();
+
+ private:
+  std::vector<Provider> provider_;
+  Q_OBJECT
+};
+
 class CloudContext : public QObject {
  public:
   Q_PROPERTY(QStringList providers READ providers CONSTANT)
-  Q_PROPERTY(
-      QVariantList userProviders READ userProviders NOTIFY userProvidersChanged)
+  Q_PROPERTY(ProviderListModel* userProviders READ userProviders CONSTANT)
   Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
   Q_PROPERTY(bool isFree READ isFree CONSTANT)
   Q_PROPERTY(qint64 cacheSize READ cacheSize NOTIFY cacheSizeChanged)
@@ -39,7 +61,7 @@ class CloudContext : public QObject {
   void save();
 
   QStringList providers() const;
-  QVariantList userProviders() const;
+  ProviderListModel* userProviders();
   bool includeAds() const;
   bool isFree() const;
   bool httpServerAvailable() const;
@@ -71,7 +93,6 @@ class CloudContext : public QObject {
   static QString thumbnail_path(const QString& filename);
 
  signals:
-  void userProvidersChanged();
   void receivedCode(QString provider);
   void errorOccurred(QString operation, QVariantMap provider, int code,
                      QString description);
@@ -121,7 +142,6 @@ class CloudContext : public QObject {
   cloudstorage::ICloudProvider::Pointer provider(
       const std::string& name, const std::string& label,
       cloudstorage::Token token) const;
-  cloudstorage::ICloudProvider* provider(const std::string& label) const;
   cloudstorage::ICloudProvider::InitData init_data(
       const std::string& name) const;
 
@@ -133,11 +153,11 @@ class CloudContext : public QObject {
   std::shared_ptr<cloudstorage::IHttp> http_;
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
   RequestPool pool_;
-  std::vector<Provider> provider_;
   std::unordered_map<ListDirectoryCacheKey,
                      std::vector<cloudstorage::IItem::Pointer>>
       list_directory_cache_;
   qint64 cache_size_;
+  ProviderListModel user_provider_model_;
 
   Q_OBJECT
 };
