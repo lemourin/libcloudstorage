@@ -112,6 +112,18 @@ void AuthorizeRequest::cancel() {
   Request::cancel();
 }
 
+void AuthorizeRequest::finish() {
+  {
+    std::lock_guard<std::mutex> lock(provider_mutex_);
+    if (provider()) {
+      std::lock_guard<std::mutex> lock(
+          provider()->current_authorization_mutex_);
+      if (!provider()->auth_callbacks_.empty()) return;
+    }
+  }
+  Request::finish();
+}
+
 void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
   std::unique_lock<std::mutex> lock(lock_);
   auth_server_ = p;

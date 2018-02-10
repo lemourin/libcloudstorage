@@ -42,7 +42,8 @@ class AuthorizeRequest : public Request<EitherError<void>> {
 
   void oauth2Authorization(AuthorizeCompleted);
   void sendCancel();
-  void cancel();
+  void cancel() override;
+  void finish() override;
   void set_server(std::shared_ptr<IHttpServer>);
 
  private:
