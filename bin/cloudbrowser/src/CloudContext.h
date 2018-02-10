@@ -90,8 +90,6 @@ class CloudContext : public QObject {
       ListDirectoryCacheKey);
   void schedule(std::function<void()>);
 
-  static QString thumbnail_path(const QString& filename);
-
  signals:
   void receivedCode(QString provider);
   void errorOccurred(QString operation, QVariantMap provider, int code,

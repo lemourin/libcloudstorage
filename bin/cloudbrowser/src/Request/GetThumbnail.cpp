@@ -1,8 +1,11 @@
 #include "GetThumbnail.h"
 
+#include <QDir>
 #include <QFile>
 #include <QSaveFile>
+#include <QStandardPaths>
 #include <QUrl>
+
 #include "CloudContext.h"
 #include "GenerateThumbnail.h"
 #include "Utility/Utility.h"
@@ -10,6 +13,17 @@
 using namespace cloudstorage;
 
 namespace {
+
+QString sanitize(const QString& name) {
+  const QString forbidden = "~\"#%&*:<>?/\\{|}";
+  QString result;
+  for (auto&& c : name)
+    if (forbidden.indexOf(c) == -1)
+      result += c;
+    else
+      result += '_';
+  return result;
+}
 
 class DownloadToString : public IDownloadFileCallback {
  public:
@@ -73,7 +87,8 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
 #ifdef WITH_THUMBNAILER
     if (e.left() && (item_->type() == IItem::FileType::Image ||
                      item_->type() == IItem::FileType::Video)) {
-      auto path = CloudContext::thumbnail_path(item_->filename().c_str());
+      auto path =
+          GetThumbnailRequest::thumbnail_path(item_->filename().c_str());
       auto provider = provider_;
       auto item = item_;
       auto notifier = notifier_;
@@ -111,7 +126,8 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       emit notifier_->finishedVariant(e.left());
     else {
       auto notifier = notifier_;
-      auto path = CloudContext::thumbnail_path(item_->filename().c_str());
+      auto path =
+          GetThumbnailRequest::thumbnail_path(item_->filename().c_str());
       auto data = std::move(data_);
       context_->schedule(
           [notifier, path, data] { submit(notifier, path, std::move(data)); });
@@ -131,7 +147,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
 void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   if (item->type() == "directory") return set_done(true);
   set_done(false);
-  auto path = CloudContext::thumbnail_path(item->filename());
+  auto path = thumbnail_path(item->filename());
   QFile file(path);
   if (file.exists() && file.size() > 0) {
     source_ = QUrl::fromLocalFile(path).toString();
@@ -164,4 +180,9 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
                                       context, object, p, item->item()));
     context->add(p, std::move(r));
   }
+}
+
+QString GetThumbnailRequest::thumbnail_path(const QString& filename) {
+  return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
+         QDir::separator() + sanitize(filename) + "-thumbnail";
 }

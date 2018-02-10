@@ -15,6 +15,7 @@ class GetThumbnailRequest : public Request {
 
   QString source() const { return source_; }
   Q_INVOKABLE void update(CloudContext* context, CloudItem* item);
+  static QString thumbnail_path(const QString& filename);
 
  signals:
   void sourceChanged();

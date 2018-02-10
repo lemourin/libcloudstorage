@@ -10,6 +10,7 @@
 #include <QtAndroid>
 
 #include "CloudContext.h"
+#include "Request/GetThumbnail.h"
 #include "Utility/Utility.h"
 
 const int RECEIVER_CODE = 43;
@@ -66,8 +67,8 @@ void AndroidUtility::defaultOrientation() {
 
 void AndroidUtility::showPlayerNotification(bool playing, QString filename,
                                             QString title) {
-  auto arg0 =
-      QAndroidJniObject::fromString(CloudContext::thumbnail_path(filename));
+  auto arg0 = QAndroidJniObject::fromString(
+      GetThumbnailRequest::thumbnail_path(filename));
   auto arg1 = QAndroidJniObject::fromString(filename);
   auto arg2 = QAndroidJniObject::fromString(title);
   QAndroidJniObject::callStaticMethod<void>(

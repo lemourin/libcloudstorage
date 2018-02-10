@@ -21,21 +21,6 @@
 
 using namespace cloudstorage;
 
-namespace {
-
-QString sanitize(const QString& name) {
-  const QString forbidden = "~\"#%&*:<>?/\\{|}";
-  QString result;
-  for (auto&& c : name)
-    if (forbidden.indexOf(c) == -1)
-      result += c;
-    else
-      result += '_';
-  return result;
-}
-
-}  // namespace
-
 int ProviderListModel::rowCount(const QModelIndex&) const {
   return provider_.size();
 }
@@ -366,11 +351,6 @@ std::vector<IItem::Pointer> CloudContext::cachedDirectory(
 
 void CloudContext::schedule(std::function<void()> f) {
   thread_pool_->schedule(f);
-}
-
-QString CloudContext::thumbnail_path(const QString& filename) {
-  return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
-         QDir::separator() + sanitize(filename) + "-thumbnail";
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
