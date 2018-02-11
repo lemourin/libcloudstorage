@@ -93,7 +93,7 @@ class IHttpServer {
 
 class IHttpServerFactory {
  public:
-  using Pointer = std::shared_ptr<IHttpServerFactory>;
+  using Pointer = std::unique_ptr<IHttpServerFactory>;
 
   virtual ~IHttpServerFactory() = default;
 
