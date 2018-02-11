@@ -54,7 +54,15 @@ libcloudstorage_la_SOURCES = \
 	Request/RenameItemRequest.cpp \
 	Request/ExchangeCodeRequest.cpp \
 	Request/GetItemUrlRequest.cpp \
-	Request/RecursiveRequest.cpp
+	Request/RecursiveRequest.cpp \
+	C/CloudProvider.cpp \
+	C/CloudStorage.cpp \
+	C/Crypto.cpp \
+	C/Http.cpp \
+	C/HttpServer.cpp \
+	C/Item.cpp \
+	C/Request.cpp \
+	C/ThreadPool.cpp
 
 noinst_HEADERS = \
 	IAuth.h \
@@ -111,7 +119,15 @@ libcloudstorage_la_HEADERS = \
 	ICrypto.h \
 	IHttp.h \
 	IHttpServer.h \
-	IThreadPool.h
+	IThreadPool.h \
+	C/CloudProvider.h \
+	C/CloudStorage.h \
+	C/Crypto.h \
+	C/Http.h \
+	C/HttpServer.h \
+	C/Item.h \
+	C/Request.h \
+	C/ThreadPool.h
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \

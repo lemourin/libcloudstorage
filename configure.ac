@@ -126,6 +126,7 @@ AC_CONFIG_FILES([
   bin/cloudbrowser/Makefile
   examples/Makefile
   examples/commandlinebrowser/Makefile
+  examples/cinterface/Makefile
 ])
 
 SOCKET_LIBS=""

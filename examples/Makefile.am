@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 if WITH_CURL
 if WITH_MICROHTTPD
 
-SUBDIRS = commandlinebrowser
+SUBDIRS = cinterface commandlinebrowser
 
 endif
 endif
