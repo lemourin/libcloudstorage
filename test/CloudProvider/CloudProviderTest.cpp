@@ -156,7 +156,7 @@ class CloudProviderTest : public ::testing::Test {
 
   static void lookup(ICloudProvider* p, IItem::Pointer directory,
                      const std::string& name, IItem::Pointer& result) {
-    auto lst = p->listDirectoryAsync(directory)->result().right();
+    auto lst = p->listDirectorySimpleAsync(directory)->result().right();
     ASSERT_NE(lst, nullptr);
     for (auto i : *lst)
       if (i->filename() == name) {
@@ -180,11 +180,11 @@ class CloudProviderTest : public ::testing::Test {
     ASSERT_NE(item, nullptr);
     item = p->renameItemAsync(item, "3")->result().right();
     ASSERT_NE(item, nullptr);
-    auto lst = p->listDirectoryAsync(root)->result().right();
+    auto lst = p->listDirectorySimpleAsync(root)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0", "3"}));
     ASSERT_NE(p->renameItemAsync(item, "1")->result().right(), nullptr);
-    lst = p->listDirectoryAsync(root)->result().right();
+    lst = p->listDirectorySimpleAsync(root)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0", "1"}));
   }
@@ -197,11 +197,11 @@ class CloudProviderTest : public ::testing::Test {
     item = p->renameItemAsync(item, "1.txt")->result().right();
     ASSERT_NE(item, nullptr);
     auto directory = lookup(p, root, "0");
-    auto lst = p->listDirectoryAsync(directory)->result().right();
+    auto lst = p->listDirectorySimpleAsync(directory)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"1.txt"}));
     ASSERT_NE(p->renameItemAsync(item, "0.txt")->result().right(), nullptr);
-    lst = p->listDirectoryAsync(directory)->result().right();
+    lst = p->listDirectorySimpleAsync(directory)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0.txt"}));
   }
@@ -215,17 +215,17 @@ class CloudProviderTest : public ::testing::Test {
     ASSERT_NE(destination, nullptr);
     auto moved = p->moveItemAsync(source, destination)->result().right();
     ASSERT_NE(moved, nullptr);
-    auto lst = p->listDirectoryAsync(root)->result().right();
+    auto lst = p->listDirectorySimpleAsync(root)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"1"}));
-    lst = p->listDirectoryAsync(destination)->result().right();
+    lst = p->listDirectorySimpleAsync(destination)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0", "1.txt"}));
-    lst = p->listDirectoryAsync(moved)->result().right();
+    lst = p->listDirectorySimpleAsync(moved)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0.txt"}));
     ASSERT_NE(p->moveItemAsync(moved, root)->result().right(), nullptr);
-    lst = p->listDirectoryAsync(root)->result().right();
+    lst = p->listDirectorySimpleAsync(root)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0", "1"}));
   }
@@ -239,15 +239,15 @@ class CloudProviderTest : public ::testing::Test {
     ASSERT_NE(destination, nullptr);
     auto moved = p->moveItemAsync(source, destination)->result().right();
     ASSERT_NE(moved, nullptr);
-    auto lst = p->listDirectoryAsync(destination)->result().right();
+    auto lst = p->listDirectorySimpleAsync(destination)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0.txt", "1.txt"}));
-    lst = p->listDirectoryAsync(source_parent)->result().right();
+    lst = p->listDirectorySimpleAsync(source_parent)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_TRUE(filename(*lst).empty());
     ASSERT_NE(p->moveItemAsync(moved, source_parent)->result().right(),
               nullptr);
-    lst = p->listDirectoryAsync(source_parent)->result().right();
+    lst = p->listDirectorySimpleAsync(source_parent)->result().right();
     ASSERT_NE(lst, nullptr);
     ASSERT_EQ(filename(*lst), std::vector<std::string>({"0.txt"}));
   }

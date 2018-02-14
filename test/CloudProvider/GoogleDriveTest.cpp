@@ -110,7 +110,8 @@ TEST_F(GoogleDriveTest, ListDirectoryTest) {
   EXPECT_CALL(http,
               create("https://www.googleapis.com/drive/v3/files", "GET", true))
       .WillRepeatedly(Return(request));
-  auto r = provider->listDirectoryAsync(provider->rootDirectory())->result();
+  auto r =
+      provider->listDirectorySimpleAsync(provider->rootDirectory())->result();
   ASSERT_NE(r.right(), nullptr);
   ASSERT_EQ(r.right()->size(), 2);
   ASSERT_EQ(r.right()->front()->filename(), "test");
@@ -147,7 +148,8 @@ TEST_F(GoogleDriveTest, AuthorizationTest) {
       .WillOnce(Return(next_token_request));
   EXPECT_CALL(http_factory, create(_, _, IHttpServer::Type::Authorization))
       .WillRepeatedly(CreateServer());
-  auto r = provider->listDirectoryAsync(provider->rootDirectory())->result();
+  auto r =
+      provider->listDirectorySimpleAsync(provider->rootDirectory())->result();
   if (r.left()) util::log(r.left()->code_, r.left()->description_);
   ASSERT_NE(r.right(), nullptr);
   ASSERT_EQ(r.right()->size(), 2);
