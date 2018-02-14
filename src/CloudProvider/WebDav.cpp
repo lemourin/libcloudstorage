@@ -236,9 +236,8 @@ IItem::Pointer WebDav::moveItemResponse(const IItem& source, const IItem& dest,
   return std::move(i);
 }
 
-std::vector<IItem::Pointer> WebDav::listDirectoryResponse(const IItem&,
-                                                          std::istream& stream,
-                                                          std::string&) const {
+IItem::List WebDav::listDirectoryResponse(const IItem&, std::istream& stream,
+                                          std::string&) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
@@ -247,7 +246,7 @@ std::vector<IItem::Pointer> WebDav::listDirectoryResponse(const IItem&,
     throw std::logic_error("failed to parse xml");
   if (document.RootElement()->FirstChild() == nullptr) return {};
 
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (auto child = document.RootElement()->FirstChild()->NextSibling(); child;
        child = child->NextSibling()) {
     result.push_back(toItem(child));

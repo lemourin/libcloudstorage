@@ -29,8 +29,7 @@
 
 namespace cloudstorage {
 
-class ListDirectoryRequest
-    : public Request<EitherError<std::vector<IItem::Pointer>>> {
+class ListDirectoryRequest : public Request<EitherError<IItem::List>> {
  public:
   using ICallback = IListDirectoryCallback;
 
@@ -42,7 +41,7 @@ class ListDirectoryRequest
   void resolve(Request::Pointer, IItem::Pointer directory, ICallback* cb);
   void work(IItem::Pointer directory, std::string page_token, ICallback*);
 
-  std::vector<IItem::Pointer> result_;
+  IItem::List result_;
 };
 
 }  // namespace cloudstorage

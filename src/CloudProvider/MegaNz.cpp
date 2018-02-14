@@ -563,13 +563,13 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
 
 ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer cb) {
-  using ItemList = EitherError<std::vector<IItem::Pointer>>;
+  using ItemList = EitherError<IItem::List>;
   auto callback = cb.get();
   auto resolver = [=](Request<ItemList>::Pointer r) {
     ensureAuthorized<ItemList>(r, [=] {
       auto node = this->node(item->id());
       if (node) {
-        std::vector<IItem::Pointer> result;
+        IItem::List result;
         std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
         if (lst) {
           for (int i = 0; i < lst->size(); i++) {
@@ -791,7 +791,7 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
     ensureAuthorized<EitherError<PageData>>(r, [=] {
       auto node = this->node(item->id());
       if (node) {
-        std::vector<IItem::Pointer> result;
+        IItem::List result;
         std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
         if (lst) {
           for (int i = 0; i < lst->size(); i++) {

@@ -46,8 +46,7 @@ class ICloudProvider {
   using ExchangeCodeRequest = IRequest<EitherError<Token>>;
   using GetItemUrlRequest = IRequest<EitherError<std::string>>;
   using ListDirectoryPageRequest = IRequest<EitherError<PageData>>;
-  using ListDirectoryRequest =
-      IRequest<EitherError<std::vector<IItem::Pointer>>>;
+  using ListDirectoryRequest = IRequest<EitherError<IItem::List>>;
   using GetItemRequest = IRequest<EitherError<IItem>>;
   using DownloadFileRequest = IRequest<EitherError<void>>;
   using UploadFileRequest = IRequest<EitherError<IItem>>;

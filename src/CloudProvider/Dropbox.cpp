@@ -291,10 +291,10 @@ IHttpRequest::Pointer Dropbox::renameItemRequest(const IItem& item,
   return request;
 }
 
-std::vector<IItem::Pointer> Dropbox::listDirectoryResponse(
-    const IItem&, std::istream& stream, std::string& next_page_token) const {
+IItem::List Dropbox::listDirectoryResponse(const IItem&, std::istream& stream,
+                                           std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (const Json::Value& v : response["entries"]) result.push_back(toItem(v));
   if (response["has_more"].asBool()) {
     next_page_token = response["cursor"].asString();

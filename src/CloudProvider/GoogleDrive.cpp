@@ -293,11 +293,11 @@ IItem::Pointer GoogleDrive::getItemDataResponse(std::istream& response) const {
   return toItem(util::json::from_stream(response));
 }
 
-std::vector<IItem::Pointer> GoogleDrive::listDirectoryResponse(
+IItem::List GoogleDrive::listDirectoryResponse(
     const IItem& item, std::istream& stream,
     std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (Json::Value v : response["files"]) result.push_back(toItem(v));
   if (item.id() == rootDirectory()->id())
     result.push_back(util::make_unique<Item>(

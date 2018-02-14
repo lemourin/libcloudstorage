@@ -355,10 +355,10 @@ IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
       source.size(), source.timestamp(), source.type());
 }
 
-std::vector<IItem::Pointer> YandexDisk::listDirectoryResponse(
+IItem::List YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (const Json::Value& v : response["_embedded"]["items"])
     result.push_back(toItem(v));
   int offset = response["_embedded"]["offset"].asInt();

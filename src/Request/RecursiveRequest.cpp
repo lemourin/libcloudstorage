@@ -55,8 +55,7 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
 }
 
 template <class T>
-void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
-                                std::vector<IItem::Pointer> lst,
+void RecursiveRequest<T>::visit(typename Request<T>::Pointer r, IItem::List lst,
                                 CompleteCallback callback, Visitor visitor) {
   if (lst.empty()) return callback(T());
   auto i = lst.back();

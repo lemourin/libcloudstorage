@@ -619,8 +619,8 @@ std::string CloudProvider::getItemUrlResponse(
   return std::static_pointer_cast<Item>(getItemDataResponse(stream))->url();
 }
 
-std::vector<IItem::Pointer> CloudProvider::listDirectoryResponse(
-    const IItem&, std::istream&, std::string&) const {
+IItem::List CloudProvider::listDirectoryResponse(const IItem&, std::istream&,
+                                                 std::string&) const {
   return {};
 }
 

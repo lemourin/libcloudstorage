@@ -37,7 +37,7 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
 
 GetItemRequest::~GetItemRequest() { cancel(); }
 
-IItem::Pointer GetItemRequest::getItem(const std::vector<IItem::Pointer>& items,
+IItem::Pointer GetItemRequest::getItem(const IItem::List& items,
                                        const std::string& name) const {
   for (const IItem::Pointer& i : items)
     if (i->filename() == name) return i;

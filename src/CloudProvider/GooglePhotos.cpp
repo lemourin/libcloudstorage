@@ -153,15 +153,16 @@ IHttpRequest::Pointer GooglePhotos::uploadFileRequest(
   return request;
 }
 
-std::vector<IItem::Pointer> GooglePhotos::listDirectoryResponse(
-    const IItem &, std::istream &stream, std::string &) const {
+IItem::List GooglePhotos::listDirectoryResponse(const IItem &,
+                                                std::istream &stream,
+                                                std::string &) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
       tinyxml2::XML_SUCCESS)
     throw std::logic_error("invalid xml");
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (auto child = document.RootElement()->FirstChildElement("entry"); child;
        child = child->NextSiblingElement("entry")) {
     result.push_back(toItem(child));

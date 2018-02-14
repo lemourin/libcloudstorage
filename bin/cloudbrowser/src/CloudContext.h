@@ -86,8 +86,7 @@ class CloudContext : public QObject {
 
   void cacheDirectory(ListDirectoryCacheKey directory,
                       const std::vector<cloudstorage::IItem::Pointer>&);
-  std::vector<cloudstorage::IItem::Pointer> cachedDirectory(
-      ListDirectoryCacheKey);
+  cloudstorage::IItem::List cachedDirectory(ListDirectoryCacheKey);
   void schedule(std::function<void()>);
 
  signals:

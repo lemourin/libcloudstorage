@@ -75,7 +75,7 @@ class WebDav : public CloudProvider {
   IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
 
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
-  std::vector<IItem::Pointer> listDirectoryResponse(
+  IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   IItem::Pointer renameItemResponse(const IItem& old_item,
                                     const std::string& name,

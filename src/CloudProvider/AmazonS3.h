@@ -74,7 +74,7 @@ class AmazonS3 : public CloudProvider {
   IHttpRequest::Pointer downloadFileRequest(
       const IItem&, std::ostream& input_stream) const override;
 
-  std::vector<IItem::Pointer> listDirectoryResponse(
+  IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,

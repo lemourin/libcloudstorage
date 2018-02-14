@@ -317,10 +317,10 @@ IHttpRequest::Pointer HubiC::getItemUrlRequest(const IItem &item,
   return r;
 }
 
-std::vector<IItem::Pointer> HubiC::listDirectoryResponse(
+IItem::List HubiC::listDirectoryResponse(
     const IItem &, std::istream &stream, std::string &next_page_token) const {
   auto json = util::json::from_stream(stream);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (auto &&v : json)
     if (!v.isMember("subdir")) {
       result.push_back(toItem(v));

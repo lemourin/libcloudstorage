@@ -239,9 +239,9 @@ IItem::Pointer OneDrive::toItem(const Json::Value& v) const {
   return std::move(item);
 }
 
-std::vector<IItem::Pointer> OneDrive::listDirectoryResponse(
+IItem::List OneDrive::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   auto response = util::json::from_stream(stream);
   for (Json::Value v : response["value"]) result.push_back(toItem(v));
   if (response.isMember("@odata.nextLink"))

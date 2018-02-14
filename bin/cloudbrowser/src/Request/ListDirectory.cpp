@@ -15,7 +15,7 @@ class ListDirectory : public IListDirectoryCallback {
     notifier_->addedItem(item);
   }
 
-  void done(EitherError<std::vector<IItem::Pointer>> r) override {
+  void done(EitherError<IItem::List> r) override {
     emit notifier_->finishedList(r);
     notifier_->deleteLater();
   }
@@ -62,7 +62,7 @@ void ListDirectoryModel::remove(int idx) {
   endRemoveRows();
 }
 
-void ListDirectoryModel::match(const std::vector<IItem::Pointer>& lst) {
+void ListDirectoryModel::match(const IItem::List& lst) {
   std::unordered_set<std::string> id;
   for (size_t i = lst.size(); i-- > 0;) {
     auto idx = find(lst[i]);
@@ -120,14 +120,14 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
                                         description);
           });
   connect(this, &ListDirectoryRequest::finished, context,
-          [=](ListDirectoryCacheKey key, const std::vector<IItem::Pointer>& r) {
+          [=](ListDirectoryCacheKey key, const IItem::List& r) {
             context->cacheDirectory(key, r);
           });
 
   auto object = new RequestNotifier;
   auto provider = item->provider().variant();
   connect(object, &RequestNotifier::finishedList, this,
-          [=](EitherError<std::vector<IItem::Pointer>> r) {
+          [=](EitherError<IItem::List> r) {
             set_done(true);
             if (r.left())
               return errorOccurred(provider, r.left()->code_,

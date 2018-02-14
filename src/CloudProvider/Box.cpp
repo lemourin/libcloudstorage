@@ -200,10 +200,10 @@ IItem::Pointer Box::getItemDataResponse(std::istream& stream) const {
   return toItem(util::json::from_stream(stream));
 }
 
-std::vector<IItem::Pointer> Box::listDirectoryResponse(
-    const IItem&, std::istream& stream, std::string& next_page_token) const {
+IItem::List Box::listDirectoryResponse(const IItem&, std::istream& stream,
+                                       std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (const Json::Value& v : response["entries"]) result.push_back(toItem(v));
   int offset = response["offset"].asInt();
   int limit = response["limit"].asInt();

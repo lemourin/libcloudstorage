@@ -424,9 +424,9 @@ IItem::Pointer YouTube::getItemDataResponse(std::istream& stream, bool audio,
                 high_quality);
 }
 
-std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
-    const IItem& directory, std::istream& stream,
-    std::string& next_page_token) const {
+IItem::List YouTube::listDirectoryResponse(const IItem& directory,
+                                           std::istream& stream,
+                                           std::string& next_page_token) const {
   std::unique_ptr<Json::CharReader> reader(
       Json::CharReaderBuilder().newCharReader());
   std::stringstream sstream;
@@ -434,7 +434,7 @@ std::vector<IItem::Pointer> YouTube::listDirectoryResponse(
   std::string str = sstream.str();
   Json::Value response;
   reader->parse(str.data(), str.data() + str.size(), &response, nullptr);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   bool audio = from_string(directory.id()).audio;
   bool high_quality = from_string(directory.id()).high_quality;
   if (response["kind"].asString() == "youtube#channelListResponse") {

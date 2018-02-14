@@ -32,8 +32,7 @@ namespace cloudstorage {
 ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                            IItem::Pointer directory,
                                            ICallback::Pointer cb)
-    : Request(p,
-              [=](EitherError<std::vector<IItem::Pointer>> e) { cb->done(e); },
+    : Request(p, [=](EitherError<IItem::List> e) { cb->done(e); },
               std::bind(&ListDirectoryRequest::resolve, this, _1, directory,
                         cb.get())) {}
 

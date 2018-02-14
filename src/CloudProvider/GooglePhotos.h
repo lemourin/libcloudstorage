@@ -47,7 +47,7 @@ class GooglePhotos : public CloudProvider {
   IHttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename,
       std::ostream& prefix_stream, std::ostream& suffix_stream) const override;
-  std::vector<IItem::Pointer> listDirectoryResponse(
+  IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,

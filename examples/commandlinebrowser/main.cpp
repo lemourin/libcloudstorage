@@ -75,7 +75,7 @@ int main(int, char**) {
   std::string command_line;
   ICloudProvider::Pointer current_provider;
   IItem::Pointer current_directory;
-  std::vector<IItem::Pointer> directory_stack;
+  IItem::List directory_stack;
   std::string prompt = "/";
   while (std::cout << prompt << ": " && std::getline(std::cin, command_line)) {
     std::stringstream line(command_line);

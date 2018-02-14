@@ -140,7 +140,7 @@ void CloudContext::loadCachedDirectories() {
     QJsonObject json = QJsonDocument::fromBinaryData(file.readAll()).object();
     for (auto directory : json["directory"].toArray()) {
       auto json = directory.toObject();
-      std::vector<IItem::Pointer> items;
+      IItem::List items;
       for (auto item : json["list"].toArray()) {
         try {
           items.push_back(IItem::fromString(item.toString().toStdString()));
@@ -327,7 +327,7 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
 }
 
 void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
-                                  const std::vector<IItem::Pointer>& lst) {
+                                  const IItem::List& lst) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::string> data;
@@ -339,8 +339,7 @@ void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
   });
 }
 
-std::vector<IItem::Pointer> CloudContext::cachedDirectory(
-    ListDirectoryCacheKey key) {
+IItem::List CloudContext::cachedDirectory(ListDirectoryCacheKey key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = list_directory_cache_.find(key);
   if (it == std::end(list_directory_cache_))

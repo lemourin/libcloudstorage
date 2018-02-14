@@ -147,8 +147,7 @@ class CloudProviderTest : public ::testing::Test {
     }
   }
 
-  static std::vector<std::string> filename(
-      const std::vector<IItem::Pointer>& lst) {
+  static std::vector<std::string> filename(const IItem::List& lst) {
     std::vector<std::string> result;
     for (auto p : lst) result.push_back(p->filename());
     std::sort(result.begin(), result.end());

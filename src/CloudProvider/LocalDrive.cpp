@@ -63,11 +63,11 @@ fs::path from_string(const std::string &string) {
   return fs::path(string, std::codecvt_utf8<wchar_t>());
 }
 
-void list_directory(
-    const LocalDrive &p, IItem::Pointer item,
-    std::function<void(EitherError<std::vector<IItem::Pointer>>)> done,
-    std::function<void(IItem::Pointer)> received_item = [](IItem::Pointer) {}) {
-  std::vector<IItem::Pointer> vector;
+void list_directory(const LocalDrive &p, IItem::Pointer item,
+                    std::function<void(EitherError<IItem::List>)> done,
+                    std::function<void(IItem::Pointer)> received_item =
+                        [](IItem::Pointer) {}) {
+  IItem::List result;
   error_code ec;
   auto directory = fs::directory_iterator(p.path(item), ec);
   if (ec) return done(Error{ec.value(), ec.message()});
@@ -84,10 +84,10 @@ void list_directory(
           to_string(e.path().filename()), to_string(e.path()), size, timestamp,
           is_directory ? IItem::FileType::Directory : IItem::FileType::Unknown);
       received_item(item);
-      vector.push_back(item);
+      result.push_back(item);
     }
   }
-  done(vector);
+  done(result);
 }
 
 }  // namespace
@@ -118,7 +118,7 @@ AuthorizeRequest::Pointer LocalDrive::authorizeAsync() {
 
 LocalDrive::ListDirectoryRequest::Pointer LocalDrive::listDirectoryAsync(
     IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  using ItemList = EitherError<std::vector<IItem::Pointer>>;
+  using ItemList = EitherError<IItem::List>;
   return request<ItemList>(
       [=](ItemList e) { callback->done(e); },
       [=](Request<ItemList>::Pointer r) {
@@ -133,13 +133,12 @@ LocalDrive::listDirectoryPageAsync(IItem::Pointer item, const std::string &,
   return request<EitherError<PageData>>(
       [=](EitherError<PageData> e) { callback(e); },
       [=](Request<EitherError<PageData>>::Pointer r) {
-        list_directory(*this, item,
-                       [=](EitherError<std::vector<IItem::Pointer>> e) {
-                         if (e.left())
-                           r->done(e.left());
-                         else
-                           r->done(PageData{*e.right(), ""});
-                       });
+        list_directory(*this, item, [=](EitherError<IItem::List> e) {
+          if (e.left())
+            r->done(e.left());
+          else
+            r->done(PageData{*e.right(), ""});
+        });
       });
 }
 

@@ -63,8 +63,8 @@ class OneDrive : public CloudProvider {
   IHttpRequest::Pointer renameItemRequest(const IItem&, const std::string& name,
                                           std::ostream&) const override;
 
-  std::vector<IItem::Pointer> listDirectoryResponse(
-      const IItem&, std::istream&, std::string&) const override;
+  IItem::List listDirectoryResponse(const IItem&, std::istream&,
+                                    std::string&) const override;
   IItem::Pointer getItemDataResponse(std::istream& response) const override;
 
  private:

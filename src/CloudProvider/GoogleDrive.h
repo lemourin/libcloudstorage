@@ -71,7 +71,7 @@ class GoogleDrive : public CloudProvider {
   std::string getItemUrlResponse(const IItem& item,
                                  const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
-  std::vector<IItem::Pointer> listDirectoryResponse(
+  IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
   GeneralData getGeneralDataResponse(std::istream& response) const override;
 

@@ -231,9 +231,9 @@ class CloudProvider : public ICloudProvider,
    *
    * @return item set
    */
-  virtual std::vector<IItem::Pointer> listDirectoryResponse(
-      const IItem& directory, std::istream& response,
-      std::string& next_page_token) const;
+  virtual IItem::List listDirectoryResponse(const IItem& directory,
+                                            std::istream& response,
+                                            std::string& next_page_token) const;
 
   virtual IItem::Pointer renameItemResponse(const IItem& old_item,
                                             const std::string& name,

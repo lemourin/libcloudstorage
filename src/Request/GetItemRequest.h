@@ -37,7 +37,7 @@ class GetItemRequest : public Request<EitherError<IItem>> {
   ~GetItemRequest();
 
  private:
-  IItem::Pointer getItem(const std::vector<IItem::Pointer>& items,
+  IItem::Pointer getItem(const IItem::List& items,
                          const std::string& name) const;
   void work(IItem::Pointer item, std::string path, Callback);
 };

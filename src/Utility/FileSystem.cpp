@@ -347,8 +347,7 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
   auto nd = get(node);
   if (nd->provider() == nullptr) return cb(Error{IHttpRequest::Bad, ""});
   list_directory_async(
-      nd->provider(), nd->item(),
-      [=](EitherError<std::vector<IItem::Pointer>> e) {
+      nd->provider(), nd->item(), [=](EitherError<IItem::List> e) {
         if (auto lst = e.right()) {
           std::unordered_set<FileId> ret;
           for (auto&& i : *lst)

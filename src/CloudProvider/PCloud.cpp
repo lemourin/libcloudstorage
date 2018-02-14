@@ -200,10 +200,10 @@ IHttpRequest::Pointer PCloud::getGeneralDataRequest(std::ostream&) const {
   return http()->create(endpoint() + "/userinfo");
 }
 
-std::vector<IItem::Pointer> PCloud::listDirectoryResponse(
-    const IItem&, std::istream& response, std::string&) const {
+IItem::List PCloud::listDirectoryResponse(const IItem&, std::istream& response,
+                                          std::string&) const {
   auto json = util::json::from_stream(response);
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   for (auto&& v : json["metadata"]["contents"]) result.push_back(toItem(v));
   return result;
 }

@@ -59,7 +59,7 @@ class YouTube : public CloudProvider {
 
   IItem::Pointer getItemDataResponse(std::istream& response, bool audio,
                                      bool high_quality) const;
-  std::vector<IItem::Pointer> listDirectoryResponse(
+  IItem::List listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
   GeneralData getGeneralDataResponse(std::istream& response) const override;

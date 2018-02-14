@@ -367,7 +367,7 @@ IHttpRequest::Pointer AmazonS3::downloadFileRequest(const IItem& item,
   return http()->create(endpoint() + "/" + escapePath(item.id()), "GET");
 }
 
-std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
+IItem::List AmazonS3::listDirectoryResponse(
     const IItem& parent, std::istream& stream,
     std::string& next_page_token) const {
   std::stringstream sstream;
@@ -376,7 +376,7 @@ std::vector<IItem::Pointer> AmazonS3::listDirectoryResponse(
   if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
       tinyxml2::XML_SUCCESS)
     throw std::logic_error("invalid xml");
-  std::vector<IItem::Pointer> result;
+  IItem::List result;
   if (auto name_element = document.RootElement()->FirstChildElement("Name")) {
     std::string bucket = name_element->GetText();
     for (auto child = document.RootElement()->FirstChildElement("Contents");
