@@ -29,13 +29,14 @@
 
 #include "ICloudProvider.h"
 #include "IHttpServer.h"
+#include "IRequest.h"
 
 namespace cloudstorage {
 
 class IAuth {
  public:
   using Pointer = std::unique_ptr<IAuth>;
-  using CodeReceived = std::function<void(EitherError<std::string>)>;
+  using CodeReceived = GenericCallback<EitherError<std::string>>;
 
   struct Token {
     using Pointer = std::unique_ptr<Token>;
