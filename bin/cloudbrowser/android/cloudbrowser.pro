@@ -135,7 +135,10 @@ DISTFILES += \
     src/org/videolan/cloudbrowser/NotificationHelper.java \
     src/org/videolan/cloudbrowser/NotificationService.java \
     build.gradle \
-    project.properties
+    project.properties \
+    src/org/videolan/cloudbrowser/FileInput.java \
+    src/org/videolan/cloudbrowser/Utility.java \
+    src/org/videolan/cloudbrowser/FileOutput.java
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 

@@ -40,29 +40,24 @@ QString AndroidUtility::name() const { return "android"; }
 
 bool AndroidUtility::openWebPage(QString url) {
   if (intent_.isValid()) closeWebPage();
-  intent_ = QAndroidJniObject::callStaticObjectMethod(
-      "org/videolan/cloudbrowser/CloudBrowser", "openWebPage",
-      "(Ljava/lang/String;)Landroid/content/Intent;",
+  intent_ = QtAndroid::androidActivity().callObjectMethod(
+      "openWebPage", "(Ljava/lang/String;)Landroid/content/Intent;",
       QAndroidJniObject::fromString(url).object());
   QtAndroid::startActivity(intent_, RECEIVER_CODE, &receiver_);
   return true;
 }
 
 void AndroidUtility::closeWebPage() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "closeWebPage",
-      "(Landroid/content/Intent;)V", intent_.object());
+  QtAndroid::androidActivity().callMethod<void>(
+      "closeWebPage", "(Landroid/content/Intent;)V", intent_.object());
 }
 
 void AndroidUtility::landscapeOrientation() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "setLandScapeOrientation",
-      "()V");
+  QtAndroid::androidActivity().callMethod<void>("setLandScapeOrientation");
 }
 
 void AndroidUtility::defaultOrientation() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "setDefaultOrientation", "()V");
+  QtAndroid::androidActivity().callMethod<void>("setDefaultOrientation");
 }
 
 void AndroidUtility::showPlayerNotification(bool playing, QString filename,
@@ -71,36 +66,34 @@ void AndroidUtility::showPlayerNotification(bool playing, QString filename,
       GetThumbnailRequest::thumbnail_path(filename));
   auto arg1 = QAndroidJniObject::fromString(filename);
   auto arg2 = QAndroidJniObject::fromString(title);
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/NotificationHelper", "showPlayerNotification",
+  auto notification = QtAndroid::androidContext().callObjectMethod(
+      "notification", "()Lorg/videolan/cloudbrowser/NotificationHelper;");
+  notification.callMethod<void>(
+      "showPlayerNotification",
       "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", playing,
       arg0.object(), arg1.object(), arg2.object());
 }
 
 void AndroidUtility::hidePlayerNotification() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/NotificationHelper", "hidePlayerNotification",
-      "()V");
+  auto notification = QtAndroid::androidContext().callObjectMethod(
+      "notification", "()Lorg/videolan/cloudbrowser/NotificationHelper;");
+  notification.callMethod<void>("hidePlayerNotification");
 }
 
 void AndroidUtility::enableKeepScreenOn() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "enableKeepScreenOn", "()V");
+  QtAndroid::androidActivity().callMethod<void>("enableKeepScreenOn");
 }
 
 void AndroidUtility::disableKeepScreenOn() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "disableKeepScreenOn", "()V");
+  QtAndroid::androidActivity().callMethod<void>("disableKeepScreenOn");
 }
 
 void AndroidUtility::showAd() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "showAd", "()V");
+  QtAndroid::androidActivity().callMethod<void>("showAd");
 }
 
 void AndroidUtility::hideAd() {
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "hideAd", "()V");
+  QtAndroid::androidActivity().callMethod<void>("hideAd");
 }
 
 void AndroidUtility::ResultReceiver::handleActivityResult(

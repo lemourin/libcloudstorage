@@ -7,10 +7,7 @@ import android.content.Intent;
 
 public class AuthView extends Activity {
     private boolean m_intent_run = false;
-
-    public AuthView() {
-        CloudBrowser.m_auth_view = this;
-    }
+    public static AuthView m_current;
 
     @Override
     protected void onResume() {
@@ -20,6 +17,8 @@ public class AuthView extends Activity {
         CharSequence sequence = intent_extras == null ?
             null : intent_extras.getCharSequence("address");
         String url = sequence == null ? null : sequence.toString();
+
+        m_current = this;
 
         if (!m_intent_run) {
             m_intent_run = true;

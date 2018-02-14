@@ -5,17 +5,17 @@
 #ifdef __ANDROID__
 
 #include <QAndroidJniEnvironment>
+#include <QtAndroid>
 
 AndroidFile::AndroidFile(QString uri) : uri_(uri) {}
 
 bool AndroidFile::open(QIODevice::OpenMode mode) {
   QAndroidJniEnvironment env;
   if (mode == QIODevice::WriteOnly) {
-    file_ = QAndroidJniObject::callStaticObjectMethod(
-        "org/videolan/cloudbrowser/CloudBrowser", "openWrite",
-        "(Ljava/lang/String;)Lorg/videolan/cloudbrowser/"
-        "CloudBrowser$FileOutput;",
-        QAndroidJniObject::fromString(uri_).object());
+    file_ = QAndroidJniObject("org/videolan/cloudbrowser/FileOutput",
+                              "(Landroid/content/Context;Ljava/lang/String;)V",
+                              QtAndroid::androidActivity().object(),
+                              QAndroidJniObject::fromString(uri_).object());
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
       env->ExceptionClear();
@@ -24,11 +24,10 @@ bool AndroidFile::open(QIODevice::OpenMode mode) {
     setOpenMode(mode);
     return true;
   } else if (mode == QIODevice::ReadOnly) {
-    file_ = QAndroidJniObject::callStaticObjectMethod(
-        "org/videolan/cloudbrowser/CloudBrowser", "openRead",
-        "(Ljava/lang/String;)Lorg/videolan/cloudbrowser/"
-        "CloudBrowser$FileInput;",
-        QAndroidJniObject::fromString(uri_).object());
+    file_ = QAndroidJniObject("org/videolan/cloudbrowser/FileInput",
+                              "(Landroid/content/Context;Ljava/lang/String;)V",
+                              QtAndroid::androidActivity().object(),
+                              QAndroidJniObject::fromString(uri_).object());
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
       env->ExceptionClear();
@@ -42,25 +41,13 @@ bool AndroidFile::open(QIODevice::OpenMode mode) {
 
 void AndroidFile::close() {
   if (!isOpen()) return;
-  if (openMode() == QIODevice::WriteOnly)
-    QAndroidJniObject::callStaticMethod<void>(
-        "org/videolan/cloudbrowser/CloudBrowser", "closeWrite",
-        "(Lorg/videolan/cloudbrowser/CloudBrowser$FileOutput;)V",
-        file_.object());
-  else
-    QAndroidJniObject::callStaticMethod<void>(
-        "org/videolan/cloudbrowser/CloudBrowser", "closeRead",
-        "(Lorg/videolan/cloudbrowser/CloudBrowser$FileInput;)V",
-        file_.object());
+  file_.callMethod<void>("close");
   setOpenMode(NotOpen);
 }
 
 qint64 AndroidFile::readData(char *buffer, qint64 size) {
   if (!isReadable()) return 0;
-  auto d = QAndroidJniObject::callStaticObjectMethod(
-      "org/videolan/cloudbrowser/CloudBrowser", "read",
-      "(Lorg/videolan/cloudbrowser/CloudBrowser$FileInput;I)[B", file_.object(),
-      static_cast<int>(size));
+  auto d = file_.callObjectMethod("read", "(I)[B", static_cast<int>(size));
   QAndroidJniEnvironment env;
   auto ret = env->GetArrayLength(d.object<jbyteArray>());
   env->GetByteArrayRegion(d.object<jbyteArray>(), 0, ret,
@@ -70,16 +57,12 @@ qint64 AndroidFile::readData(char *buffer, qint64 size) {
 
 qint64 AndroidFile::size() const {
   if (!isReadable()) return 0;
-  return QAndroidJniObject::callStaticMethod<jlong>(
-      "org/videolan/cloudbrowser/CloudBrowser", "size",
-      "(Lorg/videolan/cloudbrowser/CloudBrowser$FileInput;)J", file_.object());
+  return file_.callMethod<jlong>("size", "()J");
 }
 
 bool AndroidFile::reset() {
   if (!isOpen()) return false;
-  return QAndroidJniObject::callStaticMethod<jboolean>(
-      "org/videolan/cloudbrowser/CloudBrowser", "reset",
-      "(Lorg/videolan/cloudbrowser/CloudBrowser$FileInput;)Z", file_.object());
+  return file_.callMethod<jboolean>("reset", "()Z");
 }
 
 qint64 AndroidFile::writeData(const char *data, qint64 max_size) {
@@ -89,10 +72,7 @@ qint64 AndroidFile::writeData(const char *data, qint64 max_size) {
   env->SetByteArrayRegion(array, 0, max_size,
                           reinterpret_cast<const jbyte *>(data));
   auto d = QAndroidJniObject::fromLocalRef(array);
-  QAndroidJniObject::callStaticMethod<void>(
-      "org/videolan/cloudbrowser/CloudBrowser", "write",
-      "(Lorg/videolan/cloudbrowser/CloudBrowser$FileOutput;[B)V",
-      file_.object(), d.object());
+  file_.callMethod<void>("write", "([B)V", d.object());
   if (env->ExceptionCheck()) {
     env->ExceptionDescribe();
     env->ExceptionClear();

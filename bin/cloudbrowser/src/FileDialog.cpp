@@ -35,12 +35,12 @@ void FileDialog::open() {
   QAndroidJniObject intent;
   if (!selectExisting()) {
     intent = QAndroidJniObject::callStaticObjectMethod(
-        "org/videolan/cloudbrowser/CloudBrowser", "createFileDialog",
+        "org/videolan/cloudbrowser/Utility", "createFileDialog",
         "(Ljava/lang/String;)Landroid/content/Intent;",
         QAndroidJniObject::fromString(filename()).object());
   } else {
     intent = QAndroidJniObject::callStaticObjectMethod(
-        "org/videolan/cloudbrowser/CloudBrowser", "openFileDialog",
+        "org/videolan/cloudbrowser/Utility", "openFileDialog",
         "()Landroid/content/Intent;");
   }
   QtAndroid::startActivity(intent, REQUEST_CODE, &result_receiver_);
@@ -53,9 +53,8 @@ void FileDialog::ActivityReceiver::handleActivityResult(
     int request_code, int result_code, const QAndroidJniObject &data) {
   if (request_code != REQUEST_CODE || result_code != -1) return;
   auto uri = data.callObjectMethod("getData", "()Landroid/net/Uri;");
-  auto filename = QAndroidJniObject::callStaticObjectMethod(
-      "org/videolan/cloudbrowser/CloudBrowser", "filename",
-      "(Landroid/net/Uri;)Ljava/lang/String;", uri.object());
+  auto filename = QtAndroid::androidActivity().callObjectMethod(
+      "filename", "(Landroid/net/Uri;)Ljava/lang/String;", uri.object());
   file_dialog_->setFilename(filename.toString());
   file_dialog_->setUrl(uri.toString());
   emit file_dialog_->ready();
