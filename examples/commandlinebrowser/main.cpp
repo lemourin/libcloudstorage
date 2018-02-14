@@ -53,7 +53,7 @@ class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
 
 IItem::Pointer getChild(ICloudProvider* provider, IItem::Pointer item,
                         const std::string& filename) {
-  auto lst = provider->listDirectoryAsync(item)->result().right();
+  auto lst = provider->listDirectorySimpleAsync(item)->result().right();
   if (!lst) return nullptr;
   for (auto i : *lst)
     if (i->filename() == filename) return i;
@@ -87,7 +87,7 @@ int main(int, char**) {
         for (auto p : ICloudStorage::create()->providers())
           std::cout << p << "\n";
       } else {
-        auto lst = current_provider->listDirectoryAsync(current_directory)
+        auto lst = current_provider->listDirectorySimpleAsync(current_directory)
                        ->result()
                        .right();
         if (lst)
