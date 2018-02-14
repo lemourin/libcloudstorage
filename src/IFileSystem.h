@@ -16,18 +16,13 @@ class IFileSystem {
 
   using FileId = uint64_t;
   using Pointer = std::unique_ptr<IFileSystem>;
-  using ListDirectoryCallback =
-      std::function<void(EitherError<std::vector<std::shared_ptr<INode>>>)>;
-  using GetItemCallback = std::function<void(EitherError<INode>)>;
-  using DownloadItemCallback = std::function<void(EitherError<std::string>)>;
-  using WriteDataCallback = std::function<void(EitherError<uint32_t>)>;
-  using DataSynchronizedCallback = std::function<void(EitherError<void>)>;
 
   static constexpr int NotEmpty = 1001;
 
   class INode {
    public:
     using Pointer = std::shared_ptr<INode>;
+    using List = std::vector<std::shared_ptr<INode>>;
 
     virtual ~INode() = default;
 
@@ -37,6 +32,12 @@ class IFileSystem {
     virtual std::string filename() const = 0;
     virtual IItem::FileType type() const = 0;
   };
+
+  using ListDirectoryCallback = std::function<void(EitherError<INode::List>)>;
+  using GetItemCallback = std::function<void(EitherError<INode>)>;
+  using DownloadItemCallback = std::function<void(EitherError<std::string>)>;
+  using WriteDataCallback = std::function<void(EitherError<uint32_t>)>;
+  using DataSynchronizedCallback = std::function<void(EitherError<void>)>;
 
   struct ProviderEntry {
     std::string label_;

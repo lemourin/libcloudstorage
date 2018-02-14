@@ -228,7 +228,7 @@ FileSystem::Node::Pointer FileSystem::get(FileId node) {
 
 void FileSystem::lookup(FileId parent_node, const std::string& name,
                         GetItemCallback cb) {
-  readdir(parent_node, [=](EitherError<std::vector<INode::Pointer>> e) {
+  readdir(parent_node, [=](EitherError<INode::List> e) {
     if (auto lst = e.right()) {
       for (auto&& i : *lst)
         if (this->sanitize(i->filename()) == name) return cb(i);
@@ -338,7 +338,7 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
              CACHE_DIRECTORY_DURATION)) {
       auto it = node_directory_.find(node);
       if (it != std::end(node_directory_)) {
-        std::vector<INode::Pointer> ret;
+        INode::List ret;
         for (auto&& r : it->second) ret.push_back(get(r));
         return cb(ret);
       }
@@ -357,12 +357,12 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
             node_directory_[node] = ret;
             node_timestamp_[node] = std::chrono::system_clock::now();
           }
-          std::vector<INode::Pointer> nodes;
+          INode::List nodes;
           for (auto&& r : ret) nodes.push_back(this->get(r));
           cb(nodes);
         } else {
           auto item = auth_item(nd->provider()->authorizeLibraryUrl());
-          cb(std::vector<INode::Pointer>(
+          cb(INode::List(
               1, std::make_shared<Node>(nd->provider(), item, node,
                                         auth_node_[nd->provider()->name()],
                                         item->size())));
@@ -532,13 +532,11 @@ void FileSystem::remove(FileId parent, const char* name,
     if (e.left()) return callback(e.left());
     auto node = std::static_pointer_cast<Node>(e.right());
     if (node->type() == IItem::FileType::Directory) {
-      this->readdir(node->inode(),
-                    [=](EitherError<std::vector<INode::Pointer>> e) {
-                      if (e.left()) return callback(e.left());
-                      if (!e.right()->empty())
-                        return callback(Error{NotEmpty, "not empty"});
-                      remove_file(node);
-                    });
+      this->readdir(node->inode(), [=](EitherError<INode::List> e) {
+        if (e.left()) return callback(e.left());
+        if (!e.right()->empty()) return callback(Error{NotEmpty, "not empty"});
+        remove_file(node);
+      });
     } else
       remove_file(node);
   });
