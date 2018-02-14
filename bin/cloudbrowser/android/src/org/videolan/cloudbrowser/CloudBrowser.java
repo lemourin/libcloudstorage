@@ -21,7 +21,6 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdListener;
 
 public class CloudBrowser extends QtActivity {
-    private AuthView m_auth_view;
     private NotificationHelper m_notification_helper;
     private ViewGroup m_view_group;
     private RelativeLayout m_ad_view;
