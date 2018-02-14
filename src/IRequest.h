@@ -230,6 +230,12 @@ class GenericCallback {
 
   void operator()(Arguments... d) const { functor_->done(d...); }
 
+  template <class Callback, class... CallbackArguments>
+  static typename IGenericCallback<Arguments...>::Pointer make(
+      CallbackArguments&&... args) {
+    return std::make_shared<Callback>(std::forward<CallbackArguments>(args)...);
+  }
+
  private:
   class Functor : public IGenericCallback<Arguments...> {
    public:
