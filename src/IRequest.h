@@ -226,6 +226,8 @@ class GenericCallback {
   GenericCallback(typename IGenericCallback<Arguments...>::Pointer functor)
       : functor_(functor) {}
 
+  GenericCallback(std::nullptr_t) {}
+
   operator bool() const { return static_cast<bool>(functor_); }
 
   void operator()(Arguments... d) const { functor_->done(d...); }

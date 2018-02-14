@@ -47,7 +47,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
   const char* error = request.get(data_.error_parameter_name_);
   if (accepted) {
     std::unique_lock<std::mutex> lock(lock_);
-    auto callback = std::move(data_.callback_);
+    auto callback = util::exchange(data_.callback_, nullptr);
     lock.unlock();
     if (callback) {
       if (std::string(accepted) == "true" && code) {
