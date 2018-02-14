@@ -26,17 +26,20 @@
 #include <functional>
 #include <memory>
 
+#include "IRequest.h"
+
 namespace cloudstorage {
 
 class IThreadPool {
  public:
   using Pointer = std::unique_ptr<IThreadPool>;
+  using Task = GenericCallback<>;
 
   virtual ~IThreadPool() = default;
 
   static Pointer create(uint32_t thread_count);
 
-  virtual void schedule(std::function<void()> f) = 0;
+  virtual void schedule(const Task& f) = 0;
 };
 
 }  // namespace cloudstorage

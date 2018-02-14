@@ -35,7 +35,7 @@ class ThreadPool : public IThreadPool {
  public:
   ThreadPool(uint32_t thread_count);
 
-  void schedule(std::function<void()> f) override;
+  void schedule(const Task& f) override;
 
  private:
   struct Worker {

@@ -29,6 +29,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "IRequest.h"
+
 namespace cloudstorage {
 
 class IHttpRequest {
@@ -38,7 +40,7 @@ class IHttpRequest {
   using Pointer = std::shared_ptr<IHttpRequest>;
   using GetParameters = std::unordered_map<std::string, std::string>;
   using HeaderParameters = std::unordered_map<std::string, std::string>;
-  using CompleteCallback = std::function<void(Response)>;
+  using CompleteCallback = GenericCallback<Response>;
 
   struct Response {
     int http_code_;

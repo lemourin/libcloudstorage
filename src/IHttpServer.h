@@ -28,6 +28,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "IRequest.h"
+
 namespace cloudstorage {
 
 class IHttpServer {
@@ -42,7 +44,7 @@ class IHttpServer {
    public:
     using Pointer = std::unique_ptr<IResponse>;
     using Headers = std::unordered_map<std::string, std::string>;
-    using CompletedCallback = std::function<void()>;
+    using CompletedCallback = GenericCallback<>;
 
     static constexpr int UnknownSize = -1;
 

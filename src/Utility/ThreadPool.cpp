@@ -33,7 +33,7 @@ IThreadPool::Pointer IThreadPool::create(uint32_t cnt) {
 
 ThreadPool::ThreadPool(uint32_t thread_count) : worker_(thread_count) {}
 
-void ThreadPool::schedule(std::function<void()> f) {
+void ThreadPool::schedule(const Task& f) {
   auto it = std::min_element(worker_.begin(), worker_.end(),
                              [](const Worker& w1, const Worker& w2) {
                                std::unique_lock<std::mutex> l1(w1.mutex_);
