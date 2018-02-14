@@ -35,7 +35,9 @@ LIBS += \
     -L$$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/ \
     -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
     -lboost_filesystem -lboost_system \
-    -lVLCQtQml -lVLCQtCore -lvlcjni
+    $$ANDROID_TOOLCHAIN_PATH/lib/libVLCQtQml.a \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libVLCQtCore.a \
+    -lvlcjni
 
 HEADERS += \
     ../src/CloudContext.h \
