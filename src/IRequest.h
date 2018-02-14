@@ -92,10 +92,6 @@ class IRequest : public IGenericRequest {
  public:
   using Pointer = std::unique_ptr<IRequest>;
 
-  virtual void finish() = 0;
-
-  virtual void cancel() = 0;
-
   /**
    * Retrieves the result, blocks if it wasn't computed just yet.
    * @return result
