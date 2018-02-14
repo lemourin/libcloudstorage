@@ -33,11 +33,11 @@ class IFileSystem {
     virtual IItem::FileType type() const = 0;
   };
 
-  using ListDirectoryCallback = std::function<void(EitherError<INode::List>)>;
-  using GetItemCallback = std::function<void(EitherError<INode>)>;
-  using DownloadItemCallback = std::function<void(EitherError<std::string>)>;
-  using WriteDataCallback = std::function<void(EitherError<uint32_t>)>;
-  using DataSynchronizedCallback = std::function<void(EitherError<void>)>;
+  using ListDirectoryCallback = GenericCallback<EitherError<INode::List>>;
+  using GetItemCallback = GenericCallback<EitherError<INode>>;
+  using DownloadItemCallback = GenericCallback<EitherError<std::string>>;
+  using WriteDataCallback = GenericCallback<EitherError<uint32_t>>;
+  using DataSynchronizedCallback = GenericCallback<EitherError<void>>;
 
   struct ProviderEntry {
     std::string label_;
