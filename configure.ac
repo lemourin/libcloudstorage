@@ -108,6 +108,9 @@ case "${host_os}" in
   *mingw32*)
     SYS=mingw32
     ;;
+  *android*)
+    SYS=android
+    ;;
   *)
     SYS=linux
     ;;
@@ -136,6 +139,7 @@ AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 
 HAVE_QT=0
 HAVE_QTWEBVIEW=0
+HAVE_QTANDROID=0
 HAVE_THUMBNAILER=0
 HAVE_VLC_QT=0
 HAVE_CLOUDBROWSER=0
@@ -151,7 +155,19 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
       AC_PATH_PROGS(MOC, [moc-qt5 moc], moc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
       AC_PATH_PROGS(RCC, [rcc-qt5 rcc], rcc, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
       AC_PATH_PROGS(UIC, [uic-qt5 uic], uic, ["${QT_HOST_PATH}" "${QT_PATH}/bin"])
-      AC_DEFINE(WITH_QT)
+      AS_IF([test "${SYS}" = "android"], [
+        PKG_CHECK_MODULES([qtandroid], [Qt5AndroidExtras], [
+          HAVE_QTANDROID=1
+          AC_DEFINE(WITH_QT)
+        ], [
+          HAVE_QT=0
+          AS_IF([test "x$with_cloudbrowser" = "xyes"], [
+            AC_MSG_ERROR([cloudbrowser requires qt android extras])
+          ])
+        ])
+      ], [
+        AC_DEFINE(WITH_QT)
+      ])
     ], [
       HAVE_QT=0
       AS_IF([test "x$with_cloudbrowser" = "xyes"], [AC_MSG_ERROR([cloudbrowser requires qt])])
@@ -177,6 +193,7 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
 ])
 
 AM_CONDITIONAL([WITH_QT], [test "$HAVE_QT" -eq 1])
+AM_CONDITIONAL([WITH_QTANDROID], [test "$HAVE_QTANDROID" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBVIEW], [test "$HAVE_QTWEBVIEW" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 AM_CONDITIONAL([WITH_VLC_QT], [test "$HAVE_VLC_QT" -eq 1])
