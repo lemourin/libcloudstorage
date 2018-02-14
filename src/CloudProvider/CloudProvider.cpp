@@ -476,10 +476,11 @@ CloudProvider::listDirectoryPageAsync(IItem::Pointer directory,
       ->run();
 }
 
-ICloudProvider::ListDirectoryRequest::Pointer CloudProvider::listDirectoryAsync(
-    IItem::Pointer item, ListDirectoryCallback callback) {
+ICloudProvider::ListDirectoryRequest::Pointer
+CloudProvider::listDirectorySimpleAsync(IItem::Pointer item,
+                                        ListDirectoryCallback callback) {
   return listDirectoryAsync(
-      item, util::make_unique<::ListDirectoryCallback>(callback));
+      item, std::make_shared<::ListDirectoryCallback>(callback));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::downloadFileAsync(

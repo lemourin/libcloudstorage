@@ -648,7 +648,7 @@ void FileSystem::list_directory_async(std::shared_ptr<ICloudProvider> p,
                                       IItem::Pointer i,
                                       cloudstorage::ListDirectoryCallback cb) {
   if (!p || !i) return cb(Error{IHttpRequest::ServiceUnavailable, ""});
-  add({p, p->listDirectoryAsync(i, cb)});
+  add({p, p->listDirectorySimpleAsync(i, cb)});
 }
 
 void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,

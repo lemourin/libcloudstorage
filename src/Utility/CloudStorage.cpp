@@ -138,9 +138,9 @@ class CloudProviderWrapper : public ICloudProvider {
     return p_->listDirectoryPageAsync(directory, token, cb);
   }
 
-  ListDirectoryRequest::Pointer listDirectoryAsync(
+  ListDirectoryRequest::Pointer listDirectorySimpleAsync(
       IItem::Pointer item, ListDirectoryCallback callback) override {
-    return p_->listDirectoryAsync(item, callback);
+    return p_->listDirectorySimpleAsync(item, callback);
   }
 
   DownloadFileRequest::Pointer downloadFileAsync(

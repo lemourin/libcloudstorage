@@ -410,10 +410,9 @@ class ICloudProvider {
    * @param callback called when the request is finished
    * @return object representing the pending request
    */
-  virtual ListDirectoryRequest::Pointer listDirectoryAsync(
+  virtual ListDirectoryRequest::Pointer listDirectorySimpleAsync(
       IItem::Pointer item,
-      ListDirectoryCallback callback =
-          [](EitherError<std::vector<IItem::Pointer>>) {}) = 0;
+      ListDirectoryCallback callback = [](EitherError<IItem::List>) {}) = 0;
 
   /**
    * Simplified version of downloadFileAsync.

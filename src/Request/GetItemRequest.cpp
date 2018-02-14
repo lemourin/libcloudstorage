@@ -58,8 +58,8 @@ void GetItemRequest::work(IItem::Pointer item, std::string p,
                          ? ""
                          : std::string(path.begin() + it, path.end());
   auto request = this->shared_from_this();
-  subrequest(provider()->listDirectoryAsync(
-      item, [=](EitherError<std::vector<IItem::Pointer>> e) {
+  subrequest(provider()->listDirectorySimpleAsync(
+      item, [=](EitherError<IItem::List> e) {
         if (e.left())
           request->done(e.left());
         else

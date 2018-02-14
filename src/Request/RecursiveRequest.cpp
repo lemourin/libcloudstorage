@@ -42,8 +42,8 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
   if (item->type() != IItem::FileType::Directory)
     visitor(r, item, callback);
   else
-    r->subrequest(r->provider()->listDirectoryAsync(
-        item, [=](EitherError<std::vector<IItem::Pointer>> lst) {
+    r->subrequest(r->provider()->listDirectorySimpleAsync(
+        item, [=](EitherError<IItem::List> lst) {
           if (lst.left()) return callback(lst.left());
           visit(r, *lst.right(),
                 [=](T e) {

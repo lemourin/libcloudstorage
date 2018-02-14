@@ -212,20 +212,53 @@ class Either<Left, void> {
   std::shared_ptr<Left> left_;
 };
 
-using ExchangeCodeCallback = std::function<void(EitherError<Token>)>;
-using GetItemUrlCallback = std::function<void(EitherError<std::string>)>;
-using GetItemCallback = std::function<void(EitherError<IItem>)>;
-using GetItemDataCallback = std::function<void(EitherError<IItem>)>;
-using DeleteItemCallback = std::function<void(EitherError<void>)>;
-using CreateDirectoryCallback = std::function<void(EitherError<IItem>)>;
-using MoveItemCallback = std::function<void(EitherError<IItem>)>;
-using RenameItemCallback = std::function<void(EitherError<IItem>)>;
-using ListDirectoryPageCallback = std::function<void(EitherError<PageData>)>;
-using ListDirectoryCallback = std::function<void(EitherError<IItem::List>)>;
-using DownloadFileCallback = std::function<void(EitherError<void>)>;
-using UploadFileCallback = std::function<void(EitherError<IItem>)>;
-using GetThumbnailCallback = std::function<void(EitherError<void>)>;
-using GeneralDataCallback = std::function<void(EitherError<GeneralData>)>;
+template <class... Arguments>
+class GenericCallback {
+ public:
+  GenericCallback() {}
+
+  GenericCallback(const GenericCallback& d) : functor_(d.functor_) {}
+
+  template <class Function>
+  GenericCallback(const Function& callback)
+      : functor_(std::make_shared<Functor>(callback)) {}
+
+  GenericCallback(typename IGenericCallback<Arguments...>::Pointer functor)
+      : functor_(functor) {}
+
+  operator bool() const { return functor_; }
+
+  void operator()(Arguments... d) const { functor_->done(d...); }
+
+ private:
+  class Functor : public IGenericCallback<Arguments...> {
+   public:
+    Functor(const std::function<void(Arguments...)> callback)
+        : callback_(callback) {}
+
+    void done(Arguments... args) override { callback_(args...); }
+
+   private:
+    std::function<void(Arguments...)> callback_;
+  };
+
+  typename IGenericCallback<Arguments...>::Pointer functor_;
+};
+
+using ExchangeCodeCallback = GenericCallback<EitherError<Token>>;
+using GetItemUrlCallback = GenericCallback<EitherError<std::string>>;
+using GetItemCallback = GenericCallback<EitherError<IItem>>;
+using GetItemDataCallback = GenericCallback<EitherError<IItem>>;
+using DeleteItemCallback = GenericCallback<EitherError<void>>;
+using CreateDirectoryCallback = GenericCallback<EitherError<IItem>>;
+using MoveItemCallback = GenericCallback<EitherError<IItem>>;
+using RenameItemCallback = GenericCallback<EitherError<IItem>>;
+using ListDirectoryPageCallback = GenericCallback<EitherError<PageData>>;
+using ListDirectoryCallback = GenericCallback<EitherError<IItem::List>>;
+using DownloadFileCallback = GenericCallback<EitherError<void>>;
+using UploadFileCallback = GenericCallback<EitherError<IItem>>;
+using GetThumbnailCallback = GenericCallback<EitherError<void>>;
+using GeneralDataCallback = GenericCallback<EitherError<GeneralData>>;
 
 }  // namespace cloudstorage
 

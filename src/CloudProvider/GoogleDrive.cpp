@@ -183,9 +183,9 @@ ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
   auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
-    r->subrequest(listDirectoryAsync(directory, [=](EitherError<
-                                                    std::vector<IItem::Pointer>>
-                                                        e) {
+    r->subrequest(listDirectorySimpleAsync(directory, [=](EitherError<
+                                                          IItem::List>
+                                                              e) {
       if (e.left()) return r->done(e.left());
       IItem::Pointer item = nullptr;
       int cnt = 0;
