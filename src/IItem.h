@@ -27,6 +27,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace cloudstorage {
 
@@ -34,6 +35,7 @@ class IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
   using TimeStamp = std::chrono::system_clock::time_point;
+  using List = std::vector<IItem::Pointer>;
 
   static constexpr size_t UnknownSize = -1;
   static const TimeStamp UnknownTimeStamp;

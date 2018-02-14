@@ -48,7 +48,7 @@ struct GeneralData {
 };
 
 struct PageData {
-  std::vector<IItem::Pointer> items_;
+  IItem::List items_;
   std::string next_token_;  // empty if no next page
 };
 
@@ -99,11 +99,20 @@ class IRequest : public IGenericRequest {
   virtual ReturnValue result() = 0;
 };
 
-class IListDirectoryCallback {
+template <class... Arguments>
+class IGenericCallback {
+ public:
+  using Pointer = std::shared_ptr<IGenericCallback>;
+
+  virtual ~IGenericCallback() = default;
+
+  virtual void done(Arguments... args) = 0;
+};
+
+class IListDirectoryCallback
+    : public IGenericCallback<EitherError<IItem::List>> {
  public:
   using Pointer = std::shared_ptr<IListDirectoryCallback>;
-
-  virtual ~IListDirectoryCallback() = default;
 
   /**
    * Called when directory's child was fetched.
@@ -111,20 +120,11 @@ class IListDirectoryCallback {
    * @param item fetched item
    */
   virtual void receivedItem(IItem::Pointer item) = 0;
-
-  /**
-   * Called when the request was successfully finished.
-   *
-   * @param result contains all retrieved children
-   */
-  virtual void done(EitherError<std::vector<IItem::Pointer>>) = 0;
 };
 
-class IDownloadFileCallback {
+class IDownloadFileCallback : public IGenericCallback<EitherError<void>> {
  public:
   using Pointer = std::shared_ptr<IDownloadFileCallback>;
-
-  virtual ~IDownloadFileCallback() = default;
 
   /**
    * Called when received a part of file.
@@ -135,11 +135,6 @@ class IDownloadFileCallback {
   virtual void receivedData(const char* data, uint32_t length) = 0;
 
   /**
-   * Called when the download has finished.
-   */
-  virtual void done(EitherError<void>) = 0;
-
-  /**
    * Called when progress has changed.
    *
    * @param total count of bytes to download
@@ -148,11 +143,9 @@ class IDownloadFileCallback {
   virtual void progress(uint64_t total, uint64_t now) = 0;
 };
 
-class IUploadFileCallback {
+class IUploadFileCallback : public IGenericCallback<EitherError<IItem>> {
  public:
   using Pointer = std::shared_ptr<IUploadFileCallback>;
-
-  virtual ~IUploadFileCallback() = default;
 
   /**
    * Called when upload starts, can be also called when retransmission is
@@ -173,11 +166,6 @@ class IUploadFileCallback {
    * @return size of currently uploaded file
    */
   virtual uint64_t size() = 0;
-
-  /**
-   * Called when the upload is finished sucessfully.
-   */
-  virtual void done(EitherError<IItem>) = 0;
 
   /**
    * Called when upload progress changed.
@@ -233,8 +221,7 @@ using CreateDirectoryCallback = std::function<void(EitherError<IItem>)>;
 using MoveItemCallback = std::function<void(EitherError<IItem>)>;
 using RenameItemCallback = std::function<void(EitherError<IItem>)>;
 using ListDirectoryPageCallback = std::function<void(EitherError<PageData>)>;
-using ListDirectoryCallback =
-    std::function<void(EitherError<std::vector<IItem::Pointer>>)>;
+using ListDirectoryCallback = std::function<void(EitherError<IItem::List>)>;
 using DownloadFileCallback = std::function<void(EitherError<void>)>;
 using UploadFileCallback = std::function<void(EitherError<IItem>)>;
 using GetThumbnailCallback = std::function<void(EitherError<void>)>;
