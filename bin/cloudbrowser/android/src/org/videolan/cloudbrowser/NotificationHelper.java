@@ -13,6 +13,7 @@ import android.os.Build;
 public class NotificationHelper {
     private Context m_context;
     private NotificationManager m_notification_manager;
+    private Receiver m_receiver;
 
     private static final String ActionPlay = "PLAY";
     private static final String ActionPause = "PAUSE";
@@ -31,11 +32,12 @@ public class NotificationHelper {
         m_context = context;
         m_notification_manager =
             (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        m_receiver = new Receiver();
         final IntentFilter filter = new IntentFilter();
         filter.addAction(ActionPlay);
         filter.addAction(ActionPause);
         filter.addAction(ActionNext);
-        context.registerReceiver(new Receiver(), filter);
+        context.registerReceiver(m_receiver, filter);
         hidePlayerNotification();
 
         m_context.startService(
@@ -44,6 +46,7 @@ public class NotificationHelper {
     }
 
     public void release() {
+        m_context.unregisterReceiver(m_receiver);
         hidePlayerNotification();
     }
 
