@@ -148,9 +148,10 @@ Kirigami.ScrollablePage {
 
   Kirigami.OverlaySheet {
     id: file_info_sheet
+    topPadding: 0
     Item {
       implicitWidth: Math.min(page.width * 0.8, 400)
-      implicitHeight: childrenRect.height - 50
+      implicitHeight: childrenRect.height
       Text {
         id: file_name
         width: parent.width
