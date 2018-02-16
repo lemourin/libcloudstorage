@@ -44,6 +44,12 @@ Kirigami.Page {
       audio_player.item.pause();
     }
   }
+  onBackRequested: {
+    if (pageStack.currentIndex > 0) {
+      pageStack.currentIndex--;
+      event.accepted = true;
+    }
+  }
   Component.onCompleted: {
     root.player_count++;
     update_notification();

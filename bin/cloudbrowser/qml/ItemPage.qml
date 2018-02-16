@@ -25,6 +25,13 @@ Kirigami.ScrollablePage {
     }
   }
 
+  onBackRequested: {
+    if (pageStack.currentIndex > 0) {
+      pageStack.currentIndex--;
+      event.accepted = true;
+    }
+  }
+
   function playable_type(type) {
     return type === "audio" || type === "video" || type === "image";
   }
