@@ -24,20 +24,15 @@ std::unordered_map<int, std::unordered_set<AndroidUtility::IResultListener *>>
 }  // namespace
 
 extern "C" {
-JNIEXPORT void JNICALL
-Java_org_videolan_cloudbrowser_NotificationHelper_callback(JNIEnv *env,
-                                                           jclass *,
-                                                           jstring action) {
+JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onActionRequested(
+    JNIEnv *env, jclass *, jstring action) {
   const char *str = env->GetStringUTFChars(action, nullptr);
   emit android->notify(str);
   env->ReleaseStringUTFChars(action, str);
 }
 
-JNIEXPORT void JNICALL
-Java_org_videolan_cloudbrowser_CloudBrowser_onRequestResult(JNIEnv *, jobject *,
-                                                            jint request,
-                                                            jint result,
-                                                            jobject data) {
+JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onRequestResult(
+    JNIEnv *, jclass *, jint request, jint result, jobject data) {
   std::unique_lock<std::mutex> lock(mutex);
   auto cb = result_listener.find(request);
   if (cb != result_listener.end()) {

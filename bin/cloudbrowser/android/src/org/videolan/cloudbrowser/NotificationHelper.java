@@ -22,11 +22,9 @@ public class NotificationHelper {
 
     private static class Receiver extends BroadcastReceiver {
         public void onReceive(Context ctx, Intent intent) {
-            callback(intent.getAction());
+            Utility.onActionRequested(intent.getAction());
         }
     }
-
-    public static native void callback(String action);
 
     public NotificationHelper(Context context) {
         m_context = context;

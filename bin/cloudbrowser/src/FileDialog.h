@@ -57,7 +57,7 @@ class FileDialog : public IFileDialog {
    public:
     ActivityReceiver(FileDialog*);
     void done(int request_code, int result_code,
-                              const QAndroidJniObject& data) override;
+              const QAndroidJniObject& data) override;
 
    private:
     FileDialog* file_dialog_;

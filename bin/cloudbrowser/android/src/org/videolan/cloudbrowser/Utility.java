@@ -4,6 +4,9 @@ import android.net.Uri;
 import android.content.Intent;
 
 public class Utility {
+    public static native void onActionRequested(String action);
+    public static native void onRequestResult(int request, int result, Intent data);
+
     public static Uri stringToUri(String uri) {
         String basename = uri.substring(0, uri.lastIndexOf('/') + 1);
         String filename = uri.substring(uri.lastIndexOf('/') + 1);

@@ -26,8 +26,6 @@ public class CloudBrowser extends QtActivity {
     private RelativeLayout m_ad_view;
     private boolean m_ad_view_visible = false;
 
-    private native void onRequestResult(int request, int result, Intent data);
-
     private void updateAdView() {
         if (m_ad_view != null && m_view_group != null)
             m_view_group.removeView(m_ad_view);
@@ -57,14 +55,14 @@ public class CloudBrowser extends QtActivity {
             public void onAdLoaded() {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        NotificationHelper.callback("SHOW_AD");
+                        Utility.onActionRequested("SHOW_AD");
                         attach();
                     }
                 });
             }
 
             public void onAdFailedToLoad(int error) {
-                NotificationHelper.callback("HIDE_AD");
+                Utility.onActionRequested("HIDE_AD");
             }
         });
         ad.loadAd(new AdRequest.Builder().build());
@@ -93,7 +91,7 @@ public class CloudBrowser extends QtActivity {
     @Override
     public void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        onRequestResult(request, result, data);
+        Utility.onRequestResult(request, result, data);
     }
 
     @Override
