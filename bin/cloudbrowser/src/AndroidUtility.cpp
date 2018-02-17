@@ -7,7 +7,7 @@
 #include <QDebug>
 #include <QIcon>
 #include <QUrl>
-#include <QtAndroid>
+#include <set>
 
 #include "CloudContext.h"
 #include "Request/GetThumbnail.h"
@@ -17,6 +17,10 @@ const int RECEIVER_CODE = 43;
 
 namespace {
 AndroidUtility *android = nullptr;
+QAndroidJniObject activity;
+std::mutex mutex;
+std::unordered_map<int, std::unordered_set<AndroidUtility::IResultListener *>>
+    result_listener;
 }  // namespace
 
 extern "C" {
@@ -27,6 +31,25 @@ Java_org_videolan_cloudbrowser_NotificationHelper_callback(JNIEnv *env,
   const char *str = env->GetStringUTFChars(action, nullptr);
   emit android->notify(str);
   env->ReleaseStringUTFChars(action, str);
+}
+
+JNIEXPORT void JNICALL
+Java_org_videolan_cloudbrowser_CloudBrowser_onRequestResult(JNIEnv *, jobject *,
+                                                            jint request,
+                                                            jint result,
+                                                            jobject data) {
+  std::unique_lock<std::mutex> lock(mutex);
+  auto cb = result_listener.find(request);
+  if (cb != result_listener.end()) {
+    while (!cb->second.empty()) {
+      auto c = *cb->second.begin();
+      cb->second.erase(cb->second.begin());
+      lock.unlock();
+      c->done(request, result, QAndroidJniObject(data));
+      lock.lock();
+    }
+    result_listener.erase(cb);
+  }
 }
 }
 
@@ -40,24 +63,24 @@ QString AndroidUtility::name() const { return "android"; }
 
 bool AndroidUtility::openWebPage(QString url) {
   if (intent_.isValid()) closeWebPage();
-  intent_ = QtAndroid::androidActivity().callObjectMethod(
+  intent_ = activity().callObjectMethod(
       "openWebPage", "(Ljava/lang/String;)Landroid/content/Intent;",
       QAndroidJniObject::fromString(url).object());
-  QtAndroid::startActivity(intent_, RECEIVER_CODE, &receiver_);
+  startActivity(intent_, RECEIVER_CODE);
   return true;
 }
 
 void AndroidUtility::closeWebPage() {
-  QtAndroid::androidActivity().callMethod<void>(
-      "closeWebPage", "(Landroid/content/Intent;)V", intent_.object());
+  activity().callMethod<void>("closeWebPage", "(Landroid/content/Intent;)V",
+                              intent_.object());
 }
 
 void AndroidUtility::landscapeOrientation() {
-  QtAndroid::androidActivity().callMethod<void>("setLandScapeOrientation");
+  activity().callMethod<void>("setLandScapeOrientation");
 }
 
 void AndroidUtility::defaultOrientation() {
-  QtAndroid::androidActivity().callMethod<void>("setDefaultOrientation");
+  activity().callMethod<void>("setDefaultOrientation");
 }
 
 void AndroidUtility::showPlayerNotification(bool playing, QString filename,
@@ -66,7 +89,7 @@ void AndroidUtility::showPlayerNotification(bool playing, QString filename,
       GetThumbnailRequest::thumbnail_path(filename));
   auto arg1 = QAndroidJniObject::fromString(filename);
   auto arg2 = QAndroidJniObject::fromString(title);
-  auto notification = QtAndroid::androidContext().callObjectMethod(
+  auto notification = activity().callObjectMethod(
       "notification", "()Lorg/videolan/cloudbrowser/NotificationHelper;");
   notification.callMethod<void>(
       "showPlayerNotification",
@@ -75,32 +98,59 @@ void AndroidUtility::showPlayerNotification(bool playing, QString filename,
 }
 
 void AndroidUtility::hidePlayerNotification() {
-  auto notification = QtAndroid::androidContext().callObjectMethod(
+  auto notification = activity().callObjectMethod(
       "notification", "()Lorg/videolan/cloudbrowser/NotificationHelper;");
   notification.callMethod<void>("hidePlayerNotification");
 }
 
 void AndroidUtility::enableKeepScreenOn() {
-  QtAndroid::androidActivity().callMethod<void>("enableKeepScreenOn");
+  activity().callMethod<void>("enableKeepScreenOn");
 }
 
 void AndroidUtility::disableKeepScreenOn() {
-  QtAndroid::androidActivity().callMethod<void>("disableKeepScreenOn");
+  activity().callMethod<void>("disableKeepScreenOn");
 }
 
-void AndroidUtility::showAd() {
-  QtAndroid::androidActivity().callMethod<void>("showAd");
+void AndroidUtility::showAd() { activity().callMethod<void>("showAd"); }
+
+void AndroidUtility::hideAd() { activity().callMethod<void>("hideAd"); }
+
+void AndroidUtility::setActivity(const QAndroidJniObject &activity) {
+  ::activity = activity;
 }
 
-void AndroidUtility::hideAd() {
-  QtAndroid::androidActivity().callMethod<void>("hideAd");
-}
+QAndroidJniObject AndroidUtility::activity() { return ::activity; }
 
-void AndroidUtility::ResultReceiver::handleActivityResult(
-    int, int, const QAndroidJniObject &) {}
+void AndroidUtility::startActivity(const QAndroidJniObject &intent,
+                                   int request_code,
+                                   const IResultListener *listener) {
+  if (listener) {
+    listener->code_ = request_code;
+    std::unique_lock<std::mutex> lock(mutex);
+    result_listener[request_code].insert(
+        const_cast<IResultListener *>(listener));
+    lock.unlock();
+    activity().callMethod<void>("startActivityForResult",
+                                "(Landroid/content/Intent;I)V", intent.object(),
+                                request_code);
+  } else {
+    activity().callMethod<void>("startActivity", "(Landroid/content/Intent;)V",
+                                intent.object());
+  }
+}
 
 IPlatformUtility::Pointer IPlatformUtility::create() {
   return cloudstorage::util::make_unique<AndroidUtility>();
+}
+
+AndroidUtility::IResultListener::~IResultListener() {
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = result_listener.find(code_);
+  if (it != result_listener.end()) {
+    auto e = it->second.find(this);
+    if (e != it->second.end()) it->second.erase(e);
+    if (it->second.empty()) result_listener.erase(it);
+  }
 }
 
 #endif  // __ANDROID__

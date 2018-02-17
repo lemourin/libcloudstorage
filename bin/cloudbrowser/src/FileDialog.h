@@ -43,9 +43,8 @@ class IFileDialog : public QObject {
 
 #ifdef __ANDROID__
 
-#include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
-#include <QtAndroid>
+#include "AndroidUtility.h"
 
 class FileDialog : public IFileDialog {
  public:
@@ -54,10 +53,10 @@ class FileDialog : public IFileDialog {
   void open() override;
 
  private:
-  class ActivityReceiver : public QAndroidActivityResultReceiver {
+  class ActivityReceiver : public AndroidUtility::IResultListener {
    public:
     ActivityReceiver(FileDialog*);
-    void handleActivityResult(int request_code, int result_code,
+    void done(int request_code, int result_code,
                               const QAndroidJniObject& data) override;
 
    private:

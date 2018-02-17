@@ -5,7 +5,7 @@
 #ifdef __ANDROID__
 
 #include <QAndroidJniEnvironment>
-#include <QtAndroid>
+#include "AndroidUtility.h"
 
 AndroidFile::AndroidFile(QString uri) : uri_(uri) {}
 
@@ -14,7 +14,7 @@ bool AndroidFile::open(QIODevice::OpenMode mode) {
   if (mode == QIODevice::WriteOnly) {
     file_ = QAndroidJniObject("org/videolan/cloudbrowser/FileOutput",
                               "(Landroid/content/Context;Ljava/lang/String;)V",
-                              QtAndroid::androidActivity().object(),
+                              AndroidUtility::activity().object(),
                               QAndroidJniObject::fromString(uri_).object());
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -26,7 +26,7 @@ bool AndroidFile::open(QIODevice::OpenMode mode) {
   } else if (mode == QIODevice::ReadOnly) {
     file_ = QAndroidJniObject("org/videolan/cloudbrowser/FileInput",
                               "(Landroid/content/Context;Ljava/lang/String;)V",
-                              QtAndroid::androidActivity().object(),
+                              AndroidUtility::activity().object(),
                               QAndroidJniObject::fromString(uri_).object());
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();

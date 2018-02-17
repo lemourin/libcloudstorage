@@ -3,13 +3,24 @@
 
 #ifdef __ANDROID__
 
-#include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
 #include <QObject>
+#include <QtAndroid>
 #include "IPlatformUtility.h"
+#include "IRequest.h"
 
 class AndroidUtility : public IPlatformUtility {
  public:
+  class IResultListener
+      : public cloudstorage::IGenericCallback<int, int,
+                                              const QAndroidJniObject&> {
+   public:
+    ~IResultListener() override;
+
+   private:
+    friend class AndroidUtility;
+    mutable int code_;
+  };
   AndroidUtility();
   ~AndroidUtility();
 
@@ -27,13 +38,14 @@ class AndroidUtility : public IPlatformUtility {
   void showAd() override;
   void hideAd() override;
 
+  static void setActivity(const QAndroidJniObject&);
+  static QAndroidJniObject activity();
+
+  static void startActivity(const QAndroidJniObject& intent, int request_code,
+                            const IResultListener* = nullptr);
+
  private:
   QAndroidJniObject intent_;
-  class ResultReceiver : public QAndroidActivityResultReceiver {
-   private:
-    void handleActivityResult(int receiverRequestCode, int resultCode,
-                              const QAndroidJniObject &data) override;
-  } receiver_;
 };
 
 #endif  // __ANDROID__

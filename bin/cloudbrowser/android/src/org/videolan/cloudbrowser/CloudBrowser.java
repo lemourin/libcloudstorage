@@ -26,6 +26,8 @@ public class CloudBrowser extends QtActivity {
     private RelativeLayout m_ad_view;
     private boolean m_ad_view_visible = false;
 
+    private native void onRequestResult(int request, int result, Intent data);
+
     private void updateAdView() {
         if (m_ad_view != null && m_view_group != null)
             m_view_group.removeView(m_ad_view);
@@ -86,6 +88,12 @@ public class CloudBrowser extends QtActivity {
     public void onConfigurationChanged(Configuration config) {
         super.onConfigurationChanged(config);
         updateAdView();
+    }
+
+    @Override
+    public void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        onRequestResult(request, result, data);
     }
 
     @Override

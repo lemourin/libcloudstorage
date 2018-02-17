@@ -35,6 +35,7 @@
 #include <QQmlEngine>
 #include <QtQml>
 
+#include "AndroidUtility.h"
 #include "CloudContext.h"
 #include "FileDialog.h"
 #include "IPlatformUtility.h"
@@ -104,6 +105,10 @@ int exec_cloudbrowser(int argc, char** argv) {
 
 #ifdef WITH_QTWEBVIEW
     QtWebView::initialize();
+#endif
+
+#ifdef __ANDROID__
+    AndroidUtility::setActivity(QtAndroid::androidActivity());
 #endif
 
     app.setOrganizationName("VideoLAN");

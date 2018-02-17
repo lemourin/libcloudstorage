@@ -25,7 +25,7 @@ void IFileDialog::setFilename(QString e) {
 
 #include <QAndroidActivityResultReceiver>
 #include <QAndroidJniObject>
-#include <QtAndroid>
+#include "AndroidUtility.h"
 
 const int REQUEST_CODE = 42;
 
@@ -43,17 +43,18 @@ void FileDialog::open() {
         "org/videolan/cloudbrowser/Utility", "openFileDialog",
         "()Landroid/content/Intent;");
   }
-  QtAndroid::startActivity(intent, REQUEST_CODE, &result_receiver_);
+  AndroidUtility::startActivity(intent.object(), REQUEST_CODE,
+                                &result_receiver_);
 }
 
 FileDialog::ActivityReceiver::ActivityReceiver(FileDialog *dialog)
     : file_dialog_(dialog) {}
 
-void FileDialog::ActivityReceiver::handleActivityResult(
-    int request_code, int result_code, const QAndroidJniObject &data) {
+void FileDialog::ActivityReceiver::done(int request_code, int result_code,
+                                        const QAndroidJniObject &data) {
   if (request_code != REQUEST_CODE || result_code != -1) return;
   auto uri = data.callObjectMethod("getData", "()Landroid/net/Uri;");
-  auto filename = QtAndroid::androidActivity().callObjectMethod(
+  auto filename = AndroidUtility::activity().callObjectMethod(
       "filename", "(Landroid/net/Uri;)Ljava/lang/String;", uri.object());
   file_dialog_->setFilename(filename.toString());
   file_dialog_->setUrl(uri.toString());
