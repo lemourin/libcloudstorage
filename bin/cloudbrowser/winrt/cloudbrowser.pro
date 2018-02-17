@@ -18,7 +18,8 @@ isEmpty(MSVC_TOOLCHAIN_PATH) {
 }
 
 winrt {
-    QMAKE_CXXFLAGS += /ZW
+    QMAKE_CXXFLAGS += /ZW \
+        /FU\"$$(EXTENSIONSDKDIR)\Microsoft.Advertising.Xaml\10.0\References\CommonConfiguration\neutral\Microsoft.Advertising.winmd\"
 } else {
     DEFINES += HAVE_BOOST_FILESYSTEM_HPP
 }
