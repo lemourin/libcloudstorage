@@ -144,7 +144,8 @@ DEPS_res = \
 	resources/default_success.html \
 	resources/mega_login.html \
 	resources/webdav_login.html \
-	resources/local_login.html
+	resources/local_login.html \
+	resources/animezone_login.html
 
 %.moc.cpp: %.h
 	$(AM_V_GEN)$(MOC) -o $@ $<

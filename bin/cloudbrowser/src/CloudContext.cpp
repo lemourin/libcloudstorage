@@ -250,7 +250,8 @@ QString CloudContext::pretty(QString provider) const {
       {"yandex", "Yandex Disk"},
       {"youtube", "YouTube"},
       {"gphotos", "Google Photos"},
-      {"local", "Local Drive"}};
+      {"local", "Local Drive"},
+      {"animezone", "Anime Zone"}};
   auto it = name_map.find(provider.toStdString());
   if (it != name_map.end())
     return it->second.c_str();

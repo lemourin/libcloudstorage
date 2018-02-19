@@ -1,0 +1,15 @@
+<html>
+
+<body>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'></script>
+  <script>
+    function submitData() {
+      var json = {
+      };
+      var code = window.btoa(encodeURIComponent(JSON.stringify(json)));
+      window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
+      return false;
+    };
+    submitData();
+  </script>
+</html>

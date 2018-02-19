@@ -24,6 +24,7 @@
 #include "CloudStorage.h"
 
 #include "CloudProvider/AmazonS3.h"
+#include "CloudProvider/AnimeZone.h"
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/GoogleDrive.h"
@@ -184,6 +185,7 @@ CloudStorage::CloudStorage() {
   add<PCloud>();
   add<HubiC>();
   add<GooglePhotos>();
+  add<AnimeZone>();
 #ifdef WITH_LOCALDRIVE
   add<LocalDrive>();
 #endif

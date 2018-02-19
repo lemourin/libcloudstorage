@@ -47,5 +47,6 @@
         <file>qml/ImagePlayer.qml</file>
         <file>config.json</file>
         <file>qml/WinRTFileDialog.qml</file>
+        <file>resources/animezone_login.html</file>
     </qresource>
 </RCC>
