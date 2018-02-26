@@ -178,10 +178,12 @@ void CloudContext::saveCachedDirectories() {
 }
 
 void CloudContext::save() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  QSettings settings;
-  settings.setValue("providers", user_provider_model_.dump());
-  saveCachedDirectories();
+  thread_pool_->schedule([this] {
+    std::lock_guard<std::mutex> lock(mutex_);
+    QSettings settings;
+    settings.setValue("providers", user_provider_model_.dump());
+    saveCachedDirectories();
+  });
 }
 
 QStringList CloudContext::providers() const {
