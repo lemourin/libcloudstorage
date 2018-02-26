@@ -106,11 +106,11 @@ CloudContext::CloudContext(QObject* parent)
   for (auto j : providers) {
     auto obj = j.toMap();
     auto label = obj["label"].toString().toStdString();
-    user_provider_model_.add(
-        {label,
-         this->provider(obj["type"].toString().toStdString(), label,
-                        Token{obj["token"].toString().toStdString(),
-                              obj["access_token"].toString().toStdString()})});
+    auto provider =
+        this->provider(obj["type"].toString().toStdString(), label,
+                       Token{obj["token"].toString().toStdString(),
+                             obj["access_token"].toString().toStdString()});
+    if (provider) user_provider_model_.add({label, std::move(provider)});
   }
   for (auto p : ICloudStorage::create()->providers()) {
     auth_server_.push_back(http_server_factory_->create(
@@ -130,6 +130,7 @@ CloudContext::CloudContext(QObject* parent)
 
 CloudContext::~CloudContext() {
   save();
+  thread_pool_ = nullptr;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
 }
 
