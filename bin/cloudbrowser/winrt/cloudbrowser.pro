@@ -108,7 +108,6 @@ SOURCES += \
     ../../../src/Utility/CloudStorage.cpp \
     ../../../src/Utility/Auth.cpp \
     ../../../src/Utility/Item.cpp \
-    ../../../src/Utility/FileSystem.cpp \
     ../../../src/Utility/Utility.cpp \
     ../../../src/Utility/ThreadPool.cpp \
     ../../../src/CloudProvider/CloudProvider.cpp \

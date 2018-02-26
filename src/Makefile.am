@@ -16,7 +16,6 @@ libcloudstorage_la_SOURCES = \
 	Utility/CloudStorage.cpp \
 	Utility/Auth.cpp \
 	Utility/Item.cpp \
-	Utility/FileSystem.cpp \
 	Utility/Utility.cpp \
 	Utility/CryptoPP.cpp \
 	Utility/CurlHttp.cpp \
@@ -58,7 +57,6 @@ noinst_HEADERS = \
 	Utility/CloudStorage.h \
 	Utility/Auth.h \
 	Utility/Item.h \
-	Utility/FileSystem.h \
 	Utility/Utility.h \
 	Utility/CryptoPP.h \
 	Utility/CurlHttp.h \
@@ -103,7 +101,6 @@ libcloudstorage_la_HEADERS = \
 	ICrypto.h \
 	IHttp.h \
 	IHttpServer.h \
-	IFileSystem.h \
 	IThreadPool.h
 
 libcloudstorage_la_LIBADD = \

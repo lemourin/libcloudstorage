@@ -11,10 +11,18 @@ AM_LDFLAGS = \
 bin_PROGRAMS = libcloudstorage-fuse
 
 libcloudstorage_fuse_SOURCES = \
-	FuseCommon.h FuseCommon.cpp \
-	FuseLowLevel.h FuseLowLevel.cpp \
-	FuseHighLevel.h FuseHighLevel.cpp \
+	FuseCommon.cpp \
+	FuseLowLevel.cpp \
+	FuseHighLevel.cpp \
+	FileSystem.cpp \
 	main.cpp
+
+noinst_HEADERS = \
+	FuseCommon.h \
+	FuseLowLevel.h \
+	FuseHighLevel.h \
+	IFileSystem.h \
+	FileSystem.h
 
 libcloudstorage_fuse_LDADD = \
 	../../src/libcloudstorage.la \
