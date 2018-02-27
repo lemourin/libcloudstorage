@@ -55,11 +55,6 @@ class CloudContext : public QObject {
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
 
-  void loadCachedDirectories();
-  void saveCachedDirectories();
-
-  void save();
-
   QStringList providers() const;
   ProviderListModel* userProviders();
   bool includeAds() const;
@@ -135,6 +130,9 @@ class CloudContext : public QObject {
     QString current_line_;
   };
 
+  void loadCachedDirectories();
+  void saveCachedDirectories();
+  void saveProviders();
   void receivedCode(std::string provider, std::string code);
   cloudstorage::ICloudProvider::Pointer provider(
       const std::string& name, const std::string& label,
@@ -149,6 +147,7 @@ class CloudContext : public QObject {
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;
   std::shared_ptr<cloudstorage::IHttp> http_;
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
+  cloudstorage::IThreadPool::Pointer context_thread_pool_;
   RequestPool pool_;
   std::unordered_map<ListDirectoryCacheKey,
                      std::vector<cloudstorage::IItem::Pointer>>

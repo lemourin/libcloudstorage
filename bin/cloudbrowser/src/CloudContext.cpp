@@ -98,6 +98,7 @@ CloudContext::CloudContext(QObject* parent)
           IHttpServerFactory::create())),
       http_(IHttp::create()),
       thread_pool_(IThreadPool::create(1)),
+      context_thread_pool_(IThreadPool::create(1)),
       cache_size_(updatedCacheSize()) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
@@ -129,8 +130,6 @@ CloudContext::CloudContext(QObject* parent)
 }
 
 CloudContext::~CloudContext() {
-  save();
-  thread_pool_ = nullptr;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
 }
 
@@ -178,12 +177,11 @@ void CloudContext::saveCachedDirectories() {
     file.write(QJsonDocument(json).toBinaryData());
 }
 
-void CloudContext::save() {
-  thread_pool_->schedule([this] {
+void CloudContext::saveProviders() {
+  schedule([this] {
     std::lock_guard<std::mutex> lock(mutex_);
     QSettings settings;
     settings.setValue("providers", user_provider_model_.dump());
-    saveCachedDirectories();
   });
 }
 
@@ -234,7 +232,7 @@ void CloudContext::removeProvider(QVariant provider) {
     std::lock_guard<std::mutex> lock(mutex_);
     user_provider_model_.remove(provider);
   }
-  save();
+  saveProviders();
 }
 
 QString CloudContext::pretty(QString provider) const {
@@ -352,7 +350,7 @@ IItem::List CloudContext::cachedDirectory(ListDirectoryCacheKey key) {
 }
 
 void CloudContext::schedule(std::function<void()> f) {
-  thread_pool_->schedule(f);
+  context_thread_pool_->schedule(f);
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
@@ -377,7 +375,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
             {d.right()->username_,
              this->provider(provider, d.right()->username_, *e.right())});
       }
-      save();
+      saveProviders();
     }));
   });
   pool_.add(std::move(p), std::move(r));
