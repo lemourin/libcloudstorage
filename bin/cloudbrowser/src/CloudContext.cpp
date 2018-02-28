@@ -160,8 +160,8 @@ void CloudContext::saveCachedDirectories() {
   for (auto&& d : list_directory_cache_) {
     QJsonObject object;
     QJsonArray array;
-    for (auto&& d : d.second) {
-      array.append(d->toString().c_str());
+    for (auto&& dd : d.second) {
+      array.append(dd->toString().c_str());
     }
     object["type"] = d.first.provider_type_.c_str();
     object["label"] = d.first.provider_label_.c_str();
