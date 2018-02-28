@@ -27,6 +27,7 @@
 
 #include <json/json.h>
 #include <array>
+#include <cstring>
 #include <sstream>
 
 #include "IRequest.h"
@@ -80,6 +81,10 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
   auto header_data = static_cast<IHttpRequest::HeaderParameters*>(userdata);
   std::string header(buffer, buffer + size * nitems);
   auto pos = header.find_first_of(":");
+  const auto http_prefix = "HTTP/";
+  if (header.substr(0, strlen(http_prefix)) == http_prefix) {
+    header_data->clear();
+  }
   if (pos != std::string::npos) {
     auto header_name = header.substr(0, pos);
     for (auto&& c : header_name) c = std::tolower(c);
