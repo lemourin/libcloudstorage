@@ -110,10 +110,8 @@ class CurlHttpRequest : public IHttpRequest,
   void setHeaderParameter(const std::string& parameter,
                           const std::string& value) override;
 
-  const std::unordered_map<std::string, std::string>& parameters()
-      const override;
-  const std::unordered_map<std::string, std::string>& headerParameters()
-      const override;
+  const GetParameters& parameters() const override;
+  const HeaderParameters& headerParameters() const override;
 
   const std::string& url() const override;
   const std::string& method() const override;
@@ -136,8 +134,8 @@ class CurlHttpRequest : public IHttpRequest,
   std::unique_ptr<curl_slist, CurlListDeleter> headerParametersToList() const;
 
   std::string url_;
-  std::unordered_map<std::string, std::string> parameters_;
-  std::unordered_map<std::string, std::string> header_parameters_;
+  GetParameters parameters_;
+  HeaderParameters header_parameters_;
   std::string method_;
   bool follow_redirect_;
   std::shared_ptr<CurlHttp::Worker> worker_;

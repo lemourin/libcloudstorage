@@ -262,8 +262,13 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
                               this->set(node, nnode);
                               cb(std::static_pointer_cast<INode>(nnode));
                             });
-                      auto size =
-                          std::stoull(response.headers_["content-length"]);
+                      uint64_t size = 0;
+                      auto content_length_iter =
+                          response.headers_.find("content-length");
+                      if (content_length_iter != response.headers_.end()) {
+                        size = std::stoull(content_length_iter->second);
+                      }
+
                       auto nnode = std::make_shared<Node>(
                           n->provider(), n->item(), n->parent_, node,
                           static_cast<uint64_t>(size));

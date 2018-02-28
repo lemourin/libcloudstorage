@@ -86,8 +86,8 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
     std::stringstream stream(header.substr(pos + 1));
     std::string header_value, token;
     while (stream >> token) header_value += token + " ";
-    (*header_data)[header_name] =
-        header_value.substr(0, header_value.size() - 1);
+    header_data->insert(
+        {header_name, header_value.substr(0, header_value.size() - 1)});
   }
   return size * nitems;
 }
@@ -217,16 +217,15 @@ void CurlHttpRequest::setParameter(const std::string& parameter,
 
 void CurlHttpRequest::setHeaderParameter(const std::string& parameter,
                                          const std::string& value) {
-  header_parameters_[parameter] = value;
+  header_parameters_.insert({parameter, value});
 }
 
-const std::unordered_map<std::string, std::string>&
-CurlHttpRequest::parameters() const {
+const IHttpRequest::GetParameters& CurlHttpRequest::parameters() const {
   return parameters_;
 }
 
-const std::unordered_map<std::string, std::string>&
-CurlHttpRequest::headerParameters() const {
+const IHttpRequest::HeaderParameters& CurlHttpRequest::headerParameters()
+    const {
   return header_parameters_;
 }
 

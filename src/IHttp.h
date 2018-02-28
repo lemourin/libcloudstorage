@@ -39,7 +39,7 @@ class IHttpRequest {
 
   using Pointer = std::shared_ptr<IHttpRequest>;
   using GetParameters = std::unordered_map<std::string, std::string>;
-  using HeaderParameters = std::unordered_map<std::string, std::string>;
+  using HeaderParameters = std::unordered_multimap<std::string, std::string>;
   using CompleteCallback = GenericCallback<Response>;
 
   struct Response {
