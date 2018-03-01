@@ -23,6 +23,7 @@
 #include "AnimeZone.h"
 #include <json/json.h>
 #include <regex>
+#include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
@@ -231,6 +232,13 @@ ICloudProvider::GeneralDataRequest::Pointer AnimeZone::getGeneralDataAsync(
                data.space_used_ = 0;
                r->done(data);
              })
+      ->run();
+}
+
+ICloudProvider::DownloadFileRequest::Pointer AnimeZone::downloadFileAsync(
+    IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
+  return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
+                                                      range)
       ->run();
 }
 

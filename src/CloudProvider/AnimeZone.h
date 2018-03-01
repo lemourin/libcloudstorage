@@ -36,6 +36,9 @@ class AnimeZone : public CloudProvider {
   std::string endpoint() const override;
 
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
+  DownloadFileRequest::Pointer downloadFileAsync(
+      IItem::Pointer i, IDownloadFileCallback::Pointer cb,
+      Range range) override;
 
   ListDirectoryRequest::Pointer listDirectoryAsync(
       IItem::Pointer, IListDirectoryCallback::Pointer) override;
