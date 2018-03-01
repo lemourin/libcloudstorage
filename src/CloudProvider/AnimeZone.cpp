@@ -384,7 +384,6 @@ IItem::List AnimeZone::listDirectoryResponse(
       value["episode_no"] = episode_no;
       value["episode_title"] = episode_title;
       value["episode_url"] = episode_url;
-      std::cout << util::json::to_string(value) << std::endl;
       std::string name = episode_no;
       if (episode_title != "" && episode_title != " ") {
         name += ": " + episode_title;
@@ -420,15 +419,8 @@ IItem::List AnimeZone::listDirectoryResponse(
     for (const auto &kv : players) {
       Json::Value value;
       value["code"] = kv.second;
-      // value["code"] = "214179:81bb346c8d5c30c99e9c6e0345cbc9f2";
-      std::cout << "CODE: " << value["code"].asString() << std::endl;
       value["session"] = session;
-      // value["session"] = "e8dttn8sb6o1dpujurpbh4hcr2";
-      std::cout << "SESSION: " << value["session"].asString() << std::endl;
       value["origin"] = origin;
-      // value["origin"] =
-      //    "http://www.animezone.pl/odcinek/darling-in-the-franxx/7";
-      std::cout << "URL: " << value["origin"].asString() << std::endl;
       result.push_back(util::make_unique<Item>(
           kv.first, util::json::to_string(value), IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Video));
@@ -461,7 +453,6 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
         [=](util::Output payload) {
           const auto url = value["origin"].asString();
           auto request = http()->create(url, "POST");
-          std::cout << "URL: " << url << std::endl;
           request->setHeaderParameter("Cookie",
                                       "_SESS=" + value["session"].asString());
           request->setHeaderParameter(
@@ -485,11 +476,11 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
                               std::regex::ECMAScript | std::regex::icase);
             std::smatch match;
             std::string content = e.right()->output().str();
-            if (!std::regex_search(content, match, src_rx)) {
-              throw std::logic_error("Source not found in frame.");
-            }
-            std::cout << match[1].str() << std::endl;
-            fetch_player(r, match[1].str());
+            if (!std::regex_search(content, match, src_rx))
+              r->done(
+                  Error{IHttpRequest::Failure, "Source not found in frame."});
+            else
+              fetch_player(r, match[1].str());
           }
         });
   };
