@@ -22,6 +22,7 @@
         <file>resources/providers/yandex.png</file>
         <file>resources/providers/youtube.png</file>
         <file>resources/providers/local.png</file>
+        <file>resources/providers/animezone.png</file>
         <file>qml/ProviderEntry.qml</file>
         <file>qml/ItemPage.qml</file>
         <file>qml/RemoveProvider.qml</file>

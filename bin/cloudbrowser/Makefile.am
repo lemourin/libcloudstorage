@@ -139,6 +139,7 @@ DEPS_res = \
 	resources/providers/gphotos.png \
 	resources/providers/hubic.png \
 	resources/providers/local.png \
+	resources/providers/animezone.png \
 	resources/amazons3_login.html \
 	resources/default_error.html \
 	resources/default_success.html \
