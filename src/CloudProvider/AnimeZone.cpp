@@ -58,7 +58,7 @@ void work(Request<EitherError<IItem::List>>::Pointer r,
           r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
         }
       });
-};
+}
 
 std::vector<std::pair<std::string, std::string>> episode_to_players(
     const std::string &page) {
@@ -129,7 +129,7 @@ std::string decipher(const std::string &code,
   } _0x31f4aa = {_0x439a49, {}};
 
   auto i = 0LL;
-  for (; i < _0x439a49.length(); i += 8) {
+  for (; i < static_cast<int64_t>(_0x439a49.length()); i += 8) {
     _0x41e0ff = i * 8;
     auto _0x40b427 = _0x439a49.substr(i, 8);
     auto _0x577716 = std::stoll(_0x40b427, nullptr, 16);
@@ -142,7 +142,7 @@ std::string decipher(const std::string &code,
   auto _0x439a49_i = 0LL;
 
   auto _0x145894 = 0LL;
-  for (; _0x439a49_i < _0x5d72cd.length();) {
+  for (; _0x439a49_i < static_cast<int64_t>(_0x5d72cd.length());) {
     auto _0x5eb93a = 64LL;
     auto _0x37c346 = 127LL;
     auto _0x896767 = 0LL;
@@ -154,7 +154,7 @@ std::string decipher(const std::string &code,
     } _0x31f4aa = {128, 63};
 
     do {
-      if (_0x439a49_i + 1 >= _0x5d72cd.length()) {
+      if (_0x439a49_i + 1 >= static_cast<int64_t>(_0x5d72cd.length())) {
         _0x5eb93a = 143;
       }
 
@@ -273,11 +273,11 @@ AnimeZone::listDirectoryPageAsync(IItem::Pointer directory,
                    });
              })
       ->run();
-};
+}
 
 IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
     const IItem &directory, const std::string &page_token,
-    std::ostream &input_stream) const {
+    std::ostream &) const {
   if (directory.id() == rootDirectory()->id()) {
     return http()->create("http://www.animezone.pl/anime/lista");
   }
