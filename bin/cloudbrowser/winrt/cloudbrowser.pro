@@ -123,6 +123,7 @@ SOURCES += \
     ../../../src/CloudProvider/HubiC.cpp \
     ../../../src/CloudProvider/GooglePhotos.cpp \
     ../../../src/CloudProvider/LocalDrive.cpp \
+    ../../../src/CloudProvider/AnimeZone.cpp \
     ../../../src/Request/Request.cpp \
     ../../../src/Request/HttpCallback.cpp \
     ../../../src/Request/AuthorizeRequest.cpp \
