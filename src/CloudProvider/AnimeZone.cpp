@@ -23,6 +23,7 @@
 #include "AnimeZone.h"
 #include <json/json.h>
 #include <regex>
+#include <unordered_set>
 #include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
 #include "Utility/Item.h"
@@ -61,21 +62,27 @@ void work(Request<EitherError<IItem::List>>::Pointer r,
       });
 }
 
-std::vector<std::pair<std::string, std::string>> episode_to_players(
-    const std::string &page) {
-  std::vector<std::pair<std::string, std::string>> result;
+struct PlayerDetails {
+  std::string name_;
+  std::string code_;
+  std::string language_;
+};
+
+std::vector<PlayerDetails> episode_to_players(const std::string &page) {
+  std::vector<PlayerDetails> result;
   auto start = page.find("Wszystkie odcinki");
   if (start == std::string::npos) {
     throw std::logic_error("Players not found.");
   }
-  std::regex buttonRX(
-      "<td>(.*?)</td>(?:.|\\r?\\n)*?button "
+  std::regex button_rx(
+      "<td>(.*?)</td>(?:.|\\r?\\n)*?sprites (.*) lang(?:.|\r?\n)*?button "
       "class=.*play.*data-[^=]*=\"([^\"]*)\"",
       std::regex_constants::ECMAScript);
   for (auto it = std::sregex_iterator(
-           page.begin() + static_cast<ssize_t>(start), page.end(), buttonRX);
+           page.begin() + static_cast<int64_t>(start), page.end(), button_rx);
        it != std::sregex_iterator(); ++it) {
-    result.push_back({(*it)[1].str(), (*it)[2].str()});
+    result.push_back(
+        PlayerDetails{(*it)[1].str(), (*it)[3].str(), (*it)[2].str()});
   }
   return result;
 }
@@ -332,9 +339,9 @@ IItem::List AnimeZone::listDirectoryResponse(
     }
     return result;
   }
-  auto value = util::json::from_string(directory.id());
-  if (value["type"] == "letter") {
-    auto letter = value["letter"].asString();
+  auto dir_data = util::json::from_string(directory.id());
+  if (dir_data["type"] == "letter") {
+    auto letter = dir_data["letter"].asString();
     std::string content;
     {
       std::stringstream stream;
@@ -364,7 +371,7 @@ IItem::List AnimeZone::listDirectoryResponse(
     }
     return result;
   }
-  if (value["type"] == "anime") {
+  if (dir_data["type"] == "anime") {
     std::string content;
     {
       std::stringstream stream;
@@ -381,8 +388,9 @@ IItem::List AnimeZone::listDirectoryResponse(
       throw std::logic_error(
           "Could not find the beginning of the episodes list.");
     }
-    for (auto it = std::sregex_iterator(content.begin() + ssize_t(list_start),
-                                        content.end(), episode_rx);
+    for (auto it = std::sregex_iterator(
+             content.begin() + static_cast<int64_t>(list_start), content.end(),
+             episode_rx);
          it != std::sregex_iterator(); ++it) {
       Json::Value value;
       const auto episode_no = (*it)[1].str();
@@ -392,6 +400,7 @@ IItem::List AnimeZone::listDirectoryResponse(
       value["episode_no"] = episode_no;
       value["episode_title"] = episode_title;
       value["episode_url"] = episode_url;
+      value["anime"] = dir_data["anime"];
       std::string name = episode_no;
       if (episode_title != "" && episode_title != " ") {
         name += ": " + episode_title;
@@ -402,7 +411,7 @@ IItem::List AnimeZone::listDirectoryResponse(
     }
     return result;
   }
-  if (value["type"] == "episode") {
+  if (dir_data["type"] == "episode") {
     auto cookie_range = headers.equal_range("set-cookie");
     std::string session;
     for (auto it = cookie_range.first; it != cookie_range.second; ++it) {
@@ -424,13 +433,44 @@ IItem::List AnimeZone::listDirectoryResponse(
     auto players = episode_to_players(content);
     auto value = util::json::from_string(directory.id());
     const auto origin = endpoint() + value["episode_url"].asString();
-    for (const auto &kv : players) {
+    std::unordered_map<std::string, uint64_t> player_counter;
+    const std::unordered_set<std::string> supported_players = {"openload.co",
+                                                               "mp4upload.com"};
+    for (const auto &player : players) {
+      const std::string lower_player_name = util::to_lower(player.name_);
+      if (supported_players.find(lower_player_name) ==
+          supported_players.end()) {
+        continue;
+      }
       Json::Value value;
-      value["code"] = kv.second;
+      value["code"] = player.code_;
       value["session"] = session;
       value["origin"] = origin;
+      const std::string counter_key = player.name_ + ":" + player.language_;
+      const uint64_t player_index = player_counter[counter_key];
+      player_counter[counter_key] += 1;
+      const std::string anime_name = dir_data["anime"].asString();
+      const std::string episode_no = "- " + dir_data["episode_no"].asString();
+      const std::vector<std::string> name_segments = {
+          anime_name, episode_no, "[" + player.language_ + "]",
+          "[" + player.name_ + "]"};
+      std::string player_name;
+      const std::string name_sep = " ";
+      bool first = false;
+      for (const auto &segment : name_segments) {
+        if (!first) {
+          player_name += name_sep;
+        } else {
+          first = false;
+        }
+        player_name += segment;
+      }
+      if (player_index > 0) {
+        player_name += "(" + std::to_string(player_index) + ")";
+      }
+      player_name += ".mp4";
       result.push_back(util::make_unique<Item>(
-          kv.first, util::json::to_string(value), IItem::UnknownSize,
+          player_name, util::json::to_string(value), IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Video));
     }
     return result;
