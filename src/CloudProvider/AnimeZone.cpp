@@ -29,6 +29,8 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+namespace re = std;
+
 namespace cloudstorage {
 
 namespace {
@@ -56,8 +58,8 @@ void work(Request<EitherError<IItem::List>>::Pointer r,
           else {
             r->done(*result);
           }
-        } catch (const std::exception &) {
-          r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+        } catch (const std::exception &e) {
+          r->done(Error{IHttpRequest::Failure, e.what()});
         }
       });
 }
@@ -74,13 +76,13 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
   if (start == std::string::npos) {
     throw std::logic_error("Players not found.");
   }
-  std::regex button_rx(
-      "<td>(.*?)</td>(?:.|\\r?\\n)*?sprites (.*) lang(?:.|\r?\n)*?button "
-      "class=.*play.*data-[^=]*=\"([^\"]*)\"",
-      std::regex_constants::ECMAScript);
-  for (auto it = std::sregex_iterator(
-           page.begin() + static_cast<int64_t>(start), page.end(), button_rx);
-       it != std::sregex_iterator(); ++it) {
+  re::regex button_rx(
+      "<td>([^<]*)</td>(?:[^\\n]*\\n){2}.*?sprites (.*?) "
+      "lang(?:[^\\n]*\\n){2}.*?data-[^\"]*\"([^\"]*)\"",
+      re::regex_constants::ECMAScript);
+  for (auto it = re::sregex_iterator(page.begin() + static_cast<int64_t>(start),
+                                     page.end(), button_rx);
+       it != re::sregex_iterator(); ++it) {
     result.push_back(
         PlayerDetails{(*it)[1].str(), (*it)[3].str(), (*it)[2].str()});
   }
@@ -215,6 +217,82 @@ std::string extract_url(const std::string &page) {
 
 }  // namespace openload
 
+namespace mp4upload {
+
+std::string radix(uint64_t n, uint64_t base) {
+  const std::string numerals("0123456789abcdefghijklmnopqrstuvwxyz");
+  std::string result;
+  while (n > 0) {
+    result += numerals[n % base];
+    n /= base;
+  }
+  if (result.empty()) {
+    result = "0";
+  } else {
+    std::reverse(result.begin(), result.end());
+  }
+  return result;
+}
+
+std::string unpack_js(std::string p, uint64_t a, uint64_t c,
+                      const std::vector<std::string> &k) {
+  while (c > 0) {
+    c -= 1;
+    if (c < k.size() && (!k[c].empty())) {
+      re::regex replace_rx("\\b" + radix(c, a) + "\\b");
+      p = re::regex_replace(p, replace_rx, k[c]);
+    }
+  }
+  return p;
+}
+
+std::string extract_url(const std::string &page) {
+  auto start = page.find("p,a,c,k");
+  if (start == std::string::npos) {
+    throw std::logic_error("Could not find packed script.");
+  }
+  start = page.find("return", start);
+  if (start == std::string::npos) {
+    throw std::logic_error("Could not find packed script.");
+  }
+  start = page.find("'", start);
+  if (start == std::string::npos) {
+    throw std::logic_error("Could not find packed script.");
+  }
+  auto end = page.find("</script>", start);
+  if (end == std::string::npos) {
+    throw std::logic_error("Could not find packed script.");
+  }
+  const std::string code = page.substr(start, end - start);
+  re::smatch match;
+  re::regex arg_rx("'(.*?)',([0-9]*),([0-9]*),'(.*?)'");
+  if (!re::regex_search(code, match, arg_rx)) {
+    throw std::logic_error("Could not extract packed arguments.");
+  }
+  std::vector<std::string> arg_k;
+  std::string buffer;
+  for (char c : match[4].str()) {
+    if (c == '|') {
+      arg_k.push_back(buffer);
+      buffer.clear();
+    } else {
+      buffer += c;
+    }
+  }
+  arg_k.push_back(buffer);
+  uint64_t arg_a = uint64_t(std::atoll(match[2].str().c_str()));
+  uint64_t arg_c = uint64_t(std::atoll(match[3].str().c_str()));
+  std::string unpacked = unpack_js(match[1].str(), arg_a, arg_c, arg_k);
+  re::regex source_rx("src:\"([^\"]*)\"");
+  re::smatch source_match;
+  if (!re::regex_search(unpacked, source_match, source_rx)) {
+    throw std::logic_error("Could not locate mp4 url.");
+  }
+  return source_match[1].str();
+}
+
+}  // namespace mp4upload
+
 AnimeZone::AnimeZone() : CloudProvider(util::make_unique<Auth>()) {}
 
 AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
@@ -348,11 +426,10 @@ IItem::List AnimeZone::listDirectoryResponse(
       stream << response.rdbuf();
       content = stream.str();
     }
-    std::regex anime_rx("<a href=\"(/odcinki/[^\"]*)\">(.*?)</a>",
-                        std::regex::ECMAScript);
+    re::regex anime_rx("<a href=\"(/odcinki/[^\"]*)\">([^<]*)</a>");
     for (auto it =
-             std::sregex_iterator(content.begin(), content.end(), anime_rx);
-         it != std::sregex_iterator(); ++it) {
+             re::sregex_iterator(content.begin(), content.end(), anime_rx);
+         it != re::sregex_iterator(); ++it) {
       Json::Value value;
       const auto anime = (*it)[2].str();
       const auto anime_url = (*it)[1].str();
@@ -363,10 +440,10 @@ IItem::List AnimeZone::listDirectoryResponse(
           anime, util::json::to_string(value), IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Directory));
     }
-    std::regex next_rx("<a href=\"/anime/lista/[^=]*=([0-9]*)\">&raquo;</a>",
-                       std::regex::ECMAScript);
-    std::smatch next_match;
-    if (std::regex_search(content, next_match, next_rx)) {
+    re::regex next_rx("<a href=\"/anime/lista/[^=]*=([0-9]*)\">&raquo;</a>",
+                      re::regex::ECMAScript);
+    re::smatch next_match;
+    if (re::regex_search(content, next_match, next_rx)) {
       page_token = next_match[1].str();
     }
     return result;
@@ -378,20 +455,20 @@ IItem::List AnimeZone::listDirectoryResponse(
       stream << response.rdbuf();
       content = stream.str();
     }
-    std::regex episode_rx(
+
+    re::regex episode_rx(
         "<strong>([^<]*)</"
-        "strong>(?:.|\r?\n)*?\"episode-title\">([^<]*)<(?:.|\r?\n)*?<a "
+        "strong>[^\n]*\n[^\"]*\"episode-title\">([^<]*)<(?:[^\n]*\n){3}.*?<a "
         "href=\"..(/odcinek[^\"]*)\"",
-        std::regex::ECMAScript);
+        re::regex::ECMAScript);
     auto list_start = content.find("</thead>");
     if (list_start == std::string::npos) {
-      throw std::logic_error(
-          "Could not find the beginning of the episodes list.");
+      return result;
     }
-    for (auto it = std::sregex_iterator(
+    for (auto it = re::sregex_iterator(
              content.begin() + static_cast<int64_t>(list_start), content.end(),
              episode_rx);
-         it != std::sregex_iterator(); ++it) {
+         it != re::sregex_iterator(); ++it) {
       Json::Value value;
       const auto episode_no = (*it)[1].str();
       const auto episode_title = (*it)[2].str();
@@ -415,9 +492,9 @@ IItem::List AnimeZone::listDirectoryResponse(
     auto cookie_range = headers.equal_range("set-cookie");
     std::string session;
     for (auto it = cookie_range.first; it != cookie_range.second; ++it) {
-      std::regex sess_rx("_SESS=([^;]*);");
-      std::smatch match;
-      if (std::regex_search(it->second, match, sess_rx)) {
+      re::regex sess_rx("_SESS=([^;]*);");
+      re::smatch match;
+      if (re::regex_search(it->second, match, sess_rx)) {
         session = match[1].str();
       }
     }
@@ -446,6 +523,7 @@ IItem::List AnimeZone::listDirectoryResponse(
       value["code"] = player.code_;
       value["session"] = session;
       value["origin"] = origin;
+      value["player"] = lower_player_name;
       const std::string counter_key = player.name_ + ":" + player.language_;
       const uint64_t player_index = player_counter[counter_key];
       player_counter[counter_key] += 1;
@@ -483,18 +561,28 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
   auto value = util::json::from_string(item->id());
   auto fetch_player = [=](Request<EitherError<std::string>>::Pointer r,
                           const std::string &url) {
-    r->send([=](util::Output) { return http()->create(url); },
-            [=](EitherError<Response> e) {
-              if (e.left()) {
-                r->done(e.left());
+    r->send(
+        [=](util::Output) { return http()->create(url); },
+        [=](EitherError<Response> e) {
+          if (e.left()) {
+            r->done(e.left());
+          } else {
+            try {
+              auto value = util::json::from_string(item->id());
+              const std::string player = value["player"].asString();
+              if (player == "openload.co") {
+                r->done(openload::extract_url(e.right()->output().str()));
+              } else if (player == "mp4upload.com") {
+                r->done(mp4upload::extract_url(e.right()->output().str()));
               } else {
-                try {
-                  r->done(openload::extract_url(e.right()->output().str()));
-                } catch (const std::exception &e) {
-                  r->done(Error{IHttpRequest::Failure, e.what()});
-                }
+                throw std::logic_error(
+                    "Could not extract unsupported player \"" + player + "\"");
               }
-            });
+            } catch (const std::exception &e) {
+              r->done(Error{IHttpRequest::Failure, e.what()});
+            }
+          }
+        });
   };
   auto fetch_frame = [=](Request<EitherError<std::string>>::Pointer r) {
     r->send(
@@ -520,11 +608,11 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           if (e.left()) {
             r->done(e.left());
           } else {
-            std::regex src_rx("src=\"([^\"]*)\"",
-                              std::regex::ECMAScript | std::regex::icase);
-            std::smatch match;
+            re::regex src_rx("src=\"([^\"]*)\"",
+                             re::regex::ECMAScript | re::regex::icase);
+            re::smatch match;
             std::string content = e.right()->output().str();
-            if (!std::regex_search(content, match, src_rx))
+            if (!re::regex_search(content, match, src_rx))
               r->done(
                   Error{IHttpRequest::Failure, "Source not found in frame."});
             else
