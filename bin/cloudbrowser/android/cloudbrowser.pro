@@ -12,13 +12,23 @@ DEFINES += \
     HAVE_BOOST_FILESYSTEM_HPP
 
 ANDROID_TOOLCHAIN_PATH = $$(ANDROID_TOOLCHAIN_PATH)
+ANDROID_ARCH = $$(ANDROID_ARCH)
 
 isEmpty(ANDROID_TOOLCHAIN_PATH) {
     error(ANDROID_TOOLCHAIN_PATH environment variable not set.)
 }
 
+isEmpty(ANDROID_ARCH) {
+    error(ANDROID_ARCH environment variable not set.)
+}
+
 QMAKE_CXX = $$ANDROID_TOOLCHAIN_PATH/bin/clang++
-QMAKE_CXXFLAGS =
+QMAKE_CXXFLAGS = \
+    -fstack-protector-strong \
+    -march=armv7-a \
+    -mfloat-abi=softfp \
+    -mfpu=vfp \
+    -fno-builtin-memmove
 QMAKE_LINK = $$QMAKE_CXX
 QMAKE_INCDIR_POST =
 QMAKE_LIBS_PRIVATE =
@@ -31,6 +41,8 @@ INCLUDEPATH = \
     $$ANDROID_TOOLCHAIN_PATH/sysroot/usr/include
 
 LIBS += \
+    -L$$(ANDROID_NDK_ROOT)/sources/cxx-stl/llvm-libc++/libs/$$ANDROID_ARCH \
+    -lc++ -llog -lz -lm -ldl -lc \
     -L$$ANDROID_TOOLCHAIN_PATH/lib \
     -L$$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/ \
     -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
