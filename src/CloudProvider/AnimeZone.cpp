@@ -320,6 +320,34 @@ ICloudProvider::GeneralDataRequest::Pointer AnimeZone::getGeneralDataAsync(
       ->run();
 }
 
+ICloudProvider::GetItemDataRequest::Pointer AnimeZone::getItemDataAsync(
+    const std::string &id, GetItemDataCallback callback) {
+  return std::make_shared<Request<EitherError<IItem>>>(
+             shared_from_this(), callback,
+             [=](Request<EitherError<IItem>>::Pointer r) {
+               if (id == rootDirectory()->id()) return r->done(rootDirectory());
+               try {
+                 auto json = util::json::from_string(id);
+                 auto type = json["type"].asString();
+                 std::string name;
+                 if (type == "letter")
+                   name = json["letter"].asString();
+                 else if (type == "anime")
+                   name = json["anime"].asString();
+                 else
+                   name = json["name"].asString();
+                 IItem::Pointer item = util::make_unique<Item>(
+                     name, id, IItem::UnknownSize, IItem::UnknownTimeStamp,
+                     json.isMember("player") ? IItem::FileType::Video
+                                             : IItem::FileType::Directory);
+                 r->done(item);
+               } catch (const Json::Exception &e) {
+                 r->done(Error{IHttpRequest::Failure, e.what()});
+               }
+             })
+      ->run();
+}
+
 ICloudProvider::DownloadFileRequest::Pointer AnimeZone::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
   return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
@@ -482,6 +510,7 @@ IItem::List AnimeZone::listDirectoryResponse(
       if (episode_title != "" && episode_title != " ") {
         name += ": " + episode_title;
       }
+      value["name"] = name;
       result.push_back(util::make_unique<Item>(
           name, util::json::to_string(value), IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Directory));
@@ -547,6 +576,7 @@ IItem::List AnimeZone::listDirectoryResponse(
         player_name += "(" + std::to_string(player_index) + ")";
       }
       player_name += ".mp4";
+      value["name"] = player_name;
       result.push_back(util::make_unique<Item>(
           player_name, util::json::to_string(value), IItem::UnknownSize,
           IItem::UnknownTimeStamp, IItem::FileType::Video));
