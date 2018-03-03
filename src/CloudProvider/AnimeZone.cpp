@@ -648,7 +648,7 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
         },
         [=](Response e) {
           if (!IHttpRequest::isSuccess(e.http_code())) {
-            r->done(Error{});
+            r->done(Error{e.http_code(), e.error_output().str()});
           } else {
             {
               auto lock = auth_lock();
