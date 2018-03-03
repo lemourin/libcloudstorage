@@ -32,8 +32,13 @@ class AnimeZone : public CloudProvider {
   AnimeZone();
 
   AuthorizeRequest::Pointer authorizeAsync() override;
+  void authorizeRequest(IHttpRequest& r) const override;
+  bool reauthorize(int code,
+                   const IHttpRequest::HeaderParameters&) const override;
   std::string name() const override;
   std::string endpoint() const override;
+  bool isSuccess(int code,
+                 const IHttpRequest::HeaderParameters&) const override;
 
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
@@ -42,18 +47,12 @@ class AnimeZone : public CloudProvider {
       IItem::Pointer i, IDownloadFileCallback::Pointer cb,
       Range range) override;
 
-  ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer) override;
-  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
-      IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
-
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
-  IItem::List listDirectoryResponse(const IItem& directory,
-                                    std::istream& response,
-                                    const IHttpRequest::HeaderParameters&,
-                                    std::string& next_page_token) const;
+  IItem::List listDirectoryResponse(
+      const IItem& directory, std::istream& response,
+      std::string& next_page_token) const override;
 
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
                                              GetItemUrlCallback) override;
@@ -71,6 +70,11 @@ class AnimeZone : public CloudProvider {
         std::istream&) const override;
     Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
+
+  void set_session(const std::string& session);
+  std::string session() const;
+
+  std::string session_;
 };
 
 }  // namespace cloudstorage

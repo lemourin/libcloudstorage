@@ -33,35 +33,23 @@ namespace re = std;
 
 namespace cloudstorage {
 
+const auto USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/64.0.3282.167 Safari/537.36";
+
 namespace {
 
-void work(Request<EitherError<IItem::List>>::Pointer r,
-          std::shared_ptr<IItem::List> result, IItem::Pointer directory,
-          std::string page_token, IListDirectoryCallback *callback) {
-  r->request(
-      [=](util::Output i) {
-        return r->provider()->listDirectoryRequest(*directory, page_token, *i);
-      },
-      [=](EitherError<Response> e) {
-        if (e.left()) return r->done(e.left());
-        try {
-          std::string page_token = "";
-          for (auto &t :
-               static_cast<AnimeZone *>(r->provider().get())
-                   ->listDirectoryResponse(*directory, e.right()->output(),
-                                           e.right()->headers(), page_token)) {
-            callback->receivedItem(t);
-            result->push_back(t);
-          }
-          if (!page_token.empty())
-            work(r, result, directory, page_token, callback);
-          else {
-            r->done(*result);
-          }
-        } catch (const std::exception &e) {
-          r->done(Error{IHttpRequest::Failure, e.what()});
-        }
-      });
+std::string extract_session(const IHttpRequest::HeaderParameters &headers) {
+  auto cookie_range = headers.equal_range("set-cookie");
+  for (auto it = cookie_range.first; it != cookie_range.second; ++it) {
+    re::regex sess_rx("_SESS=([^;]*);");
+    re::smatch match;
+    if (re::regex_search(it->second, match, sess_rx)) {
+      return match[1].str();
+    }
+  }
+  return "";
 }
 
 struct PlayerDetails {
@@ -297,15 +285,69 @@ AnimeZone::AnimeZone() : CloudProvider(util::make_unique<Auth>()) {}
 
 AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest::Pointer,
+      shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
-        complete(nullptr);
+        auto authorize_session = [=](AuthorizeRequest::Pointer r,
+                                     const std::string &session) {
+          r->query(
+              [=](util::Output) {
+                auto request = http()->create(
+                    "http://www.animezone.pl/images/statistics.gif");
+                request->setHeaderParameter("Cookie", "_SESS=" + session);
+                request->setHeaderParameter("User-Agent", USER_AGENT);
+                return request;
+              },
+              [=](Response e) {
+                if (!IHttpRequest::isSuccess(e.http_code())) {
+                  complete(Error{e.http_code(), e.error_output().str()});
+                } else {
+                  this->set_session(session);
+                  complete(nullptr);
+                }
+              });
+        };
+        r->query(
+            [=](util::Output) {
+              auto request = http()->create(endpoint());
+              request->setHeaderParameter("User-Agent", USER_AGENT);
+              return request;
+            },
+            [=](Response e) {
+              if (!IHttpRequest::isSuccess(e.http_code())) {
+                complete(Error{e.http_code(), e.error_output().str()});
+              } else {
+                auto session = extract_session(e.headers());
+                if (session == "") {
+                  complete(
+                      Error{IHttpRequest::Failure, "Session token not found."});
+                } else {
+                  authorize_session(r, session);
+                }
+              }
+            });
       });
+}
+
+void AnimeZone::authorizeRequest(IHttpRequest &r) const {
+  auto session = this->session();
+  if (!session.empty()) r.setHeaderParameter("Cookie", "_SESS=" + session);
+  r.setHeaderParameter("User-Agent", USER_AGENT);
+}
+
+bool AnimeZone::reauthorize(int code,
+                            const IHttpRequest::HeaderParameters &h) const {
+  return code == IHttpRequest::NotFound ||
+         code == IHttpRequest::InternalServerError || extract_session(h) != "";
 }
 
 std::string AnimeZone::name() const { return "animezone"; }
 
 std::string AnimeZone::endpoint() const { return "http://www.animezone.pl"; }
+
+bool AnimeZone::isSuccess(int code,
+                          const IHttpRequest::HeaderParameters &headers) const {
+  return IHttpRequest::isSuccess(code) && extract_session(headers) == "";
+}
 
 ICloudProvider::GeneralDataRequest::Pointer AnimeZone::getGeneralDataAsync(
     GeneralDataCallback cb) {
@@ -355,47 +397,6 @@ ICloudProvider::DownloadFileRequest::Pointer AnimeZone::downloadFileAsync(
       ->run();
 }
 
-ICloudProvider::ListDirectoryRequest::Pointer AnimeZone::listDirectoryAsync(
-    IItem::Pointer directory, IListDirectoryCallback::Pointer callback) {
-  return std::make_shared<Request<EitherError<IItem::List>>>(
-             shared_from_this(),
-             [=](EitherError<IItem::List> e) { callback->done(e); },
-             [=](Request<EitherError<IItem::List>>::Pointer r) {
-               work(r, std::make_shared<IItem::List>(), directory, "",
-                    callback.get());
-             })
-      ->run();
-}
-
-ICloudProvider::ListDirectoryPageRequest::Pointer
-AnimeZone::listDirectoryPageAsync(IItem::Pointer directory,
-                                  const std::string &token,
-                                  ListDirectoryPageCallback cb) {
-  return std::make_shared<Request<EitherError<PageData>>>(
-             shared_from_this(), cb,
-             [=](Request<EitherError<PageData>>::Pointer r) {
-               r->request(
-                   [=](util::Output input) {
-                     return r->provider()->listDirectoryRequest(*directory,
-                                                                token, *input);
-                   },
-                   [=](EitherError<Response> e) {
-                     if (e.left()) return r->done(e.left());
-                     try {
-                       std::string next_token;
-                       auto lst = listDirectoryResponse(
-                           *directory, e.right()->output(),
-                           e.right()->headers(), next_token);
-                       r->done(PageData{lst, next_token});
-                     } catch (const std::exception &) {
-                       r->done(Error{IHttpRequest::Failure,
-                                     e.right()->output().str()});
-                     }
-                   });
-             })
-      ->run();
-}
-
 IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
     const IItem &directory, const std::string &page_token,
     std::ostream &) const {
@@ -424,10 +425,9 @@ IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
   return nullptr;
 }
 
-IItem::List AnimeZone::listDirectoryResponse(
-    const IItem &directory, std::istream &response,
-    const IHttpRequest::HeaderParameters &headers,
-    std::string &page_token) const {
+IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
+                                             std::istream &response,
+                                             std::string &page_token) const {
   IItem::List result;
   if (directory.id() == rootDirectory()->id()) {
     std::vector<char> letters;
@@ -518,18 +518,6 @@ IItem::List AnimeZone::listDirectoryResponse(
     return result;
   }
   if (dir_data["type"] == "episode") {
-    auto cookie_range = headers.equal_range("set-cookie");
-    std::string session;
-    for (auto it = cookie_range.first; it != cookie_range.second; ++it) {
-      re::regex sess_rx("_SESS=([^;]*);");
-      re::smatch match;
-      if (re::regex_search(it->second, match, sess_rx)) {
-        session = match[1].str();
-      }
-    }
-    if (session == "") {
-      throw std::logic_error("Session token not found.");
-    }
     std::string content;
     {
       std::stringstream stream;
@@ -542,15 +530,16 @@ IItem::List AnimeZone::listDirectoryResponse(
     std::unordered_map<std::string, uint64_t> player_counter;
     const std::unordered_set<std::string> supported_players = {"openload.co",
                                                                "mp4upload.com"};
+    auto idx = 0;
     for (const auto &player : players) {
       const std::string lower_player_name = util::to_lower(player.name_);
       if (supported_players.find(lower_player_name) ==
           supported_players.end()) {
+        idx++;
         continue;
       }
       Json::Value value;
-      value["code"] = player.code_;
-      value["session"] = session;
+      value["idx"] = idx++;
       value["origin"] = origin;
       value["player"] = lower_player_name;
       const std::string counter_key = player.name_ + ":" + player.language_;
@@ -614,24 +603,17 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           }
         });
   };
-  auto fetch_frame = [=](Request<EitherError<std::string>>::Pointer r) {
-    r->send(
+  auto fetch_frame = [=](Request<EitherError<std::string>>::Pointer r,
+                         const std::string &origin, const std::string &code) {
+    r->request(
         [=](util::Output payload) {
-          const auto url = value["origin"].asString();
-          auto request = http()->create(url, "POST");
-          request->setHeaderParameter("Cookie",
-                                      "_SESS=" + value["session"].asString());
+          auto request = http()->create(origin, "POST");
           request->setHeaderParameter(
               "Content-Type",
               "application/x-www-form-urlencoded; charset=UTF-8");
-          request->setHeaderParameter(
-              "User-Agent",
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-              "AppleWebKit/537.36 (KHTML, like Gecko) "
-              "Chrome/64.0.3282.167 Safari/537.36");
-          request->setHeaderParameter("Referer", url);
+          request->setHeaderParameter("Referer", origin);
           request->setHeaderParameter("Accept-Encoding", "gzip, deflate");
-          (*payload) << "data=" + value["code"].asString();
+          (*payload) << "data=" + code;
           return request;
         },
         [=](EitherError<Response> e) {
@@ -653,29 +635,36 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), cb,
              [=](Request<EitherError<std::string>>::Pointer r) {
-               r->send(
+               r->request(
                    [=](util::Output) {
-                     const auto url =
-                         "http://www.animezone.pl/images/statistics.gif";
-                     auto request = http()->create(url);
-                     request->setHeaderParameter(
-                         "Cookie", "_SESS=" + value["session"].asString());
-                     request->setHeaderParameter(
-                         "User-Agent",
-                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                         "AppleWebKit/537.36 (KHTML, like Gecko) "
-                         "Chrome/64.0.3282.167 Safari/537.36");
-                     return request;
+                     return http()->create(value["origin"].asString());
                    },
                    [=](EitherError<Response> e) {
-                     if (e.left()) {
+                     if (e.left())
                        r->done(e.left());
-                     } else {
-                       fetch_frame(r);
+                     else {
+                       try {
+                         auto episodes =
+                             episode_to_players(e.right()->output().str());
+                         fetch_frame(r, value["origin"].asString(),
+                                     episodes[value["idx"].asUInt()].code_);
+                       } catch (const std::exception &e) {
+                         r->done(Error{IHttpRequest::Failure, e.what()});
+                       }
                      }
                    });
              })
       ->run();
+}
+
+void AnimeZone::set_session(const std::string &session) {
+  auto lock = auth_lock();
+  session_ = session;
+}
+
+std::string AnimeZone::session() const {
+  auto lock = auth_lock();
+  return session_;
 }
 
 std::string AnimeZone::Auth::authorizeLibraryUrl() const {
