@@ -23,36 +23,29 @@
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 
+#include "IThreadPool.h"
 #include <condition_variable>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
-#include "IThreadPool.h"
 
 namespace cloudstorage {
 
 class ThreadPool : public IThreadPool {
- public:
+public:
   ThreadPool(uint32_t thread_count);
+  ~ThreadPool();
+  void schedule(const Task &f) override;
 
-  void schedule(const Task& f) override;
-
- private:
-  struct Worker {
-    Worker();
-    ~Worker();
-
-    void add(std::function<void()> f);
-
-    mutable std::mutex mutex_;
-    bool running_;
-    std::vector<std::function<void()>> task_;
-    std::condition_variable condition_;
-    std::thread thread_;
-  };
-  std::vector<Worker> worker_;
+private:
+  std::mutex mutex_;
+  std::condition_variable worker_cv_;
+  std::queue<Task> tasks_;
+  std::vector<std::thread> workers_;
+  bool destroyed_;
 };
 
-}  // namespace cloudstorage
+} // namespace cloudstorage
 
-#endif  // THREADPOOL_H
+#endif // THREADPOOL_H
