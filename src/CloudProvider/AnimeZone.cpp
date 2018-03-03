@@ -287,28 +287,6 @@ AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
       shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
-        auto authorize_session = [=](AuthorizeRequest::Pointer r,
-                                     const std::string &session) {
-          r->query(
-              [=](util::Output) {
-                auto request = http()->create(
-                    "http://www.animezone.pl/images/statistics.gif");
-                request->setHeaderParameter("Cookie", "_SESS=" + session);
-                request->setHeaderParameter("User-Agent", USER_AGENT);
-                return request;
-              },
-              [=](Response e) {
-                if (!IHttpRequest::isSuccess(e.http_code())) {
-                  complete(Error{e.http_code(), e.error_output().str()});
-                } else {
-                  {
-                    auto lock = auth_lock();
-                    auth()->access_token()->token_ = session;
-                  }
-                  complete(nullptr);
-                }
-              });
-        };
         r->query(
             [=](util::Output) {
               auto request = http()->create(endpoint());
@@ -324,7 +302,11 @@ AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
                   complete(
                       Error{IHttpRequest::Failure, "Session token not found."});
                 } else {
-                  authorize_session(r, session);
+                  {
+                    auto lock = auth_lock();
+                    auth()->access_token()->token_ = session;
+                  }
+                  complete(nullptr);
                 }
               }
             });
@@ -635,27 +617,51 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           }
         });
   };
+  auto fetch_player_list = [=](Request<EitherError<std::string>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          return http()->create(value["origin"].asString());
+        },
+        [=](EitherError<Response> e) {
+          if (e.left())
+            r->done(e.left());
+          else {
+            try {
+              auto episodes = episode_to_players(e.right()->output().str());
+              fetch_frame(r, value["origin"].asString(),
+                          episodes[value["idx"].asUInt()].code_);
+            } catch (const std::exception &e) {
+              r->done(Error{IHttpRequest::Failure, e.what()});
+            }
+          }
+        });
+  };
+  auto authorize_session = [=](Request<EitherError<std::string>>::Pointer r,
+                               const std::string &session) {
+    r->query(
+        [=](util::Output) {
+          auto request =
+              http()->create("http://www.animezone.pl/images/statistics.gif");
+          request->setHeaderParameter("Cookie", "_SESS=" + session);
+          request->setHeaderParameter("User-Agent", USER_AGENT);
+          return request;
+        },
+        [=](Response e) {
+          if (!IHttpRequest::isSuccess(e.http_code())) {
+            r->done(Error{});
+          } else {
+            {
+              auto lock = auth_lock();
+              auth()->access_token()->token_ = session;
+            }
+            fetch_player_list(r);
+          }
+        });
+  };
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), cb,
              [=](Request<EitherError<std::string>>::Pointer r) {
-               r->request(
-                   [=](util::Output) {
-                     return http()->create(value["origin"].asString());
-                   },
-                   [=](EitherError<Response> e) {
-                     if (e.left())
-                       r->done(e.left());
-                     else {
-                       try {
-                         auto episodes =
-                             episode_to_players(e.right()->output().str());
-                         fetch_frame(r, value["origin"].asString(),
-                                     episodes[value["idx"].asUInt()].code_);
-                       } catch (const std::exception &e) {
-                         r->done(Error{IHttpRequest::Failure, e.what()});
-                       }
-                     }
-                   });
+               authorize_session(r, access_token());
              })
       ->run();
 }
