@@ -46,6 +46,10 @@ std::stringstream& Response::output() {
   return static_cast<std::stringstream&>(*http_.output_stream_.get());
 }
 
+std::stringstream& Response::error_output() {
+  return static_cast<std::stringstream&>(*http_.error_stream_.get());
+}
+
 template <class T>
 Request<T>::Wrapper::Wrapper(typename Request<T>::Pointer r) : request_(r) {}
 
@@ -217,6 +221,16 @@ void Request<T>::send(RequestFactory factory, RequestCompleted complete) {
   this->send(factory, complete,
              [] { return std::make_shared<std::stringstream>(); },
              std::make_shared<std::stringstream>(), nullptr, nullptr, false);
+}
+
+template <class T>
+void Request<T>::query(RequestFactory factory,
+                       IHttpRequest::CompleteCallback complete) {
+  auto input = std::make_shared<std::stringstream>();
+  auto request = factory(input);
+  this->send(request.get(), complete, input,
+             std::make_shared<std::stringstream>(),
+             std::make_shared<std::stringstream>(), nullptr, nullptr);
 }
 
 template <class T>

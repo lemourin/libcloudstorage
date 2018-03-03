@@ -46,6 +46,7 @@ class Response {
   int http_code() const;
   const IHttpRequest::HeaderParameters& headers() const;
   std::stringstream& output();
+  std::stringstream& error_output();
 
  private:
   IHttpRequest::Response http_;
@@ -96,6 +97,7 @@ class Request : public IRequest<ReturnValue>,
 
   void request(RequestFactory factory, RequestCompleted);
   void send(RequestFactory factory, RequestCompleted);
+  void query(RequestFactory factory, IHttpRequest::CompleteCallback);
 
   std::shared_ptr<CloudProvider> provider() const;
 
