@@ -636,33 +636,22 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           }
         });
   };
-  auto authorize_session = [=](Request<EitherError<std::string>>::Pointer r,
-                               const std::string &session) {
-    r->query(
+  auto authorize_session = [=](Request<EitherError<std::string>>::Pointer r) {
+    r->request(
         [=](util::Output) {
-          auto request =
-              http()->create("http://www.animezone.pl/images/statistics.gif");
-          request->setHeaderParameter("Cookie", "_SESS=" + session);
-          request->setHeaderParameter("User-Agent", USER_AGENT);
-          return request;
+          return http()->create(
+              "http://www.animezone.pl/images/statistics.gif");
         },
-        [=](Response e) {
-          if (!IHttpRequest::isSuccess(e.http_code())) {
-            r->done(Error{e.http_code(), e.error_output().str()});
+        [=](EitherError<Response> e) {
+          if (e.left()) {
+            r->done(e.left());
           } else {
-            {
-              auto lock = auth_lock();
-              auth()->access_token()->token_ = session;
-            }
             fetch_player_list(r);
           }
         });
   };
   return std::make_shared<Request<EitherError<std::string>>>(
-             shared_from_this(), cb,
-             [=](Request<EitherError<std::string>>::Pointer r) {
-               authorize_session(r, access_token());
-             })
+             shared_from_this(), cb, authorize_session)
       ->run();
 }
 
