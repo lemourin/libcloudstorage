@@ -43,10 +43,11 @@ class DownloadToString : public IDownloadFileCallback {
 
 class DownloadThumbnailCallback : public IDownloadFileCallback {
  public:
-  DownloadThumbnailCallback(CloudContext* context, RequestNotifier* notifier,
+  DownloadThumbnailCallback(std::shared_ptr<IThreadPool> pool,
+                            RequestNotifier* notifier,
                             std::shared_ptr<ICloudProvider> p,
                             IItem::Pointer item)
-      : context_(context), notifier_(notifier), provider_(p), item_(item) {}
+      : pool_(pool), notifier_(notifier), provider_(p), item_(item) {}
 
   void receivedData(const char* data, uint32_t length) override {
     data_ += std::string(data, length);
@@ -92,7 +93,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto provider = provider_;
       auto item = item_;
       auto notifier = notifier_;
-      std::thread([path, provider, item, notifier] {
+      pool_->schedule([path, provider, item, notifier] {
         auto r = provider->getItemUrlAsync(item)->result();
         if (r.left()) {
           emit notifier->finishedVariant(r.left());
@@ -118,7 +119,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
           return notifier->deleteLater();
         }
         submit(notifier, path, *e.right());
-      }).detach();
+      });
       return;
     }
 #endif
@@ -129,13 +130,13 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto path =
           GetThumbnailRequest::thumbnail_path(item_->filename().c_str());
       auto data = std::move(data_);
-      context_->schedule(
+      pool_->schedule(
           [notifier, path, data] { submit(notifier, path, std::move(data)); });
     }
   }
 
  private:
-  CloudContext* context_;
+  std::shared_ptr<IThreadPool> pool_;
   RequestNotifier* notifier_;
   std::string data_;
   std::shared_ptr<ICloudProvider> provider_;
@@ -175,9 +176,10 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
               emit cacheFileAdded(map["length"].toULongLong());
             });
     auto p = item->provider().provider_;
-    auto r = p->getThumbnailAsync(item->item(),
-                                  util::make_unique<DownloadThumbnailCallback>(
-                                      context, object, p, item->item()));
+    auto r = p->getThumbnailAsync(
+        item->item(),
+        util::make_unique<DownloadThumbnailCallback>(
+            context->thumbnailer_thread_pool(), object, p, item->item()));
     context->add(p, std::move(r));
   }
 }

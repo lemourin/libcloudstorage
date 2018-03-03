@@ -99,6 +99,7 @@ CloudContext::CloudContext(QObject* parent)
       http_(IHttp::create()),
       thread_pool_(IThreadPool::create(1)),
       context_thread_pool_(IThreadPool::create(1)),
+      thumbnailer_thread_pool_(IThreadPool::create(2)),
       cache_size_(updatedCacheSize()) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
@@ -354,6 +355,10 @@ IItem::List CloudContext::cachedDirectory(ListDirectoryCacheKey key) {
 
 void CloudContext::schedule(std::function<void()> f) {
   context_thread_pool_->schedule(f);
+}
+
+std::shared_ptr<IThreadPool> CloudContext::thumbnailer_thread_pool() const {
+  return thumbnailer_thread_pool_;
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {

@@ -83,6 +83,7 @@ class CloudContext : public QObject {
                       const std::vector<cloudstorage::IItem::Pointer>&);
   cloudstorage::IItem::List cachedDirectory(ListDirectoryCacheKey);
   void schedule(std::function<void()>);
+  std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool() const;
 
  signals:
   void receivedCode(QString provider);
@@ -148,6 +149,7 @@ class CloudContext : public QObject {
   std::shared_ptr<cloudstorage::IHttp> http_;
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
   cloudstorage::IThreadPool::Pointer context_thread_pool_;
+  std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool_;
   RequestPool pool_;
   std::unordered_map<ListDirectoryCacheKey,
                      std::vector<cloudstorage::IItem::Pointer>>
