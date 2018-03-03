@@ -130,6 +130,7 @@ CloudContext::CloudContext(QObject* parent)
 }
 
 CloudContext::~CloudContext() {
+  saveProviders();
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
 }
 
