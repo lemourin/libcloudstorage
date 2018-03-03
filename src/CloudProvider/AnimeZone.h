@@ -70,11 +70,6 @@ class AnimeZone : public CloudProvider {
         std::istream&) const override;
     Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
-
-  void set_session(const std::string& session);
-  std::string session() const;
-
-  std::string session_;
 };
 
 }  // namespace cloudstorage

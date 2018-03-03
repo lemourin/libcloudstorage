@@ -301,7 +301,10 @@ AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
                 if (!IHttpRequest::isSuccess(e.http_code())) {
                   complete(Error{e.http_code(), e.error_output().str()});
                 } else {
-                  this->set_session(session);
+                  {
+                    auto lock = auth_lock();
+                    auth()->access_token()->token_ = session;
+                  }
                   complete(nullptr);
                 }
               });
@@ -329,7 +332,7 @@ AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
 }
 
 void AnimeZone::authorizeRequest(IHttpRequest &r) const {
-  auto session = this->session();
+  auto session = this->access_token();
   if (!session.empty()) r.setHeaderParameter("Cookie", "_SESS=" + session);
   r.setHeaderParameter("User-Agent", USER_AGENT);
 }
@@ -655,16 +658,6 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
                    });
              })
       ->run();
-}
-
-void AnimeZone::set_session(const std::string &session) {
-  auto lock = auth_lock();
-  session_ = session;
-}
-
-std::string AnimeZone::session() const {
-  auto lock = auth_lock();
-  return session_;
 }
 
 std::string AnimeZone::Auth::authorizeLibraryUrl() const {
