@@ -131,6 +131,7 @@ CloudContext::CloudContext(QObject* parent)
 
 CloudContext::~CloudContext() {
   saveProviders();
+  context_thread_pool_ = nullptr;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
 }
 
