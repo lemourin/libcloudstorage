@@ -14,6 +14,8 @@ using namespace cloudstorage;
 
 namespace {
 
+const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(5);
+
 QString sanitize(const QString& name) {
   const QString forbidden = "~\"#%&*:<>?/\\{|}";
   QString result;
@@ -43,11 +45,10 @@ class DownloadToString : public IDownloadFileCallback {
 
 class DownloadThumbnailCallback : public IDownloadFileCallback {
  public:
-  DownloadThumbnailCallback(std::shared_ptr<IThreadPool> pool,
-                            RequestNotifier* notifier,
-                            std::shared_ptr<ICloudProvider> p,
-                            IItem::Pointer item,
-                            std::function<bool()> interrupt)
+  DownloadThumbnailCallback(
+      std::shared_ptr<IThreadPool> pool, RequestNotifier* notifier,
+      std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
+      std::function<bool(std::chrono::system_clock::time_point)> interrupt)
       : pool_(pool),
         notifier_(notifier),
         provider_(p),
@@ -147,7 +148,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
   std::string data_;
   std::shared_ptr<ICloudProvider> provider_;
   IItem::Pointer item_;
-  std::function<bool()> interrupt_;
+  std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
 };
 
 }  // namespace
@@ -194,7 +195,12 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
         item->item(),
         util::make_unique<DownloadThumbnailCallback>(
             context->thumbnailer_thread_pool(), object, p, item->item(),
-            [=]() { return *interrupt || *ctx_interrupt; }));
+            [=](std::chrono::system_clock::time_point start_time) {
+              return *interrupt || *ctx_interrupt ||
+                     std::chrono::system_clock::now() - start_time >
+                         MAX_THUMBNAIL_GENERATION_TIME;
+              ;
+            }));
     context->add(p, std::move(r));
   }
 }

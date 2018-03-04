@@ -90,8 +90,9 @@ void check(int code, const std::string& call) {
 
 }  // namespace
 
-EitherError<std::string> generate_thumbnail(const std::string& url,
-                                            std::function<bool()> interrupt) {
+EitherError<std::string> generate_thumbnail(
+    const std::string& url,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   try {
     std::string effective_url = url;
 #ifdef _WIN32
@@ -105,9 +106,14 @@ EitherError<std::string> generate_thumbnail(const std::string& url,
     check(avformat_network_init(), "avformat_network_init");
     auto context =
         make<AVFormatContext>(avformat_alloc_context(), avformat_free_context);
-    context->interrupt_callback.opaque = &interrupt;
+    struct CallbackData {
+      std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
+      std::chrono::system_clock::time_point start_time_;
+    } data = {interrupt, std::chrono::system_clock::now()};
+    context->interrupt_callback.opaque = &data;
     context->interrupt_callback.callback = [](void* t) -> int {
-      return (*reinterpret_cast<std::function<bool()>*>(t))();
+      auto d = reinterpret_cast<CallbackData*>(t);
+      return d->interrupt_(d->start_time_);
     };
     auto network_guard = make<std::nullptr_t>(
         nullptr, [](std::nullptr_t*) { avformat_network_deinit(); });
@@ -137,7 +143,8 @@ EitherError<std::string> generate_thumbnail(const std::string& url,
     av_init_packet(&packet);
     int retry_count = 0;
     bool generated_frame = false;
-    while (!interrupt() && retry_count < MAX_RETRY_COUNT && !generated_frame) {
+    while (!interrupt(data.start_time_) && retry_count < MAX_RETRY_COUNT &&
+           !generated_frame) {
       check(av_read_frame(context.get(), &packet), "av_read_frame");
       auto send_packet = avcodec_send_packet(codec_context.get(), &packet);
       if (send_packet != 0) {
