@@ -72,8 +72,8 @@ libcloudbrowser_la_CXXFLAGS += $(qtwebview_CFLAGS)
 libcloudbrowser_la_LIBADD += $(qtwebview_LIBS)
 endif
 if WITH_THUMBNAILER
-libcloudbrowser_la_CXXFLAGS += $(libffmpegthumbnailer_CFLAGS)
-libcloudbrowser_la_LIBADD += $(libffmpegthumbnailer_LIBS)
+libcloudbrowser_la_CXXFLAGS += $(ffmpeg_CFLAGS)
+libcloudbrowser_la_LIBADD += $(ffmpeg_LIBS)
 endif
 if WITH_VLC_QT
 libcloudbrowser_la_CXXFLAGS += $(vlcqt_CFLAGS)

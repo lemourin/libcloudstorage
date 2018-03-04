@@ -144,7 +144,7 @@ Cloud Browser dependencies:
 
   when found, Cloud Browser will use it to present the authorization scheme
 
-* `libffmpegthumbnailer` 
+* `ffmpeg`
 
   when  found,  Cloud  Browser  will generate  fallback  thumbnails  if  cloud  
   provider doesn't provide any

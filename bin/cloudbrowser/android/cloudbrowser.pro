@@ -45,7 +45,8 @@ LIBS += \
     -lc++ -llog -lz -lm -ldl -lc \
     -L$$ANDROID_TOOLCHAIN_PATH/lib \
     -L$$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/ \
-    -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega -lffmpegthumbnailer \
+    -lc++_shared -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega \
+    -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale \
     -lboost_filesystem -lboost_system \
     $$ANDROID_TOOLCHAIN_PATH/lib/libVLCQtQml.a \
     $$ANDROID_TOOLCHAIN_PATH/lib/libVLCQtCore.a \
@@ -177,7 +178,6 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libswresample.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavutil.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libpng16.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libffmpegthumbnailer.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_system.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_filesystem.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so

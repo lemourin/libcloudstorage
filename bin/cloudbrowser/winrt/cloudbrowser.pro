@@ -43,7 +43,6 @@ LIBS += \
     -lshlwapi \
     -lssleay32 \
     -llibeay32 \
-    -lffmpegthumbnailer \
     -llibpng16 \
     -lavformat \
     -lavcodec \

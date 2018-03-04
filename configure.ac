@@ -176,7 +176,10 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
       HAVE_QTWEBVIEW=1
       AC_DEFINE(WITH_QTWEBVIEW)
     ], [HAVE_QTWEBVIEW=0])
-    PKG_CHECK_MODULES([libffmpegthumbnailer], [libffmpegthumbnailer], [
+    PKG_CHECK_MODULES([ffmpeg], [
+      libavcodec libavfilter libavformat libavutil
+      libswresample libswscale
+    ], [
       HAVE_THUMBNAILER=1
       AC_DEFINE(WITH_THUMBNAILER)
     ], [HAVE_THUMBNAILER=0])
