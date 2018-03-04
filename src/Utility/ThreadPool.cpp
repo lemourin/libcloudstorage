@@ -27,48 +27,53 @@
 
 namespace cloudstorage {
 
-IThreadPool::Pointer IThreadPool::create(uint32_t cnt) {
-  return util::make_unique<ThreadPool>(cnt);
-}
-
-ThreadPool::ThreadPool(uint32_t thread_count) : worker_(thread_count) {}
-
-void ThreadPool::schedule(const Task& f) {
-  auto it = std::min_element(worker_.begin(), worker_.end(),
-                             [](const Worker& w1, const Worker& w2) {
-                               std::unique_lock<std::mutex> l1(w1.mutex_);
-                               std::unique_lock<std::mutex> l2(w2.mutex_);
-                               return w1.task_.size() < w2.task_.size();
-                             });
-  it->add(f);
-}
-
-ThreadPool::Worker::Worker()
-    : running_(true), thread_([this]() {
-        while (true) {
+ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
+  for (uint32_t i = 0; i < thread_count; ++i) {
+    workers_.emplace_back([this]() {
+      while (true) {
+        Task task;
+        {
           std::unique_lock<std::mutex> lock(mutex_);
-          condition_.wait(lock, [=]() { return !running_ || !task_.empty(); });
-          if (!running_) break;
-          while (!task_.empty()) {
-            auto f = task_.back();
-            task_.pop_back();
-            lock.unlock();
-            f();
-            lock.lock();
+          if (destroyed_) {
+            break;
+          }
+          while (tasks_.empty() && !destroyed_) {
+            worker_cv_.wait(lock);
+          }
+          if (!tasks_.empty()) {
+            task = std::move(tasks_.front());
+            tasks_.pop();
+          } else {
+            break;
           }
         }
-      }) {}
-
-ThreadPool::Worker::~Worker() {
-  running_ = false;
-  condition_.notify_one();
-  thread_.join();
+        task();
+      }
+    });
+  }
 }
 
-void ThreadPool::Worker::add(std::function<void()> f) {
+ThreadPool::~ThreadPool() {
   std::unique_lock<std::mutex> lock(mutex_);
-  task_.push_back(f);
-  condition_.notify_one();
+  destroyed_ = true;
+  worker_cv_.notify_all();
+  for (auto &worker : workers_) {
+    lock.unlock();
+    worker.join();
+    lock.lock();
+  }
+}
+
+void ThreadPool::schedule(const Task &f) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  tasks_.emplace(std::move(f));
+  if (tasks_.size() == 1) {
+    worker_cv_.notify_one();
+  }
+}
+
+IThreadPool::Pointer IThreadPool::create(uint32_t threads) {
+  return util::make_unique<ThreadPool>(threads);
 }
 
 }  // namespace cloudstorage
