@@ -40,7 +40,7 @@ extern "C" {
 
 namespace cloudstorage {
 
-const int THUMBNAIL_SIZE = 128;
+const int THUMBNAIL_SIZE = 256;
 const int MAX_RETRY_COUNT = 10;
 
 namespace {
@@ -158,16 +158,26 @@ EitherError<std::string> generate_thumbnail(
         check(code, "avcodec_receive_frame");
     }
     if (!generated_frame) throw std::logic_error("failed to fetch frame");
+    int thumbnail_width, thumbnail_height;
+    if (codec_context->width > codec_context->height) {
+      thumbnail_width = THUMBNAIL_SIZE;
+      thumbnail_height =
+          codec_context->height * THUMBNAIL_SIZE / codec_context->width;
+    } else {
+      thumbnail_width =
+          codec_context->height * THUMBNAIL_SIZE / codec_context->width;
+      thumbnail_height = THUMBNAIL_SIZE;
+    }
     auto sws_context = make<SwsContext>(
         sws_getContext(codec_context->width, codec_context->height,
-                       codec_context->pix_fmt, THUMBNAIL_SIZE, THUMBNAIL_SIZE,
-                       AV_PIX_FMT_RGBA, SWS_FAST_BILINEAR, nullptr, nullptr,
-                       nullptr),
+                       codec_context->pix_fmt, thumbnail_width,
+                       thumbnail_height, AV_PIX_FMT_RGBA, SWS_BICUBIC, nullptr,
+                       nullptr, nullptr),
         sws_freeContext);
     auto rgb_frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
     rgb_frame->format = AV_PIX_FMT_RGBA;
-    rgb_frame->width = THUMBNAIL_SIZE;
-    rgb_frame->height = THUMBNAIL_SIZE;
+    rgb_frame->width = thumbnail_width;
+    rgb_frame->height = thumbnail_height;
     check(av_image_alloc(rgb_frame->data, rgb_frame->linesize, frame->width,
                          frame->height, AV_PIX_FMT_RGBA, 32),
           "av_image_alloc");
@@ -182,8 +192,8 @@ EitherError<std::string> generate_thumbnail(
                                             avcodec_free_context);
     png_context->time_base = {1, 24};
     png_context->pix_fmt = AV_PIX_FMT_RGBA;
-    png_context->width = THUMBNAIL_SIZE;
-    png_context->height = THUMBNAIL_SIZE;
+    png_context->width = thumbnail_width;
+    png_context->height = thumbnail_height;
     check(avcodec_open2(png_context.get(), png_codec, nullptr),
           "avcodec_open2");
     check(avcodec_send_frame(png_context.get(), rgb_frame.get()),

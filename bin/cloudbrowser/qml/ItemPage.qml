@@ -406,6 +406,9 @@ Kirigami.ScrollablePage {
           Image {
             id: item_thumbnail
             anchors.fill: parent
+            asynchronous: true
+            mipmap: true
+            fillMode: Image.PreserveAspectCrop
             anchors.margins: 5
             visible: thumbnail.done && thumbnail.source && !item_icon.visible
             source: thumbnail.source
