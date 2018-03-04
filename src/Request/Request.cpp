@@ -34,6 +34,20 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
+namespace {
+
+template <class T1, class T2>
+struct compare {
+  bool operator()(Request<T1>*, Request<T2>*) const { return false; }
+};
+
+template <class T>
+struct compare<T, T> {
+  bool operator()(Request<T>* d1, Request<T>* d2) const { return d1 == d2; }
+};
+
+}  // namespace
+
 Response::Response(IHttpRequest::Response r) : http_(r) {}
 
 int Response::http_code() const { return http_.http_code_; }
@@ -129,8 +143,10 @@ void Request<T>::cancel() {
       }
       if (p->auth_callbacks_.empty() && p->current_authorization_) {
         auto auth = util::exchange(p->current_authorization_, nullptr);
-        lock.unlock();
-        auth->cancel();
+        if (!compare<T, EitherError<void>>()(this, auth.get())) {
+          lock.unlock();
+          auth->cancel();
+        }
       }
     }
   }
