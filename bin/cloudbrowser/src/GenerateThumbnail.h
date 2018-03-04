@@ -29,7 +29,8 @@
 
 namespace cloudstorage {
 
-EitherError<std::string> generate_thumbnail(const std::string& url);
+EitherError<std::string> generate_thumbnail(const std::string& url,
+                                            std::function<bool()> interrupt);
 
 }  // namespace cloudstorage
 

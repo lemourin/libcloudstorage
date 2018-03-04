@@ -46,8 +46,13 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
   DownloadThumbnailCallback(std::shared_ptr<IThreadPool> pool,
                             RequestNotifier* notifier,
                             std::shared_ptr<ICloudProvider> p,
-                            IItem::Pointer item)
-      : pool_(pool), notifier_(notifier), provider_(p), item_(item) {}
+                            IItem::Pointer item,
+                            std::function<bool()> interrupt)
+      : pool_(pool),
+        notifier_(notifier),
+        provider_(p),
+        item_(item),
+        interrupt_(interrupt) {}
 
   void receivedData(const char* data, uint32_t length) override {
     data_ += std::string(data, length);
@@ -93,7 +98,8 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto provider = provider_;
       auto item = item_;
       auto notifier = notifier_;
-      pool_->schedule([path, provider, item, notifier] {
+      auto interrupt = interrupt_;
+      pool_->schedule([path, provider, item, notifier, interrupt] {
         auto r = provider->getItemUrlAsync(item)->result();
         if (r.left()) {
           emit notifier->finishedVariant(r.left());
@@ -113,7 +119,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
           }
           return notifier->deleteLater();
         }
-        auto e = generate_thumbnail(*r.right());
+        auto e = generate_thumbnail(*r.right(), interrupt);
         if (e.left()) {
           emit notifier->finishedVariant(e.left());
           return notifier->deleteLater();
@@ -141,9 +147,15 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
   std::string data_;
   std::shared_ptr<ICloudProvider> provider_;
   IItem::Pointer item_;
+  std::function<bool()> interrupt_;
 };
 
 }  // namespace
+
+GetThumbnailRequest::GetThumbnailRequest()
+    : interrupt_(std::make_shared<std::atomic_bool>()) {}
+
+GetThumbnailRequest::~GetThumbnailRequest() { *interrupt_ = true; }
 
 void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   if (item->type() == "directory") return set_done(true);
@@ -176,10 +188,13 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
               emit cacheFileAdded(map["length"].toULongLong());
             });
     auto p = item->provider().provider_;
+    auto interrupt = interrupt_;
+    auto ctx_interrupt = context->interrupt();
     auto r = p->getThumbnailAsync(
         item->item(),
         util::make_unique<DownloadThumbnailCallback>(
-            context->thumbnailer_thread_pool(), object, p, item->item()));
+            context->thumbnailer_thread_pool(), object, p, item->item(),
+            [=]() { return *interrupt || *ctx_interrupt; }));
     context->add(p, std::move(r));
   }
 }

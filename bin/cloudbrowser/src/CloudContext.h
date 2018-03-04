@@ -84,6 +84,7 @@ class CloudContext : public QObject {
   cloudstorage::IItem::List cachedDirectory(ListDirectoryCacheKey);
   void schedule(std::function<void()>);
   std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool() const;
+  std::shared_ptr<std::atomic_bool> interrupt() const;
 
  signals:
   void receivedCode(QString provider);
@@ -156,6 +157,7 @@ class CloudContext : public QObject {
       list_directory_cache_;
   qint64 cache_size_;
   ProviderListModel user_provider_model_;
+  std::shared_ptr<std::atomic_bool> interrupt_;
 
   Q_OBJECT
 };

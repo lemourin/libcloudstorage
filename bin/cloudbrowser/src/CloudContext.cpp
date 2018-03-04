@@ -21,6 +21,11 @@
 
 using namespace cloudstorage;
 
+namespace {
+std::shared_ptr<ServerWrapperFactory> http_server_factory =
+    util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create());
+}  // namespace
+
 int ProviderListModel::rowCount(const QModelIndex&) const {
   return provider_.size();
 }
@@ -94,13 +99,13 @@ CloudContext::CloudContext(QObject* parent)
         file.open(QFile::ReadOnly);
         return QJsonDocument::fromJson(file.readAll());
       }()),
-      http_server_factory_(util::make_unique<ServerWrapperFactory>(
-          IHttpServerFactory::create())),
+      http_server_factory_(http_server_factory),
       http_(IHttp::create()),
       thread_pool_(IThreadPool::create(1)),
       context_thread_pool_(IThreadPool::create(1)),
       thumbnailer_thread_pool_(IThreadPool::create(2)),
-      cache_size_(updatedCacheSize()) {
+      cache_size_(updatedCacheSize()),
+      interrupt_(std::make_shared<std::atomic_bool>()) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
@@ -133,6 +138,7 @@ CloudContext::CloudContext(QObject* parent)
 CloudContext::~CloudContext() {
   saveProviders();
   context_thread_pool_ = nullptr;
+  *interrupt_ = true;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
 }
 
@@ -359,6 +365,10 @@ void CloudContext::schedule(std::function<void()> f) {
 
 std::shared_ptr<IThreadPool> CloudContext::thumbnailer_thread_pool() const {
   return thumbnailer_thread_pool_;
+}
+
+std::shared_ptr<std::atomic_bool> CloudContext::interrupt() const {
+  return interrupt_;
 }
 
 void CloudContext::receivedCode(std::string provider, std::string code) {
