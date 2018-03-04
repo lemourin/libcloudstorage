@@ -548,10 +548,11 @@ void CloudContext::RequestPool::add(std::shared_ptr<ICloudProvider> p,
 }
 
 std::streambuf::int_type CloudContext::DebugStream::overflow(int_type ch) {
-  if (ch == '\n' || current_line_.length() > 100) {
-    qDebug() << current_line_;
+  if (ch == '\n' || current_line_.length() > 1000) {
+    qDebug().noquote() << current_line_;
     current_line_ = "";
-  } else {
+  }
+  if (ch != '\n') {
     current_line_ += static_cast<char>(ch);
   }
   return 1;
