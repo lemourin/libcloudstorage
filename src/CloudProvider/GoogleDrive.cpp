@@ -444,7 +444,6 @@ IHttpRequest::Pointer GoogleDrive::Auth::refreshTokenRequest(
   arguments << "refresh_token=" << access_token()->refresh_token_ << "&"
             << "client_id=" << client_id() << "&"
             << "client_secret=" << client_secret() << "&"
-            << "redirect_uri=" << redirect_uri() << "&"
             << "grant_type=refresh_token";
   return request;
 }
