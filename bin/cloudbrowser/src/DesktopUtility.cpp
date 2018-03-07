@@ -13,6 +13,10 @@
 
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "Utility/Utility.h"
 
 #ifdef __unix__
@@ -88,9 +92,22 @@ void DesktopUtility::showPlayerNotification(bool, QString, QString) {}
 
 void DesktopUtility::hidePlayerNotification() {}
 
-void DesktopUtility::enableKeepScreenOn() { screensaver_enabled_ = false; }
+void DesktopUtility::enableKeepScreenOn() {
+  screensaver_enabled_ = false;
+#ifdef _WIN32
+  auto result =
+      SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED |
+                              ES_AWAYMODE_REQUIRED | ES_DISPLAY_REQUIRED);
+  cloudstorage::util::log(result);
+#endif
+}
 
-void DesktopUtility::disableKeepScreenOn() { screensaver_enabled_ = false; }
+void DesktopUtility::disableKeepScreenOn() {
+  screensaver_enabled_ = false;
+#ifdef _WIN32
+  SetThreadExecutionState(ES_CONTINUOUS);
+#endif
+}
 
 void DesktopUtility::showAd() {}
 
