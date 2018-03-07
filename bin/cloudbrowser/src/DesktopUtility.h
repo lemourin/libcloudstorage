@@ -8,10 +8,16 @@
 
 #define USE_DESKTOP_UTILITY
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include "IPlatformUtility.h"
 
 class DesktopUtility : public IPlatformUtility {
  public:
+  DesktopUtility();
+  ~DesktopUtility();
+
   bool mobile() const override;
   QString name() const override;
   bool openWebPage(QString url) override;
@@ -25,6 +31,13 @@ class DesktopUtility : public IPlatformUtility {
   void disableKeepScreenOn() override;
   void showAd() override;
   void hideAd() override;
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  std::atomic_bool screensaver_enabled_;
+  bool running_;
+  std::thread thread_;
 };
 
 #endif  // WINRT
