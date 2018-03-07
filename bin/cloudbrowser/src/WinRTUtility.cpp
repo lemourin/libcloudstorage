@@ -18,6 +18,7 @@
 using namespace Microsoft::WRL;
 using namespace Platform;
 using namespace Windows::Foundation;
+using namespace Windows::System::Display;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Microsoft::Advertising::WinRT::UI;
@@ -46,6 +47,9 @@ WinRTUtility::WinRTUtility() : ad_control_attached_() {
         ad_event_handler_, &AdEventHandler::onAdRefreshed);
     ad_control_->ErrorOccurred += ref new EventHandler<AdErrorEventArgs ^>(
         ad_event_handler_, &AdEventHandler::onAdError);
+
+    display_request_ = ref new DisplayRequest;
+
     return true;
   });
 }
@@ -70,9 +74,19 @@ void WinRTUtility::showPlayerNotification(bool, QString, QString) {}
 
 void WinRTUtility::hidePlayerNotification() {}
 
-void WinRTUtility::enableKeepScreenOn() {}
+void WinRTUtility::enableKeepScreenOn() {
+  QEventDispatcherWinRT::runOnXamlThread([this]() {
+    display_request_->RequestActive();
+    return true;
+  });
+}
 
-void WinRTUtility::disableKeepScreenOn() {}
+void WinRTUtility::disableKeepScreenOn() {
+  QEventDispatcherWinRT::runOnXamlThread([this]() {
+    display_request_->RequestRelease();
+    return true;
+  });
+}
 
 void WinRTUtility::showAd() {
   QEventDispatcherWinRT::runOnXamlThread([this]() {

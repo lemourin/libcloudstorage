@@ -51,6 +51,7 @@ class WinRTUtility : public IPlatformUtility {
   Microsoft::Advertising::WinRT::UI::AdControl ^ ad_control_;
   bool ad_control_attached_;
   AdEventHandler ^ ad_event_handler_;
+  Windows::System::Display::DisplayRequest ^ display_request_;
 };
 
 #endif  // WINRT
