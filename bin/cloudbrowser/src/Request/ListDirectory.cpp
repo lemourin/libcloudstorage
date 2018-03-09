@@ -128,12 +128,15 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
   auto provider = item->provider().variant();
   connect(object, &RequestNotifier::finishedList, this,
           [=](EitherError<IItem::List> r) {
-            set_done(true);
-            if (r.left())
-              return errorOccurred(provider, r.left()->code_,
-                                   r.left()->description_.c_str());
-            if (cache_found) list_.match(*r.right());
-            emit finished(cache_key, *r.right());
+            if (r.left()) {
+              set_done(true);
+              emit errorOccurred(provider, r.left()->code_,
+                                 r.left()->description_.c_str());
+            } else {
+              if (cache_found) list_.match(*r.right());
+              emit finished(cache_key, *r.right());
+              set_done(true);
+            }
           });
   connect(object, &RequestNotifier::addedItem, this, [=](IItem::Pointer item) {
     if (!cache_found) list_.add(item);

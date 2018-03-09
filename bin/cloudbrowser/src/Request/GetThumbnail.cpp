@@ -165,8 +165,8 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
   QFile file(path);
   if (file.exists() && file.size() > 0) {
     source_ = QUrl::fromLocalFile(path).toString();
-    set_done(true);
     emit sourceChanged();
+    set_done(true);
   } else {
     auto object = new RequestNotifier;
     auto provider = item->provider().variant();
@@ -179,14 +179,18 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
             [=](quint64 size) { context->addCacheSize(size); });
     connect(object, &RequestNotifier::finishedVariant, this,
             [=](EitherError<QVariant> e) {
-              set_done(true);
-              if (e.left())
-                return errorOccurred(provider, e.left()->code_,
-                                     e.left()->description_.c_str());
-              auto map = e.right()->toMap();
-              source_ = QUrl::fromLocalFile(map["path"].toString()).toString();
-              emit sourceChanged();
-              emit cacheFileAdded(map["length"].toULongLong());
+              if (e.left()) {
+                set_done(true);
+                emit errorOccurred(provider, e.left()->code_,
+                                   e.left()->description_.c_str());
+              } else {
+                auto map = e.right()->toMap();
+                source_ =
+                    QUrl::fromLocalFile(map["path"].toString()).toString();
+                emit sourceChanged();
+                emit cacheFileAdded(map["length"].toULongLong());
+                set_done(true);
+              }
             });
     auto p = item->provider().provider_;
     auto interrupt = interrupt_;
