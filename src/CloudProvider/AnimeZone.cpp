@@ -270,7 +270,7 @@ std::string extract_url(const std::string &page) {
   uint64_t arg_a = uint64_t(std::atoll(match[2].str().c_str()));
   uint64_t arg_c = uint64_t(std::atoll(match[3].str().c_str()));
   std::string unpacked = unpack_js(match[1].str(), arg_a, arg_c, arg_k);
-  re::regex source_rx("src:\"([^\"]*)\"");
+  re::regex source_rx("\"file\":\"([^\"]*)\"");
   re::smatch source_match;
   if (!re::regex_search(unpacked, source_match, source_rx)) {
     throw std::logic_error("Could not locate mp4 url.");
