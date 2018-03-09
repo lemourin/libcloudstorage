@@ -66,8 +66,7 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
   }
   re::regex button_rx(
       "<td>([^<]*)</td>(?:[^\\n]*\\n){2}.*?sprites (.*?) "
-      "lang(?:[^\\n]*\\n){2}.*?data-[^\"]*\"([^\"]*)\"",
-      re::regex_constants::ECMAScript);
+      "lang(?:[^\\n]*\\n){2}.*?data-[^\"]*\"([^\"]*)\"");
   for (auto it = re::sregex_iterator(page.begin() + static_cast<int64_t>(start),
                                      page.end(), button_rx);
        it != re::sregex_iterator(); ++it) {
@@ -413,151 +412,20 @@ IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
 IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
                                              std::istream &response,
                                              std::string &page_token) const {
-  IItem::List result;
-  if (directory.id() == rootDirectory()->id()) {
-    std::vector<char> letters;
-    letters.push_back('0');
-    for (char c = 'A'; c <= 'Z'; ++c) {
-      letters.push_back(c);
-    }
-    for (auto l : letters) {
-      Json::Value value;
-      value["type"] = "letter";
-      value["letter"] = std::string() + l;
-      result.push_back(util::make_unique<Item>(
-          std::string() + l, util::json::to_string(value), IItem::UnknownSize,
-          IItem::UnknownTimeStamp, IItem::FileType::Directory));
-    }
-    return result;
-  }
+  if (directory.id() == rootDirectory()->id()) return rootDirectoryContent();
+  std::stringstream stream;
+  stream << response.rdbuf();
   auto dir_data = util::json::from_string(directory.id());
-  if (dir_data["type"] == "letter") {
-    auto letter = dir_data["letter"].asString();
-    std::string content;
-    {
-      std::stringstream stream;
-      stream << response.rdbuf();
-      content = stream.str();
-    }
-    re::regex anime_rx("<a href=\"(/odcinki/[^\"]*)\">([^<]*)</a>");
-    for (auto it =
-             re::sregex_iterator(content.begin(), content.end(), anime_rx);
-         it != re::sregex_iterator(); ++it) {
-      Json::Value value;
-      const auto anime = (*it)[2].str();
-      const auto anime_url = (*it)[1].str();
-      value["type"] = "anime";
-      value["anime_url"] = endpoint() + anime_url;
-      value["anime"] = anime;
-      result.push_back(util::make_unique<Item>(
-          anime, util::json::to_string(value), IItem::UnknownSize,
-          IItem::UnknownTimeStamp, IItem::FileType::Directory));
-    }
-    re::regex next_rx("<a href=\"/anime/lista/[^=]*=([0-9]*)\">&raquo;</a>",
-                      re::regex::ECMAScript);
-    re::smatch next_match;
-    if (re::regex_search(content, next_match, next_rx)) {
-      page_token = next_match[1].str();
-    }
-    return result;
-  }
-  if (dir_data["type"] == "anime") {
-    std::string content;
-    {
-      std::stringstream stream;
-      stream << response.rdbuf();
-      content = stream.str();
-    }
-
-    re::regex episode_rx(
-        "<strong>([^<]*)</"
-        "strong>[^\n]*\n[^\"]*\"episode-title\">([^<]*)<(?:[^\n]*\n){3}.*?<a "
-        "href=\"..(/odcinek[^\"]*)\"",
-        re::regex::ECMAScript);
-    auto list_start = content.find("</thead>");
-    if (list_start == std::string::npos) {
-      return result;
-    }
-    for (auto it = re::sregex_iterator(
-             content.begin() + static_cast<int64_t>(list_start), content.end(),
-             episode_rx);
-         it != re::sregex_iterator(); ++it) {
-      Json::Value value;
-      const auto episode_no = (*it)[1].str();
-      const auto episode_title = (*it)[2].str();
-      const auto episode_url = (*it)[3].str();
-      value["type"] = "episode";
-      value["episode_no"] = episode_no;
-      value["episode_title"] = episode_title;
-      value["episode_url"] = episode_url;
-      value["anime"] = dir_data["anime"];
-      std::string name = episode_no;
-      if (episode_title != "" && episode_title != " ") {
-        name += ": " + episode_title;
-      }
-      value["name"] = name;
-      result.push_back(util::make_unique<Item>(
-          name, util::json::to_string(value), IItem::UnknownSize,
-          IItem::UnknownTimeStamp, IItem::FileType::Directory));
-    }
-    return result;
-  }
-  if (dir_data["type"] == "episode") {
-    std::string content;
-    {
-      std::stringstream stream;
-      stream << response.rdbuf();
-      content = stream.str();
-    }
-    auto players = episode_to_players(content);
-    auto value = util::json::from_string(directory.id());
-    const auto origin = endpoint() + value["episode_url"].asString();
-    std::unordered_map<std::string, uint64_t> player_counter;
-    const std::unordered_set<std::string> supported_players = {"openload.co",
-                                                               "mp4upload.com"};
-    auto idx = 0;
-    for (const auto &player : players) {
-      const std::string lower_player_name = util::to_lower(player.name_);
-      if (supported_players.find(lower_player_name) ==
-          supported_players.end()) {
-        idx++;
-        continue;
-      }
-      Json::Value value;
-      value["idx"] = idx++;
-      value["origin"] = origin;
-      value["player"] = lower_player_name;
-      const std::string counter_key = player.name_ + ":" + player.language_;
-      const uint64_t player_index = player_counter[counter_key];
-      player_counter[counter_key] += 1;
-      const std::string anime_name = dir_data["anime"].asString();
-      const std::string episode_no = "- " + dir_data["episode_no"].asString();
-      const std::vector<std::string> name_segments = {
-          anime_name, episode_no, "[" + player.language_ + "]",
-          "[" + player.name_ + "]"};
-      std::string player_name;
-      const std::string name_sep = " ";
-      bool first = false;
-      for (const auto &segment : name_segments) {
-        if (!first) {
-          player_name += name_sep;
-        } else {
-          first = false;
-        }
-        player_name += segment;
-      }
-      if (player_index > 0) {
-        player_name += "(" + std::to_string(player_index) + ")";
-      }
-      player_name += ".mp4";
-      value["name"] = player_name;
-      result.push_back(util::make_unique<Item>(
-          player_name, util::json::to_string(value), IItem::UnknownSize,
-          IItem::UnknownTimeStamp, IItem::FileType::Video));
-    }
-    return result;
-  }
-  throw std::logic_error("Unknown response received.");
+  if (dir_data["type"] == "letter")
+    return letterDirectoryContent(stream.str(), page_token);
+  else if (dir_data["type"] == "anime")
+    return animeDirectoryContent(dir_data["anime"].asString(), stream.str());
+  else if (dir_data["type"] == "episode")
+    return episodeDirectoryContent(
+        dir_data["episode_url"].asString(), dir_data["anime"].asString(),
+        dir_data["episode_no"].asString(), stream.str());
+  else
+    throw std::logic_error("Unknown response received.");
 }
 
 ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
@@ -605,8 +473,7 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           if (e.left()) {
             r->done(e.left());
           } else {
-            re::regex src_rx("src=\"([^\"]*)\"",
-                             re::regex::ECMAScript | re::regex::icase);
+            re::regex src_rx("src=\"([^\"]*)\"", re::regex::icase);
             re::smatch match;
             std::string content = e.right()->output().str();
             if (!re::regex_search(content, match, src_rx))
@@ -653,6 +520,133 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), cb, authorize_session)
       ->run();
+}
+
+IItem::List AnimeZone::rootDirectoryContent() const {
+  IItem::List result;
+  std::vector<char> letters;
+  letters.push_back('0');
+  for (char c = 'A'; c <= 'Z'; ++c) {
+    letters.push_back(c);
+  }
+  for (auto l : letters) {
+    Json::Value value;
+    value["type"] = "letter";
+    value["letter"] = std::string() + l;
+    result.push_back(util::make_unique<Item>(
+        std::string() + l, util::json::to_string(value), IItem::UnknownSize,
+        IItem::UnknownTimeStamp, IItem::FileType::Directory));
+  }
+  return result;
+}
+
+IItem::List AnimeZone::letterDirectoryContent(
+    const std::string &content, std::string &next_page_token) const {
+  IItem::List result;
+  re::regex anime_rx("<a href=\"(/odcinki/[^\"]*)\">([^<]*)</a>");
+  for (auto it = re::sregex_iterator(content.begin(), content.end(), anime_rx);
+       it != re::sregex_iterator(); ++it) {
+    Json::Value value;
+    const auto anime = (*it)[2].str();
+    const auto anime_url = (*it)[1].str();
+    value["type"] = "anime";
+    value["anime_url"] = endpoint() + anime_url;
+    value["anime"] = anime;
+    result.push_back(util::make_unique<Item>(
+        anime, util::json::to_string(value), IItem::UnknownSize,
+        IItem::UnknownTimeStamp, IItem::FileType::Directory));
+  }
+  re::regex next_rx("<a href=\"/anime/lista/[^=]*=([0-9]*)\">&raquo;</a>");
+  re::smatch next_match;
+  if (re::regex_search(content, next_match, next_rx)) {
+    next_page_token = next_match[1].str();
+  }
+  return result;
+}
+
+IItem::List AnimeZone::animeDirectoryContent(const std::string &anime_name,
+                                             const std::string &content) const {
+  IItem::List result;
+  re::regex episode_rx(
+      "<strong>([^<]*)</"
+      "strong>[^\n]*\n[^\"]*\"episode-title\">([^<]*)<(?:[^\n]*\n){3}.*?<a "
+      "href=\"..(/odcinek[^\"]*)\"");
+  auto list_start = content.find("</thead>");
+  if (list_start == std::string::npos) {
+    return result;
+  }
+  for (auto it = re::sregex_iterator(
+           content.begin() + static_cast<int64_t>(list_start), content.end(),
+           episode_rx);
+       it != re::sregex_iterator(); ++it) {
+    Json::Value value;
+    const auto episode_no = (*it)[1].str();
+    const auto episode_title = (*it)[2].str();
+    const auto episode_url = (*it)[3].str();
+    value["type"] = "episode";
+    value["episode_no"] = episode_no;
+    value["episode_title"] = episode_title;
+    value["episode_url"] = episode_url;
+    value["anime"] = anime_name;
+    std::string name = episode_no;
+    if (episode_title != "" && episode_title != " ") {
+      name += ": " + episode_title;
+    }
+    value["name"] = name;
+    result.push_back(util::make_unique<Item>(
+        name, util::json::to_string(value), IItem::UnknownSize,
+        IItem::UnknownTimeStamp, IItem::FileType::Directory));
+  }
+  return result;
+}
+
+IItem::List AnimeZone::episodeDirectoryContent(
+    const std::string &episode_url, const std::string &anime_name,
+    const std::string &episode_no, const std::string &content) const {
+  auto players = episode_to_players(content);
+  const auto origin = endpoint() + episode_url;
+  std::unordered_map<std::string, uint64_t> player_counter;
+  const std::unordered_set<std::string> supported_players = {"openload.co",
+                                                             "mp4upload.com"};
+  auto idx = 0;
+  IItem::List result;
+  for (const auto &player : players) {
+    const std::string lower_player_name = util::to_lower(player.name_);
+    if (supported_players.find(lower_player_name) == supported_players.end()) {
+      idx++;
+      continue;
+    }
+    Json::Value value;
+    value["idx"] = idx++;
+    value["origin"] = origin;
+    value["player"] = lower_player_name;
+    const std::string counter_key = player.name_ + ":" + player.language_;
+    const uint64_t player_index = player_counter[counter_key];
+    player_counter[counter_key] += 1;
+    const std::vector<std::string> name_segments = {
+        anime_name, episode_no, "[" + player.language_ + "]",
+        "[" + player.name_ + "]"};
+    std::string player_name;
+    const std::string name_sep = " ";
+    bool first = false;
+    for (const auto &segment : name_segments) {
+      if (!first) {
+        player_name += name_sep;
+      } else {
+        first = false;
+      }
+      player_name += segment;
+    }
+    if (player_index > 0) {
+      player_name += "(" + std::to_string(player_index) + ")";
+    }
+    player_name += ".mp4";
+    value["name"] = player_name;
+    result.push_back(util::make_unique<Item>(
+        player_name, util::json::to_string(value), IItem::UnknownSize,
+        IItem::UnknownTimeStamp, IItem::FileType::Video));
+  }
+  return result;
 }
 
 std::string AnimeZone::Auth::authorizeLibraryUrl() const {

@@ -58,6 +58,16 @@ class AnimeZone : public CloudProvider {
                                              GetItemUrlCallback) override;
 
  private:
+  IItem::List rootDirectoryContent() const;
+  IItem::List letterDirectoryContent(const std::string& content,
+                                     std::string& next_page_token) const;
+  IItem::List animeDirectoryContent(const std::string& anime_name,
+                                    const std::string& content) const;
+  IItem::List episodeDirectoryContent(const std::string& episode_url,
+                                      const std::string& anime_name,
+                                      const std::string& episode_no,
+                                      const std::string& content) const;
+
   class Auth : public cloudstorage::Auth {
    public:
     std::string authorizeLibraryUrl() const override;
