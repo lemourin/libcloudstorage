@@ -23,6 +23,7 @@ noinst_HEADERS = \
 	src/Request/MoveItem.h \
 	src/Request/UploadItem.h \
 	src/Request/DownloadItem.h \
+	src/Request/CopyItem.h
 	src/GenerateThumbnail.h \
 	src/AndroidUtility.h \
 	src/DesktopUtility.h \
@@ -46,6 +47,7 @@ libcloudbrowser_la_SOURCES = \
 	src/Request/MoveItem.cpp \
 	src/Request/UploadItem.cpp \
 	src/Request/DownloadItem.cpp \
+	src/Request/CopyItem.cpp \
 	src/GenerateThumbnail.cpp \
 	src/AndroidUtility.cpp \
 	src/DesktopUtility.cpp \
@@ -93,6 +95,7 @@ nodist_libcloudbrowser_la_SOURCES = \
 	src/Request/MoveItem.moc.cpp \
 	src/Request/UploadItem.moc.cpp \
 	src/Request/DownloadItem.moc.cpp \
+	src/Request/CopyItem.moc.cpp \
 	src/FileDialog.moc.cpp \
 	src/IPlatformUtility.moc.cpp \
 	resources.cpp

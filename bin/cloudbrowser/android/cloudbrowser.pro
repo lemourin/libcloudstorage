@@ -66,6 +66,7 @@ HEADERS += \
     ../src/Request/MoveItem.h \
     ../src/Request/UploadItem.h \
     ../src/Request/DownloadItem.h \
+    ../src/Request/CopyItem.h \
     ../src/GenerateThumbnail.h \
     ../src/AndroidUtility.h \
     ../src/DesktopUtility.h \
@@ -89,6 +90,7 @@ SOURCES += \
     ../src/Request/MoveItem.cpp \
     ../src/Request/UploadItem.cpp \
     ../src/Request/DownloadItem.cpp \
+    ../src/Request/CopyItem.cpp \
     ../src/GenerateThumbnail.cpp \
     ../src/AndroidUtility.cpp \
     ../src/DesktopUtility.cpp \

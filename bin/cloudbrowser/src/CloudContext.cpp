@@ -104,6 +104,7 @@ CloudContext::CloudContext(QObject* parent)
       thread_pool_(IThreadPool::create(1)),
       context_thread_pool_(IThreadPool::create(1)),
       thumbnailer_thread_pool_(IThreadPool::create(2)),
+      pool_(std::make_shared<RequestPool>()),
       cache_size_(updatedCacheSize()),
       interrupt_(std::make_shared<std::atomic_bool>()) {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
@@ -140,6 +141,17 @@ CloudContext::~CloudContext() {
   context_thread_pool_ = nullptr;
   *interrupt_ = true;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
+}
+
+QString CloudContext::sanitize(const QString& name) {
+  const QString forbidden = "~\"#%&*:<>?/\\{|}";
+  QString result;
+  for (auto&& c : name)
+    if (forbidden.indexOf(c) == -1)
+      result += c;
+    else
+      result += '_';
+  return result;
 }
 
 void CloudContext::loadCachedDirectories() {
@@ -334,7 +346,7 @@ void CloudContext::showCursor() const {
 
 void CloudContext::add(std::shared_ptr<ICloudProvider> p,
                        std::shared_ptr<IGenericRequest> r) {
-  pool_.add(p, r);
+  pool_->add(p, r);
 }
 
 void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
@@ -371,6 +383,10 @@ std::shared_ptr<std::atomic_bool> CloudContext::interrupt() const {
   return interrupt_;
 }
 
+std::shared_ptr<CloudContext::RequestPool> CloudContext::request_pool() const {
+  return pool_;
+}
+
 void CloudContext::receivedCode(std::string provider, std::string code) {
   auto p = ICloudStorage::create()->provider(provider, init_data(provider));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
@@ -382,7 +398,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
                                 e.left()->description_.c_str());
     std::shared_ptr<ICloudProvider> p =
         this->provider(provider, "####", *e.right());
-    pool_.add(p, p->getGeneralDataAsync([=](EitherError<GeneralData> d) {
+    pool_->add(p, p->getGeneralDataAsync([=](EitherError<GeneralData> d) {
       if (d.left())
         return emit errorOccurred("GeneralData", provider_variant,
                                   d.left()->code_,
@@ -396,7 +412,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
       saveProviders();
     }));
   });
-  pool_.add(std::move(p), std::move(r));
+  pool_->add(std::move(p), std::move(r));
   emit receivedCode(provider.c_str());
 }
 

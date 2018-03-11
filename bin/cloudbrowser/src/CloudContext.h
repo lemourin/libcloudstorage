@@ -52,8 +52,31 @@ class CloudContext : public QObject {
   Q_PROPERTY(qint64 cacheSize READ cacheSize NOTIFY cacheSizeChanged)
   Q_PROPERTY(bool httpServerAvailable READ httpServerAvailable CONSTANT)
 
+  class RequestPool {
+   public:
+    RequestPool();
+    ~RequestPool();
+
+    void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
+             std::shared_ptr<cloudstorage::IGenericRequest> r);
+
+   private:
+    struct RequestData {
+      std::shared_ptr<cloudstorage::ICloudProvider> provider_;
+      std::shared_ptr<cloudstorage::IGenericRequest> request_;
+    };
+    std::atomic_bool done_;
+    std::shared_ptr<cloudstorage::IGenericRequest> current_request_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    std::deque<RequestData> request_;
+    std::future<void> cleanup_thread_;
+  };
+
   CloudContext(QObject* parent = nullptr);
   ~CloudContext();
+
+  static QString sanitize(const QString& filename);
 
   QStringList providers() const;
   ProviderListModel* userProviders();
@@ -85,6 +108,7 @@ class CloudContext : public QObject {
   void schedule(std::function<void()>);
   std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool() const;
   std::shared_ptr<std::atomic_bool> interrupt() const;
+  std::shared_ptr<RequestPool> request_pool() const;
 
  signals:
   void receivedCode(QString provider);
@@ -93,27 +117,6 @@ class CloudContext : public QObject {
   void cacheSizeChanged();
 
  private:
-  class RequestPool {
-   public:
-    RequestPool();
-    ~RequestPool();
-
-    void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
-             std::shared_ptr<cloudstorage::IGenericRequest> r);
-
-   private:
-    struct RequestData {
-      std::shared_ptr<cloudstorage::ICloudProvider> provider_;
-      std::shared_ptr<cloudstorage::IGenericRequest> request_;
-    };
-    std::atomic_bool done_;
-    std::shared_ptr<cloudstorage::IGenericRequest> current_request_;
-    std::mutex mutex_;
-    std::condition_variable condition_;
-    std::deque<RequestData> request_;
-    std::future<void> cleanup_thread_;
-  };
-
   class HttpServerCallback : public cloudstorage::IHttpServer::ICallback {
    public:
     HttpServerCallback(CloudContext*);
@@ -151,7 +154,7 @@ class CloudContext : public QObject {
   std::shared_ptr<cloudstorage::IThreadPool> thread_pool_;
   cloudstorage::IThreadPool::Pointer context_thread_pool_;
   std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool_;
-  RequestPool pool_;
+  std::shared_ptr<RequestPool> pool_;
   std::unordered_map<ListDirectoryCacheKey,
                      std::vector<cloudstorage::IItem::Pointer>>
       list_directory_cache_;

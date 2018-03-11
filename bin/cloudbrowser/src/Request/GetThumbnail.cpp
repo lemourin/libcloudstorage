@@ -16,17 +16,6 @@ namespace {
 
 const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(5);
 
-QString sanitize(const QString& name) {
-  const QString forbidden = "~\"#%&*:<>?/\\{|}";
-  QString result;
-  for (auto&& c : name)
-    if (forbidden.indexOf(c) == -1)
-      result += c;
-    else
-      result += '_';
-  return result;
-}
-
 class DownloadToString : public IDownloadFileCallback {
  public:
   void receivedData(const char* data, uint32_t length) override {
@@ -211,5 +200,5 @@ void GetThumbnailRequest::update(CloudContext* context, CloudItem* item) {
 
 QString GetThumbnailRequest::thumbnail_path(const QString& filename) {
   return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
-         QDir::separator() + sanitize(filename) + "-thumbnail";
+         QDir::separator() + CloudContext::sanitize(filename) + "-thumbnail";
 }
