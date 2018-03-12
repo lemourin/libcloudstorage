@@ -107,10 +107,6 @@ int exec_cloudbrowser(int argc, char** argv) {
     QtWebView::initialize();
 #endif
 
-#ifdef __ANDROID__
-    AndroidUtility::setActivity(QtAndroid::androidActivity());
-#endif
-
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
     app.setWindowIcon(QPixmap(":/resources/cloud.png"));

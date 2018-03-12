@@ -17,7 +17,6 @@ const int RECEIVER_CODE = 43;
 
 namespace {
 AndroidUtility *android = nullptr;
-QAndroidJniObject activity;
 std::mutex mutex;
 std::unordered_map<int, std::unordered_set<AndroidUtility::IResultListener *>>
     result_listener;
@@ -110,11 +109,9 @@ void AndroidUtility::showAd() { activity().callMethod<void>("showAd"); }
 
 void AndroidUtility::hideAd() { activity().callMethod<void>("hideAd"); }
 
-void AndroidUtility::setActivity(const QAndroidJniObject &activity) {
-  ::activity = activity;
+QAndroidJniObject AndroidUtility::activity() {
+  return QtAndroid::androidActivity();
 }
-
-QAndroidJniObject AndroidUtility::activity() { return ::activity; }
 
 void AndroidUtility::startActivity(const QAndroidJniObject &intent,
                                    int request_code,

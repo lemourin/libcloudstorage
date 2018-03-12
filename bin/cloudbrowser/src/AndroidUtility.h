@@ -38,7 +38,6 @@ class AndroidUtility : public IPlatformUtility {
   void showAd() override;
   void hideAd() override;
 
-  static void setActivity(const QAndroidJniObject&);
   static QAndroidJniObject activity();
 
   static void startActivity(const QAndroidJniObject& intent, int request_code,
