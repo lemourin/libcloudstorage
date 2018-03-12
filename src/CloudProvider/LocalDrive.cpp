@@ -116,17 +116,6 @@ AuthorizeRequest::Pointer LocalDrive::authorizeAsync() {
   return std::make_shared<SimpleAuthorization>(shared_from_this());
 }
 
-LocalDrive::ListDirectoryRequest::Pointer LocalDrive::listDirectoryAsync(
-    IItem::Pointer item, IListDirectoryCallback::Pointer callback) {
-  using ItemList = EitherError<IItem::List>;
-  return request<ItemList>(
-      [=](ItemList e) { callback->done(e); },
-      [=](Request<ItemList>::Pointer r) {
-        list_directory(*this, item, [=](ItemList e) { r->done(e); },
-                       [=](IItem::Pointer i) { callback->receivedItem(i); });
-      });
-}
-
 LocalDrive::ListDirectoryPageRequest::Pointer
 LocalDrive::listDirectoryPageAsync(IItem::Pointer item, const std::string &,
                                    ListDirectoryPageCallback callback) {

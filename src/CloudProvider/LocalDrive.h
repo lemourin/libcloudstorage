@@ -43,8 +43,6 @@ class LocalDrive : public CloudProvider {
   void initialize(InitData&&) override;
   AuthorizeRequest::Pointer authorizeAsync() override;
 
-  ListDirectoryRequest::Pointer listDirectoryAsync(
-      IItem::Pointer, IListDirectoryCallback::Pointer) override;
   ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
       IItem::Pointer, const std::string&, ListDirectoryPageCallback) override;
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,

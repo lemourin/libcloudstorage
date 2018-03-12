@@ -561,34 +561,6 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
       ->run();
 }
 
-ICloudProvider::ListDirectoryRequest::Pointer MegaNz::listDirectoryAsync(
-    IItem::Pointer item, IListDirectoryCallback::Pointer cb) {
-  using ItemList = EitherError<IItem::List>;
-  auto callback = cb.get();
-  auto resolver = [=](Request<ItemList>::Pointer r) {
-    ensureAuthorized<ItemList>(r, [=] {
-      auto node = this->node(item->id());
-      if (node) {
-        IItem::List result;
-        std::unique_ptr<mega::MegaNodeList> lst(mega_->getChildren(node.get()));
-        if (lst) {
-          for (int i = 0; i < lst->size(); i++) {
-            auto item = toItem(lst->get(i));
-            result.push_back(item);
-            callback->receivedItem(item);
-          }
-        }
-        r->done(result);
-      } else {
-        r->done(Error{IHttpRequest::NotFound, "node not found"});
-      }
-    });
-  };
-  return std::make_shared<Request<ItemList>>(
-             shared_from_this(), [=](ItemList e) { cb->done(e); }, resolver)
-      ->run();
-}
-
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::downloadFileAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback, Range range) {
   return std::make_shared<Request<EitherError<void>>>(

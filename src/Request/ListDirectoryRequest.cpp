@@ -51,29 +51,18 @@ void ListDirectoryRequest::resolve(Request::Pointer request,
 void ListDirectoryRequest::work(IItem::Pointer directory,
                                 std::string page_token, ICallback* callback) {
   auto request = this->shared_from_this();
-  this->request(
-      [=](util::Output i) {
-        return provider()->listDirectoryRequest(*directory, page_token, *i);
-      },
-      [=](EitherError<Response> e) {
+  request->subrequest(provider()->listDirectoryPageAsync(
+      directory, page_token, [=](EitherError<PageData> e) {
         if (e.left()) return request->done(e.left());
-        try {
-          std::string page_token = "";
-          for (auto& t : request->provider()->listDirectoryResponse(
-                   *directory, e.right()->output(), page_token)) {
-            callback->receivedItem(t);
-            result_.push_back(t);
-          }
-          if (!page_token.empty())
-            work(directory, page_token, callback);
-          else {
-            request->done(result_);
-          }
-        } catch (const std::exception&) {
-          request->done(
-              Error{IHttpRequest::Failure, e.right()->output().str()});
+        for (auto& t : e.right()->items_) {
+          callback->receivedItem(t);
+          result_.push_back(t);
         }
-      });
+        if (!e.right()->next_token_.empty())
+          work(directory, e.right()->next_token_, callback);
+        else
+          request->done(result_);
+      }));
 }
 
 }  // namespace cloudstorage
