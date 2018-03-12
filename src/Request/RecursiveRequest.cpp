@@ -45,8 +45,8 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
     r->subrequest(r->provider()->listDirectorySimpleAsync(
         item, [=](EitherError<IItem::List> lst) {
           if (lst.left()) return callback(lst.left());
-          visit(r, *lst.right(),
-                [=](T e) {
+          visit(r, lst.right(),
+                [=](const T& e) {
                   if (e.left()) return callback(e);
                   visitor(r, item, callback);
                 },
@@ -55,11 +55,12 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
 }
 
 template <class T>
-void RecursiveRequest<T>::visit(typename Request<T>::Pointer r, IItem::List lst,
+void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
+                                std::shared_ptr<IItem::List> lst,
                                 CompleteCallback callback, Visitor visitor) {
-  if (lst.empty()) return callback(T());
-  auto i = lst.back();
-  lst.pop_back();
+  if (lst->empty()) return callback(T());
+  auto i = lst->back();
+  lst->pop_back();
   visit(r, i,
         [=](const T& e) {
           if (e.left()) return callback(e.left());

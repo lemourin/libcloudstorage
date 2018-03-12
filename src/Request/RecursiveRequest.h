@@ -41,8 +41,9 @@ class RecursiveRequest : public Request<ReturnValue> {
  private:
   static void visit(typename Request<ReturnValue>::Pointer, IItem::Pointer item,
                     CompleteCallback, Visitor);
-  static void visit(typename Request<ReturnValue>::Pointer, IItem::List lst,
-                    CompleteCallback, Visitor);
+  static void visit(typename Request<ReturnValue>::Pointer,
+                    std::shared_ptr<IItem::List> lst, CompleteCallback,
+                    Visitor);
 };
 
 }  // namespace cloudstorage
