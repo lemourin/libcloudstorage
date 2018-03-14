@@ -23,12 +23,7 @@ isEmpty(ANDROID_ARCH) {
 }
 
 QMAKE_CXX = $$ANDROID_TOOLCHAIN_PATH/bin/clang++
-QMAKE_CXXFLAGS = \
-    -fstack-protector-strong \
-    -march=armv7-a \
-    -mfloat-abi=softfp \
-    -mfpu=vfp \
-    -fno-builtin-memmove
+QMAKE_CXXFLAGS =
 QMAKE_LINK = $$QMAKE_CXX
 QMAKE_INCDIR_POST =
 QMAKE_LIBS_PRIVATE =
