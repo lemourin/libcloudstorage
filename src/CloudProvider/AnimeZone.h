@@ -39,6 +39,7 @@ class AnimeZone : public CloudProvider {
   std::string endpoint() const override;
   bool isSuccess(int code,
                  const IHttpRequest::HeaderParameters&) const override;
+  OperationSet supportedOperations() const override;
 
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,

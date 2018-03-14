@@ -333,6 +333,11 @@ bool AnimeZone::isSuccess(int code,
   return IHttpRequest::isSuccess(code) && extract_session(headers) == "";
 }
 
+ICloudProvider::OperationSet AnimeZone::supportedOperations() const {
+  return GetItem | ListDirectoryPage | ListDirectory | DownloadFile |
+         GetItemUrl;
+}
+
 ICloudProvider::GeneralDataRequest::Pointer AnimeZone::getGeneralDataAsync(
     GeneralDataCallback cb) {
   return std::make_shared<Request<EitherError<GeneralData>>>(
