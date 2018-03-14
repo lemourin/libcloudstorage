@@ -62,6 +62,7 @@ public class NotificationHelper {
                 0, new Intent(ActionNext), PendingIntent.FLAG_UPDATE_CURRENT);
         final Intent intent = new Intent(m_context, CloudBrowser.class);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setAction(Intent.ACTION_MAIN);
         final PendingIntent content_intent = PendingIntent.getActivity(m_context,
                 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder builder = new Notification.Builder(m_context);
@@ -74,10 +75,10 @@ public class NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             builder.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1));
         if (!playing)
-            builder.addAction(R.drawable.play, ActionPlay, play_intent);
+            builder.addAction(android.R.drawable.ic_media_play, ActionPlay, play_intent);
         else
-            builder.addAction(R.drawable.pause, ActionPause, pause_intent);
-        builder.addAction(R.drawable.next, ActionNext, next_intent);
+            builder.addAction(android.R.drawable.ic_media_pause, ActionPause, pause_intent);
+        builder.addAction(android.R.drawable.ic_media_next, ActionNext, next_intent);
 
         m_notification_manager.notify(PlayerNotification, builder.build());
     }
