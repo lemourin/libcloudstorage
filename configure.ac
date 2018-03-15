@@ -144,6 +144,7 @@ HAVE_THUMBNAILER=0
 HAVE_VLC_QT=0
 HAVE_CLOUDBROWSER=0
 
+AC_ARG_WITH([vlc-qt], AS_HELP_STRING([--with-vlc-qt]))
 AC_ARG_WITH([cloudbrowser], AS_HELP_STRING([--with-cloudbrowser]))
 AS_IF([test "x$with_cloudbrowser" != "xno"], [
   AS_IF([test "$HAVE_CURL" -eq 1 -a "$HAVE_MICROHTTPD" -eq 1], [
@@ -183,10 +184,15 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
       HAVE_THUMBNAILER=1
       AC_DEFINE(WITH_THUMBNAILER)
     ], [HAVE_THUMBNAILER=0])
-    PKG_CHECK_MODULES([vlcqt], [libVLCQtQml], [
-      HAVE_VLC_QT=1
-      AC_DEFINE(WITH_VLC_QT)
-    ], [HAVE_VLC_QT=0])
+    AS_IF([test "x$with_vlc_qt" != "xno"], [
+      PKG_CHECK_MODULES([vlcqt], [libVLCQtQml], [
+        HAVE_VLC_QT=1
+        AC_DEFINE(WITH_VLC_QT)
+      ], [
+        HAVE_VLC_QT=0
+        AS_IF([test "x$with_vlc_qt" = "xyes"], [AC_MSG_ERROR([vlc-qt not found])])
+      ])
+    ])
   ], [
     AS_IF([test "x$with_cloudbrowser" = "xyes"], [
       AS_IF([test "$HAVE_CURL" -eq 0], [AC_MSG_ERROR([cloudbrowser requires curl])])
