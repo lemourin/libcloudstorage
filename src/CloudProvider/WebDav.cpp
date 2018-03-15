@@ -192,8 +192,10 @@ GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
   auto quota_available = prop->FirstChildElement("d:quota-available-bytes");
   if (!quota_used || !quota_available) throw std::logic_error("invalid xml");
   GeneralData data;
-  data.space_used_ = std::stoull(quota_used->GetText());
-  data.space_total_ = std::stoull(quota_available->GetText());
+  data.space_used_ =
+      quota_used->GetText() ? std::stoull(quota_used->GetText()) : 0;
+  data.space_total_ =
+      quota_available->GetText() ? std::stoull(quota_available->GetText()) : 0;
   auto lock = auth_lock();
   auto url = util::Url(webdav_url_);
   data.username_ = url.protocol() + "://" + user_ + "@" + url.host() +
