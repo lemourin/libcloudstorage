@@ -103,9 +103,8 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
                            util::json::from_stream(e.right()->output());
                        upload(r, response["uploadUrl"].asString(), 0, callback,
                               response);
-                     } catch (const Json::Exception&) {
-                       r->done(Error{IHttpRequest::Failure,
-                                     e.right()->output().str()});
+                     } catch (const Json::Exception& e) {
+                       r->done(Error{IHttpRequest::Failure, e.what()});
                      }
                    });
              })

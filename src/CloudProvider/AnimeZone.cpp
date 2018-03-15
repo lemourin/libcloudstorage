@@ -62,7 +62,7 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
   std::vector<PlayerDetails> result;
   auto start = page.find("Wszystkie odcinki");
   if (start == std::string::npos) {
-    throw std::logic_error("Players not found.");
+    throw std::logic_error(util::Error::PLAYERS_NOT_FOUND);
   }
   re::regex button_rx(
       "<td>([^<]*)</td>(?:[^\\n]*\\n){2}.*?sprites (.*?) "
@@ -236,25 +236,25 @@ std::string unpack_js(std::string p, uint64_t a, uint64_t c,
 std::string extract_url(const std::string &page) {
   auto start = page.find("p,a,c,k");
   if (start == std::string::npos) {
-    throw std::logic_error("Could not find packed script.");
+    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
   }
   start = page.find("return", start);
   if (start == std::string::npos) {
-    throw std::logic_error("Could not find packed script.");
+    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
   }
   start = page.find("'", start);
   if (start == std::string::npos) {
-    throw std::logic_error("Could not find packed script.");
+    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
   }
   auto end = page.find("</script>", start);
   if (end == std::string::npos) {
-    throw std::logic_error("Could not find packed script.");
+    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
   }
   const std::string code = page.substr(start, end - start);
   re::smatch match;
   re::regex arg_rx("'(.*?)',([0-9]*),([0-9]*),'(.*?)'");
   if (!re::regex_search(code, match, arg_rx)) {
-    throw std::logic_error("Could not extract packed arguments.");
+    throw std::logic_error(util::Error::COULD_NOT_EXTRACT_PACKED_ARGUMENTS);
   }
   std::vector<std::string> arg_k;
   std::string buffer;
@@ -273,7 +273,7 @@ std::string extract_url(const std::string &page) {
   re::regex source_rx("\"file\":\"([^\"]*)\"");
   re::smatch source_match;
   if (!re::regex_search(unpacked, source_match, source_rx)) {
-    throw std::logic_error("Could not locate mp4 url.");
+    throw std::logic_error(util::Error::COULD_NOT_FIND_MP4_URL);
   }
   return source_match[1].str();
 }
@@ -298,8 +298,8 @@ AuthorizeRequest::Pointer AnimeZone::authorizeAsync() {
               } else {
                 auto session = extract_session(e.headers());
                 if (session == "") {
-                  complete(
-                      Error{IHttpRequest::Failure, "Session token not found."});
+                  complete(Error{IHttpRequest::Failure,
+                                 util::Error::COULD_NOT_FIND_SESSION_TOKEN});
                 } else {
                   {
                     auto lock = auth_lock();
@@ -430,7 +430,7 @@ IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
         dir_data["episode_url"].asString(), dir_data["anime"].asString(),
         dir_data["episode_no"].asString(), stream.str());
   else
-    throw std::logic_error("Unknown response received.");
+    throw std::logic_error(util::Error::UNKNOWN_RESPONSE_RECEIVED);
 }
 
 ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
@@ -438,28 +438,26 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
   auto value = util::json::from_string(item->id());
   auto fetch_player = [=](Request<EitherError<std::string>>::Pointer r,
                           const std::string &url) {
-    r->send(
-        [=](util::Output) { return http()->create(url); },
-        [=](EitherError<Response> e) {
-          if (e.left()) {
-            r->done(e.left());
-          } else {
-            try {
-              auto value = util::json::from_string(item->id());
-              const std::string player = value["player"].asString();
-              if (player == "openload.co") {
-                r->done(openload::extract_url(e.right()->output().str()));
-              } else if (player == "mp4upload.com") {
-                r->done(mp4upload::extract_url(e.right()->output().str()));
+    r->send([=](util::Output) { return http()->create(url); },
+            [=](EitherError<Response> e) {
+              if (e.left()) {
+                r->done(e.left());
               } else {
-                throw std::logic_error(
-                    "Could not extract unsupported player \"" + player + "\"");
+                try {
+                  auto value = util::json::from_string(item->id());
+                  const std::string player = value["player"].asString();
+                  if (player == "openload.co") {
+                    r->done(openload::extract_url(e.right()->output().str()));
+                  } else if (player == "mp4upload.com") {
+                    r->done(mp4upload::extract_url(e.right()->output().str()));
+                  } else {
+                    throw std::logic_error(util::Error::UNSUPPORTED_PLAYER);
+                  }
+                } catch (const std::exception &e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
               }
-            } catch (const std::exception &e) {
-              r->done(Error{IHttpRequest::Failure, e.what()});
-            }
-          }
-        });
+            });
   };
   auto fetch_frame = [=](Request<EitherError<std::string>>::Pointer r,
                          const std::string &origin, const std::string &code) {

@@ -179,18 +179,18 @@ GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("failed to parse xml");
+  if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
+    throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   auto response = document.RootElement()->FirstChildElement("d:response");
-  if (!response) throw std::logic_error("invalid xml");
+  if (!response) throw std::logic_error(util::Error::INVALID_XML);
   auto propstat = response->FirstChildElement("d:propstat");
-  if (!propstat) throw std::logic_error("invalid xml");
+  if (!propstat) throw std::logic_error(util::Error::INVALID_XML);
   auto prop = propstat->FirstChildElement("d:prop");
-  if (!prop) throw std::logic_error("invalid xml");
+  if (!prop) throw std::logic_error(util::Error::INVALID_XML);
   auto quota_used = prop->FirstChildElement("d:quota-used-bytes");
   auto quota_available = prop->FirstChildElement("d:quota-available-bytes");
-  if (!quota_used || !quota_available) throw std::logic_error("invalid xml");
+  if (!quota_used || !quota_available)
+    throw std::logic_error(util::Error::INVALID_XML);
   GeneralData data;
   data.space_used_ =
       quota_used->GetText() ? std::stoull(quota_used->GetText()) : 0;
@@ -208,9 +208,8 @@ IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("failed to parse xml");
+  if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
+    throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   return toItem(document.RootElement()->FirstChild());
 }
 
@@ -243,9 +242,8 @@ IItem::List WebDav::listDirectoryResponse(const IItem&, std::istream& stream,
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("failed to parse xml");
+  if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
+    throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   if (document.RootElement()->FirstChild() == nullptr) return {};
 
   IItem::List result;
@@ -257,13 +255,13 @@ IItem::List WebDav::listDirectoryResponse(const IItem&, std::istream& stream,
 }
 
 IItem::Pointer WebDav::toItem(const tinyxml2::XMLNode* node) const {
-  if (!node) throw std::logic_error("invalid xml");
+  if (!node) throw std::logic_error(util::Error::INVALID_XML);
   auto element = node->FirstChildElement("d:href");
-  if (!element) throw std::logic_error("invalid xml");
+  if (!element) throw std::logic_error(util::Error::INVALID_XML);
   auto propstat = node->FirstChildElement("d:propstat");
-  if (!propstat) throw std::logic_error("invalid xml");
+  if (!propstat) throw std::logic_error(util::Error::INVALID_XML);
   auto prop = propstat->FirstChildElement("d:prop");
-  if (!prop) throw std::logic_error("invalid xml");
+  if (!prop) throw std::logic_error(util::Error::INVALID_XML);
   auto size = IItem::UnknownSize;
   auto timestamp = IItem::UnknownTimeStamp;
   if (auto size_element = prop->FirstChildElement("d:getcontentlength"))

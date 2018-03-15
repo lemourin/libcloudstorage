@@ -34,7 +34,7 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(p, callback, [=](Request::Pointer request) {
         if (destination->type() != IItem::FileType::Directory)
           return request->done(
-              Error{IHttpRequest::Forbidden, "destination not a directory"});
+              Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});
         this->request(
             [=](util::Output stream) {
               return p->moveItemRequest(*source, *destination, *stream);
@@ -44,9 +44,8 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
               try {
                 request->done(p->moveItemResponse(*source, *destination,
                                                   e.right()->output()));
-              } catch (const std::exception&) {
-                request->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              } catch (const std::exception& e) {
+                request->done(Error{IHttpRequest::Failure, e.what()});
               }
             });
       }) {}

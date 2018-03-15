@@ -119,6 +119,49 @@ IHttpServer::IResponse::Pointer response_from_string(
 std::string temporary_directory();
 std::string home_directory();
 
+namespace Error {
+
+constexpr auto INVALID_XML = "invalid xml";
+constexpr auto FAILED_TO_PARSE_XML = "failed to parse xml";
+constexpr auto INVALID_CREDENTIALS = "invalid credentials";
+constexpr auto INVALID_AUTHORIZATION_CODE = "invalid authorization code";
+constexpr auto PLAYERS_NOT_FOUND = "players not found";
+constexpr auto COULD_NOT_FIND_PACKED_SCRIPT = "couldn't find packed script";
+constexpr auto COULD_NOT_EXTRACT_PACKED_ARGUMENTS =
+    "couldn't extract packed arguments script";
+constexpr auto COULD_NOT_FIND_MP4_URL = "couldn't find mp4 url";
+constexpr auto COULD_NOT_FIND_SESSION_TOKEN = "couldn't find session token";
+constexpr auto UNKNOWN_RESPONSE_RECEIVED = "unknown response received";
+constexpr auto UNSUPPORTED_PLAYER = "unsupported player";
+constexpr auto COULD_NOT_READ_FILE = "couldn't read file";
+constexpr auto INVALID_NODE = "invalid node";
+constexpr auto INVALID_RANGE = "invalid range";
+constexpr auto INVALID_REQUEST = "invalid request";
+constexpr auto ABORTED = "aborted";
+constexpr auto NODE_NOT_FOUND = "node not found";
+constexpr auto COULD_NOT_FIND_DESCRAMBLER_NAME =
+    "couldn't find descrambler name";
+constexpr auto COULD_NOT_FIND_HELPER_FUNCTIONS =
+    "couldn't find helper functions";
+constexpr auto COULD_NOT_FIND_DESCRABMLER_DEFINITION =
+    "couldn't find descrambler definition";
+constexpr auto INVALID_TRANSFORMATION_FUNCTION =
+    "invalid transformation function";
+constexpr auto UNKNOWN_TRANSFORMATION = "unknown transformation";
+constexpr auto VIDEO_URL_NOT_FOUND = "video url not found";
+constexpr auto AUDIO_URL_NOT_FOUND = "audio url not found";
+constexpr auto NOT_A_DIRECTORY = "not a directory";
+constexpr auto INVALID_RANGE_HEADER_RESPONSE = "invalid range header response";
+constexpr auto INVALID_PATH = "invalid path";
+constexpr auto ITEM_NOT_FOUND = "item not found";
+constexpr auto URL_UNAVAILABLE = "url unavailable";
+constexpr auto CALLBACK_NOT_SET = "callback not set";
+constexpr auto RESOLVER_NOT_SET = "resolver not set";
+constexpr auto COULD_NOT_START_HTTP_SERVER = "couldn't start http server";
+constexpr auto YOUTUBE_CONFIG_NOT_FOUND = "ytplayer.config not found";
+
+}  // namespace Error
+
 namespace priv {
 extern std::mutex stream_mutex;
 extern std::unique_ptr<std::ostream> stream;

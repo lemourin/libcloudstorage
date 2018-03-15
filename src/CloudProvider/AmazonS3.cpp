@@ -117,11 +117,13 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
             if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
               tinyxml2::XMLDocument document;
               if (document.Parse(e.left()->description_.c_str()) != 0)
-                return complete(Error{IHttpRequest::Failure, "invalid xml"});
+                return complete(Error{IHttpRequest::Failure,
+                                      util::Error::FAILED_TO_PARSE_XML});
               auto endpoint =
                   document.RootElement()->FirstChildElement("Endpoint");
               if (!endpoint || !endpoint->GetText())
-                return complete(Error{IHttpRequest::Failure, "invalid xml"});
+                return complete(
+                    Error{IHttpRequest::Failure, util::Error::INVALID_XML});
               std::stringstream stream(endpoint->GetText());
               std::string bucket, s3, region;
               std::getline(stream, bucket, '.');
@@ -136,8 +138,8 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
             if (auth_callback()->userConsentRequired(*this) !=
                 ICloudProvider::IAuthCallback::Status::
                     WaitForAuthorizationCode) {
-              return complete(
-                  Error{IHttpRequest::Unauthorized, "invalid credentials"});
+              return complete(Error{IHttpRequest::Unauthorized,
+                                    util::Error::INVALID_CREDENTIALS});
             }
             auto code = [=](EitherError<std::string> code) {
               (void)r;
@@ -146,8 +148,9 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
               else
                 complete(unpackCredentials(*code.right())
                              ? EitherError<void>(nullptr)
-                             : EitherError<void>(Error{IHttpRequest::Failure,
-                                                       "invalid code"}));
+                             : EitherError<void>(Error{
+                                   IHttpRequest::Failure,
+                                   util::Error::INVALID_AUTHORIZATION_CODE}));
             };
             r->set_server(this->auth()->requestAuthorizationCode(code));
           } else
@@ -301,10 +304,10 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
                  std::stringstream sstream;
                  sstream << e.right()->output().rdbuf();
                  tinyxml2::XMLDocument document;
-                 if (document.Parse(sstream.str().c_str(),
-                                    sstream.str().size()) !=
+                 if (document.Parse(sstream.str().c_str()) !=
                      tinyxml2::XML_SUCCESS)
-                   return r->done(Error{IHttpRequest::Failure, "invalid xml"});
+                   return r->done(Error{IHttpRequest::Failure,
+                                        util::Error::FAILED_TO_PARSE_XML});
                  auto node = document.RootElement();
                  auto size = IItem::UnknownSize;
                  auto timestamp = IItem::UnknownTimeStamp;
@@ -373,23 +376,22 @@ IItem::List AmazonS3::listDirectoryResponse(
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("invalid xml");
+  if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
+    throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   IItem::List result;
   if (auto name_element = document.RootElement()->FirstChildElement("Name")) {
     std::string bucket = name_element->GetText();
     for (auto child = document.RootElement()->FirstChildElement("Contents");
          child; child = child->NextSiblingElement("Contents")) {
       auto size_element = child->FirstChildElement("Size");
-      if (!size_element) throw std::logic_error("invalid xml");
+      if (!size_element) throw std::logic_error(util::Error::INVALID_XML);
       auto size = std::stoull(size_element->GetText());
       auto key_element = child->FirstChildElement("Key");
-      if (!key_element) throw std::logic_error("invalid xml");
+      if (!key_element) throw std::logic_error(util::Error::INVALID_XML);
       std::string id = key_element->GetText();
       if (size == 0 && id == parent.id()) continue;
       auto timestamp_element = child->FirstChildElement("LastModified");
-      if (!timestamp_element) throw std::logic_error("invalid xml");
+      if (!timestamp_element) throw std::logic_error(util::Error::INVALID_XML);
       std::string timestamp = timestamp_element->GetText();
       auto item = util::make_unique<Item>(getFilename(id), id, size,
                                           util::parse_time(timestamp),
@@ -401,7 +403,7 @@ IItem::List AmazonS3::listDirectoryResponse(
              document.RootElement()->FirstChildElement("CommonPrefixes");
          child; child = child->NextSiblingElement("CommonPrefixes")) {
       auto prefix_element = child->FirstChildElement("Prefix");
-      if (!prefix_element) throw std::logic_error("invalid xml");
+      if (!prefix_element) throw std::logic_error(util::Error::INVALID_XML);
       std::string id = prefix_element->GetText();
       auto item = util::make_unique<Item>(
           getFilename(id), id, IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -410,11 +412,11 @@ IItem::List AmazonS3::listDirectoryResponse(
     }
     auto is_truncated_element =
         document.RootElement()->FirstChildElement("IsTruncated");
-    if (!is_truncated_element) throw std::logic_error("invalid xml");
+    if (!is_truncated_element) throw std::logic_error(util::Error::INVALID_XML);
     if (is_truncated_element->GetText() == std::string("true")) {
       auto next_token_element =
           document.RootElement()->FirstChildElement("NextContinuationToken");
-      if (!next_token_element) throw std::logic_error("invalid xml");
+      if (!next_token_element) throw std::logic_error(util::Error::INVALID_XML);
       next_page_token = next_token_element->GetText();
     }
   }

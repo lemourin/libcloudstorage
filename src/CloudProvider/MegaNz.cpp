@@ -78,7 +78,7 @@ class Listener : public IRequest<EitherError<void>>,
     std::unique_lock<std::mutex> lock(mutex_);
     if (status_ != IN_PROGRESS) return;
     status_ = CANCELLED;
-    error_ = {IHttpRequest::Aborted, ""};
+    error_ = {IHttpRequest::Aborted, util::Error::ABORTED};
     auto callback = util::exchange(callback_, nullptr);
     lock.unlock();
     if (callback) callback(error_, this);
@@ -303,12 +303,12 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       auto p = static_cast<MegaNz*>(r->provider().get());
       p->ensureAuthorized<EitherError<void>>(r, [=]() {
         auto node(p->node(file));
-        if (!node || range.start_ + range.size_ > (uint64_t)node->getSize()) {
+        if (!node || range.start_ + range.size_ > uint64_t(node->getSize())) {
           status_ = AuthFailed;
           if (!node)
-            r->done(Error{IHttpRequest::Bad, "invalid node"});
+            r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
           else
-            r->done(Error{IHttpRequest::Bad, "invalid range"});
+            r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
         } else {
           status_ = AuthSuccess;
           callback_ = util::make_unique<HttpDataCallback>(buffer_);
@@ -358,7 +358,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
   if (!state || state != provider_->auth()->state() || !name || !id ||
       !size_parameter)
     return util::response_from_string(request, IHttpRequest::Bad, {},
-                                      "invalid request");
+                                      util::Error::INVALID_REQUEST);
   std::string filename = util::from_base64(name);
   auto size = std::stoull(size_parameter);
   auto extension = filename.substr(filename.find_last_of('.') + 1);
@@ -373,7 +373,7 @@ IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
     if (range.size_ == Range::Full) range.size_ = size - range.start_;
     if (range.start_ + range.size_ > size)
       return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
-                                        "invalid range");
+                                        util::Error::INVALID_RANGE);
     std::stringstream stream;
     stream << "bytes " << range.start_ << "-" << range.start_ + range.size_ - 1
            << "/" << size;
@@ -496,11 +496,11 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
              shared_from_this(), callback,
              [=](Request<EitherError<Token>>::Pointer r) {
                auto token = authorizationCodeToToken(code);
-               auto ret =
-                   token->token_.empty()
-                       ? EitherError<Token>(Error{IHttpRequest::Failure,
-                                                  "invalid authorization code"})
-                       : EitherError<Token>({token->token_, ""});
+               auto ret = token->token_.empty()
+                              ? EitherError<Token>(Error{
+                                    IHttpRequest::Failure,
+                                    util::Error::INVALID_AUTHORIZATION_CODE})
+                              : EitherError<Token>({token->token_, ""});
                r->done(ret);
              })
       ->run();
@@ -540,7 +540,8 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
             r->set_server(
                 r->provider()->auth()->requestAuthorizationCode(code));
           } else {
-            complete(Error{IHttpRequest::Unauthorized, "invalid credentials"});
+            complete(Error{IHttpRequest::Unauthorized,
+                           util::Error::INVALID_CREDENTIALS});
           }
         });
       });
@@ -583,19 +584,21 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
                                   std::fstream::out | std::fstream::binary);
           if (!mega_cache)
             return r->done(Error{IHttpRequest::Forbidden,
-                                 "couldn't open cache file" + cache});
+                                 util::Error::COULD_NOT_READ_FILE});
           std::array<char, BUFFER_SIZE> buffer;
           while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
             if (r->is_cancelled()) {
               (void)std::remove(cache.c_str());
-              return r->done(Error{IHttpRequest::Aborted, ""});
+              return r->done(
+                  Error{IHttpRequest::Aborted, util::Error::ABORTED});
             }
             mega_cache.write(buffer.data(), length);
           }
         }
         auto node = this->node(item->id());
         if (!node)
-          return r->done(Error{IHttpRequest::NotFound, "node not found"});
+          return r->done(
+              Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
         auto listener = Listener::make<TransferListener>(
             [=](EitherError<void> e, Listener* listener) {
               (void)std::remove(cache.c_str());
@@ -626,7 +629,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
       ensureAuthorized<EitherError<void>>(r, [=] {
         auto node = this->node(item->id());
         if (!node)
-          return r->done(Error{IHttpRequest::NotFound, "node not found"});
+          return r->done(
+              Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
         std::string cache = temporaryFileName();
         auto listener = Listener::make<RequestListener>(
             [=](EitherError<void> e, Listener*) {
@@ -635,7 +639,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
                                       std::fstream::in | std::fstream::binary);
               if (!cache_file)
                 return r->done(Error{IHttpRequest::Failure,
-                                     "couldn't open cache file " + cache});
+                                     util::Error::COULD_NOT_READ_FILE});
               std::array<char, BUFFER_SIZE> buffer;
               do {
                 cache_file.read(buffer.data(), BUFFER_SIZE);
@@ -662,7 +666,7 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     ensureAuthorized<EitherError<void>>(r, [=] {
       auto node = this->node(item->id());
       if (!node) {
-        r->done(Error{IHttpRequest::NotFound, "file not found"});
+        r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       } else {
         auto listener = Listener::make<RequestListener>(
             [=](EitherError<void> e, Listener*) { return r->done(e); }, this);
@@ -683,7 +687,8 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     ensureAuthorized<EitherError<IItem>>(r, [=] {
       auto parent_node = this->node(parent->id());
       if (!parent_node)
-        return r->done(Error{IHttpRequest::NotFound, "parent not found"});
+        return r->done(
+            Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       auto listener = Listener::make<RequestListener>(
           [=](EitherError<void> e, Listener* listener) {
             if (e.left()) return r->done(e.left());
@@ -721,8 +726,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
         mega_->moveNode(source_node.get(), destination_node.get(),
                         listener.get());
       } else {
-        r->done(
-            Error{IHttpRequest::Failure, "no source node / destination node"});
+        r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       }
     });
   };
@@ -748,7 +752,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
         r->subrequest(listener);
         mega_->renameNode(node.get(), name.c_str(), listener.get());
       } else
-        r->done(Error{IHttpRequest::NotFound, "node not found"});
+        r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
     });
   };
   return std::make_shared<Request<EitherError<IItem>>>(shared_from_this(),
@@ -773,7 +777,7 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
         }
         r->done(PageData{result, ""});
       } else
-        r->done(Error{IHttpRequest::NotFound, "node not found"});
+        r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
     });
   };
   return std::make_shared<Request<EitherError<PageData>>>(shared_from_this(),
@@ -814,7 +818,8 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
     ensureAuthorized<EitherError<void>>(r, [=] {
       auto node = this->node(item->id());
       if (!node)
-        return r->done(Error{IHttpRequest::NotFound, "node not found"});
+        return r->done(
+            Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       auto listener = Listener::make<TransferListener>(
           [=](EitherError<void> e, Listener*) { r->done(e); }, this);
       listener->download_callback_ = callback;

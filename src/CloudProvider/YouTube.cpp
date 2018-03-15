@@ -36,13 +36,12 @@
 #include "Utility/Utility.h"
 
 const std::string AUDIO_DIRECTORY = "audio";
-const std::string AUDIO_DIRECTORY_ID =
-    "eyJhdWRpbyI6dHJ1ZSwicGxheWxpc3QiOnRydWUsImlkIjoiYXVkaW8ifQo=";
+const std::string AUDIO_DIRECTORY_ID = cloudstorage::util::to_base64(
+    R"({"audio":true,"playlist":true,"id":"audio"})");
 
 const std::string HIGH_QUALITY_DIRECTORY = "high quality";
-const std::string HIGH_QUALITY_DIRECTORY_ID =
-    "eyJhdWRpbyI6ZmFsc2UsInBsYXlsaXN0Ijp0cnVlLCJoaWdoX3F1YWxpdHkiOnRydWUsImlkIj"
-    "oiaGlnaCBxdWFsaXR5In0K";
+const std::string HIGH_QUALITY_DIRECTORY_ID = cloudstorage::util::to_base64(
+    R"({"audio":false,"playlist":true,"high_quality":true,"id":"high quality"})");
 
 using namespace std::placeholders;
 
@@ -120,7 +119,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
     const std::string descrambler_search = "\"signature\":\"sig\";c=";
     auto it = player.find(descrambler_search);
     if (it == std::string::npos)
-      throw std::logic_error("can't find descrambler name");
+      throw std::logic_error(util::Error::COULD_NOT_FIND_DESCRAMBLER_NAME);
     stream.seekg(it + descrambler_search.length());
     std::string descrambler;
     std::getline(stream, descrambler, '(');
@@ -132,7 +131,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
     const std::string helper_search = "var " + helper + "={";
     auto it = player.find(helper_search);
     if (it == std::string::npos)
-      throw std::logic_error("can't find helper functions");
+      throw std::logic_error(util::Error::COULD_NOT_FIND_HELPER_FUNCTIONS);
     stream.seekg(it + helper_search.length());
     std::string result;
     int cnt = 1;
@@ -166,7 +165,8 @@ EitherError<std::string> descramble(const std::string& scrambled,
     const std::string function_search = name + "=function(a){";
     auto it = player.find(function_search);
     if (it == std::string::npos)
-      throw std::logic_error("can't find descrambler definition");
+      throw std::logic_error(
+          util::Error::COULD_NOT_FIND_DESCRABMLER_DEFINITION);
     stream.seekg(it + function_search.length());
     std::string code;
     std::getline(stream, code, ';');
@@ -186,7 +186,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
       std::getline(stream, arg, ')');
       auto func = t.find(func_name);
       if (func == t.end())
-        throw std::logic_error("invalid transformation function");
+        throw std::logic_error(util::Error::INVALID_TRANSFORMATION_FUNCTION);
       auto value = std::stoull(arg);
       if (func->second.find("splice") != std::string::npos)
         code.erase(0, value);
@@ -195,7 +195,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
       else if (func->second.find("a[0]=a[b%a.length];") != std::string::npos)
         std::swap(code[0], code[value % code.length()]);
       else
-        throw std::logic_error("unknown transformation");
+        throw std::logic_error(util::Error::UNKNOWN_TRANSFORMATION);
     }
     return code;
   };
@@ -286,7 +286,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     std::string player_str = "ytplayer.config = ";
     auto it = page.find(player_str);
     if (it == std::string::npos)
-      throw std::logic_error("ytplayer.config not found");
+      throw std::logic_error(util::Error::YOUTUBE_CONFIG_NOT_FOUND);
     stream.seekg(it + player_str.length());
     return util::json::from_stream(stream);
   };
@@ -310,8 +310,10 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
         best_audio = d;
     }
     if (!data.audio && !data.high_quality) best_audio = best_video;
-    if (best_video.url.empty()) throw std::logic_error("video url not found");
-    if (best_audio.url.empty()) throw std::logic_error("audio url not found");
+    if (best_video.url.empty())
+      throw std::logic_error(util::Error::VIDEO_URL_NOT_FOUND);
+    if (best_audio.url.empty())
+      throw std::logic_error(util::Error::AUDIO_URL_NOT_FOUND);
     if (best_video.scrambled_signature.empty() &&
         best_audio.scrambled_signature.empty()) {
       if (!data.high_quality)

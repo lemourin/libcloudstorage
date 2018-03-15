@@ -41,9 +41,8 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
               try {
                 request->done(
                     p->renameItemResponse(*item, name, e.right()->output()));
-              } catch (const std::exception&) {
-                request->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              } catch (const std::exception& e) {
+                request->done(Error{IHttpRequest::Failure, e.what()});
               }
             });
       }) {}

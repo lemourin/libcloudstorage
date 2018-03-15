@@ -42,8 +42,7 @@ void ListDirectoryRequest::resolve(Request::Pointer request,
                                    IItem::Pointer directory,
                                    ICallback* callback) {
   if (directory->type() != IItem::FileType::Directory)
-    request->done(
-        Error{IHttpRequest::Forbidden, "trying to list non directory"});
+    request->done(Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});
   else
     work(directory, "", callback);
 }

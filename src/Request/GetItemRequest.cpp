@@ -31,7 +31,8 @@ GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path, Callback callback)
     : Request(p, callback, [=](Request::Pointer) {
         if (path.empty() || path.front() != '/')
-          return done(Error{IHttpRequest::Forbidden, "invalid path"});
+          return done(
+              Error{IHttpRequest::Forbidden, util::Error::INVALID_PATH});
         work(provider()->rootDirectory(), path, callback);
       }) {}
 
@@ -46,7 +47,8 @@ IItem::Pointer GetItemRequest::getItem(const IItem::List& items,
 
 void GetItemRequest::work(IItem::Pointer item, std::string p,
                           Callback complete) {
-  if (!item) return done(Error{IHttpRequest::NotFound, "not found"});
+  if (!item)
+    return done(Error{IHttpRequest::NotFound, util::Error::ITEM_NOT_FOUND});
   if (p.empty() || p.size() == 1) return done(item);
 
   auto path = p.substr(1);

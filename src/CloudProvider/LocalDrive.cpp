@@ -162,11 +162,12 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
         size_t bytes_read = 0;
         while (bytes_read < range.size_) {
           if (r->is_cancelled())
-            return r->done(Error{IHttpRequest::Aborted, ""});
+            return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
           if (!stream.read(
                   buffer.data(),
                   std::min<size_t>(BUFFER_SIZE, range.size_ - bytes_read)))
-            return r->done(Error{IHttpRequest::Failure, "couldn't read file"});
+            return r->done(
+                Error{IHttpRequest::Failure, util::Error::COULD_NOT_READ_FILE});
           callback->receivedData(buffer.data(), stream.gcount());
           bytes_read += stream.gcount();
           callback->progress(range.size_, bytes_read);
@@ -187,7 +188,7 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
         fs::ofstream stream(path, std::ios::binary);
         while (bytes_read < size) {
           if (r->is_cancelled())
-            return r->done(Error{IHttpRequest::Aborted, ""});
+            return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
           auto cnt = callback->putData(buffer.data(), BUFFER_SIZE);
           bytes_read += cnt;
           if (!stream.write(buffer.data(), cnt))

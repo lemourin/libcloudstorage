@@ -133,8 +133,8 @@ ICloudProvider::RenameItemRequest::Pointer YandexDisk::renameItemAsync(
                       item->timestamp(), item->type())));
             else
               r->done(toItem(json));
-          } catch (const Json::Exception&) {
-            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          } catch (const Json::Exception& e) {
+            r->done(Error{IHttpRequest::Failure, e.what()});
           }
         });
   };
@@ -172,8 +172,8 @@ ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
                       source->size(), source->timestamp(), source->type())));
             else
               r->done(toItem(json));
-          } catch (const Json::Exception&) {
-            r->done(Error{IHttpRequest::Failure, e.right()->output().str()});
+          } catch (const Json::Exception& e) {
+            r->done(Error{IHttpRequest::Failure, e.what()});
           }
         });
   };
@@ -233,8 +233,8 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           if (e.left()) f(e.left());
           try {
             f(util::json::from_stream(e.right()->output())["href"].asString());
-          } catch (const Json::Exception&) {
-            f(Error{IHttpRequest::Failure, e.right()->output().str()});
+          } catch (const Json::Exception& e) {
+            f(Error{IHttpRequest::Failure, e.what()});
           }
         });
   };

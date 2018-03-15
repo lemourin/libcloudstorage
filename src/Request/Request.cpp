@@ -135,7 +135,7 @@ void Request<T>::cancel() {
             auto c = it->second.back();
             it->second.pop_back();
             lock.unlock();
-            c(Error{IHttpRequest::Aborted, ""});
+            c(Error{IHttpRequest::Aborted, util::Error::ABORTED});
           }
           lock.lock();
         }
@@ -170,14 +170,14 @@ T Request<T>::result() {
 
 template <typename T>
 typename Request<T>::Wrapper::Pointer Request<T>::run() {
-  if (!resolver_) throw std::runtime_error("resolver not set");
+  if (!resolver_) throw std::runtime_error(util::Error::RESOLVER_NOT_SET);
   util::exchange(resolver_, nullptr)(this->shared_from_this());
   return util::make_unique<Wrapper>(this->shared_from_this());
 }
 
 template <class T>
 void Request<T>::done(const T& t) {
-  if (!callback_) throw std::runtime_error("no callback");
+  if (!callback_) throw std::runtime_error(util::Error::CALLBACK_NOT_SET);
   util::exchange(callback_, nullptr)(t);
   value_.set_value(t);
 }
@@ -197,7 +197,7 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   if (is_cancelled()) {
     lock.unlock();
-    return c(Error{IHttpRequest::Aborted, ""});
+    return c(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   }
   p->auth_callbacks_[this].push_back(c);
   if (!p->current_authorization_) {

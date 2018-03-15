@@ -33,7 +33,7 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
                                                CreateDirectoryCallback callback)
     : Request(p, callback, [=](Request::Pointer request) {
         if (parent->type() != IItem::FileType::Directory) {
-          Error e{IHttpRequest::Forbidden, "parent not a directory"};
+          Error e{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY};
           callback(e);
           return done(e);
         }
@@ -46,9 +46,8 @@ CreateDirectoryRequest::CreateDirectoryRequest(std::shared_ptr<CloudProvider> p,
               try {
                 request->done(provider()->createDirectoryResponse(
                     *parent, name, e.right()->output()));
-              } catch (const std::exception&) {
-                request->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              } catch (const std::exception& e) {
+                request->done(Error{IHttpRequest::Failure, e.what()});
               }
             });
       }) {}

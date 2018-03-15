@@ -164,7 +164,8 @@ IHttpServer::Pointer Auth::awaitAuthorizationCode(
   auto current_server =
       http_server_->create(callback, state(), IHttpServer::Type::Authorization);
   if (!current_server)
-    complete(Error{IHttpRequest::Failure, "couldn't start http server"});
+    complete(
+        Error{IHttpRequest::Failure, util::Error::COULD_NOT_START_HTTP_SERVER});
   return current_server;
 }
 

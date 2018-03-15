@@ -104,7 +104,7 @@ IItem::Pointer GooglePhotos::getItemDataResponse(std::istream &response) const {
   stream << response.rdbuf();
   tinyxml2::XMLDocument document;
   if (document.Parse(stream.str().c_str()) != tinyxml2::XML_SUCCESS)
-    throw std::logic_error("invalid xml");
+    throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   return toItem(document.RootElement());
 }
 
@@ -159,9 +159,8 @@ IItem::List GooglePhotos::listDirectoryResponse(const IItem &,
   std::stringstream sstream;
   sstream << stream.rdbuf();
   tinyxml2::XMLDocument document;
-  if (document.Parse(sstream.str().c_str(), sstream.str().size()) !=
-      tinyxml2::XML_SUCCESS)
-    throw std::logic_error("invalid xml");
+  if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
+    throw std::logic_error(util::Error::INVALID_XML);
   IItem::List result;
   for (auto child = document.RootElement()->FirstChildElement("entry"); child;
        child = child->NextSiblingElement("entry")) {
@@ -229,7 +228,13 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
   auto album_size = child->FirstChildElement("gphoto:bytesUsed");
   auto timestamp = child->FirstChildElement("gphoto:timestamp");
   auto album = child->FirstChildElement("gphoto:albumid");
+  if (!title || !title->GetText() || !id || !id->GetText() || !timestamp ||
+      !timestamp->GetText())
+    throw std::logic_error(util::Error::INVALID_XML);
   if (content) {
+    if (!album || !size || !timestamp || !album->GetText() ||
+        !size->GetText() || !timestamp->GetText())
+      throw std::logic_error(util::Error::INVALID_XML);
     auto item = std::make_shared<Item>(
         title->GetText(), to_string({album->GetText(), id->GetText()}),
         std::stoull(size->GetText()),

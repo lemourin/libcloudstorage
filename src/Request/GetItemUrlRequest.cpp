@@ -33,13 +33,13 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
     : Request(p, callback, [=](Request<EitherError<std::string>>::Pointer r) {
         if (item->type() == IItem::FileType::Directory)
           return r->done(Error{IHttpRequest::ServiceUnavailable,
-                               "url not provided for directory"});
+                               util::Error::URL_UNAVAILABLE});
         std::stringstream dummy;
         if (!provider()->getItemUrlRequest(*item, dummy)) {
           auto url = static_cast<Item*>(item.get())->url();
           if (url.empty())
-            return r->done(
-                Error{IHttpRequest::ServiceUnavailable, "url not provided"});
+            return r->done(Error{IHttpRequest::ServiceUnavailable,
+                                 util::Error::URL_UNAVAILABLE});
           else
             return r->done(url);
         }
@@ -57,9 +57,8 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                   static_cast<Item*>(item.get())->set_url(url);
                   r->done(url);
                 }
-              } catch (const std::exception&) {
-                r->done(
-                    Error{IHttpRequest::Failure, e.right()->output().str()});
+              } catch (const std::exception& e) {
+                r->done(Error{IHttpRequest::Failure, e.what()});
               }
             });
       }) {}
