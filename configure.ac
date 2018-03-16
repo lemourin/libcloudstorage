@@ -145,6 +145,7 @@ HAVE_VLC_QT=0
 HAVE_CLOUDBROWSER=0
 
 AC_ARG_WITH([vlc-qt], AS_HELP_STRING([--with-vlc-qt]))
+AC_ARG_WITH([qtwebview], AS_HELP_STRING([--with-qtwebview]))
 AC_ARG_WITH([cloudbrowser], AS_HELP_STRING([--with-cloudbrowser]))
 AS_IF([test "x$with_cloudbrowser" != "xno"], [
   AS_IF([test "$HAVE_CURL" -eq 1 -a "$HAVE_MICROHTTPD" -eq 1], [
@@ -173,10 +174,15 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
       HAVE_QT=0
       AS_IF([test "x$with_cloudbrowser" = "xyes"], [AC_MSG_ERROR([cloudbrowser requires qt])])
     ])
-    PKG_CHECK_MODULES([qtwebview], [Qt5WebView], [
-      HAVE_QTWEBVIEW=1
-      AC_DEFINE(WITH_QTWEBVIEW)
-    ], [HAVE_QTWEBVIEW=0])
+    AS_IF([test "x$with_qtwebview" != "xno"], [
+      PKG_CHECK_MODULES([qtwebview], [Qt5WebView], [
+        HAVE_QTWEBVIEW=1
+        AC_DEFINE(WITH_QTWEBVIEW)
+      ], [
+        HAVE_QTWEBVIEW=0
+        AS_IF([test "x$with_qtwebview" = "xyes"], [AC_MSG_ERROR([qtwebview not found])])
+      ])
+    ])
     PKG_CHECK_MODULES([ffmpeg], [
       libavcodec libavfilter libavformat libavutil
       libswresample libswscale
