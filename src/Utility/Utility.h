@@ -77,22 +77,18 @@ Range parse_range(const std::string& str);
 std::string range_to_string(Range);
 std::string to_mime_type(const std::string& extension);
 IItem::TimeStamp parse_time(const std::string& time);
-std::tm gmtime(time_t);
-time_t timegm(const std::tm&);
-std::string to_base64(const std::string&);
-std::string from_base64(const std::string&);
 std::string login_page(const std::string& provider);
 std::string success_page(const std::string& provider);
 std::string error_page(const std::string& provider);
+const char* libcloudstorage_ascii_art();
 namespace json {
 std::string to_string(const Json::Value&);
 Json::Value from_string(const std::string&);
 Json::Value from_stream(std::istream&&);
 Json::Value from_stream(std::istream&);
 }  // namespace json
-const char* libcloudstorage_ascii_art();
 
-class Url {
+class CLOUDSTORAGE_API Url {
  public:
   Url(const std::string&);
 
@@ -112,12 +108,16 @@ class Url {
   std::string query_;
 };
 
-IHttpServer::IResponse::Pointer response_from_string(
+CLOUDSTORAGE_API IHttpServer::IResponse::Pointer response_from_string(
     const IHttpServer::IRequest&, int code,
     const IHttpServer::IResponse::Headers&, const std::string&);
 
-std::string temporary_directory();
-std::string home_directory();
+CLOUDSTORAGE_API std::string temporary_directory();
+CLOUDSTORAGE_API std::string home_directory();
+CLOUDSTORAGE_API std::tm gmtime(time_t);
+CLOUDSTORAGE_API time_t timegm(const std::tm&);
+CLOUDSTORAGE_API std::string to_base64(const std::string&);
+CLOUDSTORAGE_API std::string from_base64(const std::string&);
 
 namespace Error {
 
@@ -163,8 +163,8 @@ constexpr auto YOUTUBE_CONFIG_NOT_FOUND = "ytplayer.config not found";
 }  // namespace Error
 
 namespace priv {
-extern std::mutex stream_mutex;
-extern std::unique_ptr<std::ostream> stream;
+CLOUDSTORAGE_API extern std::mutex stream_mutex;
+CLOUDSTORAGE_API extern std::unique_ptr<std::ostream> stream;
 
 template <class... Args>
 void log() {}
@@ -177,7 +177,7 @@ void log(First&& t, Rest&&... rest) {
 
 }  // namespace priv
 
-void log_stream(std::unique_ptr<std::ostream> stream);
+CLOUDSTORAGE_API void log_stream(std::unique_ptr<std::ostream> stream);
 
 template <class... Args>
 void log(Args&&... t) {

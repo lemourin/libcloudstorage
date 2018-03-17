@@ -29,9 +29,21 @@
 #include <string>
 #include <vector>
 
+#ifdef _MSC_VER
+
+#ifdef CLOUDSTORAGE_LIBRARY
+#define CLOUDSTORAGE_API __declspec(dllexport)
+#else
+#define CLOUDSTORAGE_API __declspec(dllimport)
+#endif
+
+#else
+#define CLOUDSTORAGE_API
+#endif  // _MSC_VER
+
 namespace cloudstorage {
 
-class IItem {
+class CLOUDSTORAGE_API IItem {
  public:
   using Pointer = std::shared_ptr<IItem>;
   using TimeStamp = std::chrono::system_clock::time_point;

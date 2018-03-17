@@ -32,7 +32,7 @@
 
 namespace cloudstorage {
 
-class IHttpServer {
+class CLOUDSTORAGE_API IHttpServer {
  public:
   using Pointer = std::unique_ptr<IHttpServer>;
 
@@ -93,7 +93,7 @@ class IHttpServer {
   virtual ICallback::Pointer callback() const = 0;
 };
 
-class IHttpServerFactory {
+class CLOUDSTORAGE_API IHttpServerFactory {
  public:
   using Pointer = std::unique_ptr<IHttpServerFactory>;
 

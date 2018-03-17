@@ -30,7 +30,7 @@
 
 namespace cloudstorage {
 
-class IThreadPool {
+class CLOUDSTORAGE_API IThreadPool {
  public:
   using Pointer = std::unique_ptr<IThreadPool>;
   using Task = GenericCallback<>;

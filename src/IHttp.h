@@ -33,7 +33,7 @@
 
 namespace cloudstorage {
 
-class IHttpRequest {
+class CLOUDSTORAGE_API IHttpRequest {
  public:
   struct Response;
 
@@ -173,7 +173,7 @@ class IHttpRequest {
   static bool isAuthorizationError(int code) { return code == 401; }
 };
 
-class IHttp {
+class CLOUDSTORAGE_API IHttp {
  public:
   using Pointer = std::unique_ptr<IHttp>;
 

@@ -33,7 +33,7 @@ namespace cloudstorage {
 /**
  * Contains available CloudStorage providers.
  */
-class ICloudStorage {
+class CLOUDSTORAGE_API ICloudStorage {
  public:
   using Pointer = std::unique_ptr<ICloudStorage>;
 

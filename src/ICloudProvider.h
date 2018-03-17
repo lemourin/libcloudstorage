@@ -38,7 +38,7 @@
 
 namespace cloudstorage {
 
-class ICloudProvider {
+class CLOUDSTORAGE_API ICloudProvider {
  public:
   using Pointer = std::unique_ptr<ICloudProvider>;
   using Hints = std::unordered_map<std::string, std::string>;

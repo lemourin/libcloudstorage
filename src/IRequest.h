@@ -71,7 +71,7 @@ const Range FullRange = {Range::Begin, Range::Full};
  * Class representing pending request. When there is no reference to the
  * request, it's immediately cancelled.
  */
-class IGenericRequest {
+class CLOUDSTORAGE_API IGenericRequest {
  public:
   virtual ~IGenericRequest() = default;
 
@@ -88,7 +88,7 @@ class IGenericRequest {
 };
 
 template <class ReturnValue>
-class IRequest : public IGenericRequest {
+class CLOUDSTORAGE_API IRequest : public IGenericRequest {
  public:
   using Pointer = std::unique_ptr<IRequest>;
 

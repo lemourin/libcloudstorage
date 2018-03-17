@@ -23,6 +23,18 @@
 #ifndef EXEC_H
 #define EXEC_H
 
-int exec_cloudbrowser(int argc, char** argv);
+#ifdef _MSC_VER
+
+#ifdef CLOUDBROWSER_LIBRARY
+#define CLOUDBROWSER_API __declspec(dllexport)
+#else
+#define CLOUDBROWSER_API __declspec(dllimport)
+#endif
+
+#else
+#define CLOUDBROWSER_API
+#endif  // _MSC_VER
+
+CLOUDBROWSER_API int exec_cloudbrowser(int argc, char** argv);
 
 #endif  // EXEC_H
