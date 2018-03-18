@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
+  <Identity Name="57864PaweWegner.CloudStorageBrowser" Publisher="CN=45E1A990-1A96-4132-833F-79DEA509C305" Version="1.14.0.0" />
+  <mp:PhoneIdentity PhoneProductId="fc3aea53-56dd-4a61-a0fb-8f4f565a6d02" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Properties>
+    <DisplayName>Cloud Storage Browser</DisplayName>
+    <PublisherDisplayName>Paweł Wegner</PublisherDisplayName>
+    <Logo>Assets\logo_store.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="cloudbrowser.App">
+      <uap:VisualElements DisplayName="Cloud Storage Browser" Square150x150Logo="Assets\logo_150x150.png" Square44x44Logo="Assets\logo_44x44.png" Description="cloudbrowser" BackgroundColor="lightBlue">
+        <uap:SplashScreen Image="Assets\logo_620x300.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <Capability Name="internetClientServer" />
+    <Capability Name="privateNetworkClientServer" />
+    <Capability Name="codeGeneration" />
+  </Capabilities>
+</Package>

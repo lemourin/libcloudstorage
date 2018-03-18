@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{d16b1e30-b8e4-4369-8749-bc127b42fe07}</ProjectGuid>
+    <RootNamespace>cloudbrowser</RootNamespace>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.10586.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <PackageCertificateKeyFile>cloudbrowser_StoreKey.pfx</PackageCertificateKeyFile>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <AppxBundle>Always</AppxBundle>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <PackageCertificateThumbprint>74AE125507EE27F36A092C1817DF6D3A4343EAEB</PackageCertificateThumbprint>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libcloudbrowser.lib;qtmain.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\dependencies\winrt\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>echo $(ProjectDir)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\main.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ItemGroup>
+    <None Include="../../../dependencies/winrt/bin/KF5Kirigami2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libcurl.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libeay32.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libmicrohttpd-dll.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/ssleay32.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/jsoncpp.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/tinyxml2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/cares.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/zlib.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/avcodec-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/avdevice-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/avfilter-6.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/avformat-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/avutil-55.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/swresample-2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/swscale-4.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/VLCQtCore.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/VLCQtQml.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libvlc.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libvlccore.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libcloudbrowser.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libcloudstorage.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Core.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Gui.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Qml.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5WebView.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Quick.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libGLESv2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Network.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Widgets.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5QuickControls2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Svg.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5Multimedia.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/Qt5QuickTemplates2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/platforms">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/libEGL.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/imageformats">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/mediaservice">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/org">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/QtGraphicalEffects">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/QtQml">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/QtQuick">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/QtQuick.2">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/QtWebView">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../../dependencies/winrt/bin/plugins">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <SDKReference Include="Microsoft.Advertising.Xaml, Version=10.0" />
+    <SDKReference Include="Microsoft.VCLibs.120, Version=14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\logo_150x150.png" />
+    <Image Include="Assets\logo_44x44.png" />
+    <Image Include="Assets\logo_620x300.png" />
+    <Image Include="Assets\logo_store.png" />
+  </ItemGroup>
+</Project>

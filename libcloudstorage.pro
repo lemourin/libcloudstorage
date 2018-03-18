@@ -9,22 +9,19 @@ DEFINES += \
     WITH_CRYPTOPP \
     CLOUDSTORAGE_LIBRARY
 
-MSVC_TOOLCHAIN_PATH = $$(MSVC_TOOLCHAIN_PATH)
-
-isEmpty(MSVC_TOOLCHAIN_PATH) {
-    error(MSVC_TOOLCHAIN_PATH environment variable not set.)
-}
-
 winrt {
+    TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/dependencies/winrt
+} else {
     DEFINES += HAVE_BOOST_FILESYSTEM_HPP
+    TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/dependencies/win32
 }
 
 INCLUDEPATH = \
     src \
-    $$MSVC_TOOLCHAIN_PATH/include
+    $$TOOLCHAIN_PATH/include
 
 LIBS += \
-    -L$$MSVC_TOOLCHAIN_PATH/lib \
+    -L$$TOOLCHAIN_PATH/lib \
     -llibcurl \
     -llibmicrohttpd-dll \
     -ljsoncpp \

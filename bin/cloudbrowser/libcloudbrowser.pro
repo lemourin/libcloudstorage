@@ -8,24 +8,21 @@ DEFINES += \
     WITH_VLC_QT \
     CLOUDBROWSER_LIBRARY
 
-MSVC_TOOLCHAIN_PATH = $$(MSVC_TOOLCHAIN_PATH)
-
-isEmpty(MSVC_TOOLCHAIN_PATH) {
-    error(MSVC_TOOLCHAIN_PATH environment variable not set.)
-}
-
 winrt {
     QMAKE_CXXFLAGS += /ZW \
         /FU\"$$(EXTENSIONSDKDIR)\Microsoft.Advertising.Xaml\10.0\References\CommonConfiguration\neutral\Microsoft.Advertising.winmd\"
+    TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/../../dependencies/winrt
+} else {
+    TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/../../dependencies/win32
 }
 
 INCLUDEPATH = \
     src \
     ../../src/ \
-    $$MSVC_TOOLCHAIN_PATH/include
+    $$TOOLCHAIN_PATH/include
 
 LIBS += \
-    -L$$MSVC_TOOLCHAIN_PATH/lib \
+    -L$$TOOLCHAIN_PATH/lib \
     -llibcloudstorage \
     -lVLCQtCore \
     -lVLCQtQml \
