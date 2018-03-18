@@ -96,16 +96,18 @@ class CLOUDSTORAGE_API Url {
   static std::string escape(const std::string&);
   static std::string escapeHeader(const std::string&);
 
-  std::string protocol() const { return protocol_; }
-  std::string host() const { return host_; }
-  std::string path() const { return path_; }
-  std::string query() const { return query_; }
+  std::string protocol() const;
+  std::string host() const;
+  std::string path() const;
+  std::string query() const;
 
  private:
-  std::string protocol_;
-  std::string host_;
-  std::string path_;
-  std::string query_;
+  struct {
+    std::string protocol_;
+    std::string host_;
+    std::string path_;
+    std::string query_;
+  } data_;
 };
 
 CLOUDSTORAGE_API IHttpServer::IResponse::Pointer response_from_string(

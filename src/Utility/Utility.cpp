@@ -283,22 +283,22 @@ Url::Url(const std::string& url) {
       std::search(url.begin(), url.end(), prot_end.begin(), prot_end.end());
   if (it == url.end()) {
     it = url.begin();
-    protocol_ = "http";
+    data_.protocol_ = "http";
   } else {
-    protocol_ = std::string(url.begin(), it);
+    data_.protocol_ = std::string(url.begin(), it);
     it += prot_end.length();
   }
 
   auto it_next = std::find(it, url.end(), '/');
-  host_ = std::string(it, it_next);
+  data_.host_ = std::string(it, it_next);
   it = it_next;
 
   it_next = std::find(it, url.end(), '?');
-  path_ = std::string(it, it_next);
+  data_.path_ = std::string(it, it_next);
   it = it_next;
 
   if (it != url.end()) it++;
-  query_ = std::string(it, url.end());
+  data_.query_ = std::string(it, url.end());
 }
 
 std::string Url::unescape(const std::string& str) {
@@ -340,6 +340,14 @@ std::string Url::escape(const std::string& value) {
 std::string Url::escapeHeader(const std::string& header) {
   return Json::valueToQuotedString(header.c_str());
 }
+
+std::string Url::protocol() const { return data_.protocol_; }
+
+std::string Url::host() const { return data_.host_; }
+
+std::string Url::path() const { return data_.path_; }
+
+std::string Url::query() const { return data_.query_; }
 
 IHttpServer::IResponse::Pointer response_from_string(
     const IHttpServer::IRequest& request, int code,
