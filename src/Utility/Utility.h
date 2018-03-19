@@ -161,6 +161,7 @@ constexpr auto CALLBACK_NOT_SET = "callback not set";
 constexpr auto RESOLVER_NOT_SET = "resolver not set";
 constexpr auto COULD_NOT_START_HTTP_SERVER = "couldn't start http server";
 constexpr auto YOUTUBE_CONFIG_NOT_FOUND = "ytplayer.config not found";
+constexpr auto INVALID_RADIX_BASE = "invalid radix base";
 
 }  // namespace Error
 

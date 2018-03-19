@@ -127,7 +127,6 @@ std::string decipher(const std::string &code,
 
   auto i = 0LL;
   for (; i < static_cast<int64_t>(_0x439a49.length()); i += 8) {
-    _0x41e0ff = i * 8;
     auto _0x40b427 = _0x439a49.substr(i, 8);
     auto _0x577716 = std::stoll(_0x40b427, nullptr, 16);
     _0x31f4aa.ke.push_back(_0x577716);
@@ -207,6 +206,8 @@ std::string extract_url(const std::string &page) {
 namespace mp4upload {
 
 std::string radix(uint64_t n, uint64_t base) {
+  if (base == 0 || base > 36)
+    throw std::logic_error(util::Error::INVALID_RADIX_BASE);
   const std::string numerals("0123456789abcdefghijklmnopqrstuvwxyz");
   std::string result;
   while (n > 0) {
@@ -631,7 +632,7 @@ IItem::List AnimeZone::episodeDirectoryContent(
         "[" + player.name_ + "]"};
     std::string player_name;
     const std::string name_sep = " ";
-    bool first = false;
+    bool first = true;
     for (const auto &segment : name_segments) {
       if (!first) {
         player_name += name_sep;
