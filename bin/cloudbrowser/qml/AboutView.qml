@@ -56,7 +56,7 @@ Kirigami.ScrollablePage {
       }
       ListElement {
         name: "tinyxml2"
-        url: "https://github.com/open-source-parsers/jsoncpp"
+        url: "https://github.com/leethomason/tinyxml2"
         icon_source: "qrc:/resources/tinyxml2.png"
       }
       ListElement {
