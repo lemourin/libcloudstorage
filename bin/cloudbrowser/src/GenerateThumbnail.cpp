@@ -188,8 +188,8 @@ Pointer<AVFrame> create_rgb_frame(AVCodecContext* codec_context, AVFrame* frame,
   rgb_frame->format = format;
   rgb_frame->width = size.width_;
   rgb_frame->height = size.height_;
-  check(av_image_alloc(rgb_frame->data, rgb_frame->linesize, frame->width,
-                       frame->height, format, 32),
+  check(av_image_alloc(rgb_frame->data, rgb_frame->linesize, size.width_,
+                       size.height_, format, 32),
         "av_image_alloc");
   check(sws_scale(sws_context.get(), frame->data, frame->linesize, 0,
                   frame->height, rgb_frame->data, rgb_frame->linesize),
@@ -204,7 +204,7 @@ ImageSize thumbnail_size(const ImageSize& i, int target) {
   if (i.width_ > i.height_) {
     return {target, i.height_ * target / i.width_};
   } else {
-    return {i.height_ * target / i.width_, target};
+    return {i.width_ * target / i.height_, target};
   }
 }
 
