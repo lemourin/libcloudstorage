@@ -223,8 +223,10 @@ EitherError<std::string> generate_thumbnail(
     const auto length = strlen(file);
     if (url.substr(0, length) == file) effective_url = url.substr(length);
     auto context = create_format_context(effective_url, interrupt);
-    check(av_seek_frame(context.get(), -1, context->duration / 10, 0),
-          "av_seek_frame");
+    if (context->duration >= AV_TIME_BASE)
+      check(av_seek_frame(context.get(), -1, context->duration / 10,
+                          AVSEEK_FLAG_FRAME),
+            "av_seek_frame");
     auto codec_context = create_codec_context(context.get());
     auto frame = decode_frame(context.get(), codec_context.get());
     auto rgb_frame = create_rgb_frame(
