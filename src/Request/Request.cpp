@@ -309,8 +309,10 @@ void Request<T>::send(IHttpRequest* request,
   if (request)
     request->send(complete, input, output, error,
                   http_callback(download, upload));
-  else
+  else {
+    *error << util::Error::UNIMPLEMENTED;
     complete({IHttpRequest::Aborted, {}, output, error});
+  }
 }
 
 template <class T>
