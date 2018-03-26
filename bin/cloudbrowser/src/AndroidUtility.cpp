@@ -25,8 +25,9 @@ std::unordered_map<int, std::unordered_set<AndroidUtility::IResultListener *>>
 extern "C" {
 JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onActionRequested(
     JNIEnv *env, jclass *, jstring action) {
+  auto lock = std::unique_lock<std::mutex>(mutex);
   const char *str = env->GetStringUTFChars(action, nullptr);
-  emit android->notify(str);
+  if (android) emit android->notify(str);
   env->ReleaseStringUTFChars(action, str);
 }
 
@@ -47,9 +48,15 @@ JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onRequestResult(
 }
 }
 
-AndroidUtility::AndroidUtility() { android = this; }
+AndroidUtility::AndroidUtility() {
+  auto lock = std::unique_lock<std::mutex>(mutex);
+  android = this;
+}
 
-AndroidUtility::~AndroidUtility() { android = nullptr; }
+AndroidUtility::~AndroidUtility() {
+  auto lock = std::unique_lock<std::mutex>(mutex);
+  android = nullptr;
+}
 
 bool AndroidUtility::mobile() const { return true; }
 
