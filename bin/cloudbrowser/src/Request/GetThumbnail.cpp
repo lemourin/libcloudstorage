@@ -95,20 +95,6 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
           emit notifier->finishedVariant(r.left());
           return notifier->deleteLater();
         }
-        if (item->type() == IItem::FileType::Image) {
-          if (item->size() < 2 * 1024 * 1024) {
-            auto downloader = std::make_shared<DownloadToString>();
-            auto e = provider->downloadFileAsync(item, downloader)->result();
-            if (e.left())
-              emit notifier->finishedVariant(e.left());
-            else
-              return submit(notifier, path, downloader->data());
-          } else {
-            emit notifier->finishedVariant(
-                Error{IHttpRequest::ServiceUnavailable, "image too big"});
-          }
-          return notifier->deleteLater();
-        }
         auto e = generate_thumbnail(*r.right(), interrupt);
         if (e.left()) {
           emit notifier->finishedVariant(e.left());
