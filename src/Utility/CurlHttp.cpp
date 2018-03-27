@@ -208,7 +208,6 @@ std::unique_ptr<CURL, CurlDeleter> CurlHttpRequest::init() const {
                    static_cast<long>(follow_redirect_));
   curl_easy_setopt(handle.get(), CURLOPT_XFERINFOFUNCTION, progress_callback);
   curl_easy_setopt(handle.get(), CURLOPT_NOPROGRESS, static_cast<long>(false));
-  curl_easy_setopt(handle.get(), CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
   std::string parameters = parametersToString();
   std::string url = url_ + (!parameters.empty() ? ("?" + parameters) : "");
   curl_easy_setopt(handle.get(), CURLOPT_URL, url.c_str());
