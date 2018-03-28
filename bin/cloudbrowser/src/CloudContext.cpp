@@ -469,7 +469,7 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   data.hints_["temporary_directory"] =
       QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
   data.hints_["access_token"] = token.access_token_;
-  data.hints_["file_url"] = "http://localhost:12345/" + util::to_base64(label);
+  data.hints_["file_url"] = "http://127.0.0.1:12345/" + util::to_base64(label);
   data.hints_["state"] = util::to_base64(label);
   data.http_engine_ = util::make_unique<HttpWrapper>(http_);
   data.http_server_ =

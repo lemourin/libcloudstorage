@@ -43,7 +43,7 @@ using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
 const int CACHE_FILENAME_LENGTH = 12;
-const std::string DEFAULT_FILE_URL = "http://localhost:12346";
+const std::string DEFAULT_FILE_URL = "http://127.0.0.1:12346";
 
 namespace cloudstorage {
 
