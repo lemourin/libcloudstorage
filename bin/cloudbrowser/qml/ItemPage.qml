@@ -131,14 +131,6 @@ Kirigami.ScrollablePage {
         download_dialog.filename = list_view.currentItem.item.filename;
         download_dialog.open();
       }
-    },
-    Kirigami.Action {
-      visible: list_view.currentItem
-      iconName: "help-about"
-      text: "File information"
-      onTriggered: {
-        file_info_sheet.open();
-      }
     }
   ]
 
@@ -151,62 +143,6 @@ Kirigami.ScrollablePage {
       return (size / (1024 * 1024)).toFixed(2) + " MB";
     else
       return (size / (1024 * 1024 * 1024)).toFixed(2) + " GB";
-  }
-
-  Kirigami.OverlaySheet {
-    id: file_info_sheet
-    topPadding: 0
-    Item {
-      implicitWidth: Math.min(page.width * 0.8, 400)
-      implicitHeight: childrenRect.height
-      Text {
-        id: file_name
-        width: parent.width
-        font.pointSize: 18
-        padding: 10
-        text: root.selected_item ? root.selected_item.filename : ""
-        elide: Text.ElideRight
-        wrapMode: Text.Wrap
-      }
-      ListView {
-        id: file_list
-        anchors.top: file_name.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: childrenRect.height
-        boundsBehavior: Flickable.StopAtBounds
-        model: [
-          {
-            "name": "size",
-            "value": root.selected_item && root.selected_item.size !== -1 ?
-                       show_size(root.selected_item.size) : ""
-          },
-          {
-            "name": "last modified",
-            "value": root.selected_item && root.selected_item.timestamp !== -1 ?
-                       root.selected_item.timestamp : ""
-          }
-        ]
-        delegate: Kirigami.BasicListItem {
-          icon: ""
-          visible: modelData.value !== ""
-          anchors.margins: 10
-          height: visible ? 50 : 0
-          Text {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            font.pointSize: 12
-            text: modelData.name
-          }
-          Text {
-            font.pointSize: 16
-            text: modelData.value
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right: parent.right
-          }
-        }
-      }
-    }
   }
 
   Kirigami.OverlaySheet {
@@ -418,13 +354,43 @@ Kirigami.ScrollablePage {
             onPressed: list_view.currentIndex = index;
           }
         }
-        Templates.Label {
-          anchors.verticalCenter: parent.verticalCenter
+        Item {
           width: parent.width - image.width
-          text: modelData.filename
-          color: Kirigami.Theme.textColor
+          height: parent.height
           visible: list_view.currentEdit !== index
-          elide: Text.ElideRight
+
+          Item {
+            id: description
+            x: 8
+            width: parent.width - size_box.width - x
+            height: childrenRect.height
+            anchors.verticalCenter: parent.verticalCenter
+            Templates.Label {
+              id: filename
+              width: parent.width
+              text: modelData.filename
+              font.pointSize: 16
+              color: Kirigami.Theme.textColor
+              elide: Text.ElideRight
+            }
+            Templates.Label {
+              anchors.topMargin: 5
+              anchors.top: filename.bottom
+              anchors.left: parent.left
+              text: modelData.timestamp
+              color: Kirigami.Theme.disabledTextColor
+            }
+          }
+
+          Item {
+            id: size_box
+            anchors.left: description.right
+            width: childrenRect.width
+            Templates.Label {
+              text: modelData.size !== -1 ? show_size(modelData.size) : ""
+              color: Kirigami.Theme.disabledTextColor
+            }
+          }
         }
         RowLayout {
           visible: list_view.currentEdit === index
