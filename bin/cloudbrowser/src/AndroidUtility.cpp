@@ -20,19 +20,16 @@ AndroidUtility *android = nullptr;
 std::mutex mutex;
 std::unordered_map<int, std::unordered_set<AndroidUtility::IResultListener *>>
     result_listener;
-}  // namespace
 
-extern "C" {
-JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onActionRequested(
-    JNIEnv *env, jclass *, jstring action) {
+void on_action_requested(JNIEnv *env, jclass *, jstring action) {
   auto lock = std::unique_lock<std::mutex>(mutex);
   const char *str = env->GetStringUTFChars(action, nullptr);
   if (android) emit android->notify(str);
   env->ReleaseStringUTFChars(action, str);
 }
 
-JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onRequestResult(
-    JNIEnv *, jclass *, jint request, jint result, jobject data) {
+void on_request_result(JNIEnv *, jclass *, jint request, jint result,
+                       jobject data) {
   std::unique_lock<std::mutex> lock(mutex);
   auto cb = result_listener.find(request);
   if (cb != result_listener.end()) {
@@ -45,6 +42,25 @@ JNIEXPORT void JNICALL Java_org_videolan_cloudbrowser_Utility_onRequestResult(
     }
     result_listener.erase(cb);
   }
+}
+
+}  // namespace
+
+extern "C" {
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
+  JNIEnv *env;
+  if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_4) != JNI_OK)
+    return JNI_FALSE;
+  auto clazz = env->FindClass("org/videolan/cloudbrowser/Utility");
+  const JNINativeMethod methods[] = {
+      {"onActionRequested", "(Ljava/lang/String;)V",
+       reinterpret_cast<void *>(on_action_requested)},
+      {"onRequestResult", "(IILandroid/content/Intent;)V",
+       reinterpret_cast<void *>(on_request_result)}};
+  if (env->RegisterNatives(clazz, methods,
+                           sizeof(methods) / sizeof(JNINativeMethod)) < 0)
+    return JNI_FALSE;
+  return JNI_VERSION_1_4;
 }
 }
 
