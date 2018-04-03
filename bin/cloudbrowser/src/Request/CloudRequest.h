@@ -33,7 +33,7 @@ class Request : public QObject {
   void errorOccurred(QVariantMap provider, int code, QString description);
 
  private:
-  bool done_;
+  bool done_ = false;
 
   Q_OBJECT
 };
