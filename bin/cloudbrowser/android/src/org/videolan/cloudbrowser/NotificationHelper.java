@@ -26,7 +26,7 @@ public class NotificationHelper {
         }
     }
 
-    public NotificationHelper(Context context) {
+    NotificationHelper(Context context) {
         m_context = context;
         m_notification_manager =
             (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);

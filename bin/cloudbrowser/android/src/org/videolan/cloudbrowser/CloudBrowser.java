@@ -36,7 +36,7 @@ public class CloudBrowser extends QtActivity {
         ad.setAdListener(new AdListener() {
             private boolean m_loaded;
 
-            public void attach() {
+            void attach() {
                 if (!m_loaded && m_ad_view_visible) {
                     m_loaded = true;
                     m_ad_view = new RelativeLayout(CloudBrowser.this);
@@ -164,15 +164,12 @@ public class CloudBrowser extends QtActivity {
     }
 
     public String filename(Uri uri) {
-        Cursor cursor = getContentResolver().
-            query(uri, null, null, null, null, null);
         String result = "";
-        try {
+        try (Cursor cursor = getContentResolver().
+                query(uri, null, null, null, null, null)) {
             if (cursor != null && cursor.moveToFirst())
                 result = cursor.getString(
                     cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-        } finally {
-            cursor.close();
         }
         return result;
     }
