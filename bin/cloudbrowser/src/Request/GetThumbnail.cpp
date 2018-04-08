@@ -15,6 +15,7 @@ using namespace cloudstorage;
 namespace {
 
 const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(5);
+const auto CHECK_INTERVAL = std::chrono::milliseconds(100);
 
 class DownloadToString : public IDownloadFileCallback {
  public:
@@ -90,7 +91,17 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto notifier = notifier_;
       auto interrupt = interrupt_;
       pool_->schedule([path, provider, item, notifier, interrupt] {
-        auto r = provider->getItemUrlAsync(item)->result();
+        std::promise<EitherError<std::string>> promise;
+        auto d = provider->getItemUrlAsync(
+            item, [&](EitherError<std::string> e) { promise.set_value(e); });
+        auto future = promise.get_future();
+        std::future_status status = std::future_status::deferred;
+        while (!interrupt(std::chrono::system_clock::now()) &&
+               status != std::future_status::ready) {
+          status = future.wait_for(CHECK_INTERVAL);
+        }
+        if (status != std::future_status::ready) d->cancel();
+        auto r = future.get();
         if (r.left()) {
           emit notifier->finishedVariant(r.left());
           return notifier->deleteLater();
