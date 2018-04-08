@@ -81,10 +81,10 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
 namespace openload {
 
 std::string cipher(const std::string &page) {
-  std::string cipheredBegin =
-      "<div style=\"display:none;\">\n<span style=\"\" id=\"";
+  std::string ciphered_begin =
+      "<div class=\"\" style=\"display:none;\">\n<p style=\"\" id=\"";
   auto begin =
-      page.find('>', page.find(cipheredBegin) + cipheredBegin.length()) + 1;
+      page.find('>', page.find(ciphered_begin) + ciphered_begin.length()) + 1;
   auto end = page.find('<', begin) - 1;
   return page.substr(begin, end - begin + 1);
 }
@@ -113,6 +113,8 @@ std::vector<std::string> values(const std::string &page) {
 
 std::string decipher(const std::string &code,
                      const std::vector<std::string> &r) {
+  if (code.empty())
+    throw std::logic_error(util::Error::COULD_NOT_FIND_DECIPHER_CODE);
   auto _0x531f91 = code;
   auto _0x5d72cd = std::string(1, _0x531f91[0]);
   _0x5d72cd = _0x531f91;

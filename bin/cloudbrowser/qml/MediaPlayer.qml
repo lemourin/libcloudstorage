@@ -32,6 +32,7 @@ Kirigami.Page {
       root.globalDrawer.handleVisible = false;
       root.visible_player = true;
       platform.enableKeepScreenOn();
+      cloud.showCursor();
     }
   }
   onPlayingChanged: {
