@@ -101,6 +101,8 @@ class CloudContext : public QObject {
 
   void add(std::shared_ptr<cloudstorage::ICloudProvider> p,
            std::shared_ptr<cloudstorage::IGenericRequest> r);
+  void add(const std::string& provider_name, const std::string& provider_label,
+           const cloudstorage::Token& token);
 
   void cacheDirectory(ListDirectoryCacheKey directory,
                       const std::vector<cloudstorage::IItem::Pointer>&);
@@ -141,7 +143,7 @@ class CloudContext : public QObject {
   void receivedCode(std::string provider, std::string code);
   cloudstorage::ICloudProvider::Pointer provider(
       const std::string& name, const std::string& label,
-      cloudstorage::Token token) const;
+      const cloudstorage::Token& token) const;
   cloudstorage::ICloudProvider::InitData init_data(
       const std::string& name) const;
 

@@ -349,6 +349,11 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
   pool_->add(p, r);
 }
 
+void CloudContext::add(const std::string& name, const std::string& label,
+                       const Token& token) {
+  userProviders()->add(Provider{label, provider(name, label, token)});
+}
+
 void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
                                   const IItem::List& lst) {
   {
@@ -418,7 +423,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
 
 ICloudProvider::Pointer CloudContext::provider(const std::string& name,
                                                const std::string& label,
-                                               Token token) const {
+                                               const Token& token) const {
   class HttpWrapper : public IHttp {
    public:
     HttpWrapper(std::shared_ptr<IHttp> http) : http_(http) {}
