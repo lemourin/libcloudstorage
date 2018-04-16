@@ -351,7 +351,11 @@ void CloudContext::add(std::shared_ptr<ICloudProvider> p,
 
 void CloudContext::add(const std::string& name, const std::string& label,
                        const Token& token) {
-  userProviders()->add(Provider{label, provider(name, label, token)});
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    user_provider_model_.add(Provider{label, provider(name, label, token)});
+  }
+  saveProviders();
 }
 
 void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
