@@ -26,6 +26,8 @@
 #include <QObject>
 #include <memory>
 
+class QWindow;
+
 class IPlatformUtility : public QObject {
  public:
   using Pointer = std::unique_ptr<IPlatformUtility>;
@@ -34,6 +36,7 @@ class IPlatformUtility : public QObject {
 
   static Pointer create();
 
+  Q_INVOKABLE virtual void initialize(QWindow* window) const = 0;
   Q_INVOKABLE virtual QString name() const = 0;
   Q_INVOKABLE virtual bool mobile() const = 0;
   Q_INVOKABLE virtual bool openWebPage(QString url) = 0;

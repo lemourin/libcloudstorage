@@ -74,6 +74,8 @@ DesktopUtility::~DesktopUtility() {
 #endif
 }
 
+void DesktopUtility::initialize(QWindow *) const {}
+
 bool DesktopUtility::mobile() const { return false; }
 
 QString DesktopUtility::name() const { return "desktop"; }
@@ -95,10 +97,8 @@ void DesktopUtility::hidePlayerNotification() {}
 void DesktopUtility::enableKeepScreenOn() {
   screensaver_enabled_ = false;
 #ifdef _WIN32
-  auto result =
-      SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED |
-                              ES_AWAYMODE_REQUIRED | ES_DISPLAY_REQUIRED);
-  cloudstorage::util::log(result);
+  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED |
+                          ES_AWAYMODE_REQUIRED | ES_DISPLAY_REQUIRED);
 #endif
 }
 

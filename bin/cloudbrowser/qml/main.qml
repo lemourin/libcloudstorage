@@ -284,6 +284,7 @@ Kirigami.ApplicationWindow {
   }
 
   Component.onCompleted: {
+    platform.initialize(root);
     pageStack.separatorVisible = false;
     if (include_ads)
       platform.showAd();

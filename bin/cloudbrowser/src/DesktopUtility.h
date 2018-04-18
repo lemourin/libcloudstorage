@@ -18,6 +18,7 @@ class DesktopUtility : public IPlatformUtility {
   DesktopUtility();
   ~DesktopUtility();
 
+  void initialize(QWindow*) const override;
   bool mobile() const override;
   QString name() const override;
   bool openWebPage(QString url) override;

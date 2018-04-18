@@ -19,6 +19,7 @@ class WinRTUtility : public IPlatformUtility {
   WinRTUtility();
   ~WinRTUtility();
 
+  void initialize(QWindow* window) const override;
   bool mobile() const override;
   QString name() const override;
   bool openWebPage(QString url) override;

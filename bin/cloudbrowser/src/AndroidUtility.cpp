@@ -74,6 +74,8 @@ AndroidUtility::~AndroidUtility() {
   android = nullptr;
 }
 
+void AndroidUtility::initialize(QWindow *) const {}
+
 bool AndroidUtility::mobile() const { return true; }
 
 QString AndroidUtility::name() const { return "android"; }

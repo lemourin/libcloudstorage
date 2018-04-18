@@ -56,6 +56,11 @@ WinRTUtility::WinRTUtility() : ad_control_attached_() {
 
 WinRTUtility::~WinRTUtility() {}
 
+void WinRTUtility::initialize(QWindow *window) const {
+  window->setFlag(Qt::MaximizeUsingFullscreenGeometryHint);
+  window->setGeometry(0, 0, 0, 0);
+}
+
 bool WinRTUtility::mobile() const { return false; }
 
 QString WinRTUtility::name() const { return "winrt"; }

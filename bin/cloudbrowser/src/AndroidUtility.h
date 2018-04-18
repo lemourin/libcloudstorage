@@ -24,6 +24,7 @@ class AndroidUtility : public IPlatformUtility {
   AndroidUtility();
   ~AndroidUtility();
 
+  void initialize(QWindow*) const override;
   bool mobile() const override;
   QString name() const override;
   bool openWebPage(QString url) override;
