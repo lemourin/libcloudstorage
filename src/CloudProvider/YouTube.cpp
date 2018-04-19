@@ -116,7 +116,7 @@ EitherError<std::string> descramble(const std::string& scrambled,
                                     std::stringstream& stream) {
   auto find_descrambler = [](std::stringstream& stream) {
     auto player = stream.str();
-    const std::string descrambler_search = "\"signature\":\"sig\";c=";
+    const std::string descrambler_search = "\"signature\":\"sig\",e=";
     auto it = player.find(descrambler_search);
     if (it == std::string::npos)
       throw std::logic_error(util::Error::COULD_NOT_FIND_DESCRAMBLER_NAME);
