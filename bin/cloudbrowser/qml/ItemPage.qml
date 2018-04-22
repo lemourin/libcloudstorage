@@ -244,7 +244,7 @@ Kirigami.ScrollablePage {
     id: list_view
     model: list.list
     currentIndex: -1
-    onCurrentItemChanged: root.selected_item = currentItem.item
+    onCurrentItemChanged: root.selected_item = currentItem ? currentItem.item : null
     onCurrentIndexChanged: currentEdit = -1
     footerPositioning: ListView.OverlayFooter
     footer: Kirigami.ItemViewHeader {
@@ -298,6 +298,7 @@ Kirigami.ScrollablePage {
                          Kirigami.Theme.highlightColor : Kirigami.Theme.backgroundColor
       icon: ""
       onClicked: {
+        if (list_view.currentEdit == index) return;
         list_view.currentIndex = index;
         if (modelData.type === "directory")
           cloud.list(modelData.filename, page.label, modelData);
