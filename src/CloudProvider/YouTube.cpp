@@ -35,11 +35,11 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
-const std::string AUDIO_DIRECTORY = "audio";
+const std::string AUDIO_DIRECTORY = "Audio";
 const std::string AUDIO_DIRECTORY_ID = cloudstorage::util::to_base64(
     R"({"audio":true,"playlist":true,"id":"audio"})");
 
-const std::string HIGH_QUALITY_DIRECTORY = "high quality";
+const std::string HIGH_QUALITY_DIRECTORY = "High Quality";
 const std::string HIGH_QUALITY_DIRECTORY_ID = cloudstorage::util::to_base64(
     R"({"audio":false,"playlist":true,"high_quality":true,"id":"high quality"})");
 
@@ -85,6 +85,15 @@ std::string to_string(YouTubeItem item) {
   json["id"] = item.id;
   json["video_id"] = item.video_id;
   return util::to_base64(util::json::to_string(json));
+}
+
+std::string related_playlist_name(const std::string& name) {
+  if (name == "likes")
+    return "Liked videos";
+  else if (name == "uploads")
+    return "Uploaded videos";
+  else
+    return name;
 }
 
 VideoInfo video_info(const std::string& url) {
@@ -228,7 +237,7 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
 ICloudProvider::OperationSet YouTube::supportedOperations() const {
   return GetItem | ListDirectoryPage | ListDirectory | DownloadFile |
-         DeleteItem | GetItemUrl;
+         DeleteItem | GetItemUrl | RenameItem | CreateDirectory;
 }
 
 bool YouTube::isSuccess(int code,
@@ -402,6 +411,38 @@ IHttpRequest::Pointer YouTube::deleteItemRequest(const IItem& item,
   return request;
 }
 
+IHttpRequest::Pointer YouTube::renameItemRequest(const IItem& item,
+                                                 const std::string& name,
+                                                 std::ostream& stream) const {
+  if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY_ID ||
+      item.id() == HIGH_QUALITY_DIRECTORY_ID)
+    return nullptr;
+  auto id_data = from_string(item.id());
+  if (!id_data.playlist) return nullptr;
+  auto request = http()->create(endpoint() + "/youtube/v3/playlists", "PUT");
+  request->setParameter("part", "snippet");
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value argument;
+  argument["id"] = id_data.id;
+  argument["snippet"]["title"] = name;
+  stream << argument;
+  return request;
+}
+
+IHttpRequest::Pointer YouTube::createDirectoryRequest(
+    const IItem& item, const std::string& name, std::ostream& stream) const {
+  if (item.id() != rootDirectory()->id() && item.id() == AUDIO_DIRECTORY_ID &&
+      item.id() != HIGH_QUALITY_DIRECTORY_ID)
+    return nullptr;
+  auto request = http()->create(endpoint() + "/youtube/v3/playlists", "POST");
+  request->setParameter("part", "snippet");
+  request->setHeaderParameter("Content-Type", "application/json");
+  Json::Value argument;
+  argument["snippet"]["title"] = name;
+  stream << argument;
+  return request;
+}
+
 IHttpRequest::Pointer YouTube::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY_ID ||
@@ -460,9 +501,12 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
     Json::Value related_playlists =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
     for (const std::string& name : related_playlists.getMemberNames()) {
+      if (name == "watchLater" || name == "watchHistory" || name == "favorites")
+        continue;
       auto item = util::make_unique<Item>(
-          name, to_string({audio, true, high_quality,
-                           related_playlists[name].asString()}),
+          related_playlist_name(name),
+          to_string({audio, true, high_quality,
+                     related_playlists[name].asString(), ""}),
           IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory);
       item->set_thumbnail_url(
@@ -499,6 +543,23 @@ GeneralData YouTube::getGeneralDataResponse(std::istream& response) const {
     if (j["type"].asString() == "account")
       data.username_ = j["value"].asString();
   return data;
+}
+
+IItem::Pointer YouTube::renameItemResponse(const IItem& old_item,
+                                           const std::string&,
+                                           std::istream& response) const {
+  auto json = util::json::from_stream(response);
+  auto id = from_string(old_item.id());
+  return toItem(json, "youtube#playlistListResponse", id.audio,
+                id.high_quality);
+}
+
+IItem::Pointer YouTube::createDirectoryResponse(const IItem& parent,
+                                                const std::string&,
+                                                std::istream& response) const {
+  auto id = from_string(parent.id());
+  return toItem(util::json::from_stream(response),
+                "youtube#playlistListResponse", id.audio, id.high_quality);
 }
 
 Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
