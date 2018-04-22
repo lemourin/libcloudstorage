@@ -54,6 +54,7 @@ struct YouTubeItem {
   bool playlist;
   bool high_quality;
   std::string id;
+  std::string video_id;
 };
 
 struct VideoInfo {
@@ -69,7 +70,8 @@ YouTubeItem from_string(const std::string& id) {
     auto json =
         util::json::from_stream(std::stringstream(util::from_base64(id)));
     return {json["audio"].asBool(), json["playlist"].asBool(),
-            json["high_quality"].asBool(), json["id"].asString()};
+            json["high_quality"].asBool(), json["id"].asString(),
+            json["video_id"].asString()};
   } catch (const Json::Exception&) {
     return {};
   }
@@ -81,6 +83,7 @@ std::string to_string(YouTubeItem item) {
   json["playlist"] = item.playlist;
   json["high_quality"] = item.high_quality;
   json["id"] = item.id;
+  json["video_id"] = item.video_id;
   return util::to_base64(util::json::to_string(json));
 }
 
@@ -225,7 +228,7 @@ std::string YouTube::endpoint() const { return "https://www.googleapis.com"; }
 
 ICloudProvider::OperationSet YouTube::supportedOperations() const {
   return GetItem | ListDirectoryPage | ListDirectory | DownloadFile |
-         GetItemUrl;
+         DeleteItem | GetItemUrl;
 }
 
 bool YouTube::isSuccess(int code,
@@ -350,7 +353,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
                r->send(
                    [=](util::Output) {
                      return http()->create("http://youtube.com/watch?v=" +
-                                           from_string(item->id()).id);
+                                           from_string(item->id()).video_id);
                    },
                    [=](EitherError<Response> e) {
                      if (e.left()) return r->done(e.left());
@@ -383,6 +386,20 @@ IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
 
 IHttpRequest::Pointer YouTube::getGeneralDataRequest(std::ostream&) const {
   return http()->create("https://www.googleapis.com/plus/v1/people/me");
+}
+
+IHttpRequest::Pointer YouTube::deleteItemRequest(const IItem& item,
+                                                 std::ostream&) const {
+  if (item.id() == rootDirectory()->id() || item.id() == AUDIO_DIRECTORY_ID ||
+      item.id() == HIGH_QUALITY_DIRECTORY_ID)
+    return nullptr;
+  auto id_data = from_string(item.id());
+  auto request =
+      http()->create(endpoint() + "/youtube/v3/" +
+                         (id_data.playlist ? "playlists" : "playlistItems"),
+                     "DELETE");
+  request->setParameter("id", id_data.id);
+  return request;
 }
 
 IHttpRequest::Pointer YouTube::listDirectoryRequest(
@@ -489,7 +506,7 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString(),
-        to_string({audio, true, high_quality, v["id"].asString()}),
+        to_string({audio, true, high_quality, v["id"].asString(), ""}),
         IItem::UnknownSize, IItem::UnknownTimeStamp,
         IItem::FileType::Directory);
     item->set_thumbnail_url(
@@ -502,12 +519,12 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     else if (kind == "youtube#videoListResponse")
       video_id = v["id"].asString();
     else
-      throw std::logic_error("invalid kind");
+      throw std::logic_error(util::Error::INVALID_KIND);
 
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
-        to_string({audio, false, high_quality, video_id}), IItem::UnknownSize,
-        IItem::UnknownTimeStamp,
+        to_string({audio, false, high_quality, v["id"].asString(), video_id}),
+        IItem::UnknownSize, IItem::UnknownTimeStamp,
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
@@ -518,7 +535,7 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/youtube.readonly+https://"
+         "&scope=https://www.googleapis.com/auth/youtube+https://"
          "www.googleapis.com/auth/plus.profile.emails.read"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
