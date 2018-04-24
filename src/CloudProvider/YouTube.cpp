@@ -576,7 +576,8 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString(),
         to_string({audio, true, high_quality, false, v["id"].asString(), ""}),
-        IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::UnknownSize,
+        util::parse_time(v["snippet"]["publishedAt"].asString()),
         IItem::FileType::Directory);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
@@ -594,7 +595,8 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
         v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
         to_string(
             {audio, false, high_quality, false, v["id"].asString(), video_id}),
-        IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::UnknownSize,
+        util::parse_time(v["snippet"]["publishedAt"].asString()),
         audio ? IItem::FileType::Audio : IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
