@@ -33,6 +33,8 @@
 #include "Utility/Utility.h"
 
 const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
+const std::string SHARED_ID = "shared";
+const std::string SHARED_FILENAME = "Shared with me";
 
 using namespace std::placeholders;
 
@@ -123,7 +125,7 @@ IHttpRequest::Pointer GoogleDrive::listDirectoryRequest(
     const IItem& item, const std::string& page_token, std::ostream&) const {
   IHttpRequest::Pointer request =
       http()->create(endpoint() + "/drive/v3/files", "GET");
-  if (item.id() == "shared")
+  if (item.id() == SHARED_ID)
     request->setParameter("q", "sharedWithMe");
   else
     request->setParameter("q", std::string("'") + item.id() + "'+in+parents");
@@ -169,7 +171,6 @@ ICloudProvider::DownloadFileRequest::Pointer GoogleDrive::downloadFileAsync(
                  r->done(
                      Error{IHttpRequest::ServiceUnavailable,
                            "can't download sub-range of google specific file"});
-
                })
         ->run();
   }
@@ -301,7 +302,7 @@ IItem::List GoogleDrive::listDirectoryResponse(
   for (Json::Value v : response["files"]) result.push_back(toItem(v));
   if (item.id() == rootDirectory()->id())
     result.push_back(util::make_unique<Item>(
-        "shared", "shared", IItem::UnknownSize, IItem::UnknownTimeStamp,
+        SHARED_FILENAME, SHARED_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
         IItem::FileType::Directory));
 
   if (response.isMember("nextPageToken"))
