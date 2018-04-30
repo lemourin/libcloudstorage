@@ -9,7 +9,7 @@
 class CloudContext;
 class CloudItem;
 
-class CreateDirectoryRequest : public Request {
+class CLOUDBROWSER_API CreateDirectoryRequest : public Request {
  public:
   Q_INVOKABLE void update(CloudContext*, CloudItem* parent, QString name);
 

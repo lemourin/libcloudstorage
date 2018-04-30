@@ -9,7 +9,7 @@
 class CloudContext;
 class CloudItem;
 
-class GetThumbnailRequest : public Request {
+class CLOUDBROWSER_API GetThumbnailRequest : public Request {
  public:
   Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
 

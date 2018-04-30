@@ -26,9 +26,11 @@
 #include <QObject>
 #include <memory>
 
+#include "Exec.h"
+
 class QWindow;
 
-class IPlatformUtility : public QObject {
+class CLOUDBROWSER_API IPlatformUtility : public QObject {
  public:
   using Pointer = std::unique_ptr<IPlatformUtility>;
 

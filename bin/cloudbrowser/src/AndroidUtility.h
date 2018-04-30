@@ -6,10 +6,12 @@
 #include <QAndroidJniObject>
 #include <QObject>
 #include <QtAndroid>
+
+#include "Exec.h"
 #include "IPlatformUtility.h"
 #include "IRequest.h"
 
-class AndroidUtility : public IPlatformUtility {
+class CLOUDBROWSER_API AndroidUtility : public IPlatformUtility {
  public:
   class IResultListener
       : public cloudstorage::IGenericCallback<int, int,

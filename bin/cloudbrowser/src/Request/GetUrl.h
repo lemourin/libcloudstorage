@@ -8,7 +8,7 @@
 class CloudContext;
 class CloudItem;
 
-class GetUrlRequest : public Request {
+class CLOUDBROWSER_API GetUrlRequest : public Request {
  public:
   Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
 

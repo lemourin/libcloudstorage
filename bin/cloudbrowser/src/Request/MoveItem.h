@@ -6,7 +6,7 @@
 class CloudContext;
 class CloudItem;
 
-class MoveItemRequest : public Request {
+class CLOUDBROWSER_API MoveItemRequest : public Request {
  public:
   Q_INVOKABLE void update(CloudContext*, CloudItem* source,
                           CloudItem* destination);

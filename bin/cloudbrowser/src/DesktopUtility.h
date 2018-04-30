@@ -11,9 +11,11 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+
+#include "Exec.h"
 #include "IPlatformUtility.h"
 
-class DesktopUtility : public IPlatformUtility {
+class CLOUDBROWSER_API DesktopUtility : public IPlatformUtility {
  public:
   DesktopUtility();
   ~DesktopUtility();

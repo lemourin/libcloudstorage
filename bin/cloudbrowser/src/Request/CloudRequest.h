@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVariant>
 
+#include "Exec.h"
 #include "ICloudProvider.h"
 
 class RequestNotifier : public QObject {
@@ -21,7 +22,7 @@ class RequestNotifier : public QObject {
   Q_OBJECT
 };
 
-class Request : public QObject {
+class CLOUDBROWSER_API Request : public QObject {
  public:
   Q_PROPERTY(bool done READ done WRITE set_done NOTIFY doneChanged)
 

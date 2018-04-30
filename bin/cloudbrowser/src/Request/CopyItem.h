@@ -5,7 +5,7 @@
 #include "CloudItem.h"
 #include "CloudRequest.h"
 
-class CopyItemRequest : public Request {
+class CLOUDBROWSER_API CopyItemRequest : public Request {
  public:
   Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
 
