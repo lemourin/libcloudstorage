@@ -26,10 +26,10 @@ void GetUrlRequest::update(CloudContext* context, CloudItem* item) {
             set_done(true);
           });
   auto p = item->provider().provider_;
-  auto r =
-      p->getItemUrlAsync(item->item(), [object](EitherError<std::string> e) {
-        emit object->finishedString(e);
-        object->deleteLater();
-      });
+  auto r = p->getFileDaemonUrlAsync(item->item(),
+                                    [object](EitherError<std::string> e) {
+                                      emit object->finishedString(e);
+                                      object->deleteLater();
+                                    });
   context->add(p, std::move(r));
 }
