@@ -36,6 +36,7 @@ void WinRTUtility::AdEventHandler::onAdRefreshed(Object ^, RoutedEventArgs ^) {
 
 WinRTUtility::WinRTUtility() : ad_control_attached_() {
   QEventDispatcherWinRT::runOnXamlThread([this]() {
+#ifdef WITH_ADS
     ad_event_handler_ = ref new AdEventHandler(this);
     ad_control_ = ref new AdControl();
     ad_control_->ApplicationId = L"9nbkjrh757k7";
@@ -47,7 +48,7 @@ WinRTUtility::WinRTUtility() : ad_control_attached_() {
         ad_event_handler_, &AdEventHandler::onAdRefreshed);
     ad_control_->ErrorOccurred += ref new EventHandler<AdErrorEventArgs ^>(
         ad_event_handler_, &AdEventHandler::onAdError);
-
+#endif
     display_request_ = ref new DisplayRequest;
 
     return true;
@@ -56,7 +57,7 @@ WinRTUtility::WinRTUtility() : ad_control_attached_() {
 
 WinRTUtility::~WinRTUtility() {}
 
-void WinRTUtility::initialize(QWindow *window) const {
+void WinRTUtility::initialize(QWindow* window) const {
   window->setFlag(Qt::MaximizeUsingFullscreenGeometryHint);
   window->setGeometry(0, 0, 0, 0);
 }
@@ -94,6 +95,7 @@ void WinRTUtility::disableKeepScreenOn() {
 }
 
 void WinRTUtility::showAd() {
+#ifdef WITH_ADS
   QEventDispatcherWinRT::runOnXamlThread([this]() {
     if (!ad_control_attached_ && qGuiApp->focusWindow()) {
       ad_control_attached_ = true;
@@ -106,13 +108,16 @@ void WinRTUtility::showAd() {
     ad_control_->Visibility = Visibility::Visible;
     return true;
   });
+#endif
 }
 
 void WinRTUtility::hideAd() {
+#ifdef WITH_ADS
   QEventDispatcherWinRT::runOnXamlThread([this]() {
     ad_control_->Visibility = Visibility::Collapsed;
     return true;
   });
+#endif
 }
 
 IPlatformUtility::Pointer IPlatformUtility::create() {
