@@ -86,7 +86,6 @@ class HttpDataCallback : public IDownloadFileCallback {
   }
 
   void done(EitherError<void> e) override {
-    buffer_->done();
     buffer_->resume();
     request_->done(e);
   }
@@ -110,7 +109,10 @@ class HttpData : public IHttpServer::IResponse::ICallback {
         provider_(p),
         request_(request(p, file, range)) {}
 
-  ~HttpData() override { provider_->removeStreamRequest(request_); }
+  ~HttpData() override {
+    buffer_->done();
+    provider_->removeStreamRequest(request_);
+  }
 
   std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
       std::shared_ptr<CloudProvider> provider, const std::string& file,
