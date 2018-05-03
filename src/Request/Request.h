@@ -106,7 +106,7 @@ class Request : public IRequest<ReturnValue>,
   template <class Type = CloudProvider, class Method, class... Args>
   void make_subrequest(Method method, Args... args) {
     if (is_cancelled()) {
-      call(last_argument(args...),
+      call(LastArgument<Args...>()(args...),
            Error{IHttpRequest::Aborted, util::Error::ABORTED});
     } else {
       std::lock_guard<std::recursive_mutex> lock(subrequest_mutex_);
@@ -135,14 +135,20 @@ class Request : public IRequest<ReturnValue>,
   void subrequest(std::shared_ptr<IGenericRequest>);
 
   template <class First, class... Rest>
-  const auto& last_argument(const First&, const Rest&... rest) {
-    return last_argument(rest...);
-  }
+  struct LastArgument {
+    using Type = typename LastArgument<Rest...>::Type;
+
+    const Type& operator()(const First&, const Rest&... rest) const {
+      return LastArgument<Rest...>()(rest...);
+    }
+  };
 
   template <class First>
-  const First& last_argument(const First& f) {
-    return f;
-  }
+  struct LastArgument<First> {
+    using Type = First;
+
+    const Type& operator()(const First& f) const { return f; }
+  };
 
   template <class T, class... Args>
   void call(const std::unique_ptr<T>& c, Args... args) {
