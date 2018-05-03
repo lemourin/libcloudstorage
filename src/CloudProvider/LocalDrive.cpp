@@ -275,7 +275,7 @@ LocalDrive::GetItemDataRequest::Pointer LocalDrive::getItemDataAsync(
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback(e); },
       [=](Request<EitherError<IItem>>::Pointer r) {
-        fs::path path(id);
+        fs::path path(from_string(id));
         error_code error;
         fs::status(path, error);
         if (error) return r->done(Error{error.value(), error.message()});
