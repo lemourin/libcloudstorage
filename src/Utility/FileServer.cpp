@@ -201,7 +201,7 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     code = IHttpRequest::Partial;
   }
   auto buffer = std::make_shared<Buffer>();
-  auto data = util::make_unique<HttpData>(buffer, provider_, id, range);
+  auto data = util::make_unique<HttpData>(buffer, provider_, util::from_base64(id), range);
   auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
