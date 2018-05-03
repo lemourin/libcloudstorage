@@ -120,7 +120,6 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       r->make_subrequest(
           &CloudProvider::getItemDataAsync, file, [=](EitherError<IItem> e) {
             if (e.left()) {
-              util::log("item retrieval failed");
               status_ = AuthFailed;
               r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
             } else {
