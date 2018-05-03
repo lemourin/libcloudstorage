@@ -30,12 +30,12 @@
 using namespace cloudstorage;
 using ::testing::_;
 using ::testing::AtLeast;
-using ::testing::Return;
-using ::testing::InvokeArgument;
-using ::testing::Invoke;
-using ::testing::WithArgs;
 using ::testing::ByMove;
 using ::testing::DoAll;
+using ::testing::Invoke;
+using ::testing::InvokeArgument;
+using ::testing::Return;
+using ::testing::WithArgs;
 
 class AuthCallback : public ICloudProvider::IAuthCallback {
   Status userConsentRequired(const ICloudProvider&) override {
@@ -99,6 +99,8 @@ ACTION(CreateServer) {
   return std::move(server);
 }
 
+ACTION(CreateFileServer) { return util::make_unique<HttpServerMock>(); }
+
 TEST_F(GoogleDriveTest, ListDirectoryTest) {
   ICloudProvider::InitData data;
   data.http_engine_ = util::make_unique<HttpMock>();
@@ -125,6 +127,8 @@ TEST_F(GoogleDriveTest, AuthorizationTest) {
   const HttpMock& http = static_cast<const HttpMock&>(*data.http_engine_);
   HttpServerFactoryMock& http_factory =
       static_cast<HttpServerFactoryMock&>(*data.http_server_);
+  EXPECT_CALL(http_factory, create(_, _, IHttpServer::Type::FileProvider))
+      .WillOnce(CreateFileServer());
   auto provider = ICloudStorage::create()->provider("google", std::move(data));
   auto request = request_mock();
   EXPECT_CALL(*request, send(_, _, _, _, _)).WillOnce(UnauthorizedSend());
