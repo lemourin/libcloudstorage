@@ -670,7 +670,8 @@ IItem::Pointer MegaNz::toItem(MegaNode* node) {
                        : std::chrono::system_clock::time_point(
                              std::chrono::seconds(node->getModificationTime())),
       node->isFolder() ? IItem::FileType::Directory : IItem::FileType::Unknown);
-  item->set_url(endpoint() + "/?id=" + std::to_string(node->getHandle()) +
+  item->set_url(endpoint() +
+                "/?id=" + util::to_base64(std::to_string(node->getHandle())) +
                 "&name=" + util::Url::escape(util::to_base64(node->getName())) +
                 "&size=" + std::to_string(node->getSize()) +
                 "&state=" + util::Url::escape(auth()->state()));
