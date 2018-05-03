@@ -230,12 +230,18 @@ class GenericCallback {
 
   operator bool() const { return static_cast<bool>(functor_); }
 
-  void operator()(Arguments... d) const { functor_->done(d...); }
+  void operator()(Arguments... d) const {
+    functor_->done(std::forward<Arguments>(d)...);
+  }
 
   template <class Callback, class... CallbackArguments>
   static typename IGenericCallback<Arguments...>::Pointer make(
       CallbackArguments&&... args) {
     return std::make_shared<Callback>(std::forward<CallbackArguments>(args)...);
+  }
+
+  void done(Arguments... d) const {
+    functor_->done(std::forward<Arguments>(d)...);
   }
 
  private:

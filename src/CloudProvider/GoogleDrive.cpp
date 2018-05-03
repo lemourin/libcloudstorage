@@ -184,9 +184,7 @@ ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
   auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
-    r->subrequest(listDirectorySimpleAsync(directory, [=](EitherError<
-                                                          IItem::List>
-                                                              e) {
+    auto resolve_directory = [=](EitherError<IItem::List> e) {
       if (e.left()) return r->done(e.left());
       IItem::Pointer item = nullptr;
       int cnt = 0;
@@ -223,7 +221,9 @@ ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
           [=] { return std::make_shared<std::iostream>(stream_wrapper.get()); },
           std::make_shared<std::stringstream>(), nullptr,
           std::bind(&IUploadFileCallback::progress, cb, _1, _2), true);
-    }));
+    };
+    r->make_subrequest(&GoogleDrive::listDirectorySimpleAsync, directory,
+                       resolve_directory);
   };
   return std::make_shared<Request<EitherError<IItem>>>(
              shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },

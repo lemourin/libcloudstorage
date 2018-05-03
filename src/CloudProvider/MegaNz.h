@@ -34,6 +34,10 @@
 
 namespace cloudstorage {
 
+namespace {
+class Listener;
+}
+
 /**
  * MegaNz doesn't use oauth, Token in this case is a base64 encoded
  * json with fields username, password (hashed). When credentials are required,
@@ -121,6 +125,18 @@ class MegaNz : public CloudProvider {
   };
 
  private:
+  template <class T>
+  std::shared_ptr<IRequest<EitherError<void>>> make_request(
+      std::function<void(T*)> init,
+      std::function<void(EitherError<void>, Listener*)> listener_callback,
+      GenericCallback<EitherError<void>> callback);
+
+  template <class T>
+  void make_subrequest(
+      Request<EitherError<void>>::Pointer parent_request,
+      std::function<void(T*)> init,
+      std::function<void(EitherError<void>, Listener*)> listener_callback);
+
   std::unique_ptr<mega::MegaApi> mega_;
   std::atomic_bool authorized_;
   std::random_device device_;

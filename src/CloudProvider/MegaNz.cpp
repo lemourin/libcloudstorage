@@ -256,6 +256,21 @@ std::unique_ptr<mega::MegaNode> MegaNz::node(const std::string& id) const {
     return std::unique_ptr<MegaNode>(mega_->getNodeByHandle(std::stoull(id)));
 }
 
+template <class T>
+std::shared_ptr<IRequest<EitherError<void>>> MegaNz::make_request(
+    std::function<void(T*)> init, Listener::Callback c,
+    GenericCallback<EitherError<void>>) {
+  auto r = Listener::make<T>(c, this);
+  init(r.get());
+  return r;
+}
+
+template <class T>
+void MegaNz::make_subrequest(
+    Request<EitherError<void>>::Pointer parent_request,
+    std::function<void(T*)> init,
+    std::function<void(EitherError<void>, Listener*)> listener_callback) {}
+
 void MegaNz::initialize(InitData&& data) {
   {
     auto lock = auth_lock();
@@ -304,14 +319,14 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         auto fetch = [=]() {
-          auto fetch_nodes_listener = Listener::make<RequestListener>(
+          r->make_subrequest<MegaNz>(
+              &MegaNz::make_request<RequestListener>,
+              [=](RequestListener* r) { mega_->fetchNodes(r); },
               [=](EitherError<void> e, Listener*) {
                 if (!e.left()) authorized_ = true;
                 complete(e);
               },
-              this);
-          r->subrequest(fetch_nodes_listener);
-          mega_->fetchNodes(fetch_nodes_listener.get());
+              complete);
         };
         login(r, [=](EitherError<void> e) {
           if (!e.left()) return fetch();
@@ -392,7 +407,13 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         if (!node)
           return r->done(
               Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-        auto listener = Listener::make<TransferListener>(
+        auto node_ptr = node.get();
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<TransferListener>,
+            [=](TransferListener* r) {
+              r->upload_callback_ = callback;
+              mega_->startUpload(cache.c_str(), node_ptr, filename.c_str(), r);
+            },
             [=](EitherError<void> e, Listener* listener) {
               (void)std::remove(cache.c_str());
               if (e.left()) return r->done(e.left());
@@ -400,11 +421,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
                   static_cast<TransferListener*>(listener)->node_));
               r->done(toItem(node.get()));
             },
-            this);
-        listener->upload_callback_ = callback;
-        r->subrequest(listener);
-        mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
-                           listener.get());
+            [=](EitherError<void> e) { r->done(e.left()); });
       });
     });
   };
@@ -424,7 +441,12 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
           return r->done(
               Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
         std::string cache = temporaryFileName();
-        auto listener = Listener::make<RequestListener>(
+        auto node_ptr = node.get();
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<RequestListener>,
+            [=](RequestListener* r) {
+              mega_->getThumbnail(node_ptr, cache.c_str(), r);
+            },
             [=](EitherError<void> e, Listener*) {
               if (e.left()) return r->done(e.left());
               std::fstream cache_file(cache.c_str(),
@@ -440,9 +462,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
               (void)std::remove(cache.c_str());
               r->done(nullptr);
             },
-            this);
-        r->subrequest(listener);
-        mega_->getThumbnail(node.get(), cache.c_str(), listener.get());
+            [=](EitherError<void> e) { r->done(e.left()); });
       });
     });
   };
@@ -460,10 +480,12 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
       if (!node) {
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       } else {
-        auto listener = Listener::make<RequestListener>(
-            [=](EitherError<void> e, Listener*) { return r->done(e); }, this);
-        r->subrequest(listener);
-        mega_->remove(node.get(), listener.get());
+        auto node_ptr = node.get();
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<RequestListener>,
+            [=](RequestListener* r) { mega_->remove(node_ptr, r); },
+            [=](EitherError<void> e, Listener*) { r->done(e); },
+            [=](EitherError<void> e) { r->done(e); });
       }
     });
   };
@@ -481,16 +503,19 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
       if (!parent_node)
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-      auto listener = Listener::make<RequestListener>(
+      auto parent_node_ptr = parent_node.get();
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<RequestListener>,
+          [=](RequestListener* r) {
+            mega_->createFolder(name.c_str(), parent_node_ptr, r);
+          },
           [=](EitherError<void> e, Listener* listener) {
             if (e.left()) return r->done(e.left());
             std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
                 static_cast<RequestListener*>(listener)->node_));
             r->done(toItem(node.get()));
           },
-          this);
-      r->subrequest(listener);
-      mega_->createFolder(name.c_str(), parent_node.get(), listener.get());
+          [=](EitherError<void> e) { r->done(e.left()); });
     });
   };
   return std::make_shared<Request<EitherError<IItem>>>(shared_from_this(),
@@ -506,17 +531,20 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
       auto source_node = this->node(source->id());
       auto destination_node = this->node(destination->id());
       if (source_node && destination_node) {
-        auto listener = Listener::make<RequestListener>(
+        auto source_node_ptr = source_node.get();
+        auto destination_node_ptr = destination_node.get();
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<RequestListener>,
+            [=](RequestListener* r) {
+              mega_->moveNode(source_node_ptr, destination_node_ptr, r);
+            },
             [=](EitherError<void> e, Listener* listener) {
               if (e.left()) return r->done(e.left());
               std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
                   static_cast<RequestListener*>(listener)->node_));
               r->done(toItem(node.get()));
             },
-            this);
-        r->subrequest(listener);
-        mega_->moveNode(source_node.get(), destination_node.get(),
-                        listener.get());
+            [=](EitherError<void> e) { r->done(e.left()); });
       } else {
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       }
@@ -533,16 +561,19 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     ensureAuthorized<EitherError<IItem>>(r, [=] {
       auto node = this->node(item->id());
       if (node) {
-        auto listener = Listener::make<RequestListener>(
+        auto node_ptr = node.get();
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<RequestListener>,
+            [=](RequestListener* r) {
+              mega_->renameNode(node_ptr, name.c_str(), r);
+            },
             [=](EitherError<void> e, Listener* listener) {
               if (e.left()) return r->done(e.left());
               std::unique_ptr<mega::MegaNode> node(mega_->getNodeByHandle(
                   static_cast<RequestListener*>(listener)->node_));
               r->done(toItem(node.get()));
             },
-            this);
-        r->subrequest(listener);
-        mega_->renameNode(node.get(), name.c_str(), listener.get());
+            [=](EitherError<void> e) { r->done(e.left()); });
       } else
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
     });
@@ -581,7 +612,9 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
     GeneralDataCallback callback) {
   auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
     ensureAuthorized<EitherError<GeneralData>>(r, [=] {
-      auto listener = Listener::make<RequestListener>(
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<RequestListener>,
+          [=](RequestListener* r) { mega()->getAccountDetails(r); },
           [=](EitherError<void> e, Listener* listener) {
             if (e.left()) return r->done(e.left());
             GeneralData result;
@@ -593,9 +626,7 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
                 static_cast<RequestListener*>(listener)->space_used_;
             r->done(result);
           },
-          this);
-      r->subrequest(listener);
-      mega()->getAccountDetails(listener.get());
+          [=](EitherError<void> e) { r->done(e.left()); });
     });
   };
   return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
@@ -612,49 +643,55 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
       if (!node)
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-      auto listener = Listener::make<TransferListener>(
-          [=](EitherError<void> e, Listener*) { r->done(e); }, this);
-      listener->download_callback_ = callback;
-      r->subrequest(listener);
-      mega_->startStreaming(
-          node.get(), range.start_,
-          range.size_ == Range::Full
-              ? static_cast<uint64_t>(node->getSize()) - range.start_
-              : range.size_,
-          listener.get());
+      auto node_ptr = node.get();
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<TransferListener>,
+          [=](TransferListener* r) {
+            r->download_callback_ = callback;
+            mega_->startStreaming(
+                node_ptr, range.start_,
+                range.size_ == Range::Full
+                    ? static_cast<uint64_t>(node_ptr->getSize()) - range.start_
+                    : range.size_,
+                r);
+          },
+          [=](EitherError<void> e, Listener*) { r->done(e); },
+          [=](EitherError<void> e) { r->done(e.left()); });
     });
   };
 }
 
 void MegaNz::login(Request<EitherError<void>>::Pointer r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
-  auto session_auth_listener = Listener::make<RequestListener>(
-      [=](EitherError<void> e, Listener*) {
-        if (e.left()) {
-          auto auth_listener = Listener::make<RequestListener>(
-              [=](EitherError<void> e, Listener*) {
-                if (!e.left()) {
-                  auto lock = auth_lock();
-                  std::unique_ptr<char[]> session(mega_->dumpSession());
-                  auth()->access_token()->token_ = session.get();
-                }
-                complete(e);
-              },
-              this);
-          r->subrequest(auth_listener);
-          auto data = credentialsFromString(token());
-          std::string mail = data["username"].asString();
-          std::string private_key = data["password"].asString();
-          std::unique_ptr<char[]> hash(
-              mega_->getStringHash(private_key.c_str(), mail.c_str()));
-          mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(),
-                           auth_listener.get());
-        } else
-          complete(e);
-      },
-      this);
-  r->subrequest(session_auth_listener);
-  mega_->fastLogin(access_token().c_str(), session_auth_listener.get());
+  auto session_auth_listener_callback = [=](EitherError<void> e, Listener*) {
+    if (e.left()) {
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<RequestListener>,
+          [=](RequestListener* r) {
+            auto data = credentialsFromString(token());
+            std::string mail = data["username"].asString();
+            std::string private_key = data["password"].asString();
+            std::unique_ptr<char[]> hash(
+                mega_->getStringHash(private_key.c_str(), mail.c_str()));
+            mega_->fastLogin(mail.c_str(), hash.get(), private_key.c_str(), r);
+          },
+          [=](EitherError<void> e, Listener*) {
+            if (!e.left()) {
+              auto lock = auth_lock();
+              std::unique_ptr<char[]> session(mega_->dumpSession());
+              auth()->access_token()->token_ = session.get();
+            }
+            complete(e);
+          },
+          [=](EitherError<void> e) { complete(e.left()); });
+    } else
+      complete(e);
+  };
+  r->make_subrequest<MegaNz>(
+      &MegaNz::make_request<RequestListener>,
+      [=](RequestListener* r) { mega_->fastLogin(access_token().c_str(), r); },
+      session_auth_listener_callback,
+      [=](EitherError<void> e) { r->done(e.left()); });
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {

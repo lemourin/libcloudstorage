@@ -42,16 +42,16 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
   if (item->type() != IItem::FileType::Directory)
     visitor(r, item, callback);
   else
-    r->subrequest(r->provider()->listDirectorySimpleAsync(
-        item, [=](EitherError<IItem::List> lst) {
-          if (lst.left()) return callback(lst.left());
-          visit(r, lst.right(),
-                [=](const T& e) {
-                  if (e.left()) return callback(e);
-                  visitor(r, item, callback);
-                },
-                visitor);
-        }));
+    r->make_subrequest(&CloudProvider::listDirectorySimpleAsync, item,
+                       [=](EitherError<IItem::List> lst) {
+                         if (lst.left()) return callback(lst.left());
+                         visit(r, lst.right(),
+                               [=](const T& e) {
+                                 if (e.left()) return callback(e);
+                                 visitor(r, item, callback);
+                               },
+                               visitor);
+                       });
 }
 
 template <class T>

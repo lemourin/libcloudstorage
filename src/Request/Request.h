@@ -103,7 +103,17 @@ class Request : public IRequest<ReturnValue>,
 
   bool is_cancelled() const;
 
-  void subrequest(std::shared_ptr<IGenericRequest>);
+  template <class Type = CloudProvider, class Method, class... Args>
+  void make_subrequest(Method method, Args... args) {
+    if (is_cancelled()) {
+      call(last_argument(args...),
+           Error{IHttpRequest::Aborted, util::Error::ABORTED});
+    } else {
+      std::lock_guard<std::recursive_mutex> lock(subrequest_mutex_);
+      subrequests_.push_back((static_cast<Type*>(provider().get())->*method)(
+          std::forward<Args>(args)...));
+    }
+  }
 
   void authorize(IHttpRequest::Pointer r);
   bool reauthorize(int code, const IHttpRequest::HeaderParameters&);
@@ -122,6 +132,33 @@ class Request : public IRequest<ReturnValue>,
             ProgressFunction download = nullptr,
             ProgressFunction upload = nullptr);
 
+  void subrequest(std::shared_ptr<IGenericRequest>);
+
+  template <class First, class... Rest>
+  const auto& last_argument(const First&, const Rest&... rest) {
+    return last_argument(rest...);
+  }
+
+  template <class First>
+  const First& last_argument(const First& f) {
+    return f;
+  }
+
+  template <class T, class... Args>
+  void call(const std::unique_ptr<T>& c, Args... args) {
+    c->done(std::forward<Args>(args)...);
+  }
+
+  template <class T, class... Args>
+  void call(const std::shared_ptr<T>& c, Args... args) {
+    c->done(std::forward<Args>(args)...);
+  }
+
+  template <class T, class... Args>
+  void call(const T& c, Args... args) {
+    c(std::forward<Args>(args)...);
+  }
+
   std::promise<ReturnValue> value_;
   std::shared_future<ReturnValue> future_;
   Resolver resolver_;
@@ -129,7 +166,7 @@ class Request : public IRequest<ReturnValue>,
   std::mutex provider_mutex_;
   std::shared_ptr<CloudProvider> provider_;
   std::atomic_bool is_cancelled_;
-  std::mutex subrequest_mutex_;
+  std::recursive_mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };
 

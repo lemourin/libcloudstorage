@@ -134,11 +134,11 @@ void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
   };
   auto cached_url = static_cast<Item*>(file.get())->url();
   auto get_url = [=]() {
-    r->subrequest(
-        provider()->getItemUrlAsync(file, [=](EitherError<std::string> e) {
+    r->make_subrequest(
+        &CloudProvider::getItemUrlAsync, file, [=](EitherError<std::string> e) {
           if (e.left()) return r->done(e.left());
           download(*e.right(), [=](EitherError<void> e) { r->done(e); });
-        }));
+        });
   };
   if (!cached_url.empty())
     download(cached_url, [=](EitherError<void> e) {

@@ -295,6 +295,9 @@ class CloudProvider : public ICloudProvider,
   void removeStreamRequest(
       std::shared_ptr<ICloudProvider::DownloadFileRequest>);
 
+  DownloadFileRequest::Pointer downloadFileRangeAsync(
+      IItem::Pointer, Range, IDownloadFileCallback::Pointer);
+
  protected:
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
@@ -303,6 +306,11 @@ class CloudProvider : public ICloudProvider,
   friend class AuthorizeRequest;
   template <class T>
   friend class Request;
+
+  DownloadFileRequest::Pointer makeDownloadFileRequest(
+      IItem::Pointer file, Range,
+      std::function<IHttpRequest::Pointer(const IItem&, std::ostream&)>,
+      IDownloadFileCallback::Pointer);
 
   IAuth::Pointer auth_;
   IAuthCallback::Pointer callback_;

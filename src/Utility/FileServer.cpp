@@ -117,29 +117,26 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       Range range) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       auto p = r->provider().get();
-      r->subrequest(p->getItemDataAsync(file, [=](EitherError<IItem> e) {
-        if (e.left()) {
-          status_ = AuthFailed;
-          r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
-        } else {
-          if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
-            status_ = AuthFailed;
-            r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
-          } else {
-            if (!r->is_cancelled()) {
-              status_ = AuthSuccess;
-              p->addStreamRequest(r);
-              r->subrequest(p->downloadFileAsync(
-                  e.right(), util::make_unique<HttpDataCallback>(buffer_, r),
-                  range));
-            } else {
+      r->make_subrequest(
+          &CloudProvider::getItemDataAsync, file, [=](EitherError<IItem> e) {
+            if (e.left()) {
+              util::log("item retrieval failed");
               status_ = AuthFailed;
-              r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
+              r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
+            } else {
+              if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
+                status_ = AuthFailed;
+                r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
+              } else {
+                status_ = AuthSuccess;
+                p->addStreamRequest(r);
+                r->make_subrequest(
+                    &CloudProvider::downloadFileRangeAsync, e.right(), range,
+                    util::make_unique<HttpDataCallback>(buffer_, r));
+              }
             }
-          }
-        }
-        buffer_->resume();
-      }));
+            buffer_->resume();
+          });
     };
     return std::make_shared<Request<EitherError<void>>>(
                provider,
@@ -201,7 +198,8 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     code = IHttpRequest::Partial;
   }
   auto buffer = std::make_shared<Buffer>();
-  auto data = util::make_unique<HttpData>(buffer, provider_, util::from_base64(id), range);
+  auto data = util::make_unique<HttpData>(buffer, provider_,
+                                          util::from_base64(id), range);
   auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
