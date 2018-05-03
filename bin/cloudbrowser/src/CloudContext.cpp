@@ -116,7 +116,7 @@ CloudContext::CloudContext(QObject* parent)
     auto obj = j.toMap();
     auto label = obj["label"].toString().toStdString();
     auto provider =
-        this->provider(obj["type"].toString().toStdString(), label,
+        this->provider(obj["type"].toString().toStdString(),
                        Token{obj["token"].toString().toStdString(),
                              obj["access_token"].toString().toStdString()});
     if (provider) user_provider_model_.add({label, std::move(provider)});
@@ -354,7 +354,7 @@ void CloudContext::add(const std::string& name, const std::string& label,
                        const Token& token) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    user_provider_model_.add(Provider{label, provider(name, label, token)});
+    user_provider_model_.add(Provider{label, provider(name, token)});
   }
   saveProviders();
 }
@@ -406,8 +406,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
       return emit errorOccurred("ExchangeCode", provider_variant,
                                 e.left()->code_,
                                 e.left()->description_.c_str());
-    std::shared_ptr<ICloudProvider> p =
-        this->provider(provider, "####", *e.right());
+    std::shared_ptr<ICloudProvider> p = this->provider(provider, *e.right());
     pool_->add(p, p->getGeneralDataAsync([=](EitherError<GeneralData> d) {
       if (d.left())
         return emit errorOccurred("GeneralData", provider_variant,
@@ -416,8 +415,7 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
       {
         std::unique_lock<std::mutex> lock(mutex_);
         user_provider_model_.add(
-            {d.right()->username_,
-             this->provider(provider, d.right()->username_, *e.right())});
+            {d.right()->username_, this->provider(provider, *e.right())});
       }
       saveProviders();
     }));
@@ -427,7 +425,6 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
 }
 
 ICloudProvider::Pointer CloudContext::provider(const std::string& name,
-                                               const std::string& label,
                                                const Token& token) const {
   class HttpWrapper : public IHttp {
    public:
