@@ -28,6 +28,7 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
+#include <unordered_set>
 
 #include "ICloudProvider.h"
 #include "Request/AuthorizeRequest.h"
@@ -58,6 +59,7 @@ class CloudProvider : public ICloudProvider,
   IHttpServerFactory* http_server() const;
   IThreadPool* thread_pool() const;
   IAuthCallback* auth_callback() const;
+  std::string file_url() const;
 
   virtual bool isSuccess(int code, const IHttpRequest::HeaderParameters&) const;
 
@@ -107,6 +109,8 @@ class CloudProvider : public ICloudProvider,
                                              const std::string& filename,
                                              UploadFileCallback) override;
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
+  GetItemUrlRequest::Pointer getFileDaemonUrlAsync(IItem::Pointer,
+                                                   GetItemUrlCallback) override;
 
   /**
    * Used by default implementation of getItemDataAsync.
@@ -287,6 +291,10 @@ class CloudProvider : public ICloudProvider,
   static Json::Value credentialsFromString(const std::string&);
   static std::string credentialsToString(const Json::Value& json);
 
+  void addStreamRequest(std::shared_ptr<ICloudProvider::DownloadFileRequest>);
+  void removeStreamRequest(
+      std::shared_ptr<ICloudProvider::DownloadFileRequest>);
+
  protected:
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
@@ -306,8 +314,14 @@ class CloudProvider : public ICloudProvider,
   std::unordered_map<IGenericRequest*,
                      std::vector<AuthorizeRequest::AuthorizeCompleted>>
       auth_callbacks_;
+  std::unordered_set<std::shared_ptr<ICloudProvider::DownloadFileRequest>>
+      stream_requests_;
+  std::string file_url_;
+  IHttpServer::Pointer file_daemon_;
+  std::mutex stream_request_mutex_;
   std::mutex current_authorization_mutex_;
   mutable std::mutex auth_mutex_;
+  bool deleted_;
 };
 
 }  // namespace cloudstorage

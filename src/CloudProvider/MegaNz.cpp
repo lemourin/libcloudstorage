@@ -28,6 +28,7 @@
 #include "IAuth.h"
 #include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
+#include "Utility/FileServer.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -43,7 +44,6 @@ using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
 const int CACHE_FILENAME_LENGTH = 12;
-const std::string DEFAULT_FILE_URL = "http://127.0.0.1:12346";
 
 namespace cloudstorage {
 
@@ -226,198 +226,16 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   MegaHandle node_ = 0;
 };
 
-struct Buffer {
-  using Pointer = std::shared_ptr<Buffer>;
-
-  int read(char* buf, uint32_t max) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (done_) return IHttpServer::IResponse::ICallback::Abort;
-    if (data_.empty()) return IHttpServer::IResponse::ICallback::Suspend;
-    size_t cnt = std::min<size_t>(data_.size(), static_cast<size_t>(max));
-    for (size_t i = 0; i < cnt; i++) {
-      buf[i] = data_.front();
-      data_.pop();
-    }
-    return cnt;
-  }
-
-  void put(const char* data, uint32_t length) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
-  }
-
-  void done() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    done_ = true;
-  }
-
-  void resume() {
-    std::lock_guard<std::mutex> lock(response_mutex_);
-    if (response_) response_->resume();
-  }
-
-  std::mutex mutex_;
-  std::queue<char> data_;
-  std::mutex response_mutex_;
-  IHttpServer::IResponse* response_;
-  bool done_ = false;
-};
-
-class HttpDataCallback : public IDownloadFileCallback {
- public:
-  HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
-
-  void receivedData(const char* data, uint32_t length) override {
-    buffer_->put(data, length);
-    buffer_->resume();
-  }
-
-  void done(EitherError<void>) override {
-    buffer_->done();
-    buffer_->resume();
-  }
-
-  void progress(uint64_t, uint64_t) override {}
-
-  Buffer::Pointer buffer_;
-};
-
-class HttpData : public IHttpServer::IResponse::ICallback {
- public:
-  static constexpr int AuthInProgress = 0;
-  static constexpr int AuthSuccess = 1;
-  static constexpr int AuthFailed = 2;
-
-  HttpData(Buffer::Pointer d, std::shared_ptr<MegaNz> mega,
-           const std::string& file, Range range)
-      : status_(AuthInProgress),
-        buffer_(d),
-        mega_(mega),
-        request_(request(mega, file, range)) {}
-
-  ~HttpData() { mega_->removeStreamRequest(request_); }
-
-  std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
-      std::shared_ptr<MegaNz> mega, const std::string& file, Range range) {
-    auto resolver = [=](Request<EitherError<void>>::Pointer r) {
-      auto p = static_cast<MegaNz*>(r->provider().get());
-      p->ensureAuthorized<EitherError<void>>(r, [=]() {
-        auto node(p->node(file));
-        if (!node || range.start_ + range.size_ > uint64_t(node->getSize())) {
-          status_ = AuthFailed;
-          if (!node)
-            r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
-          else
-            r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
-        } else {
-          status_ = AuthSuccess;
-          callback_ = util::make_unique<HttpDataCallback>(buffer_);
-          p->downloadResolver(p->toItem(node.get()), callback_.get(), range)(r);
-          p->addStreamRequest(r);
-        }
-        buffer_->resume();
-      });
-    };
-    return std::make_shared<Request<EitherError<void>>>(
-               mega,
-               [=](EitherError<void> e) {
-                 if (e.left()) status_ = AuthFailed;
-                 buffer_->resume();
-               },
-               resolver)
-        ->run();
-  }
-
-  int putData(char* buf, size_t max) override {
-    if (status_ == AuthFailed)
-      return Abort;
-    else if (status_ == AuthInProgress)
-      return Suspend;
-    else
-      return buffer_->read(buf, max);
-  }
-
-  std::atomic_int status_;
-  Buffer::Pointer buffer_;
-  std::shared_ptr<MegaNz> mega_;
-  std::unique_ptr<HttpDataCallback> callback_;
-  std::shared_ptr<ICloudProvider::DownloadFileRequest> request_;
-};
-
 }  // namespace
-
-MegaNz::HttpServerCallback::HttpServerCallback(std::shared_ptr<MegaNz> p)
-    : provider_(p) {}
-
-IHttpServer::IResponse::Pointer MegaNz::HttpServerCallback::handle(
-    const IHttpServer::IRequest& request) {
-  const char* state = request.get("state");
-  const char* name = request.get("name");
-  const char* id = request.get("id");
-  const char* size_parameter = request.get("size");
-  if (!state || state != provider_->auth()->state() || !name || !id ||
-      !size_parameter)
-    return util::response_from_string(request, IHttpRequest::Bad, {},
-                                      util::Error::INVALID_REQUEST);
-  std::string filename = util::from_base64(name);
-  auto size = std::stoull(size_parameter);
-  auto extension = filename.substr(filename.find_last_of('.') + 1);
-  std::unordered_map<std::string, std::string> headers = {
-      {"Content-Type", util::to_mime_type(extension)},
-      {"Accept-Ranges", "bytes"},
-      {"Content-Disposition", "inline; filename=\"" + filename + "\""}};
-  Range range = {0, size};
-  int code = IHttpRequest::Ok;
-  if (const char* range_str = request.header("Range")) {
-    range = util::parse_range(range_str);
-    if (range.size_ == Range::Full) range.size_ = size - range.start_;
-    if (range.start_ + range.size_ > size)
-      return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
-                                        util::Error::INVALID_RANGE);
-    std::stringstream stream;
-    stream << "bytes " << range.start_ << "-" << range.start_ + range.size_ - 1
-           << "/" << size;
-    headers["Content-Range"] = stream.str();
-    code = IHttpRequest::Partial;
-  }
-  auto buffer = std::make_shared<Buffer>();
-  auto data = util::make_unique<HttpData>(buffer, provider_, id, range);
-  auto response = request.response(code, headers, range.size_, std::move(data));
-  buffer->response_ = response.get();
-  response->completed([buffer]() {
-    std::unique_lock<std::mutex> lock(buffer->response_mutex_);
-    buffer->response_ = nullptr;
-  });
-  return response;
-}
 
 MegaNz::MegaNz()
     : CloudProvider(util::make_unique<Auth>()),
       mega_(),
       authorized_(),
       engine_(device_()),
-      daemon_(),
-      temporary_directory_("."),
-      deleted_() {}
+      temporary_directory_(".") {}
 
 MegaNz::~MegaNz() { mega_ = nullptr; }
-
-void MegaNz::addStreamRequest(
-    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  stream_requests_.insert(r);
-  if (deleted_) {
-    lock.unlock();
-    removeStreamRequest(r);
-  }
-}
-
-void MegaNz::removeStreamRequest(
-    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
-  r->cancel();
-  std::lock_guard<std::mutex> lock(mutex_);
-  stream_requests_.erase(r);
-}
 
 void MegaNz::addRequestListener(
     std::shared_ptr<IRequest<EitherError<void>>> p) {
@@ -443,8 +261,6 @@ void MegaNz::initialize(InitData&& data) {
     auto lock = auth_lock();
     setWithHint(data.hints_, "temporary_directory",
                 [this](std::string v) { temporary_directory_ = v; });
-    setWithHint(data.hints_, "file_url",
-                [this](std::string v) { file_url_ = v; });
     setWithHint(data.hints_, "client_id", [this](std::string v) {
       mega_ =
           util::make_unique<MegaApi>(v.c_str(), temporary_directory_.c_str());
@@ -452,39 +268,16 @@ void MegaNz::initialize(InitData&& data) {
     if (!mega_)
       mega_ =
           util::make_unique<MegaApi>("ZVhB0Czb", temporary_directory_.c_str());
-    if (file_url_.empty()) file_url_ = DEFAULT_FILE_URL;
   }
   CloudProvider::initialize(std::move(data));
-  daemon_ = http_server()->create(
-      util::make_unique<HttpServerCallback>(
-          std::static_pointer_cast<MegaNz>(shared_from_this())),
-      auth()->state(), IHttpServer::Type::FileProvider);
-}
-
-void MegaNz::destroy() {
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    deleted_ = true;
-    while (!stream_requests_.empty()) {
-      {
-        auto r = *stream_requests_.begin();
-        stream_requests_.erase(stream_requests_.begin());
-        lock.unlock();
-        r->cancel();
-      }
-      lock.lock();
-    }
-  }
-  daemon_ = nullptr;
 }
 
 std::string MegaNz::name() const { return "mega"; }
 
-std::string MegaNz::endpoint() const { return file_url_; }
+std::string MegaNz::endpoint() const { return file_url(); }
 
 ICloudProvider::Hints MegaNz::hints() const {
-  Hints result = {{"temporary_directory", temporary_directory_},
-                  {"file_url", file_url_}};
+  Hints result = {{"temporary_directory", temporary_directory_}};
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
@@ -612,7 +405,6 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         r->subrequest(listener);
         mega_->startUpload(cache.c_str(), node.get(), filename.c_str(),
                            listener.get());
-
       });
     });
   };

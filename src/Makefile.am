@@ -21,6 +21,7 @@ libcloudstorage_la_SOURCES = \
 	Utility/CurlHttp.cpp \
 	Utility/MicroHttpdServer.cpp \
 	Utility/ThreadPool.cpp \
+	Utility/FileServer.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -63,6 +64,7 @@ noinst_HEADERS = \
 	Utility/CurlHttp.h \
 	Utility/MicroHttpdServer.h \
 	Utility/ThreadPool.h \
+	Utility/FileServer.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \

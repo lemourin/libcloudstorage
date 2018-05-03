@@ -167,6 +167,11 @@ class CloudProviderWrapper : public ICloudProvider {
     return p_->getGeneralDataAsync(callback);
   }
 
+  GetItemUrlRequest::Pointer getFileDaemonUrlAsync(
+      IItem::Pointer item, GetItemUrlCallback callback) override {
+    return p_->getFileDaemonUrlAsync(item, callback);
+  }
+
  private:
   std::shared_ptr<CloudProvider> p_;
 };

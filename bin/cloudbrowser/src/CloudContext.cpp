@@ -106,7 +106,8 @@ CloudContext::CloudContext(QObject* parent)
       thumbnailer_thread_pool_(IThreadPool::create(2)),
       pool_(std::make_shared<RequestPool>()),
       cache_size_(updatedCacheSize()),
-      interrupt_(std::make_shared<std::atomic_bool>()) {
+      interrupt_(std::make_shared<std::atomic_bool>()),
+      provider_index_() {
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
@@ -478,13 +479,15 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   data.hints_["temporary_directory"] =
       QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
   data.hints_["access_token"] = token.access_token_;
-  data.hints_["file_url"] = "http://127.0.0.1:12345/" + util::to_base64(label);
-  data.hints_["state"] = util::to_base64(label);
+  data.hints_["file_url"] =
+      "http://127.0.0.1:12345/" + std::to_string(provider_index_);
+  data.hints_["state"] = std::to_string(provider_index_);
   data.http_engine_ = util::make_unique<HttpWrapper>(http_);
   data.http_server_ =
       util::make_unique<HttpServerFactoryWrapper>(http_server_factory_);
   data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool_);
   data.callback_ = util::make_unique<AuthCallback>();
+  provider_index_++;
   return ICloudStorage::create()->provider(name, std::move(data));
 }
 

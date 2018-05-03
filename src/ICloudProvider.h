@@ -144,25 +144,26 @@ class CLOUDSTORAGE_API ICloudProvider {
     IThreadPool::Pointer thread_pool_;
 
     /**
-    * Various hints which can be retrieved by some previous run with
-    * ICloudProvider::hints; providing them may speed up the authorization
-    * process; may contain the following:
-    *  - client_id
-    *  - client_secret
-    *  - redirect_uri
-    *  - state
-    *  - access_token
-    *  - file_url (used by mega.nz, url provider's base url)
-    *  - metadata_url, content_url (amazon drive's endpoints)
-    *  - temporary_directory (used by mega.nz, has to use native path separators
-    *    i.e. \ for windows and / for others; has to end with a separator)
-    *  - login_page (login page to be displayed when cloud provider doesn't use
-    *    oauth; check for DEFAULT_LOGIN_PAGE to see what is the expected layout
-    *    of the page)
-    *  - success_page (page to be displayed when library was authorized
-    *    successfully)
-    *  - error_page (page to be displayed when library authorization failed)
-    */
+     * Various hints which can be retrieved by some previous run with
+     * ICloudProvider::hints; providing them may speed up the authorization
+     * process; may contain the following:
+     *  - client_id
+     *  - client_secret
+     *  - redirect_uri
+     *  - state
+     *  - access_token
+     *  - file_url (used by mega.nz, url provider's base url)
+     *  - metadata_url, content_url (amazon drive's endpoints)
+     *  - temporary_directory (used by mega.nz, has to use native path
+     * separators i.e. \ for windows and / for others; has to end with a
+     * separator)
+     *  - login_page (login page to be displayed when cloud provider doesn't use
+     *    oauth; check for DEFAULT_LOGIN_PAGE to see what is the expected layout
+     *    of the page)
+     *  - success_page (page to be displayed when library was authorized
+     *    successfully)
+     *  - error_page (page to be displayed when library authorization failed)
+     */
     Hints hints_;
   };
 
@@ -464,6 +465,10 @@ class CLOUDSTORAGE_API ICloudProvider {
 
   virtual GeneralDataRequest::Pointer getGeneralDataAsync(
       GeneralDataCallback = [](EitherError<GeneralData>) {}) = 0;
+
+  virtual GetItemUrlRequest::Pointer getFileDaemonUrlAsync(
+      IItem::Pointer item,
+      GetItemUrlCallback = [](EitherError<std::string>) {}) = 0;
 };
 
 }  // namespace cloudstorage

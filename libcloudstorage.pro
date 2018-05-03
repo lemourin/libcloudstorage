@@ -78,6 +78,7 @@ HEADERS += \
     src/Utility/MicroHttpdServer.h \
     src/Utility/ThreadPool.h \
     src/Utility/Utility.h \
+    src/Utility/FileServer.h \
     src/IAuth.h \
     src/ICloudProvider.h \
     src/ICloudStorage.h \
@@ -127,4 +128,5 @@ SOURCES += \
     src/Utility/Item.cpp \
     src/Utility/MicroHttpdServer.cpp \
     src/Utility/ThreadPool.cpp \
-    src/Utility/Utility.cpp
+    src/Utility/Utility.cpp \
+    src/Utility/FileServer.cpp

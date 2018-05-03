@@ -28,6 +28,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "Utility/FileServer.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -49,6 +50,7 @@
 using namespace std::placeholders;
 
 const std::string DEFAULT_STATE = "DEFAULT_STATE";
+const std::string DEFAULT_FILE_URL = "http://127.0.0.1:12346";
 
 namespace {
 
@@ -131,7 +133,7 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
 namespace cloudstorage {
 
 CloudProvider::CloudProvider(IAuth::Pointer auth)
-    : auth_(std::move(auth)), http_() {}
+    : auth_(std::move(auth)), http_(), deleted_() {}
 
 void CloudProvider::initialize(InitData&& data) {
   auto lock = auth_lock();
@@ -161,6 +163,8 @@ void CloudProvider::initialize(InitData&& data) {
               [this](std::string v) { auth()->set_success_page(v); });
   setWithHint(data.hints_, "error_page",
               [this](std::string v) { auth()->set_error_page(v); });
+  setWithHint(data.hints_, "file_url",
+              [this](std::string v) { file_url_ = v; });
 
 #ifdef WITH_CRYPTOPP
   if (!crypto_) crypto_ = ICrypto::create();
@@ -179,6 +183,10 @@ void CloudProvider::initialize(InitData&& data) {
   if (!http_) throw std::runtime_error("No http module specified.");
   if (!http_server_)
     throw std::runtime_error("No http server module specified.");
+
+  file_daemon_ = FileServer::create(shared_from_this(), auth()->state());
+  if (file_url_.empty()) file_url_ = DEFAULT_FILE_URL;
+
   if (auth()->state().empty()) auth()->set_state(DEFAULT_STATE);
   if (auth()->login_page().empty())
     auth()->set_login_page(util::login_page(name()));
@@ -189,7 +197,22 @@ void CloudProvider::initialize(InitData&& data) {
   auth()->initialize(http(), http_server());
 }
 
-void CloudProvider::destroy() {}
+void CloudProvider::destroy() {
+  {
+    std::unique_lock<std::mutex> lock(stream_request_mutex_);
+    deleted_ = true;
+    while (!stream_requests_.empty()) {
+      {
+        auto r = *stream_requests_.begin();
+        stream_requests_.erase(stream_requests_.begin());
+        lock.unlock();
+        r->cancel();
+      }
+      lock.lock();
+    }
+  }
+  file_daemon_ = nullptr;
+}
 
 std::string ICloudProvider::serializeSession(const std::string& token,
                                              const Hints& hints) {
@@ -225,7 +248,9 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
 }
 
 ICloudProvider::Hints CloudProvider::hints() const {
-  return {{"access_token", access_token()}, {"state", auth()->state()}};
+  return {{"access_token", access_token()},
+          {"state", auth()->state()},
+          {"file_url", file_url_}};
 }
 
 std::string CloudProvider::access_token() const {
@@ -261,6 +286,8 @@ ICloudProvider::OperationSet CloudProvider::supportedOperations() const {
 ICloudProvider::IAuthCallback* CloudProvider::auth_callback() const {
   return callback_.get();
 }
+
+std::string CloudProvider::file_url() const { return file_url_; }
 
 ICrypto* CloudProvider::crypto() const { return crypto_.get(); }
 
@@ -410,8 +437,9 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
                     shared_from_this(), e.right(),
                     std::make_shared<DownloadCallback>(
                         callback, [=](EitherError<void> e) { r->done(e); }),
-                    FullRange, std::bind(&CloudProvider::getThumbnailRequest,
-                                         this, _1, _2))
+                    FullRange,
+                    std::bind(&CloudProvider::getThumbnailRequest, this, _1,
+                              _2))
                     ->run());
           }));
         });
@@ -527,6 +555,19 @@ ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
       ->run();
 }
 
+ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
+    IItem::Pointer item, GetItemUrlCallback cb) {
+  auto resolver = [=](Request<EitherError<std::string>>::Pointer r) {
+    r->done(file_url() + "/?id=" + item->id() +
+            "&name=" + util::Url::escape(util::to_base64(item->filename())) +
+            "&size=" + std::to_string(item->size()) +
+            "&state=" + util::Url::escape(auth()->state()));
+  };
+  return std::make_shared<Request<EitherError<std::string>>>(shared_from_this(),
+                                                             cb, resolver)
+      ->run();
+}
+
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                         std::ostream&) const {
   return nullptr;
@@ -627,6 +668,23 @@ IItem::List CloudProvider::listDirectoryResponse(const IItem&, std::istream&,
 IItem::Pointer CloudProvider::createDirectoryResponse(
     const IItem&, const std::string&, std::istream& stream) const {
   return getItemDataResponse(stream);
+}
+
+void CloudProvider::addStreamRequest(
+    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
+  std::unique_lock<std::mutex> lock(stream_request_mutex_);
+  stream_requests_.insert(r);
+  if (deleted_) {
+    lock.unlock();
+    removeStreamRequest(r);
+  }
+}
+
+void CloudProvider::removeStreamRequest(
+    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
+  r->cancel();
+  std::lock_guard<std::mutex> lock(stream_request_mutex_);
+  stream_requests_.erase(r);
 }
 
 }  // namespace cloudstorage

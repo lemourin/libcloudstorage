@@ -164,6 +164,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   qint64 cache_size_;
   ProviderListModel user_provider_model_;
   std::shared_ptr<std::atomic_bool> interrupt_;
+  mutable int provider_index_;
 
   Q_OBJECT
 };

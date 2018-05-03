@@ -45,21 +45,10 @@ namespace cloudstorage {
  */
 class MegaNz : public CloudProvider {
  public:
-  class HttpServerCallback : public IHttpServer::ICallback {
-   public:
-    HttpServerCallback(std::shared_ptr<MegaNz>);
-    IHttpServer::IResponse::Pointer handle(
-        const IHttpServer::IRequest&) override;
-
-   private:
-    std::shared_ptr<MegaNz> provider_;
-  };
-
   MegaNz();
-  ~MegaNz();
+  ~MegaNz() override;
 
   void initialize(InitData&&) override;
-  void destroy() override;
 
   std::string name() const override;
   std::string endpoint() const override;
@@ -112,10 +101,6 @@ class MegaNz : public CloudProvider {
 
   IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
-  void addStreamRequest(std::shared_ptr<ICloudProvider::DownloadFileRequest>);
-  void removeStreamRequest(
-      std::shared_ptr<ICloudProvider::DownloadFileRequest>);
-
   void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
   void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
 
@@ -141,14 +126,9 @@ class MegaNz : public CloudProvider {
   std::random_device device_;
   std::default_random_engine engine_;
   std::mutex mutex_;
-  IHttpServer::Pointer daemon_;
   std::string temporary_directory_;
-  std::string file_url_;
-  std::unordered_set<std::shared_ptr<ICloudProvider::DownloadFileRequest>>
-      stream_requests_;
   std::unordered_set<std::shared_ptr<IRequest<EitherError<void>>>>
       request_listeners_;
-  bool deleted_;
 };
 
 }  // namespace cloudstorage

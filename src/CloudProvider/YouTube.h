@@ -45,6 +45,8 @@ class YouTube : public CloudProvider {
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,
                                                  Range) override;
+  GetItemUrlRequest::Pointer getFileDaemonUrlAsync(IItem::Pointer,
+                                                   GetItemUrlCallback) override;
 
  private:
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
