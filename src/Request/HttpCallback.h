@@ -34,7 +34,7 @@ class HttpCallback : public IHttpRequest::ICallback {
  public:
   using ProgressFunction = std::function<void(uint64_t, uint64_t)>;
 
-  HttpCallback(std::function<bool()> is_cancelled,
+  HttpCallback(std::function<int()> status,
                std::function<bool(int, const IHttpRequest::HeaderParameters&)>
                    is_success,
                ProgressFunction progress_download,
@@ -44,12 +44,14 @@ class HttpCallback : public IHttpRequest::ICallback {
 
   bool abort() override;
 
+  bool pause() override;
+
   void progressDownload(uint64_t total, uint64_t now) override;
 
   void progressUpload(uint64_t, uint64_t) override;
 
  private:
-  std::function<bool()> is_cancelled_;
+  std::function<int()> status_;
   std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success_;
   ProgressFunction progress_download_;
   ProgressFunction progress_upload_;

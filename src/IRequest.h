@@ -85,6 +85,10 @@ class CLOUDSTORAGE_API IGenericRequest {
    * long if curl was compiled without asynchronous name resolver(c-ares).
    */
   virtual void cancel() = 0;
+
+  virtual void pause() = 0;
+
+  virtual void resume() = 0;
 };
 
 template <class ReturnValue>

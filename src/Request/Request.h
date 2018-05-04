@@ -66,6 +66,8 @@ class Request : public IRequest<ReturnValue>,
   using AuthorizeCompleted = std::function<void(EitherError<void>)>;
   using RequestCompleted = std::function<void(EitherError<Response>)>;
 
+  enum Status { None = 0, Cancelled = 1, Paused = 2 };
+
   class Wrapper : public IRequest<ReturnValue> {
    public:
     Wrapper(typename Request<ReturnValue>::Pointer);
@@ -74,6 +76,8 @@ class Request : public IRequest<ReturnValue>,
     void finish() override;
     void cancel() override;
     ReturnValue result() override;
+    void pause() override;
+    void resume() override;
 
    private:
     typename Request<ReturnValue>::Pointer request_;
@@ -85,6 +89,8 @@ class Request : public IRequest<ReturnValue>,
   void finish() override;
   void cancel() override;
   ReturnValue result() override;
+  void pause() override;
+  void resume() override;
 
   typename Wrapper::Pointer run();
   void done(const ReturnValue&);
@@ -171,7 +177,8 @@ class Request : public IRequest<ReturnValue>,
   Callback callback_;
   std::mutex provider_mutex_;
   std::shared_ptr<CloudProvider> provider_;
-  std::atomic_bool is_cancelled_;
+  mutable std::mutex status_mutex_;
+  Status status_;
   std::recursive_mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };

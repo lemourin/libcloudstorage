@@ -26,6 +26,8 @@
 
 namespace cloudstorage {
 
+const int MAX_BUFFER_SIZE = 8 * 1024 * 1024;
+
 namespace {
 
 class HttpServerCallback : public IHttpServer::ICallback {
@@ -53,8 +55,13 @@ struct Buffer {
   }
 
   void put(const char* data, uint32_t length) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
+    }
+    if (2 * size() < MAX_BUFFER_SIZE) {
+      request_->resume();
+    }
   }
 
   void done() {
@@ -67,33 +74,37 @@ struct Buffer {
     if (response_) response_->resume();
   }
 
+  std::size_t size() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return data_.size();
+  }
+
   std::mutex mutex_;
   std::queue<char> data_;
   std::mutex response_mutex_;
   IHttpServer::IResponse* response_;
+  Request<EitherError<void>>::Pointer request_;
   bool done_ = false;
 };
 
 class HttpDataCallback : public IDownloadFileCallback {
  public:
-  HttpDataCallback(Buffer::Pointer d,
-                   Request<EitherError<void>>::Pointer request)
-      : buffer_(d), request_(request) {}
+  HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
 
   void receivedData(const char* data, uint32_t length) override {
     buffer_->put(data, length);
     buffer_->resume();
+    if (buffer_->size() >= MAX_BUFFER_SIZE) buffer_->request_->pause();
   }
 
   void done(EitherError<void> e) override {
     buffer_->resume();
-    request_->done(e);
+    buffer_->request_->done(e);
   }
 
   void progress(uint64_t, uint64_t) override {}
 
   Buffer::Pointer buffer_;
-  Request<EitherError<void>>::Pointer request_;
 };
 
 class HttpData : public IHttpServer::IResponse::ICallback {
@@ -119,6 +130,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       Range range) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       auto p = r->provider().get();
+      buffer_->request_ = r;
       r->make_subrequest(
           &CloudProvider::getItemDataAsync, file, [=](EitherError<IItem> e) {
             if (e.left()) {
@@ -133,7 +145,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
                 p->addStreamRequest(r);
                 r->make_subrequest(
                     &CloudProvider::downloadFileRangeAsync, e.right(), range,
-                    util::make_unique<HttpDataCallback>(buffer_, r));
+                    util::make_unique<HttpDataCallback>(buffer_));
               }
             }
             buffer_->resume();

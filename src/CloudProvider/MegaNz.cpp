@@ -58,6 +58,7 @@ class Listener : public IRequest<EitherError<void>>,
   static constexpr int FAILURE = 0;
   static constexpr int SUCCESS = 1;
   static constexpr int CANCELLED = 2;
+  static constexpr int PAUSED = 3;
 
   template <class T>
   static std::shared_ptr<T> make(Callback cb, MegaNz* provider) {
@@ -72,10 +73,10 @@ class Listener : public IRequest<EitherError<void>>,
         callback_(cb),
         provider_(provider) {}
 
-  ~Listener() { cancel(); }
+  ~Listener() override { cancel(); }
 
   void cancel() override {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     if (status_ != IN_PROGRESS) return;
     status_ = CANCELLED;
     error_ = {IHttpRequest::Aborted, util::Error::ABORTED};
@@ -87,7 +88,7 @@ class Listener : public IRequest<EitherError<void>>,
 
   EitherError<void> result() override {
     finish();
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (status_ != SUCCESS)
       return error_;
     else
@@ -95,19 +96,29 @@ class Listener : public IRequest<EitherError<void>>,
   }
 
   void finish() override {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
   }
 
+  void pause() override {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (status_ != CANCELLED) status_ = PAUSED;
+  }
+
+  void resume() override {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (status_ == PAUSED) status_ = IN_PROGRESS;
+  }
+
   int status() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     return status_;
   }
 
  protected:
   int status_;
-  std::mutex mutex_;
-  std::condition_variable condition_;
+  std::recursive_mutex mutex_;
+  std::condition_variable_any condition_;
   Error error_;
   Callback callback_;
   MegaNz* provider_;
@@ -120,7 +131,7 @@ class RequestListener : public mega::MegaRequestListener, public Listener {
   void onRequestFinish(MegaApi*, MegaRequest* r, MegaError* e) override {
     auto p = shared_from_this();
     provider_->removeRequestListener(p);
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     if (e->getErrorCode() == 0)
       status_ = SUCCESS;
     else {
@@ -155,44 +166,60 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   using Listener::Listener;
 
   void cancel() override {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     auto mega = util::exchange(mega_, nullptr);
     auto transfer = util::exchange(transfer_, 0);
     upload_callback_ = nullptr;
     download_callback_ = nullptr;
     lock.unlock();
-    if (mega) {
-      std::unique_ptr<MegaTransfer> t(mega->getTransferByTag(transfer));
-      if (t) mega->cancelTransfer(t.get());
-    }
+    if (mega && transfer) mega->cancelTransferByTag(transfer);
     Listener::cancel();
   }
 
+  void pause() override {
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    if (mega_ && transfer_) mega_->pauseTransferByTag(transfer_, true);
+    lock.unlock();
+    Listener::pause();
+  }
+
+  void resume() override {
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    if (mega_ && transfer_) mega_->pauseTransferByTag(transfer_, false);
+    lock.unlock();
+    Listener::resume();
+  }
+
   void onTransferStart(MegaApi* mega, MegaTransfer* transfer) override {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (status_ == CANCELLED) {
       mega->cancelTransfer(transfer);
     } else {
+      if (status_ == PAUSED) mega->pauseTransfer(transfer, true);
       mega_ = mega;
       transfer_ = transfer->getTag();
     }
   }
 
-  bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
+  bool onTransferData(MegaApi* mega, MegaTransfer* t, char* buffer,
                       size_t size) override {
     if (status() == CANCELLED) return false;
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
                                    t->getTransferredBytes());
     }
+    if (status() == PAUSED) mega->pauseTransfer(t, true);
     return true;
   }
 
   void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
-    if (status() == CANCELLED) return mega->cancelTransfer(t);
-    std::unique_lock<std::mutex> lock(mutex_);
+    if (status() == CANCELLED)
+      return mega->cancelTransfer(t);
+    else if (status() == PAUSED)
+      return mega->pauseTransfer(t, true);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
   }
@@ -200,7 +227,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   void onTransferFinish(MegaApi*, MegaTransfer* t, MegaError* e) override {
     auto r = shared_from_this();
     provider_->removeRequestListener(r);
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     if (e->getErrorCode() == 0) {
       status_ = SUCCESS;
       node_ = t->getNodeHandle();

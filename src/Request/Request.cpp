@@ -88,13 +88,23 @@ T Request<T>::Wrapper::result() {
 }
 
 template <class T>
+void Request<T>::Wrapper::pause() {
+  return request_->pause();
+}
+
+template <class T>
+void Request<T>::Wrapper::resume() {
+  return request_->resume();
+}
+
+template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider, Callback callback,
                     Resolver resolver)
     : future_(value_.get_future()),
       resolver_(resolver),
       callback_(callback),
       provider_(provider),
-      is_cancelled_(false) {}
+      status_(None) {}
 
 template <class T>
 Request<T>::~Request() {
@@ -122,7 +132,10 @@ void Request<T>::finish() {
 
 template <class T>
 void Request<T>::cancel() {
-  is_cancelled_ = true;
+  {
+    std::unique_lock<std::mutex> lock(status_mutex_);
+    status_ = Cancelled;
+  }
   {
     std::unique_lock<std::mutex> lock(provider_mutex_);
     auto p = provider();
@@ -160,6 +173,27 @@ void Request<T>::cancel() {
     }
   }
   finish();
+}
+
+template <class T>
+void Request<T>::pause() {
+  std::unique_lock<std::mutex> lock1(status_mutex_);
+  std::unique_lock<std::recursive_mutex> lock2(subrequest_mutex_);
+  if (status_ != Cancelled) status_ = Paused;
+  for (size_t i = 0; i < subrequests_.size(); i++) {
+    subrequests_[i]->pause();
+  }
+}
+
+template <class T>
+void Request<T>::resume() {
+  std::unique_lock<std::mutex> lock1(status_mutex_);
+  std::unique_lock<std::recursive_mutex> lock2(subrequest_mutex_);
+  if (status_ != Cancelled) {
+    for (size_t i = 0; i < subrequests_.size(); i++) {
+      subrequests_[i]->resume();
+    }
+  }
 }
 
 template <class T>
@@ -322,7 +356,8 @@ std::shared_ptr<CloudProvider> Request<T>::provider() const {
 
 template <class T>
 bool Request<T>::is_cancelled() const {
-  return is_cancelled_;
+  std::unique_lock<std::mutex> lock(status_mutex_);
+  return status_ == Cancelled;
 }
 
 template <class T>

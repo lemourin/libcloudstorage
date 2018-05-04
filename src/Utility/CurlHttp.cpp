@@ -71,7 +71,8 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
 }
 
 size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
-  std::istream* stream = static_cast<std::istream*>(userdata);
+  RequestData* data = static_cast<RequestData*>(userdata);
+  auto stream = data->data_.get();
   stream->read(buffer, size * nmemb);
   return stream->gcount();
 }
@@ -99,8 +100,8 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
 
 int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
                       curl_off_t ultotal, curl_off_t ulnow) {
-  CurlHttpRequest::ICallback* callback =
-      static_cast<CurlHttpRequest::ICallback*>(clientp);
+  RequestData* data = static_cast<RequestData*>(clientp);
+  CurlHttpRequest::ICallback* callback = (data->callback_.get());
   if (callback) {
     if (ultotal != 0)
       callback->progressUpload(static_cast<uint64_t>(ultotal),
@@ -108,6 +109,10 @@ int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
     if (dltotal != 0)
       callback->progressDownload(static_cast<uint64_t>(dltotal),
                                  static_cast<uint64_t>(dlnow));
+    if (callback->pause())
+      curl_easy_pause(data->handle_.get(), CURLPAUSE_ALL);
+    else
+      curl_easy_pause(data->handle_.get(), CURLPAUSE_CONT);
     if (callback->abort()) return 1;
   }
   return 0;
@@ -259,9 +264,9 @@ RequestData::Pointer CurlHttpRequest::prepare(
                                                  0});
   auto handle = cb_data->handle_.get();
   curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb_data.get());
-  curl_easy_setopt(handle, CURLOPT_XFERINFODATA, callback.get());
+  curl_easy_setopt(handle, CURLOPT_XFERINFODATA, cb_data.get());
   curl_easy_setopt(handle, CURLOPT_HEADERDATA, &cb_data->response_headers_);
-  curl_easy_setopt(handle, CURLOPT_READDATA, data.get());
+  curl_easy_setopt(handle, CURLOPT_READDATA, cb_data.get());
   curl_easy_setopt(handle, CURLOPT_HTTPHEADER, cb_data->headers_.get());
   if (method_ == "POST") {
     curl_easy_setopt(handle, CURLOPT_POST, static_cast<long>(true));

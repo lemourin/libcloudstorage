@@ -81,6 +81,11 @@ class CLOUDSTORAGE_API IHttpRequest {
     virtual bool abort() = 0;
 
     /**
+     * @return whether the request should be paused or not
+     */
+    virtual bool pause() = 0;
+
+    /**
      * Called when download progress changed.
      *
      * @param total count of bytes to download

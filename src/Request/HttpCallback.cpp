@@ -23,13 +23,15 @@
 
 #include "HttpCallback.h"
 
+#include "Request.h"
+
 namespace cloudstorage {
 
 HttpCallback::HttpCallback(
-    std::function<bool()> is_cancelled,
+    std::function<int()> status,
     std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success,
     ProgressFunction progress_download, ProgressFunction progress_upload)
-    : is_cancelled_(is_cancelled),
+    : status_(status),
       is_success_(is_success),
       progress_download_(progress_download),
       progress_upload_(progress_upload) {}
@@ -39,7 +41,9 @@ bool HttpCallback::isSuccess(int code,
   return is_success_(code, h);
 }
 
-bool HttpCallback::abort() { return is_cancelled_(); }
+bool HttpCallback::abort() { return status_() == Request<int>::Cancelled; }
+
+bool HttpCallback::pause() { return status_() == Request<int>::Paused; }
 
 void HttpCallback::progressDownload(uint64_t total, uint64_t now) {
   if (progress_download_) progress_download_(total, now);
