@@ -567,6 +567,7 @@ ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
 
 ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
+  if (item->size() == IItem::UnknownSize) return getItemUrlAsync(item, cb);
   auto resolver = [=](Request<EitherError<std::string>>::Pointer r) {
     r->done(file_url() +
             "/?id=" + util::Url::escape(util::to_base64(item->id())) +

@@ -296,11 +296,6 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       ->run();
 }
 
-ICloudProvider::GetItemUrlRequest::Pointer YouTube::getFileDaemonUrlAsync(
-    IItem::Pointer item, GetItemUrlCallback callback) {
-  return getItemUrlAsync(item, callback);
-}
-
 ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
   auto get_config = [](std::stringstream& stream) {
