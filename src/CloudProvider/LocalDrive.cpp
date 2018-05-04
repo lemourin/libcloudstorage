@@ -317,6 +317,11 @@ LocalDrive::GeneralDataRequest::Pointer LocalDrive::getGeneralDataAsync(
       });
 }
 
+LocalDrive::GetItemUrlRequest::Pointer LocalDrive::getFileDaemonUrlAsync(
+    IItem::Pointer item, GetItemUrlCallback callback) {
+  return getItemUrlAsync(item, callback);
+}
+
 bool LocalDrive::unpackCredentials(const std::string &code) {
   auto lock = auth_lock();
   try {

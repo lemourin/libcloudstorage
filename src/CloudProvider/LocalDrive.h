@@ -67,6 +67,8 @@ class LocalDrive : public CloudProvider {
   GetItemDataRequest::Pointer getItemDataAsync(const std::string& id,
                                                GetItemDataCallback f) override;
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
+  GetItemUrlRequest::Pointer getFileDaemonUrlAsync(IItem::Pointer,
+                                                   GetItemUrlCallback) override;
 
   std::string path(IItem::Pointer) const;
 
