@@ -42,6 +42,7 @@ using error_code = boost::system::error_code;
 namespace cloudstorage {
 
 const size_t BUFFER_SIZE = 1024;
+const auto POLL_INTERVAL = std::chrono::seconds(1);
 
 namespace {
 
@@ -163,6 +164,9 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
         while (bytes_read < range.size_) {
           if (r->is_cancelled())
             return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
+          while (r->is_paused()) {
+            std::this_thread::sleep_for(POLL_INTERVAL);
+          }
           if (!stream.read(
                   buffer.data(),
                   std::min<size_t>(BUFFER_SIZE, range.size_ - bytes_read)))
@@ -189,6 +193,9 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
         while (bytes_read < size) {
           if (r->is_cancelled())
             return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
+          while (r->is_paused()) {
+            std::this_thread::sleep_for(POLL_INTERVAL);
+          }
           auto cnt = callback->putData(buffer.data(), BUFFER_SIZE);
           bytes_read += cnt;
           if (!stream.write(buffer.data(), cnt))

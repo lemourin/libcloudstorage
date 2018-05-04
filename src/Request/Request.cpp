@@ -190,6 +190,7 @@ void Request<T>::resume() {
   std::unique_lock<std::mutex> lock1(status_mutex_);
   std::unique_lock<std::recursive_mutex> lock2(subrequest_mutex_);
   if (status_ != Cancelled) {
+    status_ = None;
     for (size_t i = 0; i < subrequests_.size(); i++) {
       subrequests_[i]->resume();
     }
@@ -358,6 +359,12 @@ template <class T>
 bool Request<T>::is_cancelled() const {
   std::unique_lock<std::mutex> lock(status_mutex_);
   return status_ == Cancelled;
+}
+
+template <class T>
+bool Request<T>::is_paused() const {
+  std::unique_lock<std::mutex> lock(status_mutex_);
+  return status_ == Paused;
 }
 
 template <class T>

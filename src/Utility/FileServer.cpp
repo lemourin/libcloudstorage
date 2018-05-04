@@ -59,9 +59,10 @@ struct Buffer {
       std::lock_guard<std::mutex> lock(mutex_);
       for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
     }
-    if (2 * size() < MAX_BUFFER_SIZE) {
+    if (size() >= MAX_BUFFER_SIZE) {
+      request_->pause();
+    } else if (2 * size() < MAX_BUFFER_SIZE)
       request_->resume();
-    }
   }
 
   void done() {
@@ -94,7 +95,6 @@ class HttpDataCallback : public IDownloadFileCallback {
   void receivedData(const char* data, uint32_t length) override {
     buffer_->put(data, length);
     buffer_->resume();
-    if (buffer_->size() >= MAX_BUFFER_SIZE) buffer_->request_->pause();
   }
 
   void done(EitherError<void> e) override {
@@ -109,13 +109,13 @@ class HttpDataCallback : public IDownloadFileCallback {
 
 class HttpData : public IHttpServer::IResponse::ICallback {
  public:
-  static constexpr int AuthInProgress = 0;
-  static constexpr int AuthSuccess = 1;
-  static constexpr int AuthFailed = 2;
+  static constexpr int InProgress = 0;
+  static constexpr int Success = 1;
+  static constexpr int Failed = 2;
 
   HttpData(Buffer::Pointer d, std::shared_ptr<CloudProvider> p,
            const std::string& file, Range range)
-      : status_(AuthInProgress),
+      : status_(InProgress),
         buffer_(d),
         provider_(p),
         request_(request(p, file, range)) {}
@@ -134,14 +134,14 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       r->make_subrequest(
           &CloudProvider::getItemDataAsync, file, [=](EitherError<IItem> e) {
             if (e.left()) {
-              status_ = AuthFailed;
+              status_ = Failed;
               r->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
             } else {
               if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
-                status_ = AuthFailed;
+                status_ = Failed;
                 r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
               } else {
-                status_ = AuthSuccess;
+                status_ = Success;
                 p->addStreamRequest(r);
                 r->make_subrequest(
                     &CloudProvider::downloadFileRangeAsync, e.right(), range,
@@ -154,7 +154,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
     return std::make_shared<Request<EitherError<void>>>(
                provider,
                [=](EitherError<void> e) {
-                 if (e.left()) status_ = AuthFailed;
+                 if (e.left()) status_ = Failed;
                  buffer_->resume();
                },
                resolver)
@@ -162,9 +162,9 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   }
 
   int putData(char* buf, size_t max) override {
-    if (status_ == AuthFailed)
+    if (status_ == Failed)
       return Abort;
-    else if (status_ == AuthInProgress)
+    else if (status_ == InProgress)
       return Suspend;
     else
       return buffer_->read(buf, max);

@@ -108,6 +108,7 @@ class Request : public IRequest<ReturnValue>,
   std::shared_ptr<CloudProvider> provider() const;
 
   bool is_cancelled() const;
+  bool is_paused() const;
 
   template <class Type = CloudProvider, class Method, class... Args>
   void make_subrequest(Method method, Args... args) {

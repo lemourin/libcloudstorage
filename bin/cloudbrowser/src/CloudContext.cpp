@@ -101,7 +101,7 @@ CloudContext::CloudContext(QObject* parent)
       }()),
       http_server_factory_(http_server_factory),
       http_(IHttp::create()),
-      thread_pool_(IThreadPool::create(1)),
+      thread_pool_(IThreadPool::create(2)),
       context_thread_pool_(IThreadPool::create(1)),
       thumbnailer_thread_pool_(IThreadPool::create(2)),
       pool_(std::make_shared<RequestPool>()),
