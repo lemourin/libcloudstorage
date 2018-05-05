@@ -25,6 +25,8 @@ Loader {
     item.filename = Qt.binding(function() { return filename; });
   }
 
+  onFilenameChanged: item.filename = filename
+
   Connections {
     target: loader.item
     onReady: {
