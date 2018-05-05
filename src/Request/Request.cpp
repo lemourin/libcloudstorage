@@ -221,7 +221,10 @@ template <class T>
 std::unique_ptr<HttpCallback> Request<T>::http_callback(
     ProgressFunction progress_download, ProgressFunction progress_upload) {
   return util::make_unique<HttpCallback>(
-      [=] { return is_cancelled(); },
+      [=] {
+        std::unique_lock<std::mutex> lock(status_mutex_);
+        return status_;
+      },
       std::bind(&CloudProvider::isSuccess, provider_.get(), _1, _2),
       progress_download, progress_upload);
 }

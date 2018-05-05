@@ -43,6 +43,9 @@ struct Buffer {
   using Pointer = std::shared_ptr<Buffer>;
 
   int read(char* buf, uint32_t max) {
+    if (2 * size() < MAX_BUFFER_SIZE) {
+      request_->resume();
+    }
     std::unique_lock<std::mutex> lock(mutex_);
     if (done_) return IHttpServer::IResponse::ICallback::Abort;
     if (data_.empty()) return IHttpServer::IResponse::ICallback::Suspend;
@@ -61,8 +64,7 @@ struct Buffer {
     }
     if (size() >= MAX_BUFFER_SIZE) {
       request_->pause();
-    } else if (2 * size() < MAX_BUFFER_SIZE)
-      request_->resume();
+    }
   }
 
   void done() {

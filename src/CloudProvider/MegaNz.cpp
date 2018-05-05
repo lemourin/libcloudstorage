@@ -166,7 +166,7 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   using Listener::Listener;
 
   void cancel() override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(callback_mutex_);
     auto mega = util::exchange(mega_, nullptr);
     auto transfer = util::exchange(transfer_, 0);
     upload_callback_ = nullptr;
@@ -176,50 +176,35 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
     Listener::cancel();
   }
 
-  void pause() override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
-    if (mega_ && transfer_) mega_->pauseTransferByTag(transfer_, true);
-    lock.unlock();
-    Listener::pause();
-  }
-
-  void resume() override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
-    if (mega_ && transfer_) mega_->pauseTransferByTag(transfer_, false);
-    lock.unlock();
-    Listener::resume();
-  }
-
   void onTransferStart(MegaApi* mega, MegaTransfer* transfer) override {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (status_ == CANCELLED) {
       mega->cancelTransfer(transfer);
     } else {
-      if (status_ == PAUSED) mega->pauseTransfer(transfer, true);
       mega_ = mega;
       transfer_ = transfer->getTag();
     }
   }
 
-  bool onTransferData(MegaApi* mega, MegaTransfer* t, char* buffer,
+  bool onTransferData(MegaApi*, MegaTransfer* t, char* buffer,
                       size_t size) override {
     if (status() == CANCELLED) return false;
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(callback_mutex_);
     if (download_callback_) {
       download_callback_->receivedData(buffer, size);
       download_callback_->progress(t->getTotalBytes(),
                                    t->getTransferredBytes());
     }
-    if (status() == PAUSED) mega->pauseTransfer(t, true);
+    lock.unlock();
+    if (status() == PAUSED) {
+      return false;
+    }
     return true;
   }
 
   void onTransferUpdate(MegaApi* mega, MegaTransfer* t) override {
-    if (status() == CANCELLED)
-      return mega->cancelTransfer(t);
-    else if (status() == PAUSED)
-      return mega->pauseTransfer(t, true);
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    if (status() == CANCELLED) return mega->cancelTransfer(t);
+    std::unique_lock<std::mutex> lock(callback_mutex_);
     if (upload_callback_)
       upload_callback_->progress(t->getTotalBytes(), t->getTransferredBytes());
   }
@@ -251,6 +236,8 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
   MegaApi* mega_ = nullptr;
   int transfer_ = 0;
   MegaHandle node_ = 0;
+  std::shared_ptr<RequestListener> listener_;
+  std::mutex callback_mutex_;
 };
 
 }  // namespace
