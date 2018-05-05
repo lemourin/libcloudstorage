@@ -195,10 +195,6 @@ class TransferListener : public mega::MegaTransferListener, public Listener {
       download_callback_->progress(t->getTotalBytes(),
                                    t->getTransferredBytes());
     }
-    lock.unlock();
-    if (status() == PAUSED) {
-      return false;
-    }
     return true;
   }
 

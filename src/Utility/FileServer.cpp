@@ -26,9 +26,11 @@
 
 namespace cloudstorage {
 
-const int MAX_BUFFER_SIZE = 8 * 1024 * 1024;
+const int CHUNK_SIZE = 8 * 1024 * 1024;
 
 namespace {
+
+struct Buffer;
 
 class HttpServerCallback : public IHttpServer::ICallback {
  public:
@@ -39,12 +41,28 @@ class HttpServerCallback : public IHttpServer::ICallback {
   std::shared_ptr<CloudProvider> provider_;
 };
 
-struct Buffer {
+class HttpDataCallback : public IDownloadFileCallback {
+ public:
+  HttpDataCallback(std::shared_ptr<Buffer> d) : buffer_(d) {}
+
+  void receivedData(const char* data, uint32_t length) override;
+  void done(EitherError<void> e) override;
+  void progress(uint64_t, uint64_t) override {}
+
+  std::shared_ptr<Buffer> buffer_;
+};
+
+struct Buffer : public std::enable_shared_from_this<Buffer> {
   using Pointer = std::shared_ptr<Buffer>;
 
   int read(char* buf, uint32_t max) {
-    if (2 * size() < MAX_BUFFER_SIZE) {
-      request_->resume();
+    if (2 * size() < CHUNK_SIZE) {
+      std::unique_lock<std::mutex> lock(delayed_mutex_);
+      if (delayed_) {
+        delayed_ = false;
+        lock.unlock();
+        run_download();
+      }
     }
     std::unique_lock<std::mutex> lock(mutex_);
     if (done_) return IHttpServer::IResponse::ICallback::Abort;
@@ -58,18 +76,21 @@ struct Buffer {
   }
 
   void put(const char* data, uint32_t length) {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
-    }
-    if (size() >= MAX_BUFFER_SIZE) {
-      request_->pause();
-    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
   }
 
   void done() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    done_ = true;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      done_ = true;
+    }
+    std::unique_lock<std::mutex> lock(delayed_mutex_);
+    if (delayed_) {
+      delayed_ = false;
+      lock.unlock();
+      request_->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
+    }
   }
 
   void resume() {
@@ -82,32 +103,46 @@ struct Buffer {
     return data_.size();
   }
 
+  void continue_download(EitherError<void> e) {
+    if (e.left() || range_.size_ < CHUNK_SIZE) return request_->done(e);
+    range_.size_ -= CHUNK_SIZE;
+    range_.start_ += CHUNK_SIZE;
+    if (2 * size() < CHUNK_SIZE)
+      run_download();
+    else {
+      std::unique_lock<std::mutex> lock(delayed_mutex_);
+      delayed_ = true;
+    }
+  }
+
+  void run_download() {
+    request_->make_subrequest(
+        &CloudProvider::downloadFileRangeAsync, item_,
+        Range{range_.start_, std::min<uint64_t>(range_.size_, CHUNK_SIZE)},
+        util::make_unique<HttpDataCallback>(shared_from_this()));
+  }
+
   std::mutex mutex_;
   std::queue<char> data_;
   std::mutex response_mutex_;
   IHttpServer::IResponse* response_;
   Request<EitherError<void>>::Pointer request_;
+  IItem::Pointer item_;
+  Range range_;
+  std::mutex delayed_mutex_;
+  bool delayed_ = false;
   bool done_ = false;
 };
 
-class HttpDataCallback : public IDownloadFileCallback {
- public:
-  HttpDataCallback(Buffer::Pointer d) : buffer_(d) {}
+void HttpDataCallback::receivedData(const char* data, uint32_t length) {
+  buffer_->put(data, length);
+  buffer_->resume();
+}
 
-  void receivedData(const char* data, uint32_t length) override {
-    buffer_->put(data, length);
-    buffer_->resume();
-  }
-
-  void done(EitherError<void> e) override {
-    buffer_->resume();
-    buffer_->request_->done(e);
-  }
-
-  void progress(uint64_t, uint64_t) override {}
-
-  Buffer::Pointer buffer_;
-};
+void HttpDataCallback::done(EitherError<void> e) {
+  buffer_->resume();
+  buffer_->continue_download(e);
+}
 
 class HttpData : public IHttpServer::IResponse::ICallback {
  public:
@@ -144,9 +179,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
                 r->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
               } else {
                 status_ = Success;
+                buffer_->item_ = e.right();
+                buffer_->range_ = range;
                 p->addStreamRequest(r);
                 r->make_subrequest(
-                    &CloudProvider::downloadFileRangeAsync, e.right(), range,
+                    &CloudProvider::downloadFileRangeAsync, e.right(),
+                    Range{range.start_,
+                          std::min<uint64_t>(range.size_, CHUNK_SIZE)},
                     util::make_unique<HttpDataCallback>(buffer_));
               }
             }
