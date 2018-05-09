@@ -23,6 +23,7 @@
         <file>resources/providers/youtube.png</file>
         <file>resources/providers/local.png</file>
         <file>resources/providers/animezone.png</file>
+        <file>resources/providers/4shared.png</file>
         <file>qml/ProviderEntry.qml</file>
         <file>qml/ItemPage.qml</file>
         <file>qml/RemoveProvider.qml</file>
@@ -49,5 +50,6 @@
         <file>config.json</file>
         <file>qml/WinRTFileDialog.qml</file>
         <file>resources/animezone_login.html</file>
+        <file>resources/4shared_login.html</file>
     </qresource>
 </RCC>

@@ -74,6 +74,9 @@ T exchange(T& obj, U&& new_value) {
 std::string to_lower(std::string);
 std::string remove_whitespace(const std::string& str);
 Range parse_range(const std::string& str);
+std::unordered_map<std::string, std::string> parse_form(const std::string& str);
+std::unordered_map<std::string, std::string> parse_cookie(
+    const std::string& cookie);
 std::string range_to_string(Range);
 std::string to_mime_type(const std::string& extension);
 IItem::TimeStamp parse_time(const std::string& time);

@@ -498,5 +498,39 @@ void log_stream(std::unique_ptr<std::ostream> stream) {
   priv::stream = std::move(stream);
 }
 
+std::unordered_map<std::string, std::string> parse_form(
+    const std::string& str) {
+  auto it = 0u;
+  std::unordered_map<std::string, std::string> result;
+  while (it < str.length()) {
+    std::string key;
+    while (it < str.length() && str[it] != '=') key += str[it++];
+    std::string value;
+    it++;
+    while (it < str.length() && str[it] != '&') value += str[it++];
+    result[key] = util::Url::unescape(value);
+    it++;
+  }
+  return result;
+}
+
+std::unordered_map<std::string, std::string> parse_cookie(
+    const std::string& str) {
+  auto it = 0u;
+  std::unordered_map<std::string, std::string> result;
+  while (it < str.length()) {
+    std::string key;
+    while (it < str.length() && str[it] != '=') key += str[it++];
+    std::string value;
+    it++;
+    while ((it + 1 < str.length() && str[it] != ';' && str[it + 1] != ' ') ||
+           (it + 1 == str.length() && str[it] != ';'))
+      value += str[it++];
+    result[key] = value;
+    it += 2;
+  }
+  return result;
+}
+
 }  // namespace util
 }  // namespace cloudstorage

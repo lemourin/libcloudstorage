@@ -230,9 +230,7 @@ bool CloudContext::httpServerAvailable() const {
 }
 
 QString CloudContext::authorizationUrl(QString provider) const {
-  auto data = init_data(provider.toStdString());
-  return ICloudStorage::create()
-      ->provider(provider.toStdString().c_str(), std::move(data))
+  return this->provider(provider.toStdString(), Token{})
       ->authorizeLibraryUrl()
       .c_str();
 }
@@ -273,7 +271,8 @@ QString CloudContext::pretty(QString provider) const {
       {"youtube", "YouTube"},
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"},
-      {"animezone", "Anime Zone"}};
+      {"animezone", "Anime Zone"},
+      {"4shared", "4shared"}};
   auto it = name_map.find(provider.toStdString());
   if (it != name_map.end())
     return it->second.c_str();

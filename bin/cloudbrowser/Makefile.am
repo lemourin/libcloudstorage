@@ -143,13 +143,15 @@ DEPS_res = \
 	resources/providers/hubic.png \
 	resources/providers/local.png \
 	resources/providers/animezone.png \
+	resources/providers/4shared.png \
 	resources/amazons3_login.html \
 	resources/default_error.html \
 	resources/default_success.html \
 	resources/mega_login.html \
 	resources/webdav_login.html \
 	resources/local_login.html \
-	resources/animezone_login.html
+	resources/animezone_login.html \
+	resources/4shared_login.html
 
 %.moc.cpp: %.h
 	$(AM_V_GEN)$(MOC) -o $@ $<

@@ -37,6 +37,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/MegaNz.cpp \
 	CloudProvider/LocalDrive.cpp \
 	CloudProvider/AnimeZone.cpp \
+	CloudProvider/FourShared.cpp \
 	Request/Request.cpp \
 	Request/HttpCallback.cpp \
 	Request/AuthorizeRequest.cpp \
@@ -80,6 +81,7 @@ noinst_HEADERS = \
 	CloudProvider/MegaNz.h \
 	CloudProvider/LocalDrive.h \
 	CloudProvider/AnimeZone.h \
+	CloudProvider/FourShared.h \
 	Request/HttpCallback.h \
 	Request/AuthorizeRequest.h \
 	Request/Request.h \

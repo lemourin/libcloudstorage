@@ -92,7 +92,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto interrupt = interrupt_;
       pool_->schedule([path, provider, item, notifier, interrupt] {
         std::promise<EitherError<std::string>> promise;
-        auto d = provider->getItemUrlAsync(
+        auto d = provider->getFileDaemonUrlAsync(
             item, [&](EitherError<std::string> e) { promise.set_value(e); });
         auto future = promise.get_future();
         std::future_status status = std::future_status::deferred;

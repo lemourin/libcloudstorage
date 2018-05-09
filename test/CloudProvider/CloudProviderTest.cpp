@@ -362,6 +362,7 @@ TEST_SET(YandexProvider, "yandex")
 TEST_SET(PCloudProvider, "pcloud")
 TEST_SET(BoxProvider, "box")
 TEST_SET(AmazonS3Provider, "amazons3")
+TEST_SET(FourSharedProvider, "4shared")
 
 #ifdef WITH_MEGA
 TEST_SET(MegaProvider, "mega")
