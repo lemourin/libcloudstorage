@@ -173,7 +173,7 @@ void do_oauth_initiate(
         return request;
       },
       [=](EitherError<Response> e) {
-        if (e.left()) return r->done(e.left());
+        if (e.left()) return complete(e.left());
         auto data = util::parse_form(e.right()->output().str());
         complete(
             std::make_pair(data["oauth_token"], data["oauth_token_secret"]));
@@ -195,7 +195,7 @@ void do_get_cookie(typename Request<Result>::Pointer r,
         return r;
       },
       [=](EitherError<Response> e) {
-        if (e.left()) return r->done(e.left());
+        if (e.left()) return complete(e.left());
         auto cookies = e.right()->headers().equal_range("set-cookie");
         std::string login, password;
         for (auto it = cookies.first; it != cookies.second; it++) {
@@ -247,6 +247,8 @@ void do_authorize(
   do_oauth(r, username, password,
            [=](EitherError<std::pair<std::string, std::string>> e) {
              if (e.left()) {
+               if (!IHttpRequest::isClientError(e.left()->code_))
+                 return complete(e.left());
                do_user_interaction(r, [=](EitherError<std::string> e) {
                  if (e.left()) return complete(e.left());
                  r->make_subrequest(
