@@ -54,6 +54,7 @@ HEADERS += \
     src/CloudProvider/WebDav.h \
     src/CloudProvider/YandexDisk.h \
     src/CloudProvider/YouTube.h \
+    src/CloudProvider/FourShared.h \
     src/Request/AuthorizeRequest.h \
     src/Request/CreateDirectoryRequest.h \
     src/Request/DeleteItemRequest.h \
@@ -105,6 +106,7 @@ SOURCES += \
     src/CloudProvider/WebDav.cpp \
     src/CloudProvider/YandexDisk.cpp \
     src/CloudProvider/YouTube.cpp \
+    src/CloudProvider/FourShared.cpp \
     src/Request/AuthorizeRequest.cpp \
     src/Request/CreateDirectoryRequest.cpp \
     src/Request/DeleteItemRequest.cpp \
