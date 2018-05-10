@@ -311,11 +311,19 @@ void FourShared::authorizeRequest(IHttpRequest &request) const {
 
 bool FourShared::reauthorize(
     int code, const IHttpRequest::HeaderParameters &headers) const {
-  return root_id().empty() || CloudProvider::reauthorize(code, headers);
+  auto lock = auth_lock();
+  bool empty =
+      root_id_.empty() || oauth_token_.empty() || oauth_token_secret_.empty();
+  lock.unlock();
+  return empty || CloudProvider::reauthorize(code, headers);
 }
 
 ICloudProvider::Hints FourShared::hints() const {
-  Hints result = {{"root_id", root_id()}};
+  auto lock = auth_lock();
+  Hints result = {{"root_id", root_id_},
+                  {"oauth_token", oauth_token_},
+                  {"oauth_token_secret", oauth_token_secret_}};
+  lock.unlock();
   auto t = CloudProvider::hints();
   result.insert(t.begin(), t.end());
   return result;
