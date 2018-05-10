@@ -22,6 +22,7 @@ Supported cloud providers:
 * `AmazonS3`
 * `pCloud`
 * `hubiC`
+* `4shared`
 * `Google Photos` (partial)
 * `YouTube` (partial)
 
