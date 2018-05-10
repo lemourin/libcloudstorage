@@ -15,6 +15,10 @@
       "client_id": "ktryxp68ae5cicj",
       "client_secret": "6evu94gcxnmyr59"
     },
+    "4shared": {
+      "client_id": "2d31bf7c54c8f860c445412b0f463a8e",
+      "client_secret": "0230788b79b42fb73fb07c375fb020d57c505f37"
+    },
     "google": {
       "client_id": "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent.com",
       "client_secret": "1f0FG5ch-kKOanTAv1Bqdp9U"
