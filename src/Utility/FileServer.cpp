@@ -65,7 +65,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
       }
     }
     std::unique_lock<std::mutex> lock(mutex_);
-    if (done_) return IHttpServer::IResponse::ICallback::Abort;
+    if (abort_) return IHttpServer::IResponse::ICallback::Abort;
     if (data_.empty()) return IHttpServer::IResponse::ICallback::Suspend;
     size_t cnt = std::min<size_t>(data_.size(), static_cast<size_t>(max));
     for (size_t i = 0; i < cnt; i++) {
@@ -80,14 +80,12 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
     for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
   }
 
-  void done() {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
+  void done(EitherError<void> e) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (e.left()) {
+      abort_ = true;
+      if (done_) return;
       done_ = true;
-    }
-    std::unique_lock<std::mutex> lock(delayed_mutex_);
-    if (delayed_) {
-      delayed_ = false;
       lock.unlock();
       request_->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
     }
@@ -104,7 +102,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
   }
 
   void continue_download(EitherError<void> e) {
-    if (e.left() || range_.size_ < CHUNK_SIZE) return request_->done(e);
+    if (e.left() || range_.size_ < CHUNK_SIZE) return done(e);
     range_.size_ -= CHUNK_SIZE;
     range_.start_ += CHUNK_SIZE;
     if (2 * size() < CHUNK_SIZE)
@@ -132,6 +130,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
   std::mutex delayed_mutex_;
   bool delayed_ = false;
   bool done_ = false;
+  bool abort_ = false;
 };
 
 void HttpDataCallback::receivedData(const char* data, uint32_t length) {
@@ -158,7 +157,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
         request_(request(p, file, range)) {}
 
   ~HttpData() override {
-    buffer_->done();
+    buffer_->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
     provider_->removeStreamRequest(request_);
   }
 
