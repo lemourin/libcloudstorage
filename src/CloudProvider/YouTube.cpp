@@ -35,6 +35,8 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#undef CreateDirectory
+
 const std::string AUDIO_DIRECTORY = "Audio";
 const std::string AUDIO_DIRECTORY_ID = cloudstorage::util::to_base64(
     R"({"audio":true,"playlist":true,"id":"audio"})");
