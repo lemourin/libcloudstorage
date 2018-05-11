@@ -36,15 +36,6 @@
 #include <sstream>
 #include <unordered_map>
 
-#ifdef _WIN32
-#include <windows.h>
-
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#define WINRT
-#endif
-
-#endif
-
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {

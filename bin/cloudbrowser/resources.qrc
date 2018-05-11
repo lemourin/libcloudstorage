@@ -51,5 +51,7 @@
         <file>qml/WinRTFileDialog.qml</file>
         <file>resources/animezone_login.html</file>
         <file>resources/4shared_login.html</file>
+        <file>resources/localwinrt_login.html</file>
+        <file>resources/providers/localwinrt.png</file>
     </qresource>
 </RCC>

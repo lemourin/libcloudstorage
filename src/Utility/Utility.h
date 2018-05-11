@@ -33,6 +33,15 @@
 #include "IHttpServer.h"
 #include "IItem.h"
 
+#ifdef _WIN32
+#include <windows.h>
+
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#define WINRT
+#endif
+
+#endif
+
 namespace Json {
 class Value;
 }  // namespace Json

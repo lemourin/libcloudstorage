@@ -11,6 +11,7 @@ DEFINES += \
 
 winrt {
     TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/dependencies/winrt
+    QMAKE_CXXFLAGS += /ZW
 } else {
     DEFINES += HAVE_BOOST_FILESYSTEM_HPP
     TOOLCHAIN_PATH = $$_PRO_FILE_PWD_/dependencies/win32
@@ -55,6 +56,7 @@ HEADERS += \
     src/CloudProvider/YandexDisk.h \
     src/CloudProvider/YouTube.h \
     src/CloudProvider/FourShared.h \
+    src/CloudProvider/LocalDriveWinRT.h \
     src/Request/AuthorizeRequest.h \
     src/Request/CreateDirectoryRequest.h \
     src/Request/DeleteItemRequest.h \
@@ -107,6 +109,7 @@ SOURCES += \
     src/CloudProvider/YandexDisk.cpp \
     src/CloudProvider/YouTube.cpp \
     src/CloudProvider/FourShared.cpp \
+    src/CloudProvider/LocalDriveWinRT.cpp \
     src/Request/AuthorizeRequest.cpp \
     src/Request/CreateDirectoryRequest.cpp \
     src/Request/DeleteItemRequest.cpp \

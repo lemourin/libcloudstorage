@@ -142,6 +142,7 @@ DEPS_res = \
 	resources/providers/gphotos.png \
 	resources/providers/hubic.png \
 	resources/providers/local.png \
+	resources/providers/localwinrt.png \
 	resources/providers/animezone.png \
 	resources/providers/4shared.png \
 	resources/amazons3_login.html \
@@ -150,6 +151,7 @@ DEPS_res = \
 	resources/mega_login.html \
 	resources/webdav_login.html \
 	resources/local_login.html \
+	resources/localwinrt_login.html \
 	resources/animezone_login.html \
 	resources/4shared_login.html
 

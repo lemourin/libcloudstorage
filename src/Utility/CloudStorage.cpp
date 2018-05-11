@@ -32,6 +32,7 @@
 #include "CloudProvider/GooglePhotos.h"
 #include "CloudProvider/HubiC.h"
 #include "CloudProvider/LocalDrive.h"
+#include "CloudProvider/LocalDriveWinRT.h"
 #include "CloudProvider/MegaNz.h"
 #include "CloudProvider/OneDrive.h"
 #include "CloudProvider/PCloud.h"
@@ -193,6 +194,9 @@ CloudStorage::CloudStorage() {
   add<GooglePhotos>();
   add<AnimeZone>();
   add<FourShared>();
+#ifdef WINRT
+  add<LocalDriveWinRT>();
+#endif
 #ifdef WITH_LOCALDRIVE
   add<LocalDrive>();
 #endif

@@ -271,6 +271,7 @@ QString CloudContext::pretty(QString provider) const {
       {"youtube", "YouTube"},
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"},
+      {"localwinrt", "Local Drive"},
       {"animezone", "Anime Zone"},
       {"4shared", "4shared"}};
   auto it = name_map.find(provider.toStdString());

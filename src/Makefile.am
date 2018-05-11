@@ -36,6 +36,7 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/GooglePhotos.cpp \
 	CloudProvider/MegaNz.cpp \
 	CloudProvider/LocalDrive.cpp \
+	CloudProvider/LocalDriveWinRT.cpp \
 	CloudProvider/AnimeZone.cpp \
 	CloudProvider/FourShared.cpp \
 	Request/Request.cpp \
@@ -80,6 +81,7 @@ noinst_HEADERS = \
 	CloudProvider/GooglePhotos.h \
 	CloudProvider/MegaNz.h \
 	CloudProvider/LocalDrive.h \
+	CloudProvider/LocalDriveWinRT.h \
 	CloudProvider/AnimeZone.h \
 	CloudProvider/FourShared.h \
 	Request/HttpCallback.h \
