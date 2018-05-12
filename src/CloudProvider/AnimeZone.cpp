@@ -479,7 +479,7 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
           if (e.left()) {
             r->done(e.left());
           } else {
-            re::regex src_rx("src=\"([^\"]*)\"", re::regex::icase);
+            re::regex src_rx("(?:src|href)=\"([^\"]*)\"", re::regex::icase);
             re::smatch match;
             std::string content = e.right()->output().str();
             if (!re::regex_search(content, match, src_rx))
