@@ -390,7 +390,7 @@ IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
   if (!id_data.playlist) {
     auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
     request->setParameter("part", "contentDetails,snippet");
-    request->setParameter("id", id_data.id);
+    request->setParameter("id", id_data.video_id);
     return request;
   } else {
     auto request = http()->create(endpoint() + "/youtube/v3/playlists", "GET");
