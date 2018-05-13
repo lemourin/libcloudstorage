@@ -567,18 +567,39 @@ ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
 
 ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
-  if (item->size() == IItem::UnknownSize) return getItemUrlAsync(item, cb);
+  auto make_url = [=](const std::string& size) {
+    return file_url() +
+           "/?id=" + util::Url::escape(util::to_base64(item->id())) +
+           "&name=" + util::Url::escape(util::to_base64(item->filename())) +
+           "&size=" + size + "&state=" + util::Url::escape(auth()->state());
+  };
   auto resolver = [=](Request<EitherError<std::string>>::Pointer r) {
-    r->done(file_url() +
-            "/?id=" + util::Url::escape(util::to_base64(item->id())) +
-            "&name=" + util::Url::escape(util::to_base64(item->filename())) +
-            "&size=" + std::to_string(item->size()) +
-            "&state=" + util::Url::escape(auth()->state()));
+    if (item->size() != IItem::UnknownSize)
+      r->done(make_url(std::to_string(item->size())));
+    else {
+      r->make_subrequest(
+          &CloudProvider::getItemUrlAsync, item,
+          [=](EitherError<std::string> item_url) {
+            if (item_url.left()) return r->done(item_url);
+            r->request(
+                [=](util::Output) {
+                  return http()->create(*item_url.right(), "HEAD");
+                },
+                [=](EitherError<Response> e) {
+                  if (e.left()) return r->done(e.left());
+                  auto it = e.right()->headers().find("content-length");
+                  if (it != e.right()->headers().end()) {
+                    r->done(make_url(it->second));
+                  } else
+                    r->done(item_url.right());
+                });
+          });
+    }
   };
   return std::make_shared<Request<EitherError<std::string>>>(shared_from_this(),
                                                              cb, resolver)
       ->run();
-}
+}  // namespace cloudstorage
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                         std::ostream&) const {
