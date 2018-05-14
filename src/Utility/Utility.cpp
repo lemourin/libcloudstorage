@@ -39,16 +39,17 @@
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
-    {"aac", "audio/aac"},   {"avi", "video/x-msvideo"},
-    {"gif", "image/gif"},   {"jpeg", "image/jpeg"},
-    {"jpg", "image/jpeg"},  {"mpeg", "video/mpeg"},
-    {"oga", "audio/ogg"},   {"ogv", "video/ogg"},
-    {"png", "image/png"},   {"svg", "image/svg+xml"},
-    {"tif", "image/tiff"},  {"tiff", "image/tiff"},
-    {"wav", "audio-x/wav"}, {"weba", "audio/webm"},
-    {"webm", "video/webm"}, {"webp", "image/webp"},
-    {"3gp", "video/3gpp"},  {"3g2", "video/3gpp2"},
-    {"mp4", "video/mp4"},   {"mkv", "video/webm"}};
+    {"aac", "audio/aac"},           {"avi", "video/x-msvideo"},
+    {"gif", "image/gif"},           {"jpeg", "image/jpeg"},
+    {"jpg", "image/jpeg"},          {"mpeg", "video/mpeg"},
+    {"oga", "audio/ogg"},           {"ogv", "video/ogg"},
+    {"png", "image/png"},           {"svg", "image/svg+xml"},
+    {"tif", "image/tiff"},          {"tiff", "image/tiff"},
+    {"wav", "audio-x/wav"},         {"weba", "audio/webm"},
+    {"webm", "video/webm"},         {"webp", "image/webp"},
+    {"3gp", "video/3gpp"},          {"3g2", "video/3gpp2"},
+    {"mp4", "video/mp4"},           {"mkv", "video/webm"},
+    {"mpd", "application/dash+xml"}};
 
 const std::string CDN =
     "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"

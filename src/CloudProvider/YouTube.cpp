@@ -48,6 +48,8 @@ const std::string HIGH_QUALITY_DIRECTORY_ID = cloudstorage::util::to_base64(
 const std::string LIKED_VIDEOS = "Liked videos";
 const std::string UPLOADED_VIDEOS = "Uploaded videos";
 
+const auto MANIFEST_LENGTH = 8096;
+
 using namespace std::placeholders;
 
 namespace cloudstorage {
@@ -69,6 +71,10 @@ struct VideoInfo {
   std::string type;
   std::string url;
   int bitrate;
+  std::string codec;
+  std::string quality_label;
+  std::string init_range;
+  std::string index_range;
 };
 
 YouTubeItem from_string(const std::string& id) {
@@ -103,6 +109,16 @@ std::string related_playlist_name(const std::string& name) {
     return name;
 }
 
+std::string xml_escape(const std::string& url) {
+  std::string result;
+  for (auto c : url)
+    if (c == '&')
+      result += "&amp;";
+    else
+      result += c;
+  return result;
+}
+
 VideoInfo video_info(const std::string& url) {
   std::stringstream ss(url);
   std::string token;
@@ -116,19 +132,38 @@ VideoInfo video_info(const std::string& url) {
       result.scrambled_signature = value;
     else if (key == "sig")
       result.signature = value;
-    else if (key == "type")
+    else if (key == "type") {
       result.type = util::Url::unescape(value);
-    else if (key == "url")
+      auto text = "codecs=\"";
+      auto it = result.type.find(text) + strlen(text);
+      auto it_end = result.type.find("\"", it);
+      result.codec =
+          std::string(result.type.begin() + it, result.type.begin() + it_end);
+    } else if (key == "url")
       result.url = util::Url::unescape(value);
     else if (key == "bitrate")
       result.bitrate = std::stoi(value);
+    else if (key == "quality_label")
+      result.quality_label = value;
+    else if (key == "init")
+      result.init_range = value;
+    else if (key == "index")
+      result.index_range = value;
   }
   return result;
 }
 
-std::string combine(const std::string& video, const std::string& audio) {
-  return "cloudstorage://youtube/?video=" + util::Url::escape(video) +
-         "&audio=" + util::Url::escape(audio);
+std::string combine(const VideoInfo& video, const VideoInfo& audio) {
+  return "cloudstorage://youtube/?video=" + util::Url::escape(video.url) +
+         "&audio=" + util::Url::escape(audio.url) +
+         "&video_codec=" + video.codec +
+         "&video_bitrate=" + std::to_string(video.bitrate) +
+         "&video_init_range=" + video.init_range +
+         "&video_index_range=" + video.index_range +
+         "&audio_codec=" + audio.codec +
+         "&audio_bitrate=" + std::to_string(audio.bitrate) +
+         "&audio_init_range=" + audio.init_range +
+         "&audio_index_range=" + audio.index_range;
 }
 
 EitherError<std::string> descramble(const std::string& scrambled,
@@ -228,6 +263,142 @@ EitherError<std::string> descramble(const std::string& scrambled,
   }
 }
 
+template <class Result>
+void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
+                std::function<void(EitherError<std::string>)> complete) {
+  auto get_config = [](std::stringstream& stream) {
+    std::string page = stream.str();
+    std::string player_str = "ytplayer.config = ";
+    auto it = page.find(player_str);
+    if (it == std::string::npos)
+      throw std::logic_error(util::Error::YOUTUBE_CONFIG_NOT_FOUND);
+    stream.seekg(it + player_str.length());
+    return util::json::from_stream(stream);
+  };
+  auto get_url = [=](typename Request<Result>::Pointer r, Json::Value json) {
+    auto data = from_string(item->id());
+    std::stringstream stream(
+        item->type() == IItem::FileType::Audio || data.high_quality
+            ? json["args"]["adaptive_fmts"].asString()
+            : json["args"]["url_encoded_fmt_stream_map"].asString());
+    std::string url;
+    VideoInfo best_audio, best_video;
+    best_audio.bitrate = best_video.bitrate = -1;
+    while (std::getline(stream, url, ',')) {
+      auto d = video_info(url);
+      if (d.type.find("video/mp4") != std::string::npos &&
+          d.bitrate > best_video.bitrate)
+        best_video = d;
+      else if (d.type.find("audio/mp4") != std::string::npos &&
+               d.bitrate > best_audio.bitrate)
+        best_audio = d;
+    }
+    if (!data.audio && !data.high_quality) best_audio = best_video;
+    if (best_video.url.empty())
+      throw std::logic_error(util::Error::VIDEO_URL_NOT_FOUND);
+    if (best_audio.url.empty())
+      throw std::logic_error(util::Error::AUDIO_URL_NOT_FOUND);
+    if (best_video.scrambled_signature.empty() &&
+        best_audio.scrambled_signature.empty()) {
+      if (!data.high_quality)
+        return complete(data.audio ? best_audio.url : best_video.url);
+      else
+        return complete(combine(best_video, best_audio));
+    }
+    r->send(
+        [=](util::Output) {
+          return r->provider()->http()->create("http://youtube.com" +
+                                               json["assets"]["js"].asString());
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          auto signature_video =
+              descramble(best_video.scrambled_signature, e.right()->output());
+          if (signature_video.left()) return r->done(signature_video.left());
+          auto signature_audio =
+              descramble(best_audio.scrambled_signature, e.right()->output());
+          if (signature_audio.left()) return r->done(signature_audio.left());
+          auto video_url =
+              best_video.url + "&signature=" + *signature_video.right();
+          auto audio_url =
+              best_audio.url + "&signature=" + *signature_audio.right();
+          if (!data.high_quality)
+            return complete(data.audio ? audio_url : video_url);
+          else {
+            auto nvideo = best_video;
+            nvideo.url = video_url;
+            auto naudio = best_audio;
+            naudio.url = audio_url;
+            return complete(combine(nvideo, naudio));
+          }
+        });
+  };
+  r->send(
+      [=](util::Output) {
+        return r->provider()->http()->create("http://youtube.com/watch?v=" +
+                                             from_string(item->id()).video_id);
+      },
+      [=](EitherError<Response> e) {
+        if (e.left()) return r->done(e.left());
+        try {
+          auto json = get_config(e.right()->output());
+          get_url(r, json);
+        } catch (const std::exception& e) {
+          r->done(Error{IHttpRequest::Failure, e.what()});
+        }
+      });
+}
+
+std::string generate_dash_manifest(const std::string& url) {
+  auto form = util::parse_form(util::Url(url).query());
+  auto audio = util::Url::unescape(form["audio"]);
+  auto video = util::Url::unescape(form["video"]);
+  auto duration = util::parse_form(util::Url(video).query())["dur"];
+  std::stringstream stream;
+  stream << R"(<?xml version="1.0" encoding="UTF-8"?>
+  <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="urn:mpeg:dash:schema:mpd:2011"
+    xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+    type="static"
+    mediaPresentationDuration="PT)"
+         << duration << R"(S"
+    minBufferTime="PT2S"
+    profiles="urn:mpeg:dash:profile:isoff-main:2011">
+    <Period id="0">
+      <AdaptationSet mimeType="audio/mp4" codecs=")"
+         << form["audio_codec"] <<
+      R"(" contentType="audio" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+        <Representation id="1" bandwidth=")"
+         << form["audio_bitrate"] << R"(">
+          <BaseURL>)"
+         << xml_escape(audio) << R"(</BaseURL>
+          <SegmentBase indexRange=")"
+         << form["audio_index_range"] << R"(">
+            <Initialization range=")"
+         << form["audio_init_range"] << R"("/>
+          </SegmentBase>
+        </Representation>
+      </AdaptationSet>
+      <AdaptationSet mimeType="video/mp4" codecs=")"
+         << form["video_codec"] <<
+      R"(" contentType="video" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+        <Representation id="2" bandwidth=")"
+         << form["video_bitrate"] + R"(">
+          <BaseURL>)"
+         << xml_escape(video) << R"(</BaseURL>
+          <SegmentBase indexRange=")"
+         << form["video_index_range"] << R"(">
+            <Initialization range=")"
+         << form["video_init_range"] << R"("/>
+          </SegmentBase>
+        </Representation>
+      </AdaptationSet>
+    </Period>
+  </MPD>)";
+  auto result = stream.str();
+  return result + std::string(MANIFEST_LENGTH - result.length(), ' ');
+}
+
 }  // namespace
 
 YouTube::YouTube() : CloudProvider(util::make_unique<Auth>()) {}
@@ -293,92 +464,46 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
-  return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i, cb,
-                                                      range)
+  auto file_id = from_string(i->id());
+  if (!file_id.high_quality)
+    return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i,
+                                                        cb, range)
+        ->run();
+  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+    get_stream<EitherError<void>>(r, i, [=](EitherError<std::string> e) {
+      if (e.left()) return r->done(e.left());
+      auto drange = range;
+      if (drange.size_ == Range::Full)
+        drange.size_ = MANIFEST_LENGTH - range.start_;
+      auto manifest = generate_dash_manifest(*e.right());
+      cb->receivedData(manifest.data() + drange.start_, drange.size_);
+      cb->progress(drange.size_, drange.size_);
+      r->done(nullptr);
+    });
+  };
+  return std::make_shared<Request<EitherError<void>>>(
+             shared_from_this(), [=](EitherError<void> e) { cb->done(e); },
+             resolver)
       ->run();
 }
 
 ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
-  auto get_config = [](std::stringstream& stream) {
-    std::string page = stream.str();
-    std::string player_str = "ytplayer.config = ";
-    auto it = page.find(player_str);
-    if (it == std::string::npos)
-      throw std::logic_error(util::Error::YOUTUBE_CONFIG_NOT_FOUND);
-    stream.seekg(it + player_str.length());
-    return util::json::from_stream(stream);
-  };
-  auto get_url = [=](Request<EitherError<std::string>>::Pointer r,
-                     Json::Value json) {
-    auto data = from_string(item->id());
-    std::stringstream stream(
-        item->type() == IItem::FileType::Audio || data.high_quality
-            ? json["args"]["adaptive_fmts"].asString()
-            : json["args"]["url_encoded_fmt_stream_map"].asString());
-    std::string url;
-    VideoInfo best_audio, best_video;
-    best_audio.bitrate = best_video.bitrate = -1;
-    while (std::getline(stream, url, ',')) {
-      auto d = video_info(url);
-      if (d.type.find("video") != std::string::npos &&
-          d.bitrate > best_video.bitrate)
-        best_video = d;
-      else if (d.type.find("audio") != std::string::npos &&
-               d.bitrate > best_audio.bitrate)
-        best_audio = d;
-    }
-    if (!data.audio && !data.high_quality) best_audio = best_video;
-    if (best_video.url.empty())
-      throw std::logic_error(util::Error::VIDEO_URL_NOT_FOUND);
-    if (best_audio.url.empty())
-      throw std::logic_error(util::Error::AUDIO_URL_NOT_FOUND);
-    if (best_video.scrambled_signature.empty() &&
-        best_audio.scrambled_signature.empty()) {
-      if (!data.high_quality)
-        return r->done(data.audio ? best_audio.url : best_video.url);
-      else
-        return r->done(combine(best_video.url, best_audio.url));
-    }
-    r->send(
-        [=](util::Output) {
-          return http()->create("http://youtube.com" +
-                                json["assets"]["js"].asString());
-        },
-        [=](EitherError<Response> e) {
-          if (e.left()) return r->done(e.left());
-          auto signature_video =
-              descramble(best_video.scrambled_signature, e.right()->output());
-          if (signature_video.left()) return r->done(signature_video.left());
-          auto signature_audio =
-              descramble(best_audio.scrambled_signature, e.right()->output());
-          if (signature_audio.left()) return r->done(signature_audio.left());
-          auto video_url =
-              best_video.url + "&signature=" + *signature_video.right();
-          auto audio_url =
-              best_audio.url + "&signature=" + *signature_audio.right();
-          if (!data.high_quality)
-            return r->done(data.audio ? audio_url : video_url);
-          else
-            return r->done(combine(video_url, audio_url));
-        });
-  };
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), callback,
              [=](Request<EitherError<std::string>>::Pointer r) {
-               r->send(
-                   [=](util::Output) {
-                     return http()->create("http://youtube.com/watch?v=" +
-                                           from_string(item->id()).video_id);
-                   },
-                   [=](EitherError<Response> e) {
-                     if (e.left()) return r->done(e.left());
-                     try {
-                       auto json = get_config(e.right()->output());
-                       get_url(r, json);
-                     } catch (const std::exception& e) {
-                       r->done(Error{IHttpRequest::Failure, e.what()});
-                     }
+               get_stream<EitherError<std::string>>(
+                   r, item, [=](EitherError<std::string> e) {
+                     if (e.right() && from_string(item->id()).high_quality) {
+                       r->done(file_url() + "/?id=" +
+                               util::Url::escape(util::to_base64(item->id())) +
+                               "&name=" +
+                               util::Url::escape(
+                                   util::to_base64(item->filename())) +
+                               "&size=" + std::to_string(MANIFEST_LENGTH) +
+                               "&state=" + util::Url::escape(auth()->state()));
+                     } else
+                       r->done(e);
                    });
              })
       ->run();
@@ -594,7 +719,7 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
       throw std::logic_error(util::Error::INVALID_KIND);
 
     auto item = util::make_unique<Item>(
-        v["snippet"]["title"].asString() + (audio ? ".webm" : ".mp4"),
+        v["snippet"]["title"].asString() + (high_quality ? ".mpd" : ".mp4"),
         to_string(
             {audio, false, high_quality, false, v["id"].asString(), video_id}),
         IItem::UnknownSize,

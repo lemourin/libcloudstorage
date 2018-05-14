@@ -602,7 +602,7 @@ ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
   return std::make_shared<Request<EitherError<std::string>>>(shared_from_this(),
                                                              cb, resolver)
       ->run();
-}  // namespace cloudstorage
+}
 
 IHttpRequest::Pointer CloudProvider::getItemDataRequest(const std::string&,
                                                         std::ostream&) const {
