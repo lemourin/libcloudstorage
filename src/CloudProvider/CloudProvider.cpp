@@ -581,6 +581,9 @@ ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
           &CloudProvider::getItemUrlAsync, item,
           [=](EitherError<std::string> item_url) {
             if (item_url.left()) return r->done(item_url);
+            auto url = util::Url(*item_url.right());
+            if (url.protocol() != "http" && url.protocol() != "https")
+              return r->done(item_url);
             r->request(
                 [=](util::Output) {
                   return http()->create(*item_url.right(), "HEAD");
