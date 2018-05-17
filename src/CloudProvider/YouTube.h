@@ -64,8 +64,7 @@ class YouTube : public CloudProvider {
   IHttpRequest::Pointer createDirectoryRequest(const IItem& item,
                                                const std::string& name,
                                                std::ostream&) const override;
-  IItem::Pointer getItemDataResponse(std::istream& response, bool audio,
-                                     bool high_quality) const;
+  IItem::Pointer getItemDataResponse(std::istream& response, int type) const;
   IItem::List listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
@@ -77,8 +76,7 @@ class YouTube : public CloudProvider {
                                          const std::string& name,
                                          std::istream& response) const override;
 
-  Item::Pointer toItem(const Json::Value&, std::string kind, bool audio,
-                       bool high_quality) const;
+  Item::Pointer toItem(const Json::Value&, std::string kind, int type) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:

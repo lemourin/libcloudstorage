@@ -375,6 +375,15 @@ void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
   if (it != hints.end()) f(it->second);
 }
 
+std::string CloudProvider::defaultFileDaemonUrl(const IItem& item,
+                                                uint64_t size) const {
+  return file_url() + "/?id=" + util::Url::escape(util::to_base64(item.id())) +
+         "&name=" + util::Url::escape(util::to_base64(item.filename())) +
+         "&size=" + std::to_string(size) +
+         "&state=" + util::Url::escape(auth()->state()) +
+         "&url=" + util::Url::escape(static_cast<const Item&>(item).url());
+}
+
 ICloudProvider::DownloadFileRequest::Pointer
 CloudProvider::makeDownloadFileRequest(
     IItem::Pointer file, Range range,
@@ -567,15 +576,9 @@ ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
 
 ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
-  auto make_url = [=](const std::string& size) {
-    return file_url() +
-           "/?id=" + util::Url::escape(util::to_base64(item->id())) +
-           "&name=" + util::Url::escape(util::to_base64(item->filename())) +
-           "&size=" + size + "&state=" + util::Url::escape(auth()->state());
-  };
   auto resolver = [=](Request<EitherError<std::string>>::Pointer r) {
     if (item->size() != IItem::UnknownSize)
-      r->done(make_url(std::to_string(item->size())));
+      r->done(defaultFileDaemonUrl(*item, item->size()));
     else {
       r->make_subrequest(
           &CloudProvider::getItemUrlAsync, item,
@@ -592,7 +595,8 @@ ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
                   if (e.left()) return r->done(e.left());
                   auto it = e.right()->headers().find("content-length");
                   if (it != e.right()->headers().end()) {
-                    r->done(make_url(it->second));
+                    r->done(
+                        defaultFileDaemonUrl(*item, std::stoull(it->second)));
                   } else
                     r->done(item_url.right());
                 });

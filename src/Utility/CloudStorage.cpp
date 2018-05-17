@@ -82,7 +82,14 @@ class CloudProviderWrapper : public ICloudProvider {
 
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer item,
                                              GetItemUrlCallback cb) override {
-    return p_->getItemUrlAsync(item, cb);
+    return p_->getItemUrlAsync(item, [=](EitherError<std::string> e) {
+      if (e.left())
+        cb(e.left());
+      else {
+        static_cast<Item*>(item.get())->set_url(*e.right());
+        cb(e);
+      }
+    });
   }
 
   GetItemRequest::Pointer getItemAsync(const std::string& absolute_path,

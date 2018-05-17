@@ -301,6 +301,7 @@ class CloudProvider : public ICloudProvider,
  protected:
   void setWithHint(const Hints& hints, const std::string& name,
                    std::function<void(std::string)>) const;
+  std::string defaultFileDaemonUrl(const IItem& item, uint64_t size) const;
 
  private:
   friend class AuthorizeRequest;

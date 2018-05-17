@@ -39,11 +39,11 @@
 
 const std::string AUDIO_DIRECTORY = "Audio";
 const std::string AUDIO_DIRECTORY_ID = cloudstorage::util::to_base64(
-    R"({"audio":true,"playlist":true,"id":"audio"})");
+    R"({"type":3,"id":"audio"})");
 
 const std::string HIGH_QUALITY_DIRECTORY = "High Quality";
 const std::string HIGH_QUALITY_DIRECTORY_ID = cloudstorage::util::to_base64(
-    R"({"audio":false,"playlist":true,"high_quality":true,"id":"high quality"})");
+    R"({"type":6,"id":"high quality"})");
 
 const std::string LIKED_VIDEOS = "Liked videos";
 const std::string UPLOADED_VIDEOS = "Uploaded videos";
@@ -57,10 +57,14 @@ namespace cloudstorage {
 namespace {
 
 struct YouTubeItem {
-  bool audio;
-  bool playlist;
-  bool high_quality;
-  bool related_playlist;
+  enum Type {
+    Audio = 1 << 0,
+    Playlist = 1 << 1,
+    HighQuality = 1 << 2,
+    RelatedPlaylist = 1 << 3,
+    DontMerge = 1 << 4
+  };
+  int type = 0;
   std::string id;
   std::string video_id;
 };
@@ -75,15 +79,15 @@ struct VideoInfo {
   std::string quality_label;
   std::string init_range;
   std::string index_range;
+  uint64_t size = 0;
 };
 
 YouTubeItem from_string(const std::string& id) {
   try {
     auto json =
         util::json::from_stream(std::stringstream(util::from_base64(id)));
-    return {json["audio"].asBool(),        json["playlist"].asBool(),
-            json["high_quality"].asBool(), json["related_playlist"].asBool(),
-            json["id"].asString(),         json["video_id"].asString()};
+    return {json["type"].asInt(), json["id"].asString(),
+            json["video_id"].asString()};
   } catch (const Json::Exception&) {
     return {};
   }
@@ -91,10 +95,7 @@ YouTubeItem from_string(const std::string& id) {
 
 std::string to_string(YouTubeItem item) {
   Json::Value json;
-  json["audio"] = item.audio;
-  json["playlist"] = item.playlist;
-  json["high_quality"] = item.high_quality;
-  json["related_playlist"] = item.related_playlist;
+  json["type"] = item.type;
   json["id"] = item.id;
   json["video_id"] = item.video_id;
   return util::to_base64(util::json::to_string(json));
@@ -149,6 +150,8 @@ VideoInfo video_info(const std::string& url) {
       result.init_range = value;
     else if (key == "index")
       result.index_range = value;
+    else if (key == "clen")
+      result.size = std::stoull(value);
   }
   return result;
 }
@@ -160,10 +163,12 @@ std::string combine(const VideoInfo& video, const VideoInfo& audio) {
          "&video_bitrate=" + std::to_string(video.bitrate) +
          "&video_init_range=" + video.init_range +
          "&video_index_range=" + video.index_range +
+         "&video_size=" + std::to_string(video.size) +
          "&audio_codec=" + audio.codec +
          "&audio_bitrate=" + std::to_string(audio.bitrate) +
          "&audio_init_range=" + audio.init_range +
-         "&audio_index_range=" + audio.index_range;
+         "&audio_index_range=" + audio.index_range +
+         "&audio_size=" + std::to_string(audio.size);
 }
 
 EitherError<std::string> descramble(const std::string& scrambled,
@@ -278,7 +283,8 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
   auto get_url = [=](typename Request<Result>::Pointer r, Json::Value json) {
     auto data = from_string(item->id());
     std::stringstream stream(
-        item->type() == IItem::FileType::Audio || data.high_quality
+        item->type() == IItem::FileType::Audio ||
+                (data.type & YouTubeItem::HighQuality)
             ? json["args"]["adaptive_fmts"].asString()
             : json["args"]["url_encoded_fmt_stream_map"].asString());
     std::string url;
@@ -293,15 +299,18 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
                d.bitrate > best_audio.bitrate)
         best_audio = d;
     }
-    if (!data.audio && !data.high_quality) best_audio = best_video;
+    if (!(data.type & (YouTubeItem::Audio | YouTubeItem::HighQuality)))
+      best_audio = best_video;
     if (best_video.url.empty())
       throw std::logic_error(util::Error::VIDEO_URL_NOT_FOUND);
     if (best_audio.url.empty())
       throw std::logic_error(util::Error::AUDIO_URL_NOT_FOUND);
     if (best_video.scrambled_signature.empty() &&
         best_audio.scrambled_signature.empty()) {
-      if (!data.high_quality)
-        return complete(data.audio ? best_audio.url : best_video.url);
+      if (!(data.type & YouTubeItem::HighQuality) ||
+          (data.type & YouTubeItem::DontMerge))
+        return complete((data.type & YouTubeItem::Audio) ? best_audio.url
+                                                         : best_video.url);
       else
         return complete(combine(best_video, best_audio));
     }
@@ -322,9 +331,11 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
               best_video.url + "&signature=" + *signature_video.right();
           auto audio_url =
               best_audio.url + "&signature=" + *signature_audio.right();
-          if (!data.high_quality)
-            return complete(data.audio ? audio_url : video_url);
-          else {
+          if (!(data.type & YouTubeItem::HighQuality) ||
+              (data.type & YouTubeItem::DontMerge)) {
+            return complete((data.type & YouTubeItem::Audio) ? audio_url
+                                                             : video_url);
+          } else {
             auto nvideo = best_video;
             nvideo.url = video_url;
             auto naudio = best_audio;
@@ -349,10 +360,10 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
       });
 }
 
-std::string generate_dash_manifest(const std::string& url) {
+std::string generate_dash_manifest(const std::string& url,
+                                   const std::string& audio,
+                                   const std::string& video) {
   auto form = util::parse_form(util::Url(url).query());
-  auto audio = util::Url::unescape(form["audio"]);
-  auto video = util::Url::unescape(form["video"]);
   auto duration = util::parse_form(util::Url(video).query())["dur"];
   std::stringstream stream;
   stream << R"(<?xml version="1.0" encoding="UTF-8"?>
@@ -451,8 +462,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                      auto id_data = from_string(id);
                      try {
                        r->done(getItemDataResponse(e.right()->output(),
-                                                   id_data.audio,
-                                                   id_data.high_quality));
+                                                   id_data.type));
                      } catch (const Json::Exception&) {
                        r->done(Error{IHttpRequest::Failure,
                                      e.right()->output().str()});
@@ -465,9 +475,11 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
 ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
   auto file_id = from_string(i->id());
-  if (!file_id.high_quality)
+  if (!(file_id.type & YouTubeItem::HighQuality) ||
+      (file_id.type & YouTubeItem::DontMerge))
     return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i,
                                                         cb, range)
+
         ->run();
   auto resolver = [=](Request<EitherError<void>>::Pointer r) {
     get_stream<EitherError<void>>(r, i, [=](EitherError<std::string> e) {
@@ -475,7 +487,24 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       auto drange = range;
       if (drange.size_ == Range::Full)
         drange.size_ = MANIFEST_LENGTH - range.start_;
-      auto manifest = generate_dash_manifest(*e.right());
+      auto data = util::parse_form(util::Url(*e.right()).query());
+      auto id = file_id;
+      id.type = YouTubeItem::DontMerge | YouTubeItem::HighQuality |
+                YouTubeItem::Audio;
+      auto item_audio = util::make_unique<Item>(i->filename(), to_string(id),
+                                                std::stoull(data["audio_size"]),
+                                                i->timestamp(), i->type());
+      item_audio->set_url(data["audio"]);
+      id.type = YouTubeItem::DontMerge | YouTubeItem::HighQuality;
+      auto item_video = util::make_unique<Item>(i->filename(), to_string(id),
+                                                std::stoull(data["video_size"]),
+                                                i->timestamp(), i->type());
+      item_video->set_url(data["video"]);
+      auto audio_url = defaultFileDaemonUrl(*item_audio, item_audio->size());
+      auto video_url =
+          defaultFileDaemonUrl(*item_video, item_video->size()) +
+          "&dur=" + util::parse_form(util::Url(data["video"]).query())["dur"];
+      auto manifest = generate_dash_manifest(*e.right(), audio_url, video_url);
       cb->receivedData(manifest.data() + drange.start_, drange.size_);
       cb->progress(drange.size_, drange.size_);
       r->done(nullptr);
@@ -489,21 +518,18 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
 
 ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
+  auto type = from_string(item->id()).type;
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), callback,
              [=](Request<EitherError<std::string>>::Pointer r) {
                get_stream<EitherError<std::string>>(
                    r, item, [=](EitherError<std::string> e) {
-                     if (e.right() && from_string(item->id()).high_quality) {
-                       r->done(file_url() + "/?id=" +
-                               util::Url::escape(util::to_base64(item->id())) +
-                               "&name=" +
-                               util::Url::escape(
-                                   util::to_base64(item->filename())) +
-                               "&size=" + std::to_string(MANIFEST_LENGTH) +
-                               "&state=" + util::Url::escape(auth()->state()));
-                     } else
+                     if (e.right() && (type & YouTubeItem::HighQuality) &&
+                         !(type & YouTubeItem::DontMerge)) {
+                       r->done(defaultFileDaemonUrl(*item, MANIFEST_LENGTH));
+                     } else {
                        r->done(e);
+                     }
                    });
              })
       ->run();
@@ -512,7 +538,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
 IHttpRequest::Pointer YouTube::getItemDataRequest(const std::string& full_id,
                                                   std::ostream&) const {
   auto id_data = from_string(full_id);
-  if (!id_data.playlist) {
+  if (!(id_data.type & YouTubeItem::Playlist)) {
     auto request = http()->create(endpoint() + "/youtube/v3/videos", "GET");
     request->setParameter("part", "contentDetails,snippet");
     request->setParameter("id", id_data.video_id);
@@ -535,11 +561,12 @@ IHttpRequest::Pointer YouTube::deleteItemRequest(const IItem& item,
       item.id() == HIGH_QUALITY_DIRECTORY_ID)
     return nullptr;
   auto id_data = from_string(item.id());
-  if (id_data.related_playlist) return nullptr;
-  auto request =
-      http()->create(endpoint() + "/youtube/v3/" +
-                         (id_data.playlist ? "playlists" : "playlistItems"),
-                     "DELETE");
+  if (id_data.type & YouTubeItem::RelatedPlaylist) return nullptr;
+  auto request = http()->create(
+      endpoint() + "/youtube/v3/" +
+          ((id_data.type & YouTubeItem::Playlist) ? "playlists"
+                                                  : "playlistItems"),
+      "DELETE");
   request->setParameter("id", id_data.id);
   return request;
 }
@@ -551,7 +578,7 @@ IHttpRequest::Pointer YouTube::renameItemRequest(const IItem& item,
       item.id() == HIGH_QUALITY_DIRECTORY_ID)
     return nullptr;
   auto id_data = from_string(item.id());
-  if (!id_data.playlist) return nullptr;
+  if (!(id_data.type & YouTubeItem::Playlist)) return nullptr;
   auto request = http()->create(endpoint() + "/youtube/v3/playlists", "PUT");
   request->setParameter("part", "snippet");
   request->setHeaderParameter("Content-Type", "application/json");
@@ -610,11 +637,10 @@ IHttpRequest::Pointer YouTube::listDirectoryRequest(
   }
 }
 
-IItem::Pointer YouTube::getItemDataResponse(std::istream& stream, bool audio,
-                                            bool high_quality) const {
+IItem::Pointer YouTube::getItemDataResponse(std::istream& stream,
+                                            int type) const {
   auto response = util::json::from_stream(stream);
-  return toItem(response["items"][0], response["kind"].asString(), audio,
-                high_quality);
+  return toItem(response["items"][0], response["kind"].asString(), type);
 }
 
 IItem::List YouTube::listDirectoryResponse(const IItem& directory,
@@ -628,8 +654,7 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
   Json::Value response;
   reader->parse(str.data(), str.data() + str.size(), &response, nullptr);
   IItem::List result;
-  bool audio = from_string(directory.id()).audio;
-  bool high_quality = from_string(directory.id()).high_quality;
+  auto type = from_string(directory.id()).type;
   if (response["kind"].asString() == "youtube#channelListResponse") {
     Json::Value related_playlists =
         response["items"][0]["contentDetails"]["relatedPlaylists"];
@@ -638,8 +663,9 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
         continue;
       auto item = util::make_unique<Item>(
           related_playlist_name(name),
-          to_string({audio, true, high_quality, true,
-                     related_playlists[name].asString(), ""}),
+          to_string(
+              {YouTubeItem::Playlist | YouTubeItem::RelatedPlaylist | type,
+               related_playlists[name].asString(), ""}),
           IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory);
       item->set_thumbnail_url(
@@ -650,7 +676,9 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
     next_page_token = "real_playlist";
   } else {
     for (const Json::Value& v : response["items"]) {
-      auto item = toItem(v, response["kind"].asString(), audio, high_quality);
+      auto item =
+          toItem(v, response["kind"].asString(),
+                 type & (YouTubeItem::Audio | YouTubeItem::HighQuality));
       if (!item->thumbnail_url().empty()) result.push_back(item);
     }
   }
@@ -685,8 +713,7 @@ IItem::Pointer YouTube::renameItemResponse(const IItem& old_item,
   if (json.isMember("error"))
     throw std::logic_error(json["error"]["errors"][0]["message"].asString());
   auto id = from_string(old_item.id());
-  return toItem(json, "youtube#playlistListResponse", id.audio,
-                id.high_quality);
+  return toItem(json, "youtube#playlistListResponse", id.type);
 }
 
 IItem::Pointer YouTube::createDirectoryResponse(const IItem& parent,
@@ -694,16 +721,15 @@ IItem::Pointer YouTube::createDirectoryResponse(const IItem& parent,
                                                 std::istream& response) const {
   auto id = from_string(parent.id());
   return toItem(util::json::from_stream(response),
-                "youtube#playlistListResponse", id.audio, id.high_quality);
+                "youtube#playlistListResponse", id.type);
 }
 
 Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
-                              bool audio, bool high_quality) const {
+                              int type) const {
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString(),
-        to_string({audio, true, high_quality, false, v["id"].asString(), ""}),
-        IItem::UnknownSize,
+        to_string({type, v["id"].asString(), ""}), IItem::UnknownSize,
         util::parse_time(v["snippet"]["publishedAt"].asString()),
         IItem::FileType::Directory);
     item->set_thumbnail_url(
@@ -719,12 +745,12 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
       throw std::logic_error(util::Error::INVALID_KIND);
 
     auto item = util::make_unique<Item>(
-        v["snippet"]["title"].asString() + (high_quality ? ".mpd" : ".mp4"),
-        to_string(
-            {audio, false, high_quality, false, v["id"].asString(), video_id}),
-        IItem::UnknownSize,
+        v["snippet"]["title"].asString() +
+            ((type & YouTubeItem::HighQuality) ? ".mpd" : ".mp4"),
+        to_string({type, v["id"].asString(), video_id}), IItem::UnknownSize,
         util::parse_time(v["snippet"]["publishedAt"].asString()),
-        audio ? IItem::FileType::Audio : IItem::FileType::Video);
+        (type & YouTubeItem::Audio) ? IItem::FileType::Audio
+                                    : IItem::FileType::Video);
     item->set_thumbnail_url(
         v["snippet"]["thumbnails"]["default"]["url"].asString());
     return std::move(item);

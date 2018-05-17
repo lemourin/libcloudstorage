@@ -24,6 +24,8 @@
 
 #include <queue>
 
+#include "Utility/Item.h"
+
 namespace cloudstorage {
 
 const int CHUNK_SIZE = 8 * 1024 * 1024;
@@ -150,11 +152,11 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   static constexpr int Failed = 2;
 
   HttpData(Buffer::Pointer d, std::shared_ptr<CloudProvider> p,
-           const std::string& file, Range range)
+           const std::string& file, Range range, const std::string& cached_url)
       : status_(InProgress),
         buffer_(d),
         provider_(p),
-        request_(request(p, file, range)) {}
+        request_(request(p, file, range, cached_url)) {}
 
   ~HttpData() override {
     buffer_->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
@@ -163,7 +165,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
       std::shared_ptr<CloudProvider> provider, const std::string& file,
-      Range range) {
+      Range range, const std::string& url) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       auto p = r->provider().get();
       buffer_->request_ = r;
@@ -180,6 +182,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
                     Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
               } else {
                 status_ = Success;
+                static_cast<Item*>(e.right().get())->set_url(url);
                 buffer_->item_ = e.right();
                 buffer_->range_ = range;
                 p->addStreamRequest(r);
@@ -237,7 +240,11 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
   std::unordered_map<std::string, std::string> headers = {
       {"Content-Type", util::to_mime_type(extension)},
       {"Accept-Ranges", "bytes"},
-      {"Content-Disposition", "inline; filename=\"" + filename + "\""}};
+      {"Content-Disposition", "inline; filename=\"" + filename + "\""},
+      {"Access-Control-Allow-Origin", "*"},
+      {"Access-Control-Allow-Headers", "*"}};
+  if (request.method() == "OPTIONS")
+    return util::response_from_string(request, IHttpRequest::Ok, headers, "");
   Range range = {0, size};
   int code = IHttpRequest::Ok;
   if (const char* range_str = request.header("Range")) {
@@ -253,8 +260,9 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     code = IHttpRequest::Partial;
   }
   auto buffer = std::make_shared<Buffer>();
-  auto data = util::make_unique<HttpData>(buffer, provider_,
-                                          util::from_base64(id), range);
+  auto data = util::make_unique<HttpData>(
+      buffer, provider_, util::from_base64(id), range,
+      request.get("url") ? request.get("url") : "");
   auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
