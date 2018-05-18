@@ -380,8 +380,7 @@ std::string CloudProvider::defaultFileDaemonUrl(const IItem& item,
   return file_url() + "/?id=" + util::Url::escape(util::to_base64(item.id())) +
          "&name=" + util::Url::escape(util::to_base64(item.filename())) +
          "&size=" + std::to_string(size) +
-         "&state=" + util::Url::escape(auth()->state()) +
-         "&url=" + util::Url::escape(static_cast<const Item&>(item).url());
+         "&state=" + util::Url::escape(auth()->state());
 }
 
 ICloudProvider::DownloadFileRequest::Pointer

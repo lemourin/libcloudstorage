@@ -26,6 +26,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -206,6 +207,57 @@ void log(Args&&... t) {
   priv::log(std::forward<Args>(t)...);
   *priv::stream << std::endl;
 }
+
+template <class Key, class Value>
+class LRUCache {
+ public:
+  LRUCache(size_t size) : size_(size), time_() {}
+
+  std::shared_ptr<Value> get(const Key& key) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto it = data_.find(key);
+    if (it == data_.end())
+      return nullptr;
+    else {
+      mark(key, time_);
+      time_++;
+      return it->second.first;
+    }
+  }
+
+  void put(const Key& key, const std::shared_ptr<Value>& value) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto data_it = data_.find(key);
+    if (data_it != data_.end()) {
+      mark(key, time_);
+      time_++;
+      return;
+    }
+    data_[key] = {value, time_};
+    access_time_[time_++] = key;
+    if (data_.size() > size_) {
+      auto access_it = access_time_.begin();
+      auto data_it = data_.find(access_it->second);
+      access_time_.erase(access_it);
+      data_.erase(data_it);
+    }
+  }
+
+ private:
+  void mark(const Key& key, uint32_t time) {
+    auto data_it = data_.find(key);
+    auto access_it = access_time_.find(data_it->second.second);
+    access_time_.erase(access_it);
+    data_it->second.second = time;
+    access_time_[time] = key;
+  }
+
+  std::mutex mutex_;
+  std::unordered_map<Key, std::pair<std::shared_ptr<Value>, uint32_t>> data_;
+  std::map<uint32_t, Key> access_time_;
+  size_t size_;
+  uint32_t time_;
+};
 
 }  // namespace util
 

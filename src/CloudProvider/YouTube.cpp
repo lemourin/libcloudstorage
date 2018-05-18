@@ -522,14 +522,15 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), callback,
              [=](Request<EitherError<std::string>>::Pointer r) {
+               if ((type & YouTubeItem::HighQuality) &&
+                   !(type & YouTubeItem::DontMerge))
+                 return r->done(defaultFileDaemonUrl(*item, MANIFEST_LENGTH));
                get_stream<EitherError<std::string>>(
                    r, item, [=](EitherError<std::string> e) {
-                     if (e.right() && (type & YouTubeItem::HighQuality) &&
-                         !(type & YouTubeItem::DontMerge)) {
-                       r->done(defaultFileDaemonUrl(*item, MANIFEST_LENGTH));
-                     } else {
-                       r->done(e);
+                     if (e.right()) {
+                       static_cast<Item*>(item.get())->set_url(*e.right());
                      }
+                     r->done(e);
                    });
              })
       ->run();

@@ -29,10 +29,12 @@
 namespace cloudstorage {
 
 const int CHUNK_SIZE = 8 * 1024 * 1024;
+const int CACHE_SIZE = 128;
 
 namespace {
 
 struct Buffer;
+using Cache = util::LRUCache<std::string, IItem>;
 
 class HttpServerCallback : public IHttpServer::ICallback {
  public:
@@ -40,6 +42,7 @@ class HttpServerCallback : public IHttpServer::ICallback {
   IHttpServer::IResponse::Pointer handle(const IHttpServer::IRequest&) override;
 
  private:
+  std::shared_ptr<Cache> item_cache_;
   std::shared_ptr<CloudProvider> provider_;
 };
 
@@ -152,11 +155,11 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   static constexpr int Failed = 2;
 
   HttpData(Buffer::Pointer d, std::shared_ptr<CloudProvider> p,
-           const std::string& file, Range range, const std::string& cached_url)
+           const std::string& file, Range range, std::shared_ptr<Cache> cache)
       : status_(InProgress),
         buffer_(d),
         provider_(p),
-        request_(request(p, file, range, cached_url)) {}
+        request_(request(p, file, range, cache)) {}
 
   ~HttpData() override {
     buffer_->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
@@ -165,36 +168,39 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
       std::shared_ptr<CloudProvider> provider, const std::string& file,
-      Range range, const std::string& url) {
+      Range range, std::shared_ptr<Cache> cache) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       auto p = r->provider().get();
       buffer_->request_ = r;
-      r->make_subrequest(
-          &CloudProvider::getItemDataAsync, file, [=](EitherError<IItem> e) {
-            if (e.left()) {
-              status_ = Failed;
-              buffer_->done(
-                  Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
-            } else {
-              if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
-                status_ = Failed;
-                buffer_->done(
-                    Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
-              } else {
-                status_ = Success;
-                static_cast<Item*>(e.right().get())->set_url(url);
-                buffer_->item_ = e.right();
-                buffer_->range_ = range;
-                p->addStreamRequest(r);
-                r->make_subrequest(
-                    &CloudProvider::downloadFileRangeAsync, e.right(),
-                    Range{range.start_,
-                          std::min<uint64_t>(range.size_, CHUNK_SIZE)},
-                    util::make_unique<HttpDataCallback>(buffer_));
-              }
-            }
-            buffer_->resume();
-          });
+      auto item_received = [=](EitherError<IItem> e) {
+        if (e.left()) {
+          status_ = Failed;
+          buffer_->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
+        } else {
+          if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
+            status_ = Failed;
+            buffer_->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
+          } else {
+            status_ = Success;
+            buffer_->item_ = e.right();
+            buffer_->range_ = range;
+            cache->put(file, e.right());
+            p->addStreamRequest(r);
+            r->make_subrequest(
+                &CloudProvider::downloadFileRangeAsync, e.right(),
+                Range{range.start_,
+                      std::min<uint64_t>(range.size_, CHUNK_SIZE)},
+                util::make_unique<HttpDataCallback>(buffer_));
+          }
+        }
+        buffer_->resume();
+      };
+      auto cached_item = cache->get(file);
+      if (cached_item == nullptr)
+        r->make_subrequest(&CloudProvider::getItemDataAsync, file,
+                           item_received);
+      else
+        item_received(cached_item);
     };
     return std::make_shared<Request<EitherError<void>>>(
                provider,
@@ -222,7 +228,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 };
 
 HttpServerCallback::HttpServerCallback(std::shared_ptr<CloudProvider> p)
-    : provider_(p) {}
+    : item_cache_(util::make_unique<Cache>(CACHE_SIZE)), provider_(p) {}
 
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
@@ -261,8 +267,7 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
   }
   auto buffer = std::make_shared<Buffer>();
   auto data = util::make_unique<HttpData>(
-      buffer, provider_, util::from_base64(id), range,
-      request.get("url") ? request.get("url") : "");
+      buffer, provider_, util::from_base64(id), range, item_cache_);
   auto response = request.response(code, headers, range.size_, std::move(data));
   buffer->response_ = response.get();
   response->completed([buffer]() {
@@ -281,5 +286,4 @@ IHttpServer::Pointer FileServer::create(std::shared_ptr<CloudProvider> p,
 }
 
 FileServer::FileServer() {}
-
 }  // namespace cloudstorage
