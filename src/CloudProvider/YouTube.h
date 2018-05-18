@@ -75,6 +75,8 @@ class YouTube : public CloudProvider {
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
                                          std::istream& response) const override;
+  std::string generateDashManifest(const IItem& i,
+                                   const std::string& url) const;
 
   Item::Pointer toItem(const Json::Value&, std::string kind, int type) const;
 
