@@ -137,6 +137,7 @@ void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
     r->make_subrequest(
         &CloudProvider::getItemUrlAsync, file, [=](EitherError<std::string> e) {
           if (e.left()) return r->done(e.left());
+          static_cast<Item*>(file.get())->set_url(*e.right());
           download(*e.right(), [=](EitherError<void> e) { r->done(e); });
         });
   };

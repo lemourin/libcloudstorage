@@ -526,12 +526,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
                    !(type & YouTubeItem::DontMerge))
                  return r->done(defaultFileDaemonUrl(*item, MANIFEST_LENGTH));
                get_stream<EitherError<std::string>>(
-                   r, item, [=](EitherError<std::string> e) {
-                     if (e.right()) {
-                       static_cast<Item*>(item.get())->set_url(*e.right());
-                     }
-                     r->done(e);
-                   });
+                   r, item, [=](EitherError<std::string> e) { r->done(e); });
              })
       ->run();
 }
