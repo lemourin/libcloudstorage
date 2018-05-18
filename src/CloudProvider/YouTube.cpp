@@ -65,6 +65,11 @@ struct YouTubeItem {
   int type = 0;
   std::string id;
   std::string video_id;
+
+  YouTubeItem() {}
+
+  YouTubeItem(int type, const std::string& id, const std::string& video_id)
+      : type(type), id(id), video_id(video_id) {}
 };
 
 struct VideoInfo {
@@ -91,7 +96,7 @@ YouTubeItem from_string(const std::string& id) {
   }
 }
 
-std::string to_string(YouTubeItem item) {
+std::string to_string(const YouTubeItem& item) {
   Json::Value json;
   json["type"] = item.type;
   json["id"] = item.id;
