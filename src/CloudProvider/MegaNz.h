@@ -28,15 +28,18 @@
 
 #include "CloudProvider.h"
 
-#include <megaapi.h>
+#include <mega.h>
 #include <random>
 #include <unordered_set>
 
 namespace cloudstorage {
 
 namespace {
+class CloudMegaClient;
+template <class T>
 class Listener;
-}
+enum class Type;
+}  // namespace
 
 /**
  * MegaNz doesn't use oauth, Token in this case is a base64 encoded
@@ -71,8 +74,6 @@ class MegaNz : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
-  DownloadFileRequest::Pointer getThumbnailAsync(
-      IItem::Pointer, IDownloadFileCallback::Pointer) override;
   DeleteItemRequest::Pointer deleteItemAsync(IItem::Pointer,
                                              DeleteItemCallback) override;
   CreateDirectoryRequest::Pointer createDirectoryAsync(
@@ -93,9 +94,10 @@ class MegaNz : public CloudProvider {
              AuthorizeRequest::AuthorizeCompleted);
   std::string passwordHash(const std::string& password) const;
 
-  mega::MegaApi* mega() const { return mega_.get(); }
+  CloudMegaClient* mega() const { return mega_.get(); }
 
-  IItem::Pointer toItem(mega::MegaNode*);
+  IItem::Pointer toItem(mega::Node*);
+  mega::Node* node(const std::string& id) const;
   std::string randomString(int length);
   std::string temporaryFileName();
 
@@ -107,8 +109,6 @@ class MegaNz : public CloudProvider {
 
   void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
   void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
-
-  std::unique_ptr<mega::MegaNode> node(const std::string& id) const;
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -126,18 +126,11 @@ class MegaNz : public CloudProvider {
 
  private:
   template <class T>
-  std::shared_ptr<IRequest<EitherError<void>>> make_request(
-      std::function<void(T*)> init,
-      std::function<void(EitherError<void>, Listener*)> listener_callback,
-      GenericCallback<EitherError<void>> callback);
+  std::shared_ptr<IRequest<EitherError<T>>> make_request(
+      Type, std::function<void(Listener<T>*, int)> init,
+      GenericCallback<EitherError<T>> callback);
 
-  template <class T>
-  void make_subrequest(
-      Request<EitherError<void>>::Pointer parent_request,
-      std::function<void(T*)> init,
-      std::function<void(EitherError<void>, Listener*)> listener_callback);
-
-  std::unique_ptr<mega::MegaApi> mega_;
+  std::unique_ptr<CloudMegaClient> mega_;
   std::atomic_bool authorized_;
   std::random_device device_;
   std::default_random_engine engine_;
