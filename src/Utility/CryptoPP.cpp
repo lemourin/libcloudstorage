@@ -47,7 +47,7 @@ std::string CryptoPP::sha256(const std::string& message) {
 std::string CryptoPP::hmac_sha256(const std::string& key,
                                   const std::string& message) {
   std::string mac;
-  ::CryptoPP::HMAC<::CryptoPP::SHA256> hmac((byte*)key.c_str(), key.length());
+  ::CryptoPP::HMAC<::CryptoPP::SHA256> hmac((uint8_t*)key.c_str(), key.length());
   ::CryptoPP::StringSource(
       message, true,
       new ::CryptoPP::HashFilter(hmac, new ::CryptoPP::StringSink(mac)));
@@ -59,7 +59,7 @@ std::string CryptoPP::hmac_sha256(const std::string& key,
 std::string CryptoPP::hmac_sha1(const std::string& key,
                                 const std::string& message) {
   std::string mac;
-  ::CryptoPP::HMAC<::CryptoPP::SHA1> hmac((byte*)key.c_str(), key.length());
+  ::CryptoPP::HMAC<::CryptoPP::SHA1> hmac((uint8_t*)key.c_str(), key.length());
   ::CryptoPP::StringSource(
       message, true,
       new ::CryptoPP::HashFilter(hmac, new ::CryptoPP::StringSink(mac)));
