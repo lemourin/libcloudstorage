@@ -136,8 +136,6 @@ class MegaNz : public CloudProvider {
   std::default_random_engine engine_;
   std::mutex mutex_;
   std::string temporary_directory_;
-  std::unordered_set<std::shared_ptr<IRequest<EitherError<void>>>>
-      request_listeners_;
 };
 
 }  // namespace cloudstorage

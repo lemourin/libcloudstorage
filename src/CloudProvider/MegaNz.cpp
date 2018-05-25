@@ -33,12 +33,13 @@
 #include "Utility/Utility.h"
 
 #include <json/json.h>
-#include <megaapi.h>
 #include <array>
 #include <condition_variable>
 #include <cstring>
 #include <fstream>
 #include <queue>
+
+#undef DELETE
 
 using namespace mega;
 using namespace std::placeholders;
@@ -62,6 +63,8 @@ enum class Type {
   GENERAL_DATA,
   LOGIN
 };
+
+std::string error_description(error) { return ""; }
 
 template <class Result>
 class Listener : public IRequest<EitherError<Result>> {
@@ -167,7 +170,7 @@ struct App : public MegaApp {
   void request_error(error e) override { std::cerr << "error " << e << "\n"; }
 
   void transfer_failed(Transfer*, error c, dstime) override {
-    util::log("transfer failed", MegaError::getErrorString(c));
+    util::log("transfer failed", error_description(c));
   }
 
   bool pread_data(uint8_t* data, m_off_t length, m_off_t, m_off_t, m_off_t,
@@ -565,8 +568,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               [=](EitherError<error> e) {
                 if (e.left()) return complete(e.left());
                 if (*e.right() != 0)
-                  complete(
-                      Error{*e.right(), MegaError::getErrorString(*e.right())});
+                  complete(Error{*e.right(), error_description(*e.right())});
                 else {
                   authorized_ = true;
                   complete(nullptr);
@@ -924,8 +926,7 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
       [=](EitherError<error> e) {
         if (e.left()) return complete(e.left());
         if (*e.right() != 0)
-          return complete(
-              Error{*e.right(), MegaError::getErrorString(*e.right())});
+          return complete(Error{*e.right(), error_description(*e.right())});
         complete(nullptr);
       });
 }
