@@ -225,9 +225,7 @@ class Listener : public IRequest<EitherError<Result>> {
 struct App : public MegaApp {
   App(MegaNz* mega) : mega_(mega) {}
 
-  void notify_retry(dstime, retryreason_t r) override {
-    if (r == RETRY_API_LOCK) Waiter::ds = INT_MAX;
-  }
+  void notify_retry(dstime, retryreason_t r) override { Waiter::ds = INT_MAX; }
 
   void transfer_failed(Transfer*, error, dstime) override {
     Waiter::ds = INT_MAX;
@@ -239,7 +237,6 @@ struct App : public MegaApp {
       auto request = static_cast<Listener<error>*>(it->second.second.get());
       request->done(Error{e, error_description(e)});
       callback_.erase(it);
-      return ~static_cast<dstime>(0);
     }
     Waiter::ds = INT_MAX;
     return 0;
@@ -286,7 +283,10 @@ struct App : public MegaApp {
     }
   }
 
-  void putnodes_result(error e, targettype_t, NewNode*) override {
+  void putnodes_result(error e, targettype_t, NewNode* nodes) override {
+    auto it = callback_.find(this->client->restag);
+    if (it != callback_.end() && it->second.first == Type::UPLOAD)
+      delete[] nodes;
     if (e == API_OK) {
       call(e, client->nodenotify.back()->nodehandle);
     } else {
@@ -465,8 +465,14 @@ class FileUpload : public File {
     listener_->upload_callback_->progress(size_, transfer->progresscompleted);
   }
 
+  void completed(Transfer* t, LocalNode* n) override {
+    File::completed(t, n);
+    delete this;
+  }
+
   void terminated() override {
     listener_->done(Error{API_EFAILED, error_description(API_EFAILED)});
+    delete this;
   }
 
   Listener<handle>* listener_ = nullptr;
