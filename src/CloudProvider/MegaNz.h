@@ -35,11 +35,12 @@
 namespace cloudstorage {
 
 namespace {
-class CloudMegaClient;
 template <class T>
 class Listener;
 enum class Type;
 }  // namespace
+
+class CloudMegaClient;
 
 /**
  * MegaNz doesn't use oauth, Token in this case is a base64 encoded

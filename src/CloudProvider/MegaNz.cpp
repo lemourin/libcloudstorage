@@ -533,6 +533,8 @@ class CloudFileSystemAccess : public FileSystemAccess {
   FileAccess* newfileaccess() override { return new CloudFileAccess(nullptr); }
 };
 
+}  // namespace
+
 class CloudMegaClient {
  public:
   CloudMegaClient(MegaNz* mega, const char* api_key)
@@ -570,8 +572,6 @@ class CloudMegaClient {
   std::unique_ptr<FileSystemAccess> fs_;
   std::unique_ptr<MegaClient> client_;
 };
-
-}  // namespace
 
 MegaNz::MegaNz()
     : CloudProvider(util::make_unique<Auth>()),
