@@ -174,10 +174,10 @@ std::string decipher(const std::string &code,
     auto _1x4bfb36 = std::stoll(r[0], nullptr, 8) - std::stoll(r[1]);
     auto _0x30725e = _0x896767 ^ _0x3d7b02[_0x145894 % 9];
 
-    _0x30725e = (_0x30725e ^
-                 (std::stoll(r[2], nullptr, 8) - std::stoll(r[3]) + 0x4) /
-                     (std::stoll(r[4]) - 0x8)) ^
-                _1x4bfb36;
+    _0x30725e =
+        (_0x30725e ^ (std::stoll(r[2], nullptr, 8) - std::stoll(r[3]) + 0x4) /
+                         (std::stoll(r[4]) - 0x8)) ^
+        _1x4bfb36;
 
     auto _0x2de433 = 2 * _0x5eb93a + _0x37c346;
 
@@ -329,7 +329,7 @@ bool AnimeZone::reauthorize(int code,
 
 std::string AnimeZone::name() const { return "animezone"; }
 
-std::string AnimeZone::endpoint() const { return "http://www.animezone.pl"; }
+std::string AnimeZone::endpoint() const { return "https://www.animezone.pl"; }
 
 bool AnimeZone::isSuccess(int code,
                           const IHttpRequest::HeaderParameters &headers) const {
@@ -393,13 +393,13 @@ IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
     const IItem &directory, const std::string &page_token,
     std::ostream &) const {
   if (directory.id() == rootDirectory()->id()) {
-    return http()->create("http://www.animezone.pl/anime/lista");
+    return http()->create(endpoint() + "/anime/lista");
   }
   auto data = util::json::from_string(directory.id());
   auto type = data["type"].asString();
   if (type == "letter") {
     auto letter = data["letter"].asString();
-    const std::string url = "http://www.animezone.pl/anime/lista/" + letter;
+    const std::string url = endpoint() + "/anime/lista/" + letter;
     auto r = http()->create(url);
     if (page_token != "") {
       r->setParameter("page", page_token);
@@ -512,8 +512,7 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
   auto authorize_session = [=](Request<EitherError<std::string>>::Pointer r) {
     r->request(
         [=](util::Output) {
-          return http()->create(
-              "http://www.animezone.pl/images/statistics.gif");
+          return http()->create(endpoint() + "/images/statistics.gif");
         },
         [=](EitherError<Response> e) {
           if (e.left()) {
