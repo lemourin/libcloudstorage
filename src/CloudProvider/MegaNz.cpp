@@ -45,7 +45,6 @@ using namespace mega;
 using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
-const int HASH_BUFFER_SIZE = 128;
 const int CACHE_FILENAME_LENGTH = 12;
 
 namespace cloudstorage {
@@ -64,7 +63,65 @@ enum class Type {
   LOGIN
 };
 
-std::string error_description(error) { return ""; }
+std::string error_description(error e) {
+  if (e <= 0) {
+    switch (e) {
+      case API_OK:
+        return "No error";
+      case API_EINTERNAL:
+        return "Internal error";
+      case API_EARGS:
+        return "Invalid argument";
+      case API_EAGAIN:
+        return "Request failed, retrying";
+      case API_ERATELIMIT:
+        return "Rate limit exceeded";
+      case API_EFAILED:
+        return "Failed permanently";
+      case API_ETOOMANY:
+        return "Too many concurrent connections or transfers";
+      case API_ERANGE:
+        return "Out of range";
+      case API_EEXPIRED:
+        return "Expired";
+      case API_ENOENT:
+        return "Not found";
+      case API_ECIRCULAR:
+        return "Circular linkage detected";
+      case API_EACCESS:
+        return "Access denied";
+      case API_EEXIST:
+        return "Already exists";
+      case API_EINCOMPLETE:
+        return "Incomplete";
+      case API_EKEY:
+        return "Invalid key/Decryption error";
+      case API_ESID:
+        return "Bad session ID";
+      case API_EBLOCKED:
+        return "Blocked";
+      case API_EOVERQUOTA:
+        return "Over quota";
+      case API_ETEMPUNAVAIL:
+        return "Temporarily not available";
+      case API_ETOOMANYCONNECTIONS:
+        return "Connection overflow";
+      case API_EWRITE:
+        return "Write error";
+      case API_EREAD:
+        return "Read error";
+      case API_EAPPKEY:
+        return "Invalid application key";
+      case API_ESSL:
+        return "SSL verification failed";
+      case API_EGOINGOVERQUOTA:
+        return "Not enough quota";
+      default:
+        return "Unknown error";
+    }
+  }
+  return "HTTP Error";
+}
 
 template <class Result>
 class Listener : public IRequest<EitherError<Result>> {
@@ -167,10 +224,24 @@ class Listener : public IRequest<EitherError<Result>> {
 struct App : public MegaApp {
   App(MegaNz* mega) : mega_(mega) {}
 
-  void request_error(error e) override { std::cerr << "error " << e << "\n"; }
+  void notify_retry(dstime, retryreason_t r) override {
+    if (r == RETRY_API_LOCK) Waiter::ds = INT_MAX;
+  }
 
-  void transfer_failed(Transfer*, error c, dstime) override {
-    util::log("transfer failed", error_description(c));
+  void transfer_failed(Transfer*, error, dstime) override {
+    Waiter::ds = INT_MAX;
+  }
+
+  dstime pread_failure(error e, int retry, void* d, dstime) override {
+    auto it = callback_.find(reinterpret_cast<uintptr_t>(d));
+    if (retry >= 4) {
+      auto request = static_cast<Listener<error>*>(it->second.second.get());
+      request->done(Error{e, error_description(e)});
+      callback_.erase(it);
+      return ~static_cast<dstime>(0);
+    }
+    Waiter::ds = INT_MAX;
+    return 0;
   }
 
   bool pread_data(uint8_t* data, m_off_t length, m_off_t, m_off_t, m_off_t,
@@ -199,47 +270,53 @@ struct App : public MegaApp {
     GeneralData data;
     data.space_total_ = details->storage_max;
     data.space_used_ = details->storage_used;
-    call(data);
+    call(API_OK, data);
   }
 
-  void login_result(error e) override { call(e); }
+  void login_result(error e) override { call(e, e); }
 
-  void fetchnodes_result(error e) override { call(e); }
+  void fetchnodes_result(error e) override { call(e, e); }
 
   void nodes_updated(Node** node, int) override {
     auto it = callback_.find(this->client->restag);
     if (it != callback_.end()) {
       if (it->second.first == Type::MKDIR || it->second.first == Type::MOVE)
-        call(node[0]->nodehandle);
+        call(API_OK, node[0]->nodehandle);
     }
   }
 
   void putnodes_result(error e, targettype_t, NewNode*) override {
     if (e == API_OK) {
-      call(client->nodenotify.back()->nodehandle);
+      call(e, client->nodenotify.back()->nodehandle);
     } else {
-      call(0ULL);
+      call(e, 0ULL);
     }
   }
 
-  void unlink_result(handle, error e) override { call(e); }
+  void unlink_result(handle, error e) override { call(e, e); }
 
-  void setattr_result(handle, error e) override { call(e); }
+  void rename_result(handle h, error e) override { call(e, h); }
+
+  void setattr_result(handle, error e) override { call(e, e); }
 
   void exec() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (exec_pending_) return;
     exec_pending_ = true;
     client->exec();
+    client->exec();
     exec_pending_ = false;
   }
 
   template <class T>
-  void call(const T& arg) {
+  void call(error e, const T& arg) {
     auto it = callback_.find(this->client->restag);
     if (it != callback_.end()) {
-      static_cast<Listener<T>*>(it->second.second.get())
-          ->done(EitherError<T>(std::make_shared<T>(arg)));
+      auto r = static_cast<Listener<T>*>(it->second.second.get());
+      if (e == API_OK)
+        r->done(EitherError<T>(std::make_shared<T>(arg)));
+      else
+        r->done(Error{e, error_description(e)});
       callback_.erase(it);
     }
   }
@@ -258,9 +335,9 @@ struct App : public MegaApp {
 struct CloudHttp : public HttpIO {
   class HttpCallback : public IHttpRequest::ICallback {
    public:
-    HttpCallback(std::function<void(const char*, uint32_t)> read,
+    HttpCallback(App* app, std::function<void(const char*, uint32_t)> read,
                  std::shared_ptr<std::atomic_bool> abort)
-        : stream_(read), abort_(abort) {}
+        : app_(app), stream_(read), abort_(abort) {}
 
     ~HttpCallback() override {}
 
@@ -277,24 +354,23 @@ struct CloudHttp : public HttpIO {
 
     void progressUpload(uint64_t, uint64_t) override {}
 
+    App* app_;
     DownloadStreamWrapper stream_;
     std::shared_ptr<std::atomic_bool> abort_;
   };
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
-    util::log(r->posturl);
-    // util::log(std::string(r->out->data(), r->out->size()));
     auto lock = app_->lock();
     if (http == nullptr) return;
     auto abort_mark = std::make_shared<std::atomic_bool>(false);
     auto request = http->create(r->posturl, "POST");
     auto callback = std::make_shared<HttpCallback>(
+        app_,
         [=](const char* d, uint32_t cnt) {
           auto lock = app_->lock();
-          if (!*abort_mark) {
+          if (!*abort_mark)
             read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
-            app_->exec();
-          }
+          app_->exec();
         },
         abort_mark);
     auto input = std::make_shared<std::stringstream>();
@@ -349,6 +425,7 @@ struct CloudHttp : public HttpIO {
       delete static_cast<std::shared_ptr<std::atomic_bool>*>(
           r.first->httpiohandle);
       r.first->httpiohandle = nullptr;
+      result = true;
       if (r.second.left()) {
         r.first->httpstatus = r.second.left()->code_;
         r.first->status = REQ_FAILURE;
@@ -384,12 +461,16 @@ struct CloudHttp : public HttpIO {
 class FileUpload : public File {
  public:
   void progress() override {
-    upload_callback_->progress(size_, transfer->progresscompleted);
+    listener_->upload_callback_->progress(size_, transfer->progresscompleted);
   }
 
-  IUploadFileCallback* upload_callback_ = nullptr;
+  void terminated() override {
+    listener_->done(Error{API_EFAILED, error_description(API_EFAILED)});
+  }
+
+  Listener<handle>* listener_ = nullptr;
   uint64_t size_ = 0;
-};
+};  // namespace
 
 class CloudFileSystemAccess : public FileSystemAccess {
  public:
@@ -448,10 +529,7 @@ class CloudFileSystemAccess : public FileSystemAccess {
   void path2local(string*, string*) const override {}
   DirAccess* newdiraccess() override { return nullptr; }
 
-  FileAccess* newfileaccess() override {
-    util::log("creating file");
-    return new CloudFileAccess(nullptr);
-  }
+  FileAccess* newfileaccess() override { return new CloudFileAccess(nullptr); }
 };
 
 class CloudMegaClient {
@@ -501,10 +579,7 @@ MegaNz::MegaNz()
       engine_(device_()),
       temporary_directory_(".") {}
 
-MegaNz::~MegaNz() {
-  mega_ = nullptr;
-  util::log("~meganz()");
-}
+MegaNz::~MegaNz() { mega_ = nullptr; }
 
 Node* MegaNz::node(const std::string& id) const {
   if (id == rootDirectory()->id())
@@ -664,7 +739,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
             [=](Listener<handle>* r, int) {
               r->upload_callback_ = callback;
               auto upload = new FileUpload;
-              upload->upload_callback_ = callback;
+              upload->listener_ = r;
               upload->size_ = size;
               upload->h = node->nodehandle;
               upload->name = filename;
@@ -918,9 +993,8 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
         auto data = credentialsFromString(token());
         std::string mail = data["username"].asString();
         std::string private_key = data["password"].asString();
-        uint8_t buffer[HASH_BUFFER_SIZE];
-        mega_->client()->pw_key(private_key.c_str(), buffer);
-        mega_->client()->login(mail.c_str(), buffer);
+        auto key = util::from_base64(private_key);
+        mega_->client()->login(mail.c_str(), (uint8_t*)(key.c_str()));
         mega_->exec();
       },
       [=](EitherError<error> e) {
@@ -935,7 +1009,7 @@ std::string MegaNz::passwordHash(const std::string& password) const {
   auto lock = mega_->lock();
   uint8_t buffer[BUFFER_SIZE];
   mega_->client()->pw_key(password.c_str(), buffer);
-  return std::string(reinterpret_cast<const char*>(buffer));
+  return util::to_base64(std::string(reinterpret_cast<const char*>(buffer)));
 }
 
 IItem::Pointer MegaNz::toItem(Node* node) {
@@ -994,8 +1068,7 @@ IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
   IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
   Json::Value json;
   json["username"] = data["username"].asString();
-  json["password"] = data["password"].asString();
-  // passwordHash(data["password"].asString());
+  json["password"] = passwordHash(data["password"].asString());
   token->token_ = credentialsToString(json);
   token->refresh_token_ = token->token_;
   return token;
