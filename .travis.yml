@@ -56,7 +56,7 @@ before_install:
   - PKG_CONFIG_LIBDIR=`pwd`/contribs/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig ./configure --with-examples
       CC=gcc-7
       CXX=g++-7
-      CXXFLAGS="-pedantic -Wall -Werror -Wextra -g -O0 -fsanitize=address"
+      CXXFLAGS="-pedantic -Wall -Wextra -g -O0 -fsanitize=address"
       LDFLAGS="-static-libasan -fsanitize=address"
 
 script:
