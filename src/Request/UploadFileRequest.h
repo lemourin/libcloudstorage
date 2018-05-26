@@ -35,8 +35,9 @@ class UploadStreamWrapper : public std::streambuf {
 
   static constexpr uint32_t BUFFER_SIZE = 1024;
 
-  UploadStreamWrapper(std::function<uint32_t(char*, uint32_t)> callback,
-                      uint64_t size);
+  UploadStreamWrapper(
+      std::function<uint32_t(char*, uint32_t, uint64_t)> callback,
+      uint64_t size);
   void reset();
 
   pos_type seekoff(off_type, std::ios_base::seekdir,
@@ -44,7 +45,7 @@ class UploadStreamWrapper : public std::streambuf {
   int_type underflow() override;
 
   char buffer_[BUFFER_SIZE];
-  std::function<uint32_t(char*, uint32_t)> callback_;
+  std::function<uint32_t(char*, uint32_t, uint64_t)> callback_;
   std::stringstream prefix_;
   std::stringstream suffix_;
   uint64_t size_;

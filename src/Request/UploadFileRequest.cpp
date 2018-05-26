@@ -33,12 +33,13 @@ UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
                                      IItem::Pointer directory,
                                      const std::string& filename,
                                      UploadFileRequest::ICallback::Pointer cb)
-    : Request(p, [=](EitherError<IItem> e) { cb->done(e); },
-              std::bind(&UploadFileRequest::resolve, _1,
-                        std::make_shared<UploadStreamWrapper>(
-                            std::bind(&ICallback::putData, cb.get(), _1, _2),
-                            cb->size()),
-                        directory, filename, cb)) {}
+    : Request(
+          p, [=](EitherError<IItem> e) { cb->done(e); },
+          std::bind(&UploadFileRequest::resolve, _1,
+                    std::make_shared<UploadStreamWrapper>(
+                        std::bind(&ICallback::putData, cb.get(), _1, _2, _3),
+                        cb->size()),
+                    directory, filename, cb)) {}
 
 void UploadFileRequest::resolve(Request::Pointer r,
                                 UploadStreamWrapper::Pointer stream_wrapper,
@@ -46,7 +47,6 @@ void UploadFileRequest::resolve(Request::Pointer r,
                                 ICallback::Pointer callback) {
   r->send(
       [=](util::Output) {
-        callback->reset();
         stream_wrapper->reset();
         return r->provider()->uploadFileRequest(*directory, filename,
                                                 stream_wrapper->prefix_,
@@ -69,7 +69,7 @@ void UploadFileRequest::resolve(Request::Pointer r,
 }
 
 UploadStreamWrapper::UploadStreamWrapper(
-    std::function<uint32_t(char*, uint32_t)> callback, uint64_t size)
+    std::function<uint32_t(char*, uint32_t, uint64_t)> callback, uint64_t size)
     : callback_(std::move(callback)), size_(size), read_(), position_() {}
 
 void UploadStreamWrapper::reset() {
@@ -96,7 +96,8 @@ std::streambuf::int_type UploadStreamWrapper::underflow() {
     read_data += prefix_.gcount();
   }
   if (read_ < size_ && !prefix_) {
-    uint32_t size = callback_(buffer_ + read_data, BUFFER_SIZE - read_data);
+    uint32_t size =
+        callback_(buffer_ + read_data, BUFFER_SIZE - read_data, read_);
     read_data += size;
     read_ += size;
   }

@@ -152,9 +152,9 @@ ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
               http()->create(endpoint() + "/v1/disk/resources/move", "POST");
           request->setParameter("from", source->id());
           request->setParameter(
-              "path",
-              destination->id() + (destination->id().back() == '/' ? "" : "/") +
-                  source->filename());
+              "path", destination->id() +
+                          (destination->id().back() == '/' ? "" : "/") +
+                          source->filename());
           return request;
         },
         [=](EitherError<Response> e) {
@@ -241,12 +241,11 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   auto upload = [=](Request<EitherError<IItem>>::Pointer r, std::string url,
                     std::function<void(EitherError<IItem>)> f) {
     auto wrapper = std::make_shared<UploadStreamWrapper>(
-        std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2),
+        std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2, _3),
         callback->size());
     r->send(
         [=](util::Output) {
           auto request = http()->create(url, "PUT");
-          callback->reset();
           wrapper->reset();
           return request;
         },
@@ -339,10 +338,9 @@ IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
                                                   std::ostream&) const {
   auto request = http()->create(endpoint() + "/v1/disk/resources/move", "POST");
   request->setParameter("from", source.id());
-  request->setParameter("path",
-                        destination.id() +
-                            (destination.id().back() == '/' ? "" : "/") +
-                            source.filename());
+  request->setParameter(
+      "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
+                  source.filename());
   return request;
 }
 

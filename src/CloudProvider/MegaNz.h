@@ -60,7 +60,6 @@ class MegaNz : public CloudProvider {
 
   std::string name() const override;
   std::string endpoint() const override;
-  Hints hints() const override;
 
   const std::atomic_bool& authorized() const { return authorized_; }
 
@@ -99,8 +98,6 @@ class MegaNz : public CloudProvider {
 
   IItem::Pointer toItem(mega::Node*);
   mega::Node* node(const std::string& id) const;
-  std::string randomString(int length);
-  std::string temporaryFileName();
 
   template <class T>
   void ensureAuthorized(typename Request<T>::Pointer,
@@ -133,10 +130,7 @@ class MegaNz : public CloudProvider {
 
   std::unique_ptr<CloudMegaClient> mega_;
   std::atomic_bool authorized_;
-  std::random_device device_;
-  std::default_random_engine engine_;
   std::mutex mutex_;
-  std::string temporary_directory_;
 };
 
 }  // namespace cloudstorage

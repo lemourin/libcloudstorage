@@ -46,7 +46,6 @@ using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
 const int HASH_BUFFER_SIZE = 128;
-const int CACHE_FILENAME_LENGTH = 12;
 
 namespace cloudstorage {
 
@@ -483,39 +482,37 @@ class CloudFileSystemAccess : public FileSystemAccess {
  public:
   class CloudFileAccess : public FileAccess {
    public:
-    using FileAccess::FileAccess;
+    CloudFileAccess(CloudFileSystemAccess* fs)
+        : FileAccess(nullptr), fs_(fs), callback_() {}
 
     bool asyncavailable() override { return false; }
-    void updatelocalname(string* d) override { localname = *d; }
+    void updatelocalname(string* d) override { fopen(d, true, false); }
     bool fopen(string* str, bool, bool) override {
       localname = *str;
-      stream_.close();
-      stream_.open(*str, std::fstream::binary);
       type = FILENODE;
       retry = false;
+      auto it = fs_->callback_.find(std::stoull(localname));
+      if (it == fs_->callback_.end()) return false;
+      callback_ = it->second;
       sysstat(&mtime, &size);
-      return bool(stream_);
+      return true;
     }
     bool fwrite(const uint8_t*, unsigned, m_off_t) override { return false; }
     bool sysread(uint8_t* data, unsigned length, m_off_t offset) override {
       retry = false;
-      stream_.seekg(offset);
-      stream_.read((char*)data, length);
-      return stream_.gcount() == length;
+      return callback_->putData((char*)data, length, offset) == length;
     }
     bool sysstat(m_time_t* time, m_off_t* size) override {
-      std::ifstream stream(localname, std::ios::binary);
-      stream.seekg(0, std::ios::end);
       *time = 0;
-      *size = stream.tellg();
-      stream.seekg(std::ios::beg);
+      *size = callback_->size();
       return true;
     }
     bool sysopen(bool) override { return fopen(&localname, true, false); }
-    void sysclose() override { stream_.close(); }
+    void sysclose() override {}
 
    private:
-    std::ifstream stream_;
+    CloudFileSystemAccess* fs_;
+    IUploadFileCallback* callback_;
   };
 
   void tmpnamelocal(string*) const override {}
@@ -535,8 +532,10 @@ class CloudFileSystemAccess : public FileSystemAccess {
   void local2path(string*, string*) const override {}
   void path2local(string*, string*) const override {}
   DirAccess* newdiraccess() override { return nullptr; }
+  FileAccess* newfileaccess() override { return new CloudFileAccess(this); }
 
-  FileAccess* newfileaccess() override { return new CloudFileAccess(nullptr); }
+  std::unordered_map<uint32_t, IUploadFileCallback*> callback_;
+  uint32_t tag_ = 0;
 };
 
 }  // namespace
@@ -568,6 +567,14 @@ class CloudMegaClient {
     return tag;
   }
 
+  int register_file(IUploadFileCallback* callback) {
+    auto tag = fs_->tag_++;
+    fs_->callback_[tag] = callback;
+    return tag;
+  }
+
+  void remove_file(int tag) { fs_->callback_.erase(fs_->callback_.find(tag)); }
+
   void exec() { app_.exec(); }
 
   std::unique_lock<std::recursive_mutex> lock() { return app_.lock(); }
@@ -575,16 +582,12 @@ class CloudMegaClient {
  private:
   App app_;
   std::unique_ptr<CloudHttp> http_;
-  std::unique_ptr<FileSystemAccess> fs_;
+  std::unique_ptr<CloudFileSystemAccess> fs_;
   std::unique_ptr<MegaClient> client_;
 };
 
 MegaNz::MegaNz()
-    : CloudProvider(util::make_unique<Auth>()),
-      mega_(),
-      authorized_(),
-      engine_(device_()),
-      temporary_directory_(".") {}
+    : CloudProvider(util::make_unique<Auth>()), mega_(), authorized_() {}
 
 MegaNz::~MegaNz() { mega_ = nullptr; }
 
@@ -598,8 +601,6 @@ Node* MegaNz::node(const std::string& id) const {
 void MegaNz::initialize(InitData&& data) {
   {
     auto lock = auth_lock();
-    setWithHint(data.hints_, "temporary_directory",
-                [this](std::string v) { temporary_directory_ = v; });
     setWithHint(data.hints_, "client_id", [this](std::string v) {
       mega_ = util::make_unique<CloudMegaClient>(this, v.c_str());
     });
@@ -611,13 +612,6 @@ void MegaNz::initialize(InitData&& data) {
 std::string MegaNz::name() const { return "mega"; }
 
 std::string MegaNz::endpoint() const { return file_url(); }
-
-ICloudProvider::Hints MegaNz::hints() const {
-  Hints result = {{"temporary_directory", temporary_directory_}};
-  auto t = CloudProvider::hints();
-  result.insert(t.begin(), t.end());
-  return result;
-}
 
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
@@ -715,56 +709,37 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IUploadFileCallback::Pointer cb) {
   auto callback = cb.get();
   auto resolver = [=](Request<EitherError<IItem>>::Pointer r) {
-    thread_pool()->schedule([=] {
-      ensureAuthorized<EitherError<IItem>>(r, [=] {
-        std::string cache = temporaryFileName();
-        uint64_t size = 0;
-        {
-          std::fstream mega_cache(cache.c_str(),
-                                  std::fstream::out | std::fstream::binary);
-          if (!mega_cache)
-            return r->done(Error{IHttpRequest::Forbidden,
-                                 util::Error::COULD_NOT_READ_FILE});
-          std::array<char, BUFFER_SIZE> buffer;
-          while (auto length = callback->putData(buffer.data(), BUFFER_SIZE)) {
-            if (r->is_cancelled()) {
-              (void)std::remove(cache.c_str());
-              return r->done(
-                  Error{IHttpRequest::Aborted, util::Error::ABORTED});
-            }
-            size += length;
-            mega_cache.write(buffer.data(), length);
-          }
-        }
-        auto lock = mega_->lock();
-        auto node = this->node(item->id());
-        if (!node)
-          return r->done(
-              Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-        r->make_subrequest<MegaNz>(
-            &MegaNz::make_request<handle>, Type::UPLOAD,
-            [=](Listener<handle>* r, int) {
-              r->upload_callback_ = callback;
-              auto upload = new FileUpload;
-              upload->listener_ = r;
-              upload->size_ = size;
-              upload->h = node->nodehandle;
-              upload->name = filename;
-              upload->localname = cache;
-              mega_->client()->startxfer(PUT, upload);
-              mega_->exec();
-            },
-            [=](EitherError<handle> e) {
-              (void)std::remove(cache.c_str());
-              auto lock = mega_->lock();
-              if (e.left()) return r->done(e.left());
-              if (*e.right() == 0)
-                r->done(
-                    Error{IHttpRequest::Failure, util::Error::NODE_NOT_FOUND});
-              else
-                r->done(toItem(mega_->client()->nodebyhandle(*e.right())));
-            });
-      });
+    ensureAuthorized<EitherError<IItem>>(r, [=] {
+      auto lock = mega_->lock();
+      auto node = this->node(item->id());
+      if (!node)
+        return r->done(
+            Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      auto tag = std::make_shared<uint32_t>(0);
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<handle>, Type::UPLOAD,
+          [=](Listener<handle>* r, int) {
+            r->upload_callback_ = callback;
+            *tag = mega_->register_file(callback);
+            auto upload = new FileUpload;
+            upload->listener_ = r;
+            upload->size_ = callback->size();
+            upload->h = node->nodehandle;
+            upload->name = filename;
+            upload->localname = std::to_string(*tag);
+            mega_->client()->startxfer(PUT, upload);
+            mega_->exec();
+          },
+          [=](EitherError<handle> e) {
+            auto lock = mega_->lock();
+            mega_->remove_file(*tag);
+            if (e.left()) return r->done(e.left());
+            if (*e.right() == 0)
+              r->done(
+                  Error{IHttpRequest::Failure, util::Error::NODE_NOT_FOUND});
+            else
+              r->done(toItem(mega_->client()->nodebyhandle(*e.right())));
+          });
     });
   };
   return std::make_shared<Request<EitherError<IItem>>>(
@@ -1052,18 +1027,6 @@ IItem::Pointer MegaNz::toItem(Node* node) {
                              : IItem::FileType::Directory);
   item->set_url(defaultFileDaemonUrl(*item, node->size));
   return item;
-}
-
-std::string MegaNz::randomString(int length) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  std::uniform_int_distribution<short> dist('a', 'z');
-  std::string result;
-  for (int i = 0; i < length; i++) result += dist(engine_);
-  return result;
-}
-
-std::string MegaNz::temporaryFileName() {
-  return temporary_directory_ + randomString(CACHE_FILENAME_LENGTH);
 }
 
 template <class T>

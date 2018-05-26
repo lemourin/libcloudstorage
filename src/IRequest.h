@@ -152,19 +152,14 @@ class IUploadFileCallback : public IGenericCallback<EitherError<IItem>> {
   using Pointer = std::shared_ptr<IUploadFileCallback>;
 
   /**
-   * Called when upload starts, can be also called when retransmission is
-   * required due to network issues.
-   */
-  virtual void reset() = 0;
-
-  /**
    * Called when the file data should be uploaded.
    *
    * @param data buffer to put data to
    * @param maxlength max count of bytes which can be put to the buffer
+   * @param offset byte offset of requested chunk
    * @return count of bytes put to the buffer
    */
-  virtual uint32_t putData(char* data, uint32_t maxlength) = 0;
+  virtual uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) = 0;
 
   /**
    * @return size of currently uploaded file

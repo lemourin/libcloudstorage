@@ -46,7 +46,8 @@ void upload(Request<EitherError<IItem>>::Pointer r,
   r->send(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
-        if (sent < size) *length = callback->putData(buffer.data(), CHUNK_SIZE);
+        if (sent < size)
+          *length = callback->putData(buffer.data(), CHUNK_SIZE, sent);
         std::string upload_url =
             "https://content.dropboxapi.com/2/files/upload_session";
         Json::Value json;

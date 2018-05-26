@@ -473,8 +473,6 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   };
   auto data = init_data(name);
   data.token_ = token.token_;
-  data.hints_["temporary_directory"] =
-      QDir::toNativeSeparators(QDir::tempPath() + "/").toStdString();
   data.hints_["access_token"] = token.access_token_;
   data.hints_["file_url"] =
       "http://127.0.0.1:12345/" + std::to_string(provider_index_);

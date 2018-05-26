@@ -17,9 +17,8 @@ class UploadCallback : public IUploadFileCallback {
     file_.open(QFile::ReadOnly);
   }
 
-  void reset() override { file_.reset(); }
-
-  uint32_t putData(char* data, uint32_t length) override {
+  uint32_t putData(char* data, uint32_t length, uint64_t offset) override {
+    file_.seek(offset);
     return static_cast<uint32_t>(file_.read(data, static_cast<qint64>(length)));
   }
 

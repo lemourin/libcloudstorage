@@ -62,9 +62,8 @@ class UploadFile : public IUploadFileCallback {
  public:
   UploadFile(const std::string& str) { stream_ << str; }
 
-  void reset() override { stream_.seekg(std::istream::beg); }
-
-  uint32_t putData(char* data, uint32_t maxlength) override {
+  uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
+    stream_.seekg(offset);
     stream_.read(data, maxlength);
     return stream_.gcount();
   }

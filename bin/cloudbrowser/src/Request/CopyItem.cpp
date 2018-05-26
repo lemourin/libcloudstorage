@@ -22,9 +22,8 @@ class Upload : public cloudstorage::IUploadFileCallback {
     notifier_->deleteLater();
   }
 
-  void reset() override { temp_file_->reset(); }
-
-  uint32_t putData(char* data, uint32_t maxlength) override {
+  uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
+    temp_file_->seek(offset);
     return temp_file_->read(data, maxlength);
   }
 

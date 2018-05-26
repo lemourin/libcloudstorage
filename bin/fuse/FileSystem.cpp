@@ -91,9 +91,10 @@ FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
           std::launch::async, std::bind(&FileSystem::cancelled, this))),
       cleanup_(std::async(std::launch::async,
                           std::bind(&FileSystem::cleanup, this))) {
-  add(nullptr, 0, util::make_unique<cloudstorage::Item>(
-                      "/", "root", IItem::UnknownSize, IItem::UnknownTimeStamp,
-                      IItem::FileType::Directory));
+  add(nullptr, 0,
+      util::make_unique<cloudstorage::Item>("/", "root", IItem::UnknownSize,
+                                            IItem::UnknownTimeStamp,
+                                            IItem::FileType::Directory));
   std::unordered_set<FileId> root_directory;
   for (auto&& entry : provider) {
     IItem::Pointer item = util::make_unique<cloudstorage::Item>(
@@ -523,15 +524,14 @@ void FileSystem::remove(FileId parent, const char* name,
     }
     if (!node->provider())
       return callback(Error{IHttpRequest::ServiceUnavailable, ""});
-    this->add({node->provider(),
-               node->provider()->deleteItemAsync(
-                   node->item(), [=](EitherError<void> e) {
-                     if (e.left())
-                       log("remove failed", e.left()->code_,
-                           e.left()->description_);
-                     update_lists(node);
-                     callback(nullptr);
-                   })});
+    this->add({node->provider(), node->provider()->deleteItemAsync(
+                                     node->item(), [=](EitherError<void> e) {
+                                       if (e.left())
+                                         log("remove failed", e.left()->code_,
+                                             e.left()->description_);
+                                       update_lists(node);
+                                       callback(nullptr);
+                                     })});
   };
   lookup(parent, name, [=](EitherError<INode> e) {
     if (e.left()) return callback(e.left());
@@ -566,9 +566,8 @@ void FileSystem::fsync(FileId inode, DataSynchronizedCallback cb) {
       node_->store_->seekg(std::ios::beg);
     }
 
-    void reset() override { node_->store_->seekg(std::ios::beg); }
-
-    uint32_t putData(char* data, uint32_t maxlength) override {
+    uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
+      node_->store_->seekg(offset);
       node_->store_->read(data, maxlength);
       return node_->store_->gcount();
     }
@@ -667,10 +666,9 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
     }
 
     void done(EitherError<void> e) override {
-      log("access time",
-          std::chrono::duration<double>(std::chrono::system_clock::now() -
-                                        start_)
-              .count());
+      log("access time", std::chrono::duration<double>(
+                             std::chrono::system_clock::now() - start_)
+                             .count());
       if (e.left()) return callback_(e.left());
       callback_(buffer_);
     }

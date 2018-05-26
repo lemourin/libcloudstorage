@@ -196,7 +196,7 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
           while (r->is_paused()) {
             std::this_thread::sleep_for(POLL_INTERVAL);
           }
-          auto cnt = callback->putData(buffer.data(), BUFFER_SIZE);
+          auto cnt = callback->putData(buffer.data(), BUFFER_SIZE, bytes_read);
           bytes_read += cnt;
           if (!stream.write(buffer.data(), cnt))
             return r->done(Error{IHttpRequest::Failure, "couldn't write file"});

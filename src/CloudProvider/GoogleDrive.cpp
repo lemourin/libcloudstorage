@@ -194,14 +194,13 @@ ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
           cnt++;
         }
       auto stream_wrapper = std::make_shared<UploadStreamWrapper>(
-          std::bind(&IUploadFileCallback::putData, cb.get(), _1, _2),
+          std::bind(&IUploadFileCallback::putData, cb.get(), _1, _2, _3),
           cb->size());
       if (cnt != 1)
         return cloudstorage::UploadFileRequest::resolve(
             r, stream_wrapper, directory, filename, cb);
       r->send(
           [=](util::Output) {
-            cb->reset();
             stream_wrapper->reset();
             return upload(*directory,
                           endpoint() + "/upload/drive/v3/files/" + item->id(),
