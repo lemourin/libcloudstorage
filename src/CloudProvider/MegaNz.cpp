@@ -45,6 +45,7 @@ using namespace mega;
 using namespace std::placeholders;
 
 const int BUFFER_SIZE = 1024;
+const int HASH_BUFFER_SIZE = 128;
 const int CACHE_FILENAME_LENGTH = 12;
 
 namespace cloudstorage {
@@ -986,28 +987,50 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
 
 void MegaNz::login(Request<EitherError<void>>::Pointer r,
                    AuthorizeRequest::AuthorizeCompleted complete) {
-  r->make_subrequest<MegaNz>(
-      &MegaNz::make_request<error>, Type::LOGIN,
-      [=](Listener<error>*, int) {
-        auto lock = mega_->lock();
-        auto data = credentialsFromString(token());
-        std::string mail = data["username"].asString();
-        std::string private_key = data["password"].asString();
-        auto key = util::from_base64(private_key);
-        mega_->client()->login(mail.c_str(), (uint8_t*)(key.c_str()));
-        mega_->exec();
-      },
-      [=](EitherError<error> e) {
-        if (e.left()) return complete(e.left());
-        if (*e.right() != 0)
-          return complete(Error{*e.right(), error_description(*e.right())});
-        complete(nullptr);
-      });
+  auto data = credentialsFromString(token());
+  std::string mail = data["username"].asString();
+  std::string private_key = data["password"].asString();
+  auto key = util::from_base64(private_key);
+  auto session_auth_callback = [=](EitherError<error> e) {
+    if (!e.left() && *e.right() == API_OK) return complete(nullptr);
+    auto lock = mega_->lock();
+    r->make_subrequest<MegaNz>(
+        &MegaNz::make_request<error>, Type::LOGIN,
+        [=](Listener<error>*, int) {
+          auto lock = mega_->lock();
+          mega_->client()->login(mail.c_str(), (uint8_t*)(key.c_str()));
+          mega_->exec();
+        },
+        [=](EitherError<error> e) {
+          if (e.left()) return complete(e.left());
+          if (*e.right() != 0)
+            return complete(Error{*e.right(), error_description(*e.right())});
+          {
+            auto lock1 = auth_lock();
+            auto lock2 = mega_->lock();
+            char buffer[HASH_BUFFER_SIZE];
+            auto length = mega_->client()->dumpsession((uint8_t*)buffer,
+                                                       HASH_BUFFER_SIZE);
+            auth()->access_token()->token_ =
+                util::to_base64(std::string(buffer, length));
+          }
+          complete(nullptr);
+        });
+  };
+  r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::LOGIN,
+                             [=](Listener<error>*, int) {
+                               auto lock = mega_->lock();
+                               auto session = util::from_base64(access_token());
+                               mega_->client()->login((uint8_t*)session.c_str(),
+                                                      session.size());
+                               mega_->exec();
+                             },
+                             session_auth_callback);
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {
   auto lock = mega_->lock();
-  uint8_t buffer[BUFFER_SIZE];
+  uint8_t buffer[HASH_BUFFER_SIZE];
   mega_->client()->pw_key(password.c_str(), buffer);
   return util::to_base64(std::string(reinterpret_cast<const char*>(buffer)));
 }
