@@ -12,14 +12,15 @@ addons:
     - sourceline: deb http://ppa.launchpad.net/beineri/opt-qt591-trusty/ubuntu trusty main
     packages:
     - g++-7
-    - libmega-dev
     - libfuse3-dev
     - libjsoncpp-dev
     - libcurl-dev
+    - libc-ares-dev
     - libtinyxml2-dev
+    - libsqlite3-dev
+    - libssl-dev
     - libmicrohttpd-dev
     - libcrypto++-dev
-    - libffmpegthumbnailer-dev
     - qt59base
     - qt59declarative
   coverity_scan:
@@ -34,8 +35,25 @@ addons:
 before_install:
   - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - . /opt/qt59/bin/qt59-env.sh
+  -
+  - mkdir tarballs contribs
+  - cd tarballs
+  -
+  - wget -nc https://github.com/meganz/sdk/archive/v3.3.7.tar.gz
+  - tar xvf v3.3.7.tar.gz
+  - cd sdk-3.3.7
+  - ./autogen.sh
+  - ./configure
+      --disable-examples
+      --without-readline
+      --disable-megacmd
+      --without-freeimage
+      --prefix=`pwd`/../../contribs
+  - make -j 4 install
+  - cd ../..
+  -
   - ./bootstrap
-  - ./configure --with-examples
+  - PKG_CONFIG_LIBDIR=`pwd`/contribs/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig ./configure --with-examples
       CC=gcc-7
       CXX=g++-7
       CXXFLAGS="-pedantic -Wall -Werror -Wextra -g -O0 -fsanitize=address"
