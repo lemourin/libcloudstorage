@@ -190,7 +190,8 @@ void write_file(Request<EitherError<IItem>>::Pointer r, const std::string &path,
     return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   auto chunk_size = std::min<uint64_t>(size, BUFFER_SIZE);
   std::vector<char> buffer(chunk_size);
-  auto current_chunk = callback->putData(buffer.data(), chunk_size);
+  auto current_chunk = callback->putData(buffer.data(), chunk_size,
+                                         total_size - size);
   auto bytes = ref new Array<byte>(current_chunk);
   for (auto i = 0u; i < current_chunk; i++) bytes[i] = buffer[i];
   data_writer->WriteBytes(bytes);
