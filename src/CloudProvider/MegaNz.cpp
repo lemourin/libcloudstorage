@@ -44,7 +44,6 @@
 using namespace mega;
 using namespace std::placeholders;
 
-const int BUFFER_SIZE = 1024;
 const int HASH_BUFFER_SIZE = 128;
 
 namespace cloudstorage {
