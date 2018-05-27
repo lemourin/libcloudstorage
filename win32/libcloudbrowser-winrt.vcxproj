@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{0EA64D57-2ABC-44CD-9ADC-F21D566DF640}</ProjectGuid>
+    <RootNamespace>libcloudbrowserwinrt</RootNamespace>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.16299.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(Platform)\$(Configuration)\libcloudbrowser-winrt</IntDir>
+    <TargetName>libcloudbrowser</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>false</ConformanceMode>
+      <AdditionalIncludeDirectories>../bin/cloudbrowser/src;../src;../dependencies/win32/include/QtCore/5.10.1/;../dependencies/win32/include/QtCore/5.10.1/QtCore;../dependencies/win32/include/QtWebView;../dependencies/win32/include/QtQml;../dependencies/win32/include/QtCore;../dependencies/win32/include;../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;libcloudstorage.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../dependencies/winrt/lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\bin\cloudbrowser\src\AndroidUtility.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\CloudContext.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\CloudItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\DesktopUtility.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Exec.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\File.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\FileDialog.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\GenerateThumbnail.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\HttpServer.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\CloudRequest.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\CopyItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\CreateDirectory.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\DeleteItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\DownloadItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\GetThumbnail.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\GetUrl.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\ListDirectory.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\MoveItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\RenameItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\Request\UploadItem.cpp" />
+    <ClCompile Include="..\bin\cloudbrowser\src\WinRTUtility.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_CloudContext.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_CloudItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_CloudRequest.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_CopyItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_CreateDirectory.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_DeleteItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_DownloadItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_FileDialog.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_GetThumbnail.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_GetUrl.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_IPlatformUtility.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_ListDirectory.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_MoveItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_RenameItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\moc_UploadItem.cpp" />
+    <ClCompile Include="..\dependencies\win32\src\qrc_resources.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\bin\cloudbrowser\src\AndroidUtility.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\CloudContext.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\CloudItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\DesktopUtility.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Exec.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\File.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\FileDialog.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\GenerateThumbnail.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\HttpServer.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\IPlatformUtility.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\CloudRequest.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\CopyItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\CreateDirectory.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\DeleteItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\DownloadItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\GetThumbnail.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\GetUrl.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\ListDirectory.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\MoveItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\RenameItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\Request\UploadItem.h" />
+    <ClInclude Include="..\bin\cloudbrowser\src\WinRTUtility.h" />
+    <ClInclude Include="..\dependencies\win32\src\moc_predefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libcloudstorage-winrt.vcxproj">
+      <Project>{cdc406b9-7980-488b-8d91-812a582b6587}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <SDKReference Include="Microsoft.Advertising.Xaml, Version=10.0" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
