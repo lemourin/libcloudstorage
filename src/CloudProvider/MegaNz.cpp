@@ -301,7 +301,7 @@ struct App : public MegaApp {
 
   void exec() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (exec_pending_) return;
+    if (exec_pending_ || removed_) return;
     exec_pending_ = true;
     client->exec();
     client->exec();
@@ -330,6 +330,7 @@ struct App : public MegaApp {
   std::unordered_map<int, std::pair<Type, std::shared_ptr<IGenericRequest>>>
       callback_;
   bool exec_pending_ = false;
+  bool removed_ = false;
 };
 
 struct CloudHttp : public HttpIO {
@@ -361,9 +362,9 @@ struct CloudHttp : public HttpIO {
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
     auto lock = app_->lock();
-    if (http == nullptr) return;
+    if (http_ == nullptr) return;
     auto abort_mark = std::make_shared<std::atomic_bool>(false);
-    auto request = http->create(r->posturl, "POST");
+    auto request = http_->create(r->posturl, "POST");
     auto callback = std::make_shared<HttpCallback>(
         app_,
         [=](const char* d, uint32_t cnt) {
@@ -382,10 +383,14 @@ struct CloudHttp : public HttpIO {
     }
     r->status = REQ_INFLIGHT;
     r->httpiohandle = new std::shared_ptr<std::atomic_bool>(abort_mark);
+    pending_requests_++;
     request->send(
         [=](EitherError<IHttpRequest::Response> e) {
           auto lock = app_->lock();
-          if (!*abort_mark) {
+          pending_requests_--;
+          if (!http_ && pending_requests_ == 0) {
+            no_requests_.set_value();
+          } else if (!*abort_mark) {
             queue_.push_back({r, e});
             app_->exec();
           }
@@ -450,12 +455,14 @@ struct CloudHttp : public HttpIO {
 
   void setuseragent(string*) override {}
 
-  CloudHttp(App* app) : app_(app) {}
+  CloudHttp(IHttp* http, App* app) : http_(http), app_(app) {}
 
   std::vector<std::pair<HttpReq*, EitherError<IHttpRequest::Response>>> queue_;
   std::deque<std::pair<HttpReq*, std::string>> read_update_;
+  IHttp* http_;
   App* app_;
-  cloudstorage::IHttp::Pointer http = cloudstorage::IHttp::create();
+  uint32_t pending_requests_ = 0;
+  std::promise<void> no_requests_;
 };
 
 class FileUpload : public File {
@@ -544,18 +551,23 @@ class CloudMegaClient {
  public:
   CloudMegaClient(MegaNz* mega, const char* api_key)
       : app_(mega),
-        http_(util::make_unique<CloudHttp>(&app_)),
+        http_(util::make_unique<CloudHttp>(mega->http(), &app_)),
         fs_(util::make_unique<CloudFileSystemAccess>()),
         client_(util::make_unique<MegaClient>(&app_, nullptr, http_.get(),
                                               fs_.get(), nullptr, nullptr,
                                               api_key, "libcloudstorage")) {}
 
   ~CloudMegaClient() {
-    {
-      auto lock = this->lock();
-      client_ = nullptr;
-      fs_ = nullptr;
+    auto lock = this->lock();
+    client_ = nullptr;
+    app_.removed_ = true;
+    http_->http_ = nullptr;
+    if (http_->pending_requests_ > 0) {
+      lock.unlock();
+      http_->no_requests_.get_future().get();
+      lock.lock();
     }
+    fs_ = nullptr;
     http_ = nullptr;
   }
 
@@ -599,14 +611,12 @@ Node* MegaNz::node(const std::string& id) const {
 }
 
 void MegaNz::initialize(InitData&& data) {
-  {
-    auto lock = auth_lock();
-    setWithHint(data.hints_, "client_id", [this](std::string v) {
-      mega_ = util::make_unique<CloudMegaClient>(this, v.c_str());
-    });
-    if (!mega_) mega_ = util::make_unique<CloudMegaClient>(this, "ZVhB0Czb");
-  }
   CloudProvider::initialize(std::move(data));
+  auto lock = auth_lock();
+  setWithHint(data.hints_, "client_id", [this](std::string v) {
+    mega_ = util::make_unique<CloudMegaClient>(this, v.c_str());
+  });
+  if (!mega_) mega_ = util::make_unique<CloudMegaClient>(this, "ZVhB0Czb");
 }
 
 std::string MegaNz::name() const { return "mega"; }
