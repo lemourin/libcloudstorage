@@ -236,6 +236,13 @@ std::string unpack_js(std::string p, uint64_t a, uint64_t c,
   return p;
 }
 
+std::string find_embed_url(const std::string &page) {
+  const auto search = "<IFRAME SRC=\"";
+  auto start = page.find(search) + strlen(search);
+  auto end = page.find("\"", start);
+  return std::string(page.begin() + start, page.begin() + end);
+}
+
 std::string extract_url(const std::string &page) {
   auto start = page.find("p,a,c,k");
   if (start == std::string::npos) {
@@ -452,7 +459,18 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
                   if (player == "openload.co") {
                     r->done(openload::extract_url(e.right()->output().str()));
                   } else if (player == "mp4upload.com") {
-                    r->done(mp4upload::extract_url(e.right()->output().str()));
+                    r->send(
+                        [=](util::Output) {
+                          return http()->create(mp4upload::find_embed_url(
+                              e.right()->output().str()));
+                        },
+                        [=](EitherError<Response> e) {
+                          if (e.left())
+                            r->done(e.left());
+                          else
+                            r->done(mp4upload::extract_url(
+                                e.right()->output().str()));
+                        });
                   } else {
                     throw std::logic_error(util::Error::UNSUPPORTED_PLAYER);
                   }
