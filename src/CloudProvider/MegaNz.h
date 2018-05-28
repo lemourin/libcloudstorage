@@ -60,6 +60,7 @@ class MegaNz : public CloudProvider {
 
   std::string name() const override;
   std::string endpoint() const override;
+  void destroy() override;
 
   const std::atomic_bool& authorized() const { return authorized_; }
 

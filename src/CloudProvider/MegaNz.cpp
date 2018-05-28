@@ -600,7 +600,7 @@ class CloudMegaClient {
 MegaNz::MegaNz()
     : CloudProvider(util::make_unique<Auth>()), mega_(), authorized_() {}
 
-MegaNz::~MegaNz() { mega_ = nullptr; }
+MegaNz::~MegaNz() {}
 
 Node* MegaNz::node(const std::string& id) const {
   if (id == rootDirectory()->id())
@@ -621,6 +621,11 @@ void MegaNz::initialize(InitData&& data) {
 std::string MegaNz::name() const { return "mega"; }
 
 std::string MegaNz::endpoint() const { return file_url(); }
+
+void MegaNz::destroy() {
+  CloudProvider::destroy();
+  mega_ = nullptr;
+}
 
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
