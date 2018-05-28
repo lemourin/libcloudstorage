@@ -337,7 +337,7 @@ struct CloudHttp : public HttpIO {
    public:
     HttpCallback(App* app, std::function<void(const char*, uint32_t)> read,
                  std::shared_ptr<std::atomic_bool> abort)
-        : app_(app), stream_(read), abort_(abort) {}
+        : app_(app), stream_(read), abort_(abort), progress_() {}
 
     ~HttpCallback() override {}
 
@@ -350,13 +350,20 @@ struct CloudHttp : public HttpIO {
 
     bool pause() override { return false; }
 
-    void progressDownload(uint64_t, uint64_t) override {}
+    void progressDownload(uint64_t, uint64_t now) override {
+      progress_ = now;
+      app_->exec();
+    }
 
-    void progressUpload(uint64_t, uint64_t) override {}
+    void progressUpload(uint64_t, uint64_t now) override {
+      progress_ = now;
+      app_->exec();
+    }
 
     App* app_;
     DownloadStreamWrapper stream_;
     std::shared_ptr<std::atomic_bool> abort_;
+    std::atomic_uint64_t progress_;
   };
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
@@ -381,7 +388,7 @@ struct CloudHttp : public HttpIO {
       *input << std::string(data, length);
     }
     r->status = REQ_INFLIGHT;
-    r->httpiohandle = new std::shared_ptr<std::atomic_bool>(abort_mark);
+    r->httpiohandle = new std::shared_ptr<HttpCallback>(callback);
     pending_requests_++;
     request->send(
         [=](EitherError<IHttpRequest::Response> e) {
@@ -399,9 +406,12 @@ struct CloudHttp : public HttpIO {
 
   void cancel(HttpReq* h) override {
     auto lock = app_->lock();
+    h->httpstatus = 0;
+    h->httpio = nullptr;
+    h->status = REQ_FAILURE;
     if (h->httpiohandle) {
-      auto r = static_cast<std::shared_ptr<std::atomic_bool>*>(h->httpiohandle);
-      **r = true;
+      auto r = static_cast<std::shared_ptr<HttpCallback>*>(h->httpiohandle);
+      *((*r)->abort_) = true;
       delete r;
       h->httpiohandle = nullptr;
     }
@@ -411,7 +421,9 @@ struct CloudHttp : public HttpIO {
       if (d.first == h) d.first = nullptr;
   }
 
-  m_off_t postpos(void*) override { return 0; }
+  m_off_t postpos(void* h) override {
+    return (*static_cast<std::shared_ptr<HttpCallback>*>(h))->progress_;
+  }
 
   bool doio() override {
     auto lock = app_->lock();
@@ -426,8 +438,7 @@ struct CloudHttp : public HttpIO {
       queue_.pop_back();
       if (!r.first) continue;
       r.first->httpio = nullptr;
-      delete static_cast<std::shared_ptr<std::atomic_bool>*>(
-          r.first->httpiohandle);
+      delete static_cast<std::shared_ptr<HttpCallback>*>(r.first->httpiohandle);
       r.first->httpiohandle = nullptr;
       result = true;
       if (r.second.left()) {
@@ -438,7 +449,8 @@ struct CloudHttp : public HttpIO {
         auto req = r.first;
         req->httpstatus = d->http_code_;
         auto content_length_it = d->headers_.find("content-length");
-        if (content_length_it != d->headers_.end()) {
+        if (IHttpRequest::isSuccess(d->http_code_) &&
+            content_length_it != d->headers_.end()) {
           req->contentlength = std::stol(content_length_it->second);
           req->status = REQ_SUCCESS;
           success = true;
@@ -467,7 +479,9 @@ struct CloudHttp : public HttpIO {
 class FileUpload : public File {
  public:
   void progress() override {
-    listener_->upload_callback_->progress(size_, transfer->progresscompleted);
+    if (listener_ && listener_->upload_callback_)
+      listener_->upload_callback_->progress(size_,
+                                            transfer->slot->progressreported);
   }
 
   void completed(Transfer* t, LocalNode* n) override {
