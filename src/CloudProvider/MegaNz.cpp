@@ -223,10 +223,10 @@ class Listener : public IRequest<EitherError<Result>> {
 struct App : public MegaApp {
   App(MegaNz* mega) : mega_(mega) {}
 
-  void notify_retry(dstime, retryreason_t r) override { Waiter::ds = INT_MAX; }
+  void notify_retry(dstime, retryreason_t) override { client->abortbackoff(); }
 
   void transfer_failed(Transfer*, error, dstime) override {
-    Waiter::ds = INT_MAX;
+    client->abortbackoff();
   }
 
   dstime pread_failure(error e, int retry, void* d, dstime) override {
@@ -236,7 +236,6 @@ struct App : public MegaApp {
       request->done(Error{e, error_description(e)});
       callback_.erase(it);
     }
-    Waiter::ds = INT_MAX;
     return 0;
   }
 
@@ -302,7 +301,6 @@ struct App : public MegaApp {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (exec_pending_ || removed_) return;
     exec_pending_ = true;
-    client->exec();
     client->exec();
     exec_pending_ = false;
   }
