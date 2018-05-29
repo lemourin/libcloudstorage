@@ -90,7 +90,7 @@ std::string cipher(const std::string &page) {
 }
 
 std::vector<std::string> values(const std::string &page) {
-  std::string b1search = "var _1x4bfb36=parseInt('";
+  std::string b1search = "var  _1x4bfb36=parseInt('";
   auto r1begin = page.find(b1search) + b1search.length();
   auto r1end = page.find("'", r1begin);
   auto r2begin = page.find('-', r1end) + 1;
