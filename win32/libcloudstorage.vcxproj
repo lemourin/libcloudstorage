@@ -312,7 +312,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../dependencies/win32/include/cares;../dependencies/win32/include/mega/wincurl;../dependencies/win32/include;../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
