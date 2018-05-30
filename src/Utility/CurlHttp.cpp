@@ -142,18 +142,22 @@ void CurlHttp::Worker::work() {
     nonempty_.wait(lock, [=]() {
       return done_ || !requests_.empty() || !pending_.empty();
     });
-    auto requests = std::move(requests_);
+    auto requests = util::exchange(requests_, {});
     lock.unlock();
     for (auto&& r : requests) {
       curl_multi_add_handle(handle, r->handle_.get());
       pending_[r->handle_.get()] = std::move(r);
     }
-    int dummy;
-    curl_multi_perform(handle, &dummy);
-    curl_multi_wait(handle, nullptr, 0, POLL_TIMEOUT, &dummy);
+    int rc;
+    curl_multi_wait(handle, nullptr, 0, POLL_TIMEOUT, &rc);
+    if (rc == 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIMEOUT));
+    int running_handles = 0;
+    curl_multi_perform(handle, &running_handles);
     CURLMsg* msg;
     do {
-      msg = curl_multi_info_read(handle, &dummy);
+      int message_count;
+      msg = curl_multi_info_read(handle, &message_count);
       if (msg && msg->msg == CURLMSG_DONE) {
         auto easy_handle = msg->easy_handle;
         curl_multi_remove_handle(handle, easy_handle);
