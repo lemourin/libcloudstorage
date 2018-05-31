@@ -25,6 +25,7 @@
 
 #include <json/json.h>
 #include <algorithm>
+#include <cstring>
 #include <sstream>
 
 #include "Request/DownloadFileRequest.h"
@@ -35,6 +36,7 @@
 const std::string GOOGLEAPI_ENDPOINT = "https://www.googleapis.com";
 const std::string SHARED_ID = "shared";
 const std::string SHARED_FILENAME = "Shared with me";
+const auto THUMBNAIL_SIZE = 256;
 
 using namespace std::placeholders;
 
@@ -83,6 +85,15 @@ std::string google_extension_to_mime_type(const std::string& ext) {
     return "application/vnd.google-apps.presentation";
   else
     return "";
+}
+
+std::string icon_link(const std::string& link) {
+  const auto default_size = "16";
+  auto it = link.find(default_size);
+  if (it == std::string::npos) return link;
+  return std::string(link.begin(), link.begin() + it) +
+         std::to_string(THUMBNAIL_SIZE) +
+         std::string(link.begin() + it + strlen(default_size), link.end());
 }
 
 }  // namespace
@@ -388,7 +399,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
   item->set_hidden(v["trashed"].asBool());
   item->set_thumbnail_url(v.isMember("thumbnailLink")
                               ? v["thumbnailLink"].asString()
-                              : v["iconLink"].asString());
+                              : icon_link(v["iconLink"].asString()));
   item->set_mime_type(v["mimeType"].asString());
   std::vector<std::string> parents;
   for (auto id : v["parents"]) parents.push_back(id.asString());
