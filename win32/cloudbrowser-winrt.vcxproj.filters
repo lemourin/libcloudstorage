@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>918f4834-3c84-4c9e-9334-8ba017805c26</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>221235d4-1e81-47b3-8088-cee091c4f97e</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\bin\cloudbrowser\src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cloudbrowser-winrt_TemporaryKey.pfx" />
+    <None Include="../dependencies/winrt/bin/KF5Kirigami2.dll" />
+    <None Include="../dependencies/winrt/bin/libcurl.dll" />
+    <None Include="../dependencies/winrt/bin/libeay32.dll" />
+    <None Include="../dependencies/winrt/bin/libmicrohttpd-dll.dll" />
+    <None Include="../dependencies/winrt/bin/ssleay32.dll" />
+    <None Include="../dependencies/winrt/bin/jsoncpp.dll" />
+    <None Include="../dependencies/winrt/bin/tinyxml2.dll" />
+    <None Include="../dependencies/winrt/bin/cares.dll" />
+    <None Include="../dependencies/winrt/bin/zlib.dll" />
+    <None Include="../dependencies/winrt/bin/avcodec-57.dll" />
+    <None Include="../dependencies/winrt/bin/avdevice-57.dll" />
+    <None Include="../dependencies/winrt/bin/avfilter-6.dll" />
+    <None Include="../dependencies/winrt/bin/avformat-57.dll" />
+    <None Include="../dependencies/winrt/bin/avutil-55.dll" />
+    <None Include="../dependencies/winrt/bin/swresample-2.dll" />
+    <None Include="../dependencies/winrt/bin/swscale-4.dll" />
+    <None Include="../dependencies/winrt/bin/VLCQtCore.dll" />
+    <None Include="../dependencies/winrt/bin/VLCQtQml.dll" />
+    <None Include="../dependencies/winrt/bin/libvlc.dll" />
+    <None Include="../dependencies/winrt/bin/libvlccore.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Core.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Gui.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Qml.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5WebView.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Quick.dll" />
+    <None Include="../dependencies/winrt/bin/libGLESv2.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Network.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Widgets.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5QuickControls2.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Svg.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5Multimedia.dll" />
+    <None Include="../dependencies/winrt/bin/Qt5QuickTemplates2.dll" />
+    <None Include="../dependencies/winrt/bin/platforms" />
+    <None Include="../dependencies/winrt/bin/libEGL.dll" />
+    <None Include="../dependencies/winrt/bin/imageformats" />
+    <None Include="../dependencies/winrt/bin/mediaservice" />
+    <None Include="../dependencies/winrt/bin/org" />
+    <None Include="../dependencies/winrt/bin/QtGraphicalEffects" />
+    <None Include="../dependencies/winrt/bin/QtQml" />
+    <None Include="../dependencies/winrt/bin/QtQuick" />
+    <None Include="../dependencies/winrt/bin/QtQuick.2" />
+    <None Include="../dependencies/winrt/bin/QtWebView" />
+    <None Include="../dependencies/winrt/bin/plugins" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\logo_44x44.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\logo_150x150.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\logo_620x300.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\logo_store.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
