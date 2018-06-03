@@ -36,6 +36,9 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "JQuery.h"
+#include "UrlJS.h"
+
 namespace cloudstorage {
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
@@ -51,13 +54,10 @@ const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"mp4", "video/mp4"},           {"mkv", "video/webm"},
     {"mpd", "application/dash+xml"}};
 
-const std::string CDN =
-    "<script src='https://code.jquery.com/jquery-3.1.0.min.js'"
-    "integrity='sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s='"
-    "crossorigin='anonymous'></script>"
-    "<script "
-    "src='https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.min.js'>"
-    "</script>";
+const std::string CDN = std::string("<script>") + JQUERY_MIN_JS +
+                        "</script>"
+                        "<script>" +
+                        URL_MIN_JS + "</script>";
 
 namespace {
 

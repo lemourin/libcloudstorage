@@ -67,6 +67,8 @@ noinst_HEADERS = \
 	Utility/MicroHttpdServer.h \
 	Utility/ThreadPool.h \
 	Utility/FileServer.h \
+	Utility/JQuery.h \
+	Utility/UrlJS.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
