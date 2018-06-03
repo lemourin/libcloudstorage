@@ -129,6 +129,9 @@ CloudContext::CloudContext(QObject* parent)
   auth_server_.push_back(
       http_server_factory_->create(util::make_unique<HttpServerCallback>(this),
                                    "static", IHttpServer::Type::FileProvider));
+  auth_server_.push_back(http_server_factory_->create(
+      util::make_unique<HttpServerCallback>(this), "favicon.ico",
+      IHttpServer::Type::FileProvider));
   connect(this, &CloudContext::errorOccurred, this,
           [](QString operation, QVariantMap provider, int code,
              QString description) {
@@ -513,8 +516,10 @@ CloudContext::HttpServerCallback::HttpServerCallback(CloudContext* ctx)
 IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
   auto state = first_url_part(request.url());
-  if (state == "static") {
-    auto path = request.url().substr(strlen("/static"));
+  if (state == "static" || state == "favicon.ico") {
+    auto path = state == "favicon.ico"
+                    ? "/cloud.png"
+                    : request.url().substr(strlen("/static"));
     QFile file(QString(":/resources") + path.c_str());
     if (!file.open(QFile::ReadOnly)) {
       return util::response_from_string(request, IHttpRequest::NotFound, {},
