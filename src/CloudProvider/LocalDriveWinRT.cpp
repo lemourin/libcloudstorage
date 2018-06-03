@@ -95,7 +95,7 @@ void get_directory(const std::string &path, StorageFolder ^ current,
         auto fragment = get_first_part(path);
         for (auto i = 0u; i < folders->Size; i++) {
           auto f = folders->GetAt(i);
-          if (to_string(f->FolderRelativeId->Data()) == fragment) {
+          if (to_string(f->Name->Data()) == fragment) {
             return get_directory(get_rest(path), f, callback);
           }
         }
@@ -109,7 +109,7 @@ void get_directory(const std::string &path,
   auto fragment = get_first_part(path);
   for (auto i = 0u; i < root->Size; i++) {
     auto f = root->GetAt(i);
-    if (to_string(f->FolderRelativeId->Data()) == fragment) {
+    if (to_string(f->Name->Data()) == fragment) {
       return get_directory(get_rest(path), f, callback);
     }
   }
@@ -127,7 +127,7 @@ void get_file(const std::string &path,
         .then([=](IVectorView<StorageFile ^> ^ files) {
           for (auto i = 0u; i < files->Size; i++) {
             auto f = files->GetAt(i);
-            if (to_string(f->FolderRelativeId->Data()) == filename)
+            if (to_string(f->Name->Data()) == filename)
               return callback(f);
           }
           callback(nullptr);
@@ -519,7 +519,7 @@ IItem::Pointer LocalDriveWinRT::toItem(Windows::Storage::StorageFolder ^ f,
                                        const std::string &path) const {
   return util::make_unique<Item>(
       to_string(f->Name->Data()),
-      path + to_string(f->FolderRelativeId->Data()) + "/", IItem::UnknownSize,
+      path + to_string(f->Name->Data()) + "/", IItem::UnknownSize,
       std::chrono::system_clock::time_point(std::chrono::seconds(
           f->DateCreated.UniversalTime / 10000000 - 11644473600LL)),
       IItem::FileType::Directory);
@@ -529,7 +529,7 @@ IItem::Pointer LocalDriveWinRT::toItem(Windows::Storage::StorageFile ^ f,
                                        const std::string &path,
                                        uint64_t size) const {
   return util::make_unique<Item>(
-      to_string(f->Name->Data()), path + to_string(f->FolderRelativeId->Data()),
+      to_string(f->Name->Data()), path + to_string(f->Name->Data()),
       size,
       std::chrono::system_clock::time_point(std::chrono::seconds(
           f->DateCreated.UniversalTime / 10000000 - 11644473600LL)),
