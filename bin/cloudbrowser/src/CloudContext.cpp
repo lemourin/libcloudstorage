@@ -126,6 +126,9 @@ CloudContext::CloudContext(QObject* parent)
         util::make_unique<HttpServerCallback>(this), p,
         IHttpServer::Type::Authorization));
   }
+  auth_server_.push_back(
+      http_server_factory_->create(util::make_unique<HttpServerCallback>(this),
+                                   "static", IHttpServer::Type::FileProvider));
   connect(this, &CloudContext::errorOccurred, this,
           [](QString operation, QVariantMap provider, int code,
              QString description) {
@@ -510,6 +513,16 @@ CloudContext::HttpServerCallback::HttpServerCallback(CloudContext* ctx)
 IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
   auto state = first_url_part(request.url());
+  if (state == "static") {
+    auto path = request.url().substr(strlen("/static"));
+    QFile file(QString(":/resources") + path.c_str());
+    if (!file.open(QFile::ReadOnly)) {
+      return util::response_from_string(request, IHttpRequest::NotFound, {},
+                                        util::Error::NODE_NOT_FOUND);
+    }
+    return util::response_from_string(request, IHttpRequest::Ok, {},
+                                      file.readAll().toStdString());
+  }
   auto code = request.get("code");
   if (code) {
     QFile file(":/resources/default_success.html");

@@ -53,5 +53,11 @@
         <file>resources/4shared_login.html</file>
         <file>resources/localwinrt_login.html</file>
         <file>resources/providers/localwinrt.png</file>
+        <file>resources/vlc-blue.png</file>
+        <file>resources/url.min.js</file>
+        <file>resources/style.min.css</file>
+        <file>resources/jquery.min.js</file>
+        <file>resources/bootstrap.min.css</file>
+        <file>resources/bootstrap.min.js</file>
     </qresource>
 </RCC>

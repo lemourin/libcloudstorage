@@ -153,7 +153,13 @@ DEPS_res = \
 	resources/local_login.html \
 	resources/localwinrt_login.html \
 	resources/animezone_login.html \
-	resources/4shared_login.html
+	resources/4shared_login.html \
+	resources/bootstrap.min.css \
+	resources/bootstrap.min.js \
+	resources/jquery.min.js \
+	resources/style.min.css \
+	resources/url.min.js \
+	resources/vlc-blue.png
 
 %.moc.cpp: %.h
 	$(AM_V_GEN)$(MOC) -o $@ $<
