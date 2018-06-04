@@ -36,6 +36,7 @@ class CLOUDBROWSER_API WinRTUtility : public IPlatformUtility {
 
  private:
   // clang-format off
+#ifdef WITH_ADS
   ref class AdEventHandler sealed {
    internal:
     AdEventHandler(WinRTUtility*);
@@ -47,11 +48,15 @@ class CLOUDBROWSER_API WinRTUtility : public IPlatformUtility {
    private:
     WinRTUtility* winrt_;
   };
+#endif
   // clang-format on
 
+#ifdef WITH_ADS
   Microsoft::Advertising::WinRT::UI::AdControl ^ ad_control_;
-  bool ad_control_attached_;
   AdEventHandler ^ ad_event_handler_;
+#endif
+
+  bool ad_control_attached_;
   Windows::System::Display::DisplayRequest ^ display_request_;
 };
 

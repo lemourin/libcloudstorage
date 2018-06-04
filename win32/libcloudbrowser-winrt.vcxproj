@@ -144,9 +144,6 @@
       <Project>{cdc406b9-7980-488b-8d91-812a582b6587}</Project>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <SDKReference Include="Microsoft.Advertising.Xaml, Version=10.0" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

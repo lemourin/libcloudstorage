@@ -21,8 +21,12 @@ using namespace Windows::Foundation;
 using namespace Windows::System::Display;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
-using namespace Microsoft::Advertising::WinRT::UI;
 
+#ifdef WITH_ADS
+using namespace Microsoft::Advertising::WinRT::UI;
+#endif
+
+#ifdef WITH_ADS
 WinRTUtility::AdEventHandler::AdEventHandler(WinRTUtility* winrt)
     : winrt_(winrt) {}
 
@@ -33,6 +37,7 @@ void WinRTUtility::AdEventHandler::onAdError(Object ^, AdErrorEventArgs ^) {
 void WinRTUtility::AdEventHandler::onAdRefreshed(Object ^, RoutedEventArgs ^) {
   emit winrt_->notify("SHOW_AD");
 }
+#endif
 
 WinRTUtility::WinRTUtility() : ad_control_attached_() {
   QEventDispatcherWinRT::runOnXamlThread([this]() {
