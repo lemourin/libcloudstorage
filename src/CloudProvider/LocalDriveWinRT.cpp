@@ -127,8 +127,7 @@ void get_file(const std::string &path,
         .then([=](IVectorView<StorageFile ^> ^ files) {
           for (auto i = 0u; i < files->Size; i++) {
             auto f = files->GetAt(i);
-            if (to_string(f->Name->Data()) == filename)
-              return callback(f);
+            if (to_string(f->Name->Data()) == filename) return callback(f);
           }
           callback(nullptr);
         });
@@ -190,8 +189,8 @@ void write_file(Request<EitherError<IItem>>::Pointer r, const std::string &path,
     return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   auto chunk_size = std::min<uint64_t>(size, BUFFER_SIZE);
   std::vector<char> buffer(chunk_size);
-  auto current_chunk = callback->putData(buffer.data(), chunk_size,
-                                         total_size - size);
+  auto current_chunk =
+      callback->putData(buffer.data(), chunk_size, total_size - size);
   auto bytes = ref new Array<byte>(current_chunk);
   for (auto i = 0u; i < current_chunk; i++) bytes[i] = buffer[i];
   data_writer->WriteBytes(bytes);
@@ -261,10 +260,20 @@ LocalDriveWinRT::listDirectoryPageAsync(IItem::Pointer item,
                   return folder->GetFilesAsync();
                 })
                 .then([=](IVectorView<StorageFile ^> ^ files) {
-                  get_file_list(this, item->id(), files, 0, result,
-                                [=](std::shared_ptr<PageData> result) {
-                                  r->done(*result);
-                                });
+                  get_file_list(
+                      this, item->id(), files, 0, result,
+                      [=](std::shared_ptr<PageData> result) {
+                        IItem::List filtered;
+                        std::unordered_set<std::string> present;
+                        for (auto &&d : result->items_) {
+                          if (present.find(d->id()) == present.end()) {
+                            present.insert(d->id());
+                            filtered.push_back(d);
+                          }
+                        }
+                        result->items_ = filtered;
+                        r->done(*result);
+                      });
                 });
           });
         }
@@ -518,8 +527,8 @@ ICloudProvider::UploadFileRequest::Pointer LocalDriveWinRT::uploadFileAsync(
 IItem::Pointer LocalDriveWinRT::toItem(Windows::Storage::StorageFolder ^ f,
                                        const std::string &path) const {
   return util::make_unique<Item>(
-      to_string(f->Name->Data()),
-      path + to_string(f->Name->Data()) + "/", IItem::UnknownSize,
+      to_string(f->Name->Data()), path + to_string(f->Name->Data()) + "/",
+      IItem::UnknownSize,
       std::chrono::system_clock::time_point(std::chrono::seconds(
           f->DateCreated.UniversalTime / 10000000 - 11644473600LL)),
       IItem::FileType::Directory);
@@ -529,8 +538,7 @@ IItem::Pointer LocalDriveWinRT::toItem(Windows::Storage::StorageFile ^ f,
                                        const std::string &path,
                                        uint64_t size) const {
   return util::make_unique<Item>(
-      to_string(f->Name->Data()), path + to_string(f->Name->Data()),
-      size,
+      to_string(f->Name->Data()), path + to_string(f->Name->Data()), size,
       std::chrono::system_clock::time_point(std::chrono::seconds(
           f->DateCreated.UniversalTime / 10000000 - 11644473600LL)),
       IItem::FileType::Unknown);
