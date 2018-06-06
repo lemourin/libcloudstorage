@@ -51,8 +51,18 @@ const uint64_t BUFFER_SIZE = 1024;
 namespace {
 Vector<StorageFolder ^> ^ root_directory() {
   auto vector = ref new Vector<StorageFolder ^>();
+  ADD_FOLDER(vector, KnownFolders::AppCaptures);
+  ADD_FOLDER(vector, KnownFolders::CameraRoll);
+  ADD_FOLDER(vector, KnownFolders::DocumentsLibrary);
+  ADD_FOLDER(vector, KnownFolders::HomeGroup);
+  ADD_FOLDER(vector, KnownFolders::MediaServerDevices);
   ADD_FOLDER(vector, KnownFolders::MusicLibrary);
+  ADD_FOLDER(vector, KnownFolders::Objects3D);
   ADD_FOLDER(vector, KnownFolders::PicturesLibrary);
+  ADD_FOLDER(vector, KnownFolders::Playlists);
+  ADD_FOLDER(vector, KnownFolders::RecordedCalls);
+  ADD_FOLDER(vector, KnownFolders::RemovableDevices);
+  ADD_FOLDER(vector, KnownFolders::SavedPictures);
   ADD_FOLDER(vector, KnownFolders::VideosLibrary);
   return vector;
 }
