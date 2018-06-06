@@ -101,13 +101,17 @@ void get_directory(const std::string &path, StorageFolder ^ current,
                    std::function<void(StorageFolder ^)> callback) {
   if (path == "/") return callback(current);
   create_task(current->GetFoldersAsync())
-      .then([=](IVectorView<StorageFolder ^> ^ folders) {
-        auto fragment = get_first_part(path);
-        for (auto i = 0u; i < folders->Size; i++) {
-          auto f = folders->GetAt(i);
-          if (to_string(f->Name->Data()) == fragment) {
-            return get_directory(get_rest(path), f, callback);
+      .then([=](task<IVectorView<StorageFolder ^> ^> t) {
+        try {
+          auto fragment = get_first_part(path);
+          auto folders = t.get();
+          for (auto i = 0u; i < folders->Size; i++) {
+            auto f = folders->GetAt(i);
+            if (to_string(f->Name->Data()) == fragment) {
+              return get_directory(get_rest(path), f, callback);
+            }
           }
+        } catch (Platform::Exception ^) {
         }
         callback(nullptr);
       });
@@ -134,10 +138,14 @@ void get_file(const std::string &path,
   get_directory(directory_path, [=](StorageFolder ^ folder) {
     if (folder == nullptr) return callback(nullptr);
     create_task(folder->GetFilesAsync())
-        .then([=](IVectorView<StorageFile ^> ^ files) {
-          for (auto i = 0u; i < files->Size; i++) {
-            auto f = files->GetAt(i);
-            if (to_string(f->Name->Data()) == filename) return callback(f);
+        .then([=](task<IVectorView<StorageFile ^> ^> t) {
+          try {
+            auto files = t.get();
+            for (auto i = 0u; i < files->Size; i++) {
+              auto f = files->GetAt(i);
+              if (to_string(f->Name->Data()) == filename) return callback(f);
+            }
+          } catch (Platform::Exception ^) {
           }
           callback(nullptr);
         });
@@ -153,8 +161,12 @@ void get_file_list(LocalDriveWinRT *p, const std::string &path,
   } else {
     auto file = files->GetAt(idx);
     create_task(file->GetBasicPropertiesAsync())
-        .then([=](FileProperties::BasicProperties ^ props) {
-          result->items_.push_back(p->toItem(file, path, props->Size));
+        .then([=](task<FileProperties::BasicProperties ^> t) {
+          try {
+            auto props = t.get();
+            result->items_.push_back(p->toItem(file, path, props->Size));
+          } catch (Platform::Exception ^) {
+          }
           get_file_list(p, path, files, idx + 1, result, callback);
         });
   }
@@ -168,14 +180,19 @@ void read_file(Request<EitherError<void>>::Pointer r, DataReader ^ data_reader,
     return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   auto chunk_size = std::min<uint64_t>(size, BUFFER_SIZE);
   create_task(data_reader->LoadAsync(chunk_size))
-      .then([=](unsigned int byte_count) {
-        auto bytes = ref new Array<byte>(byte_count);
-        data_reader->ReadBytes(bytes);
-        std::vector<char> buffer(byte_count);
-        for (auto i = 0u; i < bytes->Length; i++) buffer[i] = bytes[i];
-        callback->receivedData(buffer.data(), buffer.size());
-        callback->progress(total_size - (size - byte_count), total_size);
-        read_file(r, data_reader, size - byte_count, total_size, callback);
+      .then([=](task<unsigned int> t) {
+        try {
+          auto byte_count = t.get();
+          auto bytes = ref new Array<byte>(byte_count);
+          data_reader->ReadBytes(bytes);
+          std::vector<char> buffer(byte_count);
+          for (auto i = 0u; i < bytes->Length; i++) buffer[i] = bytes[i];
+          callback->receivedData(buffer.data(), buffer.size());
+          callback->progress(total_size - (size - byte_count), total_size);
+          read_file(r, data_reader, size - byte_count, total_size, callback);
+        } catch (Platform::Exception ^ e) {
+          r->done(Error{IHttpRequest::Failure, to_string(e->Message->Data())});
+        }
       });
 }
 
@@ -204,11 +221,20 @@ void write_file(Request<EitherError<IItem>>::Pointer r, const std::string &path,
   auto bytes = ref new Array<byte>(current_chunk);
   for (auto i = 0u; i < current_chunk; i++) bytes[i] = buffer[i];
   data_writer->WriteBytes(bytes);
-  create_task(data_writer->StoreAsync()).then([=](unsigned int) {
-    callback->progress(total_size - (size - current_chunk), total_size);
-    write_file(r, path, file, output_stream, data_writer, size - current_chunk,
-               total_size, callback);
-  });
+  create_task(data_writer->StoreAsync())
+      .then([=](unsigned int) {
+        callback->progress(total_size - (size - current_chunk), total_size);
+        write_file(r, path, file, output_stream, data_writer,
+                   size - current_chunk, total_size, callback);
+      })
+      .then([=](task<void> e) {
+        try {
+          e.get();
+        } catch (Platform::Exception ^ e) {
+          r->done(Error{IHttpRequest::Failure, to_string(e->Message->Data())});
+        }
+      });
+  ;
 }
 
 LocalDriveWinRT::LocalDriveWinRT() : CloudProvider(util::make_unique<Auth>()) {}
@@ -284,6 +310,14 @@ LocalDriveWinRT::listDirectoryPageAsync(IItem::Pointer item,
                         result->items_ = filtered;
                         r->done(*result);
                       });
+                })
+                .then([=](task<void> e) {
+                  try {
+                    e.get();
+                  } catch (Platform::Exception ^ e) {
+                    r->done(Error{IHttpRequest::Failure,
+                                  to_string(e->Message->Data())});
+                  }
                 });
           });
         }
@@ -318,8 +352,14 @@ ICloudProvider::GetItemDataRequest::Pointer LocalDriveWinRT::getItemDataAsync(
                     Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
               else {
                 create_task(file->GetBasicPropertiesAsync())
-                    .then([=](FileProperties::BasicProperties ^ props) {
-                      r->done(toItem(file, parent_path(id), props->Size));
+                    .then([=](task<FileProperties::BasicProperties ^> t) {
+                      try {
+                        auto props = t.get();
+                        r->done(toItem(file, parent_path(id), props->Size));
+                      } catch (Platform::Exception ^ e) {
+                        r->done(Error{IHttpRequest::Failure,
+                                      to_string(e->Message->Data())});
+                      }
                     });
               }
             });
@@ -344,7 +384,16 @@ ICloudProvider::DownloadFileRequest::Pointer LocalDriveWinRT::downloadFileAsync(
                 auto input = stream->GetInputStreamAt(range.start_);
                 auto data_reader = ref new DataReader(input);
                 read_file(r, data_reader, range.size_, range.size_, callback);
+              })
+              .then([=](task<void> e) {
+                try {
+                  e.get();
+                } catch (Platform::Exception ^ e) {
+                  r->done(Error{IHttpRequest::Failure,
+                                to_string(e->Message->Data())});
+                }
               });
+          ;
         });
       });
   return request->run();
@@ -391,7 +440,15 @@ ICloudProvider::DeleteItemRequest::Pointer LocalDriveWinRT::deleteItemAsync(
                   Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
             create_task(
                 folder->DeleteAsync(StorageDeleteOption::PermanentDelete))
-                .then([=] { r->done(nullptr); });
+                .then([=](task<void> e) {
+                  try {
+                    e.get();
+                    r->done(nullptr);
+                  } catch (Platform::Exception ^ e) {
+                    r->done(Error{IHttpRequest::Failure,
+                                  to_string(e->Message->Data())});
+                  }
+                });
           });
         } else {
           get_file(item->id(), [=](StorageFile ^ file) {
@@ -399,7 +456,15 @@ ICloudProvider::DeleteItemRequest::Pointer LocalDriveWinRT::deleteItemAsync(
               return r->done(
                   Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
             create_task(file->DeleteAsync(StorageDeleteOption::PermanentDelete))
-                .then([=] { r->done(nullptr); });
+                .then([=](task<void> e) {
+                  try {
+                    e.get();
+                    r->done(nullptr);
+                  } catch (Platform::Exception ^ e) {
+                    r->done(Error{IHttpRequest::Failure,
+                                  to_string(e->Message->Data())});
+                  }
+                });
           });
         }
       });
@@ -523,6 +588,14 @@ ICloudProvider::UploadFileRequest::Pointer LocalDriveWinRT::uploadFileAsync(
                         write_file(r, parent->id(), d.get(), output,
                                    ref new DataWriter(output), size, size,
                                    callback);
+                      })
+                      .then([=](task<void> e) {
+                        try {
+                          d.get();
+                        } catch (Exception ^ e) {
+                          r->done(Error{IHttpRequest::Failure,
+                                        to_string(e->Message->Data())});
+                        }
                       });
                 } catch (Exception ^ e) {
                   r->done(Error{IHttpRequest::Failure,
