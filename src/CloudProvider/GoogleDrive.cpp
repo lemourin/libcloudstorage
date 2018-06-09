@@ -323,9 +323,15 @@ IItem::List GoogleDrive::listDirectoryResponse(
 GeneralData GoogleDrive::getGeneralDataResponse(std::istream& response) const {
   auto json = util::json::from_stream(response);
   GeneralData data;
-  data.space_total_ = std::stoull(json["storageQuota"]["limit"].asString());
+  data.space_total_ =
+      json["storageQuota"].isMember("limit")
+          ? std::stoull(json["storageQuota"]["limit"].asString())
+          : 0;
   data.space_used_ = std::stoull(json["storageQuota"]["usage"].asString());
-  data.username_ = json["user"]["emailAddress"].asString();
+  data.username_ =
+      (json["user"].isMember("emailAddress") ? json["user"]["emailAddress"]
+                                             : json["user"]["displayName"])
+          .asString();
   return data;
 }
 
