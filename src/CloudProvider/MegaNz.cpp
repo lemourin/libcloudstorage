@@ -231,7 +231,7 @@ struct App : public MegaApp {
 
   dstime pread_failure(error e, int retry, void* d, dstime) override {
     auto it = callback_.find(reinterpret_cast<uintptr_t>(d));
-    if (retry >= 4) {
+    if (retry >= 4 && it != callback_.end()) {
       auto request = static_cast<Listener<error>*>(it->second.second.get());
       request->done(Error{e, error_description(e)});
       callback_.erase(it);
