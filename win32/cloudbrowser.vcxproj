@@ -71,16 +71,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ExecutablePath>../dependencies/win32/bin;$(ExecutablePath)</ExecutablePath>
+    <CustomBuildAfterTargets>ClCompile</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ExecutablePath>../dependencies/win32/bin;$(ExecutablePath)</ExecutablePath>
+    <CustomBuildAfterTargets>ClCompile</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ExecutablePath>../dependencies/win32/bin;$(ExecutablePath)</ExecutablePath>
+    <CustomBuildAfterTargets>ClCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ExecutablePath>../dependencies/win32/bin;$(ExecutablePath)</ExecutablePath>
-    <IntDir>$(Platform)\$(Configuration)\cloudbrowser</IntDir>
+    <CustomBuildAfterTargets>ClCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -146,6 +153,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\bin\cloudbrowser\src\main.cpp" />
+    <CustomBuild Include="qt.conf">
+      <Message>COPY qt.conf</Message>
+      <Command>copy $(ProjectDir)qt.conf $(OutDir)</Command>
+      <Outputs>$(OutDir)/qt.conf</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -44,9 +44,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IntDir>$(Platform)\$(Configuration)\libcloudbrowser-winrt</IntDir>
-    <TargetName>libcloudbrowser</TargetName>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -58,13 +58,13 @@
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../bin/cloudbrowser/src;../src;../dependencies/win32/include/QtCore/5.10.1/;../dependencies/win32/include/QtCore/5.10.1/QtCore;../dependencies/win32/include/QtWebView;../dependencies/win32/include/QtQml;../dependencies/win32/include/QtCore;../dependencies/win32/include;../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;libcloudstorage.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../dependencies/winrt/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../dependencies/winrt/lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -116,32 +116,99 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\bin\cloudbrowser\src\AndroidUtility.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\CloudContext.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\CloudItem.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\DesktopUtility.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\Exec.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\File.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\FileDialog.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\GenerateThumbnail.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\HttpServer.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\IPlatformUtility.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\CloudRequest.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\CopyItem.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\CreateDirectory.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\DeleteItem.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\DownloadItem.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\GetThumbnail.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\GetUrl.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\ListDirectory.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\MoveItem.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\RenameItem.h" />
-    <ClInclude Include="..\bin\cloudbrowser\src\Request\UploadItem.h" />
     <ClInclude Include="..\bin\cloudbrowser\src\WinRTUtility.h" />
-    <ClInclude Include="..\dependencies\win32\src\moc_predefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\bin\cloudbrowser\src\CloudContext.h">
+      <Message>MOC CloudContext.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_CloudContext.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_CloudContext.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\CloudItem.h">
+      <Message>MOC CloudItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_CloudItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_CloudItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\IPlatformUtility.h">
+      <Message>MOC IPlatformUtility.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_IPlatformUtility.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_IPlatformUtility.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\FileDialog.h">
+      <Message>MOC FileDialog.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_FileDialog.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_FileDialog.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\CloudRequest.h">
+      <Message>MOC CloudRequest.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_CloudRequest.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_CloudRequest.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\CopyItem.h">
+      <Message>MOC CopyItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_CopyItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_CopyItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\CreateDirectory.h">
+      <Message>MOC CreateDirectory.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_CreateDirectory.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_CreateDirectory.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\DeleteItem.h">
+      <Message>MOC DeleteItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_DeleteItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_DeleteItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\DownloadItem.h">
+      <Message>MOC DownloadItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_DownloadItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_DownloadItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\GetThumbnail.h">
+      <Message>MOC GetThumbnail.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_GetThumbnail.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_GetThumbnail.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\GetUrl.h">
+      <Message>MOC GetUrl.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_GetUrl.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_GetUrl.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\ListDirectory.h">
+      <Message>MOC ListDirectory.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_ListDirectory.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_ListDirectory.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\MoveItem.h">
+      <Message>MOC MoveItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_MoveItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_MoveItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\RenameItem.h">
+      <Message>MOC RenameItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_RenameItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_RenameItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\src\Request\UploadItem.h">
+      <Message>MOC UploadItem.h</Message>
+      <Command>..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\moc_UploadItem.cpp</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\moc_UploadItem.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\bin\cloudbrowser\resources.qrc">
+      <Message>MOC RenamItem.h</Message>
+      <Command>..\dependencies\win32\bin\rcc %(Identity) -o  $(ProjectDir)\..\dependencies\win32\src\qrc_resources.cpp --name resources</Command>
+      <Outputs>$(ProjectDir)\..\dependencies\win32\src\qrc_resources.cpp</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libcloudstorage-winrt.vcxproj">
       <Project>{cdc406b9-7980-488b-8d91-812a582b6587}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
