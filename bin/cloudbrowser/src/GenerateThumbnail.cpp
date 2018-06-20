@@ -41,7 +41,7 @@ extern "C" {
 namespace cloudstorage {
 
 const int THUMBNAIL_SIZE = 256;
-const int MAX_RETRY_COUNT = 24;
+const int MAX_RETRY_COUNT = 48;
 
 namespace {
 
