@@ -79,7 +79,12 @@ IHttpRequest::Pointer GooglePhotos::getItemDataRequest(
     const std::string &id_str, std::ostream &) const {
   if (id_str == rootDirectory()->id()) return nullptr;
   IHttpRequest::Pointer request;
-  auto id = from_string(id_str);
+  ItemId id;
+  try {
+    id = from_string(id_str);
+  } catch (const Json::Exception &) {
+    return nullptr;
+  }
   if (id.id_.empty()) {
     request = http()->create(endpoint() + "/feed/api/user/default/albumid/" +
                              id.album_id_);
