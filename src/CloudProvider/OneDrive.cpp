@@ -78,7 +78,63 @@ OneDrive::OneDrive() : CloudProvider(util::make_unique<Auth>()) {}
 std::string OneDrive::name() const { return "onedrive"; }
 
 std::string OneDrive::endpoint() const {
-  return "https://graph.microsoft.com/v1.0";
+  auto lock = auth_lock();
+  return endpoint_;
+}
+
+void OneDrive::initialize(ICloudProvider::InitData&& d) {
+  setWithHint(d.hints_, "endpoint", [=](std::string v) {
+    auto lock = auth_lock();
+    endpoint_ = v;
+  });
+  CloudProvider::initialize(std::move(d));
+}
+
+ICloudProvider::Hints OneDrive::hints() const {
+  auto hints = CloudProvider::hints();
+  hints.insert({{"endpoint", endpoint()}});
+  return hints;
+}
+
+bool OneDrive::reauthorize(int code,
+                           const IHttpRequest::HeaderParameters& h) const {
+  auto lock = auth_lock();
+  return CloudProvider::reauthorize(code, h) || endpoint_.empty();
+}
+
+AuthorizeRequest::Pointer OneDrive::authorizeAsync() {
+  return util::make_unique<AuthorizeRequest>(
+      shared_from_this(), [=](AuthorizeRequest::Pointer r,
+                              AuthorizeRequest::AuthorizeCompleted complete) {
+        r->oauth2Authorization([=](EitherError<void> e) {
+          if (e.left()) return complete(e.left());
+          r->query(
+              [=](util::Output) {
+                auto request =
+                    http()->create("https://graph.microsoft.com/v1.0/me");
+                authorizeRequest(*request);
+                return request;
+              },
+              [=](Response e) {
+                if (!IHttpRequest::isSuccess(e.http_code())) {
+                  return complete(Error{e.http_code(), e.error_output().str()});
+                }
+                try {
+                  auto json = util::json::from_stream(e.output());
+                  auto lock = auth_lock();
+                  if (json.isMember("mySite")) {
+                    endpoint_ = json["mySite"].asString() + "_api/v2.0";
+                  } else {
+                    endpoint_ = "https://graph.microsoft.com/v1.0";
+                  }
+                  lock.unlock();
+                  complete(nullptr);
+                } catch (const Json::Exception& e) {
+                  complete(Error{IHttpRequest::Failure, e.what()});
+                }
+              });
+        });
+      });
 }
 
 ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
