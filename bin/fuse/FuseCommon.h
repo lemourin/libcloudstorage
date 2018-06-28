@@ -1,12 +1,14 @@
 #ifndef FUSE_COMMON_H
 #define FUSE_COMMON_H
 
+#ifndef FUSE_USE_VERSION
 #ifdef WITH_FUSE
 #define FUSE_USE_VERSION 31
 #include <fuse_lowlevel.h>
 #elif WITH_LEGACY_FUSE
-#define FUSE_USE_VERSION 27
+#define FUSE_USE_VERSION 26
 #include <fuse.h>
+#endif
 #endif
 
 #ifndef FUSE_STAT

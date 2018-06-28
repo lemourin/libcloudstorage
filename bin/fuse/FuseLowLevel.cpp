@@ -1,6 +1,6 @@
-#ifdef WITH_FUSE
-
 #include "FuseLowLevel.h"
+
+#ifdef FUSE_LOWLEVEL
 
 #include <cassert>
 #include <cfloat>
@@ -114,8 +114,8 @@ void lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
   });
 }
 
-void rename(fuse_req_t req, fuse_ino_t parent, const char *name,
-            fuse_ino_t newparent, const char *newname, unsigned int) {
+void fuse2_rename(fuse_req_t req, fuse_ino_t parent, const char *name,
+                  fuse_ino_t newparent, const char *newname) {
   context(req)->rename(
       parent, name, newparent, newname, [=](EitherError<IItem> e) {
         if (e.left()) {
@@ -125,6 +125,19 @@ void rename(fuse_req_t req, fuse_ino_t parent, const char *name,
           fuse_reply_err(req, 0);
       });
 }
+
+void fuse3_rename(fuse_req_t req, fuse_ino_t parent, const char *name,
+                  fuse_ino_t newparent, const char *newname, unsigned) {
+  fuse2_rename(req, parent, name, newparent, newname);
+}
+
+#ifdef WITH_LEGACY_FUSE
+#define fuse_rename fuse2_rename
+#endif
+
+#ifdef WITH_FUSE
+#define fuse_rename fuse3_rename
+#endif
 
 void mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t) {
   context(req)->mkdir(parent, name, [=](EitherError<IFileSystem::INode> e) {
@@ -197,7 +210,7 @@ fuse_lowlevel_ops low_level_operations() {
   operations.lookup = lookup;
   operations.read = read;
   operations.open = open;
-  operations.rename = rename;
+  operations.rename = fuse_rename;
   operations.mkdir = mkdir;
   operations.rmdir = remove;
   operations.unlink = remove;
@@ -209,24 +222,45 @@ fuse_lowlevel_ops low_level_operations() {
 }
 
 FuseLowLevel::FuseLowLevel(fuse_args *args, const char *mountpoint,
-                           void *userdata) {
+                           void *userdata)
+    : mountpoint_(mountpoint) {
   auto operations = cloudstorage::low_level_operations();
+#ifdef WITH_FUSE
   session_ = fuse_session_new(args, &operations, sizeof(operations), userdata);
-  fuse_set_signal_handlers(session_);
   fuse_session_mount(session_, mountpoint);
+#endif
+#ifdef WITH_LEGACY_FUSE
+  session_ = fuse_lowlevel_new(args, &operations, sizeof(operations), userdata);
+  channel_ = fuse_mount(mountpoint, args);
+  fuse_session_add_chan(session_, channel_);
+#endif
+  fuse_set_signal_handlers(session_);
 }
 
 FuseLowLevel::~FuseLowLevel() {
+#ifdef WITH_LEGACY_FUSE
+  fuse_session_remove_chan(channel_);
+  fuse_unmount(mountpoint_.c_str(), channel_);
+#endif
+#ifdef WITH_FUSE
   fuse_session_unmount(session_);
+#endif
   fuse_remove_signal_handlers(session_);
   fuse_session_destroy(session_);
 }
 
 int FuseLowLevel::run(bool singlethread, bool clone_fd) const {
+#ifdef WITH_FUSE
   return singlethread ? fuse_session_loop(session_)
                       : fuse_session_loop_mt(session_, clone_fd);
+#endif
+#ifdef WITH_LEGACY_FUSE
+  (void)clone_fd;
+  return singlethread ? fuse_session_loop(session_)
+                      : fuse_session_loop_mt(session_);
+#endif
 }
 
 }  // namespace cloudstorage
 
-#endif  // WITH_FUSE
+#endif  // FUSE_LOWLEVEL

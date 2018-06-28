@@ -3,13 +3,8 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
-#ifdef WITH_FUSE
 #include "FuseLowLevel.h"
-#endif
-
-#ifdef WITH_LEGACY_FUSE
 #include "FuseHighLevel.h"
-#endif
 
 #include <cstring>
 #include <fstream>
@@ -265,10 +260,10 @@ int fuse_run(int argc, char **argv) {
     return 0;
   }
   int ret = 0;
-#ifdef WITH_FUSE
+#ifdef FUSE_LOWLEVEL
   ret = fuse_run<FuseLowLevel>(args.get(), opts.get(), json);
 #endif
-#ifdef WITH_LEGACY_FUSE
+#ifndef FUSE_LOWLEVEL
   ret = fuse_run<FuseHighLevel>(args.get(), opts.get(), json);
 #endif
   std::ofstream(options.config_file) << json;
