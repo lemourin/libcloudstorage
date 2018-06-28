@@ -33,7 +33,7 @@ class FileSystem : public IFileSystem {
     Node();
     Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item, FileId parent,
          FileId inode, uint64_t size);
-    ~Node();
+    ~Node() override;
 
     FileId inode() const override;
     std::chrono::system_clock::time_point timestamp() const override;
@@ -74,11 +74,12 @@ class FileSystem : public IFileSystem {
     std::deque<Chunk> chunk_;
     std::string cache_filename_;
     std::unique_ptr<std::fstream> store_;
+    bool list_directory_pending_ = false;
   };
 
   FileSystem(const std::vector<ProviderEntry> &, IHttp::Pointer http,
              const std::string &temporary_directory);
-  ~FileSystem();
+  ~FileSystem() override;
 
   FileId mknod(FileId parent, const char *name) override;
   void lookup(FileId parent_node, const std::string &name,

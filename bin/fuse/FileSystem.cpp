@@ -335,23 +335,24 @@ void FileSystem::write(FileId inode, const char* data, uint32_t size,
 }
 
 void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
+  bool reported = false;
   {
     std::lock_guard<mutex> lock(node_data_mutex_);
-    auto node_timestamp_it = node_timestamp_.find(node);
-    if (node == 1 ||
-        (node_timestamp_it != node_timestamp_.end() &&
-         std::chrono::system_clock::now() - node_timestamp_it->second <
-             CACHE_DIRECTORY_DURATION)) {
-      auto it = node_directory_.find(node);
-      if (it != std::end(node_directory_)) {
-        INode::List ret;
-        for (auto&& r : it->second) ret.push_back(get(r));
-        return cb(ret);
-      }
+    auto it = node_directory_.find(node);
+    if (it != std::end(node_directory_)) {
+      INode::List ret;
+      for (auto&& r : it->second) ret.push_back(get(r));
+      reported = true;
+      cb(ret);
     }
   }
   auto nd = get(node);
-  if (nd->provider() == nullptr) return cb(Error{IHttpRequest::Bad, ""});
+  if (nd->provider() == nullptr && !reported)
+    return cb(Error{IHttpRequest::Bad, ""});
+  std::unique_lock<std::recursive_mutex> lock(nd->mutex_);
+  if (nd->list_directory_pending_ && reported) return;
+  nd->list_directory_pending_ = true;
+  lock.unlock();
   list_directory_async(
       nd->provider(), nd->item(), [=](EitherError<IItem::List> e) {
         if (auto lst = e.right()) {
@@ -363,15 +364,23 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
             node_directory_[node] = ret;
             node_timestamp_[node] = std::chrono::system_clock::now();
           }
-          INode::List nodes;
-          for (auto&& r : ret) nodes.push_back(this->get(r));
-          cb(nodes);
+          if (!reported) {
+            INode::List nodes;
+            for (auto&& r : ret) nodes.push_back(this->get(r));
+            cb(nodes);
+          }
         } else {
-          auto item = auth_item(nd->provider()->authorizeLibraryUrl());
-          cb(INode::List(
-              1, std::make_shared<Node>(nd->provider(), item, node,
-                                        auth_node_[nd->provider()->name()],
-                                        item->size())));
+          if (!reported) {
+            auto item = auth_item(nd->provider()->authorizeLibraryUrl());
+            cb(INode::List(
+                1, std::make_shared<Node>(nd->provider(), item, node,
+                                          auth_node_[nd->provider()->name()],
+                                          item->size())));
+          }
+        }
+        {
+          std::unique_lock<std::recursive_mutex> lock(nd->mutex_);
+          nd->list_directory_pending_ = false;
         }
       });
 }
