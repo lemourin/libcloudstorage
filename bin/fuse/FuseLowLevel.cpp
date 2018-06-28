@@ -230,8 +230,8 @@ FuseLowLevel::FuseLowLevel(fuse_args *args, const char *mountpoint,
   fuse_session_mount(session_, mountpoint);
 #endif
 #ifdef WITH_LEGACY_FUSE
-  session_ = fuse_lowlevel_new(args, &operations, sizeof(operations), userdata);
   channel_ = fuse_mount(mountpoint, args);
+  session_ = fuse_lowlevel_new(args, &operations, sizeof(operations), userdata);
   fuse_session_add_chan(session_, channel_);
 #endif
   fuse_set_signal_handlers(session_);
