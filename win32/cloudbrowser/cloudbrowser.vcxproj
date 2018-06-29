@@ -103,7 +103,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>qtmain.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -122,7 +122,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>../dependencies/win32-debug/lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib</AdditionalLibraryDirectories>
     </Link>
     <Link>
       <AdditionalDependencies>qtmaind.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -144,20 +144,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="libcloudbrowser.vcxproj">
-      <Project>{6959f5d5-a817-4af0-8b02-e7d3b23eaf5b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="libcloudstorage.vcxproj">
-      <Project>{9194bbb3-78d1-46ff-bbbc-e6926ab1f9a6}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\bin\cloudbrowser\src\main.cpp" />
+    <ClCompile Include="..\..\bin\cloudbrowser\src\main.cpp" />
     <CustomBuild Include="qt.conf">
       <Message>COPY qt.conf</Message>
       <Command>copy $(ProjectDir)qt.conf $(OutDir)</Command>
       <Outputs>$(OutDir)/qt.conf</Outputs>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libcloudbrowser\libcloudbrowser.vcxproj">
+      <Project>{6959f5d5-a817-4af0-8b02-e7d3b23eaf5b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

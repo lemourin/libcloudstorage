@@ -19,101 +19,101 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\CloudProvider\AmazonS3.h" />
-    <ClInclude Include="..\src\CloudProvider\AnimeZone.h" />
-    <ClInclude Include="..\src\CloudProvider\Box.h" />
-    <ClInclude Include="..\src\CloudProvider\CloudProvider.h" />
-    <ClInclude Include="..\src\CloudProvider\Dropbox.h" />
-    <ClInclude Include="..\src\CloudProvider\FourShared.h" />
-    <ClInclude Include="..\src\CloudProvider\GoogleDrive.h" />
-    <ClInclude Include="..\src\CloudProvider\GooglePhotos.h" />
-    <ClInclude Include="..\src\CloudProvider\HubiC.h" />
-    <ClInclude Include="..\src\CloudProvider\LocalDrive.h" />
-    <ClInclude Include="..\src\CloudProvider\LocalDriveWinRT.h" />
-    <ClInclude Include="..\src\CloudProvider\MegaNz.h" />
-    <ClInclude Include="..\src\CloudProvider\OneDrive.h" />
-    <ClInclude Include="..\src\CloudProvider\PCloud.h" />
-    <ClInclude Include="..\src\CloudProvider\WebDav.h" />
-    <ClInclude Include="..\src\CloudProvider\YandexDisk.h" />
-    <ClInclude Include="..\src\CloudProvider\YouTube.h" />
-    <ClInclude Include="..\src\IAuth.h" />
-    <ClInclude Include="..\src\ICloudProvider.h" />
-    <ClInclude Include="..\src\ICloudStorage.h" />
-    <ClInclude Include="..\src\ICrypto.h" />
-    <ClInclude Include="..\src\IHttp.h" />
-    <ClInclude Include="..\src\IHttpServer.h" />
-    <ClInclude Include="..\src\IItem.h" />
-    <ClInclude Include="..\src\IRequest.h" />
-    <ClInclude Include="..\src\IThreadPool.h" />
-    <ClInclude Include="..\src\Request\AuthorizeRequest.h" />
-    <ClInclude Include="..\src\Request\CreateDirectoryRequest.h" />
-    <ClInclude Include="..\src\Request\DeleteItemRequest.h" />
-    <ClInclude Include="..\src\Request\DownloadFileRequest.h" />
-    <ClInclude Include="..\src\Request\ExchangeCodeRequest.h" />
-    <ClInclude Include="..\src\Request\GetItemDataRequest.h" />
-    <ClInclude Include="..\src\Request\GetItemRequest.h" />
-    <ClInclude Include="..\src\Request\GetItemUrlRequest.h" />
-    <ClInclude Include="..\src\Request\HttpCallback.h" />
-    <ClInclude Include="..\src\Request\ListDirectoryPageRequest.h" />
-    <ClInclude Include="..\src\Request\ListDirectoryRequest.h" />
-    <ClInclude Include="..\src\Request\MoveItemRequest.h" />
-    <ClInclude Include="..\src\Request\RecursiveRequest.h" />
-    <ClInclude Include="..\src\Request\RenameItemRequest.h" />
-    <ClInclude Include="..\src\Request\Request.h" />
-    <ClInclude Include="..\src\Request\UploadFileRequest.h" />
-    <ClInclude Include="..\src\Utility\Auth.h" />
-    <ClInclude Include="..\src\Utility\CloudStorage.h" />
-    <ClInclude Include="..\src\Utility\CryptoPP.h" />
-    <ClInclude Include="..\src\Utility\CurlHttp.h" />
-    <ClInclude Include="..\src\Utility\FileServer.h" />
-    <ClInclude Include="..\src\Utility\Item.h" />
-    <ClInclude Include="..\src\Utility\MicroHttpdServer.h" />
-    <ClInclude Include="..\src\Utility\ThreadPool.h" />
-    <ClInclude Include="..\src\Utility\Utility.h" />
+    <ClInclude Include="..\..\src\CloudProvider\AmazonS3.h" />
+    <ClInclude Include="..\..\src\CloudProvider\AnimeZone.h" />
+    <ClInclude Include="..\..\src\CloudProvider\Box.h" />
+    <ClInclude Include="..\..\src\CloudProvider\CloudProvider.h" />
+    <ClInclude Include="..\..\src\CloudProvider\Dropbox.h" />
+    <ClInclude Include="..\..\src\CloudProvider\FourShared.h" />
+    <ClInclude Include="..\..\src\CloudProvider\GoogleDrive.h" />
+    <ClInclude Include="..\..\src\CloudProvider\GooglePhotos.h" />
+    <ClInclude Include="..\..\src\CloudProvider\HubiC.h" />
+    <ClInclude Include="..\..\src\CloudProvider\LocalDrive.h" />
+    <ClInclude Include="..\..\src\CloudProvider\LocalDriveWinRT.h" />
+    <ClInclude Include="..\..\src\CloudProvider\MegaNz.h" />
+    <ClInclude Include="..\..\src\CloudProvider\OneDrive.h" />
+    <ClInclude Include="..\..\src\CloudProvider\PCloud.h" />
+    <ClInclude Include="..\..\src\CloudProvider\WebDav.h" />
+    <ClInclude Include="..\..\src\CloudProvider\YandexDisk.h" />
+    <ClInclude Include="..\..\src\CloudProvider\YouTube.h" />
+    <ClInclude Include="..\..\src\IAuth.h" />
+    <ClInclude Include="..\..\src\ICloudProvider.h" />
+    <ClInclude Include="..\..\src\ICloudStorage.h" />
+    <ClInclude Include="..\..\src\ICrypto.h" />
+    <ClInclude Include="..\..\src\IHttp.h" />
+    <ClInclude Include="..\..\src\IHttpServer.h" />
+    <ClInclude Include="..\..\src\IItem.h" />
+    <ClInclude Include="..\..\src\IRequest.h" />
+    <ClInclude Include="..\..\src\IThreadPool.h" />
+    <ClInclude Include="..\..\src\Request\AuthorizeRequest.h" />
+    <ClInclude Include="..\..\src\Request\CreateDirectoryRequest.h" />
+    <ClInclude Include="..\..\src\Request\DeleteItemRequest.h" />
+    <ClInclude Include="..\..\src\Request\DownloadFileRequest.h" />
+    <ClInclude Include="..\..\src\Request\ExchangeCodeRequest.h" />
+    <ClInclude Include="..\..\src\Request\GetItemDataRequest.h" />
+    <ClInclude Include="..\..\src\Request\GetItemRequest.h" />
+    <ClInclude Include="..\..\src\Request\GetItemUrlRequest.h" />
+    <ClInclude Include="..\..\src\Request\HttpCallback.h" />
+    <ClInclude Include="..\..\src\Request\ListDirectoryPageRequest.h" />
+    <ClInclude Include="..\..\src\Request\ListDirectoryRequest.h" />
+    <ClInclude Include="..\..\src\Request\MoveItemRequest.h" />
+    <ClInclude Include="..\..\src\Request\RecursiveRequest.h" />
+    <ClInclude Include="..\..\src\Request\RenameItemRequest.h" />
+    <ClInclude Include="..\..\src\Request\Request.h" />
+    <ClInclude Include="..\..\src\Request\UploadFileRequest.h" />
+    <ClInclude Include="..\..\src\Utility\Auth.h" />
+    <ClInclude Include="..\..\src\Utility\CloudStorage.h" />
+    <ClInclude Include="..\..\src\Utility\CryptoPP.h" />
+    <ClInclude Include="..\..\src\Utility\CurlHttp.h" />
+    <ClInclude Include="..\..\src\Utility\FileServer.h" />
+    <ClInclude Include="..\..\src\Utility\Item.h" />
+    <ClInclude Include="..\..\src\Utility\MicroHttpdServer.h" />
+    <ClInclude Include="..\..\src\Utility\ThreadPool.h" />
+    <ClInclude Include="..\..\src\Utility\Utility.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\CloudProvider\AmazonS3.cpp" />
-    <ClCompile Include="..\src\CloudProvider\AnimeZone.cpp" />
-    <ClCompile Include="..\src\CloudProvider\Box.cpp" />
-    <ClCompile Include="..\src\CloudProvider\CloudProvider.cpp" />
-    <ClCompile Include="..\src\CloudProvider\Dropbox.cpp" />
-    <ClCompile Include="..\src\CloudProvider\FourShared.cpp" />
-    <ClCompile Include="..\src\CloudProvider\GoogleDrive.cpp" />
-    <ClCompile Include="..\src\CloudProvider\GooglePhotos.cpp" />
-    <ClCompile Include="..\src\CloudProvider\HubiC.cpp" />
-    <ClCompile Include="..\src\CloudProvider\LocalDrive.cpp" />
-    <ClCompile Include="..\src\CloudProvider\LocalDriveWinRT.cpp" />
-    <ClCompile Include="..\src\CloudProvider\MegaNz.cpp" />
-    <ClCompile Include="..\src\CloudProvider\OneDrive.cpp" />
-    <ClCompile Include="..\src\CloudProvider\PCloud.cpp" />
-    <ClCompile Include="..\src\CloudProvider\WebDav.cpp" />
-    <ClCompile Include="..\src\CloudProvider\YandexDisk.cpp" />
-    <ClCompile Include="..\src\CloudProvider\YouTube.cpp" />
-    <ClCompile Include="..\src\Request\AuthorizeRequest.cpp" />
-    <ClCompile Include="..\src\Request\CreateDirectoryRequest.cpp" />
-    <ClCompile Include="..\src\Request\DeleteItemRequest.cpp" />
-    <ClCompile Include="..\src\Request\DownloadFileRequest.cpp" />
-    <ClCompile Include="..\src\Request\ExchangeCodeRequest.cpp" />
-    <ClCompile Include="..\src\Request\GetItemDataRequest.cpp" />
-    <ClCompile Include="..\src\Request\GetItemRequest.cpp" />
-    <ClCompile Include="..\src\Request\GetItemUrlRequest.cpp" />
-    <ClCompile Include="..\src\Request\HttpCallback.cpp" />
-    <ClCompile Include="..\src\Request\ListDirectoryPageRequest.cpp" />
-    <ClCompile Include="..\src\Request\ListDirectoryRequest.cpp" />
-    <ClCompile Include="..\src\Request\MoveItemRequest.cpp" />
-    <ClCompile Include="..\src\Request\RecursiveRequest.cpp" />
-    <ClCompile Include="..\src\Request\RenameItemRequest.cpp" />
-    <ClCompile Include="..\src\Request\Request.cpp" />
-    <ClCompile Include="..\src\Request\UploadFileRequest.cpp" />
-    <ClCompile Include="..\src\Utility\Auth.cpp" />
-    <ClCompile Include="..\src\Utility\CloudStorage.cpp" />
-    <ClCompile Include="..\src\Utility\CryptoPP.cpp" />
-    <ClCompile Include="..\src\Utility\CurlHttp.cpp" />
-    <ClCompile Include="..\src\Utility\FileServer.cpp" />
-    <ClCompile Include="..\src\Utility\Item.cpp" />
-    <ClCompile Include="..\src\Utility\MicroHttpdServer.cpp" />
-    <ClCompile Include="..\src\Utility\ThreadPool.cpp" />
-    <ClCompile Include="..\src\Utility\Utility.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\AmazonS3.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\AnimeZone.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\Box.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\CloudProvider.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\Dropbox.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\FourShared.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\GoogleDrive.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\GooglePhotos.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\HubiC.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\LocalDrive.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\LocalDriveWinRT.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\MegaNz.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\OneDrive.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\PCloud.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\WebDav.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\YandexDisk.cpp" />
+    <ClCompile Include="..\..\src\CloudProvider\YouTube.cpp" />
+    <ClCompile Include="..\..\src\Request\AuthorizeRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\CreateDirectoryRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\DeleteItemRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\DownloadFileRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\ExchangeCodeRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\GetItemDataRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\GetItemRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\GetItemUrlRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\HttpCallback.cpp" />
+    <ClCompile Include="..\..\src\Request\ListDirectoryPageRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\ListDirectoryRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\MoveItemRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\RecursiveRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\RenameItemRequest.cpp" />
+    <ClCompile Include="..\..\src\Request\Request.cpp" />
+    <ClCompile Include="..\..\src\Request\UploadFileRequest.cpp" />
+    <ClCompile Include="..\..\src\Utility\Auth.cpp" />
+    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp" />
+    <ClCompile Include="..\..\src\Utility\CryptoPP.cpp" />
+    <ClCompile Include="..\..\src\Utility\CurlHttp.cpp" />
+    <ClCompile Include="..\..\src\Utility\FileServer.cpp" />
+    <ClCompile Include="..\..\src\Utility\Item.cpp" />
+    <ClCompile Include="..\..\src\Utility\MicroHttpdServer.cpp" />
+    <ClCompile Include="..\..\src\Utility\ThreadPool.cpp" />
+    <ClCompile Include="..\..\src\Utility\Utility.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -172,14 +172,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -207,14 +205,14 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>../dependencies/win32/include/cares;../dependencies/win32/include/mega/wincurl;../dependencies/win32/include;../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;cryptlib.lib;cares.lib;winhttp.lib;ws2_32.lib;advapi32.lib;ssleay32.lib;libeay32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../dependencies/win32-debug/lib;../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -248,7 +246,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>../dependencies/win32/include/cares;../dependencies/win32/include/mega/wincurl;../dependencies/win32/include;../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -256,7 +254,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

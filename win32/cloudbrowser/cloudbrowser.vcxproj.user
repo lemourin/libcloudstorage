@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\dependencies\win32\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>QML2_IMPORT_PATH=$(ProjectDir)\..\..\dependencies\win32\bin
+QT_PLUGIN_PATH=$(ProjectDir)\..\..\dependencies\win32\bin
+QTWEBENGINEPROCESS_PATH=$(ProjectDir)\..\..\dependencies\win32\bin
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)\..\..\dependencies\win32-debug\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>QML2_IMPORT_PATH=$(ProjectDir)\..\..\dependencies\win32-debug\bin
+QT_PLUGIN_PATH=$(ProjectDir)\..\..\dependencies\win32-debug\bin
+QTWEBENGINEPROCESS_PATH=$(ProjectDir)\..\..\dependencies\win32\bin</LocalDebuggerEnvironment>
+  </PropertyGroup>
+</Project>

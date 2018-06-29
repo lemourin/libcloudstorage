@@ -15,285 +15,285 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\IAuth.h">
+    <ClInclude Include="..\..\src\IAuth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ICloudProvider.h">
+    <ClInclude Include="..\..\src\ICloudProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ICloudStorage.h">
+    <ClInclude Include="..\..\src\ICloudStorage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ICrypto.h">
+    <ClInclude Include="..\..\src\ICrypto.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\IHttp.h">
+    <ClInclude Include="..\..\src\IHttp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\IHttpServer.h">
+    <ClInclude Include="..\..\src\IHttpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\IItem.h">
+    <ClInclude Include="..\..\src\IItem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\IRequest.h">
+    <ClInclude Include="..\..\src\IRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\IThreadPool.h">
+    <ClInclude Include="..\..\src\IThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\Auth.h">
+    <ClInclude Include="..\..\src\Utility\Auth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\CloudStorage.h">
+    <ClInclude Include="..\..\src\Utility\CloudStorage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\CryptoPP.h">
+    <ClInclude Include="..\..\src\Utility\CryptoPP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\CurlHttp.h">
+    <ClInclude Include="..\..\src\Utility\CurlHttp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\FileServer.h">
+    <ClInclude Include="..\..\src\Utility\FileServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\Item.h">
+    <ClInclude Include="..\..\src\Utility\Item.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\MicroHttpdServer.h">
+    <ClInclude Include="..\..\src\Utility\MicroHttpdServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\ThreadPool.h">
+    <ClInclude Include="..\..\src\Utility\ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Utility\Utility.h">
+    <ClInclude Include="..\..\src\Utility\Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\AuthorizeRequest.h">
+    <ClInclude Include="..\..\src\Request\AuthorizeRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\CreateDirectoryRequest.h">
+    <ClInclude Include="..\..\src\Request\CreateDirectoryRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\DeleteItemRequest.h">
+    <ClInclude Include="..\..\src\Request\DeleteItemRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\DownloadFileRequest.h">
+    <ClInclude Include="..\..\src\Request\DownloadFileRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\ExchangeCodeRequest.h">
+    <ClInclude Include="..\..\src\Request\ExchangeCodeRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\GetItemDataRequest.h">
+    <ClInclude Include="..\..\src\Request\GetItemDataRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\GetItemRequest.h">
+    <ClInclude Include="..\..\src\Request\GetItemRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\GetItemUrlRequest.h">
+    <ClInclude Include="..\..\src\Request\GetItemUrlRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\HttpCallback.h">
+    <ClInclude Include="..\..\src\Request\HttpCallback.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\ListDirectoryPageRequest.h">
+    <ClInclude Include="..\..\src\Request\ListDirectoryPageRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\ListDirectoryRequest.h">
+    <ClInclude Include="..\..\src\Request\ListDirectoryRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\MoveItemRequest.h">
+    <ClInclude Include="..\..\src\Request\MoveItemRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\RecursiveRequest.h">
+    <ClInclude Include="..\..\src\Request\RecursiveRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\RenameItemRequest.h">
+    <ClInclude Include="..\..\src\Request\RenameItemRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\Request.h">
+    <ClInclude Include="..\..\src\Request\Request.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Request\UploadFileRequest.h">
+    <ClInclude Include="..\..\src\Request\UploadFileRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\AmazonS3.h">
+    <ClInclude Include="..\..\src\CloudProvider\AmazonS3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\AnimeZone.h">
+    <ClInclude Include="..\..\src\CloudProvider\AnimeZone.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\Box.h">
+    <ClInclude Include="..\..\src\CloudProvider\Box.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\CloudProvider.h">
+    <ClInclude Include="..\..\src\CloudProvider\CloudProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\Dropbox.h">
+    <ClInclude Include="..\..\src\CloudProvider\Dropbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\FourShared.h">
+    <ClInclude Include="..\..\src\CloudProvider\FourShared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\GoogleDrive.h">
+    <ClInclude Include="..\..\src\CloudProvider\GoogleDrive.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\GooglePhotos.h">
+    <ClInclude Include="..\..\src\CloudProvider\GooglePhotos.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\HubiC.h">
+    <ClInclude Include="..\..\src\CloudProvider\HubiC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\LocalDrive.h">
+    <ClInclude Include="..\..\src\CloudProvider\LocalDrive.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\LocalDriveWinRT.h">
+    <ClInclude Include="..\..\src\CloudProvider\LocalDriveWinRT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\MegaNz.h">
+    <ClInclude Include="..\..\src\CloudProvider\MegaNz.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\OneDrive.h">
+    <ClInclude Include="..\..\src\CloudProvider\OneDrive.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\PCloud.h">
+    <ClInclude Include="..\..\src\CloudProvider\PCloud.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\WebDav.h">
+    <ClInclude Include="..\..\src\CloudProvider\WebDav.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\YandexDisk.h">
+    <ClInclude Include="..\..\src\CloudProvider\YandexDisk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\CloudProvider\YouTube.h">
+    <ClInclude Include="..\..\src\CloudProvider\YouTube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Utility\Auth.cpp">
+    <ClCompile Include="..\..\src\Utility\Auth.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\CloudStorage.cpp">
+    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\CryptoPP.cpp">
+    <ClCompile Include="..\..\src\Utility\CryptoPP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\CurlHttp.cpp">
+    <ClCompile Include="..\..\src\Utility\CurlHttp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\FileServer.cpp">
+    <ClCompile Include="..\..\src\Utility\FileServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\Item.cpp">
+    <ClCompile Include="..\..\src\Utility\Item.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\MicroHttpdServer.cpp">
+    <ClCompile Include="..\..\src\Utility\MicroHttpdServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\ThreadPool.cpp">
+    <ClCompile Include="..\..\src\Utility\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Utility\Utility.cpp">
+    <ClCompile Include="..\..\src\Utility\Utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\AuthorizeRequest.cpp">
+    <ClCompile Include="..\..\src\Request\AuthorizeRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\CreateDirectoryRequest.cpp">
+    <ClCompile Include="..\..\src\Request\CreateDirectoryRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\DeleteItemRequest.cpp">
+    <ClCompile Include="..\..\src\Request\DeleteItemRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\DownloadFileRequest.cpp">
+    <ClCompile Include="..\..\src\Request\DownloadFileRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\ExchangeCodeRequest.cpp">
+    <ClCompile Include="..\..\src\Request\ExchangeCodeRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\GetItemDataRequest.cpp">
+    <ClCompile Include="..\..\src\Request\GetItemDataRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\GetItemRequest.cpp">
+    <ClCompile Include="..\..\src\Request\GetItemRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\GetItemUrlRequest.cpp">
+    <ClCompile Include="..\..\src\Request\GetItemUrlRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\HttpCallback.cpp">
+    <ClCompile Include="..\..\src\Request\HttpCallback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\ListDirectoryPageRequest.cpp">
+    <ClCompile Include="..\..\src\Request\ListDirectoryPageRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\ListDirectoryRequest.cpp">
+    <ClCompile Include="..\..\src\Request\ListDirectoryRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\MoveItemRequest.cpp">
+    <ClCompile Include="..\..\src\Request\MoveItemRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\RecursiveRequest.cpp">
+    <ClCompile Include="..\..\src\Request\RecursiveRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\RenameItemRequest.cpp">
+    <ClCompile Include="..\..\src\Request\RenameItemRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\Request.cpp">
+    <ClCompile Include="..\..\src\Request\Request.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Request\UploadFileRequest.cpp">
+    <ClCompile Include="..\..\src\Request\UploadFileRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\AmazonS3.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\AmazonS3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\AnimeZone.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\AnimeZone.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\Box.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\Box.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\CloudProvider.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\CloudProvider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\Dropbox.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\Dropbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\FourShared.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\FourShared.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\GoogleDrive.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\GoogleDrive.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\GooglePhotos.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\GooglePhotos.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\HubiC.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\HubiC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\LocalDrive.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\LocalDrive.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\LocalDriveWinRT.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\LocalDriveWinRT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\MegaNz.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\MegaNz.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\OneDrive.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\OneDrive.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\PCloud.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\PCloud.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\WebDav.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\WebDav.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\YandexDisk.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\YandexDisk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\CloudProvider\YouTube.cpp">
+    <ClCompile Include="..\..\src\CloudProvider\YouTube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
