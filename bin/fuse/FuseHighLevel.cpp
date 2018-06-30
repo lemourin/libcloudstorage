@@ -15,6 +15,8 @@ using util::log;
 
 namespace {
 
+IThreadPool::Pointer thread_pool = IThreadPool::create(4);
+
 struct FileId {
   std::string path_;
   std::string filename_;
@@ -58,10 +60,12 @@ int readdir(const char *path, void *buf, fuse_fill_dir_t filler, FUSE_OFF_T,
     ctx->readdir(e.right()->inode(),
                  [&](EitherError<std::vector<IFileSystem::INode::Pointer>> e) {
                    if (e.left()) return ret.set_value(-EIO);
-                   for (auto &&i : *e.right())
-                     filler(buf, ctx->sanitize(i->filename()).c_str(), nullptr,
-                            0);
-                   ret.set_value(0);
+                   thread_pool->schedule([&ret, filler, buf, ctx, e] {
+                     for (auto &&i : *e.right())
+                       filler(buf, ctx->sanitize(i->filename()).c_str(),
+                              nullptr, 0);
+                     ret.set_value(0);
+                   });
                  });
   });
   return ret.get_future().get();
