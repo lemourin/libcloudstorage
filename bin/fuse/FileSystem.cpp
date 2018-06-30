@@ -13,6 +13,7 @@
 #include "Utility/Utility.h"
 
 const std::string AUTH_ITEM_ID = "NVap5sT9XY";
+const bool IGNORE_UNKNOWN_SIZE = false;
 
 namespace cloudstorage {
 
@@ -244,42 +245,33 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
   auto n = get(node);
   if (n->item()) {
     if (n->type() != IItem::FileType::Directory &&
-        n->size() == IItem::UnknownSize)
+        n->size() == IItem::UnknownSize) {
       get_url_async(n->provider(), n->item(), [=](EitherError<std::string> e) {
         if (auto url = e.right()) {
           http_->create(*url, "HEAD")
               ->send(
                   [=](IHttpRequest::Response response) {
                     if (IHttpRequest::isSuccess(response.http_code_)) {
-                      if (response.headers_.find("content-length") ==
-                          response.headers_.end())
-                        return this->download_item_async(
-                            n->provider(), n->item(), FullRange,
-                            [=](EitherError<std::string> e) {
-                              if (e.left()) return cb(e.left());
-                              auto nnode = std::make_shared<Node>(
-                                  n->provider(), n->item(), n->parent_, node,
-                                  e.right()->size());
-                              this->set(node, nnode);
-                              cb(std::static_pointer_cast<INode>(nnode));
-                            });
                       uint64_t size = 0;
                       auto content_length_iter =
                           response.headers_.find("content-length");
                       if (content_length_iter != response.headers_.end()) {
                         size = std::stoull(content_length_iter->second);
                       }
-
                       auto nnode = std::make_shared<Node>(
                           n->provider(), n->item(), n->parent_, node,
                           static_cast<uint64_t>(size));
                       this->set(node, nnode);
                       cb(std::static_pointer_cast<INode>(nnode));
-                    } else
+                    } else {
+                      auto nnode = std::make_shared<Node>(
+                          n->provider(), n->item(), n->parent_, node, 0ull);
+                      this->set(node, nnode);
                       cb(Error{response.http_code_,
                                std::static_pointer_cast<std::stringstream>(
                                    response.error_stream_)
                                    ->str()});
+                    }
                   },
                   std::make_shared<std::stringstream>(),
                   std::make_shared<std::stringstream>(),
@@ -287,7 +279,7 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
         } else
           cb(e.left());
       });
-    else
+    } else
       cb(std::static_pointer_cast<INode>(n));
   } else {
     cb(Error{IHttpRequest::Bad, ""});
@@ -358,7 +350,9 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
         if (auto lst = e.right()) {
           std::unordered_set<FileId> ret;
           for (auto&& i : *lst)
-            ret.insert(this->add(nd->provider(), node, i)->inode());
+            if (i->type() == IItem::FileType::Directory ||
+                i->size() != IItem::UnknownSize || !IGNORE_UNKNOWN_SIZE)
+              ret.insert(this->add(nd->provider(), node, i)->inode());
           {
             std::lock_guard<mutex> lock(node_data_mutex_);
             node_directory_[node] = ret;
