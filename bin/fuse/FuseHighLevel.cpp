@@ -49,7 +49,7 @@ int opendir(const char *, struct fuse_file_info *) { return 0; }
 
 int open(const char *, struct fuse_file_info *f) { return 0; }
 
-int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t,
+int readdir(const char *path, void *buf, fuse_fill_dir_t filler, FUSE_OFF_T,
             struct fuse_file_info *) {
   std::promise<int> ret;
   auto ctx = context();
@@ -67,7 +67,7 @@ int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t,
   return ret.get_future().get();
 }
 
-int read(const char *path, char *buffer, size_t size, off_t offset,
+int read(const char *path, char *buffer, size_t size, FUSE_OFF_T offset,
          struct fuse_file_info *) {
   std::promise<int> ret;
   auto ctx = context();
@@ -156,7 +156,7 @@ int mknod(const char *path, mode_t, dev_t) {
   return ret.get_future().get();
 }
 
-int write(const char *path, const char *data, size_t size, off_t offset,
+int write(const char *path, const char *data, size_t size, FUSE_OFF_T offset,
           struct fuse_file_info *) {
   std::promise<int> ret;
   auto ctx = context();

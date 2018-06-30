@@ -1,3 +1,6 @@
 [submodule "test/googletest"]
 	path = test/googletest
 	url = https://github.com/google/googletest.git
+[submodule "win32/dokany"]
+	path = win32/dokany
+	url = https://github.com/dokan-dev/dokany

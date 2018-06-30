@@ -51,15 +51,15 @@ namespace cloudstorage {
 
 struct Range;
 
-bool operator==(const Range&, const Range&);
-bool operator!=(const Range&, const Range&);
+CLOUDSTORAGE_API bool operator==(const Range&, const Range&);
+CLOUDSTORAGE_API bool operator!=(const Range&, const Range&);
 
 namespace util {
 
 using Output = std::shared_ptr<std::ostream>;
 using Input = std::shared_ptr<std::istream>;
 
-struct FileId {
+struct CLOUDSTORAGE_API FileId {
   FileId(bool, const std::string&);
   FileId(const std::string&);
 
@@ -81,24 +81,25 @@ T exchange(T& obj, U&& new_value) {
   return old_value;
 }
 
-std::string to_lower(std::string);
-std::string remove_whitespace(const std::string& str);
-Range parse_range(const std::string& str);
-std::unordered_map<std::string, std::string> parse_form(const std::string& str);
-std::unordered_map<std::string, std::string> parse_cookie(
+CLOUDSTORAGE_API std::string to_lower(std::string);
+CLOUDSTORAGE_API std::string remove_whitespace(const std::string& str);
+CLOUDSTORAGE_API Range parse_range(const std::string& str);
+CLOUDSTORAGE_API std::unordered_map<std::string, std::string> parse_form(
+    const std::string& str);
+CLOUDSTORAGE_API std::unordered_map<std::string, std::string> parse_cookie(
     const std::string& cookie);
-std::string range_to_string(Range);
-std::string to_mime_type(const std::string& extension);
-IItem::TimeStamp parse_time(const std::string& time);
-std::string login_page(const std::string& provider);
-std::string success_page(const std::string& provider);
-std::string error_page(const std::string& provider);
-const char* libcloudstorage_ascii_art();
+CLOUDSTORAGE_API std::string range_to_string(Range);
+CLOUDSTORAGE_API std::string to_mime_type(const std::string& extension);
+CLOUDSTORAGE_API IItem::TimeStamp parse_time(const std::string& time);
+CLOUDSTORAGE_API std::string login_page(const std::string& provider);
+CLOUDSTORAGE_API std::string success_page(const std::string& provider);
+CLOUDSTORAGE_API std::string error_page(const std::string& provider);
+CLOUDSTORAGE_API const char* libcloudstorage_ascii_art();
 namespace json {
-std::string to_string(const Json::Value&);
-Json::Value from_string(const std::string&);
-Json::Value from_stream(std::istream&&);
-Json::Value from_stream(std::istream&);
+CLOUDSTORAGE_API std::string to_string(const Json::Value&);
+CLOUDSTORAGE_API Json::Value from_string(const std::string&);
+CLOUDSTORAGE_API Json::Value from_stream(std::istream&&);
+CLOUDSTORAGE_API Json::Value from_stream(std::istream&);
 }  // namespace json
 
 class CLOUDSTORAGE_API Url {

@@ -32,7 +32,7 @@
 
 namespace cloudstorage {
 
-class Item : public IItem {
+class CLOUDSTORAGE_API Item : public IItem {
  public:
   using Pointer = std::shared_ptr<Item>;
 

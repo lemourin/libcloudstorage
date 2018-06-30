@@ -19,6 +19,10 @@
 #define FUSE_STAT stat
 #endif
 
+#ifndef FUSE_OFF_T
+#define FUSE_OFF_T off_t
+#endif
+
 #include <json/json.h>
 #include <future>
 #include "IFileSystem.h"
