@@ -8,12 +8,13 @@ AM_LDFLAGS = \
 	-no-undefined \
 	$(SOCKET_LIBS)
 
-bin_PROGRAMS = libcloudstorage-fuse
+bin_PROGRAMS = cloudstorage-fuse
 
-libcloudstorage_fuse_SOURCES = \
+cloudstorage_fuse_SOURCES = \
 	FuseCommon.cpp \
 	FuseLowLevel.cpp \
 	FuseHighLevel.cpp \
+	FuseDokan.cpp \
 	FileSystem.cpp \
 	main.cpp
 
@@ -21,19 +22,20 @@ noinst_HEADERS = \
 	FuseCommon.h \
 	FuseLowLevel.h \
 	FuseHighLevel.h \
+	FuseDokan.h \
 	IFileSystem.h \
 	FileSystem.h
 
-libcloudstorage_fuse_LDADD = \
+cloudstorage_fuse_LDADD = \
 	../../src/libcloudstorage.la \
 	$(libjsoncpp_LIBS)
 
 if WITH_FUSE
 AM_CXXFLAGS += $(fuse_CFLAGS)
-libcloudstorage_fuse_LDADD += $(fuse_LIBS)
+cloudstorage_fuse_LDADD += $(fuse_LIBS)
 endif
 
 if WITH_LEGACY_FUSE
 AM_CXXFLAGS += $(fuse2_CFLAGS)
-libcloudstorage_fuse_LDADD += $(fuse2_LIBS)
+cloudstorage_fuse_LDADD += $(fuse2_LIBS)
 endif
