@@ -47,6 +47,25 @@ IItem::TimeStamp parse_time(const std::string& str) {
   }
 }
 
+bool ends_with(const char* str, const char* pattern) {
+  auto l1 = strlen(str);
+  auto l2 = strlen(pattern);
+  if (l1 < l2) return false;
+  for (auto i = 0u; i < l2; i++)
+    if (str[i + l1 - l2] != pattern[i]) return false;
+  return true;
+}
+
+const tinyxml2::XMLElement* find(const tinyxml2::XMLElement* parent,
+                                 const char* name, bool except = true) {
+  for (auto element = parent->FirstChildElement(); element;
+       element = element->NextSiblingElement()) {
+    if (element->Name() && ends_with(element->Name(), name)) return element;
+  }
+  if (except) throw std::logic_error(util::Error::INVALID_XML);
+  return nullptr;
+}
+
 }  // namespace
 
 WebDav::WebDav() : CloudProvider(util::make_unique<Auth>()) {}
@@ -181,16 +200,11 @@ GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
     throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
-  auto response = document.RootElement()->FirstChildElement("d:response");
-  if (!response) throw std::logic_error(util::Error::INVALID_XML);
-  auto propstat = response->FirstChildElement("d:propstat");
-  if (!propstat) throw std::logic_error(util::Error::INVALID_XML);
-  auto prop = propstat->FirstChildElement("d:prop");
-  if (!prop) throw std::logic_error(util::Error::INVALID_XML);
-  auto quota_used = prop->FirstChildElement("d:quota-used-bytes");
-  auto quota_available = prop->FirstChildElement("d:quota-available-bytes");
-  if (!quota_used || !quota_available)
-    throw std::logic_error(util::Error::INVALID_XML);
+  auto response = find(document.RootElement(), "response");
+  auto propstat = find(response, "propstat");
+  auto prop = find(propstat, "prop");
+  auto quota_used = find(prop, "quota-used-bytes");
+  auto quota_available = find(prop, "quota-available-bytes");
   GeneralData data;
   data.space_used_ =
       quota_used->GetText() ? std::stoull(quota_used->GetText()) : 0;
@@ -210,7 +224,7 @@ IItem::Pointer WebDav::getItemDataResponse(std::istream& stream) const {
   tinyxml2::XMLDocument document;
   if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
     throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
-  return toItem(document.RootElement()->FirstChild());
+  return toItem(document.RootElement()->FirstChildElement());
 }
 
 IItem::Pointer WebDav::renameItemResponse(const IItem& item,
@@ -247,26 +261,23 @@ IItem::List WebDav::listDirectoryResponse(const IItem&, std::istream& stream,
   if (document.RootElement()->FirstChild() == nullptr) return {};
 
   IItem::List result;
-  for (auto child = document.RootElement()->FirstChild()->NextSibling(); child;
-       child = child->NextSibling()) {
+  for (auto child = document.RootElement()->FirstChild()->NextSiblingElement();
+       child; child = child->NextSiblingElement()) {
     result.push_back(toItem(child));
   }
   return result;
 }
 
-IItem::Pointer WebDav::toItem(const tinyxml2::XMLNode* node) const {
+IItem::Pointer WebDav::toItem(const tinyxml2::XMLElement* node) const {
   if (!node) throw std::logic_error(util::Error::INVALID_XML);
-  auto element = node->FirstChildElement("d:href");
-  if (!element) throw std::logic_error(util::Error::INVALID_XML);
-  auto propstat = node->FirstChildElement("d:propstat");
-  if (!propstat) throw std::logic_error(util::Error::INVALID_XML);
-  auto prop = propstat->FirstChildElement("d:prop");
-  if (!prop) throw std::logic_error(util::Error::INVALID_XML);
+  auto element = find(node, "href");
+  auto propstat = find(node, "propstat");
+  auto prop = find(propstat, "prop");
   auto size = IItem::UnknownSize;
   auto timestamp = IItem::UnknownTimeStamp;
-  if (auto size_element = prop->FirstChildElement("d:getcontentlength"))
+  if (auto size_element = find(prop, "getcontentlength", false))
     if (auto text = size_element->GetText()) size = std::stoull(text);
-  if (auto timestamp_element = prop->FirstChildElement("d:getlastmodified"))
+  if (auto timestamp_element = find(prop, "getlastmodified"))
     if (auto text = timestamp_element->GetText()) timestamp = parse_time(text);
   auto lock = auth_lock();
   auto url = util::Url(webdav_url_);

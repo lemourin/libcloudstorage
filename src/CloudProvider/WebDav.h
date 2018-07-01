@@ -90,7 +90,7 @@ class WebDav : public CloudProvider {
                                     std::istream& response) const override;
   GeneralData getGeneralDataResponse(std::istream& response) const override;
 
-  IItem::Pointer toItem(const tinyxml2::XMLNode*) const;
+  IItem::Pointer toItem(const tinyxml2::XMLElement*) const;
 
   bool reauthorize(int code,
                    const IHttpRequest::HeaderParameters&) const override;
