@@ -275,15 +275,19 @@ IItem::Pointer WebDav::toItem(const tinyxml2::XMLElement* node) const {
   auto prop = find(propstat, "prop");
   auto size = IItem::UnknownSize;
   auto timestamp = IItem::UnknownTimeStamp;
+  auto type = IItem::FileType::Unknown;
   if (auto size_element = find(prop, "getcontentlength", false))
     if (auto text = size_element->GetText()) size = std::stoull(text);
-  if (auto timestamp_element = find(prop, "getlastmodified"))
+  if (auto timestamp_element = find(prop, "getlastmodified", false))
     if (auto text = timestamp_element->GetText()) timestamp = parse_time(text);
+  if (auto resource_type = find(prop, "resourcetype", false))
+    if (find(resource_type, "collection", false)) {
+      type = IItem::FileType::Directory;
+    }
   auto lock = auth_lock();
   auto url = util::Url(webdav_url_);
   std::string id = element->GetText();
   id = id.substr(url.path().length());
-  IItem::FileType type = IItem::FileType::Unknown;
   if (id.back() == '/') type = IItem::FileType::Directory;
   std::string filename = id;
   if (filename.back() == '/') filename.pop_back();
