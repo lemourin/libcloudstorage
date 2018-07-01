@@ -15,9 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcloudbrowser-winrt", "li
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cloudbrowser-winrt", "cloudbrowser-winrt\cloudbrowser-winrt.vcxproj", "{918F4834-3C84-4C9E-9334-8BA017805C26}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fuse", "fuse\fuse.vcxproj", "{431C3574-3E47-4874-A4E6-7C7C11C2E0A4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cloudstorage-fuse", "cloudstorage-fuse\cloudstorage-fuse.vcxproj", "{431C3574-3E47-4874-A4E6-7C7C11C2E0A4}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dokan_fuse", "dokany\dokan_fuse\dokan_fuse.vcxproj", "{4AF8149D-C526-4D38-A4BC-9FFA67EDF924}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dokan", "dokany\dokan\dokan.vcxproj", "{F25BA22F-2AB8-4859-9B89-8FE1E774B472}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,10 @@ Global
 		{4AF8149D-C526-4D38-A4BC-9FFA67EDF924}.Debug|x64.Build.0 = Debug|x64
 		{4AF8149D-C526-4D38-A4BC-9FFA67EDF924}.Release|x64.ActiveCfg = Release|x64
 		{4AF8149D-C526-4D38-A4BC-9FFA67EDF924}.Release|x64.Build.0 = Release|x64
+		{F25BA22F-2AB8-4859-9B89-8FE1E774B472}.Debug|x64.ActiveCfg = Debug|x64
+		{F25BA22F-2AB8-4859-9B89-8FE1E774B472}.Debug|x64.Build.0 = Debug|x64
+		{F25BA22F-2AB8-4859-9B89-8FE1E774B472}.Release|x64.ActiveCfg = Release|x64
+		{F25BA22F-2AB8-4859-9B89-8FE1E774B472}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\bin\fuse\FileSystem.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseCommon.cpp" />
+    <ClCompile Include="..\..\bin\fuse\FuseDokan.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseHighLevel.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseLowLevel.cpp" />
     <ClCompile Include="..\..\bin\fuse\main.cpp" />
@@ -28,11 +29,15 @@
   <ItemGroup>
     <ClInclude Include="..\..\bin\fuse\FileSystem.h" />
     <ClInclude Include="..\..\bin\fuse\FuseCommon.h" />
+    <ClInclude Include="..\..\bin\fuse\FuseDokan.h" />
     <ClInclude Include="..\..\bin\fuse\FuseHighLevel.h" />
     <ClInclude Include="..\..\bin\fuse\FuseLowLevel.h" />
     <ClInclude Include="..\..\bin\fuse\IFileSystem.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\dokany\dokan\dokan.vcxproj">
+      <Project>{f25ba22f-2ab8-4859-9b89-8fe1e774b472}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\dokany\dokan_fuse\dokan_fuse.vcxproj">
       <Project>{4af8149d-c526-4d38-a4bc-9ffa67edf924}</Project>
     </ProjectReference>
@@ -112,9 +117,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WITH_LEGACY_FUSE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../dokany/dokan;../dokany/sys;../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,9 +152,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WITH_LEGACY_FUSE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../dokany/dokan;../dokany/sys;../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

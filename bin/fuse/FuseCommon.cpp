@@ -3,8 +3,9 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
-#include "FuseLowLevel.h"
+#include "FuseDokan.h"
 #include "FuseHighLevel.h"
+#include "FuseLowLevel.h"
 
 #include <cstring>
 #include <fstream>
@@ -260,12 +261,18 @@ int fuse_run(int argc, char **argv) {
     return 0;
   }
   int ret = 0;
+
+#ifdef WITH_DOKAN
+  ret = fuse_run<FuseDokan>(args.get(), opts.get(), json);
+#else
 #ifdef FUSE_LOWLEVEL
   ret = fuse_run<FuseLowLevel>(args.get(), opts.get(), json);
 #endif
 #ifndef FUSE_LOWLEVEL
   ret = fuse_run<FuseHighLevel>(args.get(), opts.get(), json);
 #endif
+#endif  // WITH_DOKAN
+
   std::ofstream(options.config_file) << json;
   return ret;
 }
