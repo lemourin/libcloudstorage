@@ -213,8 +213,7 @@ GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
   auto lock = auth_lock();
   auto url = util::Url(webdav_url_);
   data.username_ = url.protocol() + "://" + user_ + "@" + url.host() +
-                   (url.path().empty() ? "" : "/" + url.path()) +
-                   (url.query().empty() ? "" : "?" + url.query());
+                   url.path() + (url.query().empty() ? "" : "?" + url.query());
   return data;
 }
 
