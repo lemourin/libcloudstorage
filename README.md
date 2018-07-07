@@ -49,16 +49,6 @@ Requirements:
 * [`libcryptopp`](https://www.cryptopp.com/) (optional, required for `AmazonS3`)
 * [`mega`](https://github.com/meganz/sdk) (optional, required for `mega.nz`)
 
-Platforms:
-==========
-
-The library can be  build on any platform which has  a proper `C++11` support.  
-It was tested under the following operating systems:
-
-* `Ubuntu 16.04`
-* `Windows 10`
-* `Android 5.0.2`
-
 Building:
 =========
 
@@ -113,19 +103,19 @@ enough when it comes to watching  videos; with `mega.nz` being the fastest and
 
 ## Windows:
 
-It is possible  to run `libcloudstorage-fuse` under  `Windows` using `Dokan`'s  
-(https://github.com/dokan-dev/dokany) `fuse` wrapper.
+It is possible  to run `cloudstorage-fuse` under  `Windows` using `Dokan`  
+(https://github.com/dokan-dev/dokany).
 
 ## Usage:
 
 To add cloud providers to file system, first the cloud providers need to be  
 added. This can be done by calling:
 
-`libcloudstorage-fuse --add=provider_label`
+`cloudstorage-fuse --add=provider_label`
 
 After cloud providers are added, the file system can be mount using:
 
-`libcloudstorage-fuse mountpoint`
+`cloudstorage-fuse mountpoint`
 
 Cloud Browser:
 ==============
@@ -157,9 +147,16 @@ Cloud Browser dependencies:
 
 Screenshot:
 
-  <a href="https://i.imgur.com/NsbNvfX.png">
-    <img src="https://i.imgur.com/NsbNvfX.png" width="640" />
+  <a href="https://imgur.com/a/bF4CIS1">
+    <img src="https://i.imgur.com/oZ6kYHN.png" width="640" />
   </a>
+
+
+Apps that use libcloudstorage:
+==============================
+
+* https://play.google.com/store/apps/details?id=io.storage.cloudbrowser
+* https://www.microsoft.com/en-us/p/cloud-storage-browser/9nbkjrh757k7
 
 TODO:
 =====
@@ -194,6 +191,5 @@ Implement bindings to various languages, notably script languages:
 Integrate in various desktops
 * `KIO` slave
 * `gvfs` implementation
-* `Dokan fuse`
 
 Implement chunked uploads.
