@@ -1,5 +1,7 @@
 language: cpp
 
+python: "3.6"
+
 env:
   global:
   - secure: xm+0q1h0D4T9P2Ifj7zIvt2NTajjsFiCBHayfku5sDeRH/lD2ouFX1oHAo0RhwZJsZJb/ztmvoiFwl4VfpnREQDS2+96cUvspmKBcoX0AMWyeEDW9TDH+0LSYhyQF4JzJwmZfhOHO+8smapXwp+Tt1MuUQ9JAoy6R9Dw/B/Qh34zjR2olLzGWlHu1FXahpQs4QyvcQGbXEP851KLNrGPyM/GT5e7uDRq709xX1dZTpP1ju4TBBqM2V2OIQxGrelrZGxJJkHUbaKq8po8q/oK7XbMo13kQBxvMYRaOPpAmQ/2Gd8GlL2qTeJHXRx9a+TNOrrh0ePqFjlaa2eygSUmem1PJbiYO+WYJCfwOvz+jWZlHKcgexOMWfQG/uuhh5caHlHY13cq3oeaLz6QZ6JUvEIyTa5anG9zETNHnzEVv3pNfd7n9fE3WiZlo+kqQB3ygJgF8lLVl1kan+ZLwIGiLpf5jZLni3lS9BLle59PsGILXJErM2H26LNQilD7wDbfnnCBbIcyQsrwsni6ESIBiQ5pNFJtQ44Ohz2mIykLRtmuJzSk6rKNcM/2YsauceNG9ktgfd7b7otEbrHOmeynLXgQjgvinwOtG73wrt34P95dUkuiHKhJI8YyPaqdiRvIQFNgvepsSMeo5T+W6OdnIsD0OWWHxueeVNWGPK9OZsw=
@@ -10,14 +12,14 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-7
-    - libjsoncpp-dev
     - libcurl4-openssl-dev
-    - libc-ares-dev
+    - libjsoncpp-dev
     - libtinyxml2-dev
-    - libsqlite3-dev
     - libssl-dev
+    - libc-ares-dev
     - libmicrohttpd-dev
     - libcrypto++-dev
+    - libudev-dev
   coverity_scan:
     project:
       name: lemourin/libcloudstorage
@@ -30,28 +32,22 @@ addons:
 before_install:
   - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   -
-  - mkdir tarballs contribs
-  - cd tarballs
+  - pyenv shell 3.6
+  - pip install meson
   -
-  - wget -nc https://github.com/meganz/sdk/archive/v3.3.7.tar.gz
-  - tar xvf v3.3.7.tar.gz
-  - cd sdk-3.3.7
-  - ./autogen.sh
-  - ./configure
-      --disable-examples
-      --without-readline
-      --disable-megacmd
-      --without-freeimage
-      --prefix=`pwd`/../../contribs
-  - make -j 4 install
-  - cd ../..
+  - cd contrib
   -
   - ./bootstrap
-  - PKG_CONFIG_LIBDIR=`pwd`/contribs/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig ./configure --with-examples
-      CC=gcc-7
-      CXX=g++-7
+      --with-ninja
+      --with-fuse3
+      --with-megasdk
+  - cd ..
+  -
+  - ./bootstrap
+  - PKG_CONFIG_LIBDIR=`pwd`/contrib/x86_64-linux-gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig ./configure --with-examples
       CXXFLAGS="-pedantic -Wall -Wextra -g -O0 -fsanitize=address"
       LDFLAGS="-static-libasan -fsanitize=address"
+      CC=gcc-7 CXX=g++-7
 
 script:
   - make -j 4

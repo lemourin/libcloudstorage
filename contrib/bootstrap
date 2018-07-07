@@ -1,0 +1,555 @@
+#!/usr/bin/env bash
+
+export ARCH=x86_64-linux-gnu
+export INSTALL_PATH=$PWD/$ARCH
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+export CMAKE_PREFIX_PATH=$INSTALL_PATH
+export PATH=$INSTALL_PATH/bin:$PATH
+
+CMAKE_SOURCE=cmake-3.11.4
+CMAKE_SOURCE_URL=https://cmake.org/files/v3.11/cmake-3.11.4.tar.gz
+
+ECM_SOURCE=extra-cmake-modules-5.47.0
+ECM_SOURCE_URL=https://github.com/KDE/extra-cmake-modules/archive/v5.47.0.tar.gz
+
+NINJA_SOURCE=ninja-1.8.2
+NINJA_SOURCE_URL=https://github.com/ninja-build/ninja/archive/v1.8.2.tar.gz
+
+QT_SOURCE=qt-everywhere-src-5.10.1
+QT_SOURCE_URL=https://download.qt.io/archive/qt/5.10/5.10.1/single/qt-everywhere-src-5.10.1.tar.xz
+QTWEBVIEW_SOURCE="enabled"
+
+KIRIGAMI_SOURCE=kirigami-5.44.0
+KIRIGAMI_SOURCE_URL=https://github.com/KDE/kirigami/archive/v5.44.0.tar.gz
+KIRIGAMI_ICON_URL="https://drive.google.com/uc?export=download&id=1ltAHi1wnhzc7-1oTnhw5kMo1ZIuawN-s"
+
+JSONCPP_SOURCE=jsoncpp-1.8.3
+JSONCPP_SOURCE_URL=https://github.com/open-source-parsers/jsoncpp/archive/1.8.3.tar.gz
+
+TINYXML2_SOURCE=tinyxml2-6.0.0
+TINYXML2_SOURCE_URL=https://github.com/leethomason/tinyxml2/archive/6.0.0.tar.gz
+
+CARES_SOURCE=c-ares-cares-1_13_0
+CARES_SOURCE_URL=https://github.com/c-ares/c-ares/archive/cares-1_13_0.tar.gz
+
+NGHTTP2_SOURCE=nghttp2-1.28.0
+NGHTTP2_SOURCE_URL=https://github.com/nghttp2/nghttp2/releases/download/v1.28.0/nghttp2-1.28.0.tar.gz
+
+OPENSSL_SOURCE=openssl-OpenSSL_1_0_2n
+OPENSSL_SOURCE_URL=https://github.com/openssl/openssl/archive/OpenSSL_1_0_2n.tar.gz
+
+CURL_SOURCE=curl-7.57.0
+CURL_SOURCE_URL=https://github.com/curl/curl/releases/download/curl-7_57_0/curl-7.57.0.tar.gz
+
+MICROHTTPD_SOURCE=libmicrohttpd-0.9.58
+MICROHTTPD_SOURCE_URL=https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.58.tar.gz
+
+CRYPTOPP_SOURCE=cryptopp-CRYPTOPP_5_6_5
+CRYPTOPP_SOURCE_URL=https://github.com/weidai11/cryptopp/archive/CRYPTOPP_5_6_5.tar.gz
+
+SQLITE_SOURCE=sqlite-autoconf-3240000
+SQLITE_SOURCE_URL=https://www.sqlite.org/2018/sqlite-autoconf-3240000.tar.gz
+
+MEGASDK_SOURCE=sdk-3.3.7
+MEGASDK_SOURCE_URL=https://github.com/meganz/sdk/archive/v3.3.7.tar.gz
+
+FFMPEG_SOURCE=FFmpeg-n3.4.1
+FFMPEG_SOURCE_URL=https://github.com/FFmpeg/FFmpeg/archive/n3.4.1.tar.gz
+
+OGG_SOURCE=libogg-1.3.3
+OGG_SOURCE_URL=http://downloads.xiph.org/releases/ogg/libogg-1.3.3.tar.gz
+
+VORBIS_SOURCE=libvorbis-1.3.6
+VORBIS_SOURCE_URL=http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.6.tar.gz
+
+OPUS_SOURCE=opus-1.2.1
+OPUS_SOURCE_URL=https://archive.mozilla.org/pub/opus/opus-1.2.1.tar.gz
+
+EBML_SOURCE=libebml-release-1.3.6
+EBML_SOURCE_URL=https://github.com/Matroska-Org/libebml/archive/release-1.3.6.tar.gz
+
+MATROSKA_SOURCE=libmatroska-release-1.4.9
+MATROSKA_SOURCE_URL=https://github.com/Matroska-Org/libmatroska/archive/release-1.4.9.tar.gz
+
+VLC_SOURCE=vlc-3.0.3
+VLC_SOURCE_URL=http://get.videolan.org/vlc/3.0.3/vlc-3.0.3.tar.xz
+
+VLCQT_SOURCE=vlc-qt-1.1.1
+VLCQT_SOURCE_URL=https://github.com/vlc-qt/vlc-qt/archive/1.1.1.tar.gz
+
+FUSE3_SOURCE=libfuse-fuse-3.2.1
+FUSE3_SOURCE_URL=https://github.com/libfuse/libfuse/archive/fuse-3.2.1.tar.gz
+
+configure_qt() {
+  sudo apt install -y \
+    libdbus-1-dev \
+    libnss3-dev \
+    libegl1-mesa-dev \
+    libgl1-mesa-dev \
+    libxcomposite-dev \
+    libxcursor-dev \
+    libxdamage-dev \
+    libxrandr-dev \
+    libxss-dev \
+    libxi-dev \
+    libxtst-dev \
+    libglib2.0-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libfontconfig1-dev \
+    libgtk-3-dev \
+    bison \
+    flex \
+    gperf \
+    autoconf \
+    libtool
+
+  wget -nc $QT_SOURCE_URL -O $QT_SOURCE.tar.xz
+  tar xfkz $QT_SOURCE.tar.xz
+  cd $QT_SOURCE
+
+  mkdir -p build
+  cd build
+
+  ../configure \
+    -prefix $INSTALL_PATH -opensource -confirm-license -fontconfig -system-freetype \
+    -I $INSTALL_PATH/include -L $INSTALL_PATH/lib \
+    OPENSSL_LIBS="-lssl -lcrypto" \
+    -shared \
+    -gtk \
+    -openssl -openssl-linked \
+    -nomake examples \
+    -nomake tests
+
+  QMAKE=$PWD/qtbase/bin/qmake
+}
+
+install_qt() {
+  configure_qt
+
+  cd qtbase
+  $QMAKE ../../qtbase
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtdeclarative
+  $QMAKE ../../qtdeclarative
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtquickcontrols
+  $QMAKE ../../qtquickcontrols
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtquickcontrols2
+  $QMAKE ../../qtquickcontrols2
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtsvg
+  $QMAKE ../../qtsvg
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtgraphicaleffects
+  $QMAKE ../../qtgraphicaleffects
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qttools
+  $QMAKE ../../qttools
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd ../..
+}
+
+install_qtwebview() {
+  configure_qt
+
+  cd qtwebchannel
+  $QMAKE ../../qtwebchannel
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtwebengine
+  $QMAKE ../../qtwebengine
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd qtwebview
+  $QMAKE ../../qtwebview
+  make -j 4 && make -j 4 install
+  cd ..
+
+  cd ../..
+}
+
+install_cmake() {
+  wget -nc $CMAKE_SOURCE_URL -O $CMAKE_SOURCE.tar.gz
+  tar xf $CMAKE_SOURCE.tar.gz
+  cd $CMAKE_SOURCE
+  
+  mkdir -p build
+  cd build
+
+  ../configure --prefix=$INSTALL_PATH
+  make -j 4 install
+  cd ..
+
+  cd ..
+}
+
+install_ecm() {
+  wget -nc $ECM_SOURCE_URL -O $ECM_SOURCE.tar.gz
+  tar xf $ECM_SOURCE.tar.gz
+  cd $ECM_SOURCE
+  
+  cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+  make -j 4 install
+  cd ..
+}
+
+install_ninja() {
+  wget -nc $NINJA_SOURCE_URL -O $NINJA_SOURCE.tar.gz
+  tar xf $NINJA_SOURCE.tar.gz
+  cd $NINJA_SOURCE
+
+  ./configure.py --bootstrap
+  mkdir -p $INSTALL_PATH/bin
+  cp ninja $INSTALL_PATH/bin
+
+  cd ..
+}
+
+install_kirigami() {
+  wget -nc $KIRIGAMI_SOURCE_URL -O $KIRIGAMI_SOURCE.tar.gz
+  tar xf $KIRIGAMI_SOURCE.tar.gz
+  cd $KIRIGAMI_SOURCE
+
+  mkdir -p build
+  cd build
+  Qt5_DIR=$INSTALL_PATH cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+    -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump
+  make -j 4 install
+  cd ..
+
+  cd ..
+
+  wget -nc $KIRIGAMI_ICON_URL -O icons.zip
+  unzip -o icons.zip
+  cp -r icons $INSTALL_PATH/qml/org/kde/kirigami.2
+}
+
+install_jsoncpp() {
+  wget -nc $JSONCPP_SOURCE_URL -O $JSONCPP_SOURCE.tar.gz
+  tar xf $JSONCPP_SOURCE.tar.gz
+  cd $JSONCPP_SOURCE
+
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=1
+  make -j 4 install
+  cd ..
+
+  cd ..
+}
+
+install_tinyxml2() {
+  wget -nc $TINYXML2_SOURCE_URL -O $TINYXML2_SOURCE.tar.gz
+  tar xf $TINYXML2_SOURCE.tar.gz
+  cd $TINYXML2_SOURCE
+
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+  make -j 4 install
+  cd ..
+
+  cd ..
+}
+
+install_openssl() {
+  wget -nc $OPENSSL_SOURCE_URL -O $OPENSSL_SOURCE.tar.gz
+  tar xf $OPENSSL_SOURCE.tar.gz
+  cd $OPENSSL_SOURCE
+
+  ./config --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl shared
+  make -j 4
+  make -j 4 install
+
+  cd ..
+}
+
+install_cares() {
+  wget -nc $CARES_SOURCE_URL -O $CARES_SOURCE.tar.gz
+  tar xf $CARES_SOURCE.tar.gz
+  cd $CARES_SOURCE
+
+  ./buildconf
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_nghttp2() {
+  wget -nc $NGHTTP2_SOURCE_URL -O $NGHTTP2_SOURCE.tar.gz
+  tar xf $NGHTTP2_SOURCE.tar.gz
+  cd $NGHTTP2_SOURCE
+
+  ./buildconf
+  ./configure --prefix=$INSTALL_PATH --enable-lib-only
+  make -j 4 install
+
+  cd ..
+}
+
+install_curl() {
+  wget -nc $CURL_SOURCE_URL -O $CURL_SOURCE.tar.gz
+  tar xf $CURL_SOURCE.tar.gz
+  cd $CURL_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH --with-nghttp2 --enable-ares
+  make -j 4 install
+
+  cd ..
+}
+
+install_microhttpd() {
+  wget -nc $MICROHTTPD_SOURCE_URL -O $MICROHTTPD_SOURCE.tar.gz
+  tar xf $MICROHTTPD_SOURCE.tar.gz
+  cd $MICROHTTPD_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_cryptopp() {
+  wget $CRYPTOPP_SOURCE_URL -O $CRYPTOPP_SOURCE.tar.gz
+  tar xf $CRYPTOPP_SOURCE.tar.gz
+  cd $CRYPTOPP_SOURCE
+
+  make -j 4 shared
+  make -j 4 install PREFIX=$INSTALL_PATH
+
+  cd ..
+}
+
+install_sqlite() {
+  wget -nc $SQLITE_SOURCE_URL -O $SQLITE_SOURCE.tar.gz
+  tar xf $SQLITE_SOURCE.tar.gz
+  cd $SQLITE_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_megasdk() {
+  wget -nc $MEGASDK_SOURCE_URL -O $MEGASDK_SOURCE.tar.gz
+  tar xf $MEGASDK_SOURCE.tar.gz
+  cd $MEGASDK_SOURCE
+
+  ./autogen.sh
+  ./configure --prefix=$INSTALL_PATH \
+    --without-freeimage \
+    --disable-examples \
+    --with-cryptopp=$INSTALL_PATH \
+    --with-sqlite=$INSTALL_PATH \
+    --with-openssl=$INSTALL_PATH \
+    --with-cares=$INSTALL_PATH \
+    --with-curl=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_ffmpeg() {
+  sudo apt install -y yasm
+
+  wget -nc $FFMPEG_SOURCE_URL -O $FFMPEG_SOURCE.tar.gz
+  tar xf $FFMPEG_SOURCE.tar.gz
+  cd $FFMPEG_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH --enable-openssl --enable-shared --disable-static
+  make -j 4 install
+
+  cd ..
+}
+
+install_ogg() {
+  wget -nc $OGG_SOURCE_URL -O $OGG_SOURCE.tar.gz
+  tar xf $OGG_SOURCE.tar.gz
+  cd $OGG_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_opus() {
+  wget -nc $OPUS_SOURCE_URL -O $OPUS_SOURCE.tar.gz
+  tar xf $OPUS_SOURCE.tar.gz
+  cd $OPUS_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_vorbis() {
+  wget -nc $VORBIS_SOURCE_URL -O $VORBIS_SOURCE.tar.gz
+  tar xf $VORBIS_SOURCE.tar.gz
+  cd $VORBIS_SOURCE
+
+  ./configure --prefix=$INSTALL_PATH
+  make -j 4 install
+
+  cd ..
+}
+
+install_ebml() {
+  wget -nc $EBML_SOURCE_URL -O $EBML_SOURCE.tar.gz
+  tar xf $EBML_SOURCE.tar.gz
+  cd $EBML_SOURCE
+
+  mkdir -p build
+  cd build
+  cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=YES
+  make -j 4 install
+  cd ../..
+}
+
+install_matroska() {
+  wget -nc $MATROSKA_SOURCE_URL -O $MATROSKA_SOURCE.tar.gz
+  tar xf $MATROSKA_SOURCE.tar.gz
+  cd $MATROSKA_SOURCE
+
+  mkdir -p build
+  cd build
+  cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=YES
+  make -j 4 install
+  cd ../..
+}
+
+install_vlc() {
+  sudo apt install -y \
+    libxcb-shm0-dev \
+    libxcb-composite0-dev \
+    libxcb-xv0-dev \
+    libxml2-dev \
+    libasound2-dev
+
+  wget -nc $VLC_SOURCE_URL -O $VLC_SOURCE.tar.gz
+  tar xf $VLC_SOURCE.tar.gz
+  cd $VLC_SOURCE
+
+  mkdir -p build
+  cd build
+
+  ../configure --prefix=$INSTALL_PATH \
+    --disable-lua --disable-a52 --disable-qt --disable-chromecast
+  make -j 4 install
+
+  cd ../../
+}
+
+install_vlcqt() {
+  wget -nc $VLCQT_SOURCE_URL -O $VLCQT_SOURCE.tar.gz
+  tar xf $VLCQT_SOURCE.tar.gz
+  cd $VLCQT_SOURCE
+
+  mkdir -p build
+  cd build
+  CXXFLAGS="-I$INSTALL_PATH/include/vlc/plugins $CXXFLAGS" cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+  make -j 4 install
+  rm $INSTALL_PATH/qml/VLCQt -rf
+  cd ..
+
+  cd ..
+}
+
+install_fuse3() {
+  wget -nc $FUSE3_SOURCE_URL -O $FUSE3_SOURCE.tar.gz
+  tar xf $FUSE3_SOURCE.tar.gz
+  cd $FUSE3_SOURCE
+
+  mkdir -p build
+  cd build
+  meson .. --prefix=$INSTALL_PATH --libdir=lib
+  ninja install || echo 0
+  cd ..
+
+  cd ..
+}
+
+install() {
+  uppercase=`echo $1 | awk '{print toupper($0)}'`
+  name=${uppercase}_INSTALL
+  if [[ $INSTALL_LISTED -eq 1 ]]; then
+    if [[ ${!name} -eq 1 ]]; then
+      install_$1
+    fi
+  else
+    if [[ "x${!name}" != "x0" ]]; then
+      install_$1
+    fi
+  fi
+}
+
+INSTALL_LISTED=0
+
+for i in $@; do
+  if [[ "$i" == *without-* ]]; then
+    component=${i##"--without-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    declare "${uppercase_component}_INSTALL"="0"
+  fi
+
+  if [[ "$i" == *with-* ]]; then
+    component=${i##"--with-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    INSTALL_LISTED=1
+    declare "${uppercase_component}_INSTALL"="1"
+  fi
+done
+
+mkdir tarballs -p
+cd tarballs
+
+install "cmake"
+install "ecm"
+install "ninja"
+install "openssl"
+install "qt"
+install "qtwebview"
+install "kirigami"
+install "jsoncpp"
+install "tinyxml2"
+install "cares"
+install "nghttp2"
+install "curl"
+install "microhttpd"
+install "cryptopp"
+install "sqlite"
+install "megasdk"
+install "opus"
+install "ogg"
+install "vorbis"
+install "ebml"
+install "matroska"
+install "ffmpeg"
+install "vlc"
+install "vlcqt"
+install "fuse3"

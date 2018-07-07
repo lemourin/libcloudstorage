@@ -35,3 +35,4 @@ libcloudstorage*
 .clang_complete
 .vscode
 *.pro.user
+contrib/tarballs
