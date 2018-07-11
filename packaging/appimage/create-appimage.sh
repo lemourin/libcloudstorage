@@ -42,6 +42,8 @@ cp \
   $CONTRIB_DIR/translations \
   usr -r
 
+rm -f usr/lib/vlc/plugins/plugins.dat
+
 cd ..
 
 mkdir build -p
