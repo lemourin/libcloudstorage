@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Cloud Browser
+Exec=cloudbrowser %F
+Icon=cloudbrowser
+Type=Application
+Terminal=false
+StartupNotify=true
+NoDisplay=false
