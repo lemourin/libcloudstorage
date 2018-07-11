@@ -77,6 +77,9 @@ VLC_SOURCE_URL=http://get.videolan.org/vlc/3.0.3/vlc-3.0.3.tar.xz
 VLCQT_SOURCE=vlc-qt-1.1.1
 VLCQT_SOURCE_URL=https://github.com/vlc-qt/vlc-qt/archive/1.1.1.tar.gz
 
+BOOST_SOURCE=boost_1_67_0
+BOOST_SOURCE_URL=https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.gz
+
 FUSE3_SOURCE=libfuse-fuse-3.2.1
 FUSE3_SOURCE_URL=https://github.com/libfuse/libfuse/archive/fuse-3.2.1.tar.gz
 
@@ -480,6 +483,19 @@ install_vlcqt() {
   cd ..
 }
 
+install_boost() {
+  wget -nc $BOOST_SOURCE_URL -O $BOOST_SOURCE.tar.gz
+  tar xf $BOOST_SOURCE.tar.gz
+  cd $BOOST_SOURCE
+
+  ./bootstrap.sh
+
+  cd libs/filesystem/build
+  ../../../b2 install --prefix=$INSTALL_PATH
+
+  cd ../../../../
+}
+
 install_fuse3() {
   wget -nc $FUSE3_SOURCE_URL -O $FUSE3_SOURCE.tar.gz
   tar xf $FUSE3_SOURCE.tar.gz
@@ -552,4 +568,5 @@ install "matroska"
 install "ffmpeg"
 install "vlc"
 install "vlcqt"
+install "boost"
 install "fuse3"
