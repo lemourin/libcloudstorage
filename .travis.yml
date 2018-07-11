@@ -23,7 +23,7 @@ addons:
     notification_email: pawel.wegner95@gmail.com
     build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template
     build_command: make -j 4
-    branch_pattern: master
+    branch_pattern: coverity
 
 before_install:
 - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END
@@ -46,9 +46,9 @@ script:
 before_deploy:
 - cd contrib
 - wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.2/x86_64-linux-gnu.tar.gz
-- tar xvf x86_64-linux-gnu.tar.gz
+- tar xf x86_64-linux-gnu.tar.gz
 - ./change-prefix.sh
-- ../packaging/appimage/create-image.sh
+- ../packaging/appimage/create-appimage.sh
 
 deploy:
   provider: releases
