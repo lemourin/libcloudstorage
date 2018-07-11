@@ -1,11 +1,8 @@
 language: cpp
-
-python: "3.6"
-
+python: '3.6'
 env:
   global:
   - secure: xm+0q1h0D4T9P2Ifj7zIvt2NTajjsFiCBHayfku5sDeRH/lD2ouFX1oHAo0RhwZJsZJb/ztmvoiFwl4VfpnREQDS2+96cUvspmKBcoX0AMWyeEDW9TDH+0LSYhyQF4JzJwmZfhOHO+8smapXwp+Tt1MuUQ9JAoy6R9Dw/B/Qh34zjR2olLzGWlHu1FXahpQs4QyvcQGbXEP851KLNrGPyM/GT5e7uDRq709xX1dZTpP1ju4TBBqM2V2OIQxGrelrZGxJJkHUbaKq8po8q/oK7XbMo13kQBxvMYRaOPpAmQ/2Gd8GlL2qTeJHXRx9a+TNOrrh0ePqFjlaa2eygSUmem1PJbiYO+WYJCfwOvz+jWZlHKcgexOMWfQG/uuhh5caHlHY13cq3oeaLz6QZ6JUvEIyTa5anG9zETNHnzEVv3pNfd7n9fE3WiZlo+kqQB3ygJgF8lLVl1kan+ZLwIGiLpf5jZLni3lS9BLle59PsGILXJErM2H26LNQilD7wDbfnnCBbIcyQsrwsni6ESIBiQ5pNFJtQ44Ohz2mIykLRtmuJzSk6rKNcM/2YsauceNG9ktgfd7b7otEbrHOmeynLXgQjgvinwOtG73wrt34P95dUkuiHKhJI8YyPaqdiRvIQFNgvepsSMeo5T+W6OdnIsD0OWWHxueeVNWGPK9OZsw=
-
 addons:
   apt:
     sources:
@@ -13,7 +10,6 @@ addons:
     packages:
     - g++-7
     - libcurl4-openssl-dev
-    - libjsoncpp-dev
     - libtinyxml2-dev
     - libssl-dev
     - libc-ares-dev
@@ -30,26 +26,35 @@ addons:
     branch_pattern: master
 
 before_install:
-  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
-  -
-  - pyenv shell 3.6
-  - pip install meson
-  -
-  - cd contrib
-  -
-  - ./bootstrap
-      --with-ninja
-      --with-fuse3
-      --with-megasdk
-  - cd ..
-  -
-  - ./bootstrap
-  - PKG_CONFIG_LIBDIR=`pwd`/contrib/x86_64-linux-gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig ./configure --with-examples
-      CXXFLAGS="-pedantic -Wall -Wextra -g -O0 -fsanitize=address"
-      LDFLAGS="-static-libasan -fsanitize=address"
-      CC=gcc-7 CXX=g++-7
+- echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END
+  CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+- pyenv shell 3.6
+- pip install meson
+- cd contrib
+- ./bootstrap --with-ninja --with-fuse3 --with-megasdk --with-jsoncpp
+- cd ..
+- ./bootstrap
+- PKG_CONFIG_LIBDIR=$PWD/contrib/x86_64-linux-gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+  ./configure --with-examples CXXFLAGS="-pedantic -Wall -Wextra -g -O0 -fsanitize=address"
+  LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7
 
 script:
-  - make -j 4
-  - make check CXXFLAGS=-Wno-error -j 4
-  - cat test/test-suite.log
+- make -j 4
+- LD_LIBRARY_PATH=$PWD/contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-error -j 4
+- cat test/test-suite.log
+
+before_deploy:
+- cd contrib
+- wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.2/x86_64-linux-gnu.tar.gz
+- tar xvf x86_64-linux-gnu.tar.gz
+- ./change-prefix.sh
+- ../packaging/appimage/create-image.sh
+
+deploy:
+  provider: releases
+  api_key:
+    secure: sZKInCjyL27bL0heTafgt6KJR1T9Lutz4BoASPPnMJtDBmh0rGmdDDEJuG4w44y1pj92ybq57wtgRI+Wb68Ir5BQoyihnUAXqniblWgj3FmSUQQJRZqIGGRM+KFKHNLgqExDM54amKAHXeHMC0qDtzldI0dj2pCxF5+Dh9/2wvh+xj9ibO9PhKf2PUQELhxqa1tDD02kQI47H/0zY8Q2jhLkTezFMUuMQOw6A6ltKx8m9t6QluqWrkzoH7IwYUGI/swGT9yVE8AIaruXwCLQiNAnypIXvt4ZETofrIrF3iJU4PeWojqO6G9k7m7UHVgYLTKYJE17jDNWW9dxUbYqSaXBvRIcEf0+hwHeuNvXfJakCXo4j84TAmiOrTaS2944ppDBfjvU+LfvYQ3pmaWT+m5iObdY5WZjqsDQvCcgsGzjal41Sv5iS2F4YeC/NKvAWQqW0Fr3EmUp7RHLSpA2N/KMfdnDp/KDzc+CY6P8Iti+cOtvQThivplat133XtsrjoDBWUyT8FVPI88BIKJBdU/UKRz8x1h/6qIm8zY4Q7ruffWer2lxRIxrJWh+ocW/OC7nlQ9joN4p3swtls/5wmYico5XvGmz5he5+7u5JVq+rf1TiFALUM2OoFAmnJET+FNq3O8STWXNgoPw1t8kuMj+IqzHNGqBrVe1M4J6ldU=
+  file: packaging/appimage/build/Cloud_Browser-x86_64.AppImage
+  on:
+    repo: lemourin/libcloudstorage
+    branch: master
