@@ -48,7 +48,7 @@ script:
 
 before_deploy:
 - cd contrib
-- wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.2/x86_64-linux-gnu.tar.gz
+- wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.3/x86_64-linux-gnu.tar.gz
 - tar xf x86_64-linux-gnu.tar.gz
 - ./change-prefix.sh
 - cd ..
