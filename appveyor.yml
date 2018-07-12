@@ -1,0 +1,33 @@
+image: Visual Studio 2017
+
+install:
+  - git submodule update --init --recursive
+  - appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.3/x86_64-msvc-2017.7z
+  - 7z x x86_64-msvc-2017.7z
+
+platform: x64
+configuration: Release
+
+build:
+  project: win32\cloudstorage.sln
+
+after_build:
+  - mkdir win32\x64\%CONFIGURATION%\package
+  - mkdir win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
+  - xcopy /s /e /y dependencies\win32\bin win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
+  - del win32\x64\%CONFIGURATION%\package\cloudbrowser-win32\moc.exe
+  - del win32\x64\%CONFIGURATION%\package\cloudbrowser-win32\rcc.exe
+  - copy win32\x64\%CONFIGURATION%\*.exe win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
+  - copy win32\x64\%CONFIGURATION%\*.dll win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
+
+artifacts:
+  - path: win32\x64\$(configuration)\package
+    name: cloudbrowser-win32
+
+deploy:
+  provider: GitHub
+  artifact: cloudbrowser-win32
+  auth_token:
+    secure: GX3Ea/dVTl4V5//OacxzlTwd97bpNwtjZ28pLDkp1fdf5IDDvuwC/bZS02j313yi
+  on:
+    appveyor_repo_tag: true
