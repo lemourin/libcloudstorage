@@ -331,6 +331,7 @@ Kirigami.Page {
     height: 200
     visible: page.item.type === "audio"
     source: "audio-x-generic"
+    isMask: true
   }
 
   MouseArea {
@@ -352,6 +353,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         color: button_color
+        isMask: true
         source: playing ? "media-playback-pause" : "media-playback-start"
         visible: item.type === "video" || item.type === "audio"
         MouseArea {
@@ -367,6 +369,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         source: "media-skip-forward"
+        isMask: true
         color: button_color
         MouseArea {
           anchors.fill: parent
@@ -394,6 +397,7 @@ Kirigami.Page {
         source: volume_icon(volume_slider.value)
         visible: (item.type === "video" || item.type === "audio") && page.width > 450
         color: button_color
+        isMask: true
         MouseArea {
           id: volume_control_mouse_area
           anchors.fill: parent
@@ -572,6 +576,7 @@ Kirigami.Page {
       Kirigami.Icon {
         id: autoplay_icon
         anchors.margins: 10
+        isMask: true
         width: height
         height: parent.height
         source: item.type === "audio" || item.type === "video" ?
@@ -593,6 +598,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         color: button_color
+        isMask: true
         source: "view-fullscreen"
 
         MouseArea {

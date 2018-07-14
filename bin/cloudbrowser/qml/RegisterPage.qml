@@ -45,13 +45,14 @@ Kirigami.ScrollablePage {
     id: list
     model: cloud.providers
     delegate: Kirigami.BasicListItem {
-      icon: ""
+      reserveSpaceForIcon: false
       backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
                                                 Kirigami.Theme.backgroundColor
       onClicked: {
         open_auth(cloud.authorizationUrl(modelData));
         list.currentIndex = index;
       }
+      height: 60
       contentItem: ProviderEntry {
         image_width: 120
         image_height: 35

@@ -67,24 +67,26 @@ Kirigami.ScrollablePage {
     }
     delegate: Kirigami.BasicListItem {
       onClicked: Qt.openUrlExternally(url)
-      icon: ""
+      reserveSpaceForIcon: false
       RowLayout {
-        anchors.left: parent.left
-        anchors.right: parent.right
         Item {
-          width: 150
+          Layout.alignment: Qt.AlignLeft
+          Layout.fillWidth: true
           height: 50
-          Image {
-            anchors.centerIn: parent
-            anchors.fill: parent
-            mipmap: true
-            source: icon_source
-            fillMode: Image.PreserveAspectFit
+          Item {
+            width: 150
+            height: parent.height
+            Image {
+              anchors.fill: parent
+              mipmap: true
+              source: icon_source
+              fillMode: Image.PreserveAspectFit
+            }
           }
         }
         Label {
-          anchors.right: parent.right
-          anchors.margins: 15
+          Layout.alignment: Qt.AlignRight
+          Layout.margins: 15
           text: name
           color: Kirigami.Theme.textColor
         }

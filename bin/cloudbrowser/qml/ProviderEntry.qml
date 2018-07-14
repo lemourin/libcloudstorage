@@ -10,6 +10,7 @@ Row {
 
   Item {
     id: item
+    anchors.verticalCenter: parent.verticalCenter
     Image {
       anchors.centerIn: parent
       fillMode: Image.PreserveAspectFit

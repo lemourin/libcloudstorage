@@ -11,9 +11,10 @@ Kirigami.ScrollablePage {
     id: list
     model: cloud.userProviders
     delegate: Kirigami.BasicListItem {
-      icon: ""
+      reserveSpaceForIcon: false
       backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor :
                                                 Kirigami.Theme.backgroundColor
+      height: 60
       onClicked: {
         list.currentIndex = index;
         cloud.removeProvider(modelData);

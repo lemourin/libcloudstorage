@@ -159,8 +159,7 @@ Kirigami.ScrollablePage {
           id: create_directory
           onCreatedDirectory: refreshing = true
         }
-
-        anchors.horizontalCenter: parent.horizontalCenter
+        Layout.alignment: Qt.AlignHCenter
         text: "Create"
         onClicked: {
           create_directory.update(cloud, item, directory_name.text);
@@ -296,7 +295,8 @@ Kirigami.ScrollablePage {
       id: item
       backgroundColor: (ListView.isCurrentItem && list_view.currentEdit === -1) ?
                          Kirigami.Theme.highlightColor : Kirigami.Theme.backgroundColor
-      icon: ""
+      reserveSpaceForIcon: false
+      height: 80
       onClicked: {
         if (list_view.currentEdit == index) return;
         list_view.currentIndex = index;
@@ -305,17 +305,18 @@ Kirigami.ScrollablePage {
         else
           root.contextDrawer.drawerOpen = true;
       }
-      Row {
-        anchors.left: parent.left
-        anchors.right: parent.right
+      RowLayout {
+        Layout.fillWidth: true
+        Layout.alignment: Qt.AlignHCenter
         GetThumbnailRequest {
           id: thumbnail
           Component.onCompleted: update(cloud, modelData)
         }
         Item {
           id: image
-          width: 50
-          height: 50
+          width: 64
+          height: 64
+          Layout.rightMargin: 10
           Controls.BusyIndicator {
             anchors.fill: parent
             running: !item_icon.visible && !item_thumbnail.visible
@@ -356,66 +357,55 @@ Kirigami.ScrollablePage {
           }
         }
         Item {
-          width: parent.width - image.width
-          height: parent.height
+          Layout.fillWidth: true
+          Layout.fillHeight: true
           visible: list_view.currentEdit !== index
-
-          Item {
-            id: description
-            x: 8
-            width: parent.width - size_box.width - x
-            height: childrenRect.height
-            anchors.verticalCenter: parent.verticalCenter
-            Templates.Label {
-              id: filename
-              width: parent.width
-              text: modelData.filename
-              font.pointSize: 16
-              color: Kirigami.Theme.textColor
-              elide: Text.ElideRight
+          RowLayout {
+            anchors.fill: parent
+            ColumnLayout {
+              id: description
+              Layout.fillWidth: true
+              Templates.Label {
+                id: filename
+                text: modelData.filename
+                Layout.fillWidth: true
+                font.pointSize: 16
+                color: Kirigami.Theme.textColor
+                elide: Text.ElideRight
+              }
+              Templates.Label {
+                text: modelData.timestamp
+                color: Kirigami.Theme.disabledTextColor
+              }
             }
             Templates.Label {
-              anchors.topMargin: 5
-              anchors.top: filename.bottom
-              anchors.left: parent.left
-              text: modelData.timestamp
-              color: Kirigami.Theme.disabledTextColor
-            }
-          }
-
-          Item {
-            id: size_box
-            anchors.left: description.right
-            width: childrenRect.width
-            Templates.Label {
+              Layout.alignment: Qt.AlignRight | Qt.AlignTop
               text: modelData.size !== -1 ? show_size(modelData.size) : ""
               color: Kirigami.Theme.disabledTextColor
             }
           }
         }
-        RowLayout {
+        Item {
+          Layout.fillWidth: true
+          Layout.fillHeight: true
           visible: list_view.currentEdit === index
-          onVisibleChanged: if (visible && modelData) text.text = modelData.filename
-          width: parent.width - image.width
-          height: parent.height
-          Controls.TextField {
-            id: text
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.margins: 10
-            anchors.left: parent.left
-            anchors.right: rename_button.left
-            Layout.alignment: Qt.AlignLeft
-            color: Kirigami.Theme.textColor
-          }
-          Controls.Button {
-            id: rename_button
-            anchors.margins: 10
-            Layout.alignment: Qt.AlignRight
-            anchors.right: parent.right
-            text: "Rename"
-            onClicked: {
-              list_view.currentEdit = -1;
-              rename_request.update(cloud, modelData, text.text);
+          RowLayout {
+            anchors.fill: parent
+            onVisibleChanged: if (visible && modelData) text.text = modelData.filename
+            Controls.TextField {
+              id: text
+              Layout.fillWidth: true
+              color: Kirigami.Theme.textColor
+            }
+            Controls.Button {
+              id: rename_button
+              Layout.alignment: Qt.AlignRight
+              Layout.leftMargin: 8
+              text: "Rename"
+              onClicked: {
+                list_view.currentEdit = -1;
+                rename_request.update(cloud, modelData, text.text);
+              }
             }
           }
         }

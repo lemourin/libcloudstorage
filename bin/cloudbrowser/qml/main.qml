@@ -44,11 +44,10 @@ Kirigami.ApplicationWindow {
     }
   }
 
-  header: fullscreen_player ? null : header
-
-  Kirigami.ApplicationHeader {
+  header: Kirigami.ApplicationHeader {
     id: header
     width: root.width
+    visible: !fullscreen_player
   }
 
   Connections {
