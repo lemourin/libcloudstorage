@@ -40,22 +40,22 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\WinRTUtility.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudContext.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudRequest.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CopyItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CreateDirectory.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_DeleteItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_DownloadItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_FileDialog.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_GetThumbnail.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_GetUrl.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_IPlatformUtility.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_ListDirectory.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_MoveItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_RenameItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\moc_UploadItem.cpp" />
-    <ClCompile Include="..\..\dependencies\win32\src\qrc_resources.cpp" />
+    <ClCompile Include="Generated\moc_CloudContext.cpp" />
+    <ClCompile Include="Generated\moc_CloudItem.cpp" />
+    <ClCompile Include="Generated\moc_CloudRequest.cpp" />
+    <ClCompile Include="Generated\moc_CopyItem.cpp" />
+    <ClCompile Include="Generated\moc_CreateDirectory.cpp" />
+    <ClCompile Include="Generated\moc_DeleteItem.cpp" />
+    <ClCompile Include="Generated\moc_DownloadItem.cpp" />
+    <ClCompile Include="Generated\moc_FileDialog.cpp" />
+    <ClCompile Include="Generated\moc_GetThumbnail.cpp" />
+    <ClCompile Include="Generated\moc_GetUrl.cpp" />
+    <ClCompile Include="Generated\moc_IPlatformUtility.cpp" />
+    <ClCompile Include="Generated\moc_ListDirectory.cpp" />
+    <ClCompile Include="Generated\moc_MoveItem.cpp" />
+    <ClCompile Include="Generated\moc_RenameItem.cpp" />
+    <ClCompile Include="Generated\moc_UploadItem.cpp" />
+    <ClCompile Include="Generated\qrc_resources.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\cloudbrowser\src\AndroidUtility.h" />
@@ -69,89 +69,151 @@
   <ItemGroup>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\CloudContext.h">
       <Message>MOC CloudContext.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_CloudContext.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_CloudContext.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_CloudContext.cpp</Command>
+      <Outputs>Generated\moc_CloudContext.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\CloudItem.h">
       <Message>MOC CloudItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_CloudItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_CloudItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_CloudItem.cpp</Command>
+      <Outputs>Generated\moc_CloudItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\IPlatformUtility.h">
       <Message>MOC IPlatformUtility.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_IPlatformUtility.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_IPlatformUtility.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_IPlatformUtility.cpp</Command>
+      <Outputs>Generated\moc_IPlatformUtility.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\FileDialog.h">
       <Message>MOC FileDialog.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_FileDialog.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_FileDialog.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_FileDialog.cpp</Command>
+      <Outputs>Generated\moc_FileDialog.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.h">
       <Message>MOC CloudRequest.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_CloudRequest.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_CloudRequest.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_CloudRequest.cpp</Command>
+      <Outputs>Generated\moc_CloudRequest.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CopyItem.h">
       <Message>MOC CopyItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_CopyItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_CopyItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_CopyItem.cpp</Command>
+      <Outputs>Generated\moc_CopyItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.h">
       <Message>MOC CreateDirectory.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_CreateDirectory.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_CreateDirectory.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_CreateDirectory.cpp</Command>
+      <Outputs>Generated\moc_CreateDirectory.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DeleteItem.h">
       <Message>MOC DeleteItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_DeleteItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_DeleteItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_DeleteItem.cpp</Command>
+      <Outputs>Generated\moc_DeleteItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DownloadItem.h">
       <Message>MOC DownloadItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_DownloadItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_DownloadItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_DownloadItem.cpp</Command>
+      <Outputs>Generated\moc_DownloadItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.h">
       <Message>MOC GetThumbnail.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_GetThumbnail.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_GetThumbnail.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_GetThumbnail.cpp</Command>
+      <Outputs>Generated\moc_GetThumbnail.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetUrl.h">
       <Message>MOC GetUrl.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_GetUrl.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_GetUrl.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_GetUrl.cpp</Command>
+      <Outputs>Generated\moc_GetUrl.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\ListDirectory.h">
       <Message>MOC ListDirectory.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_ListDirectory.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_ListDirectory.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_ListDirectory.cpp</Command>
+      <Outputs>Generated\moc_ListDirectory.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\MoveItem.h">
       <Message>MOC MoveItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_MoveItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_MoveItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_MoveItem.cpp</Command>
+      <Outputs>Generated\moc_MoveItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\RenameItem.h">
       <Message>MOC RenameItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_RenameItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_RenameItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_RenameItem.cpp</Command>
+      <Outputs>Generated\moc_RenameItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\UploadItem.h">
       <Message>MOC UploadItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\moc_UploadItem.cpp</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\moc_UploadItem.cpp</Outputs>
+      <Command>..\..\dependencies\win32\bin\moc %(Identity) -o  Generated\moc_UploadItem.cpp</Command>
+      <Outputs>Generated\moc_UploadItem.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\resources.qrc">
-      <Message>MOC RenamItem.h</Message>
-      <Command>..\..\dependencies\win32\bin\rcc %(Identity) -o  $(ProjectDir)\..\..\dependencies\win32\src\qrc_resources.cpp --name resources</Command>
-      <Outputs>$(ProjectDir)\..\..\dependencies\win32\src\qrc_resources.cpp</Outputs>
+      <Message>RCC resources.qrc</Message>
+      <AdditionalInputs>..\..\bin\cloudbrowser\resources\4shared_login.html;..\..\bin\cloudbrowser\resources\amazons3_login.html;..\..\bin\cloudbrowser\resources\animezone_login.html;..\..\bin\cloudbrowser\resources\bootstrap.min.css;..\..\bin\cloudbrowser\resources\bootstrap.min.js;..\..\bin\cloudbrowser\resources\Calibri.ttf;..\..\bin\cloudbrowser\resources\cloud.png;..\..\bin\cloudbrowser\resources\cryptopp.png;..\..\bin\cloudbrowser\resources\curl.png;..\..\bin\cloudbrowser\resources\default_error.html;..\..\bin\cloudbrowser\resources\default_success.html;..\..\bin\cloudbrowser\resources\ffmpeg.png;..\..\bin\cloudbrowser\resources\gnu.png;..\..\bin\cloudbrowser\resources\jquery.min.js;..\..\bin\cloudbrowser\resources\jsoncpp.png;..\..\bin\cloudbrowser\resources\kde.png;..\..\bin\cloudbrowser\resources\localwinrt_login.html;..\..\bin\cloudbrowser\resources\local_login.html;..\..\bin\cloudbrowser\resources\mega_login.html;..\..\bin\cloudbrowser\resources\providers\4shared.png;..\..\bin\cloudbrowser\resources\providers\amazons3.png;..\..\bin\cloudbrowser\resources\providers\animezone.png;..\..\bin\cloudbrowser\resources\providers\box.png;..\..\bin\cloudbrowser\resources\providers\dropbox.png;..\..\bin\cloudbrowser\resources\providers\google.png;..\..\bin\cloudbrowser\resources\providers\gphotos.png;..\..\bin\cloudbrowser\resources\providers\hubic.png;..\..\bin\cloudbrowser\resources\providers\local.png;..\..\bin\cloudbrowser\resources\providers\localwinrt.png;..\..\bin\cloudbrowser\resources\providers\mega.png;..\..\bin\cloudbrowser\resources\providers\onedrive.png;..\..\bin\cloudbrowser\resources\providers\pcloud.png;..\..\bin\cloudbrowser\resources\providers\webdav.png;..\..\bin\cloudbrowser\resources\providers\yandex.png;..\..\bin\cloudbrowser\resources\providers\youtube.png;..\..\bin\cloudbrowser\resources\qt.png;..\..\bin\cloudbrowser\resources\style.min.css;..\..\bin\cloudbrowser\resources\tinyxml2.png;..\..\bin\cloudbrowser\resources\url.min.js;..\..\bin\cloudbrowser\resources\vlc-blue.png;..\..\bin\cloudbrowser\resources\vlc-qt.png;..\..\bin\cloudbrowser\resources\vlc.png;..\..\bin\cloudbrowser\resources\webdav_login.html;..\..\bin\cloudbrowser\qml\AboutView.qml;..\..\bin\cloudbrowser\qml\AndroidFileDialog.qml;..\..\bin\cloudbrowser\qml\FileDialog.qml;..\..\bin\cloudbrowser\qml\ImagePlayer.qml;..\..\bin\cloudbrowser\qml\ItemPage.qml;..\..\bin\cloudbrowser\qml\main.qml;..\..\bin\cloudbrowser\qml\MediaPlayer.qml;..\..\bin\cloudbrowser\qml\ProviderEntry.qml;..\..\bin\cloudbrowser\qml\QtFileDialog.qml;..\..\bin\cloudbrowser\qml\QtPlayer.qml;..\..\bin\cloudbrowser\qml\RegisterPage.qml;..\..\bin\cloudbrowser\qml\RemoveProvider.qml;..\..\bin\cloudbrowser\qml\VlcPlayer.qml;..\..\bin\cloudbrowser\qml\WebView.qml;..\..\bin\cloudbrowser\qml\WinRTFileDialog.qml;</AdditionalInputs>
+      <Command>..\..\dependencies\win32\bin\rcc %(Identity) -o  Generated\qrc_resources.cpp --name resources</Command>
+      <Outputs>Generated\qrc_resources.cpp</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libcloudstorage\libcloudstorage.vcxproj">
       <Project>{9194bbb3-78d1-46ff-bbbc-e6926ab1f9a6}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\bin\cloudbrowser\qml\AboutView.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\AndroidFileDialog.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\FileDialog.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\ImagePlayer.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\ItemPage.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\main.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\MediaPlayer.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\ProviderEntry.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\QtFileDialog.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\QtPlayer.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\RegisterPage.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\RemoveProvider.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\VlcPlayer.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\WebView.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\WinRTFileDialog.qml" />
+    <None Include="..\..\bin\cloudbrowser\resources\4shared_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\amazons3_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\animezone_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\bootstrap.min.css" />
+    <None Include="..\..\bin\cloudbrowser\resources\bootstrap.min.js" />
+    <None Include="..\..\bin\cloudbrowser\resources\default_error.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\default_success.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\jquery.min.js" />
+    <None Include="..\..\bin\cloudbrowser\resources\localwinrt_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\local_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\mega_login.html" />
+    <None Include="..\..\bin\cloudbrowser\resources\style.min.css" />
+    <None Include="..\..\bin\cloudbrowser\resources\url.min.js" />
+    <None Include="..\..\bin\cloudbrowser\resources\webdav_login.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\bin\cloudbrowser\resources\cloud.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\cryptopp.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\curl.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\ffmpeg.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\gnu.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\jsoncpp.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\kde.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\4shared.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\amazons3.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\animezone.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\box.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\dropbox.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\google.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\gphotos.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\hubic.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\local.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\localwinrt.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\mega.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\onedrive.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\pcloud.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\webdav.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\yandex.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\youtube.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\qt.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\tinyxml2.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc-blue.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc-qt.png" />
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

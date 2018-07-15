@@ -16,6 +16,15 @@
     <Filter Include="Generated Files">
       <UniqueIdentifier>{4dafac51-007f-49bb-a440-bc4aa19f1625}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\qml">
+      <UniqueIdentifier>{e3641697-0eab-46e3-a577-ae80b3448a19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\resources">
+      <UniqueIdentifier>{3ecce326-ff74-4f32-848f-ec6195dfa84f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\resources\providers">
+      <UniqueIdentifier>{097fb11f-1028-4dc3-9d06-af9cdeacf28a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\bin\cloudbrowser\src\AndroidUtility.cpp">
@@ -81,52 +90,52 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudContext.cpp">
+    <ClCompile Include="Generated\moc_UploadItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudItem.cpp">
+    <ClCompile Include="Generated\moc_CloudContext.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CloudRequest.cpp">
+    <ClCompile Include="Generated\moc_CloudItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CopyItem.cpp">
+    <ClCompile Include="Generated\moc_CloudRequest.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_CreateDirectory.cpp">
+    <ClCompile Include="Generated\moc_CopyItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_DeleteItem.cpp">
+    <ClCompile Include="Generated\moc_CreateDirectory.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_DownloadItem.cpp">
+    <ClCompile Include="Generated\moc_DeleteItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_FileDialog.cpp">
+    <ClCompile Include="Generated\moc_DownloadItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_GetThumbnail.cpp">
+    <ClCompile Include="Generated\moc_FileDialog.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_GetUrl.cpp">
+    <ClCompile Include="Generated\moc_GetThumbnail.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_IPlatformUtility.cpp">
+    <ClCompile Include="Generated\moc_GetUrl.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_ListDirectory.cpp">
+    <ClCompile Include="Generated\moc_IPlatformUtility.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_MoveItem.cpp">
+    <ClCompile Include="Generated\moc_ListDirectory.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_RenameItem.cpp">
+    <ClCompile Include="Generated\moc_MoveItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\moc_UploadItem.cpp">
+    <ClCompile Include="Generated\moc_RenameItem.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\dependencies\win32\src\qrc_resources.cpp">
+    <ClCompile Include="Generated\qrc_resources.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -202,5 +211,180 @@
     <CustomBuild Include="..\..\bin\cloudbrowser\resources.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\4shared.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\amazons3.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\animezone.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\box.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\dropbox.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\google.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\gphotos.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\hubic.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\local.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\localwinrt.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\mega.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\onedrive.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\pcloud.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\webdav.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\yandex.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\providers\youtube.png">
+      <Filter>Resource Files\resources\providers</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\cloud.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\cryptopp.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\curl.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\ffmpeg.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\gnu.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\jsoncpp.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\kde.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\qt.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\tinyxml2.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc-blue.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\vlc-qt.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\bin\cloudbrowser\resources\4shared_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\amazons3_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\animezone_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\bootstrap.min.css">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\bootstrap.min.js">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\default_error.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\default_success.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\jquery.min.js">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\local_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\localwinrt_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\mega_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\style.min.css">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\url.min.js">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\webdav_login.html">
+      <Filter>Resource Files\resources</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\AboutView.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\AndroidFileDialog.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\FileDialog.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\ImagePlayer.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\ItemPage.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\main.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\MediaPlayer.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\ProviderEntry.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\QtFileDialog.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\QtPlayer.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\RegisterPage.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\RemoveProvider.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\VlcPlayer.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\WebView.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\WinRTFileDialog.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
   </ItemGroup>
 </Project>
