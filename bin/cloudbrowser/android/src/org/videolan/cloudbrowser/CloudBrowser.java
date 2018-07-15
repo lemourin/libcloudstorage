@@ -97,6 +97,7 @@ public class CloudBrowser extends QtActivity {
     @Override
     public void onDestroy() {
         m_notification_helper.release();
+        System.exit(0);
         super.onDestroy();
     }
 

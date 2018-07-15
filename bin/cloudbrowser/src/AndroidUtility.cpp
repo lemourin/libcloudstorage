@@ -5,6 +5,7 @@
 #include <QAndroidJniEnvironment>
 #include <QAndroidJniObject>
 #include <QDebug>
+#include <QGuiApplication>
 #include <QIcon>
 #include <QUrl>
 #include <set>
@@ -44,6 +45,8 @@ void on_request_result(JNIEnv *, jclass *, jint request, jint result,
   }
 }
 
+void quit(JNIEnv *, jclass) { QGuiApplication::quit(); }
+
 }  // namespace
 
 extern "C" {
@@ -56,7 +59,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
       {"onActionRequested", "(Ljava/lang/String;)V",
        reinterpret_cast<void *>(on_action_requested)},
       {"onRequestResult", "(IILandroid/content/Intent;)V",
-       reinterpret_cast<void *>(on_request_result)}};
+       reinterpret_cast<void *>(on_request_result)},
+      {"quit", "()V", reinterpret_cast<void *>(quit)}};
   if (env->RegisterNatives(clazz, methods,
                            sizeof(methods) / sizeof(JNINativeMethod)) < 0)
     return JNI_FALSE;

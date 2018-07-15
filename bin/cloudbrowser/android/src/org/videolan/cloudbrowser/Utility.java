@@ -6,6 +6,7 @@ import android.content.Intent;
 public class Utility {
     public static native void onActionRequested(String action);
     public static native void onRequestResult(int request, int result, Intent data);
+    public static native void quit();
 
     public static Uri stringToUri(String uri) {
         String basename = uri.substring(0, uri.lastIndexOf('/') + 1);
