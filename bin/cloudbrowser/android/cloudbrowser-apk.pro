@@ -63,6 +63,7 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libsqlite3.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libmega.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcryptopp.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libavresample.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavdevice.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavfilter.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libswscale.so \
@@ -70,7 +71,6 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavcodec.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libswresample.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavutil.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libpng16.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_system.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_filesystem.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so
