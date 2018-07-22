@@ -44,6 +44,9 @@ const int THUMBNAIL_SIZE = 256;
 
 namespace {
 
+std::mutex mutex;
+bool initialized;
+
 struct ImageSize {
   int width_;
   int height_;
@@ -79,12 +82,31 @@ void check(int code, const std::string& call) {
   if (code < 0) throw std::logic_error(call + " (" + av_error(code) + ")");
 }
 
+void initialize() {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (!initialized) {
+    av_register_all();
+    av_log_set_level(AV_LOG_PANIC);
+    check(avformat_network_init(), "avformat_network_init");
+    check(av_lockmgr_register([](void** data, AVLockOp op) {
+            if (op == AV_LOCK_CREATE)
+              *data = new std::mutex;
+            else if (op == AV_LOCK_DESTROY)
+              delete static_cast<std::mutex*>(*data);
+            else if (op == AV_LOCK_OBTAIN)
+              static_cast<std::mutex*>(*data)->lock();
+            else if (op == AV_LOCK_RELEASE)
+              static_cast<std::mutex*>(*data)->unlock();
+            return 0;
+          }),
+          "av_lockmgr_register");
+    initialized = true;
+  }
+}
+
 Pointer<AVFormatContext> create_format_context(
     const std::string& url,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
-  av_register_all();
-  av_log_set_level(AV_LOG_PANIC);
-  check(avformat_network_init(), "avformat_network_init");
   auto context = avformat_alloc_context();
   auto data = new CallbackData{interrupt, std::chrono::system_clock::now()};
   context->interrupt_callback.opaque = data;
@@ -216,6 +238,7 @@ EitherError<std::string> generate_thumbnail(
     const std::string& url,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   try {
+    initialize();
     std::string effective_url = url;
 #ifdef _WIN32
     const char* file = "file:///";
