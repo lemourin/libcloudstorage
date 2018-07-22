@@ -41,7 +41,6 @@ extern "C" {
 namespace cloudstorage {
 
 const int THUMBNAIL_SIZE = 256;
-const int MAX_RETRY_COUNT = 48;
 
 namespace {
 
@@ -95,6 +94,7 @@ Pointer<AVFormatContext> create_format_context(
   };
   int e = 0;
   if ((e = avformat_open_input(&context, url.c_str(), nullptr, nullptr)) < 0) {
+    avformat_free_context(context);
     delete data;
     check(e, "avformat_open_input");
   } else if ((e = avformat_find_stream_info(context, nullptr)) < 0) {
@@ -108,16 +108,15 @@ Pointer<AVFormatContext> create_format_context(
   });
 }
 
-Pointer<AVCodecContext> create_codec_context(AVFormatContext* context) {
-  auto idx =
-      av_find_best_stream(context, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-  check(idx, "av_find_best_stream");
-  auto codec = avcodec_find_decoder(context->streams[idx]->codecpar->codec_id);
+Pointer<AVCodecContext> create_codec_context(AVFormatContext* context,
+                                             int stream_index) {
+  auto codec =
+      avcodec_find_decoder(context->streams[stream_index]->codecpar->codec_id);
   if (!codec) throw std::logic_error("decoder not found");
   auto codec_context =
       make<AVCodecContext>(avcodec_alloc_context3(codec), avcodec_free_context);
   check(avcodec_parameters_to_context(codec_context.get(),
-                                      context->streams[idx]->codecpar),
+                                      context->streams[stream_index]->codecpar),
         "avcodec_parameters_to_context");
   check(avcodec_open2(codec_context.get(), codec, nullptr), "avcodec_open2");
   return codec_context;
@@ -126,6 +125,8 @@ Pointer<AVCodecContext> create_codec_context(AVFormatContext* context) {
 Pointer<AVPacket> create_packet() {
   auto packet = new AVPacket;
   av_init_packet(packet);
+  packet->data = nullptr;
+  packet->size = 0;
   return Pointer<AVPacket>(packet, [](AVPacket* packet) {
     av_packet_unref(packet);
     delete packet;
@@ -133,27 +134,28 @@ Pointer<AVPacket> create_packet() {
 }
 
 Pointer<AVFrame> decode_frame(AVFormatContext* context,
-                              AVCodecContext* codec_context) {
-  int retry_count = 0;
+                              AVCodecContext* codec_context, int stream_index) {
   Pointer<AVFrame> result_frame;
-  while (retry_count < MAX_RETRY_COUNT && !result_frame) {
-    auto packet = create_packet();
+  auto packet = create_packet();
+  while (!result_frame) {
     auto read_packet = av_read_frame(context, packet.get());
-    if (read_packet != 0) {
-      retry_count++;
-      continue;
-    }
-    auto send_packet = avcodec_send_packet(codec_context, packet.get());
-    if (send_packet != 0) {
-      retry_count++;
-      continue;
+    if (read_packet != 0 && read_packet != AVERROR_EOF) {
+      check(read_packet, "av_read_frame");
+    } else {
+      if (read_packet == 0 && packet->stream_index != stream_index) continue;
+      auto send_packet = avcodec_send_packet(
+          codec_context, read_packet == AVERROR_EOF ? nullptr : packet.get());
+      if (send_packet != AVERROR_EOF) check(send_packet, "avcodec_send_packet");
     }
     auto frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
     auto code = avcodec_receive_frame(codec_context, frame.get());
-    if (code == 0)
+    if (code == 0) {
       result_frame = std::move(frame);
-    else if (code != -EAGAIN)
+    } else if (code == AVERROR_EOF) {
+      break;
+    } else if (code != AVERROR(EAGAIN)) {
       check(code, "avcodec_receive_frame");
+    }
   }
   if (!result_frame) throw std::logic_error("failed to fetch frame");
   return result_frame;
@@ -223,12 +225,16 @@ EitherError<std::string> generate_thumbnail(
     const auto length = strlen(file);
     if (url.substr(0, length) == file) effective_url = url.substr(length);
     auto context = create_format_context(effective_url, interrupt);
-    if (context->duration >= AV_TIME_BASE)
+    auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
+                                      nullptr, 0);
+    check(stream, "av_find_best_stream");
+    if (context->duration > 0) {
       check(av_seek_frame(context.get(), -1, context->duration / 10,
                           AVSEEK_FLAG_FRAME),
             "av_seek_frame");
-    auto codec_context = create_codec_context(context.get());
-    auto frame = decode_frame(context.get(), codec_context.get());
+    }
+    auto codec_context = create_codec_context(context.get(), stream);
+    auto frame = decode_frame(context.get(), codec_context.get(), stream);
     auto rgb_frame = create_rgb_frame(
         codec_context.get(), frame.get(),
         thumbnail_size({codec_context->width, codec_context->height},
