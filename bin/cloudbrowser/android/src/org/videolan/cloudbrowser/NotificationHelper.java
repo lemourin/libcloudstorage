@@ -1,6 +1,6 @@
 package org.videolan.cloudbrowser;
 
-import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -9,15 +9,19 @@ import android.content.IntentFilter;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.media.app.NotificationCompat.MediaStyle;
 
 public class NotificationHelper {
     private Context m_context;
-    private NotificationManager m_notification_manager;
+    private NotificationManagerCompat m_notification_manager;
     private Receiver m_receiver;
 
     private static final String ActionPlay = "PLAY";
     private static final String ActionPause = "PAUSE";
     private static final String ActionNext = "NEXT";
+    public static final String ChannelId = "MediaPlayer";
     public static final int PlayerNotification = 1;
 
     private static class Receiver extends BroadcastReceiver {
@@ -28,8 +32,7 @@ public class NotificationHelper {
 
     NotificationHelper(Context context) {
         m_context = context;
-        m_notification_manager =
-            (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        m_notification_manager = NotificationManagerCompat.from(context);
         m_receiver = new Receiver();
         final IntentFilter filter = new IntentFilter();
         filter.addAction(ActionPlay);
@@ -37,7 +40,7 @@ public class NotificationHelper {
         filter.addAction(ActionNext);
         context.registerReceiver(m_receiver, filter);
         hidePlayerNotification();
-
+        createNotificationChannel();
         m_context.startService(
             new Intent(context, NotificationService.class)
         );
@@ -65,15 +68,15 @@ public class NotificationHelper {
         intent.setAction(Intent.ACTION_MAIN);
         final PendingIntent content_intent = PendingIntent.getActivity(m_context,
                 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        Notification.Builder builder = new Notification.Builder(m_context);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(m_context, ChannelId);
         builder.setSmallIcon(R.drawable.icon).
             setOngoing(playing).
             setContentText(content_text).
             setContentTitle(title).
             setLargeIcon(BitmapFactory.decodeFile(icon)).
-            setContentIntent(content_intent);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            builder.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(0, 1));
+            setContentIntent(content_intent).
+            setPriority(NotificationCompat.PRIORITY_DEFAULT).
+            setStyle(new MediaStyle().setShowActionsInCompactView(0, 1));
         if (!playing)
             builder.addAction(android.R.drawable.ic_media_play, ActionPlay, play_intent);
         else
@@ -85,5 +88,17 @@ public class NotificationHelper {
 
     public void hidePlayerNotification() {
         m_notification_manager.cancel(PlayerNotification);
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    ChannelId, "Media Player", NotificationManager.IMPORTANCE_LOW
+            );
+            NotificationManager notificationManager = m_context.getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
     }
 }

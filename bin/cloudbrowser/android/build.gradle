@@ -19,11 +19,6 @@ allprojects {
 
 apply plugin: 'com.android.application'
 
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.google.android.gms:play-services-ads:11.8.0'
-}
-
 android {
     /*******************************************************
      * The following variables:
@@ -62,4 +57,10 @@ android {
     defaultConfig {
         applicationIdSuffix ".debug"
     }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.google.android.gms:play-services-ads:11.8.0'
+    compile 'com.android.support:support-v4:27.1.0'
 }
