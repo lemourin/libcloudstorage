@@ -104,9 +104,9 @@ IHttpRequest::Pointer GooglePhotos::getItemDataRequest(
                              id.album_id_ + "/photoid/" + id.id_);
     request->setParameter("imgmax", "d");
     request->setParameter(
-        "fields", util::Url::escape(
-                      "title,gphoto:id,gphoto:timestamp,"
-                      "gphoto:size,gphoto:albumid,media:group(media:content)"));
+        "fields", util::Url::escape("title,gphoto:id,gphoto:timestamp,"
+                                    "gphoto:size,gphoto:albumid,gphoto:"
+                                    "videostatus,media:group(media:content)"));
   }
   request->setParameter("GData-Version", "3");
   return request;
@@ -143,7 +143,7 @@ IHttpRequest::Pointer GooglePhotos::listDirectoryRequest(const IItem &directory,
         "fields",
         util::Url::escape(
             "entry(id,title,content,gphoto:size,gphoto:bytesUsed,"
-            "gphoto:timestamp,gphoto:id,gphoto:albumid,"
+            "gphoto:timestamp,gphoto:id,gphoto:albumid,gphoto:videostatus,"
             "media:group(media:"
             "thumbnail,media:content),link[@rel='http://schemas.google.com/g/"
             "2005#feed'](@href))"));
@@ -289,8 +289,14 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
     if (!album || !size || !timestamp || !album->GetText() ||
         !size->GetText() || !timestamp->GetText() || !url || !type)
       throw std::logic_error(util::Error::INVALID_XML);
+    auto status_element = child->FirstChildElement("gphoto:videostatus");
+    auto status = status_element ? status_element->GetText() : nullptr;
     auto item = std::make_shared<Item>(
-        title->GetText(), to_string({album->GetText(), id->GetText()}),
+        ((status && status != std::string("final"))
+             ? std::string("[") + status + "] "
+             : std::string()) +
+            title->GetText(),
+        to_string({album->GetText(), id->GetText()}),
         std::stoull(size->GetText()),
         std::chrono::system_clock::time_point(
             std::chrono::milliseconds(std::stoull(timestamp->GetText()))),
