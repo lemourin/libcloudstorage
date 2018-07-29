@@ -49,6 +49,14 @@ ItemId from_string(const std::string &str) {
   return {json["a"].asString(), json["i"].asString()};
 }
 
+std::string extension(const std::string &name) {
+  auto it = name.find_last_of(".");
+  if (it == std::string::npos)
+    return name;
+  else
+    return name.substr(it + 1);
+}
+
 }  // namespace
 
 GooglePhotos::GooglePhotos() : CloudProvider(util::make_unique<Auth>()) {}
@@ -146,15 +154,34 @@ IHttpRequest::Pointer GooglePhotos::listDirectoryRequest(const IItem &directory,
 }
 
 IHttpRequest::Pointer GooglePhotos::uploadFileRequest(
-    const IItem &directory, const std::string &filename, std::ostream &,
-    std::ostream &) const {
+    const IItem &directory, const std::string &filename, std::ostream &prefix,
+    std::ostream &suffix) const {
+  const std::string separator = "fWoDm9QNn3v3Bq3bScUX";
+  std::string content_type = "application/octet-stream";
+  auto file_type = Item::fromExtension(extension(filename));
+  if (file_type == IItem::FileType::Video)
+    content_type = "video/mp4";
+  else if (file_type == IItem::FileType::Image)
+    content_type = "image/png";
   auto request = http()->create(endpoint() + "/feed/api/user/default/albumid/" +
                                     from_string(directory.id()).album_id_,
                                 "POST");
-  request->setHeaderParameter("Slug", filename);
-  request->setHeaderParameter("Content-Type", "image/png");
-  request->setParameter("imgmax", "d");
+  request->setHeaderParameter(
+      "Content-Type", "multipart/related; boundary=\"" + separator + "\"");
   request->setHeaderParameter("GData-Version", "3");
+  request->setHeaderParameter("MIME-version", "1.0");
+  prefix << "Media multipart posting\r\n"
+         << "--" << separator << "\r\n"
+         << "Content-Type: application/atom+xml\r\n\r\n"
+         << "<entry xmlns='http://www.w3.org/2005/Atom'>"
+         << "  <title>" << filename << "</title>"
+         << "  <category scheme=\"http://schemas.google.com/g/2005#kind\""
+         << "            term=\"http://schemas.google.com/photos/2007#photo\"/>"
+         << "</entry>\r\n"
+         << "--" << separator << "\r\n"
+         << "Content-Type: " << content_type << "\r\n\r\n";
+  request->setParameter("imgmax", "d");
+  suffix << "\r\n--" << separator << "--\r\n";
   return request;
 }
 
