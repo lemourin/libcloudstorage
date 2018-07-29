@@ -259,8 +259,8 @@ Kirigami.ScrollablePage {
           width: parent.width
           height: 40
           Item {
-            anchors.left: parent.left
-            anchors.right: icon.left
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignLeft
             height: parent.height
             Templates.Label {
               anchors.fill: parent
@@ -271,16 +271,16 @@ Kirigami.ScrollablePage {
           }
           Kirigami.Icon {
             id: icon
-            anchors.right: progress.left
-            anchors.margins: 10
+            Layout.alignment: Qt.AlignRight
+            Layout.margins: 10
             width: 20
             height: 20
             source: modelData.upload ? "go-up" : "go-down"
           }
           Controls.ProgressBar {
             id: progress
-            anchors.right: parent.right
-            anchors.margins: 10
+            Layout.alignment: Qt.AlignRight
+            Layout.margins: 10
             from: 0
             to: 1
             value: modelData.progress
