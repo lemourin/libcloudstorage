@@ -228,6 +228,26 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
   auto media_group = child->FirstChildElement("media:group");
   auto content =
       media_group ? media_group->FirstChildElement("media:content") : nullptr;
+  if (media_group && content) {
+    for (auto node = media_group->FirstChildElement(); node;
+         node = node->NextSiblingElement()) {
+      if (node->Name() == std::string("media:content")) {
+        auto current_medium = content->Attribute("medium");
+        auto current_size = content->Attribute("width");
+        auto medium = node->Attribute("medium");
+        auto size = node->Attribute("width");
+        if (!current_medium || !current_size || !medium || !size)
+          throw std::logic_error(util::Error::INVALID_XML);
+        if ((medium == std::string("video") &&
+             (current_medium == std::string("image") ||
+              std::stoull(size) > std::stoull(current_size))) ||
+            (medium == std::string("image") &&
+             current_medium == std::string("image") &&
+             std::stoull(size) > std::stoull(current_size)))
+          content = node;
+      }
+    }
+  }
   auto id = child->FirstChildElement("gphoto:id");
   auto size = child->FirstChildElement("gphoto:size");
   auto album_size = child->FirstChildElement("gphoto:bytesUsed");
@@ -237,18 +257,19 @@ IItem::Pointer GooglePhotos::toItem(const tinyxml2::XMLElement *child) const {
       !timestamp->GetText())
     throw std::logic_error(util::Error::INVALID_XML);
   if (content) {
+    auto url = content->Attribute("url");
+    auto type = content->Attribute("type");
     if (!album || !size || !timestamp || !album->GetText() ||
-        !size->GetText() || !timestamp->GetText())
+        !size->GetText() || !timestamp->GetText() || !url || !type)
       throw std::logic_error(util::Error::INVALID_XML);
     auto item = std::make_shared<Item>(
         title->GetText(), to_string({album->GetText(), id->GetText()}),
         std::stoull(size->GetText()),
         std::chrono::system_clock::time_point(
             std::chrono::milliseconds(std::stoull(timestamp->GetText()))),
-        IItem::FileType::Image);
-    item->set_thumbnail_url(content->Attribute("url"));
-    item->set_url(content->Attribute("url"));
-
+        Item::fromMimeType(type));
+    item->set_thumbnail_url(url);
+    item->set_url(url);
     return item;
   } else {
     auto item = std::make_shared<Item>(
