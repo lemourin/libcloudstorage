@@ -23,7 +23,6 @@
 #ifndef GOOGLEPHOTOS_H
 #define GOOGLEPHOTOS_H
 
-#include <tinyxml2.h>
 #include "GoogleDrive.h"
 
 namespace cloudstorage {
@@ -47,19 +46,46 @@ class GooglePhotos : public CloudProvider {
   IHttpRequest::Pointer uploadFileRequest(
       const IItem& directory, const std::string& filename,
       std::ostream& prefix_stream, std::ostream& suffix_stream) const override;
+  IHttpRequest::Pointer getItemUrlRequest(
+      const IItem&, std::ostream& input_stream) const override;
   IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
+  std::string getItemUrlResponse(const IItem& item,
+                                 const IHttpRequest::HeaderParameters&,
+                                 std::istream& response) const override;
+  IItem::Pointer uploadFileResponse(const IItem& parent,
+                                    const std::string& filename, uint64_t,
+                                    std::istream& response) const override;
+  IHttpRequest::Pointer createDirectoryRequest(const IItem&,
+                                               const std::string& name,
+                                               std::ostream&) const override;
   DownloadFileRequest::Pointer downloadFileAsync(IItem::Pointer,
                                                  IDownloadFileCallback::Pointer,
                                                  Range) override;
   GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
+  DownloadFileRequest::Pointer getThumbnailAsync(
+      IItem::Pointer item, IDownloadFileCallback::Pointer) override;
+  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer item, const std::string&,
+      ListDirectoryPageCallback complete) override;
+  UploadFileRequest::Pointer uploadFileAsync(
+      IItem::Pointer, const std::string& filename,
+      IUploadFileCallback::Pointer) override;
 
-  IItem::Pointer toItem(const tinyxml2::XMLElement*) const;
+  IItem::Pointer toItem(const Json::Value&) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:
     std::string authorizeLibraryUrl() const override;
   };
+
+ private:
+  DownloadFileRequest::Pointer downloadFromUrl(IItem::Pointer item,
+                                               const std::string& url,
+                                               IDownloadFileCallback::Pointer);
+  UploadFileRequest::Pointer uploadFileAsyncBase(IItem::Pointer,
+                                                 const std::string& filename,
+                                                 IUploadFileCallback::Pointer);
 };
 
 }  // namespace cloudstorage

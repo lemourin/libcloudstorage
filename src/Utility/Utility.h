@@ -163,6 +163,7 @@ constexpr auto COULD_NOT_FIND_HELPER_FUNCTIONS =
     "couldn't find helper functions";
 constexpr auto COULD_NOT_FIND_DESCRABMLER_DEFINITION =
     "couldn't find descrambler definition";
+constexpr auto COULD_NOT_UPLOAD_HERE = "couldn't upload to this directory";
 constexpr auto INVALID_TRANSFORMATION_FUNCTION =
     "invalid transformation function";
 constexpr auto UNKNOWN_TRANSFORMATION = "unknown transformation";
