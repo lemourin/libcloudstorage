@@ -266,7 +266,7 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
              [=](EitherError<IItem> e) { callback->done(e); },
              [=](Request<EitherError<IItem>>::Pointer r) {
                upload_url(r, [=](EitherError<std::string> ret) {
-                 if (ret.left()) r->done(ret.left());
+                 if (ret.left()) return r->done(ret.left());
                  upload(r, *ret.right(),
                         [=](EitherError<IItem> e) { r->done(e); });
                });
