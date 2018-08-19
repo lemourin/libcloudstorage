@@ -24,6 +24,7 @@
 #include "CloudProvider.h"
 
 #include <json/json.h>
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -373,10 +374,16 @@ void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
 
 std::string CloudProvider::defaultFileDaemonUrl(const IItem& item,
                                                 uint64_t size) const {
-  return file_url() + "/?id=" + util::Url::escape(util::to_base64(item.id())) +
-         "&name=" + util::Url::escape(util::to_base64(item.filename())) +
-         "&size=" + std::to_string(size) +
-         "&state=" + util::Url::escape(auth()->state());
+  Json::Value json;
+  json["id"] = item.id();
+  json["size"] = Json::Int64(size);
+  json["state"] = auth()->state();
+  json["name"] = item.filename();
+  Json::FastWriter writer;
+  writer.omitEndingLineFeed();
+  auto id = util::to_base64(writer.write(json));
+  std::replace(id.begin(), id.end(), '/', '-');
+  return file_url() + "/" + id;
 }
 
 ICloudProvider::DownloadFileRequest::Pointer

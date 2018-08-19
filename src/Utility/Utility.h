@@ -155,6 +155,7 @@ constexpr auto INVALID_NODE = "invalid node";
 constexpr auto INVALID_RANGE = "invalid range";
 constexpr auto INVALID_REQUEST = "invalid request";
 constexpr auto INVALID_KIND = "invalid kind";
+constexpr auto INVALID_STATE = "invalid state argument";
 constexpr auto ABORTED = "aborted";
 constexpr auto NODE_NOT_FOUND = "node not found";
 constexpr auto COULD_NOT_FIND_DESCRAMBLER_NAME =

@@ -22,6 +22,9 @@
  *****************************************************************************/
 #include "FileServer.h"
 
+#include <json/json.h>
+
+#include <algorithm>
 #include <queue>
 
 #include "Utility/Item.h"
@@ -232,49 +235,57 @@ HttpServerCallback::HttpServerCallback(std::shared_ptr<CloudProvider> p)
 
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
-  const char* state = request.get("state");
-  const char* name = request.get("name");
-  const char* id = request.get("id");
-  const char* size_parameter = request.get("size");
-  if (!state || state != provider_->auth()->state() || !name || !id ||
-      !size_parameter)
+  try {
+    auto url_fragment =
+        std::string(request.url())
+            .substr(std::string(request.url()).find_last_of('/') + 1);
+    std::replace(url_fragment.begin(), url_fragment.end(), '-', '/');
+    auto json = util::json::from_string(util::from_base64(url_fragment));
+    if (json["state"] != provider_->auth()->state())
+      return util::response_from_string(request, IHttpRequest::Bad, {},
+                                        util::Error::INVALID_STATE);
+    auto id = json["id"].asString();
+    auto filename = json["name"].asString();
+    auto size = json["size"].asUInt64();
+    auto extension = filename.substr(filename.find_last_of('.') + 1);
+    std::unordered_map<std::string, std::string> headers = {
+        {"Content-Type", util::to_mime_type(extension)},
+        {"Accept-Ranges", "bytes"},
+        {"Content-Disposition", "inline; filename=\"" + filename + "\""},
+        {"Access-Control-Allow-Origin", "*"},
+        {"Access-Control-Allow-Headers", "*"}};
+    if (request.method() == "OPTIONS")
+      return util::response_from_string(request, IHttpRequest::Ok, headers, "");
+    Range range = {0, size};
+    int code = IHttpRequest::Ok;
+    if (const char* range_str = request.header("Range")) {
+      range = util::parse_range(range_str);
+      if (range.size_ == Range::Full) range.size_ = size - range.start_;
+      if (range.start_ + range.size_ > size)
+        return util::response_from_string(request, IHttpRequest::RangeInvalid,
+                                          {}, util::Error::INVALID_RANGE);
+      std::stringstream stream;
+      stream << "bytes " << range.start_ << "-"
+             << range.start_ + range.size_ - 1 << "/" << size;
+      headers["Content-Range"] = stream.str();
+      code = IHttpRequest::Partial;
+    }
+    auto buffer = std::make_shared<Buffer>();
+    auto data =
+        util::make_unique<HttpData>(buffer, provider_, id, range, item_cache_);
+    auto response =
+        request.response(code, headers, range.size_, std::move(data));
+    buffer->response_ = response.get();
+    response->completed([buffer]() {
+      std::unique_lock<std::mutex> lock(buffer->response_mutex_);
+      buffer->response_ = nullptr;
+    });
+    return response;
+  } catch (const Json::Exception& e) {
+    util::log("invalid request", request.url(), e.what());
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       util::Error::INVALID_REQUEST);
-  std::string filename = util::from_base64(name);
-  auto size = std::stoull(size_parameter);
-  auto extension = filename.substr(filename.find_last_of('.') + 1);
-  std::unordered_map<std::string, std::string> headers = {
-      {"Content-Type", util::to_mime_type(extension)},
-      {"Accept-Ranges", "bytes"},
-      {"Content-Disposition", "inline; filename=\"" + filename + "\""},
-      {"Access-Control-Allow-Origin", "*"},
-      {"Access-Control-Allow-Headers", "*"}};
-  if (request.method() == "OPTIONS")
-    return util::response_from_string(request, IHttpRequest::Ok, headers, "");
-  Range range = {0, size};
-  int code = IHttpRequest::Ok;
-  if (const char* range_str = request.header("Range")) {
-    range = util::parse_range(range_str);
-    if (range.size_ == Range::Full) range.size_ = size - range.start_;
-    if (range.start_ + range.size_ > size)
-      return util::response_from_string(request, IHttpRequest::RangeInvalid, {},
-                                        util::Error::INVALID_RANGE);
-    std::stringstream stream;
-    stream << "bytes " << range.start_ << "-" << range.start_ + range.size_ - 1
-           << "/" << size;
-    headers["Content-Range"] = stream.str();
-    code = IHttpRequest::Partial;
   }
-  auto buffer = std::make_shared<Buffer>();
-  auto data = util::make_unique<HttpData>(
-      buffer, provider_, util::from_base64(id), range, item_cache_);
-  auto response = request.response(code, headers, range.size_, std::move(data));
-  buffer->response_ = response.get();
-  response->completed([buffer]() {
-    std::unique_lock<std::mutex> lock(buffer->response_mutex_);
-    buffer->response_ = nullptr;
-  });
-  return response;
 }
 
 }  // namespace
