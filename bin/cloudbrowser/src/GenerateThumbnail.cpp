@@ -85,9 +85,12 @@ void check(int code, const std::string& call) {
 void initialize() {
   std::unique_lock<std::mutex> lock(mutex);
   if (!initialized) {
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     av_register_all();
+#endif
     av_log_set_level(AV_LOG_PANIC);
     check(avformat_network_init(), "avformat_network_init");
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     check(av_lockmgr_register([](void** data, AVLockOp op) {
             if (op == AV_LOCK_CREATE)
               *data = new std::mutex;
@@ -100,6 +103,7 @@ void initialize() {
             return 0;
           }),
           "av_lockmgr_register");
+#endif
     initialized = true;
   }
 }
