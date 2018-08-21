@@ -60,7 +60,7 @@ struct YouTubeItem {
     Playlist = 1 << 1,
     HighQuality = 1 << 2,
     RelatedPlaylist = 1 << 3,
-    DontMerge = 1 << 4
+    Stream = 1 << 4
   };
   int type = 0;
   std::string id;
@@ -330,7 +330,7 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
     if (best_video.scrambled_signature.empty() &&
         best_audio.scrambled_signature.empty()) {
       if (!(data.type & YouTubeItem::HighQuality) ||
-          (data.type & YouTubeItem::DontMerge))
+          (data.type & YouTubeItem::Stream))
         return complete((data.type & YouTubeItem::Audio) ? best_audio.url
                                                          : best_video.url);
       else
@@ -354,7 +354,7 @@ void get_stream(typename Request<Result>::Pointer r, IItem::Pointer item,
           auto audio_url =
               best_audio.url + "&signature=" + *signature_audio.right();
           if (!(data.type & YouTubeItem::HighQuality) ||
-              (data.type & YouTubeItem::DontMerge)) {
+              (data.type & YouTubeItem::Stream)) {
             return complete((data.type & YouTubeItem::Audio) ? audio_url
                                                              : video_url);
           } else {
@@ -506,7 +506,7 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     IItem::Pointer i, IDownloadFileCallback::Pointer cb, Range range) {
   auto file_id = from_string(i->id());
   if (!(file_id.type & YouTubeItem::HighQuality) ||
-      (file_id.type & YouTubeItem::DontMerge))
+      (file_id.type & YouTubeItem::Stream))
     return std::make_shared<DownloadFileFromUrlRequest>(shared_from_this(), i,
                                                         cb, range)
 
@@ -538,7 +538,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
                get_stream<EitherError<std::string>>(
                    r, item, [=](EitherError<std::string> e) {
                      if (e.right() && (type & YouTubeItem::HighQuality) &&
-                         !(type & YouTubeItem::DontMerge)) {
+                         !(type & YouTubeItem::Stream)) {
                        r->done(defaultFileDaemonUrl(
                            *item,
                            generateDashManifest(*item, *e.right()).size()));
@@ -745,13 +745,13 @@ std::string YouTube::generateDashManifest(const IItem& i,
                                           const std::string& url) const {
   auto data = util::parse_form(util::Url(url).query());
   auto id = from_string(i.id());
-  id.type = YouTubeItem::DontMerge | YouTubeItem::HighQuality |
+  id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
             YouTubeItem::Audio | (id.type & YouTubeItem::RelatedPlaylist);
   auto item_audio = util::make_unique<Item>(i.filename(), to_string(id),
                                             std::stoull(data["audio_size"]),
                                             i.timestamp(), i.type());
   item_audio->set_url(data["audio"]);
-  id.type = YouTubeItem::DontMerge | YouTubeItem::HighQuality |
+  id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
             (id.type & YouTubeItem::RelatedPlaylist);
   auto item_video = util::make_unique<Item>(i.filename(), to_string(id),
                                             std::stoull(data["video_size"]),
