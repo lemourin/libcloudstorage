@@ -1,20 +1,8 @@
 #ifndef FUSE_LOW_LEVEL_H
 #define FUSE_LOW_LEVEL_H
 
-#ifndef FUSE_USE_VERSION
-
 #ifdef WITH_FUSE
-#define FUSE_USE_VERSION 31
-#endif
-
-#ifdef WITH_LEGACY_FUSE
-#define FUSE_USE_VERSION 26
-#endif
-
-#endif
-
-#ifndef _WIN32
-#include <fuse_lowlevel.h>
+#include "FuseCommon.h"
 #include <json/json.h>
 
 #define FUSE_LOWLEVEL
@@ -40,7 +28,7 @@ fuse_lowlevel_ops low_level_operations();
 
 }  // namespace cloudstorage
 
-#endif  // _WIN32
+#endif  // WITH_FUSE
 
 #endif  // FUSE_USE_VERSION
 #endif  // FUSE_LOW_LEVEL_H

@@ -3,11 +3,7 @@
 
 #ifdef WITH_LEGACY_FUSE
 
-#ifndef FUSE_USE_VERSION
-#define FUSE_USE_VERSION 26
-#endif
-
-#include <fuse.h>
+#include "FuseCommon.h"
 
 #include <json/json.h>
 
