@@ -39,6 +39,7 @@
 #include "CloudContext.h"
 #include "FileDialog.h"
 #include "IPlatformUtility.h"
+#include "MpvPlayer.h"
 #include "Request/CreateDirectory.h"
 #include "Request/DeleteItem.h"
 #include "Request/DownloadItem.h"
@@ -93,6 +94,9 @@ void register_types() {
 #ifdef WITH_VLC_QT
   VlcQml::registerTypes();
 #endif
+#ifdef WITH_MPV
+  qmlRegisterType<MpvPlayer>("libcloudstorage", 1, 0, "MpvPlayer");
+#endif
 }
 
 int exec_cloudbrowser(int argc, char** argv) {
@@ -127,10 +131,16 @@ int exec_cloudbrowser(int argc, char** argv) {
 #else
     engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
+#ifdef WITH_MPV
+    engine.rootContext()->setContextProperty("mpv", QVariant(true));
+#else
+    engine.rootContext()->setContextProperty("mpv", QVariant(true));
+#endif
     engine.rootContext()->setContextProperty("platform", platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
     engine.load(QUrl("qrc:/qml/main.qml"));
 
+    setlocale(LC_NUMERIC, "C");
     int ret = app.exec();
 
     Q_CLEANUP_RESOURCE(resources);

@@ -61,6 +61,11 @@ Kirigami.Page {
       platform.hidePlayerNotification();
   }
 
+  function preferred_player() {
+    //return "VlcPlayer.qml";
+    return mpv ? "MpvPlayer.qml" : (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml");
+  }
+
   function next() {
     player.item.source = audio_player.item.source = "";
     var next = item_page.nextRequested();
@@ -221,7 +226,7 @@ Kirigami.Page {
       anchors.fill: parent
       asynchronous: true
       source: page.item.type === "video" || page.item.type === "audio" ?
-                (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml") : "ImagePlayer.qml"
+                preferred_player() : "ImagePlayer.qml"
       onStatusChanged: {
         if (status === Loader.Ready) {
           set_url();
@@ -234,7 +239,7 @@ Kirigami.Page {
 
     Loader {
       id: audio_player
-      source: vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml"
+      source: preferred_player()
     }
 
     Timer {

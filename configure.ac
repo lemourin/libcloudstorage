@@ -142,6 +142,7 @@ HAVE_QTWEBVIEW=0
 HAVE_QTANDROID=0
 HAVE_THUMBNAILER=0
 HAVE_VLC_QT=0
+HAVE_MPV=0
 HAVE_CLOUDBROWSER=0
 
 AC_ARG_WITH([vlc-qt], AS_HELP_STRING([--with-vlc-qt]))
@@ -205,6 +206,15 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
         AS_IF([test "x$with_vlc_qt" = "xyes"], [AC_MSG_ERROR([vlc-qt not found])])
       ])
     ])
+    AS_IF([test "x$with_mpv" != "xno"], [
+      PKG_CHECK_MODULES([mpv], [mpv], [
+        HAVE_MPV=1
+        AC_DEFINE(WITH_MPV)
+      ], [
+        HAVE_MPV=0
+        AS_IF([test "x$with_mpv" = "xyes"], [AC_MSG_ERROR([mpv not found])])
+      ])
+    ])
   ], [
     AS_IF([test "x$with_cloudbrowser" = "xyes"], [
       AS_IF([test "$HAVE_CURL" -eq 0], [AC_MSG_ERROR([cloudbrowser requires curl])])
@@ -218,6 +228,7 @@ AM_CONDITIONAL([WITH_QTANDROID], [test "$HAVE_QTANDROID" -eq 1])
 AM_CONDITIONAL([WITH_QTWEBVIEW], [test "$HAVE_QTWEBVIEW" -eq 1])
 AM_CONDITIONAL([WITH_THUMBNAILER], [test "$HAVE_THUMBNAILER" -eq 1])
 AM_CONDITIONAL([WITH_VLC_QT], [test "$HAVE_VLC_QT" -eq 1])
+AM_CONDITIONAL([WITH_MPV], [test "$HAVE_MPV" -eq 1])
 AM_CONDITIONAL([WITH_CLOUDBROWSER], [test "$HAVE_CLOUDBROWSER" -eq 1])
 
 AC_OUTPUT

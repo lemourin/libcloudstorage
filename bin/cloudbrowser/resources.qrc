@@ -59,5 +59,6 @@
         <file>resources/jquery.min.js</file>
         <file>resources/bootstrap.min.css</file>
         <file>resources/bootstrap.min.js</file>
+        <file>qml/MpvPlayer.qml</file>
     </qresource>
 </RCC>

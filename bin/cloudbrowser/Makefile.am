@@ -31,7 +31,8 @@ noinst_HEADERS = \
 	src/FileDialog.h \
 	src/Exec.h \
 	src/File.h \
-	src/IPlatformUtility.h
+	src/IPlatformUtility.h \
+	src/MpvPlayer.h
 
 libcloudbrowser_la_SOURCES = \
 	src/CloudContext.cpp \
@@ -54,7 +55,8 @@ libcloudbrowser_la_SOURCES = \
 	src/WinRTUtility.cpp \
 	src/FileDialog.cpp \
 	src/Exec.cpp \
-	src/File.cpp
+	src/File.cpp \
+	src/MpvPlayer.cpp
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/bin/cloudbrowser/src \
@@ -81,6 +83,10 @@ if WITH_VLC_QT
 libcloudbrowser_la_CXXFLAGS += $(vlcqt_CFLAGS)
 libcloudbrowser_la_LIBADD += $(vlcqt_LIBS)
 endif
+if WITH_MPV
+libcloudbrowser_la_CXXFLAGS += $(mpv_CFLAGS)
+libcloudbrowser_la_LIBADD += $(mpv_LIBS)
+endif
 
 nodist_libcloudbrowser_la_SOURCES = \
 	src/CloudContext.moc.cpp \
@@ -98,6 +104,7 @@ nodist_libcloudbrowser_la_SOURCES = \
 	src/Request/CopyItem.moc.cpp \
 	src/FileDialog.moc.cpp \
 	src/IPlatformUtility.moc.cpp \
+	src/MpvPlayer.moc.cpp \
 	resources.cpp
 
 DEPS_res = \
@@ -108,6 +115,7 @@ DEPS_res = \
 	qml/MediaPlayer.qml \
 	qml/VlcPlayer.qml \
 	qml/QtPlayer.qml \
+	qml/MpvPlayer.qml \
 	qml/ImagePlayer.qml \
 	qml/RegisterPage.qml \
 	qml/RemoveProvider.qml \
