@@ -62,7 +62,6 @@ Kirigami.Page {
   }
 
   function preferred_player() {
-    //return "VlcPlayer.qml";
     return mpv ? "MpvPlayer.qml" : (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml");
   }
 
