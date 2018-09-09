@@ -18,8 +18,4 @@ MpvPlayer {
   function set_position(p) {
     player.position = p;
   }
-
-  Component.onCompleted: {
-    player.set_volume(root.volume)
-  }
 }
