@@ -138,7 +138,10 @@ LocalDrive::GetItemUrlRequest::Pointer LocalDrive::getItemUrlAsync(
       [=](EitherError<std::string> e) { callback(e); },
       [=](Request<EitherError<std::string>>::Pointer r) {
 #ifdef _WIN32
-        r->done("file:///" + path(item));
+        auto p = path(item);
+        for (auto &c : p)
+          if (c == '\\') c = '/';
+        r->done("file:///" + p);
 #else
         r->done("file://" + path(item));
 #endif
