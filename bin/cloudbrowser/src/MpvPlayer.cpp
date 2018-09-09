@@ -111,6 +111,7 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
   mpv_set_option_string(mpv_, "video-timing-offset", "0");
   mpv_observe_property(mpv_, POSITION_ID, "time-pos", MPV_FORMAT_INT64);
   mpv_observe_property(mpv_, IDLE_ID, "core-idle", MPV_FORMAT_FLAG);
+  mpv_request_log_messages(mpv_, "warn");
 
   if (mpv_initialize(mpv_) < 0)
     throw std::runtime_error("could not initialize mpv context");
@@ -214,6 +215,9 @@ void MpvPlayer::eventOccurred() {
         ended_ = true;
         emit endedChanged();
       }
+    } else if (event->event_id == MPV_EVENT_LOG_MESSAGE) {
+      auto e = reinterpret_cast<mpv_event_log_message *>(event->data);
+      cloudstorage::util::log(e->text);
     } else if (event->event_id == MPV_EVENT_NONE) {
       break;
     }
