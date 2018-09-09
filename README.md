@@ -146,6 +146,10 @@ Cloud Browser dependencies:
   when  found, Cloud  Browser  will  use  vlc-based  media  player instead  of  
   QtMultimedia-based one
 
+* `mpv`
+
+  when found, Cloud Browser will use mpv-based media player
+
 Screenshot:
 
   <a href="https://imgur.com/a/bF4CIS1">
