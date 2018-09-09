@@ -4,7 +4,7 @@ import libcloudstorage 1.0
 MpvPlayer {
   property alias source: player.uri
   property int time: player.position * player.duration
-  property bool buffering: !player.playing
+  property bool buffering: !player.playing && !player.paused
 
   id: player
   anchors.fill: parent

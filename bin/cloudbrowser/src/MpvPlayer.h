@@ -38,6 +38,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   Q_PROPERTY(int duration READ duration NOTIFY durationChanged)
   Q_PROPERTY(bool ended READ ended NOTIFY endedChanged)
   Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
+  Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
   Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
 
   MpvPlayer(QQuickItem *parent = nullptr);
@@ -55,6 +56,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   int duration() const;
   bool ended() const;
   bool playing() const;
+  bool paused() const;
 
   Q_INVOKABLE void play();
   Q_INVOKABLE void pause();
@@ -68,6 +70,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   void durationChanged();
   void endedChanged();
   void playingChanged();
+  void pausedChanged();
   void volumeChanged();
 
  protected:
@@ -89,6 +92,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   bool invoke_load_ = false;
   bool ended_ = false;
   bool playing_ = false;
+  bool paused_ = false;
   int volume_ = 100;
   int64_t duration_ = 0;
 };

@@ -174,14 +174,20 @@ bool MpvPlayer::ended() const { return ended_; }
 
 bool MpvPlayer::playing() const { return playing_; }
 
+bool MpvPlayer::paused() const { return paused_; }
+
 void MpvPlayer::play() {
   int flag = false;
   mpv_set_property_async(mpv_, 0, "pause", MPV_FORMAT_FLAG, &flag);
+  paused_ = false;
+  emit pausedChanged();
 }
 
 void MpvPlayer::pause() {
   int flag = true;
   mpv_set_property_async(mpv_, 0, "pause", MPV_FORMAT_FLAG, &flag);
+  paused_ = true;
+  emit pausedChanged();
 }
 
 QQuickFramebufferObject::Renderer *MpvPlayer::createRenderer() const {
