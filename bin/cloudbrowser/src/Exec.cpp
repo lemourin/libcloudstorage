@@ -134,7 +134,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 #ifdef WITH_MPV
     engine.rootContext()->setContextProperty("mpv", QVariant(true));
 #else
-    engine.rootContext()->setContextProperty("mpv", QVariant(true));
+    engine.rootContext()->setContextProperty("mpv", QVariant(false));
 #endif
     engine.rootContext()->setContextProperty("platform", platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
