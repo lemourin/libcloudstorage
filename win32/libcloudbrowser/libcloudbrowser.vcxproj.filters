@@ -138,6 +138,9 @@
     <ClCompile Include="Generated\moc_CloudContext.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\MpvPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\cloudbrowser\src\AndroidUtility.h">
@@ -159,6 +162,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\bin\cloudbrowser\src\MpvPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -298,6 +304,9 @@
       <Filter>Resource Files\qml</Filter>
     </None>
     <None Include="..\..\bin\cloudbrowser\qml\main.qml">
+      <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\qml\MpvPlayer.qml">
       <Filter>Resource Files\qml</Filter>
     </None>
   </ItemGroup>

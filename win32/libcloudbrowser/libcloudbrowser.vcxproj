@@ -28,6 +28,7 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\FileDialog.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\HttpServer.cpp" />
+    <ClCompile Include="..\..\bin\cloudbrowser\src\MpvPlayer.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CopyItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.cpp" />
@@ -64,6 +65,7 @@
     <ClInclude Include="..\..\bin\cloudbrowser\src\File.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\HttpServer.h" />
+    <ClInclude Include="..\..\bin\cloudbrowser\src\MpvPlayer.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h" />
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +164,7 @@
     <None Include="..\..\bin\cloudbrowser\qml\ItemPage.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\main.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\MediaPlayer.qml" />
+    <None Include="..\..\bin\cloudbrowser\qml\MpvPlayer.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\ProviderEntry.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\QtFileDialog.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\QtPlayer.qml" />
