@@ -23,6 +23,8 @@
 #ifndef MPVPLAYER_H
 #define MPVPLAYER_H
 
+#ifdef WITH_MPV
+
 #include <QQuickFramebufferObject>
 
 struct mpv_handle;
@@ -90,5 +92,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   int volume_ = 100;
   int64_t duration_ = 0;
 };
+
+#endif  // WITH_MPV
 
 #endif  // MPVPLAYER_H

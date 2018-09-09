@@ -84,7 +84,7 @@ libcloudbrowser_la_CXXFLAGS += $(vlcqt_CFLAGS)
 libcloudbrowser_la_LIBADD += $(vlcqt_LIBS)
 endif
 if WITH_MPV
-libcloudbrowser_la_CXXFLAGS += $(mpv_CFLAGS)
+libcloudbrowser_la_CXXFLAGS += $(mpv_CFLAGS) -DWITH_MPV
 libcloudbrowser_la_LIBADD += $(mpv_LIBS)
 endif
 
@@ -170,7 +170,7 @@ DEPS_res = \
 	resources/vlc-blue.png
 
 %.moc.cpp: %.h
-	$(AM_V_GEN)$(MOC) -o $@ $<
+	$(AM_V_GEN)$(MOC) -o $@ $< $(libcloudbrowser_la_CXXFLAGS)
 
 resources.cpp: resources.qrc $(DEPS_res)
 	$(AM_V_GEN)$(RCC) --name resources -o $@ $<
