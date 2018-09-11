@@ -223,7 +223,9 @@ void MpvPlayer::eventOccurred() {
       }
     } else if (event->event_id == MPV_EVENT_LOG_MESSAGE) {
       auto e = reinterpret_cast<mpv_event_log_message *>(event->data);
-      cloudstorage::util::log(e->text);
+      std::string text = e->text;
+      if (text.length() > 0)
+        cloudstorage::util::log(text.substr(0, text.length() - 1));
     } else if (event->event_id == MPV_EVENT_NONE) {
       break;
     }
