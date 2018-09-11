@@ -146,6 +146,7 @@ HAVE_MPV=0
 HAVE_CLOUDBROWSER=0
 
 AC_ARG_WITH([vlc-qt], AS_HELP_STRING([--with-vlc-qt]))
+AC_ARG_WITH([mpv], AS_HELP_STRING[--with-mpv])
 AC_ARG_WITH([qtwebview], AS_HELP_STRING([--with-qtwebview]))
 AC_ARG_WITH([ffmpeg], AS_HELP_STRING([--with-ffmpeg]))
 AC_ARG_WITH([cloudbrowser], AS_HELP_STRING([--with-cloudbrowser]))
