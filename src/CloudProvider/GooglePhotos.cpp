@@ -104,15 +104,6 @@ IHttpRequest::Pointer GooglePhotos::listDirectoryRequest(
   return request;
 }
 
-IHttpRequest::Pointer GooglePhotos::uploadFileRequest(
-    const IItem &, const std::string &filename, std::ostream &,
-    std::ostream &) const {
-  auto request = http()->create(endpoint() + "/uploads", "POST");
-  request->setHeaderParameter("X-Goog-Upload-File-Name", filename);
-  request->setHeaderParameter("X-Goog-Upload-Protocol", "raw");
-  return request;
-}
-
 IHttpRequest::Pointer GooglePhotos::getItemUrlRequest(const IItem &item,
                                                       std::ostream &) const {
   return http()->create(endpoint() + "/mediaItems/" + item.id());
@@ -142,16 +133,6 @@ std::string GooglePhotos::getItemUrlResponse(
   auto json = util::json::from_stream(response);
   return json["baseUrl"].asString() + "=" +
          (json["mediaMetadata"].isMember("video") ? "dv" : "d");
-}
-
-IItem::Pointer GooglePhotos::uploadFileResponse(const IItem &,
-                                                const std::string &filename,
-                                                uint64_t size,
-                                                std::istream &response) const {
-  std::string id;
-  response >> id;
-  return util::make_unique<Item>(filename, id, size, IItem::UnknownTimeStamp,
-                                 IItem::FileType::Unknown);
 }
 
 IHttpRequest::Pointer GooglePhotos::createDirectoryRequest(
@@ -290,23 +271,65 @@ GooglePhotos::listDirectoryPageAsync(IItem::Pointer item,
 ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
     IItem::Pointer directory, const std::string &filename,
     IUploadFileCallback::Pointer cb) {
-  class Wrapper : public IUploadFileCallback {
-   public:
-    Wrapper(IUploadFileCallback::Pointer wrapped,
-            std::function<void(EitherError<IItem>)> done)
-        : wrapped_(wrapped), done_(done) {}
-    uint32_t putData(char *data, uint32_t maxlength, uint64_t offset) override {
-      return wrapped_->putData(data, maxlength, offset);
-    }
-    uint64_t size() override { return wrapped_->size(); }
-    void progress(uint64_t total, uint64_t now) override {
-      wrapped_->progress(total, now);
-    }
-    void done(EitherError<IItem> e) override { done_(e); }
-
-   private:
-    IUploadFileCallback::Pointer wrapped_;
-    std::function<void(EitherError<IItem>)> done_;
+  auto create_batch = [=](Request<EitherError<IItem>>::Pointer r,
+                          const std::string &id) {
+    r->request(
+        [=](util::Output stream) {
+          auto request =
+              http()->create(endpoint() + "/mediaItems:batchCreate", "POST");
+          request->setHeaderParameter("Content-Type", "application/json");
+          Json::Value argument;
+          if (directory->id() != PHOTOS_ID) {
+            argument["albumId"] = directory->id();
+          }
+          Json::Value entry;
+          entry["simpleMediaItem"]["uploadToken"] = id;
+          Json::Value array;
+          array.append(entry);
+          argument["newMediaItems"] = array;
+          Json::FastWriter writer;
+          writer.omitEndingLineFeed();
+          *stream << writer.write(argument);
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          try {
+            auto json = util::json::from_stream(
+                e.right()->output())["newMediaItemResults"][0];
+            if (json["status"]["code"].asInt() != 0) {
+              r->done(Error{IHttpRequest::Failure,
+                            json["status"]["message"].asString()});
+            } else
+              r->done(toItem(json["mediaItem"]));
+          } catch (const Json::Exception &e) {
+            r->done(Error{IHttpRequest::Failure, e.what()});
+          }
+        });
+  };
+  auto upload = [=](Request<EitherError<IItem>>::Pointer r,
+                    const std::string &url) {
+    auto wrapper = std::make_shared<UploadStreamWrapper>(
+        std::bind(&IUploadFileCallback::putData, cb.get(), _1, _2, _3),
+        cb->size());
+    r->send(
+        [=](util::Output) {
+          auto request = http()->create(url, "POST");
+          request->setHeaderParameter("X-Goog-Upload-Command",
+                                      "upload, finalize");
+          request->setHeaderParameter("X-Goog-Upload-Offset", "0");
+          wrapper->reset();
+          return request;
+        },
+        [=](EitherError<Response> e) {
+          if (e.left()) return r->done(e.left());
+          std::string id;
+          e.right()->output() >> id;
+          create_batch(r, id);
+        },
+        [=] { return std::make_shared<std::iostream>(wrapper.get()); },
+        std::make_shared<std::stringstream>(), nullptr,
+        std::bind(&IUploadFileCallback::progress, cb.get(), _1, _2), true);
   };
   auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
     if (directory->id() == ALBUMS_ID ||
@@ -314,44 +337,12 @@ ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
       return r->done(Error{IHttpRequest::ServiceUnavailable,
                            util::Error::COULD_NOT_UPLOAD_HERE});
     }
-    r->make_subrequest<GooglePhotos>(
-        &GooglePhotos::uploadFileAsyncBase, directory, filename,
-        std::make_shared<Wrapper>(cb, [=](EitherError<IItem> e) {
-          if (e.left()) return r->done(e.left());
-          r->request(
-              [=](util::Output stream) {
-                auto request = http()->create(
-                    endpoint() + "/mediaItems:batchCreate", "POST");
-                request->setHeaderParameter("Content-Type", "application/json");
-                Json::Value argument;
-                if (directory->id() != PHOTOS_ID) {
-                  argument["albumId"] = directory->id();
-                }
-                Json::Value entry;
-                entry["simpleMediaItem"]["uploadToken"] = e.right()->id();
-                Json::Value array;
-                array.append(entry);
-                argument["newMediaItems"] = array;
-                Json::FastWriter writer;
-                writer.omitEndingLineFeed();
-                *stream << writer.write(argument);
-                return request;
-              },
-              [=](EitherError<Response> e) {
-                if (e.left()) return r->done(e.left());
-                try {
-                  auto json = util::json::from_stream(
-                      e.right()->output())["newMediaItemResults"][0];
-                  if (json["status"]["code"].asInt() != 0) {
-                    r->done(Error{IHttpRequest::Failure,
-                                  json["status"]["message"].asString()});
-                  } else
-                    r->done(toItem(json["mediaItem"]));
-                } catch (const Json::Exception &e) {
-                  r->done(Error{IHttpRequest::Failure, e.what()});
-                }
-              });
-        }));
+    r->make_subrequest<GooglePhotos>(&GooglePhotos::getUploadUrl, directory,
+                                     filename, cb->size(),
+                                     [=](EitherError<std::string> e) {
+                                       if (e.left()) return r->done(e.left());
+                                       upload(r, *e.right());
+                                     });
   };
   return std::make_shared<Request<EitherError<IItem>>>(
              shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },
@@ -364,11 +355,22 @@ IItem::Pointer GooglePhotos::toItem(const Json::Value &json) const {
     return util::make_unique<Item>(
         json["title"].asString(), json["id"].asString(), IItem::UnknownSize,
         IItem::UnknownTimeStamp, IItem::FileType::Directory);
-  } else
+  } else {
+    auto filename = json["filename"].asString();
+    if (json["mediaMetadata"].isMember("video") &&
+        json["mediaMetadata"]["video"]["status"] != "READY") {
+      filename = "[" + json["mediaMetadata"]["video"]["status"].asString() +
+                 "] " + filename;
+    }
     return util::make_unique<Item>(
-        json["filename"].asString(), json["id"].asString(), IItem::UnknownSize,
+        filename, json["id"].asString(), IItem::UnknownSize,
         util::parse_time(json["mediaMetadata"]["creationTime"].asString()),
-        IItem::FileType::Unknown);
+        json["mediaMetadata"].isMember("photo")
+            ? IItem::FileType::Image
+            : (json["mediaMetadata"].isMember("video")
+                   ? IItem::FileType::Video
+                   : IItem::FileType::Unknown));
+  }
 }
 
 ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFromUrl(
@@ -380,10 +382,42 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFromUrl(
       ->run();
 }
 
-ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsyncBase(
-    IItem::Pointer item, const std::string &filename,
-    IUploadFileCallback::Pointer cb) {
-  return CloudProvider::uploadFileAsync(item, filename, cb);
+IRequest<EitherError<std::string>>::Pointer GooglePhotos::getUploadUrl(
+    IItem::Pointer, const std::string &filename, uint64_t size,
+    std::function<void(EitherError<std::string>)> cb) {
+  return std::make_shared<Request<EitherError<std::string>>>(
+             shared_from_this(), cb,
+             [=](Request<EitherError<std::string>>::Pointer r) {
+               r->request(
+                   [=](util::Output) {
+                     auto extension =
+                         filename.substr(filename.find_last_of(".") + 1);
+                     auto request =
+                         http()->create(endpoint() + "/uploads", "POST");
+                     request->setHeaderParameter("X-Goog-Upload-Command",
+                                                 "start");
+                     request->setHeaderParameter("X-Goog-Upload-Content-Type",
+                                                 util::to_mime_type(extension));
+                     request->setHeaderParameter("X-Goog-Upload-Protocol",
+                                                 "resumable");
+                     request->setHeaderParameter("X-Goog-Upload-Raw-Size",
+                                                 std::to_string(size));
+                     request->setHeaderParameter("X-Goog-File-Name", filename);
+                     return request;
+                   },
+                   [=](EitherError<Response> e) {
+                     if (e.left()) return r->done(e.left());
+                     const auto &headers = e.right()->headers();
+                     auto it = headers.find("x-goog-upload-url");
+                     if (it == headers.end()) {
+                       r->done(Error{IHttpRequest::ServiceUnavailable,
+                                     util::Error::UNKNOWN_RESPONSE_RECEIVED});
+                     } else {
+                       r->done(it->second);
+                     }
+                   });
+             })
+      ->run();
 }
 
 std::string GooglePhotos::Auth::authorizeLibraryUrl() const {

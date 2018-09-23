@@ -43,9 +43,6 @@ class GooglePhotos : public CloudProvider {
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
-  IHttpRequest::Pointer uploadFileRequest(
-      const IItem& directory, const std::string& filename,
-      std::ostream& prefix_stream, std::ostream& suffix_stream) const override;
   IHttpRequest::Pointer getItemUrlRequest(
       const IItem&, std::ostream& input_stream) const override;
   IItem::List listDirectoryResponse(
@@ -53,9 +50,6 @@ class GooglePhotos : public CloudProvider {
   std::string getItemUrlResponse(const IItem& item,
                                  const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
-  IItem::Pointer uploadFileResponse(const IItem& parent,
-                                    const std::string& filename, uint64_t,
-                                    std::istream& response) const override;
   IHttpRequest::Pointer createDirectoryRequest(const IItem&,
                                                const std::string& name,
                                                std::ostream&) const override;
@@ -83,9 +77,9 @@ class GooglePhotos : public CloudProvider {
   DownloadFileRequest::Pointer downloadFromUrl(IItem::Pointer item,
                                                const std::string& url,
                                                IDownloadFileCallback::Pointer);
-  UploadFileRequest::Pointer uploadFileAsyncBase(IItem::Pointer,
-                                                 const std::string& filename,
-                                                 IUploadFileCallback::Pointer);
+  IRequest<EitherError<std::string>>::Pointer getUploadUrl(
+      IItem::Pointer, const std::string& filename, uint64_t size,
+      std::function<void(EitherError<std::string>)> cb);
 };
 
 }  // namespace cloudstorage
