@@ -11,9 +11,6 @@ Kirigami.Page {
   property bool handle_state
   property bool playing: true
   property bool autoplay: false
-  property bool separate_av: false
-  property bool video_paused: false
-  property bool audio_paused: false
   property color button_color: "#BDBDBD"
   property int extended_view_threshold: 525
 
@@ -41,10 +38,8 @@ Kirigami.Page {
     update_notification();
     if (playing) {
       player.item.play();
-      audio_player.item.play();
     } else {
       player.item.pause();
-      audio_player.item.pause();
     }
   }
   onBackRequested: {
@@ -68,7 +63,7 @@ Kirigami.Page {
   }
 
   function next() {
-    player.item.source = audio_player.item.source = "";
+    player.item.source = "";
     var next = item_page.nextRequested();
     if (next)
       item = next;
@@ -111,40 +106,8 @@ Kirigami.Page {
   function set_url() {
     if (!player.item) return;
     var d = cloud.readUrl(url_request.source);
-    if (d.protocol === "cloudstorage") {
-      if (d.host === "youtube") {
-        player.item.source = d.video;
-        audio_player.item.source = d.audio;
-        separate_av = true;
-      }
-    } else {
-      player.item.source = url_request.source;
-      separate_av = false;
-    }
+    player.item.source = url_request.source;
     if (playing) {
-      player.item.play();
-      audio_player.item.play();
-    }
-  }
-
-  function position_changed() {
-    if (!separate_av || !playing) return;
-    var diff = (audio_player.item.position - player.item.position) * player.item.duration;
-    if (Math.abs(diff) > 500 && audio_player.item.playing && player.item.playing) {
-      if (audio_player.item.position > player.item.position) {
-        audio_paused = true;
-        audio_player.item.pause();
-      } else {
-        video_paused = true;
-        player.item.pause();
-      }
-    }
-    if (audio_paused && player.item.position >= audio_player.item.position) {
-      audio_paused = false;
-      audio_player.item.play();
-    }
-    if (video_paused && audio_player.item.position >= player.item.position) {
-      video_paused = false;
       player.item.play();
     }
   }
@@ -166,7 +129,6 @@ Kirigami.Page {
   Connections {
     id: connections
     target: null
-    onPositionChanged: position_changed()
     onEndedChanged: {
       if (target.ended && target.source.toString() !== "") {
         ended();
@@ -175,12 +137,6 @@ Kirigami.Page {
     onError: {
       cloud.errorOccurred("MediaPlayer", null, error, errorString);
     }
-  }
-
-  Connections {
-    id: audio_connection
-    target: audio_player.item
-    onPositionChanged: position_changed()
   }
 
   Connections {
@@ -236,11 +192,6 @@ Kirigami.Page {
           cloud.errorOccurred("LoadPlayer", null, 500, source);
         }
       }
-    }
-
-    Loader {
-      id: audio_player
-      source: preferred_player()
     }
 
     Timer {
@@ -503,7 +454,6 @@ Kirigami.Page {
         onMoved: {
           root.volume = value;
           player.item.set_volume(value);
-          audio_player.item.set_volume(value);
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
           timer.cnt = 0;
@@ -572,7 +522,6 @@ Kirigami.Page {
           visible: player.item && player.item.duration > 0 && page.width > 600
           onMoved: {
             player.item.set_position(value);
-            audio_player.item.set_position(value);
             timer.cnt = 0;
           }
           background: Rectangle {
