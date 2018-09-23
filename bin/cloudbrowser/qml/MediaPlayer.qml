@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0 as Controls
 import org.kde.kirigami 2.0 as Kirigami
+import QtQuick.Layouts 1.2
 import libcloudstorage 1.0
 
 Kirigami.Page {
@@ -14,6 +15,7 @@ Kirigami.Page {
   property bool video_paused: false
   property bool audio_paused: false
   property color button_color: "#BDBDBD"
+  property int extended_view_threshold: 525
 
   id: page
   leftPadding: 0
@@ -306,8 +308,12 @@ Kirigami.Page {
   onStateChanged: {
     if (state === "overlay_visible")
       cloud.showCursor();
-    else if (mouse_area.containsMouse)
-      cloud.hideCursor();
+    else {
+      if (mouse_area.containsMouse)
+        cloud.hideCursor();
+      subtitle_track_list.item.shown = false;
+      audio_track_list.item.shown = false;
+    }
   }
 
   transitions: [
@@ -383,6 +389,34 @@ Kirigami.Page {
           }
         }
       }
+      Item {
+        id: audio_track_select
+        anchors.margins: 10
+        width: height
+        height: parent.height
+        visible: page.width > extended_view_threshold
+                 && (item.type === "video" || item.type === "audio")
+                 && player.item.audio_track_count > 1
+        Kirigami.Icon {
+          id: audio_track_icon
+          anchors.fill: parent
+          source: "media-album-track"
+          isMask: true
+          color: button_color
+          MouseArea {
+            anchors.fill: parent
+            onPressed: {
+              audio_track_list.item.shown ^= 1;
+            }
+          }
+        }
+        Loader {
+          id: audio_track_list
+          sourceComponent: slide_out_menu
+          anchors.horizontalCenter: audio_track_icon.horizontalCenter
+          anchors.bottom: audio_track_icon.top
+        }
+      }
       Kirigami.Icon {
         width: height
         height: parent.height
@@ -399,7 +433,7 @@ Kirigami.Page {
 
         id: volume_control
         source: volume_icon(volume_slider.value)
-        visible: (item.type === "video" || item.type === "audio") && page.width > 450
+        visible: (item.type === "video" || item.type === "audio") && page.width > extended_view_threshold
         color: button_color
         isMask: true
         MouseArea {
@@ -527,7 +561,8 @@ Kirigami.Page {
                volume_control.width * volume_control.visible -
                volume_slider.width * volume_slider.visible -
                current_time.width * current_time.visible - total_time.width * total_time.visible -
-               autoplay_icon.width - next_button.width
+               autoplay_icon.width - next_button.width - subtitle_track_select.width * subtitle_track_select.visible -
+               audio_track_select.width * audio_track_select.visible
         Controls.Slider {
           id: progress
           anchors.verticalCenter: parent.verticalCenter
@@ -577,6 +612,36 @@ Kirigami.Page {
           text: player.item ? print_timestamp(player.item.duration) : ""
         }
       }
+      Item {
+        id: subtitle_track_select
+        visible: page.width > extended_view_threshold
+                 && (item.type === "video" || item.type === "audio")
+                 && player.item.subtitle_track_count > 0
+        width: height
+        height: parent.height
+        anchors.margins: 10
+        Kirigami.Icon {
+          id: subtitle_track_icon
+          source: "media-view-subtitles-symbolic"
+          color: button_color
+          anchors.fill: parent
+          MouseArea {
+            anchors.fill: parent
+            onPressed: {
+              subtitle_track_list.item.shown ^= 1;
+            }
+          }
+        }
+        Loader {
+          id: subtitle_track_list
+          sourceComponent: slide_out_menu
+          anchors.horizontalCenter: subtitle_track_icon.horizontalCenter
+          anchors.bottom: subtitle_track_icon.top
+          onLoaded: {
+            item.model = Qt.binding(function() { return player.subtitle_track_model; });
+          }
+        }
+      }
       Kirigami.Icon {
         id: autoplay_icon
         anchors.margins: 10
@@ -623,5 +688,74 @@ Kirigami.Page {
     running: player.item ? player.item.buffering : true
     width: 200
     height: 200
+  }
+
+  Component {
+    id: slide_out_menu
+    Item {
+      property bool shown: false
+      property alias model: list.model
+      width: 100
+      height: 150
+      clip: true
+      Item {
+        id: slide_out
+        width: parent.width
+        height: parent.height
+        state: (shown && page.state == "overlay_visible") ? "list_visible" : "list_invisible"
+        states: [
+          State {
+            name: "list_visible"
+            PropertyChanges {
+              target: slide_out
+              y: -height + parent.height
+            }
+          },
+          State {
+            name: "list_invisible"
+            PropertyChanges {
+              target: slide_out
+              y: parent.height
+            }
+          }
+        ]
+        transitions: [
+          Transition {
+            from: "list_visible"
+            to: "list_invisible"
+            PropertyAnimation {
+              properties: "y"
+              duration: 200
+            }
+          },
+          Transition {
+            from: "list_invisible"
+            to: "list_visible"
+            PropertyAnimation {
+              properties: "y"
+              duration: 200
+            }
+          }
+        ]
+        ListView {
+          id: list
+          rotation: 180
+          anchors.fill: parent
+          interactive: false
+          delegate: Kirigami.BasicListItem {
+            rotation: 180
+            width: slide_out.width
+            backgroundColor: "black"
+            opacity: 0.65
+            height: 40
+            reserveSpaceForIcon: false
+            Text {
+              text: modelData
+              color: "white"
+            }
+          }
+        }
+      }
+    }
   }
 }

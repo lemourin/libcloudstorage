@@ -5,6 +5,8 @@ Item {
   property alias source: player.url
   property alias player: player
   property alias position: player.position
+  property int audio_track_count: 0
+  property int subtitle_track_count: 0
   property real volume: player.volume / 100.0
   property bool playing: player.state === Vlc.Playing
   property bool buffering: player.state === Vlc.Buffering || player.state === Vlc.Opening

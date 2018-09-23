@@ -3,6 +3,8 @@ import libcloudstorage 1.0
 
 MpvPlayer {
   property alias source: player.uri
+  property int audio_track_count: 0
+  property int subtitle_track_count: 0
   property int time: player.position * player.duration
   property bool buffering: !player.playing && !player.paused
 

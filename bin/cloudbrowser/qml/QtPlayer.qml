@@ -12,6 +12,8 @@ Item {
   property bool ended: player.status === MediaPlayer.EndOfMedia
   property int time: duration * position
   property int duration: player.duration
+  property int audio_track_count: 0
+  property int subtitle_track_count: 0
 
   signal error(int error, string errorString)
 
