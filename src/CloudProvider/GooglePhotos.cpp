@@ -39,6 +39,8 @@ const auto ALBUMS_ID = "albums";
 const auto ALBUMS_NAME = "Albums";
 const auto PHOTOS_ID = "photos";
 const auto PHOTOS_NAME = "Photos";
+const auto SHARED_ID = "shared";
+const auto SHARED_NAME = "Shared with me";
 
 GooglePhotos::GooglePhotos() : CloudProvider(util::make_unique<Auth>()) {}
 
@@ -86,6 +88,9 @@ IHttpRequest::Pointer GooglePhotos::listDirectoryRequest(
   } else if (directory.id() == PHOTOS_ID) {
     request = http()->create(endpoint() + "/mediaItems");
     if (!page_token.empty()) request->setParameter("pageToken", page_token);
+  } else if (directory.id() == SHARED_ID) {
+    request = http()->create(endpoint() + "/sharedAlbums");
+    if (!page_token.empty()) request->setParameter("pageToken", page_token);
   } else {
     request = http()->create(endpoint() + "/mediaItems:search", "POST");
     request->setHeaderParameter("Content-Type", "application/json");
@@ -115,7 +120,7 @@ IHttpRequest::Pointer GooglePhotos::getItemUrlRequest(const IItem &item,
 
 IItem::List GooglePhotos::listDirectoryResponse(
     const IItem &, std::istream &stream, std::string &next_page_token) const {
-  const std::string entry_names[] = {"albums", "mediaItems"};
+  const std::string entry_names[] = {"albums", "mediaItems", "sharedAlbums"};
   auto json = util::json::from_stream(stream);
   IItem::List result;
   for (const auto &name : entry_names) {
@@ -255,6 +260,9 @@ GooglePhotos::listDirectoryPageAsync(IItem::Pointer item,
           IItem::FileType::Directory));
       data.items_.push_back(util::make_unique<Item>(
           ALBUMS_NAME, ALBUMS_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
+          IItem::FileType::Directory));
+      data.items_.push_back(util::make_unique<Item>(
+          SHARED_NAME, SHARED_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory));
       return r->done(data);
     }
