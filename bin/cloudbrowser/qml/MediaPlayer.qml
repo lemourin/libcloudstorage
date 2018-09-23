@@ -347,7 +347,7 @@ Kirigami.Page {
         height: parent.height
         visible: page.width > extended_view_threshold
                  && (item.type === "video" || item.type === "audio")
-                 && player.item.audio_track_count > 1
+                 && player.item && player.item.audio_track_count > 1
         Kirigami.Icon {
           id: audio_track_icon
           anchors.fill: parent
@@ -565,7 +565,7 @@ Kirigami.Page {
         id: subtitle_track_select
         visible: page.width > extended_view_threshold
                  && (item.type === "video" || item.type === "audio")
-                 && player.item.subtitle_track_count > 0
+                 && player.item && player.item.subtitle_track_count > 0
         width: height
         height: parent.height
         anchors.margins: 10
@@ -582,12 +582,21 @@ Kirigami.Page {
           }
         }
         Loader {
+          property int selected_track: 0
+
           id: subtitle_track_list
           sourceComponent: slide_out_menu
           anchors.horizontalCenter: subtitle_track_icon.horizontalCenter
           anchors.bottom: subtitle_track_icon.top
           onLoaded: {
-            item.model = Qt.binding(function() { return player.subtitle_track_model; });
+            item.model = Qt.binding(function() { return player.item ? player.item.subtitle_tracks : []; });
+            selected_track = Qt.binding(function() { return item.currentSelection; });
+          }
+          onSelected_trackChanged: {
+            if (selected_track >= 0) {
+              player.item.set_subtitle_track(selected_track);
+              subtitle_track_list.item.shown = false;
+            }
           }
         }
       }
@@ -644,13 +653,14 @@ Kirigami.Page {
     Item {
       property bool shown: false
       property alias model: list.model
-      width: 100
-      height: 150
+      property alias currentSelection: list.currentIndex
+      width: childrenRect.width
+      height: list.height
       clip: true
       Item {
         id: slide_out
-        width: parent.width
-        height: parent.height
+        width: childrenRect.width
+        height: list.height
         state: (shown && page.state == "overlay_visible") ? "list_visible" : "list_invisible"
         states: [
           State {
@@ -689,18 +699,23 @@ Kirigami.Page {
         ListView {
           id: list
           rotation: 180
-          anchors.fill: parent
+          implicitWidth: 250
+          height: 300
           interactive: false
           delegate: Kirigami.BasicListItem {
             rotation: 180
-            width: slide_out.width
-            backgroundColor: "black"
+            backgroundColor: ListView.isCurrentItem ? Kirigami.Theme.highlightColor : "black"
             opacity: 0.65
             height: 40
             reserveSpaceForIcon: false
             Text {
+              id: text
+              opacity: 1.5
               text: modelData
               color: "white"
+            }
+            onPressed: {
+              list.currentIndex = index;
             }
           }
         }
