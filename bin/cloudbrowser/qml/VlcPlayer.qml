@@ -7,6 +7,8 @@ Item {
   property alias position: player.position
   property var subtitle_tracks: []
   property var subtitle_id: []
+  property var audio_tracks: []
+  property var audio_id: []
   property int audio_track_count: player.audioTrackModel.count - 1
   property int subtitle_track_count: player.subtitleTrackModel.count - 1
   property real volume: player.volume / 100.0
@@ -15,6 +17,8 @@ Item {
   property bool ended: player.state === Vlc.Ended
   property int time: player.time
   property int duration: player.length
+  property int title_id: 256 + 2
+  property int identifier_id: 256 + 1
 
   signal error(int error, string errorString)
 
@@ -49,8 +53,6 @@ Item {
   }
 
   Connections {
-    property int title_id: 256 + 2
-    property int identifier_id: 256 + 1
     target: player.subtitleTrackModel
     onRowsRemoved: {
       subtitle_tracks = [];
@@ -59,7 +61,7 @@ Item {
     onRowsInserted: {
       var id = target.data(target.index(first, 0), identifier_id);
       subtitle_id.push(id);
-      var title = target.data(target.index(first, 0), title_id)
+      var title = target.data(target.index(first, 0), title_id);
       subtitle_tracks.push(title);
       subtitle_tracks = subtitle_tracks;
       if (first === 0) {
@@ -68,8 +70,29 @@ Item {
     }
   }
 
+  Connections {
+    target: player.audioTrackModel
+    onRowsRemoved: {
+      audio_tracks = [];
+      audio_id = [];
+    }
+    onRowsInserted: {
+      var title = target.data(target.index(first, 0), title_id);
+      if (title !== "Disable") {
+        var id = target.data(target.index(first, 0), identifier_id);
+        audio_id.push(id);
+        audio_tracks.push(title);
+        audio_tracks = audio_tracks;
+      }
+    }
+  }
+
   Component.onCompleted: {
     player.volume = 100;
+  }
+
+  function set_audio_track(track) {
+    player.audioTrack = audio_id[track];
   }
 
   function set_subtitle_track(track) {

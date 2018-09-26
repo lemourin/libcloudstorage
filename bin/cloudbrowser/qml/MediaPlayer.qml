@@ -362,10 +362,21 @@ Kirigami.Page {
           }
         }
         Loader {
+          property int selected_track: 0
           id: audio_track_list
           sourceComponent: slide_out_menu
           anchors.horizontalCenter: audio_track_icon.horizontalCenter
           anchors.bottom: audio_track_icon.top
+          onLoaded: {
+            item.model = Qt.binding(function() { return player.item ? player.item.audio_tracks : []; });
+            selected_track = Qt.binding(function() { return item.currentSelection; });
+          }
+          onSelected_trackChanged: {
+            if (selected_track >= 0) {
+              player.item.set_audio_track(selected_track);
+              audio_track_list.item.shown = false;
+            }
+          }
         }
       }
       Kirigami.Icon {
