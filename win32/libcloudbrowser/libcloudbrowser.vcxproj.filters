@@ -25,6 +25,15 @@
     <Filter Include="Resource Files\resources\providers">
       <UniqueIdentifier>{d9c25718-470f-49ad-835d-ac08e23b2a9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\resources\icons">
+      <UniqueIdentifier>{a12f4f8c-c4d7-47af-b890-4a82c419bd06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\resources\icons\material">
+      <UniqueIdentifier>{c2d2e900-5d7b-48c3-a5dc-ec0e3f52f664}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\resources\icons\material\hdpi">
+      <UniqueIdentifier>{6f5d002b-ba44-445a-8521-1eabc6487f6b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\bin\cloudbrowser\src\AndroidUtility.cpp">
@@ -308,6 +317,168 @@
     </None>
     <None Include="..\..\bin\cloudbrowser\qml\MpvPlayer.qml">
       <Filter>Resource Files\qml</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\index.theme">
+      <Filter>Resource Files\resources\icons\material</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\applications-graphics.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\audio-volume-high.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\audio-volume-low.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\audio-volume-medium.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\audio-volume-muted.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\audio-x-generic.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\bookmarks.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\configure.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\dialog-apply.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\dialog-cancel.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\dialog-close.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\document-decrypt.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\document-edit.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\document-open-remote.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\document-save.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\edit-add.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\edit-cut.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\edit-delete.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\edit-paste-style.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\folder.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\folder-move.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\folder-new.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\folder-sync.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-down.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-next.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-next-symbolic.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-next-symbolic-rtl.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-previous.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-previous-symbolic.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-previous-symbolic-rtl.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\go-up.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\gtk-file.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\handle-left.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\handle-right.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\help-about.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\image.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\list-add.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\mail-reply-sender.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-album-track.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-playback-pause.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-playback-start.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-playlist-shuffle.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-record-symbolic.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-skip-forward.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\media-view-subtitles-symbolic.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\overflow-menu.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\package-supported.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\player-volume.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\settings-configure.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\video.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\view-fullscreen.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\view-list-details.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\view-list-icons.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
