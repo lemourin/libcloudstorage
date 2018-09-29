@@ -32,6 +32,9 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
@@ -183,7 +186,6 @@ Pointer<AVFrame> decode_frame(AVFormatContext* context,
       check(code, "avcodec_receive_frame");
     }
   }
-  if (!result_frame) throw std::logic_error("failed to fetch frame");
   return result_frame;
 }
 
@@ -197,22 +199,41 @@ std::string encode_frame(AVFrame* frame) {
   png_context->width = frame->width;
   png_context->height = frame->height;
   check(avcodec_open2(png_context.get(), png_codec, nullptr), "avcodec_open2");
-  check(avcodec_send_frame(png_context.get(), frame), "avcodec_send_frame");
   auto packet = create_packet();
-  check(avcodec_receive_packet(png_context.get(), packet.get()),
-        "avcodec_receive_packet");
-  return std::string(reinterpret_cast<char*>(packet->data), packet->size);
+  bool frame_sent = false, flush_sent = false;
+  std::string result;
+  while (true) {
+    if (!frame_sent) {
+      check(avcodec_send_frame(png_context.get(), frame), "avcodec_send_frame");
+      frame_sent = true;
+    } else if (!flush_sent) {
+      check(avcodec_send_frame(png_context.get(), nullptr),
+            "avcodec_send_frame");
+      flush_sent = true;
+    }
+    auto err = avcodec_receive_packet(png_context.get(), packet.get());
+    if (err != 0) {
+      if (err == AVERROR_EOF)
+        break;
+      else
+        check(err, "avcodec_receive_packet");
+    } else {
+      result +=
+          std::string(reinterpret_cast<char*>(packet->data), packet->size);
+    }
+  }
+  return result;
 }
 
-Pointer<AVFrame> create_rgb_frame(AVCodecContext* codec_context, AVFrame* frame,
-                                  ImageSize size) {
+Pointer<AVFrame> create_rgb_frame(AVFrame* frame, ImageSize size) {
   auto format = AV_PIX_FMT_RGBA;
   auto sws_context = make<SwsContext>(
-      sws_getContext(codec_context->width, codec_context->height,
-                     codec_context->pix_fmt, size.width_, size.height_, format,
-                     SWS_BICUBIC, nullptr, nullptr, nullptr),
+      sws_getContext(frame->width, frame->height, AVPixelFormat(frame->format),
+                     size.width_, size.height_, format, SWS_BICUBIC, nullptr,
+                     nullptr, nullptr),
       sws_freeContext);
   auto rgb_frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
+  av_frame_copy_props(rgb_frame.get(), frame);
   rgb_frame->format = format;
   rgb_frame->width = size.width_;
   rgb_frame->height = size.height_;
@@ -226,6 +247,57 @@ Pointer<AVFrame> create_rgb_frame(AVCodecContext* codec_context, AVFrame* frame,
     av_freep(&f->data);
     av_frame_free(&f);
   });
+}
+
+Pointer<AVFilterContext> create_source_filter(AVFormatContext* format_context,
+                                              int stream,
+                                              AVCodecContext* codec_context,
+                                              AVFilterGraph* graph) {
+  auto filter =
+      make<AVFilterContext>(avfilter_graph_alloc_filter(
+                                graph, avfilter_get_by_name("buffer"), nullptr),
+                            avfilter_free);
+  if (!filter) {
+    throw std::logic_error("filter buffer unavailable");
+  }
+  AVDictionary* d = nullptr;
+  av_dict_set_int(&d, "width", codec_context->width, 0);
+  av_dict_set_int(&d, "height", codec_context->height, 0);
+  av_dict_set_int(&d, "pix_fmt", codec_context->pix_fmt, 0);
+  av_dict_set(
+      &d, "time_base",
+      (std::to_string(format_context->streams[stream]->time_base.num) + "/" +
+       std::to_string(format_context->streams[stream]->time_base.den))
+          .c_str(),
+      0);
+  auto err = avfilter_init_dict(filter.get(), &d);
+  av_dict_free(&d);
+  check(err, "avfilter_init_dict source");
+  return filter;
+}
+
+Pointer<AVFilterContext> create_sink_filter(AVFilterGraph* graph) {
+  auto filter = make<AVFilterContext>(
+      avfilter_graph_alloc_filter(graph, avfilter_get_by_name("buffersink"),
+                                  nullptr),
+      avfilter_free);
+  if (!filter) {
+    throw std::logic_error("filter buffersink unavailable");
+  }
+  check(avfilter_init_dict(filter.get(), nullptr), "avfilter_init_dict");
+  return filter;
+}
+
+Pointer<AVFilterContext> create_thumbnail_filter(AVFilterGraph* graph) {
+  auto filter = make<AVFilterContext>(
+      avfilter_graph_alloc_filter(graph, avfilter_get_by_name("thumbnail"),
+                                  nullptr),
+      avfilter_free);
+  if (!filter) {
+    throw std::logic_error("filter thumbnail unavailable");
+  }
+  check(avfilter_init_dict(filter.get(), nullptr), "avfilter_init_dict");
+  return filter;
 }
 
 ImageSize thumbnail_size(const ImageSize& i, int target) {
@@ -256,14 +328,43 @@ EitherError<std::string> generate_thumbnail(
                                       nullptr, 0);
     check(stream, "av_find_best_stream");
     if (context->duration > 0) {
-      check(av_seek_frame(context.get(), -1, context->duration / 10,
-                          AVSEEK_FLAG_FRAME),
+      check(av_seek_frame(context.get(), -1, context->duration / 10, 0),
             "av_seek_frame");
     }
     auto codec_context = create_codec_context(context.get(), stream);
-    auto frame = decode_frame(context.get(), codec_context.get(), stream);
+    auto filter_graph =
+        make<AVFilterGraph>(avfilter_graph_alloc(), avfilter_graph_free);
+    auto source_filter = create_source_filter(
+        context.get(), stream, codec_context.get(), filter_graph.get());
+    auto sink_filter = create_sink_filter(filter_graph.get());
+    auto thumbnail_filter = create_thumbnail_filter(filter_graph.get());
+    check(avfilter_link(source_filter.get(), 0, thumbnail_filter.get(), 0),
+          "avfilter_link");
+    check(avfilter_link(thumbnail_filter.get(), 0, sink_filter.get(), 0),
+          "avfilter_link");
+    check(avfilter_graph_config(filter_graph.get(), nullptr),
+          "avfilter_graph_config");
+    Pointer<AVFrame> frame;
+    while (auto current =
+               decode_frame(context.get(), codec_context.get(), stream)) {
+      frame = std::move(current);
+      check(av_buffersrc_write_frame(source_filter.get(), frame.get()),
+            "av_buffersrc_write_frame");
+      auto received_frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
+      auto err =
+          av_buffersink_get_frame(sink_filter.get(), received_frame.get());
+      if (err == 0) {
+        frame = std::move(received_frame);
+        break;
+      } else if (err != AVERROR(EAGAIN)) {
+        check(err, "av_buffersink_get_frame");
+      }
+    }
+    if (!frame) {
+      throw std::logic_error("couldn't get any frame");
+    }
     auto rgb_frame = create_rgb_frame(
-        codec_context.get(), frame.get(),
+        frame.get(),
         thumbnail_size({codec_context->width, codec_context->height},
                        THUMBNAIL_SIZE));
     return encode_frame(rgb_frame.get());
