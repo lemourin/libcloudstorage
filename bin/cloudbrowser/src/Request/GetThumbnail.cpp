@@ -14,7 +14,7 @@ using namespace cloudstorage;
 
 namespace {
 
-const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(5);
+const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(10);
 const auto CHECK_INTERVAL = std::chrono::milliseconds(100);
 
 class DownloadToString : public IDownloadFileCallback {
