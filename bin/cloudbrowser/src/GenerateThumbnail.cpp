@@ -90,6 +90,7 @@ void initialize() {
   if (!initialized) {
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     av_register_all();
+    avfilter_register_all();
 #endif
     av_log_set_level(AV_LOG_PANIC);
     check(avformat_network_init(), "avformat_network_init");
