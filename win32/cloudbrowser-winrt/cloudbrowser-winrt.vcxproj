@@ -127,7 +127,12 @@
     <ClCompile>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;libcloudbrowser-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformTarget)\$(ConfigurationName)\libcloudbrowser-winrt;../../dependencies/winrt-debug/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -158,7 +163,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <None Include="../../dependencies/winrt/bin/KF5Kirigami2.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -283,6 +288,137 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/QtWebView">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/plugins">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <None Include="../../dependencies/winrt-debug/bin/KF5Kirigami2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libcurl.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libeay32.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libmicrohttpd-dll.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/ssleay32.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/jsoncpp.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/tinyxml2d.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/cares.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/zlib.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avcodec-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avdevice-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avutil-55.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/VLCQtCore.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/VLCQtQml.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libvlc.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libvlccore.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Cored.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Guid.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Qmld.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5WebViewd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Quickd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/libGLESv2d.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Networkd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Widgetsd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5QuickControls2d.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Svgd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Multimediad.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5QuickTemplates2d.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/platforms">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/libEGLd.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/imageformats">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/mediaservice">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/org">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtGraphicalEffects">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQml">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQuick">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQuick.2">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtWebView">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/plugins">

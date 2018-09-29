@@ -17,133 +17,133 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cloudbrowser-winrt_TemporaryKey.pfx" />
-    <None Include="../../dependencies/winrt/bin/cares.dll">
-      <Filter>Dependencies</Filter>
-    </None>
     <None Include="../../dependencies/winrt/bin/avcodec-57.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/avdevice-57.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+    <None Include="../../dependencies/winrt/bin/cares.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/avutil-55.dll">
       <Filter>Dependencies</Filter>
     </None>
+    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
+      <Filter>Dependencies</Filter>
+    </None>
     <None Include="../../dependencies/winrt/bin/libvlccore.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/imageformats">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/jsoncpp.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/KF5Kirigami2.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/libcurl.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/libeay32.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/libEGL.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/libGLESv2.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/libmicrohttpd-dll.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/libvlc.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/QtWebView">
+    <None Include="../../dependencies/winrt/bin/libmicrohttpd-dll.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/platforms">
+    <None Include="../../dependencies/winrt-debug/bin/libGLESv2d.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/libEGLd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libeay32.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libcurl.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/KF5Kirigami2.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/jsoncpp.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/imageformats">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/plugins">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Core.dll">
+    <None Include="../../dependencies/winrt-debug/bin/platforms">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Gui.dll">
+    <None Include="../../dependencies/winrt-debug/bin/org">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Multimedia.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Network.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Qml.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Quick.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5QuickControls2.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5QuickTemplates2.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Svg.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5WebView.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/Qt5Widgets.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/QtGraphicalEffects">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/QtQml">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/QtQuick">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/QtQuick.2">
+    <None Include="../../dependencies/winrt-debug/bin/mediaservice">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/zlib.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/ssleay32.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
-      <Filter>Dependencies</Filter>
-    </None>
-    <None Include="../../dependencies/winrt/bin/tinyxml2.dll">
+    <None Include="../../dependencies/winrt/bin/VLCQtQml.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/VLCQtCore.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/VLCQtQml.dll">
+    <None Include="../../dependencies/winrt-debug/bin/tinyxml2d.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/org">
+    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/mediaservice">
+    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/ssleay32.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtWebView">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQuick.2">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQuick">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtQml">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/QtGraphicalEffects">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Widgetsd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5WebViewd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Svgd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5QuickTemplates2d.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Quickd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5QuickControls2d.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Qmld.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Networkd.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Multimediad.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Guid.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/Qt5Cored.dll">
       <Filter>Dependencies</Filter>
     </None>
   </ItemGroup>

@@ -22,7 +22,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
@@ -71,9 +71,16 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>false</ConformanceMode>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MICROHTTPD;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;WINDOWS_PHONE;SQLITE_OS_WINRT</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>../../dependencies/winrt-debug/lib;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2d.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\CloudProvider\AmazonS3.h" />

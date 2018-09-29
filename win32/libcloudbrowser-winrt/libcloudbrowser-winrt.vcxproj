@@ -22,7 +22,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
@@ -58,12 +58,12 @@
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/win32/include/QtCore/5.10.1/;../../dependencies/win32/include/QtCore/5.10.1/QtCore;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY;WITH_VLC_QT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;VLCQtQml.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -71,9 +71,16 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>false</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/win32/include/QtCore/5.10.1/;../../dependencies/win32/include/QtCore/5.10.1/QtCore;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../../dependencies/winrt-debug/lib;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;VLCQtQml.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\bin\cloudbrowser\src\AndroidUtility.cpp" />
