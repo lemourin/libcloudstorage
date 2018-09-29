@@ -37,6 +37,7 @@
 const int DURATION_ID = 1;
 const int POSITION_ID = 2;
 const int IDLE_ID = 3;
+const int TRACK_LIST_ID = 4;
 
 namespace {
 void on_mpv_events(void *d) {
@@ -190,6 +191,21 @@ void MpvPlayer::pause() {
   emit pausedChanged();
 }
 
+void MpvPlayer::set_subtitle_track(int track) {
+  if (track > 0) {
+    mpv_set_property_async(mpv_, 0, "sid", MPV_FORMAT_INT64,
+                           &subtitle_tracks_id_[track]);
+  } else {
+    const char *value = "no";
+    mpv_set_property_async(mpv_, 0, "sid", MPV_FORMAT_STRING, &value);
+  }
+}
+
+void MpvPlayer::set_audio_track(int track) {
+  mpv_set_property_async(mpv_, 0, "aid", MPV_FORMAT_INT64,
+                         &audio_tracks_id_[track]);
+}
+
 QQuickFramebufferObject::Renderer *MpvPlayer::createRenderer() const {
   return new MpvRenderer(const_cast<MpvPlayer *>(this));
 }
@@ -201,9 +217,51 @@ void MpvPlayer::eventOccurred() {
       if (event->reply_userdata == DURATION_ID) {
         duration_ = 1000 * *reinterpret_cast<int64_t *>(property->data);
         emit durationChanged();
+      } else if (event->reply_userdata == TRACK_LIST_ID) {
+        auto track_list = reinterpret_cast<mpv_node *>(property->data)->u.list;
+        subtitle_tracks_ = QStringList{"Disabled"};
+        audio_tracks_ = QStringList{};
+        subtitle_tracks_id_ = {-1};
+        audio_tracks_id_ = {};
+        for (int i = 0; i < track_list->num; i++) {
+          auto track = track_list->values[i].u.list;
+          std::string type, title, lang;
+          int64_t id;
+          for (int j = 0; j < track->num; j++) {
+            if (track->keys[j] == std::string("type"))
+              type = track->values[j].u.string;
+            else if (track->keys[j] == std::string("title"))
+              title = track->values[j].u.string;
+            else if (track->keys[j] == std::string("lang"))
+              lang = track->values[j].u.string;
+            else if (track->keys[j] == std::string("id"))
+              id = track->values[j].u.int64;
+          }
+          if (type == "sub") {
+            subtitle_tracks_.push_back(
+                ((title.empty()
+                      ? "Track " + std::to_string(subtitle_tracks_.size())
+                      : title) +
+                 (lang.empty() ? "" : " [" + lang + "]"))
+                    .c_str());
+            subtitle_tracks_id_.push_back(id);
+          } else if (type == "audio") {
+            audio_tracks_.push_back(
+                ((title.empty()
+                      ? "Track " + std::to_string(audio_tracks_.size() + 1)
+                      : title) +
+                 (lang.empty() ? "" : " [" + lang + "]"))
+                    .c_str());
+            audio_tracks_id_.push_back(id);
+          }
+        }
+        emit subtitleTracksChanged();
+        emit audioTracksChanged();
       }
     } else if (event->event_id == MPV_EVENT_FILE_LOADED) {
       mpv_get_property_async(mpv_, DURATION_ID, "duration", MPV_FORMAT_INT64);
+      mpv_get_property_async(mpv_, TRACK_LIST_ID, "track-list",
+                             MPV_FORMAT_NODE);
     } else if (event->event_id == MPV_EVENT_PROPERTY_CHANGE) {
       auto property = reinterpret_cast<mpv_event_property *>(event->data);
       if (event->reply_userdata == POSITION_ID && property->data) {

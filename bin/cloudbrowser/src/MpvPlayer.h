@@ -40,6 +40,9 @@ class MpvPlayer : public QQuickFramebufferObject {
   Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
   Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
   Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
+  Q_PROPERTY(QStringList audioTracks READ audioTracks NOTIFY audioTracksChanged)
+  Q_PROPERTY(QStringList subtitleTracks READ subtitleTracks NOTIFY
+                 subtitleTracksChanged)
 
   MpvPlayer(QQuickItem *parent = nullptr);
   ~MpvPlayer() override;
@@ -58,8 +61,14 @@ class MpvPlayer : public QQuickFramebufferObject {
   bool playing() const;
   bool paused() const;
 
+  QStringList audioTracks() const { return audio_tracks_; }
+  QStringList subtitleTracks() const { return subtitle_tracks_; }
+
   Q_INVOKABLE void play();
   Q_INVOKABLE void pause();
+
+  Q_INVOKABLE void set_subtitle_track(int track);
+  Q_INVOKABLE void set_audio_track(int track);
 
  signals:
   void onUpdate();
@@ -72,6 +81,8 @@ class MpvPlayer : public QQuickFramebufferObject {
   void playingChanged();
   void pausedChanged();
   void volumeChanged();
+  void audioTracksChanged();
+  void subtitleTracksChanged();
 
  protected:
   Renderer *createRenderer() const override;
@@ -95,6 +106,10 @@ class MpvPlayer : public QQuickFramebufferObject {
   bool paused_ = false;
   int volume_ = 100;
   int64_t duration_ = 0;
+  QStringList audio_tracks_;
+  std::vector<int64_t> audio_tracks_id_;
+  QStringList subtitle_tracks_;
+  std::vector<int64_t> subtitle_tracks_id_;
 };
 
 #endif  // WITH_MPV
