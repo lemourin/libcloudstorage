@@ -60,5 +60,59 @@
         <file>resources/bootstrap.min.css</file>
         <file>resources/bootstrap.min.js</file>
         <file>qml/MpvPlayer.qml</file>
+        <file>resources/icons/material/hdpi/applications-graphics.svg</file>
+        <file>resources/icons/material/hdpi/audio-volume-high.svg</file>
+        <file>resources/icons/material/hdpi/audio-volume-low.svg</file>
+        <file>resources/icons/material/hdpi/audio-volume-medium.svg</file>
+        <file>resources/icons/material/hdpi/audio-volume-muted.svg</file>
+        <file>resources/icons/material/hdpi/audio-x-generic.svg</file>
+        <file>resources/icons/material/hdpi/bookmarks.svg</file>
+        <file>resources/icons/material/hdpi/configure.svg</file>
+        <file>resources/icons/material/hdpi/dialog-apply.svg</file>
+        <file>resources/icons/material/hdpi/dialog-cancel.svg</file>
+        <file>resources/icons/material/hdpi/dialog-close.svg</file>
+        <file>resources/icons/material/hdpi/document-decrypt.svg</file>
+        <file>resources/icons/material/hdpi/document-edit.svg</file>
+        <file>resources/icons/material/hdpi/document-open-remote.svg</file>
+        <file>resources/icons/material/hdpi/document-save.svg</file>
+        <file>resources/icons/material/hdpi/edit-add.svg</file>
+        <file>resources/icons/material/hdpi/edit-cut.svg</file>
+        <file>resources/icons/material/hdpi/edit-delete.svg</file>
+        <file>resources/icons/material/hdpi/edit-paste-style.svg</file>
+        <file>resources/icons/material/hdpi/folder-move.svg</file>
+        <file>resources/icons/material/hdpi/folder-new.svg</file>
+        <file>resources/icons/material/hdpi/folder-sync.svg</file>
+        <file>resources/icons/material/hdpi/folder.svg</file>
+        <file>resources/icons/material/hdpi/go-down.svg</file>
+        <file>resources/icons/material/hdpi/go-next-symbolic-rtl.svg</file>
+        <file>resources/icons/material/hdpi/go-next-symbolic.svg</file>
+        <file>resources/icons/material/hdpi/go-next.svg</file>
+        <file>resources/icons/material/hdpi/go-previous-symbolic-rtl.svg</file>
+        <file>resources/icons/material/hdpi/go-previous-symbolic.svg</file>
+        <file>resources/icons/material/hdpi/go-previous.svg</file>
+        <file>resources/icons/material/hdpi/go-up.svg</file>
+        <file>resources/icons/material/hdpi/gtk-file.svg</file>
+        <file>resources/icons/material/hdpi/handle-left.svg</file>
+        <file>resources/icons/material/hdpi/handle-right.svg</file>
+        <file>resources/icons/material/hdpi/help-about.svg</file>
+        <file>resources/icons/material/hdpi/image.svg</file>
+        <file>resources/icons/material/hdpi/list-add.svg</file>
+        <file>resources/icons/material/hdpi/mail-reply-sender.svg</file>
+        <file>resources/icons/material/hdpi/media-album-track.svg</file>
+        <file>resources/icons/material/hdpi/media-playback-pause.svg</file>
+        <file>resources/icons/material/hdpi/media-playback-start.svg</file>
+        <file>resources/icons/material/hdpi/media-playlist-shuffle.svg</file>
+        <file>resources/icons/material/hdpi/media-record-symbolic.svg</file>
+        <file>resources/icons/material/hdpi/media-skip-forward.svg</file>
+        <file>resources/icons/material/hdpi/media-view-subtitles-symbolic.svg</file>
+        <file>resources/icons/material/hdpi/overflow-menu.svg</file>
+        <file>resources/icons/material/hdpi/package-supported.svg</file>
+        <file>resources/icons/material/hdpi/player-volume.svg</file>
+        <file>resources/icons/material/hdpi/settings-configure.svg</file>
+        <file>resources/icons/material/hdpi/video.svg</file>
+        <file>resources/icons/material/hdpi/view-fullscreen.svg</file>
+        <file>resources/icons/material/hdpi/view-list-details.svg</file>
+        <file>resources/icons/material/hdpi/view-list-icons.svg</file>
+        <file>resources/icons/material/index.theme</file>
     </qresource>
 </RCC>

@@ -167,7 +167,61 @@ DEPS_res = \
 	resources/jquery.min.js \
 	resources/style.min.css \
 	resources/url.min.js \
-	resources/vlc-blue.png
+	resources/vlc-blue.png \
+	resources/icons/material/hdpi/view-fullscreen.svg \
+	resources/icons/material/hdpi/media-playback-pause.svg \
+	resources/icons/material/hdpi/audio-volume-low.svg \
+	resources/icons/material/hdpi/edit-paste-style.svg \
+	resources/icons/material/hdpi/go-previous-symbolic-rtl.svg \
+	resources/icons/material/hdpi/view-list-icons.svg \
+	resources/icons/material/hdpi/package-supported.svg \
+	resources/icons/material/hdpi/mail-reply-sender.svg \
+	resources/icons/material/hdpi/media-record-symbolic.svg \
+	resources/icons/material/hdpi/go-down.svg \
+	resources/icons/material/hdpi/folder-move.svg \
+	resources/icons/material/hdpi/help-about.svg \
+	resources/icons/material/hdpi/settings-configure.svg \
+	resources/icons/material/hdpi/applications-graphics.svg \
+	resources/icons/material/hdpi/go-previous-symbolic.svg \
+	resources/icons/material/hdpi/configure.svg \
+	resources/icons/material/hdpi/image.svg \
+	resources/icons/material/hdpi/edit-add.svg \
+	resources/icons/material/hdpi/audio-volume-medium.svg \
+	resources/icons/material/hdpi/handle-left.svg \
+	resources/icons/material/hdpi/document-save.svg \
+	resources/icons/material/hdpi/media-playlist-shuffle.svg \
+	resources/icons/material/hdpi/go-next-symbolic-rtl.svg \
+	resources/icons/material/hdpi/media-playback-start.svg \
+	resources/icons/material/hdpi/go-next-symbolic.svg \
+	resources/icons/material/hdpi/audio-volume-high.svg \
+	resources/icons/material/hdpi/folder.svg \
+	resources/icons/material/hdpi/overflow-menu.svg \
+	resources/icons/material/hdpi/bookmarks.svg \
+	resources/icons/material/hdpi/folder-sync.svg \
+	resources/icons/material/hdpi/edit-cut.svg \
+	resources/icons/material/hdpi/go-previous.svg \
+	resources/icons/material/hdpi/media-album-track.svg \
+	resources/icons/material/hdpi/audio-x-generic.svg \
+	resources/icons/material/hdpi/media-view-subtitles-symbolic.svg \
+	resources/icons/material/hdpi/media-skip-forward.svg \
+	resources/icons/material/hdpi/handle-right.svg \
+	resources/icons/material/hdpi/view-list-details.svg \
+	resources/icons/material/hdpi/dialog-cancel.svg \
+	resources/icons/material/hdpi/folder-new.svg \
+	resources/icons/material/hdpi/audio-volume-muted.svg \
+	resources/icons/material/hdpi/player-volume.svg \
+	resources/icons/material/hdpi/list-add.svg \
+	resources/icons/material/hdpi/go-up.svg \
+	resources/icons/material/hdpi/document-open-remote.svg \
+	resources/icons/material/hdpi/go-next.svg \
+	resources/icons/material/hdpi/dialog-apply.svg \
+	resources/icons/material/hdpi/document-edit.svg \
+	resources/icons/material/hdpi/video.svg \
+	resources/icons/material/hdpi/gtk-file.svg \
+	resources/icons/material/hdpi/document-decrypt.svg \
+	resources/icons/material/hdpi/dialog-close.svg \
+	resources/icons/material/hdpi/edit-delete.svg \
+	resources/icons/material/index.theme
 
 %.moc.cpp: %.h
 	$(AM_V_GEN)$(MOC) -o $@ $< $(libcloudbrowser_la_CXXFLAGS)

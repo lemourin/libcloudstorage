@@ -115,6 +115,9 @@ int exec_cloudbrowser(int argc, char** argv) {
     app.setApplicationName("cloudbrowser");
     app.setWindowIcon(QPixmap(":/resources/cloud.png"));
 
+    QIcon::setThemeSearchPaths({":/resources/icons"});
+    QIcon::setThemeName("material");
+
     register_types();
 
     QSettings::setDefaultFormat(QSettings::IniFormat);

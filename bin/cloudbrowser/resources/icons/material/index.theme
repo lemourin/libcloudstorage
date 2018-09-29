@@ -1,0 +1,9 @@
+[Icon Theme]
+Name=material
+Comment=https://github.com/KDE/breeze-icons
+
+Directories=hdpi
+
+[hdpi]
+Size=32
+Type=Fixed
