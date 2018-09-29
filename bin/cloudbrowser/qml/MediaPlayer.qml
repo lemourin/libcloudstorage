@@ -358,6 +358,7 @@ Kirigami.Page {
             anchors.fill: parent
             onPressed: {
               audio_track_list.item.shown ^= 1;
+              subtitle_track_list.item.shown = false;
             }
           }
         }
@@ -589,6 +590,7 @@ Kirigami.Page {
             anchors.fill: parent
             onPressed: {
               subtitle_track_list.item.shown ^= 1;
+              audio_track_list.item.shown = false;
             }
           }
         }
