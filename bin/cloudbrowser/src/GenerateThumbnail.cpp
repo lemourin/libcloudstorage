@@ -301,6 +301,24 @@ Pointer<AVFilterContext> create_thumbnail_filter(AVFilterGraph* graph) {
   return filter;
 }
 
+Pointer<AVFilterContext> create_scale_filter(AVFilterGraph* graph,
+                                             ImageSize size) {
+  auto filter =
+      make<AVFilterContext>(avfilter_graph_alloc_filter(
+                                graph, avfilter_get_by_name("scale"), nullptr),
+                            avfilter_free);
+  if (!filter) {
+    throw std::logic_error("filter thumbnail unavailable");
+  }
+  AVDictionary* d = nullptr;
+  av_dict_set_int(&d, "width", size.width_, 0);
+  av_dict_set_int(&d, "height", size.height_, 0);
+  auto err = avfilter_init_dict(filter.get(), &d);
+  av_dict_free(&d);
+  check(err, "avfilter_init_dict");
+  return filter;
+}
+
 ImageSize thumbnail_size(const ImageSize& i, int target) {
   if (i.width_ > i.height_) {
     return {target, i.height_ * target / i.width_};
@@ -333,13 +351,18 @@ EitherError<std::string> generate_thumbnail(
             "av_seek_frame");
     }
     auto codec_context = create_codec_context(context.get(), stream);
+    auto size = thumbnail_size({codec_context->width, codec_context->height},
+                               THUMBNAIL_SIZE);
     auto filter_graph =
         make<AVFilterGraph>(avfilter_graph_alloc(), avfilter_graph_free);
     auto source_filter = create_source_filter(
         context.get(), stream, codec_context.get(), filter_graph.get());
     auto sink_filter = create_sink_filter(filter_graph.get());
     auto thumbnail_filter = create_thumbnail_filter(filter_graph.get());
-    check(avfilter_link(source_filter.get(), 0, thumbnail_filter.get(), 0),
+    auto scale_filter = create_scale_filter(filter_graph.get(), size);
+    check(avfilter_link(source_filter.get(), 0, scale_filter.get(), 0),
+          "avfilter_link");
+    check(avfilter_link(scale_filter.get(), 0, thumbnail_filter.get(), 0),
           "avfilter_link");
     check(avfilter_link(thumbnail_filter.get(), 0, sink_filter.get(), 0),
           "avfilter_link");
@@ -364,10 +387,7 @@ EitherError<std::string> generate_thumbnail(
     if (!frame) {
       throw std::logic_error("couldn't get any frame");
     }
-    auto rgb_frame = create_rgb_frame(
-        frame.get(),
-        thumbnail_size({codec_context->width, codec_context->height},
-                       THUMBNAIL_SIZE));
+    auto rgb_frame = create_rgb_frame(frame.get(), size);
     return encode_frame(rgb_frame.get());
   } catch (const std::exception& e) {
     return Error{IHttpRequest::Failure, e.what()};
