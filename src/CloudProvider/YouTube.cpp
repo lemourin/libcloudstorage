@@ -197,11 +197,11 @@ EitherError<std::string> descramble(const std::string& scrambled,
                                     std::stringstream& stream) {
   auto find_descrambler = [](std::stringstream& stream) {
     auto player = stream.str();
-    const std::string descrambler_search = "yt.akamaized.net";
+    const std::string descrambler_search = "(k.sp,(0,window.encodeURIComponent)(";
     auto it = player.find(descrambler_search);
     if (it == std::string::npos)
       throw std::logic_error(util::Error::COULD_NOT_FIND_DESCRAMBLER_NAME);
-    stream.seekg(it + 34 + descrambler_search.length());
+    stream.seekg(it + descrambler_search.length());
     std::string descrambler;
     std::getline(stream, descrambler, '(');
     return descrambler;
