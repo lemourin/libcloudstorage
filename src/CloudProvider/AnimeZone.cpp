@@ -489,7 +489,6 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
               "Content-Type",
               "application/x-www-form-urlencoded; charset=UTF-8");
           request->setHeaderParameter("Referer", origin);
-          request->setHeaderParameter("Accept-Encoding", "gzip, deflate");
           (*payload) << "data=" + code;
           return request;
         },
