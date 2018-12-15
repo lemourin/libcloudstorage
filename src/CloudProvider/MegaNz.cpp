@@ -712,10 +712,14 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
                ensureAuthorized<EitherError<IItem>>(r, [=] {
                  auto lock = mega_->lock();
                  auto node = this->node(id);
-                 if (!node)
+                 if (!node) {
+                   lock.unlock();
                    return r->done(Error{IHttpRequest::NotFound,
                                         util::Error::NODE_NOT_FOUND});
-                 return r->done(toItem(node));
+                 }
+                 auto item = toItem(node);
+                 lock.unlock();
+                 return r->done(item);
                });
              })
       ->run();
@@ -738,9 +742,11 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     ensureAuthorized<EitherError<IItem>>(r, [=] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
-      if (!node)
+      if (!node) {
+        lock.unlock();
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      }
       auto tag = std::make_shared<uint32_t>(0);
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<handle>, Type::UPLOAD,
@@ -759,12 +765,19 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
           [=](EitherError<handle> e) {
             auto lock = mega_->lock();
             mega_->remove_file(*tag);
-            if (e.left()) return r->done(e.left());
-            if (*e.right() == 0)
+            if (e.left()) {
+              lock.unlock();
+              return r->done(e.left());
+            }
+            if (*e.right() == 0) {
+              lock.unlock();
               r->done(
                   Error{IHttpRequest::Failure, util::Error::NODE_NOT_FOUND});
-            else
-              r->done(toItem(mega_->client()->nodebyhandle(*e.right())));
+            } else {
+              auto item = toItem(mega_->client()->nodebyhandle(*e.right()));
+              lock.unlock();
+              r->done(item);
+            }
           });
     });
   };
@@ -781,6 +794,7 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
+        lock.unlock();
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       } else {
         r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::DELETE,
@@ -809,9 +823,11 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     ensureAuthorized<EitherError<IItem>>(r, [=] {
       auto lock = mega_->lock();
       auto parent_node = this->node(parent->id());
-      if (!parent_node)
+      if (!parent_node) {
+        lock.unlock();
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      }
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<handle>, Type::MKDIR,
           [=](Listener<handle>*, int) {
@@ -842,7 +858,9 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
             if (e.left()) return r->done(e.left());
             auto lock = mega_->lock();
             auto node = mega_->client()->nodebyhandle(*e.right());
-            r->done(toItem(node));
+            auto item = toItem(node);
+            lock.unlock();
+            r->done(item);
           });
     });
   };
@@ -870,9 +888,11 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
               if (e.left()) return r->done(e.left());
               auto lock = mega_->lock();
               auto node = this->mega_->client()->nodebyhandle(*e.right());
+              lock.unlock();
               r->done(toItem(node));
             });
       } else {
+        lock.unlock();
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       }
     });
@@ -896,12 +916,16 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
                                      mega_->exec();
                                    },
                                    [=](EitherError<handle> e) {
-                                     auto lock = mega_->lock();
                                      if (e.left()) return r->done(e.left());
-                                     r->done(toItem(node));
+                                     auto lock = mega_->lock();
+                                     auto item = toItem(node);
+                                     lock.unlock();
+                                     r->done(item);
                                    });
-      } else
+      } else {
+        lock.unlock();
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      }
     });
   };
   return std::make_shared<Request<EitherError<IItem>>>(shared_from_this(),
@@ -917,14 +941,16 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
-        r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-        return;
+        lock.unlock();
+        return r->done(
+            Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       }
       IItem::List result;
       for (auto d : node->children) {
         auto item = toItem(d);
         result.push_back(item);
       }
+      lock.unlock();
       r->done(PageData{result, ""});
     });
   };
@@ -966,9 +992,11 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
     ensureAuthorized<EitherError<void>>(r, [=] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
-      if (!node)
+      if (!node) {
+        lock.unlock();
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      }
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<error>, Type::READ,
           [=](Listener<error>* r, int tag) {
