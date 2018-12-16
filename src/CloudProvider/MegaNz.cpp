@@ -141,7 +141,7 @@ class Listener : public IRequest<EitherError<Result>> {
   ~Listener() override { cancel(); }
 
   void cancel() override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     if (status_ != IN_PROGRESS) return;
     status_ = CANCELLED;
     error_ = {IHttpRequest::Aborted, util::Error::ABORTED};
@@ -155,7 +155,7 @@ class Listener : public IRequest<EitherError<Result>> {
 
   EitherError<Result> result() override {
     finish();
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (status_ != SUCCESS)
       return error_;
     else
@@ -163,27 +163,27 @@ class Listener : public IRequest<EitherError<Result>> {
   }
 
   void finish() override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this]() { return status_ != IN_PROGRESS; });
   }
 
   void pause() override {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (status_ != CANCELLED) status_ = PAUSED;
   }
 
   void resume() override {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (status_ == PAUSED) status_ = IN_PROGRESS;
   }
 
   int status() {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     return status_;
   }
 
   void done(EitherError<Result> e) {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<mutex> lock(mutex_);
     status_ = SUCCESS;
     result_ = e;
     auto callback = util::exchange(callback_, nullptr);
@@ -195,15 +195,19 @@ class Listener : public IRequest<EitherError<Result>> {
   }
 
   bool receivedData(const char* data, uint32_t length) {
+    std::unique_lock<mutex> lock(mutex_);
     if (download_callback_) {
-      download_callback_->receivedData(data, length);
-      download_callback_->progress(total_bytes_, received_bytes_);
+      auto callback = download_callback_;
+      lock.unlock();
+      callback->receivedData(data, length);
+      callback->progress(total_bytes_, received_bytes_);
+      lock.lock();
     }
     return status_ == IN_PROGRESS;
   }
 
-  std::unique_lock<std::recursive_mutex> lock() {
-    return std::unique_lock<std::recursive_mutex>(mutex_);
+  std::unique_lock<std::mutex> lock() {
+    return std::unique_lock<std::mutex>(mutex_);
   }
 
   IDownloadFileCallback* download_callback_ = nullptr;
@@ -213,8 +217,8 @@ class Listener : public IRequest<EitherError<Result>> {
 
  protected:
   int status_;
-  std::recursive_mutex mutex_;
-  std::condition_variable_any condition_;
+  std::mutex mutex_;
+  std::condition_variable condition_;
   Error error_;
   Callback callback_;
   EitherError<Result> result_;
@@ -243,13 +247,14 @@ struct App : public MegaApp {
                   void* d) override {
     auto it = callback_.find(reinterpret_cast<uintptr_t>(d));
     if (it != callback_.end()) {
-      auto request = static_cast<Listener<error>*>(it->second.second.get());
-      auto lock = request->lock();
-      request->received_bytes_ += length;
+      auto request =
+          std::static_pointer_cast<Listener<error>>(it->second.second);
       auto result =
           request->receivedData(reinterpret_cast<const char*>(data), length);
+      auto lock = request->lock();
+      request->received_bytes_ += length;
       if (request->received_bytes_ == request->total_bytes_) {
-        request->done(std::make_shared<error>(API_OK));
+        enqueue([=] { request->done(std::make_shared<error>(API_OK)); });
         callback_.erase(it);
       } else if (result == false) {
         callback_.erase(it);
@@ -297,35 +302,62 @@ struct App : public MegaApp {
 
   void setattr_result(handle, error e) override { call(e, e); }
 
-  void exec() {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+  void exec(std::unique_lock<std::mutex>& lock) {
     if (exec_pending_ || removed_) return;
     exec_pending_ = true;
     client->exec();
+    lock.unlock();
+    bool empty;
+    {
+      std::unique_lock<std::mutex> callback_lock(callback_mutex_);
+      for (size_t i = 0; i < callback_queue_.size(); i++)
+        if (callback_queue_[i]) {
+          callback_lock.unlock();
+          callback_queue_[i]();
+          callback_lock.lock();
+        }
+      empty = callback_queue_.empty();
+      callback_queue_.clear();
+    }
+    lock.lock();
     exec_pending_ = false;
+    if (!empty) {
+      exec(lock);
+    } else {
+      lock.unlock();
+    }
   }
 
   template <class T>
   void call(error e, const T& arg) {
     auto it = callback_.find(this->client->restag);
     if (it != callback_.end()) {
-      auto r = static_cast<Listener<T>*>(it->second.second.get());
-      if (e == API_OK)
-        r->done(EitherError<T>(std::make_shared<T>(arg)));
-      else
-        r->done(Error{e, error_description(e)});
+      auto r = std::static_pointer_cast<Listener<T>>(it->second.second);
       callback_.erase(it);
+      enqueue([=] {
+        if (e == API_OK)
+          r->done(EitherError<T>(std::make_shared<T>(arg)));
+        else
+          r->done(Error{e, error_description(e)});
+      });
     }
   }
 
-  std::unique_lock<std::recursive_mutex> lock() {
-    return std::unique_lock<std::recursive_mutex>(mutex_);
+  void enqueue(std::function<void()> f) {
+    std::unique_lock<std::mutex> lock(callback_mutex_);
+    callback_queue_.push_back(f);
   }
 
-  std::recursive_mutex mutex_;
+  std::unique_lock<std::mutex> lock() {
+    return std::unique_lock<std::mutex>(mutex_);
+  }
+
+  std::mutex mutex_;
+  std::mutex callback_mutex_;
   MegaNz* mega_;
   std::unordered_map<int, std::pair<Type, std::shared_ptr<IGenericRequest>>>
       callback_;
+  std::vector<std::function<void()>> callback_queue_;
   bool exec_pending_ = false;
   bool removed_ = false;
 };
@@ -349,13 +381,15 @@ struct CloudHttp : public HttpIO {
     bool pause() override { return false; }
 
     void progressDownload(uint64_t, uint64_t now) override {
+      auto lock = app_->lock();
       progress_ = now;
-      app_->exec();
+      app_->exec(lock);
     }
 
     void progressUpload(uint64_t, uint64_t now) override {
+      auto lock = app_->lock();
       progress_ = now;
-      app_->exec();
+      app_->exec(lock);
     }
 
     App* app_;
@@ -365,17 +399,17 @@ struct CloudHttp : public HttpIO {
   };
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
-    auto lock = app_->lock();
     if (http_ == nullptr) return;
     auto abort_mark = std::make_shared<std::atomic_bool>(false);
     auto request = http_->create(r->posturl, "POST");
     auto callback = std::make_shared<HttpCallback>(
         app_,
         [=](const char* d, uint32_t cnt) {
-          auto lock = app_->lock();
-          if (!*abort_mark)
+          if (!*abort_mark) {
+            auto lock = app_->lock();
             read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
-          app_->exec();
+            app_->exec(lock);
+          }
         },
         abort_mark);
     auto input = std::make_shared<std::stringstream>();
@@ -388,22 +422,23 @@ struct CloudHttp : public HttpIO {
     r->status = REQ_INFLIGHT;
     r->httpiohandle = new std::shared_ptr<HttpCallback>(callback);
     pending_requests_++;
-    request->send(
-        [=](EitherError<IHttpRequest::Response> e) {
-          auto lock = app_->lock();
-          pending_requests_--;
-          if (!http_ && pending_requests_ == 0) {
-            no_requests_.set_value();
-          } else if (!*abort_mark) {
-            queue_.push_back({r, e});
-            app_->exec();
-          }
-        },
-        input, output, output, callback);
+    app_->enqueue([=] {
+      request->send(
+          [=](EitherError<IHttpRequest::Response> e) {
+            auto lock = app_->lock();
+            pending_requests_--;
+            if (!http_ && pending_requests_ == 0) {
+              no_requests_.set_value();
+            } else if (!*abort_mark) {
+              queue_.push_back({r, e});
+              app_->exec(lock);
+            }
+          },
+          input, output, output, callback);
+    });
   }
 
   void cancel(HttpReq* h) override {
-    auto lock = app_->lock();
     h->httpstatus = 0;
     h->httpio = nullptr;
     h->status = REQ_FAILURE;
@@ -424,7 +459,6 @@ struct CloudHttp : public HttpIO {
   }
 
   bool doio() override {
-    auto lock = app_->lock();
     bool result = queue_.size() > 0;
     while (!read_update_.empty()) {
       auto r = read_update_.front();
@@ -598,9 +632,9 @@ class CloudMegaClient {
 
   void remove_file(int tag) { fs_->callback_.erase(fs_->callback_.find(tag)); }
 
-  void exec() { app_.exec(); }
+  void exec(std::unique_lock<std::mutex>& lock) { app_.exec(lock); }
 
-  std::unique_lock<std::recursive_mutex> lock() { return app_.lock(); }
+  std::unique_lock<std::mutex> lock() { return app_.lock(); }
 
  private:
   App app_;
@@ -660,12 +694,12 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
       shared_from_this(), [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         auto fetch = [=]() {
+          auto lock = mega_->lock();
           r->make_subrequest<MegaNz>(
               &MegaNz::make_request<error>, Type::FETCH_NODES,
-              [=](Listener<error>*, int) {
-                auto lock = mega_->lock();
+              [&](Listener<error>*, int) {
                 mega_->client()->fetchnodes();
-                mega_->exec();
+                mega_->exec(lock);
               },
               [=](EitherError<error> e) {
                 if (e.left()) return complete(e.left());
@@ -750,7 +784,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
       auto tag = std::make_shared<uint32_t>(0);
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<handle>, Type::UPLOAD,
-          [=](Listener<handle>* r, int) {
+          [&](Listener<handle>* r, int) {
             r->upload_callback_ = callback;
             *tag = mega_->register_file(callback);
             auto upload = new FileUpload;
@@ -760,7 +794,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
             upload->name = filename;
             upload->localname = std::to_string(*tag);
             mega_->client()->startxfer(PUT, upload);
-            mega_->exec();
+            mega_->exec(lock);
           },
           [=](EitherError<handle> e) {
             auto lock = mega_->lock();
@@ -798,9 +832,9 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       } else {
         r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::DELETE,
-                                   [=](Listener<error>*, int) {
+                                   [&](Listener<error>*, int) {
                                      mega_->client()->unlink(node, false);
-                                     mega_->exec();
+                                     mega_->exec(lock);
                                    },
                                    [=](EitherError<error> e) {
                                      if (e.left())
@@ -830,7 +864,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
       }
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<handle>, Type::MKDIR,
-          [=](Listener<handle>*, int) {
+          [&](Listener<handle>*, int) {
             NewNode folder;
             folder.source = NEW_NODE;
             folder.type = FOLDERNODE;
@@ -852,7 +886,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
             mega_->client()->makeattr(&key, folder.attrstring,
                                       attr_str.c_str());
             mega_->client()->putnodes(parent_node->nodehandle, &folder, 1);
-            mega_->exec();
+            mega_->exec(lock);
           },
           [=](EitherError<handle> e) {
             if (e.left()) return r->done(e.left());
@@ -880,9 +914,9 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
       if (source_node && destination_node) {
         r->make_subrequest<MegaNz>(
             &MegaNz::make_request<handle>, Type::MOVE,
-            [=](Listener<handle>*, int) {
+            [&](Listener<handle>*, int) {
               mega_->client()->rename(source_node, destination_node);
-              mega_->exec();
+              mega_->exec(lock);
             },
             [=](EitherError<handle> e) {
               if (e.left()) return r->done(e.left());
@@ -910,10 +944,10 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
       auto node = this->node(item->id());
       if (node) {
         r->make_subrequest<MegaNz>(&MegaNz::make_request<handle>, Type::RENAME,
-                                   [=](Listener<handle>*, int) {
+                                   [&](Listener<handle>*, int) {
                                      node->attrs.map['n'] = name;
                                      mega_->client()->setattr(node);
-                                     mega_->exec();
+                                     mega_->exec(lock);
                                    },
                                    [=](EitherError<handle> e) {
                                      if (e.left()) return r->done(e.left());
@@ -963,13 +997,13 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
     GeneralDataCallback callback) {
   auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
     ensureAuthorized<EitherError<GeneralData>>(r, [=] {
+      auto lock = mega_->lock();
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<GeneralData>, Type::GENERAL_DATA,
-          [=](Listener<GeneralData>*, int) {
-            auto lock = mega_->lock();
+          [&](Listener<GeneralData>*, int) {
             mega_->client()->getaccountdetails(new AccountDetails, true, false,
                                                false, false, false, false);
-            mega_->exec();
+            mega_->exec(lock);
           },
           [=](EitherError<GeneralData> e) {
             if (e.left()) return r->done(e.left());
@@ -999,7 +1033,7 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
       }
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<error>, Type::READ,
-          [=](Listener<error>* r, int tag) {
+          [&](Listener<error>* r, int tag) {
             r->download_callback_ = callback;
             r->total_bytes_ =
                 range.size_ == Range::Full
@@ -1008,7 +1042,7 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
             mega_->client()->pread(
                 node, range.start_, r->total_bytes_,
                 reinterpret_cast<void*>(static_cast<uintptr_t>(tag)));
-            mega_->exec();
+            mega_->exec(lock);
           },
           [=](EitherError<error> e) {
             if (e.left())
@@ -1031,10 +1065,9 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
     auto lock = mega_->lock();
     r->make_subrequest<MegaNz>(
         &MegaNz::make_request<error>, Type::LOGIN,
-        [=](Listener<error>*, int) {
-          auto lock = mega_->lock();
+        [&](Listener<error>*, int) {
           mega_->client()->login(mail.c_str(), (uint8_t*)(key.c_str()));
-          mega_->exec();
+          mega_->exec(lock);
         },
         [=](EitherError<error> e) {
           if (e.left()) return complete(e.left());
@@ -1052,13 +1085,13 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
           complete(nullptr);
         });
   };
+  auto lock = mega_->lock();
   r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::LOGIN,
-                             [=](Listener<error>*, int) {
-                               auto lock = mega_->lock();
+                             [&](Listener<error>*, int) {
                                auto session = util::from_base64(access_token());
                                mega_->client()->login((uint8_t*)session.c_str(),
                                                       session.size());
-                               mega_->exec();
+                               mega_->exec(lock);
                              },
                              session_auth_callback);
 }
