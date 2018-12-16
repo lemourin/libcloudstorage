@@ -110,7 +110,7 @@ int rename(const char *path, const char *new_path) {
   return ret.get_future().get();
 }
 
-int mkdir(const char *path, mode_t) {
+int mkdir(const char *path, FUSE_MODE_T) {
   std::promise<int> ret;
   auto file = file_id(path);
   auto ctx = context();
@@ -145,7 +145,7 @@ int remove(const char *path) {
   return ret.get_future().get();
 }
 
-int mknod(const char *path, mode_t, dev_t) {
+int mknod(const char *path, FUSE_MODE_T, FUSE_DEV_T) {
   std::promise<int> ret;
   auto file = file_id(path);
   auto ctx = context();

@@ -11,6 +11,7 @@
 #include <cwchar>
 #include <future>
 
+#include "FuseCommon.h"
 #include "IFileSystem.h"
 #include "Utility/Utility.h"
 
@@ -30,14 +31,6 @@ FileId file_id(const std::string &current_path) {
   auto name =
       std::string(current_path.begin() + slash_it + 1, current_path.end());
   return {parent_path, name};
-}
-
-std::string to_string(const std::wstring &str) {
-  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(str);
-}
-
-std::wstring from_string(const std::string &str) {
-  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
 }
 
 IFileSystem **context_ptr;

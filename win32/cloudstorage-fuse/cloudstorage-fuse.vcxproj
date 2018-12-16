@@ -88,7 +88,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_WINFSP;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../dokany/dokan;../dokany/sys;../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include/fuse;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,7 +107,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_WINFSP;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../dokany/dokan;../dokany/sys;../dokany/dokan_fuse/include;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include;../../src;../../dependencies/win32/include/fuse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

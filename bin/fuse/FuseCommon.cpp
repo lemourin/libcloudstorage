@@ -6,7 +6,9 @@
 #include "FuseDokan.h"
 #include "FuseHighLevel.h"
 #include "FuseLowLevel.h"
+#include "FuseWinFsp.h"
 
+#include <codecvt>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -38,6 +40,14 @@ const struct fuse_opt option_spec[] = {
     OPTION("--remove=%s", remove_provider_label),
     OPTION("--list", list_providers), FUSE_OPT_END};
 }  // namespace
+
+std::string to_string(const std::wstring &str) {
+  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(str);
+}
+
+std::wstring from_string(const std::string &str) {
+  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
+}
 
 struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i) {
   struct FUSE_STAT ret = {};
@@ -262,16 +272,17 @@ int fuse_run(int argc, char **argv) {
   }
   int ret = 0;
 
-#ifdef WITH_DOKAN
+#ifdef WITH_WINFSP
+  ret = fuse_run<FuseWinFsp>(args.get(), opts.get(), json);
+#elif WITH_DOKAN
   ret = fuse_run<FuseDokan>(args.get(), opts.get(), json);
 #else
 #ifdef FUSE_LOWLEVEL
   ret = fuse_run<FuseLowLevel>(args.get(), opts.get(), json);
-#endif
-#ifndef FUSE_LOWLEVEL
+#else
   ret = fuse_run<FuseHighLevel>(args.get(), opts.get(), json);
 #endif
-#endif  // WITH_DOKAN
+#endif
 
   std::ofstream(options.config_file) << json;
   return ret;

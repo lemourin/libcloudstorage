@@ -16,11 +16,35 @@
 #endif
 
 #ifndef FUSE_STAT
+#ifdef WITH_WINFSP
+#define FUSE_STAT fuse_stat
+#else
 #define FUSE_STAT stat
+#endif
 #endif
 
 #ifndef FUSE_OFF_T
+#ifdef WITH_WINFSP
+#define FUSE_OFF_T fuse_off_t
+#else
 #define FUSE_OFF_T off_t
+#endif
+#endif
+
+#ifndef FUSE_DEV_T
+#ifdef WITH_WINFSP
+#define FUSE_DEV_T fuse_dev_t
+#else
+#define FUSE_DEV_T dev_t
+#endif
+#endif
+
+#ifndef FUSE_MODE_T
+#ifdef WITH_WINFSP
+#define FUSE_MODE_T fuse_mode_t
+#else
+#define FUSE_MODE_T mode_t
+#endif
 #endif
 
 #include <json/json.h>
@@ -77,6 +101,9 @@ std::vector<cloudstorage::IFileSystem::ProviderEntry> providers(
     const std::string &temporary_directory);
 
 int fuse_run(int argc, char **argv);
+
+std::string to_string(const std::wstring &str);
+std::wstring from_string(const std::string &str);
 
 }  // namespace cloudstorage
 

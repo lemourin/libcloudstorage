@@ -29,6 +29,9 @@
     <ClCompile Include="..\..\bin\fuse\FuseDokan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\bin\fuse\FuseWinFsp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\fuse\FileSystem.h">
@@ -47,6 +50,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\bin\fuse\FuseDokan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\bin\fuse\FuseWinFsp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
