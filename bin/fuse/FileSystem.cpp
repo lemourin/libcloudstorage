@@ -699,7 +699,12 @@ std::string FileSystem::sanitize(const std::string& name) {
   std::string res;
   for (auto&& c : name)
     if (forbidden.find(c) == std::string::npos) res += c;
-  return res;
+  if (res.empty()) return res;
+  int index = res.size() - 1;
+  while (index >= 0 && (res[index] == '.' || res[index] == ' ')) {
+    index--;
+  }
+  return std::string(res.begin(), res.begin() + index + 1);
 }
 
 IFileSystem::Pointer IFileSystem::create(
