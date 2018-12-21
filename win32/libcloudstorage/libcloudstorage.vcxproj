@@ -152,7 +152,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
