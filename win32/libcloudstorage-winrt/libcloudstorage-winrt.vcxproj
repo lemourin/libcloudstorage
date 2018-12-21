@@ -74,12 +74,12 @@
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MICROHTTPD;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;WINDOWS_PHONE;SQLITE_OS_WINRT</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MICROHTTPD;WITH_MEGA;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;WINDOWS_PHONE;SQLITE_OS_WINRT</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>../../dependencies/winrt-debug/lib;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2d.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2d.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

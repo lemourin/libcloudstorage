@@ -267,10 +267,10 @@
     <None Include="../../dependencies/winrt/bin/swscale-4.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/VLCQtCore.dll">
+    <None Include="../../dependencies/winrt-debug/bin/VLCQtCore.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/VLCQtQml.dll">
+    <None Include="../../dependencies/winrt-debug/bin/VLCQtQml.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/libvlc.dll">

@@ -224,6 +224,12 @@
     <None Include="../../dependencies/winrt/bin/Qt5Core.dll">
       <Filter>Dependencies</Filter>
     </None>
+    <None Include="../../dependencies/winrt-debug/bin/VLCQtCore.dll">
+      <Filter>Dependencies</Filter>
+     </None>
+    <None Include="../../dependencies/winrt-debug/bin/VLCQtQml.dll">
+      <Filter>Dependencies</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\logo_44x44.png">

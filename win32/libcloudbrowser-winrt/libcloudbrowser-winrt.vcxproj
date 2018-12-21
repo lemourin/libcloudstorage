@@ -75,7 +75,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/win32/include/QtCore/5.10.1/;../../dependencies/win32/include/QtCore/5.10.1/QtCore;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;WITH_VLC_QT;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../../dependencies/winrt-debug/lib;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
