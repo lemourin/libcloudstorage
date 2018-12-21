@@ -334,6 +334,7 @@ FuseDokan::FuseDokan(fuse_args *args, const char *mountpoint, void *userdata)
   DokanInit(nullptr);
   options_.MountPoint = mountpoint_.c_str();
   options_.Version = DOKAN_VERSION;
+  options_.Options = DOKAN_OPTION_NETWORK;
   context_ptr = static_cast<IFileSystem **>(userdata);
 }
 
