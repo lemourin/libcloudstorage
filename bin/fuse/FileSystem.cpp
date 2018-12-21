@@ -329,12 +329,13 @@ void FileSystem::write(FileId inode, const char* data, uint32_t size,
 void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
   bool reported = false;
   {
-    std::lock_guard<mutex> lock(node_data_mutex_);
+    std::unique_lock<mutex> lock(node_data_mutex_);
     auto it = node_directory_.find(node);
     if (it != std::end(node_directory_)) {
       INode::List ret;
       for (auto&& r : it->second) ret.push_back(get(r));
       reported = true;
+      lock.unlock();
       cb(ret);
     }
   }
