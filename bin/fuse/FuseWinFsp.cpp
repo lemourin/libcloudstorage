@@ -43,7 +43,8 @@ void node_to_file_info(IFileSystem::INode *node,
                                   ? FILE_ATTRIBUTE_DIRECTORY
                                   : FILE_ATTRIBUTE_NORMAL;
   file_info->ReparseTag = 0;
-  file_info->FileSize = node->size();
+  file_info->FileSize =
+      node->size() == IItem::UnknownSize ? UINT64_MAX : node->size();
   file_info->AllocationSize =
       (node->size() + ALLOCATION_UNIT - 1) / ALLOCATION_UNIT * ALLOCATION_UNIT;
   file_info->CreationTime = timestamp;
