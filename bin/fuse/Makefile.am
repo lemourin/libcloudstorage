@@ -11,6 +11,7 @@ AM_LDFLAGS = \
 bin_PROGRAMS = cloudstorage-fuse
 
 cloudstorage_fuse_SOURCES = \
+	../cloudbrowser/src/HttpServer.cpp \
 	FuseCommon.cpp \
 	FuseLowLevel.cpp \
 	FuseHighLevel.cpp \
@@ -19,6 +20,7 @@ cloudstorage_fuse_SOURCES = \
 	main.cpp
 
 noinst_HEADERS = \
+	../cloudbrowser/src/HttpServer.h \
 	FuseCommon.h \
 	FuseLowLevel.h \
 	FuseHighLevel.h \

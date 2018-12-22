@@ -3,6 +3,7 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
+#include "../cloudbrowser/src/HttpServer.h"
 #include "FuseDokan.h"
 #include "FuseHighLevel.h"
 #include "FuseLowLevel.h"
@@ -89,16 +90,21 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
   }
 }
 
-ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
-                               std::shared_ptr<IThreadPool> thread_pool,
-                               std::string temporary_directory,
-                               Json::Value config) {
-  class DummyServerFactory : public IHttpServerFactory {
+ICloudProvider::Pointer create(
+    int index, std::shared_ptr<IHttpServerFactory> http_server_factory,
+    std::shared_ptr<IHttp> http, std::shared_ptr<IThreadPool> thread_pool,
+    std::string temporary_directory, Json::Value config) {
+  class ServerFactoryWrapper : public IHttpServerFactory {
    public:
-    IHttpServer::Pointer create(IHttpServer::ICallback::Pointer,
-                                const std::string &, IHttpServer::Type) {
-      return nullptr;
+    ServerFactoryWrapper(std::shared_ptr<IHttpServerFactory> f) : factory_(f) {}
+    IHttpServer::Pointer create(IHttpServer::ICallback::Pointer cb,
+                                const std::string &ssid,
+                                IHttpServer::Type type) {
+      return factory_->create(cb, ssid, type);
     }
+
+   private:
+    std::shared_ptr<IHttpServerFactory> factory_;
   };
   class AuthCallback : public ICloudProvider::IAuthCallback {
     Status userConsentRequired(const ICloudProvider &) override {
@@ -111,8 +117,12 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
   init_data.callback_ = util::make_unique<AuthCallback>();
   init_data.token_ = config["token"].asString();
   init_data.http_engine_ = util::make_unique<HttpWrapper>(http);
-  init_data.http_server_ = util::make_unique<DummyServerFactory>();
+  init_data.http_server_ =
+      util::make_unique<ServerFactoryWrapper>(http_server_factory);
   init_data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool);
+  init_data.hints_["file_url"] =
+      "http://127.0.0.1:12345/" + std::to_string(index);
+  init_data.hints_["state"] = std::to_string(index);
   init_data.hints_["access_token"] = config["access_token"].asString();
   init_data.hints_["temporary_directory"] = temporary_directory;
   return ICloudStorage::create()->provider(config["type"].asString(),
@@ -120,13 +130,16 @@ ICloudProvider::Pointer create(std::shared_ptr<IHttp> http,
 }
 
 std::vector<IFileSystem::ProviderEntry> providers(
-    const Json::Value &data, std::shared_ptr<IHttp> http,
-    std::shared_ptr<IThreadPool> thread_pool,
+    const Json::Value &data,
+    std::shared_ptr<IHttpServerFactory> http_server_factory,
+    std::shared_ptr<IHttp> http, std::shared_ptr<IThreadPool> thread_pool,
     const std::string &temporary_directory) {
   std::vector<IFileSystem::ProviderEntry> providers;
+  int index = 0;
   for (auto &&p : data)
-    providers.push_back({p["label"].asString(),
-                         create(http, thread_pool, temporary_directory, p)});
+    providers.push_back(
+        {p["label"].asString(), create(index++, http_server_factory, http,
+                                       thread_pool, temporary_directory, p)});
   return providers;
 }
 
@@ -141,10 +154,13 @@ int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   fuse_daemonize(opts->foreground);
   std::shared_ptr<IHttp> http = IHttp::create();
   std::shared_ptr<IThreadPool> thread_pool = IThreadPool::create(1);
+  std::shared_ptr<IHttpServerFactory> http_server_factory =
+      util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create());
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty())
     temporary_directory = util::temporary_directory();
-  auto p = providers(json["providers"], http, thread_pool, temporary_directory);
+  auto p = providers(json["providers"], http_server_factory, http, thread_pool,
+                     temporary_directory);
   *ctx = IFileSystem::create(p, util::make_unique<HttpWrapper>(http),
                              temporary_directory)
              .release();
