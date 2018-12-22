@@ -176,6 +176,13 @@ FileSystem::Node::Pointer FileSystem::add(std::shared_ptr<ICloudProvider> p,
     auto node = std::make_shared<Node>(p, i, parent, idx, i->size());
     node_map_[idx] = node;
     node_id_map_[id(p, i)] = node;
+    if (parent > 0) {
+      auto parent_node = node_map_[parent];
+      node->path_ = parent_node->path_ + "/" + sanitize(i->filename());
+      node_path_to_id_[node->path_] = idx;
+    } else {
+      node_path_to_id_[""] = idx;
+    }
     return node;
   } else
     return it->second;
@@ -186,6 +193,13 @@ void FileSystem::set(FileId idx, Node::Pointer node) {
   if (node->item()) {
     node_map_[idx] = node;
     node_id_map_[id(node->provider(), node->item())] = node;
+    if (node->parent_ > 0) {
+      node->path_ =
+          node_map_[node->parent_]->path_ + "/" + sanitize(node->filename());
+      node_path_to_id_[node->path_] = idx;
+    } else {
+      node_path_to_id_[""] = idx;
+    }
   } else {
     auto it1 = node_map_.find(idx);
     if (it1 != std::end(node_map_)) {
@@ -196,6 +210,8 @@ void FileSystem::set(FileId idx, Node::Pointer node) {
     }
     auto it3 = node_directory_.find(idx);
     if (it3 != std::end(node_directory_)) node_directory_.erase(it3);
+    auto it4 = node_path_to_id_.find(node->path_);
+    if (it4 != node_path_to_id_.end()) node_path_to_id_.erase(it4);
   }
 }
 
@@ -286,8 +302,20 @@ void FileSystem::getattr(FileId node, GetItemCallback cb) {
   }
 }
 
-void FileSystem::getattr(const std::string& path, GetItemCallback callback) {
-  return get_path(1, path, callback);
+void FileSystem::getattr(const std::string& full_path,
+                         GetItemCallback callback) {
+  std::unique_lock<mutex> lock(node_data_mutex_);
+  std::string path = full_path;
+  if (!path.empty() && path.back() == '/') {
+    path.pop_back();
+  }
+  auto it = node_path_to_id_.find(path);
+  if (it == node_path_to_id_.end()) {
+    lock.unlock();
+    callback(Error{IHttpRequest::NotFound});
+  } else {
+    getattr(it->second, callback);
+  }
 }
 
 void FileSystem::get_path(FileId node, const std::string& path,

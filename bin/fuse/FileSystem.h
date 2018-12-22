@@ -73,6 +73,7 @@ class FileSystem : public IFileSystem {
     std::vector<Range> pending_download_;
     std::deque<Chunk> chunk_;
     std::string cache_filename_;
+    std::string path_;
     std::unique_ptr<std::fstream> store_;
     bool list_directory_pending_ = false;
   };
@@ -130,6 +131,7 @@ class FileSystem : public IFileSystem {
 
   mutable mutex node_data_mutex_;
   mutable mutex request_data_mutex_;
+  std::unordered_map<std::string, FileId> node_path_to_id_;
   std::unordered_map<FileId, Node::Pointer> node_map_;
   std::unordered_map<std::string, Node::Pointer> node_id_map_;
   std::unordered_map<FileId, std::unordered_set<FileId>> node_directory_;
