@@ -30,6 +30,20 @@
 
 namespace cloudstorage {
 
+struct VideoInfo {
+  std::string scrambled_signature;
+  std::string signature;
+  std::string type;
+  std::string url;
+  int bitrate;
+  std::string codec;
+  std::string quality_label;
+  std::string init_range;
+  std::string index_range;
+  uint64_t size = 0;
+  bool adaptive_;
+};
+
 class YouTube : public CloudProvider {
  public:
   YouTube();
@@ -75,8 +89,8 @@ class YouTube : public CloudProvider {
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
                                          std::istream& response) const override;
-  std::string generateDashManifest(const IItem& i,
-                                   const std::string& url) const;
+  std::string generateDashManifest(
+      const IItem& i, const std::vector<VideoInfo>& video_info) const;
 
   Item::Pointer toItem(const Json::Value&, std::string kind, int type) const;
 
@@ -84,6 +98,8 @@ class YouTube : public CloudProvider {
    public:
     std::string authorizeLibraryUrl() const override;
   };
+
+  mutable util::LRUCache<std::string, std::vector<VideoInfo>> manifest_data_;
 };
 
 }  // namespace cloudstorage
