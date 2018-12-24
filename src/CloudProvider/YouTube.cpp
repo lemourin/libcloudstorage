@@ -56,6 +56,11 @@ namespace cloudstorage {
 
 namespace {
 
+struct YouTubeDescrambleData {
+  std::string function;
+  std::string helper;
+};
+
 struct YouTubeItem {
   enum Type {
     Audio = 1 << 0,
@@ -163,28 +168,52 @@ VideoInfo video_info(const std::string& url) {
   return result;
 }
 
-EitherError<std::string> descramble(const std::string& scrambled,
-                                    std::stringstream& stream) {
+bool find(std::stringstream& stream, const std::string& pattern) {
+  std::deque<char> buffer;
+  stream.seekg(0);
+  while (true) {
+    char c;
+    if (!stream.read(&c, 1)) {
+      break;
+    }
+    buffer.push_back(c);
+    if (buffer.size() > pattern.size()) {
+      buffer.pop_front();
+    }
+    if (std::equal(buffer.begin(), buffer.end(), pattern.begin(),
+                   pattern.end())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+YouTubeDescrambleData descramble_data(std::stringstream& stream) {
   auto find_descrambler = [](std::stringstream& stream) {
-    auto player = stream.str();
     const std::string descrambler_search =
         "(k.sp,(0,window.encodeURIComponent)(";
-    auto it = player.find(descrambler_search);
-    if (it == std::string::npos)
+    if (!find(stream, descrambler_search))
       throw std::logic_error(util::Error::COULD_NOT_FIND_DESCRAMBLER_NAME);
-    stream.seekg(it + descrambler_search.length());
     std::string descrambler;
     std::getline(stream, descrambler, '(');
     return descrambler;
   };
+  auto find_descrambler_code = [](const std::string& name,
+                                  std::stringstream& stream) {
+    const std::string function_search = name + "=function(a){";
+    if (!find(stream, function_search))
+      throw std::logic_error(
+          util::Error::COULD_NOT_FIND_DESCRABMLER_DEFINITION);
+    std::string code;
+    std::getline(stream, code, ';');
+    std::getline(stream, code, '}');
+    return code.substr(0, code.find_last_of(';') + 1);
+  };
   auto find_helper = [](const std::string& code, std::stringstream& stream) {
-    auto player = stream.str();
     auto helper = code.substr(0, code.find_first_of('.'));
     const std::string helper_search = "var " + helper + "={";
-    auto it = player.find(helper_search);
-    if (it == std::string::npos)
+    if (!find(stream, helper_search))
       throw std::logic_error(util::Error::COULD_NOT_FIND_HELPER_FUNCTIONS);
-    stream.seekg(it + helper_search.length());
     std::string result;
     int cnt = 1;
     char c;
@@ -197,34 +226,14 @@ EitherError<std::string> descramble(const std::string& scrambled,
     }
     return result;
   };
-  auto transformations = [](const std::string& helper) {
-    std::stringstream stream(helper);
-    std::unordered_map<std::string, std::string> result;
-    while (stream) {
-      std::string key, value;
-      stream >> std::ws;
-      std::getline(stream, key, ':');
-      std::getline(stream, value, '}');
-      if (stream) result[key] = value;
-      std::string dummy;
-      std::getline(stream, dummy, ',');
-    }
-    return result;
-  };
-  auto find_descrambler_code = [](const std::string& name,
-                                  std::stringstream& stream) {
-    auto player = stream.str();
-    const std::string function_search = name + "=function(a){";
-    auto it = player.find(function_search);
-    if (it == std::string::npos)
-      throw std::logic_error(
-          util::Error::COULD_NOT_FIND_DESCRABMLER_DEFINITION);
-    stream.seekg(it + function_search.length());
-    std::string code;
-    std::getline(stream, code, ';');
-    std::getline(stream, code, '}');
-    return code.substr(0, code.find_last_of(';') + 1);
-  };
+  YouTubeDescrambleData data;
+  data.function = find_descrambler_code(find_descrambler(stream), stream);
+  data.helper = find_helper(data.function, stream);
+  return data;
+}
+
+EitherError<std::string> descramble(const std::string& scrambled,
+                                    const YouTubeDescrambleData& data) {
   auto transform = [](std::string code, const std::string& function,
                       const std::unordered_map<std::string, std::string>& t) {
     std::stringstream stream(function);
@@ -251,14 +260,21 @@ EitherError<std::string> descramble(const std::string& scrambled,
     }
     return code;
   };
-  try {
-    auto descrambler = find_descrambler(stream);
-    auto function = find_descrambler_code(descrambler, stream);
-    return transform(scrambled, function,
-                     transformations(find_helper(function, stream)));
-  } catch (const std::logic_error& e) {
-    return Error{IHttpRequest::Failure, e.what()};
-  }
+  auto transformations = [](const std::string& helper) {
+    std::stringstream stream(helper);
+    std::unordered_map<std::string, std::string> result;
+    while (stream) {
+      std::string key, value;
+      stream >> std::ws;
+      std::getline(stream, key, ':');
+      std::getline(stream, value, '}');
+      if (stream) result[key] = value;
+      std::string dummy;
+      std::getline(stream, dummy, ',');
+    }
+    return result;
+  };
+  return transform(scrambled, data.function, transformations(data.helper));
 }
 
 template <class Result>
@@ -266,12 +282,9 @@ void get_stream(
     typename Request<Result>::Pointer r, const std::string& video_id,
     std::function<void(EitherError<std::vector<VideoInfo>>)> complete) {
   auto get_config = [](std::stringstream& stream) {
-    std::string page = stream.str();
-    std::string player_str = "ytplayer.config = ";
-    auto it = page.find(player_str);
-    if (it == std::string::npos)
+    const std::string player_str = "ytplayer.config = ";
+    if (!find(stream, player_str))
       throw std::logic_error(util::Error::YOUTUBE_CONFIG_NOT_FOUND);
-    stream.seekg(it + player_str.length());
     return util::json::from_stream(stream);
   };
   auto get_url = [=](typename Request<Result>::Pointer r, Json::Value json) {
@@ -298,21 +311,25 @@ void get_stream(
         },
         [=](EitherError<Response> e) {
           if (e.left()) return complete(e.left());
-          std::vector<VideoInfo> decoded;
-          for (auto v : result) {
-            if (!v.scrambled_signature.empty()) {
-              auto signature =
-                  descramble(v.scrambled_signature, e.right()->output());
-              if (signature.left()) {
-                return complete(signature.left());
+          try {
+            std::vector<VideoInfo> decoded;
+            auto data = descramble_data(e.right()->output());
+            for (auto v : result) {
+              if (!v.scrambled_signature.empty()) {
+                auto signature = descramble(v.scrambled_signature, data);
+                if (signature.left()) {
+                  return complete(signature.left());
+                }
+                v.url += "&signature=" + *signature.right();
+                decoded.emplace_back(v);
+              } else {
+                decoded.emplace_back(v);
               }
-              v.url += "&signature=" + *signature.right();
-              decoded.emplace_back(v);
-            } else {
-              decoded.emplace_back(v);
             }
+            complete(decoded);
+          } catch (const std::logic_error& e) {
+            complete(Error{IHttpRequest::Failure, e.what()});
           }
-          complete(decoded);
         });
   };
   r->send(
