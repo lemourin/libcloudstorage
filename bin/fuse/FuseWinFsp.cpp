@@ -30,6 +30,7 @@ struct FspContext {
 
 struct FspFileContext {
   IFileSystem::INode::Pointer inode_;
+  void *directory_buffer_ = nullptr;
 };
 
 void node_to_file_info(IFileSystem::INode *node,
@@ -103,7 +104,11 @@ NTSTATUS open(FSP_FILE_SYSTEM *fs, PWSTR filename, UINT32 create_options,
 }
 
 VOID close(FSP_FILE_SYSTEM *, PVOID file_context) {
-  delete static_cast<FspFileContext *>(file_context);
+  auto c = static_cast<FspFileContext *>(file_context);
+  if (c->directory_buffer_) {
+    FspFileSystemDeleteDirectoryBuffer(&c->directory_buffer_);
+  }
+  delete c;
 }
 
 NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
@@ -113,6 +118,12 @@ NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
   auto file = static_cast<FspFileContext *>(file_context);
   auto hint = FspFileSystemGetOperationContext()->Request->Hint;
   auto transferred = *bytes_transferred;
+  if (pattern) {
+    NTSTATUS result;
+    FspFileSystemReadDirectoryBuffer(&file->directory_buffer_, pattern, buffer,
+                                     buffer_length, bytes_transferred);
+    return STATUS_SUCCESS;
+  }
   c->context()->readdir(
       file->inode_->inode(), [=](EitherError<IFileSystem::INode::List> e) {
         FSP_FSCTL_TRANSACT_RSP response;
@@ -126,13 +137,19 @@ NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
           return;
         }
         auto list = *e.right();
-        ULONG bytes_transferred = transferred;
         std::sort(list.begin(), list.end(),
                   [](const IFileSystem::INode::Pointer &n1,
                      const IFileSystem::INode::Pointer &n2) {
                     return n1->filename() < n2->filename();
                   });
-        int count = 0;
+        NTSTATUS result;
+        if (!FspFileSystemAcquireDirectoryBuffer(&file->directory_buffer_, true,
+                                                 &result)) {
+          response.IoStatus.Status = STATUS_INVALID_DEVICE_REQUEST;
+          response.IoStatus.Information = 0;
+          FspFileSystemSendResponse(fs, &response);
+          return;
+        }
         for (auto entry : list) {
           if (!marker ||
               c->context()->sanitize(entry->filename()) > to_string(marker)) {
@@ -148,17 +165,17 @@ NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
             node_to_file_info(entry.get(), &info.d.FileInfo);
             memcpy(info.d.FileNameBuf, filename.c_str(),
                    filename.length() * sizeof(wchar_t));
-            count++;
-            if (!FspFileSystemAddDirInfo(&info.d, buffer, buffer_length,
-                                         &bytes_transferred)) {
+            if (!FspFileSystemFillDirectoryBuffer(&file->directory_buffer_,
+                                                  &info.d, &result)) {
               break;
             }
           }
         }
-        if (count == 0) {
-          FspFileSystemAddDirInfo(nullptr, buffer, buffer_length,
-                                  &bytes_transferred);
-        }
+        FspFileSystemReleaseDirectoryBuffer(&file->directory_buffer_);
+        ULONG bytes_transferred = transferred;
+        FspFileSystemReadDirectoryBuffer(&file->directory_buffer_, marker,
+                                         buffer, buffer_length,
+                                         &bytes_transferred);
         response.IoStatus.Status = STATUS_SUCCESS;
         response.IoStatus.Information = bytes_transferred;
         FspFileSystemSendResponse(fs, &response);
