@@ -180,8 +180,8 @@ bool find(std::stringstream& stream, const std::string& pattern) {
     if (buffer.size() > pattern.size()) {
       buffer.pop_front();
     }
-    if (std::equal(buffer.begin(), buffer.end(), pattern.begin(),
-                   pattern.end())) {
+    if (buffer.size() == pattern.size() &&
+        std::equal(buffer.begin(), buffer.end(), pattern.begin())) {
       return true;
     }
   }
