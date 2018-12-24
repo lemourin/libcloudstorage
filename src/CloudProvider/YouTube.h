@@ -67,8 +67,6 @@ class YouTube : public CloudProvider {
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
 
-  IHttpRequest::Pointer getItemDataRequest(const std::string& full_id,
-                                           std::ostream&) const override;
   IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
   IHttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const override;
@@ -78,7 +76,6 @@ class YouTube : public CloudProvider {
   IHttpRequest::Pointer createDirectoryRequest(const IItem& item,
                                                const std::string& name,
                                                std::ostream&) const override;
-  IItem::Pointer getItemDataResponse(std::istream& response, int type) const;
   IItem::List listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
