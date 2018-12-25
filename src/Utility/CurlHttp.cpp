@@ -136,7 +136,7 @@ CurlHttp::Worker::~Worker() {
 }
 
 void CurlHttp::Worker::work() {
-  util::set_thread_name("cloudstorage-curl");
+  util::set_thread_name("cs-curl");
   auto handle = curl_multi_init();
   while (!done_ || !pending_.empty()) {
     std::unique_lock<std::mutex> lock(lock_);

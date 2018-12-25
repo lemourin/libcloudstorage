@@ -553,6 +553,7 @@ IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
 
 CloudContext::RequestPool::RequestPool()
     : done_(), cleanup_thread_(std::async(std::launch::async, [=] {
+        util::set_thread_name("cb-cleanup");
         while (!done_) {
           std::unique_lock<std::mutex> lock(mutex_);
           condition_.wait(lock, [=] { return done_ || !request_.empty(); });

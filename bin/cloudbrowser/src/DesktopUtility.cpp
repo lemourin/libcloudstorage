@@ -52,6 +52,7 @@ int run_xdg_screensaver(const std::vector<std::string> &args) {
 DesktopUtility::DesktopUtility() : screensaver_enabled_(true), running_(true) {
 #ifdef __unix__
   thread_ = std::thread([=] {
+    cloudstorage::util::set_thread_name("cb-screensaver");
     while (true) {
       std::unique_lock<std::mutex> lock(mutex_);
       condition_.wait_for(lock, std::chrono::seconds(15),

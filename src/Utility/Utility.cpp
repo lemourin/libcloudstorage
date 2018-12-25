@@ -35,6 +35,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <thread>
 #include <unordered_map>
 
 #include "JQuery.h"
@@ -44,6 +45,13 @@
 #if _MSC_VER >= 1913
 #include <processthreadsapi.h>
 #endif
+#endif
+
+#ifdef __linux__
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <pthread.h>
 #endif
 
 namespace cloudstorage {
@@ -489,6 +497,9 @@ void set_thread_name(const std::string& name) {
                            .from_bytes(name)
                            .c_str());
 #endif
+#endif
+#ifdef __linux__
+  pthread_setname_np(pthread_self(), name.c_str());
 #endif
 }
 
