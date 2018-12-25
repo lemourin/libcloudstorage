@@ -388,7 +388,7 @@ std::string generate_dash_manifest(const std::string& duration,
       <AdaptationSet mimeType=")"
       << mimetype <<
         R"(" contentType=")" << type <<
-        R"(" subsegmentAlignment="true" subsegmentStartsWithSAP="1">)";
+        R"(" bitstreamSwitching="true" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1" startWithSAP="1">)";
     for (const auto& stream : d.second) {
       r << R"(
         <Representation id=")"
