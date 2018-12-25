@@ -337,7 +337,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -345,7 +345,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;VLCQtQml.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
