@@ -169,6 +169,15 @@ VideoInfo video_info(const std::string& url) {
       result.index_range = value;
     else if (key == "clen")
       result.size = std::stoull(value);
+    else if (key == "size") {
+      int it = value.find('x');
+      result.width = std::stoul(std::string(value.begin(), value.begin() + it));
+      result.height =
+          std::stoul(std::string(value.begin() + it + 1, value.end()));
+    } else if (key == "fps")
+      result.framerate = std::stoul(value);
+    else if (key == "audio_sample_rate")
+      result.samplerate = std::stoul(value);
   }
   return result;
 }
@@ -365,28 +374,45 @@ std::string generate_dash_manifest(const std::string& duration,
     << duration << R"(S"
     minBufferTime="PT2S"
     profiles="urn:mpeg:dash:profile:isoff-main:2011">
-    <Period id="0">)";
+    <Period>)";
   int index = 1;
+  std::unordered_map<std::string, std::vector<VideoInfo>> grouped;
   for (const auto& stream : streams) {
     auto mimetype = stream.type.substr(0, stream.type.find(';'));
+    grouped[mimetype].emplace_back(stream);
+  }
+  for (const auto& d : grouped) {
+    auto mimetype = d.first;
     auto type = mimetype.substr(0, mimetype.find('/'));
     r << R"(
       <AdaptationSet mimeType=")"
-      << mimetype << R"(" codecs=")" << stream.codec <<
+      << mimetype <<
         R"(" contentType=")" << type <<
-        R"(" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+        R"(" subsegmentAlignment="true" subsegmentStartsWithSAP="1">)";
+    for (const auto& stream : d.second) {
+      r << R"(
         <Representation id=")"
-      << (stream.quality_label.empty() ? std::to_string(index++)
-                                       : stream.quality_label)
-      << R"(" bandwidth=")" << stream.bitrate << R"(">
+        << (stream.quality_label.empty() ? std::to_string(index++)
+                                         : stream.quality_label)
+        << R"(" bandwidth=")" << stream.bitrate << R"(" codecs=")"
+        << stream.codec << "\""
+        << (type == "video"
+                ? " width=\"" + std::to_string(stream.width) + "\" height=\"" +
+                      std::to_string(stream.height) + "\" frameRate=\"" +
+                      std::to_string(stream.framerate) + "\""
+                : " audioSamplingRate=\"" + std::to_string(stream.samplerate) +
+                      "\"")
+        << R"(>
           <BaseURL>)"
-      << xml_escape(stream.url) << R"(</BaseURL>
+        << xml_escape(stream.url) << R"(</BaseURL>
           <SegmentBase indexRange=")"
-      << stream.index_range << R"(">
+        << stream.index_range << R"(">
             <Initialization range=")"
-      << stream.init_range << R"("/>
+        << stream.init_range << R"("/>
           </SegmentBase>
-        </Representation>
+        </Representation>)";
+    }
+    r << R"(
       </AdaptationSet>)";
   }
   r << R"(

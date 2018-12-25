@@ -41,6 +41,10 @@ struct VideoInfo {
   std::string init_range;
   std::string index_range;
   uint64_t size = 0;
+  uint32_t width;
+  uint32_t height;
+  uint32_t framerate;
+  uint32_t samplerate;
   bool adaptive_;
 };
 
