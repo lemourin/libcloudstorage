@@ -371,7 +371,15 @@ void FileSystem::readdir(FileId node, ListDirectoryCallback cb) {
   if (nd->provider() == nullptr && !reported)
     return cb(Error{IHttpRequest::Bad, ""});
   std::unique_lock<std::recursive_mutex> lock(nd->mutex_);
-  if (nd->list_directory_pending_ && reported) return;
+  if (reported) {
+    if (nd->list_directory_pending_) return;
+    auto it = node_timestamp_.find(node);
+    if (it != node_timestamp_.end() &&
+        std::chrono::system_clock::now() - it->second <=
+            CACHE_DIRECTORY_DURATION) {
+      return;
+    }
+  }
   nd->list_directory_pending_ = true;
   lock.unlock();
   list_directory_async(

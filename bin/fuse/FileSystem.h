@@ -20,7 +20,7 @@ namespace cloudstorage {
 
 const int READ_AHEAD = 2 * 1024 * 1024;
 const int CACHED_CHUNK_COUNT = 4;
-const auto CACHE_DIRECTORY_DURATION = std::chrono::seconds(10);
+const auto CACHE_DIRECTORY_DURATION = std::chrono::seconds(60);
 
 class FileSystem : public IFileSystem {
  public:
