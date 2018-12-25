@@ -70,6 +70,7 @@ struct YouTubeItem {
     Stream = 1 << 4
   };
   int type = 0;
+  int stream_index = -1;
   std::string id;
   std::string video_id;
   std::string name;
@@ -77,11 +78,12 @@ struct YouTubeItem {
 
   YouTubeItem() {}
 
-  YouTubeItem(int type, const std::string& id, const std::string& video_id,
-              const std::string& name,
+  YouTubeItem(int type, int stream_index, const std::string& id,
+              const std::string& video_id, const std::string& name,
               const IItem::TimeStamp& timestamp = IItem::UnknownTimeStamp)
       : type(type),
         id(id),
+        stream_index(stream_index),
         video_id(video_id),
         name(name),
         timestamp(timestamp) {}
@@ -91,11 +93,13 @@ YouTubeItem from_string(const std::string& id) {
   try {
     auto json =
         util::json::from_stream(std::stringstream(util::from_base64(id)));
-    YouTubeItem result = {json["type"].asInt(), json["id"].asString(),
-                          json["video_id"].asString(), ""};
-    result.name = json["name"].asString();
-    result.timestamp =
-        std::chrono::system_clock::from_time_t(json["timestamp"].asInt64());
+    YouTubeItem result = {
+        json["type"].asInt(),
+        json.isMember("stream_index") ? json["stream_index"].asInt() : -1,
+        json["id"].asString(),
+        json["video_id"].asString(),
+        json["name"].asString(),
+        std::chrono::system_clock::from_time_t(json["timestamp"].asInt64())};
     return result;
   } catch (const Json::Exception&) {
     return {};
@@ -106,6 +110,7 @@ std::string to_string(const YouTubeItem& item) {
   Json::Value json;
   json["type"] = item.type;
   json["id"] = item.id;
+  if (item.stream_index != -1) json["stream_index"] = item.stream_index;
   json["video_id"] = item.video_id;
   json["name"] = item.name;
   json["timestamp"] = static_cast<Json::Int64>(
@@ -349,63 +354,62 @@ void get_stream(
 }
 
 std::string generate_dash_manifest(const std::string& duration,
-                                   const VideoInfo& video_stream,
-                                   const VideoInfo& audio_stream) {
-  std::stringstream stream;
-  stream << R"(<?xml version="1.0" encoding="UTF-8"?>
+                                   const std::vector<VideoInfo>& streams) {
+  std::stringstream r;
+  r << R"(<?xml version="1.0" encoding="UTF-8"?>
   <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="urn:mpeg:dash:schema:mpd:2011"
     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
     type="static"
     mediaPresentationDuration="PT)"
-         << duration << R"(S"
+    << duration << R"(S"
     minBufferTime="PT2S"
     profiles="urn:mpeg:dash:profile:isoff-main:2011">
-    <Period id="0">
-      <AdaptationSet mimeType="audio/mp4" codecs=")"
-         << audio_stream.codec <<
-      R"(" contentType="audio" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-        <Representation id="1" bandwidth=")"
-         << audio_stream.bitrate << R"(">
+    <Period id="0">)";
+  int index = 1;
+  for (const auto& stream : streams) {
+    auto mimetype = stream.type.substr(0, stream.type.find(';'));
+    auto type = mimetype.substr(0, mimetype.find('/'));
+    r << R"(
+      <AdaptationSet mimeType=")"
+      << mimetype << R"(" codecs=")" << stream.codec <<
+        R"(" contentType=")" << type <<
+        R"(" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+        <Representation id=")"
+      << (stream.quality_label.empty() ? std::to_string(index++)
+                                       : stream.quality_label)
+      << R"(" bandwidth=")" << stream.bitrate << R"(">
           <BaseURL>)"
-         << xml_escape(audio_stream.url) << R"(</BaseURL>
+      << xml_escape(stream.url) << R"(</BaseURL>
           <SegmentBase indexRange=")"
-         << audio_stream.index_range << R"(">
+      << stream.index_range << R"(">
             <Initialization range=")"
-         << audio_stream.init_range << R"("/>
+      << stream.init_range << R"("/>
           </SegmentBase>
         </Representation>
-      </AdaptationSet>
-      <AdaptationSet mimeType="video/mp4" codecs=")"
-         << video_stream.codec <<
-      R"(" contentType="video" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-        <Representation id="2" bandwidth=")"
-         << video_stream.bitrate << R"(">
-          <BaseURL>)"
-         << xml_escape(video_stream.url) << R"(</BaseURL>
-          <SegmentBase indexRange=")"
-         << video_stream.index_range << R"(">
-            <Initialization range=")"
-         << video_stream.init_range << R"("/>
-          </SegmentBase>
-        </Representation>
-      </AdaptationSet>
+      </AdaptationSet>)";
+  }
+  r << R"(
     </Period>
   </MPD>)";
-  return stream.str();
+  return r.str();
 }
 
-VideoInfo get_stream(const std::vector<VideoInfo>& d, int type) {
+VideoInfo get_stream(const std::vector<VideoInfo>& d, const IItem& item) {
   VideoInfo result = {};
   result.bitrate = -1;
+  auto id = from_string(item.id());
+  if (id.stream_index >= 0 && id.stream_index < d.size()) {
+    return d[id.stream_index];
+  }
   for (const auto& d : d) {
     if (d.bitrate > result.bitrate) {
-      if (type & YouTubeItem::Audio) {
+      if (id.type & YouTubeItem::Audio) {
         if (d.type.find("audio/mp4") != std::string::npos && d.adaptive_)
           result = d;
       } else {
         if (d.type.find("video/mp4") != std::string::npos &&
-            d.adaptive_ == bool(type & YouTubeItem::Stream))
+            d.adaptive_ == bool(id.type & YouTubeItem::Stream))
           result = d;
       }
     }
@@ -473,7 +477,7 @@ ICloudProvider::GetItemDataRequest::Pointer YouTube::getItemDataAsync(
                if (!is_manifest) {
                  auto entry = manifest_data_.get(data.video_id);
                  if (entry) {
-                   auto track = get_stream(*entry, data.type);
+                   auto track = get_stream(*entry, *i);
                    i->set_url(track.url);
                    if (track.size > 0) i->set_size(track.size);
                  }
@@ -546,7 +550,7 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
                            *item,
                            generateDashManifest(*item, *e.right()).size()));
                      } else {
-                       r->done(get_stream(*e.right(), type).url);
+                       r->done(get_stream(*e.right(), *item).url);
                      }
                    });
              })
@@ -662,7 +666,7 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
       auto item = util::make_unique<Item>(
           related_playlist_name(name),
           to_string(
-              {YouTubeItem::Playlist | YouTubeItem::RelatedPlaylist | type,
+              {YouTubeItem::Playlist | YouTubeItem::RelatedPlaylist | type, -1,
                related_playlists[name].asString(), "", ""}),
           IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory);
@@ -724,33 +728,37 @@ IItem::Pointer YouTube::createDirectoryResponse(const IItem& parent,
 
 std::string YouTube::generateDashManifest(
     const IItem& i, const std::vector<VideoInfo>& video_info) const {
-  VideoInfo best_video, best_audio;
-  best_audio.bitrate = best_video.bitrate = -1;
-  for (const auto& v : video_info)
+  std::string duration;
+  int index = 0;
+  VideoInfo best_audio = {}, best_video = {};
+  for (const auto& v : video_info) {
     if (v.adaptive_) {
-      if (v.type.find("audio/mp4") != std::string::npos &&
-          v.bitrate > best_audio.bitrate)
-        best_audio = v;
-      else if (v.type.find("video/mp4") != std::string::npos &&
-               v.bitrate > best_video.bitrate)
-        best_video = v;
+      auto id = from_string(i.id());
+      id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
+                (id.type & YouTubeItem::RelatedPlaylist);
+      if (v.type.find("audio") != std::string::npos)
+        id.type |= YouTubeItem::Audio;
+      id.stream_index = index;
+      auto item = util::make_unique<Item>(i.filename(), to_string(id), v.size,
+                                          i.timestamp(), i.type());
+      item->set_url(v.url);
+      VideoInfo d = v;
+      d.url = defaultFileDaemonUrl(*item, item->size());
+      if (duration.empty())
+        duration = util::parse_form(util::Url(v.url).query())["dur"];
+      if (id.type & YouTubeItem::Audio) {
+        if (d.bitrate > best_audio.bitrate &&
+            d.type.find("audio/mp4") != std::string::npos)
+          best_audio = d;
+      } else {
+        if (d.bitrate > best_video.bitrate &&
+            d.type.find("video/mp4") != std::string::npos)
+          best_video = d;
+      }
     }
-  auto id = from_string(i.id());
-  id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
-            YouTubeItem::Audio | (id.type & YouTubeItem::RelatedPlaylist);
-  auto item_audio = util::make_unique<Item>(
-      i.filename(), to_string(id), best_audio.size, i.timestamp(), i.type());
-  item_audio->set_url(best_audio.url);
-  id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
-            (id.type & YouTubeItem::RelatedPlaylist);
-  auto item_video = util::make_unique<Item>(
-      i.filename(), to_string(id), best_video.size, i.timestamp(), i.type());
-  item_video->set_url(best_video.url);
-  auto duration = util::parse_form(util::Url(best_video.url).query())["dur"];
-  best_video.url = defaultFileDaemonUrl(*item_video, item_video->size());
-  best_audio.url = defaultFileDaemonUrl(*item_audio, item_audio->size());
-  auto result = generate_dash_manifest(duration, best_video, best_audio);
-  return result;
+    index++;
+  }
+  return generate_dash_manifest(duration, {best_video, best_audio});
 }
 
 Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
@@ -758,7 +766,8 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(
         v["snippet"]["title"].asString(),
-        to_string({type | YouTubeItem::Playlist, v["id"].asString(), "", ""}),
+        to_string(
+            {type | YouTubeItem::Playlist, -1, v["id"].asString(), "", ""}),
         IItem::UnknownSize,
         util::parse_time(v["snippet"]["publishedAt"].asString()),
         IItem::FileType::Directory);
@@ -778,7 +787,8 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     auto name = v["snippet"]["title"].asString() +
                 ((type & YouTubeItem::HighQuality) ? ".mpd" : ".mp4");
     auto item = util::make_unique<Item>(
-        name, to_string({type, v["id"].asString(), video_id, name, timestamp}),
+        name,
+        to_string({type, -1, v["id"].asString(), video_id, name, timestamp}),
         IItem::UnknownSize, timestamp,
         (type & YouTubeItem::Audio) ? IItem::FileType::Audio
                                     : IItem::FileType::Video);
@@ -789,7 +799,7 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
     if (!is_manifest) {
       auto entry = manifest_data_.get(video_id);
       if (entry) {
-        VideoInfo info = get_stream(*entry, type);
+        VideoInfo info = get_stream(*entry, *item);
         item->set_url(info.url);
         if (info.size > 0) item->set_size(info.size);
       }
