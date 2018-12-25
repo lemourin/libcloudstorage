@@ -30,6 +30,7 @@ namespace cloudstorage {
 ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
   for (uint32_t i = 0; i < thread_count; ++i) {
     workers_.emplace_back([this]() {
+      util::set_thread_name("cloudstorage-threadpool");
       while (true) {
         Task task;
         {

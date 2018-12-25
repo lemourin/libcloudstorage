@@ -29,6 +29,7 @@
 #include <json/json.h>
 #include <algorithm>
 #include <cctype>
+#include <codecvt>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -38,6 +39,12 @@
 
 #include "JQuery.h"
 #include "UrlJS.h"
+
+#ifdef _MSC_VER
+#if _MSC_VER >= 1913
+#include <processthreadsapi.h>
+#endif
+#endif
 
 namespace cloudstorage {
 
@@ -472,6 +479,17 @@ Json::Value json::from_stream(std::istream& stream) {
   std::stringstream sstream;
   sstream << stream.rdbuf();
   return from_string(sstream.str());
+}
+
+void set_thread_name(const std::string& name) {
+#ifdef _MSC_VER
+#if _MSC_VER >= 1913
+  SetThreadDescription(GetCurrentThread(),
+                       std::wstring_convert<std::codecvt_utf8<wchar_t>>()
+                           .from_bytes(name)
+                           .c_str());
+#endif
+#endif
 }
 
 const char* libcloudstorage_ascii_art() {

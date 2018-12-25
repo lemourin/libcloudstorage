@@ -120,6 +120,7 @@ FileSystem::~FileSystem() {
 }
 
 void FileSystem::cleanup() {
+  util::set_thread_name("cloudstorage-fs-cleanup");
   while (running_) {
     std::unique_lock<mutex> lock(request_data_mutex_);
     request_data_condition_.wait(
@@ -137,6 +138,7 @@ void FileSystem::cleanup() {
 }
 
 void FileSystem::cancelled() {
+  util::set_thread_name("cloudstorage-fs-cancelled");
   while (running_) {
     std::unique_lock<mutex> lock(request_data_mutex_);
     cancelled_request_condition_.wait(

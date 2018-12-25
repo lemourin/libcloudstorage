@@ -134,6 +134,7 @@ CLOUDSTORAGE_API std::tm gmtime(time_t);
 CLOUDSTORAGE_API time_t timegm(const std::tm&);
 CLOUDSTORAGE_API std::string to_base64(const std::string&);
 CLOUDSTORAGE_API std::string from_base64(const std::string&);
+CLOUDSTORAGE_API void set_thread_name(const std::string&);
 
 namespace Error {
 
