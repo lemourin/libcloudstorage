@@ -197,11 +197,8 @@ class Listener : public IRequest<EitherError<Result>> {
   bool receivedData(const char* data, uint32_t length) {
     std::unique_lock<mutex> lock(mutex_);
     if (download_callback_) {
-      auto callback = download_callback_;
-      lock.unlock();
-      callback->receivedData(data, length);
-      callback->progress(total_bytes_, received_bytes_);
-      lock.lock();
+      download_callback_->receivedData(data, length);
+      download_callback_->progress(total_bytes_, received_bytes_);
     }
     return status_ == IN_PROGRESS;
   }
@@ -511,9 +508,12 @@ struct CloudHttp : public HttpIO {
 class FileUpload : public File {
  public:
   void progress() override {
-    if (listener_ && listener_->upload_callback_)
-      listener_->upload_callback_->progress(size_,
-                                            transfer->slot->progressreported);
+    if (listener_) {
+      std::unique_lock<std::mutex> lock(listener_->lock());
+      if (listener_->upload_callback_)
+        listener_->upload_callback_->progress(size_,
+                                              transfer->slot->progressreported);
+    }
   }
 
   void completed(Transfer* t, LocalNode* n) override {
