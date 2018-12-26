@@ -111,6 +111,19 @@ int exec_cloudbrowser(int argc, char** argv) {
     QtWebView::initialize();
 #endif
 
+#ifdef WINRT
+    qputenv("VLC_ARGS", (QStringList() << "--intf=dummy"
+                                       << "--no-media-library"
+                                       << "--no-stats"
+                                       << "--no-osd"
+                                       << "--no-loop"
+                                       << "--no-video-title-show"
+                                       << "--aout=winstore"
+                                       << "--drop-late-frames")
+                            .join(' ')
+                            .toLocal8Bit());
+#endif
+
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
     app.setWindowIcon(QPixmap(":/resources/cloud.png"));
