@@ -5,6 +5,7 @@
 
 cd "$(dirname "$0")"
 
+APPDIR="$(dirname "$(readlink -f "${0}")")"
 cxxpre=""
 gccpre=""
 execpre=""
