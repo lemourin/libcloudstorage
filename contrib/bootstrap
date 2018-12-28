@@ -7,8 +7,6 @@ export CMAKE_PREFIX_PATH=$INSTALL_PATH
 export PATH=$INSTALL_PATH/bin:$PATH
 CONCURRENCY=4
 
-KIRIGAMI_ICON_URL="https://drive.google.com/uc?export=download&id=1ltAHi1wnhzc7-1oTnhw5kMo1ZIuawN-s"
-
 unpack() {
   if [[ ! -d $1 ]]; then
     tar xf $1.$2
@@ -195,10 +193,6 @@ install_kirigami() {
     -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml
     -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump
   run_make
-
-  wget -nc $KIRIGAMI_ICON_URL -O icons.zip
-  unzip -o icons.zip
-  cp -r icons $INSTALL_PATH/qml/org/kde/kirigami.2
 }
 
 fetch_jsoncpp() {
@@ -480,7 +474,7 @@ install "ninja" 1.8.2
 install "openssl" 1.0.2p
 install "qt" 5.10.1
 install "qtwebview" 5.10.1
-install "kirigami" 5.44.0
+install "kirigami" 5.48.0
 install "jsoncpp" 1.8.3
 install "tinyxml2" 6.0.0
 install "cares" 1.13.0
