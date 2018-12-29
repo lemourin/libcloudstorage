@@ -1,0 +1,8 @@
+504c504
+<             if (m_isMask ||
+---
+>             if (m_color != Qt::transparent && (m_isMask ||
+509c509
+<                 (isPath && tintColor != Qt::transparent)) {
+---
+>                 (isPath && tintColor != Qt::transparent))) {

@@ -53,6 +53,16 @@ run_make() {
 
 fetch_qt() {
   fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
+   if [ ! -f .patched ]; then
+    patch \
+      qtbase/src/plugins/platformthemes/gtk3/qgtk3theme.cpp < \
+      ../../patches/qt-force-gtk-file-dialog.patch
+    if [ $? != 0 ]; then
+      echo "Couldn't patch qt source."
+      exit 1
+    fi
+    touch .patched
+  fi
 }
 
 configure_qt() {
@@ -100,33 +110,23 @@ install_qt() {
 
   configure_qt
 
-  cd $BASE_DIRECTORY/qtbase
-  $QMAKE ../../qtbase
-  run_make
+  make -j $CONCURRENCY \
+    module-qtbase \
+    module-qtdeclarative \
+    module-qtquickcontrols \
+    module-qtquickcontrols2 \
+    module-qtsvg \
+    module-qtgraphicaleffects \
+    module-qttools
 
-  cd $BASE_DIRECTORY/qtdeclarative
-  $QMAKE ../../qtdeclarative
-  run_make
-
-  cd $BASE_DIRECTORY/qtquickcontrols
-  $QMAKE ../../qtquickcontrols
-  run_make
-
-  cd $BASE_DIRECTORY/qtquickcontrols2
-  $QMAKE ../../qtquickcontrols2
-  run_make
-
-  cd $BASE_DIRECTORY/qtsvg
-  $QMAKE ../../qtsvg
-  run_make
-
-  cd $BASE_DIRECTORY/qtgraphicaleffects
-  $QMAKE ../../qtgraphicaleffects
-  run_make
-
-  cd $BASE_DIRECTORY/qttools
-  $QMAKE ../../qttools
-  run_make
+  make -j $CONCURRENCY \
+    module-qtbase-install_subtargets \
+    module-qtdeclarative-install_subtargets \
+    module-qtquickcontrols-install_subtargets \
+    module-qtquickcontrols2-install_subtargets \
+    module-qtsvg-install_subtargets \
+    module-qtgraphicaleffects-install_subtargets \
+    module-qttools-install_subtargets
 }
 
 fetch_qtwebview() {
@@ -137,17 +137,15 @@ install_qtwebview() {
   BASE_DIRECTORY=$PWD
   configure_qt
 
-  cd $BASE_DIRECTORY/qtwebchannel
-  $QMAKE ../../qtwebchannel
-  run_make
+  make \
+    module-qtwebchannel \
+    module-qtwebengine \
+    module-qtwebview
 
-  cd $BASE_DIRECTORY/qtwebengine
-  $QMAKE ../../qtwebengine
-  run_make
-
-  cd $BASE_DIRECTORY/qtwebview
-  $QMAKE ../../qtwebview
-  run_make
+  make \
+    module-qtwebchannel-install_subtargets \
+    module-qtwebengine-install_subtargets \
+    module-qtwebview-install_subtargets
 }
 
 fetch_cmake() {
@@ -183,6 +181,14 @@ install_ninja() {
 
 fetch_kirigami() {
   fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch src/desktopicon.cpp < ../../patches/kirigami-tint-transparent.patch
+    if [ $? != 0 ]; then
+      echo "Couldn't patch kirigami source."
+      exit 1
+    fi
+    touch .patched
+  fi
 }
 
 install_kirigami() {
@@ -308,7 +314,12 @@ fetch_ffmpeg() {
 install_ffmpeg() {
   sudo apt install -y yasm
 
-  ./configure --prefix=$INSTALL_PATH --enable-openssl --enable-shared --disable-static
+  ./configure \
+    --prefix=$INSTALL_PATH \
+    --enable-openssl \
+    --enable-shared \
+    --disable-static \
+    --enable-libass
   run_make
 }
 
@@ -363,6 +374,33 @@ install_matroska() {
   run_make
 }
 
+fetch_fribidi() {
+  fetch_url https://github.com/fribidi/fribidi/releases/download/v$1/fribidi-$1.tar.bz2
+}
+
+install_fribidi() {
+  ./configure --prefix=$INSTALL_PATH
+  run_make
+}
+
+fetch_harfbuzz() {
+  fetch_url https://github.com/harfbuzz/harfbuzz/releases/download/$1/harfbuzz-$1.tar.bz2
+}
+
+install_harfbuzz() {
+  ./configure --prefix=$INSTALL_PATH
+  run_make
+}
+
+fetch_libass() {
+  fetch_url https://github.com/libass/libass/releases/download/$1/libass-$1.tar.gz
+}
+
+install_libass() {
+  ./configure --prefix=$INSTALL_PATH
+  run_make
+}
+
 fetch_vlc() {
   fetch_url http://get.videolan.org/vlc/$1/vlc-$1.tar.xz
 }
@@ -373,7 +411,8 @@ install_vlc() {
     libxcb-composite0-dev \
     libxcb-xv0-dev \
     libxml2-dev \
-    libasound2-dev
+    libasound2-dev \
+    libpulse-dev
 
   mkdir -p build
   cd build
@@ -472,8 +511,8 @@ install "cmake" 3.12.1
 install "ecm" 5.49.0
 install "ninja" 1.8.2
 install "openssl" 1.0.2p
-install "qt" 5.10.1
-install "qtwebview" 5.10.1
+install "qt" 5.11.3
+install "qtwebview" 5.11.3
 install "kirigami" 5.48.0
 install "jsoncpp" 1.8.3
 install "tinyxml2" 6.0.0
@@ -484,13 +523,16 @@ install "microhttpd" 0.9.58
 install "cryptopp" 7.0.0
 install "sqlite" 3240000
 install "megasdk" 3.3.7
+install "fribidi" 1.0.5
+install "harfbuzz" 2.3.0
+install "libass" 0.14.0
 install "opus" 1.2.1
 install "ogg" 1.3.3
 install "vorbis" 1.3.6
 install "ebml" 1.3.6
 install "matroska" 1.4.9
-install "ffmpeg" 4.0.2
-install "vlc" 3.0.3
+install "ffmpeg" 4.1
+install "vlc" 3.0.4
 install "vlcqt" 1.1.1
 install "boost" 1.67.0
 install "fuse3" 3.2.1
