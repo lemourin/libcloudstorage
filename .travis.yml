@@ -29,14 +29,13 @@ before_install:
 - ./bootstrap
 
 script:
-- export LD_LIBRARY_PATH=$PWD/contrib/x86_64-linux-gnu/lib
 - mkdir build
 - cd build
 - PKG_CONFIG_LIBDIR=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
   ../configure --with-examples CXXFLAGS="-pedantic -Wall -Wextra -g -O0 -fsanitize=address"
   LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7
-- make -j 4
-- make check CXXFLAGS=-Wno-error -j 4
+- LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make -j 4
+- LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-error -j 4
 - cat test/test-suite.log
 - cd ..
 
