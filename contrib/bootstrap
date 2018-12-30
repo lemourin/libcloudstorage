@@ -522,7 +522,7 @@ install "curl" 7.57.0
 install "microhttpd" 0.9.58
 install "cryptopp" 7.0.0
 install "sqlite" 3240000
-install "megasdk" 3.3.7
+install "megasdk" 3.4.4
 install "fribidi" 1.0.5
 install "harfbuzz" 2.3.0
 install "libass" 0.14.0
