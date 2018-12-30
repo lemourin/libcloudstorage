@@ -184,7 +184,7 @@ class Listener : public IRequest<EitherError<Result>> {
   }
 
   void done(EitherError<Result> e) {
-    std::unique_lock<mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     status_ = SUCCESS;
     result_ = e;
     auto callback = util::exchange(callback_, nullptr);
@@ -196,7 +196,7 @@ class Listener : public IRequest<EitherError<Result>> {
   }
 
   bool receivedData(const char* data, uint32_t length) {
-    std::unique_lock<mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     if (download_callback_) {
       download_callback_->receivedData(data, length);
       download_callback_->progress(total_bytes_, received_bytes_);
