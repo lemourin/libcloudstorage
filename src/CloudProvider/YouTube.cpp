@@ -82,8 +82,8 @@ struct YouTubeItem {
               const std::string& video_id, const std::string& name,
               const IItem::TimeStamp& timestamp = IItem::UnknownTimeStamp)
       : type(type),
-        id(id),
         stream_index(stream_index),
+        id(id),
         video_id(video_id),
         name(name),
         timestamp(timestamp) {}
@@ -425,7 +425,7 @@ VideoInfo get_stream(const std::vector<VideoInfo>& d, const IItem& item) {
   VideoInfo result = {};
   result.bitrate = -1;
   auto id = from_string(item.id());
-  if (id.stream_index >= 0 && id.stream_index < d.size()) {
+  if (id.stream_index >= 0 && id.stream_index < static_cast<int>(d.size())) {
     return d[id.stream_index];
   }
   for (const auto& d : d) {
