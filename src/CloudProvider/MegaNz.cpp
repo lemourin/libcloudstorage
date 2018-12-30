@@ -32,6 +32,34 @@
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
+#ifdef VERSION
+#undef VERSION
+#endif
+
+#ifdef PACKAGE
+#undef PACKAGE
+#endif
+
+#ifdef PACKAGE_VERSION
+#undef PACKAGE_VERSION
+#endif
+
+#ifdef PACKAGE_NAME
+#undef PACKAGE_NAME
+#endif
+
+#ifdef PACKAGE_TARNAME
+#undef PACKAGE_TARNAME
+#endif
+
+#ifdef PACKAGE_STRING
+#undef PACKAGE_STRING
+#endif
+
+#ifdef PACKAGE_BUGREPORT
+#undef PACKAGE_BUGREPORT
+#endif
+
 #include <json/json.h>
 #include <mega.h>
 #include <array>
@@ -40,7 +68,9 @@
 #include <fstream>
 #include <queue>
 
+#ifdef DELETE
 #undef DELETE
+#endif
 
 using namespace mega;
 using namespace std::placeholders;
