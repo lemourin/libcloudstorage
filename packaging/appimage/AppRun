@@ -47,7 +47,7 @@ fi
 # echo ">>>>> $LD_LIBRARY_PATH"
 # echo ">>>>> $LD_PRELOAD"
 
-export LD_LIBRARY_PATH="${APPDIR}/usr/lib":"${APPDIR}/usr/lib/x86_64-linux-gnu":$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib":"${APPDIR}/usr/lib/x86_64-linux-gnu":"${APPDIR}/usr/lib/vlc":$LD_LIBRARY_PATH
 export QT_PLUGIN_PATH="${APPDIR}/usr/plugins"
 export QML2_IMPORT_PATH="${APPDIR}/usr/qml"
 
