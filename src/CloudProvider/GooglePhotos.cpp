@@ -97,9 +97,7 @@ IHttpRequest::Pointer GooglePhotos::listDirectoryRequest(
     Json::Value argument;
     argument["albumId"] = directory.id();
     if (!page_token.empty()) argument["pageToken"] = page_token;
-    Json::FastWriter writer;
-    writer.omitEndingLineFeed();
-    stream << writer.write(argument);
+    stream << util::json::to_string(argument);
   }
   return request;
 }
@@ -142,9 +140,7 @@ IHttpRequest::Pointer GooglePhotos::createDirectoryRequest(
   request->setHeaderParameter("Content-Type", "application/json");
   Json::Value argument;
   argument["album"]["title"] = name;
-  Json::FastWriter writer;
-  writer.omitEndingLineFeed();
-  stream << writer.write(argument);
+  stream << util::json::to_string(argument);
   return request;
 }
 
@@ -287,9 +283,7 @@ ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
           Json::Value array;
           array.append(entry);
           argument["newMediaItems"] = array;
-          Json::FastWriter writer;
-          writer.omitEndingLineFeed();
-          *stream << writer.write(argument);
+          *stream << util::json::to_string(argument);
           return request;
         },
         [=](EitherError<Response> e) {

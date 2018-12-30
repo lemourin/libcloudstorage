@@ -379,9 +379,7 @@ std::string CloudProvider::defaultFileDaemonUrl(const IItem& item,
   json["size"] = Json::Int64(size);
   json["state"] = auth()->state();
   json["name"] = item.filename();
-  Json::FastWriter writer;
-  writer.omitEndingLineFeed();
-  auto id = util::to_base64(writer.write(json));
+  auto id = util::to_base64(util::json::to_string(json));
   std::replace(id.begin(), id.end(), '/', '-');
   return file_url() + "/" + id;
 }
