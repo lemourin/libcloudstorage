@@ -33,7 +33,7 @@
 
 namespace mega {
 class Node;
-};
+}
 
 namespace cloudstorage {
 
