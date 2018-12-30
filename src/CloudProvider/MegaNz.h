@@ -28,9 +28,12 @@
 
 #include "CloudProvider.h"
 
-#include <mega.h>
 #include <random>
 #include <unordered_set>
+
+namespace mega {
+class Node;
+};
 
 namespace cloudstorage {
 

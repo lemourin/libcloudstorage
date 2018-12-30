@@ -33,6 +33,7 @@
 #include "Utility/Utility.h"
 
 #include <json/json.h>
+#include <mega.h>
 #include <array>
 #include <condition_variable>
 #include <cstring>
