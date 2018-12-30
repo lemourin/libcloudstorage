@@ -314,7 +314,7 @@ void FileSystem::getattr(const std::string& full_path,
   auto it = node_path_to_id_.find(path);
   if (it == node_path_to_id_.end()) {
     lock.unlock();
-    callback(Error{IHttpRequest::NotFound});
+    callback(Error{IHttpRequest::NotFound, "file not found"});
   } else {
     getattr(it->second, callback);
   }
