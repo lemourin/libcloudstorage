@@ -30,6 +30,16 @@ Kirigami.ScrollablePage {
         icon_source: "qrc:/resources/ffmpeg.png"
       }
       ListElement {
+        name: "MPV"
+        url: "https://mpv.io/"
+        icon_source: "qrc:/resources/mpv.png"
+      }
+      ListElement {
+        name: "VLC"
+        url: "https://www.videolan.org/vlc/index.html"
+        icon_source: "qrc:/resources/vlc.png"
+      }
+      ListElement {
         name: "vlc-qt"
         url: "https://github.com/vlc-qt/vlc-qt"
         icon_source: "qrc:/resources/vlc-qt.png"

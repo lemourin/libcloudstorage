@@ -123,6 +123,10 @@ Kirigami.ApplicationWindow {
     return ret;
   }
 
+  function bold_text(flag, text) {
+    return flag ? ("<b>" + text + "</b>") : text;
+  }
+
   globalDrawer: Kirigami.GlobalDrawer {
     Component {
       id: settings
@@ -143,6 +147,32 @@ Kirigami.ApplicationWindow {
           onTriggered: {
             pageStack.clear();
             pageStack.push(removeProviderPage);
+          }
+        }
+        Kirigami.Action {
+          text: "Select media player"
+          iconName: "multimedia-player"
+          visible: mpv && vlcqt
+          Kirigami.Action {
+            iconName: "qrc:/resources/vlc.png"
+            text: bold_text(cloud.playerBackend === "vlc", "VLC")
+            onTriggered: {
+              cloud.playerBackend = "vlc";
+            }
+          }
+          Kirigami.Action {
+            iconName: "qrc:/resources/mpv.png"
+            text: bold_text(cloud.playerBackend === "mpv", "MPV")
+            onTriggered: {
+              cloud.playerBackend = "mpv";
+            }
+          }
+          Kirigami.Action {
+            iconName: "qrc:/resources/qt.png"
+            text: bold_text(cloud.playerBackend === "qt", "Qt")
+            onTriggered: {
+              cloud.playerBackend = "qt";
+            }
           }
         }
         Kirigami.Action {

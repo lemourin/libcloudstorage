@@ -54,6 +54,7 @@
         <file>resources/localwinrt_login.html</file>
         <file>resources/providers/localwinrt.png</file>
         <file>resources/vlc-blue.png</file>
+        <file>resources/mpv.png</file>
         <file>resources/url.min.js</file>
         <file>resources/style.min.css</file>
         <file>resources/jquery.min.js</file>
@@ -113,6 +114,7 @@
         <file>resources/icons/material/hdpi/view-fullscreen.svg</file>
         <file>resources/icons/material/hdpi/view-list-details.svg</file>
         <file>resources/icons/material/hdpi/view-list-icons.svg</file>
+        <file>resources/icons/material/hdpi/multimedia-player.svg</file>
         <file>resources/icons/material/index.theme</file>
     </qresource>
 </RCC>

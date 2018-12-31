@@ -168,6 +168,7 @@ DEPS_res = \
 	resources/style.min.css \
 	resources/url.min.js \
 	resources/vlc-blue.png \
+	resources/mpv.png \
 	resources/icons/material/hdpi/view-fullscreen.svg \
 	resources/icons/material/hdpi/media-playback-pause.svg \
 	resources/icons/material/hdpi/audio-volume-low.svg \
@@ -221,6 +222,7 @@ DEPS_res = \
 	resources/icons/material/hdpi/document-decrypt.svg \
 	resources/icons/material/hdpi/dialog-close.svg \
 	resources/icons/material/hdpi/edit-delete.svg \
+	resources/icons/material/hdpi/multimedia-player.svg
 	resources/icons/material/index.theme
 
 %.moc.cpp: %.h

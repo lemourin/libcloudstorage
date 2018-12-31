@@ -235,6 +235,26 @@ bool CloudContext::httpServerAvailable() const {
   return http_server_factory_->serverAvailable();
 }
 
+QString CloudContext::playerBackend() const {
+#ifdef WITH_MPV
+  const char* default_player = "mpv";
+#else
+#ifdef WITH_VLC_QT
+  const char* default_player = "vlc";
+#else
+  const char* default_player = "qt";
+#endif
+#endif
+  QSettings settings;
+  return settings.value("playerBackend", default_player).toString();
+}
+
+void CloudContext::setPlayerBackend(QString str) {
+  QSettings settings;
+  settings.setValue("playerBackend", str);
+  emit playerBackendChanged();
+}
+
 QString CloudContext::authorizationUrl(QString provider) const {
   return this->provider(provider.toStdString(), Token{})
       ->authorizeLibraryUrl()

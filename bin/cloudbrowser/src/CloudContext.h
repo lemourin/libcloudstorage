@@ -51,6 +51,8 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   Q_PROPERTY(bool includeAds READ includeAds CONSTANT)
   Q_PROPERTY(bool isFree READ isFree CONSTANT)
   Q_PROPERTY(qint64 cacheSize READ cacheSize NOTIFY cacheSizeChanged)
+  Q_PROPERTY(QString playerBackend READ playerBackend WRITE setPlayerBackend
+                 NOTIFY playerBackendChanged)
   Q_PROPERTY(bool httpServerAvailable READ httpServerAvailable CONSTANT)
 
   class RequestPool {
@@ -84,6 +86,9 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   bool includeAds() const;
   bool isFree() const;
   bool httpServerAvailable() const;
+  QString playerBackend() const;
+
+  void setPlayerBackend(QString);
 
   Q_INVOKABLE QString authorizationUrl(QString provider) const;
   Q_INVOKABLE QObject* root(QVariant provider);
@@ -118,6 +123,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   void errorOccurred(QString operation, QVariantMap provider, int code,
                      QString description);
   void cacheSizeChanged();
+  void playerBackendChanged();
 
  private:
   class HttpServerCallback : public cloudstorage::IHttpServer::ICallback {
@@ -143,8 +149,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   void saveProviders();
   void receivedCode(std::string provider, std::string code);
   cloudstorage::ICloudProvider::Pointer provider(
-      const std::string& name,
-      const cloudstorage::Token& token) const;
+      const std::string& name, const cloudstorage::Token& token) const;
   cloudstorage::ICloudProvider::InitData init_data(
       const std::string& name) const;
 

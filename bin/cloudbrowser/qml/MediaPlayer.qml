@@ -59,7 +59,8 @@ Kirigami.Page {
   }
 
   function preferred_player() {
-    return mpv ? "MpvPlayer.qml" : (vlcqt ? "VlcPlayer.qml" : "QtPlayer.qml");
+    var player = cloud.playerBackend;
+    return player === "mpv" ? "MpvPlayer.qml" : (player === "vlc" ? "VlcPlayer.qml" : "QtPlayer.qml");
   }
 
   function next() {
