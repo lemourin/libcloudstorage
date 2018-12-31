@@ -307,6 +307,21 @@ install_megasdk() {
   run_make
 }
 
+fetch_libxml2() {
+  fetch http://xmlsoft.org/sources/libxml2-sources-$1.tar.gz libxml2-$1.tar.gz
+}
+
+install_libxml2() {
+  mkdir -p build
+  cd build
+  ../configure \
+    --prefix=$INSTALL_PATH \
+    --enable-shared \
+    --disable-static \
+    --without-python
+  run_make
+}
+
 fetch_ffmpeg() {
   fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
 }
@@ -319,7 +334,8 @@ install_ffmpeg() {
     --enable-openssl \
     --enable-shared \
     --disable-static \
-    --enable-libass
+    --enable-libass \
+    --enable-libxml2
   run_make
 }
 
@@ -456,6 +472,16 @@ install_fuse3() {
   ninja install || echo 0
 }
 
+fetch_mpv() {
+  fetch_github https://github.com/mpv-player/mpv/archive/v$1.tar.gz
+}
+
+install_mpv() {
+  ./bootstrap.py
+  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-shared
+  ./waf install
+}
+
 install_run() {
   BASE_DIRECTORY=$PWD
   fetch_$1 $2
@@ -531,8 +557,10 @@ install "ogg" 1.3.3
 install "vorbis" 1.3.6
 install "ebml" 1.3.6
 install "matroska" 1.4.9
+install "libxml2" 2.9.7
 install "ffmpeg" 4.1
 install "vlc" 3.0.4
 install "vlcqt" 1.1.1
+install "mpv" 0.29.1
 install "boost" 1.67.0
 install "fuse3" 3.2.1
