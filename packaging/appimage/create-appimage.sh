@@ -43,6 +43,7 @@ cp \
   usr -r
 
 rm -f usr/lib/vlc/plugins/plugins.dat
+rm -f usr/lib/*.a usr/lib/*.la usr/lib/*.prl
 
 cd ..
 
