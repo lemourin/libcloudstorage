@@ -150,6 +150,9 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\MpvPlayer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Generated\moc_MpvPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\cloudbrowser\src\AndroidUtility.h">
@@ -171,9 +174,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\bin\cloudbrowser\src\MpvPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -221,6 +221,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\UploadItem.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\MpvPlayer.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\resources.qrc">
@@ -310,6 +313,9 @@
       <Filter>Resource Files\resources</Filter>
     </Image>
     <Image Include="..\..\bin\cloudbrowser\resources\vlc-qt.png">
+      <Filter>Resource Files\resources</Filter>
+    </Image>
+    <Image Include="..\..\bin\cloudbrowser\resources\mpv.png">
       <Filter>Resource Files\resources</Filter>
     </Image>
   </ItemGroup>
@@ -564,6 +570,9 @@
       <Filter>Resource Files\resources\icons\material\hdpi</Filter>
     </None>
     <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\view-list-icons.svg">
+      <Filter>Resource Files\resources\icons\material\hdpi</Filter>
+    </None>
+    <None Include="..\..\bin\cloudbrowser\resources\icons\material\hdpi\multimedia-player.svg">
       <Filter>Resource Files\resources\icons\material\hdpi</Filter>
     </None>
   </ItemGroup>

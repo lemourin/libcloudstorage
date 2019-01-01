@@ -46,6 +46,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <PackageCertificateKeyFile>cloudbrowser-winrt_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxBundle>Always</AppxBundle>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
+    <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -91,6 +97,12 @@
     <None Include="../../dependencies/winrt/bin/KF5Kirigami2.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="../../dependencies/winrt/bin/mpv-1.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/wasapiuwp2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="../../dependencies/winrt/bin/libcurl.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -115,25 +127,28 @@
     <None Include="../../dependencies/winrt/bin/zlib.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avcodec-57.dll">
+    <None Include="../../dependencies/winrt/bin/avcodec-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avdevice-57.dll">
+    <None Include="../../dependencies/winrt/bin/avdevice-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
+    <None Include="../../dependencies/winrt/bin/avfilter-7.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+    <None Include="../../dependencies/winrt/bin/avformat-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avutil-55.dll">
+    <None Include="../../dependencies/winrt/bin/avutil-56.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
+    <None Include="../../dependencies/winrt/bin/swresample-3.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
+    <None Include="../../dependencies/winrt/bin/swscale-5.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libxml2.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/VLCQtCore.dll">
@@ -222,6 +237,12 @@
     <None Include="../../dependencies/winrt-debug/bin/KF5Kirigami2.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="../../dependencies/winrt/bin/mpv-1.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/wasapiuwp2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="../../dependencies/winrt/bin/libcurl.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -246,25 +267,28 @@
     <None Include="../../dependencies/winrt/bin/zlib.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avcodec-57.dll">
+    <None Include="../../dependencies/winrt/bin/avcodec-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avdevice-57.dll">
+    <None Include="../../dependencies/winrt/bin/avdevice-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
+    <None Include="../../dependencies/winrt/bin/avfilter-7.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+    <None Include="../../dependencies/winrt/bin/avformat-58.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/avutil-55.dll">
+    <None Include="../../dependencies/winrt/bin/avutil-56.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
+    <None Include="../../dependencies/winrt/bin/swresample-3.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
+    <None Include="../../dependencies/winrt/bin/swscale-5.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libxml2.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt-debug/bin/VLCQtCore.dll">

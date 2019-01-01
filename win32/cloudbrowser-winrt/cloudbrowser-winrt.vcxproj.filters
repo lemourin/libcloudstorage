@@ -17,22 +17,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cloudbrowser-winrt_TemporaryKey.pfx" />
-    <None Include="../../dependencies/winrt/bin/avcodec-57.dll">
+    <None Include="../../dependencies/winrt/bin/avcodec-58.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/avdevice-57.dll">
+    <None Include="../../dependencies/winrt/bin/avdevice-58.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/cares.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/avutil-55.dll">
+    <None Include="../../dependencies/winrt/bin/avutil-56.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/avformat-57.dll">
+    <None Include="../../dependencies/winrt/bin/avformat-58.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/avfilter-6.dll">
+    <None Include="../../dependencies/winrt/bin/avfilter-7.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/libvlccore.dll">
@@ -83,10 +83,10 @@
     <None Include="../../dependencies/winrt-debug/bin/tinyxml2d.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/swscale-4.dll">
+    <None Include="../../dependencies/winrt/bin/swscale-5.dll">
       <Filter>Dependencies</Filter>
     </None>
-    <None Include="../../dependencies/winrt/bin/swresample-2.dll">
+    <None Include="../../dependencies/winrt/bin/swresample-3.dll">
       <Filter>Dependencies</Filter>
     </None>
     <None Include="../../dependencies/winrt/bin/ssleay32.dll">
@@ -228,6 +228,15 @@
       <Filter>Dependencies</Filter>
      </None>
     <None Include="../../dependencies/winrt-debug/bin/VLCQtQml.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/mpv-1.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/wasapiuwp2.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/libxml2.dll">
       <Filter>Dependencies</Filter>
     </None>
   </ItemGroup>
