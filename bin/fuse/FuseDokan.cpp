@@ -77,8 +77,10 @@ create_file(DOKAN_CREATE_FILE_EVENT *e) {
   auto parent_path = file_id(current_path).path_;
   auto name = file_id(current_path).name_;
   DWORD attributes;
+  ACCESS_MASK access_mask;
   DWORD creation_disposition;
-  DokanMapKernelToUserCreateFileFlags(e, &attributes, &creation_disposition);
+  DokanMapKernelToUserCreateFileFlags(e, &access_mask, &attributes,
+                                      &creation_disposition);
   if (name != context()->sanitize(name)) return STATUS_INTERNAL_ERROR;
   if (creation_disposition == CREATE_ALWAYS ||
       creation_disposition == CREATE_NEW ||
