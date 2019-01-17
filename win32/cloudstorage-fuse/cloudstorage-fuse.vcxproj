@@ -31,12 +31,6 @@
     <ClInclude Include="..\..\bin\fuse\IFileSystem.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\dokany\dokan\dokan.vcxproj">
-      <Project>{f25ba22f-2ab8-4859-9b89-8fe1e774b472}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\dokany\dokan_fuse\dokan_fuse.vcxproj">
-      <Project>{4af8149d-c526-4d38-a4bc-9ffa67edf924}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\libcloudstorage\libcloudstorage.vcxproj">
       <Project>{9194bbb3-78d1-46ff-bbbc-e6926ab1f9a6}</Project>
     </ProjectReference>
@@ -88,9 +82,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_WINFSP;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../dependencies/win32/include;../../src;../../dependencies/win32/include/fuse;../dokany/dokan;../dokany/dokan_fuse/include;../dokany/sys;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -98,7 +92,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>jsoncpp.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>jsoncpp.lib;dokan2.lib;dokanfuse2.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -107,14 +101,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_WINFSP;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../dependencies/win32/include;../../src;../../dependencies/win32/include/fuse;../dokany/dokan;../dokany/dokan_fuse/include;../dokany/sys;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../dependencies/win32/include;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>jsoncpp.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>jsoncpp.lib;dokan2.lib;dokanfuse2.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
