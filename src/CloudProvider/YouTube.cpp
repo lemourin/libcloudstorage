@@ -204,8 +204,7 @@ bool find(std::stringstream& stream, const std::string& pattern) {
 
 YouTubeDescrambleData descramble_data(std::stringstream& stream) {
   auto find_descrambler = [](std::stringstream& stream) {
-    const std::string descrambler_search =
-        "(k.sp,(0,window.encodeURIComponent)(";
+    const std::string descrambler_search = "(k.sp,encodeURIComponent(";
     if (!find(stream, descrambler_search))
       throw std::logic_error(util::Error::COULD_NOT_FIND_DESCRAMBLER_NAME);
     std::string descrambler;
