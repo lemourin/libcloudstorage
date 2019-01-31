@@ -42,6 +42,44 @@ const auto PHOTOS_NAME = "Photos";
 const auto SHARED_ID = "shared";
 const auto SHARED_NAME = "Shared with me";
 
+ICloudProvider::GeneralDataRequest::Pointer getGeneralDataUsingOpenId(
+    CloudProvider *p, GeneralDataCallback callback) {
+  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    r->request(
+        [=](util::Output) {
+          return p->http()->create(
+              "https://accounts.google.com/.well-known/openid-configuration");
+        },
+        [=](EitherError<Response> d) {
+          if (d.left()) return r->done(d.left());
+          try {
+            auto json = util::json::from_stream(d.right()->output());
+            auto endpoint = json["userinfo_endpoint"].asString();
+            r->request(
+                [=](util::Output) { return p->http()->create(endpoint); },
+                [=](EitherError<Response> d) {
+                  if (d.left()) {
+                    return r->done(d.left());
+                  }
+                  try {
+                    auto json = util::json::from_stream(d.right()->output());
+                    GeneralData result = {};
+                    result.username_ = json["email"].asString();
+                    r->done(result);
+                  } catch (const Json::Exception &e) {
+                    r->done(Error{IHttpRequest::Failure, e.what()});
+                  }
+                });
+          } catch (const Json::Exception &e) {
+            r->done(Error{IHttpRequest::Failure, e.what()});
+          }
+        });
+  };
+  return std::make_shared<Request<EitherError<GeneralData>>>(
+             p->shared_from_this(), callback, resolver)
+      ->run();
+}
+
 GooglePhotos::GooglePhotos() : CloudProvider(util::make_unique<Auth>()) {}
 
 std::string GooglePhotos::name() const { return "gphotos"; }
@@ -153,30 +191,7 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFileAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer GooglePhotos::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
-    r->request(
-        [=](util::Output) {
-          return http()->create("https://www.googleapis.com/plus/v1/people/me");
-        },
-        [=](EitherError<Response> d) {
-          if (d.left()) return r->done(d.left());
-          try {
-            auto json = util::json::from_stream(d.right()->output());
-            GeneralData result;
-            result.space_total_ = 0;
-            result.space_used_ = 0;
-            for (auto &&j : json["emails"])
-              if (j["type"].asString() == "account")
-                result.username_ = j["value"].asString();
-            r->done(result);
-          } catch (const std::exception &e) {
-            r->done(Error{IHttpRequest::Failure, e.what()});
-          }
-        });
-  };
-  return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
-                                                             callback, resolver)
-      ->run();
+  return getGeneralDataUsingOpenId(this, callback);
 }
 
 ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::getThumbnailAsync(
@@ -417,8 +432,7 @@ IRequest<EitherError<std::string>>::Pointer GooglePhotos::getUploadUrl(
 std::string GooglePhotos::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/photoslibrary+https://"
-         "www.googleapis.com/auth/plus.profile.emails.read"
+         "&scope=https://www.googleapis.com/auth/photoslibrary+openid%20email"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
          state();

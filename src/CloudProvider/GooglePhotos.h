@@ -82,5 +82,8 @@ class GooglePhotos : public CloudProvider {
       std::function<void(EitherError<std::string>)> cb);
 };
 
+ICloudProvider::GeneralDataRequest::Pointer getGeneralDataUsingOpenId(
+    CloudProvider* p, GeneralDataCallback callback);
+
 }  // namespace cloudstorage
 #endif  // GOOGLEPHOTOS_H
