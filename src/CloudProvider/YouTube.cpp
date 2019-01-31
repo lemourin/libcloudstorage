@@ -583,7 +583,10 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
 }
 
 IHttpRequest::Pointer YouTube::getGeneralDataRequest(std::ostream&) const {
-  return http()->create("https://www.googleapis.com/plus/v1/people/me");
+  auto r = http()->create(endpoint() + "/youtube/v3/channels");
+  r->setParameter("part", "snippet");
+  r->setParameter("mine", "true");
+  return r;
 }
 
 IHttpRequest::Pointer YouTube::deleteItemRequest(const IItem& item,
@@ -727,9 +730,7 @@ GeneralData YouTube::getGeneralDataResponse(std::istream& response) const {
   GeneralData data;
   data.space_total_ = 0;
   data.space_used_ = 0;
-  for (auto&& j : json["emails"])
-    if (j["type"].asString() == "account")
-      data.username_ = j["value"].asString();
+  data.username_ = json["items"][0]["snippet"]["title"].asString();
   return data;
 }
 
@@ -836,8 +837,7 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/youtube+https://"
-         "www.googleapis.com/auth/plus.profile.emails.read"
+         "&scope=https://www.googleapis.com/auth/youtube.readonly"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
          state();
