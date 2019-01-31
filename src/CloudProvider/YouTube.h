@@ -65,13 +65,13 @@ class YouTube : public CloudProvider {
                                                  Range) override;
 
  private:
+  GeneralDataRequest::Pointer getGeneralDataAsync(GeneralDataCallback) override;
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
                                              GetItemUrlCallback) override;
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
 
-  IHttpRequest::Pointer getGeneralDataRequest(std::ostream&) const override;
   IHttpRequest::Pointer deleteItemRequest(
       const IItem&, std::ostream& input_stream) const override;
   IHttpRequest::Pointer renameItemRequest(const IItem& item,
@@ -83,7 +83,6 @@ class YouTube : public CloudProvider {
   IItem::List listDirectoryResponse(
       const IItem& directory, std::istream&,
       std::string& next_page_token) const override;
-  GeneralData getGeneralDataResponse(std::istream& response) const override;
   IItem::Pointer renameItemResponse(const IItem& old_item,
                                     const std::string& name,
                                     std::istream& response) const override;

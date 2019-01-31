@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <cstring>
 
+#include "CloudProvider/GooglePhotos.h"
+
 #include "Request/DownloadFileRequest.h"
 #include "Request/ListDirectoryPageRequest.h"
 #include "Request/ListDirectoryRequest.h"
@@ -552,6 +554,11 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
       ->run();
 }
 
+ICloudProvider::GeneralDataRequest::Pointer YouTube::getGeneralDataAsync(
+    GeneralDataCallback callback) {
+  return getGeneralDataUsingOpenId(this, callback);
+}
+
 ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
   auto file_id = from_string(item->id());
@@ -580,13 +587,6 @@ ICloudProvider::GetItemUrlRequest::IRequest::Pointer YouTube::getItemUrlAsync(
                    });
              })
       ->run();
-}
-
-IHttpRequest::Pointer YouTube::getGeneralDataRequest(std::ostream&) const {
-  auto r = http()->create(endpoint() + "/youtube/v3/channels");
-  r->setParameter("part", "snippet");
-  r->setParameter("mine", "true");
-  return r;
 }
 
 IHttpRequest::Pointer YouTube::deleteItemRequest(const IItem& item,
@@ -725,15 +725,6 @@ IItem::List YouTube::listDirectoryResponse(const IItem& directory,
   return result;
 }
 
-GeneralData YouTube::getGeneralDataResponse(std::istream& response) const {
-  auto json = util::json::from_stream(response);
-  GeneralData data;
-  data.space_total_ = 0;
-  data.space_used_ = 0;
-  data.username_ = json["items"][0]["snippet"]["title"].asString();
-  return data;
-}
-
 IItem::Pointer YouTube::renameItemResponse(const IItem& old_item,
                                            const std::string&,
                                            std::istream& response) const {
@@ -837,7 +828,8 @@ Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
 std::string YouTube::Auth::authorizeLibraryUrl() const {
   return "https://accounts.google.com/o/oauth2/auth?client_id=" + client_id() +
          "&redirect_uri=" + redirect_uri() +
-         "&scope=https://www.googleapis.com/auth/youtube.readonly"
+         "&scope=https://www.googleapis.com/auth/"
+         "youtube.readonly+openid%20email"
          "&response_type=code&access_type=offline&prompt=consent"
          "&state=" +
          state();
