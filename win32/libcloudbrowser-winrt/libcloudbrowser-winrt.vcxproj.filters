@@ -151,7 +151,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Generated\moc_MpvPlayer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
