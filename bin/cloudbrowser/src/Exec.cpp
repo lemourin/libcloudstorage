@@ -123,6 +123,8 @@ int exec_cloudbrowser(int argc, char** argv) {
                             .join(' ')
                             .toLocal8Bit());
 #endif
+    if (!qEnvironmentVariableIsSet("XDG_CURRENT_DESKTOP"))
+      qputenv("XDG_CURRENT_DESKTOP", "1");
 
     app.setOrganizationName("VideoLAN");
     app.setApplicationName("cloudbrowser");
