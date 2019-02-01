@@ -208,6 +208,9 @@
     <None Include="../../dependencies/winrt/bin/imageformats">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="../../dependencies/winrt/bin/iconengines">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="../../dependencies/winrt/bin/mediaservice">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -227,6 +230,9 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/QtWebView">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt/bin/webview">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/plugins">
@@ -348,6 +354,9 @@
     <None Include="../../dependencies/winrt-debug/bin/imageformats">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="../../dependencies/winrt/bin/iconengines">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="../../dependencies/winrt-debug/bin/mediaservice">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -367,6 +376,9 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt-debug/bin/QtWebView">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/webview">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="../../dependencies/winrt/bin/plugins">

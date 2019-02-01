@@ -56,9 +56,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.10.1/;../../dependencies/winrt/include/QtCore/5.10.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtGui;../../dependencies/winrt/include/QtANGLE;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtGui;../../dependencies/winrt/include/QtANGLE;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY;WITH_VLC_QT;WITH_MPV</PreprocessorDefinitions>
+      <CompileAsWinRT>true</CompileAsWinRT>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -74,7 +75,7 @@
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.10.1/;../../dependencies/winrt/include/QtCore/5.10.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtANGLE;../../dependencies/winrt/include/QtGui;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtANGLE;../../dependencies/winrt/include/QtGui;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
     </ClCompile>
     <Link>

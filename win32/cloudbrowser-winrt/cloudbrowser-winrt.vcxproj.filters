@@ -239,6 +239,18 @@
     <None Include="../../dependencies/winrt/bin/libxml2.dll">
       <Filter>Dependencies</Filter>
     </None>
+    <None Include="../../dependencies/winrt/bin/webview">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt/bin/iconengines">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/webview">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../../dependencies/winrt-debug/bin/iconengines">
+      <Filter>Dependencies</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\logo_44x44.png">
