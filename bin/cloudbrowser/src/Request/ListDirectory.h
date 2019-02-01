@@ -52,7 +52,7 @@ class CLOUDBROWSER_API ListDirectoryModel : public QAbstractListModel {
  private:
   Provider provider_;
   std::vector<cloudstorage::IItem::Pointer> list_;
-  std::unordered_set<std::string> id_;
+  std::unordered_multiset<std::string> id_;
   Q_OBJECT
 };
 
