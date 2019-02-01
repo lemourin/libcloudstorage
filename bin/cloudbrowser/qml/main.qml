@@ -216,6 +216,7 @@ Kirigami.ApplicationWindow {
           cloud.list(cloud.pretty(provider.type), cloud.pretty(provider.type),
                      cloud.root(provider));
         }
+        icon.color: "transparent"
       }
     }
 
@@ -224,6 +225,7 @@ Kirigami.ApplicationWindow {
     drawerOpen: true
     actions: root.actions(cloud.userProviders.variant())
     height: parent.height - footer_height
+    width: contentItem.implicitWidth
     handle.anchors.bottomMargin: footer_height
   }
   contextDrawer: Kirigami.ContextDrawer {
