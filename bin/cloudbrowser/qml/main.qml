@@ -27,6 +27,7 @@ Kirigami.ApplicationWindow {
     if (fullscreen_player) {
       drawer_state = globalDrawer.drawerOpen;
       globalDrawer.drawerOpen = false;
+      pageStack.globalToolBar.style = Kirigami.ApplicationHeaderStyle.None;
       if (platform.mobile()) platform.landscapeOrientation();
       if (include_ads) {
         platform.hideAd();
@@ -35,6 +36,7 @@ Kirigami.ApplicationWindow {
       root.showFullScreen();
     } else {
       globalDrawer.drawerOpen = drawer_state;
+      pageStack.globalToolBar.style = Kirigami.ApplicationHeaderStyle.ToolBar;
       if (platform.mobile()) platform.defaultOrientation();
       if (include_ads) {
         platform.showAd();
@@ -42,12 +44,6 @@ Kirigami.ApplicationWindow {
       }
       root.show();
     }
-  }
-
-  header: Kirigami.ApplicationHeader {
-    id: header
-    width: root.width
-    visible: !fullscreen_player
   }
 
   Connections {

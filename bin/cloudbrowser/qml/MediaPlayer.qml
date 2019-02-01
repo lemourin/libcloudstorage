@@ -239,13 +239,12 @@ Kirigami.Page {
   }
 
   state: "overlay_visible"
-
   states: [
     State {
       name: "overlay_visible"
       PropertyChanges {
         target: controls
-        y: page.height - controls.height
+        y: page.height - controls.height - root.pageStack.globalToolBar.height
       }
     },
     State {
