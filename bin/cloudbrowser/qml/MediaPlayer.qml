@@ -662,4 +662,13 @@ Item {
       }
     }
   }
+
+  onShowCursor: cursor_area.cursorShape = Qt.ArrowCursor
+  onHideCursor: cursor_area.cursorShape = Qt.BlankCursor
+
+  MouseArea {
+    id: cursor_area
+    anchors.fill: parent
+    enabled: false
+  }
 }

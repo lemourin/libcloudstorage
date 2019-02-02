@@ -82,7 +82,6 @@ Kirigami.ScrollablePage {
           root.globalDrawer.handleVisible = false;
           root.visible_player = true;
           platform.enableKeepScreenOn();
-          cloud.showCursor();
         }
       }
 
@@ -150,8 +149,6 @@ Kirigami.ScrollablePage {
           cloud.errorOccurred(domain, null, 500, message);
         }
 
-        onShowCursor: cloud.showCursor();
-        onHideCursor: cloud.hideCursor();
         onFullscreenChanged: root.fullscreen_player = fullscreen;
 
         Component.onCompleted: {
