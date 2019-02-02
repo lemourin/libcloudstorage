@@ -33,6 +33,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QSettings>
 
 #include "AndroidUtility.h"
 #include "CloudContext.h"
