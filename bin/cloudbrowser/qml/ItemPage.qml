@@ -112,6 +112,7 @@ Kirigami.ScrollablePage {
         player: cloud.playerBackend
         type: item.type
         volume: root.last_volume
+        title: fullscreen ? item.filename : ""
 
         Connections {
           target: platform

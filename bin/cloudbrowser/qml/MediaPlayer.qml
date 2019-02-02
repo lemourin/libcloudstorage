@@ -2,6 +2,7 @@ import QtQuick 2.7
 import QtQuick.Controls 2.0 as Controls
 import QtQuick.Layouts 1.2
 import org.kde.kirigami 2.0 as Kirigami
+import QtGraphicalEffects 1.0
 
 Item {
   property string icon
@@ -11,11 +12,13 @@ Item {
   property bool mobile: false
   property alias volume: volume_slider.value
   property bool fullscreen: false
+  property string title
 
   property real last_volume: 1
   property bool playing: true
   property bool autoplay: false
-  property color button_color: "#BDBDBD"
+  property color button_color: "#EEEEEE"
+  property color tint_color: "#757575"
   property int extended_view_threshold: 525
 
   signal showCursor();
@@ -175,14 +178,22 @@ Item {
       name: "overlay_visible"
       PropertyChanges {
         target: controls
-        y: page.height - controls.height
+        opacity: 1
+      }
+      PropertyChanges {
+        target: top_gradient
+        opacity: 1
       }
     },
     State {
       name: "overlay_invisible"
       PropertyChanges {
         target: controls
-        y: page.height
+        opacity: 0
+      }
+      PropertyChanges {
+        target: top_gradient
+        opacity: 0
       }
     }
   ]
@@ -203,7 +214,7 @@ Item {
       from: "overlay_invisible"
       to: "overlay_visible"
       PropertyAnimation {
-        properties: "y"
+        properties: "opacity"
         duration: 250
       }
     },
@@ -211,7 +222,7 @@ Item {
       from: "overlay_visible"
       to: "overlay_invisible"
       PropertyAnimation {
-        properties: "y"
+        properties: "opacity"
         duration: 250
       }
     }
@@ -226,17 +237,62 @@ Item {
     isMask: true
   }
 
+  Item {
+    id: top_gradient
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: page.height * 0.35
+    visible: title !== ""
+
+    LinearGradient {
+      anchors.fill: parent
+      gradient: Gradient {
+        GradientStop {
+          position: 0.0
+          color: "#FF000000"
+        }
+        GradientStop {
+          position: 1.0
+          color: "#00000000"
+        }
+      }
+    }
+    Item {
+      anchors.fill: parent
+      anchors.margins: 20
+      clip: true
+      Text {
+        text: title
+        color: button_color
+        font.pointSize: 20
+      }
+    }
+  }
+
   MouseArea {
     id: controls
     hoverEnabled: !mobile
     anchors.left: parent.left
     anchors.right: parent.right
+    anchors.bottom: parent.bottom
     height: 50
     onClicked: timer.cnt = 0
-    Rectangle {
-      anchors.fill: parent
-      color: "black"
-      opacity: 0.65
+    LinearGradient {
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: page.height * 0.35
+      gradient: Gradient {
+        GradientStop {
+          position: 0.0
+          color: "#00000000"
+        }
+        GradientStop {
+          position: 1.0
+          color: "#FF000000"
+        }
+      }
     }
     Row {
       anchors.fill: parent
@@ -549,7 +605,7 @@ Item {
         width: height
         height: parent.height
         source: type === "audio" || type === "video" ? "media-playlist-shuffle" : ""
-        color: autoplay ? button_color : "#757575"
+        color: autoplay ? button_color : tint_color
 
         MouseArea {
           anchors.fill: parent
