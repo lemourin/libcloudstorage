@@ -47,7 +47,123 @@ Kirigami.ScrollablePage {
 
   Component {
     id: media_player
-    MediaPlayer {
+    Kirigami.Page {
+      property CloudItem item
+      property var item_page
+      property bool handle_state
+
+      id: player_page
+      title: item.filename
+      leftPadding: 0
+      rightPadding: 0
+      topPadding: 0
+      bottomPadding: 0
+
+      onItemChanged: {
+        url_request.update(cloud, item);
+        update_notification();
+      }
+
+      onBackRequested: {
+        if (pageStack.currentIndex > 0) {
+          pageStack.currentIndex--;
+          event.accepted = true;
+        }
+      }
+
+      onIsCurrentPageChanged: {
+        if (!isCurrentPage) {
+          platform.disableKeepScreenOn();
+          root.fullscreen_player = false;
+          root.visible_player = false;
+          root.globalDrawer.handleVisible = handle_state;
+        } else {
+          handle_state = root.globalDrawer.handleVisible;
+          root.globalDrawer.handleVisible = false;
+          root.visible_player = true;
+          platform.enableKeepScreenOn();
+          cloud.showCursor();
+        }
+      }
+
+      GetUrlRequest {
+        id: url_request
+        onSourceChanged: player.url = source
+        onDoneChanged: {
+          if (done && source === "") {
+            if (!player.autoplay) {
+              root.pageStack.pop();
+            } else {
+              player.next();
+            }
+          }
+        }
+      }
+
+      function update_notification() {
+        if (item.type === "audio" || item.type === "video")
+          platform.showPlayerNotification(player.playing, item.filename, item_page ? item_page.label : "");
+        else
+          platform.hidePlayerNotification();
+      }
+
+      MediaPlayer {
+        anchors.fill: parent
+        id: player
+        player: cloud.playerBackend
+        type: item.type
+        volume: root.volume
+
+        Connections {
+          target: platform
+          onNotify: {
+            if (action === "PLAY")
+              playing = true;
+            else if (action === "PAUSE")
+              playing = false;
+            else if (action === "NEXT") {
+              autoplay = true;
+              next();
+            }
+          }
+        }
+
+        onEnded: {
+          if (!autoplay) {
+            root.pageStack.pop();
+          }
+        }
+
+        onNext: {
+          var next = item_page.nextRequested();
+          if (next)
+            item = next;
+          else
+            root.pageStack.pop();
+        }
+
+        onPlayingChanged: {
+          update_notification();
+        }
+
+        onErrorOccurred: {
+          cloud.errorOccurred(domain, null, 500, message);
+        }
+
+        onShowCursor: cloud.showCursor();
+        onHideCursor: cloud.hideCursor();
+        onFullscreenChanged: root.fullscreen_player = fullscreen;
+
+        Component.onCompleted: {
+          root.player_count++;
+          update_notification();
+        }
+        Component.onDestruction: {
+          root.player_count--;
+          if (root.player_count === 0)
+             platform.hidePlayerNotification();
+        }
+      }
     }
   }
 

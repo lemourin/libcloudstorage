@@ -1,82 +1,45 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0 as Controls
-import org.kde.kirigami 2.0 as Kirigami
 import QtQuick.Layouts 1.2
-import libcloudstorage 1.0
+import org.kde.kirigami 2.0 as Kirigami
 
-Kirigami.Page {
-  property CloudItem item
+Item {
   property string icon
-  property var item_page
-  property bool handle_state
+  property string url
+  property string type
+  property string player
+  property bool mobile: false
+  property alias volume: volume_slider.value
+  property bool fullscreen: false
+
   property bool playing: true
   property bool autoplay: false
   property color button_color: "#BDBDBD"
   property int extended_view_threshold: 525
 
+  signal showCursor();
+  signal hideCursor();
+  signal errorOccurred(string domain, string message);
+  signal ended();
+  signal next();
+
   id: page
-  leftPadding: 0
-  rightPadding: 0
-  topPadding: 0
-  bottomPadding: 0
-  title: item.filename
-  onIsCurrentPageChanged: {
-    if (!isCurrentPage) {
-      platform.disableKeepScreenOn();
-      root.fullscreen_player = false;
-      root.visible_player = false;
-      root.globalDrawer.handleVisible = handle_state;
-    } else {
-      handle_state = root.globalDrawer.handleVisible;
-      root.globalDrawer.handleVisible = false;
-      root.visible_player = true;
-      platform.enableKeepScreenOn();
-      cloud.showCursor();
-    }
-  }
+
   onPlayingChanged: {
-    update_notification();
     if (playing) {
       player.item.play();
     } else {
       player.item.pause();
     }
   }
-  onBackRequested: {
-    if (pageStack.currentIndex > 0) {
-      pageStack.currentIndex--;
-      event.accepted = true;
-    }
-  }
-  Component.onCompleted: {
-    root.player_count++;
-    update_notification();
-  }
-  Component.onDestruction: {
-    root.player_count--;
-    if (root.player_count === 0)
-      platform.hidePlayerNotification();
-  }
 
   function preferred_player() {
-    var player = cloud.playerBackend;
-    return player === "mpv" ? "MpvPlayer.qml" : (player === "vlc" ? "VlcPlayer.qml" : "QtPlayer.qml");
+    return page.player === "mpv" ? "MpvPlayer.qml" : (page.player === "vlc" ? "VlcPlayer.qml" : "QtPlayer.qml");
   }
 
-  function next() {
+  function invoke_next() {
     player.item.source = "";
-    var next = item_page.nextRequested();
-    if (next)
-      item = next;
-    else
-      root.pageStack.pop();
-  }
-
-  function update_notification() {
-    if (item.type === "audio" || item.type === "video")
-      platform.showPlayerNotification(playing, item.filename, item_page ? item_page.label : "");
-    else
-      platform.hidePlayerNotification();
+    next();
   }
 
   function print_timestamp(d) {
@@ -96,36 +59,15 @@ Kirigami.Page {
     return (hours > 0 ? hours + ":" : "") + minutes + ":" + seconds;
   }
 
-  function ended() {
-    if (autoplay) {
-      next();
-    } else {
-      root.pageStack.pop();
-    }
-  }
-
   function set_url() {
     if (!player.item) return;
-    var d = cloud.readUrl(url_request.source);
-    player.item.source = url_request.source;
+    player.item.source = url;
     if (playing) {
       player.item.play();
     }
   }
 
-  onItemChanged: {
-    url_request.update(cloud, item);
-    update_notification();
-  }
-
-  GetUrlRequest {
-    id: url_request
-    onSourceChanged: set_url()
-    onDoneChanged: {
-      if (done && source === "")
-        ended();
-    }
-  }
+  onUrlChanged: set_url()
 
   Connections {
     id: connections
@@ -133,24 +75,13 @@ Kirigami.Page {
     onEndedChanged: {
       if (target.ended && target.source.toString() !== "") {
         ended();
+        if (autoplay) {
+          invoke_next();
+        }
       }
     }
     onError: {
-      cloud.errorOccurred("MediaPlayer", null, error, errorString);
-    }
-  }
-
-  Connections {
-    target: platform
-    onNotify: {
-      if (action === "PLAY")
-        playing = true;
-      else if (action === "PAUSE")
-        playing = false;
-      else if (action === "NEXT") {
-        autoplay = true;
-        next();
-      }
+      errorOccurred("MediaPlayer", error + ": " + errorString);
     }
   }
 
@@ -162,15 +93,15 @@ Kirigami.Page {
 
     onContainsMouseChanged: {
       if (state === "overlay_visible" || !mouse_area.containsMouse)
-        cloud.showCursor();
+        showCursor();
       else if (state === "overlay_invisible" && mouse_area.containsMouse)
-        cloud.hideCursor();
+        hideCursor();
     }
 
     onClicked: {
       if (page.state === "overlay_visible" &&
           Date.now() - timer.last_visible >= 2 * timer.interval &&
-          (item.type === "video" || item.type === "audio"))
+          (type === "video" || type === "audio"))
         playing ^= 1;
     }
 
@@ -183,14 +114,13 @@ Kirigami.Page {
       id: player
       anchors.fill: parent
       asynchronous: true
-      source: page.item.type === "video" || page.item.type === "audio" ?
-                preferred_player() : "ImagePlayer.qml"
+      source: type === "video" || type === "audio" ? preferred_player() : "ImagePlayer.qml"
       onStatusChanged: {
         if (status === Loader.Ready) {
           set_url();
           connections.target = item;
         } else if (status === Loader.Error) {
-          cloud.errorOccurred("LoadPlayer", null, 500, source);
+          errorOccurred("LoadPlayer", source);
         }
       }
     }
@@ -218,7 +148,7 @@ Kirigami.Page {
             last_visible = Date.now();
           }
         } else if (page.state === "overlay_visible") {
-          if ((!controls.containsMouse || platform.mobile())
+          if ((!controls.containsMouse || mobile)
               && page.playing && player.item && !player.item.buffering
               && !volume_slider.visible)
             cnt++;
@@ -244,7 +174,7 @@ Kirigami.Page {
       name: "overlay_visible"
       PropertyChanges {
         target: controls
-        y: page.height - controls.height - root.pageStack.globalToolBar.height
+        y: page.height - controls.height
       }
     },
     State {
@@ -257,11 +187,11 @@ Kirigami.Page {
   ]
 
   onStateChanged: {
-    if (state === "overlay_visible")
-      cloud.showCursor();
-    else {
+    if (state === "overlay_visible") {
+      showCursor();
+    } else {
       if (mouse_area.containsMouse)
-        cloud.hideCursor();
+         hideCursor();
       subtitle_track_list.item.shown = false;
       audio_track_list.item.shown = false;
     }
@@ -290,14 +220,14 @@ Kirigami.Page {
     anchors.centerIn: parent
     width: 200
     height: 200
-    visible: page.item.type === "audio"
+    visible: type === "audio"
     source: "audio-x-generic"
     isMask: true
   }
 
   MouseArea {
     id: controls
-    hoverEnabled: !platform.mobile()
+    hoverEnabled: !mobile
     anchors.left: parent.left
     anchors.right: parent.right
     height: 50
@@ -316,7 +246,7 @@ Kirigami.Page {
         color: button_color
         isMask: true
         source: playing ? "media-playback-pause" : "media-playback-start"
-        visible: item.type === "video" || item.type === "audio"
+        visible: type === "video" || type === "audio"
         MouseArea {
           anchors.fill: parent
           onClicked: {
@@ -336,7 +266,7 @@ Kirigami.Page {
           anchors.fill: parent
           onClicked: {
             timer.cnt = 0;
-            next();
+            invoke_next();
           }
         }
       }
@@ -346,7 +276,7 @@ Kirigami.Page {
         width: height
         height: parent.height
         visible: page.width > extended_view_threshold
-                 && (item.type === "video" || item.type === "audio")
+                 && (type === "video" || type === "audio")
                  && player.item && player.item.audio_track_count > 1
         Kirigami.Icon {
           id: audio_track_icon
@@ -396,7 +326,7 @@ Kirigami.Page {
 
         id: volume_control
         source: volume_icon(volume_slider.value)
-        visible: (item.type === "video" || item.type === "audio") && page.width > extended_view_threshold
+        visible: (type === "video" || type === "audio") && page.width > extended_view_threshold
         color: button_color
         isMask: true
         MouseArea {
@@ -425,15 +355,14 @@ Kirigami.Page {
         property bool should_show: volume_control_mouse_area.containsMouse ||
                                    volume_slider.hovered ||
                                    volume_slider.pressed ||
-                                   (platform.mobile() && recently_hovered)
+                                   (mobile && recently_hovered)
         property real timestamp: 0
         property bool recently_hovered: false
 
         id: volume_slider
         anchors.verticalCenter: parent.verticalCenter
         visible: width !== 0
-        value: root.volume
-        hoverEnabled: !platform.mobile()
+        hoverEnabled: !mobile
         onHoveredChanged: {
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
@@ -464,7 +393,6 @@ Kirigami.Page {
           }
         }
         onMoved: {
-          root.volume = value;
           player.item.set_volume(value);
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
@@ -576,7 +504,7 @@ Kirigami.Page {
       Item {
         id: subtitle_track_select
         visible: page.width > extended_view_threshold
-                 && (item.type === "video" || item.type === "audio")
+                 && (type === "video" || type === "audio")
                  && player.item && player.item.subtitle_track_count > 0
         width: height
         height: parent.height
@@ -619,8 +547,7 @@ Kirigami.Page {
         isMask: true
         width: height
         height: parent.height
-        source: item.type === "audio" || item.type === "video" ?
-                  "media-playlist-shuffle" : ""
+        source: type === "audio" || type === "video" ? "media-playlist-shuffle" : ""
         color: autoplay ? button_color : "#757575"
 
         MouseArea {
@@ -644,7 +571,7 @@ Kirigami.Page {
         MouseArea {
           anchors.fill: parent
           onClicked: {
-            root.fullscreen_player ^= 1;
+            page.fullscreen ^= 1;
             timer.cnt = 0;
           }
         }
