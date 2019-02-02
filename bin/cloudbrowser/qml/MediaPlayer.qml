@@ -12,6 +12,7 @@ Item {
   property alias volume: volume_slider.value
   property bool fullscreen: false
 
+  property real last_volume: 1
   property bool playing: true
   property bool autoplay: false
   property color button_color: "#BDBDBD"
@@ -341,9 +342,9 @@ Item {
             timer.cnt = 0;
             if (volume_slider.visible) {
               if (volume_slider.value === 0)
-                volume_slider.value = root.last_volume;
+                volume_slider.value = last_volume;
               else {
-                root.last_volume = volume_slider.value;
+                last_volume = volume_slider.value;
                 volume_slider.value = 0;
               }
               volume_slider.onMoved();

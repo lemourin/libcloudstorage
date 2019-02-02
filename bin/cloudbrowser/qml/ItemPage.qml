@@ -111,7 +111,7 @@ Kirigami.ScrollablePage {
         id: player
         player: cloud.playerBackend
         type: item.type
-        volume: root.volume
+        volume: root.last_volume
 
         Connections {
           target: platform
@@ -159,6 +159,7 @@ Kirigami.ScrollablePage {
           root.player_count--;
           if (root.player_count === 0)
              platform.hidePlayerNotification();
+          root.last_volume = volume;
         }
       }
     }
