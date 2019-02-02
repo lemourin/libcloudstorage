@@ -242,7 +242,7 @@ Item {
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    height: page.height * 0.35
+    height: 100
     visible: title !== ""
 
     LinearGradient {
@@ -282,7 +282,7 @@ Item {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom
-      height: page.height * 0.35
+      height: 100
       gradient: Gradient {
         GradientStop {
           position: 0.0
