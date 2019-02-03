@@ -113,6 +113,7 @@ Kirigami.ScrollablePage {
         type: item.type
         volume: root.last_volume
         title: fullscreen ? item.filename : ""
+        focus: true
 
         Connections {
           target: platform

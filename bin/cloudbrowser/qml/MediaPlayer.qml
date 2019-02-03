@@ -424,6 +424,7 @@ Item {
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
         }
+        onActiveFocusChanged: if (activeFocus) page.forceActiveFocus();
         background: Rectangle {
           x: volume_slider.leftPadding
           y: volume_slider.topPadding + volume_slider.availableHeight / 2 - height / 2
@@ -521,6 +522,7 @@ Item {
             player.item.set_position(value);
             timer.cnt = 0;
           }
+          onActiveFocusChanged: if (activeFocus) page.forceActiveFocus();
           background: Rectangle {
             x: progress.leftPadding
             y: progress.topPadding + progress.availableHeight / 2 - height / 2
@@ -727,5 +729,60 @@ Item {
     id: cursor_area
     anchors.fill: parent
     enabled: false
+  }
+
+  Keys.onPressed: {
+    if (event.key === Qt.Key_N) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      invoke_next();
+    } else if (event.key === Qt.Key_Space || event.key === Qt.Key_K) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      playing ^= 1;
+    } else if (event.key === Qt.Key_M) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      if (volume_slider.value === 0)
+        volume_slider.value = last_volume;
+      else {
+        last_volume = volume_slider.value;
+        volume_slider.value = 0;
+      }
+      volume_slider.onMoved();
+    } else if (event.key === Qt.Key_F) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      page.fullscreen ^= 1;
+    } else if (event.key === Qt.Key_Left) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      player.item.position = Math.max(((player.item.position * player.item.duration) - 5000) / player.item.duration, 0);
+    } else if (event.key === Qt.Key_Right) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      player.item.position = Math.min(((player.item.position * player.item.duration) + 5000) / player.item.duration, 1);
+    } else if (event.key === Qt.Key_J) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      player.item.position = Math.max(((player.item.position * player.item.duration) - 10000) / player.item.duration, 0);
+    } else if (event.key === Qt.Key_L) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      player.item.position = Math.min(((player.item.position * player.item.duration) + 10000) / player.item.duration, 1);
+    } else if (event.key === Qt.Key_A) {
+      event.accepted = true;
+      page.state = "overlay_visible";
+      timer.cnt = 0;
+      page.autoplay ^= 1;
+    }
   }
 }
