@@ -74,7 +74,7 @@ Kirigami.ScrollablePage {
       onIsCurrentPageChanged: {
         if (!isCurrentPage) {
           platform.disableKeepScreenOn();
-          root.fullscreen_player = false;
+          player.fullscreen = false;
           root.visible_player = false;
           root.globalDrawer.handleVisible = handle_state;
         } else {
@@ -159,9 +159,12 @@ Kirigami.ScrollablePage {
         }
         Component.onDestruction: {
           root.player_count--;
-          if (root.player_count === 0)
-             platform.hidePlayerNotification();
-          root.last_volume = volume;
+          if (root.player_count === 0) {
+            platform.hidePlayerNotification();
+            root.fullscreen_player = false;
+            root.visible_player = false;
+            root.last_volume = volume;
+          }
         }
       }
     }
