@@ -239,6 +239,7 @@ Kirigami.ScrollablePage {
       onTriggered: upload_dialog.open()
     },
     Kirigami.Action {
+      id: download_action
       visible: list_view.currentItem && list_view.currentItem.item.type !== "directory" &&
                item.supports("download")
       iconName: "document-save"
@@ -418,8 +419,10 @@ Kirigami.ScrollablePage {
         list_view.currentIndex = index;
         if (modelData.type === "directory")
           cloud.list(modelData.filename, page.label, modelData);
+        else if (modelData.type === "audio" || modelData.type === "video" || modelData.type === "image")
+          play_action.trigger(item);
         else
-          root.contextDrawer.drawerOpen = true;
+          download_action.trigger(item);
       }
       RowLayout {
         Layout.fillWidth: true
