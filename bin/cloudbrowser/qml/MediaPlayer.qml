@@ -545,6 +545,13 @@ Item {
             color: Kirigami.Theme.backgroundColor
 
             Rectangle {
+              width: player.item ? player.item.cachePosition * parent.width : 0
+              height: parent.height
+              color: tint_color
+              radius: 2
+            }
+
+            Rectangle {
               width: progress.visualPosition * parent.width
               height: parent.height
               color: Kirigami.Theme.highlightColor

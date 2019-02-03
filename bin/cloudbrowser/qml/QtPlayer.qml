@@ -14,6 +14,7 @@ Item {
   property int duration: player.duration
   property int audio_track_count: 0
   property int subtitle_track_count: 0
+  property int cachePosition: 0
 
   signal error(int error, string errorString)
 

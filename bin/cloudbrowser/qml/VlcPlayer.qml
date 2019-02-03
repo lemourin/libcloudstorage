@@ -19,6 +19,7 @@ Item {
   property int duration: player.length
   property int title_id: 256 + 2
   property int identifier_id: 256 + 1
+  property int cachePosition: 0
 
   signal error(int error, string errorString)
 

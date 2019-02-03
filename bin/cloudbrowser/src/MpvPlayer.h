@@ -40,6 +40,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
   Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
   Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
+  Q_PROPERTY(qreal cachePosition READ cachePosition NOTIFY cachePositionChanged)
   Q_PROPERTY(QStringList audioTracks READ audioTracks NOTIFY audioTracksChanged)
   Q_PROPERTY(QStringList subtitleTracks READ subtitleTracks NOTIFY
                  subtitleTracksChanged)
@@ -64,6 +65,8 @@ class MpvPlayer : public QQuickFramebufferObject {
   QStringList audioTracks() const { return audio_tracks_; }
   QStringList subtitleTracks() const { return subtitle_tracks_; }
 
+  qreal cachePosition() const { return cache_position_; }
+
   Q_INVOKABLE void play();
   Q_INVOKABLE void pause();
 
@@ -83,6 +86,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   void volumeChanged();
   void audioTracksChanged();
   void subtitleTracksChanged();
+  void cachePositionChanged();
 
  protected:
   Renderer *createRenderer() const override;
@@ -99,6 +103,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   mpv_render_context *mpv_gl_;
   QString uri_;
   qreal position_ = 0;
+  qreal cache_position_ = 0;
   bool initialized_ = false;
   bool invoke_load_ = false;
   bool ended_ = false;

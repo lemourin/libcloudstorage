@@ -38,6 +38,7 @@ const int DURATION_ID = 1;
 const int POSITION_ID = 2;
 const int IDLE_ID = 3;
 const int TRACK_LIST_ID = 4;
+const int CACHE_TIME_ID = 5;
 
 namespace {
 void on_mpv_events(void *d) {
@@ -112,6 +113,8 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
   mpv_set_option_string(mpv_, "video-timing-offset", "0");
   mpv_observe_property(mpv_, POSITION_ID, "time-pos", MPV_FORMAT_INT64);
   mpv_observe_property(mpv_, IDLE_ID, "core-idle", MPV_FORMAT_FLAG);
+  mpv_observe_property(mpv_, CACHE_TIME_ID, "demuxer-cache-time",
+                       MPV_FORMAT_NODE);
   mpv_request_log_messages(mpv_, "warn");
 
   if (mpv_initialize(mpv_) < 0)
@@ -271,6 +274,11 @@ void MpvPlayer::eventOccurred() {
       } else if (event->reply_userdata == IDLE_ID) {
         playing_ = !*reinterpret_cast<int *>(property->data);
         emit playingChanged();
+      } else if (event->reply_userdata == CACHE_TIME_ID && property->data) {
+        cache_position_ =
+            1000 * reinterpret_cast<mpv_node *>(property->data)->u.double_ /
+            duration();
+        emit cachePositionChanged();
       }
     } else if (event->event_id == MPV_EVENT_END_FILE) {
       auto e = reinterpret_cast<mpv_event_end_file *>(event->data);
