@@ -451,10 +451,13 @@ Item {
           }
         }
         onMoved: {
-          player.item.set_volume(value);
           volume_slider.timestamp = Date.now();
           volume_slider.recently_hovered = true;
           timer.cnt = 0;
+        }
+        onValueChanged: {
+          if (player.item)
+            player.item.set_volume(value);
         }
         state: should_show ? "volume_slider_visible" : "volume_slider_invisible"
         states: [
@@ -491,6 +494,14 @@ Item {
             }
           }
         ]
+        MouseArea {
+          anchors.fill: parent
+          acceptedButtons: Qt.NoButton
+          onWheel: {
+            wheel.accepted = true;
+            volume_slider.value = Math.min(Math.max(volume_slider.value + wheel.angleDelta.y / 8 / 360.0, 0), 1);
+          }
+        }
       }
       Item {
         id: current_time
