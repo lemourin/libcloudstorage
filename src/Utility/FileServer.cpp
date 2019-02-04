@@ -95,6 +95,9 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
       if (done_) return;
       done_ = true;
       lock.unlock();
+      if (e.left()->code_ != IHttpRequest::Aborted)
+        util::log("[HTTP SERVER] download failed", e.left()->code_,
+                  e.left()->description_);
       request_->done(e);
     }
   }
@@ -178,10 +181,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       auto item_received = [=](EitherError<IItem> e) {
         if (e.left()) {
           status_ = Failed;
+          util::log("[HTTP SERVER] couldn't get item", e.left()->code_,
+                    e.left()->description_);
           buffer_->done(Error{IHttpRequest::Bad, util::Error::INVALID_NODE});
         } else {
           if (range.start_ + range.size_ > uint64_t(e.right()->size())) {
             status_ = Failed;
+            util::log("[HTTP SERVER] invalid range", range.start_, range.size_);
             buffer_->done(Error{IHttpRequest::Bad, util::Error::INVALID_RANGE});
           } else {
             status_ = Success;
@@ -282,7 +288,7 @@ IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     });
     return response;
   } catch (const Json::Exception& e) {
-    util::log("invalid request", request.url(), e.what());
+    util::log("[HTTP SERVER] invalid request", request.url(), e.what());
     return util::response_from_string(request, IHttpRequest::Bad, {},
                                       util::Error::INVALID_REQUEST);
   }
