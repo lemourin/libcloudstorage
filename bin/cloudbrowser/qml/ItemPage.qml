@@ -71,19 +71,21 @@ Kirigami.ScrollablePage {
         }
       }
 
-      onIsCurrentPageChanged: {
-        if (!isCurrentPage) {
-          platform.disableKeepScreenOn();
-          player.fullscreen = false;
-          root.visible_player = false;
-          root.globalDrawer.handleVisible = handle_state;
-        } else {
+      function playerVisibilityChanged(visibility) {
+        if (visibility) {
           handle_state = root.globalDrawer.handleVisible;
           root.globalDrawer.handleVisible = false;
           root.visible_player = true;
           platform.enableKeepScreenOn();
+        } else {
+          platform.disableKeepScreenOn();
+          player.fullscreen = false;
+          root.visible_player = false;
+          root.globalDrawer.handleVisible = handle_state;
         }
       }
+
+      onIsCurrentPageChanged: playerVisibilityChanged(isCurrentPage)
 
       GetUrlRequest {
         id: url_request
@@ -92,6 +94,7 @@ Kirigami.ScrollablePage {
           if (done && source === "") {
             if (!player.autoplay) {
               root.pageStack.pop();
+              player_page.playerVisibilityChanged(false);
             } else {
               player.next();
             }
@@ -132,6 +135,7 @@ Kirigami.ScrollablePage {
         onEnded: {
           if (!autoplay) {
             root.pageStack.pop();
+            player_page.playerVisibilityChanged(false);
           }
         }
 
@@ -139,8 +143,10 @@ Kirigami.ScrollablePage {
           var next = item_page.nextRequested();
           if (next)
             item = next;
-          else
+          else {
             root.pageStack.pop();
+            player_page.playerVisibilityChanged(false);
+          }
         }
 
         onPlayingChanged: {
