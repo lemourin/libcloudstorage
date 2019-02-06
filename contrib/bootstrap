@@ -53,7 +53,7 @@ run_make() {
 
 fetch_qt() {
   fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
-   if [ ! -f .patched ]; then
+  if [ ! -f .patched ]; then
     patch \
       qtbase/src/plugins/platformthemes/gtk3/qgtk3theme.cpp < \
       ../../patches/qt-force-gtk-file-dialog.patch
@@ -63,6 +63,15 @@ fetch_qt() {
     fi
     touch .patched
   fi
+}
+
+fetch_xkbcommon() {
+  fetch_url http://xkbcommon.org/download/libxkbcommon-$1.tar.xz
+}
+
+install_xkbcommon() {
+  ./configure --prefix=$INSTALL_PATH --disable-shared --enable-static LDFLAGS=-fPIC CFLAGS=-fPIC
+  run_make
 }
 
 configure_qt() {
@@ -78,6 +87,7 @@ configure_qt() {
     libxss-dev \
     libxi-dev \
     libxtst-dev \
+    libxcb-xkb-dev \
     libglib2.0-dev \
     libfontconfig1-dev \
     libfreetype6-dev \
@@ -98,6 +108,7 @@ configure_qt() {
     OPENSSL_LIBS="-lssl -lcrypto" \
     -shared \
     -gtk \
+    -qt-xcb \
     -openssl -openssl-linked \
     -nomake examples \
     -nomake tests
@@ -106,8 +117,6 @@ configure_qt() {
 }
 
 install_qt() {
-  BASE_DIRECTORY=$PWD
-
   configure_qt
 
   make -j $CONCURRENCY \
@@ -119,6 +128,11 @@ install_qt() {
     module-qtgraphicaleffects \
     module-qttools
 
+  make \
+    module-qtwebchannel \
+    module-qtwebengine \
+    module-qtwebview
+
   make -j $CONCURRENCY \
     module-qtbase-install_subtargets \
     module-qtdeclarative-install_subtargets \
@@ -127,20 +141,6 @@ install_qt() {
     module-qtsvg-install_subtargets \
     module-qtgraphicaleffects-install_subtargets \
     module-qttools-install_subtargets
-}
-
-fetch_qtwebview() {
-  fetch_qt $@
-}
-
-install_qtwebview() {
-  BASE_DIRECTORY=$PWD
-  configure_qt
-
-  make \
-    module-qtwebchannel \
-    module-qtwebengine \
-    module-qtwebview
 
   make \
     module-qtwebchannel-install_subtargets \
@@ -180,15 +180,7 @@ install_ninja() {
 }
 
 fetch_kirigami() {
-  fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
-  if [ ! -f .patched ]; then
-    patch src/desktopicon.cpp < ../../patches/kirigami-tint-transparent.patch
-    if [ $? != 0 ]; then
-      echo "Couldn't patch kirigami source."
-      exit 1
-    fi
-    touch .patched
-  fi
+  fetch_github https://github.com/lemourin/kirigami/archive/$1.tar.gz
 }
 
 install_kirigami() {
@@ -196,7 +188,7 @@ install_kirigami() {
   cd build
   Qt5_DIR=$INSTALL_PATH cmake .. \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
-    -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml
+    -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml \
     -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump
   run_make
 }
@@ -324,6 +316,16 @@ install_libxml2() {
 
 fetch_ffmpeg() {
   fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch \
+      libavformat/dashdec.c < \
+      ../../patches/ffmpeg-enable-dash-seeking.patch
+    if [ $? != 0 ]; then
+      echo "Couldn't patch ffmpeg source."
+      exit 1
+    fi
+    touch .patched
+  fi
 }
 
 install_ffmpeg() {
@@ -534,12 +536,12 @@ mkdir tarballs -p
 cd tarballs
 
 install "cmake" 3.12.1
-install "ecm" 5.49.0
+install "ecm" 5.54.0
 install "ninja" 1.8.2
 install "openssl" 1.0.2p
-install "qt" 5.11.3
-install "qtwebview" 5.11.3
-install "kirigami" 5.48.0
+install "xkbcommon" 0.5.0
+install "qt" 5.12.1
+install "kirigami" 33e64ff8eedecedf9560c836fd94a851db066515
 install "jsoncpp" 1.8.3
 install "tinyxml2" 6.0.0
 install "cares" 1.13.0
