@@ -118,6 +118,8 @@ Kirigami.ScrollablePage {
         title: fullscreen ? item.filename : ""
         focus: true
 
+        onVolumeChanged: root.last_volume = volume;
+
         Connections {
           target: platform
           onNotify: {
@@ -169,7 +171,6 @@ Kirigami.ScrollablePage {
             platform.hidePlayerNotification();
             root.fullscreen_player = false;
             root.visible_player = false;
-            root.last_volume = volume;
           }
         }
       }

@@ -166,10 +166,12 @@ void MpvPlayer::setPosition(qreal position) {
 int MpvPlayer::volume() const { return volume_; }
 
 void MpvPlayer::setVolume(int v) {
-  volume_ = v;
-  emit volumeChanged();
-  int64_t volume = v;
-  mpv_set_property_async(mpv_, 0, "ao-volume", MPV_FORMAT_INT64, &volume);
+  if (volume_ != v) {
+    volume_ = v;
+    emit volumeChanged();
+    int64_t volume = v;
+    mpv_set_property_async(mpv_, 0, "volume", MPV_FORMAT_INT64, &volume);
+  }
 }
 
 int MpvPlayer::duration() const { return duration_; }

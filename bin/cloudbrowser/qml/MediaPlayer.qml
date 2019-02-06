@@ -122,6 +122,7 @@ Item {
       onStatusChanged: {
         if (status === Loader.Ready) {
           set_url();
+          player.item.set_volume(volume);
           connections.target = item;
         } else if (status === Loader.Error) {
           errorOccurred("LoadPlayer", source);
