@@ -45,10 +45,6 @@ void on_mpv_events(void *d) {
   emit reinterpret_cast<MpvPlayer *>(d)->onEventOccurred();
 }
 
-void on_mpv_redraw(void *ctx) {
-  emit reinterpret_cast<MpvPlayer *>(ctx)->onUpdate();
-}
-
 static void *get_proc_address_mpv(void *, const char *name) {
   QOpenGLContext *glctx = QOpenGLContext::currentContext();
   if (!glctx) return nullptr;
@@ -74,6 +70,7 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
     mpv_render_param params[] = {{MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
                                  {MPV_RENDER_PARAM_INVALID, nullptr}};
     mpv_render_context_render(player_->mpv_gl_, params);
+    update();
   }
 
   QOpenGLFramebufferObject *createFramebufferObject(
@@ -95,8 +92,6 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
       if (mpv_render_context_create(&player_->mpv_gl_, player_->mpv_, params) <
           0)
         throw std::runtime_error("failed to initialize mpv GL context");
-      mpv_render_context_set_update_callback(player_->mpv_gl_, on_mpv_redraw,
-                                             player_);
       emit player_->onInitialized();
     }
   }
@@ -122,8 +117,6 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
 
   mpv_set_option_string(mpv_, "hwdec", "auto");
 
-  connect(this, &MpvPlayer::onUpdate, this, [=] { update(); },
-          Qt::QueuedConnection);
   connect(this, &MpvPlayer::onInitialized, this,
           [=] {
             initialized_ = true;
