@@ -101,14 +101,17 @@ std::vector<std::string> values(const std::string &page) {
   auto r3end = page.find("'", r3begin);
   auto r4begin = page.find('-', r3end) + 1;
   auto r4end = page.find('+', r4begin);
-  auto r5begin = page.find('/', r4end) + 2;
-  auto r5end = page.find('-', r5begin);
+  auto r5begin = page.find('-', r4begin + 1) + 1;
+  auto r5end = page.find(')', r5begin);
+  auto r6begin = page.find('/', r4end) + 2;
+  auto r6end = page.find('-', r5begin);
 
   return {page.substr(r1begin, r1end - r1begin),
           page.substr(r2begin, r2end - r2begin),
           page.substr(r3begin, r3end - r3begin),
           page.substr(r4begin, r4end - r4begin),
-          page.substr(r5begin, r5end - r5begin)};
+          page.substr(r5begin, r5end - r5begin),
+          page.substr(r6begin, r6end - r6begin)};
 }
 
 std::string decipher(const std::string &code,
@@ -174,10 +177,10 @@ std::string decipher(const std::string &code,
     auto _1x4bfb36 = std::stoll(r[0], nullptr, 8) - std::stoll(r[1]);
     auto _0x30725e = _0x896767 ^ _0x3d7b02[_0x145894 % 9];
 
-    _0x30725e =
-        (_0x30725e ^ (std::stoll(r[2], nullptr, 8) - std::stoll(r[3]) + 0x4) /
-                         (std::stoll(r[4]) - 0x8)) ^
-        _1x4bfb36;
+    _0x30725e = (_0x30725e ^ (std::stoll(r[2], nullptr, 8) - std::stoll(r[3]) +
+                              0x4 - std::stoll(r[4])) /
+                                 (std::stoll(r[5]) - 0x8)) ^
+                _1x4bfb36;
 
     auto _0x2de433 = 2 * _0x5eb93a + _0x37c346;
 
