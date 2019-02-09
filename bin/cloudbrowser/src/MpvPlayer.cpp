@@ -56,9 +56,19 @@ static void *get_proc_address_mpv(void *, const char *name) {
 
 class MpvRenderer : public QQuickFramebufferObject::Renderer {
  public:
-  MpvRenderer(MpvPlayer *player) : player_(player) {
-    mpv_set_wakeup_callback(player->mpv_, on_mpv_events, player);
+  MpvRenderer(const std::shared_ptr<mpv_handle> &mpv) : mpv_(mpv) {
+    mpv_opengl_init_params gl_init_params{get_proc_address_mpv, nullptr,
+                                          nullptr};
+    mpv_render_param params[]{
+        {MPV_RENDER_PARAM_API_TYPE,
+         const_cast<char *>(MPV_RENDER_API_TYPE_OPENGL)},
+        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
+        {MPV_RENDER_PARAM_INVALID, nullptr}};
+    if (mpv_render_context_create(&mpv_gl_, mpv_.get(), params) < 0)
+      throw std::runtime_error("failed to initialize mpv GL context");
   }
+
+  ~MpvRenderer() { mpv_render_context_free(mpv_gl_); }
 
   void render() override {
     mpv_opengl_fbo mpfbo;
@@ -69,53 +79,38 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
 
     mpv_render_param params[] = {{MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
                                  {MPV_RENDER_PARAM_INVALID, nullptr}};
-    mpv_render_context_render(player_->mpv_gl_, params);
+    mpv_render_context_render(mpv_gl_, params);
     update();
   }
 
   QOpenGLFramebufferObject *createFramebufferObject(
       const QSize &size) override {
-    initialize();
     return new QOpenGLFramebufferObject(size);
-  }
-
-  void initialize() {
-    if (!player_->mpv_gl_) {
-      mpv_opengl_init_params gl_init_params{get_proc_address_mpv, nullptr,
-                                            nullptr};
-      mpv_render_param params[]{
-          {MPV_RENDER_PARAM_API_TYPE,
-           const_cast<char *>(MPV_RENDER_API_TYPE_OPENGL)},
-          {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
-          {MPV_RENDER_PARAM_INVALID, nullptr}};
-
-      if (mpv_render_context_create(&player_->mpv_gl_, player_->mpv_, params) <
-          0)
-        throw std::runtime_error("failed to initialize mpv GL context");
-      emit player_->onInitialized();
-    }
   }
 
  private:
   MpvPlayer *player_;
   QRectF rect_;
+  std::shared_ptr<mpv_handle> mpv_;
+  mpv_render_context *mpv_gl_;
 };
 
 MpvPlayer::MpvPlayer(QQuickItem *parent)
-    : QQuickFramebufferObject(parent), mpv_(mpv_create()), mpv_gl_(nullptr) {
+    : QQuickFramebufferObject(parent),
+      mpv_(std::shared_ptr<mpv_handle>(mpv_create(), mpv_terminate_destroy)) {
   if (!mpv_) throw std::runtime_error("could not create mpv context");
 
-  mpv_set_option_string(mpv_, "video-timing-offset", "0");
-  mpv_observe_property(mpv_, POSITION_ID, "time-pos", MPV_FORMAT_INT64);
-  mpv_observe_property(mpv_, IDLE_ID, "core-idle", MPV_FORMAT_FLAG);
-  mpv_observe_property(mpv_, CACHE_TIME_ID, "demuxer-cache-time",
+  mpv_set_option_string(mpv_.get(), "video-timing-offset", "0");
+  mpv_observe_property(mpv_.get(), POSITION_ID, "time-pos", MPV_FORMAT_INT64);
+  mpv_observe_property(mpv_.get(), IDLE_ID, "core-idle", MPV_FORMAT_FLAG);
+  mpv_observe_property(mpv_.get(), CACHE_TIME_ID, "demuxer-cache-time",
                        MPV_FORMAT_NODE);
-  mpv_request_log_messages(mpv_, "warn");
+  mpv_request_log_messages(mpv_.get(), "warn");
 
-  if (mpv_initialize(mpv_) < 0)
+  if (mpv_initialize(mpv_.get()) < 0)
     throw std::runtime_error("could not initialize mpv context");
 
-  mpv_set_option_string(mpv_, "hwdec", "auto");
+  mpv_set_option_string(mpv_.get(), "hwdec", "auto");
 
   connect(this, &MpvPlayer::onInitialized, this,
           [=] {
@@ -125,13 +120,8 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
           Qt::QueuedConnection);
   connect(this, &MpvPlayer::onEventOccurred, this, &MpvPlayer::eventOccurred,
           Qt::QueuedConnection);
-}
 
-MpvPlayer::~MpvPlayer() {
-  if (mpv_gl_) {
-    mpv_render_context_free(mpv_gl_);
-  }
-  mpv_terminate_destroy(mpv_);
+  mpv_set_wakeup_callback(mpv_.get(), on_mpv_events, this);
 }
 
 QString MpvPlayer::uri() const { return uri_; }
@@ -152,8 +142,8 @@ void MpvPlayer::setPosition(qreal position) {
   position_ = position;
   emit positionChanged();
   int64_t p = position * duration() / 1000;
-  mpv_set_property_async(mpv_, POSITION_ID, "playback-time", MPV_FORMAT_INT64,
-                         &p);
+  mpv_set_property_async(mpv_.get(), POSITION_ID, "playback-time",
+                         MPV_FORMAT_INT64, &p);
 }
 
 int MpvPlayer::volume() const { return volume_; }
@@ -163,7 +153,7 @@ void MpvPlayer::setVolume(int v) {
     volume_ = v;
     emit volumeChanged();
     int64_t volume = v;
-    mpv_set_property_async(mpv_, 0, "volume", MPV_FORMAT_INT64, &volume);
+    mpv_set_property_async(mpv_.get(), 0, "volume", MPV_FORMAT_INT64, &volume);
   }
 }
 
@@ -177,39 +167,40 @@ bool MpvPlayer::paused() const { return paused_; }
 
 void MpvPlayer::play() {
   int flag = false;
-  mpv_set_property_async(mpv_, 0, "pause", MPV_FORMAT_FLAG, &flag);
+  mpv_set_property_async(mpv_.get(), 0, "pause", MPV_FORMAT_FLAG, &flag);
   paused_ = false;
   emit pausedChanged();
 }
 
 void MpvPlayer::pause() {
   int flag = true;
-  mpv_set_property_async(mpv_, 0, "pause", MPV_FORMAT_FLAG, &flag);
+  mpv_set_property_async(mpv_.get(), 0, "pause", MPV_FORMAT_FLAG, &flag);
   paused_ = true;
   emit pausedChanged();
 }
 
 void MpvPlayer::set_subtitle_track(int track) {
   if (track > 0) {
-    mpv_set_property_async(mpv_, 0, "sid", MPV_FORMAT_INT64,
+    mpv_set_property_async(mpv_.get(), 0, "sid", MPV_FORMAT_INT64,
                            &subtitle_tracks_id_[track]);
   } else {
     const char *value = "no";
-    mpv_set_property_async(mpv_, 0, "sid", MPV_FORMAT_STRING, &value);
+    mpv_set_property_async(mpv_.get(), 0, "sid", MPV_FORMAT_STRING, &value);
   }
 }
 
 void MpvPlayer::set_audio_track(int track) {
-  mpv_set_property_async(mpv_, 0, "aid", MPV_FORMAT_INT64,
+  mpv_set_property_async(mpv_.get(), 0, "aid", MPV_FORMAT_INT64,
                          &audio_tracks_id_[track]);
 }
 
 QQuickFramebufferObject::Renderer *MpvPlayer::createRenderer() const {
-  return new MpvRenderer(const_cast<MpvPlayer *>(this));
+  emit const_cast<MpvPlayer *>(this)->onInitialized();
+  return new MpvRenderer(mpv_);
 }
 
 void MpvPlayer::eventOccurred() {
-  while (auto event = mpv_wait_event(mpv_, 0)) {
+  while (auto event = mpv_wait_event(mpv_.get(), 0)) {
     if (event->event_id == MPV_EVENT_GET_PROPERTY_REPLY) {
       auto property = reinterpret_cast<mpv_event_property *>(event->data);
       if (event->reply_userdata == DURATION_ID) {
@@ -257,8 +248,9 @@ void MpvPlayer::eventOccurred() {
         emit audioTracksChanged();
       }
     } else if (event->event_id == MPV_EVENT_FILE_LOADED) {
-      mpv_get_property_async(mpv_, DURATION_ID, "duration", MPV_FORMAT_INT64);
-      mpv_get_property_async(mpv_, TRACK_LIST_ID, "track-list",
+      mpv_get_property_async(mpv_.get(), DURATION_ID, "duration",
+                             MPV_FORMAT_INT64);
+      mpv_get_property_async(mpv_.get(), TRACK_LIST_ID, "track-list",
                              MPV_FORMAT_NODE);
     } else if (event->event_id == MPV_EVENT_PROPERTY_CHANGE) {
       auto property = reinterpret_cast<mpv_event_property *>(event->data);
@@ -294,7 +286,8 @@ void MpvPlayer::eventOccurred() {
 }
 
 void MpvPlayer::executeLoadFile() {
-  mpv_command_string(mpv_, ("loadfile \"" + uri_.toStdString() + "\"").c_str());
+  mpv_command_string(mpv_.get(),
+                     ("loadfile \"" + uri_.toStdString() + "\"").c_str());
   ended_ = false;
 }
 

@@ -26,6 +26,7 @@
 #ifdef WITH_MPV
 
 #include <QQuickFramebufferObject>
+#include <memory>
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -46,7 +47,6 @@ class MpvPlayer : public QQuickFramebufferObject {
                  subtitleTracksChanged)
 
   MpvPlayer(QQuickItem *parent = nullptr);
-  ~MpvPlayer() override;
 
   QString uri() const;
   void setUri(QString uri);
@@ -99,8 +99,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   void eventOccurred();
   void executeLoadFile();
 
-  mpv_handle *mpv_;
-  mpv_render_context *mpv_gl_;
+  std::shared_ptr<mpv_handle> mpv_;
   QString uri_;
   qreal position_ = 0;
   qreal cache_position_ = 0;
