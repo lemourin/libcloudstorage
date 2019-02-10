@@ -117,6 +117,7 @@ Kirigami.ScrollablePage {
         volume: root.last_volume
         title: fullscreen ? item.filename : ""
         focus: true
+        preview: thumbnailer
 
         onVolumeChanged: root.last_volume = volume;
 

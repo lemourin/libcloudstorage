@@ -156,6 +156,12 @@ int exec_cloudbrowser(int argc, char** argv) {
 #endif
     engine.rootContext()->setContextProperty("platform", platform.get());
     engine.rootContext()->setContextProperty("seperator", QDir::separator());
+#ifdef WITH_THUMBNAILER
+    engine.rootContext()->setContextProperty("thumbnailer", QVariant(true));
+    engine.addImageProvider("thumbnailer", new ThumbnailGenerator);
+#else
+    engine.rootContext()->setContextProperty("thumbnailer", QVariant(false));
+#endif
     engine.load(QUrl("qrc:/qml/main.qml"));
 
     setlocale(LC_NUMERIC, "C");

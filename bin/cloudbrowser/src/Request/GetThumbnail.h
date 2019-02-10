@@ -4,6 +4,7 @@
 #include "Request/CloudRequest.h"
 
 #include <QObject>
+#include <QQuickAsyncImageProvider>
 #include <QString>
 
 class CloudContext;
@@ -30,5 +31,13 @@ class CLOUDBROWSER_API GetThumbnailRequest : public Request {
 
   Q_OBJECT
 };
+
+#ifdef WITH_THUMBNAILER
+class ThumbnailGenerator : public QQuickAsyncImageProvider {
+ public:
+  QQuickImageResponse* requestImageResponse(
+      const QString& id, const QSize& requested_size) override;
+};
+#endif
 
 #endif  // GETTHUMBNAILREQUEST_H

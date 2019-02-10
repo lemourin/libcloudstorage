@@ -394,6 +394,39 @@ EitherError<std::string> generate_thumbnail(
   }
 }
 
+EitherError<std::string> generate_thumbnail(
+    const std::string& url, int64_t timestamp,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+  try {
+    initialize();
+    std::string effective_url = url;
+#ifdef _WIN32
+    const char* file = "file:///";
+#else
+    const char* file = "file://";
+#endif
+    const auto length = strlen(file);
+    if (url.substr(0, length) == file) effective_url = url.substr(length);
+    auto context = create_format_context(effective_url, interrupt);
+    auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
+                                      nullptr, 0);
+    check(stream, "av_find_best_stream");
+    check(avformat_seek_file(context.get(), -1, INT64_MIN,
+                             timestamp * AV_TIME_BASE / 1000, INT64_MAX, 0),
+          "avformat_seek_file");
+    auto codec_context = create_codec_context(context.get(), stream);
+    auto size = thumbnail_size({codec_context->width, codec_context->height},
+                               THUMBNAIL_SIZE);
+    Pointer<AVFrame> current =
+        decode_frame(context.get(), codec_context.get(), stream);
+    if (!current) throw std::logic_error("couldn't get frame");
+    auto rgb_frame = create_rgb_frame(current.get(), size);
+    return encode_frame(rgb_frame.get());
+  } catch (const std::exception& e) {
+    return Error{IHttpRequest::Failure, e.what()};
+  }
+}
+
 }  // namespace cloudstorage
 
 #endif  // WITH_THUMBNAILER

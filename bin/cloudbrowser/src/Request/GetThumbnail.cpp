@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QThreadPool>
 #include <QUrl>
 
 #include "CloudContext.h"
@@ -199,3 +200,66 @@ QString GetThumbnailRequest::thumbnail_path(const QString& filename) {
   return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
          QDir::separator() + CloudContext::sanitize(filename) + "-thumbnail";
 }
+
+#ifdef WITH_THUMBNAILER
+class Generator : public QQuickImageResponse {
+ public:
+  Generator(const std::string& url, int timestamp)
+      : task_(new Runnable(this, url, timestamp)) {
+    task_->setAutoDelete(false);
+    QThreadPool::globalInstance()->start(task_);
+  }
+
+  ~Generator() override { delete task_; }
+
+  void cancel() override { task_->cancelled_ = true; }
+
+  QString errorString() const override { return error_; }
+
+  QQuickTextureFactory* textureFactory() const override {
+    return QQuickTextureFactory::textureFactoryForImage(image_);
+  }
+
+ private:
+  class Runnable : public QRunnable {
+   public:
+    Runnable(Generator* r, const std::string& url, int timestamp)
+        : response_(r), url_(url), timestamp_(timestamp), cancelled_(false) {}
+
+    void run() override {
+      try {
+        auto data = generate_thumbnail(
+            url_, timestamp_, [this](std::chrono::system_clock::time_point) {
+              return bool(cancelled_);
+            });
+        if (data.left()) throw std::logic_error(data.left()->description_);
+        response_->image_ = QImage::fromData(
+            reinterpret_cast<const uchar*>(data.right()->c_str()),
+            data.right()->size());
+        emit response_->finished();
+      } catch (const std::exception& e) {
+        response_->error_ = e.what();
+        emit response_->finished();
+      }
+    }
+
+    std::atomic_bool cancelled_;
+
+   private:
+    Generator* response_;
+    std::string url_;
+    int timestamp_;
+  };
+
+  Runnable* task_;
+  QString error_;
+  QImage image_;
+};
+
+QQuickImageResponse* ThumbnailGenerator::requestImageResponse(const QString& id,
+                                                              const QSize&) {
+  auto timestamp = id.left(id.indexOf('/')).toLongLong() * 10000;
+  auto url = id.right(id.length() - id.indexOf('/') - 1);
+  return new Generator(url.toStdString(), timestamp);
+}
+#endif

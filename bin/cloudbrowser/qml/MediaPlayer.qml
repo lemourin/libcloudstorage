@@ -13,6 +13,7 @@ Item {
   property alias volume: volume_slider.value
   property bool fullscreen: false
   property string title
+  property bool preview: false
 
   property real last_volume: 1
   property bool playing: true
@@ -236,6 +237,15 @@ Item {
     visible: type === "audio"
     source: "audio-x-generic"
     isMask: true
+  }
+
+  Controls.BusyIndicator {
+    id: indicator
+    anchors.centerIn: parent
+    enabled: false
+    running: player.item ? player.item.buffering : true
+    width: 200
+    height: 200
   }
 
   Item {
@@ -530,10 +540,6 @@ Item {
           width: parent.width
           value: player.item ? player.item.position : 0
           visible: player.item && player.item.duration > 0 && page.width > 600
-          onMoved: {
-            player.item.set_position(value);
-            timer.cnt = 0;
-          }
           onActiveFocusChanged: if (activeFocus) page.forceActiveFocus();
           background: Rectangle {
             x: progress.leftPadding
@@ -557,6 +563,85 @@ Item {
               height: parent.height
               color: Kirigami.Theme.highlightColor
               radius: 2
+            }
+
+            MouseArea {
+              id: slider_mousearea
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              height: 32
+              hoverEnabled: true
+              preventStealing: true
+              onMouseXChanged: {
+                if (pressed) {
+                  player.item.set_position(slider_mousearea.mouseX / slider_mousearea.width);
+                  timer.cnt = 0;
+                }
+              }
+            }
+          }
+          Item {
+            property int position: player.item ?
+                                     player.item.duration * slider_mousearea.mouseX / slider_mousearea.width :
+                                     0
+            id: preview
+            width: 160
+            height: 90
+            visible: slider_mousearea.containsMouse || slider_mousearea.pressed
+            onVisibleChanged: {
+              previous.source = "";
+            }
+            anchors.bottom: progress.top
+            x: slider_mousearea.mouseX - width / 2 + progress.leftPadding
+            Rectangle {
+              anchors.fill: parent
+              color: page.preview ? "black" : "transparent"
+              Rectangle {
+                anchors.fill: parent
+                anchors.margins: 2
+                color: page.preview ? "black" : "transparent"
+
+                Image {
+                  id: previous
+                  anchors.fill: parent
+                  visible: false
+                }
+
+                Image {
+                  anchors.fill: parent
+                  source: (preview.visible && page.preview) ?
+                            "image://thumbnailer/" + Math.round(preview.position / 10000) + "/" + url :
+                            ""
+                  onStatusChanged: {
+                    if (status === Image.Ready) {
+                      previous.source = source;
+                      previous.visible = false;
+                    } else {
+                      previous.visible = true;
+                    }
+                  }
+                }
+
+                Rectangle {
+                  anchors.bottom: parent.bottom
+                  anchors.bottomMargin: -2;
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  width: childrenRect.width
+                  height: childrenRect.height
+                  color: "black"
+                  opacity: 0.7
+                  radius: 2.5
+                  Text {
+                    rightPadding: 8
+                    leftPadding: 8
+                    topPadding: 2
+                    bottomPadding: 2
+                    text: print_timestamp(preview.position)
+                    color: "white"
+                  }
+                }
+              }
             }
           }
         }
@@ -655,15 +740,6 @@ Item {
         }
       }
     }
-  }
-
-  Controls.BusyIndicator {
-    id: indicator
-    anchors.centerIn: parent
-    enabled: false
-    running: player.item ? player.item.buffering : true
-    width: 200
-    height: 200
   }
 
   Component {
