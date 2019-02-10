@@ -68,7 +68,7 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
       throw std::runtime_error("failed to initialize mpv GL context");
   }
 
-  ~MpvRenderer() { mpv_render_context_free(mpv_gl_); }
+  ~MpvRenderer() override { mpv_render_context_free(mpv_gl_); }
 
   void render() override {
     mpv_opengl_fbo mpfbo;
@@ -89,7 +89,6 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
   }
 
  private:
-  MpvPlayer *player_;
   QRectF rect_;
   std::shared_ptr<mpv_handle> mpv_;
   mpv_render_context *mpv_gl_;
