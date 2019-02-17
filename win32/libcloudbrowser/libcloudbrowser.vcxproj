@@ -335,7 +335,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;Qt5Quick.lib;VLCQtQml.lib;mpv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;Qt5Quick.lib;VLCQtQml.lib;mpv.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -352,7 +352,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;VLCQtQml.lib;mpv.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Quickd.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;VLCQtQml.lib;mpv.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Quickd.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

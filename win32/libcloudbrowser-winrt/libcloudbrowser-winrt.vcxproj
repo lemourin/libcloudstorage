@@ -64,7 +64,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;Qt5Quick.lib;VLCQtQml.lib;mpv.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;Qt5Quick.lib;VLCQtQml.lib;mpv.lib;libcloudstorage-winrt.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -80,7 +80,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\libcloudstorage-winrt;../../dependencies/winrt-debug/lib;../../dependencies/winrt/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;Qt5Quickd.lib;VLCQtQml.lib;mpv.lib;libcloudstorage-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;Qt5Quickd.lib;VLCQtQml.lib;mpv.lib;libcloudstorage-winrt.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
