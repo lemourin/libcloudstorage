@@ -431,6 +431,7 @@ Pointer<AVFilterContext> create_scale_filter(AVFilterGraph* graph,
 }
 
 ImageSize thumbnail_size(const ImageSize& i, int target) {
+  if (i.width_ == 0 || i.height_ == 0) return {target, target};
   if (i.width_ > i.height_) {
     return {target, i.height_ * target / i.width_};
   } else {
