@@ -238,7 +238,7 @@ class Generator : public QQuickImageResponse {
   class Runnable : public QRunnable {
    public:
     Runnable(Generator* r, const std::string& url, int timestamp)
-        : response_(r), url_(url), timestamp_(timestamp), cancelled_(false) {}
+        : cancelled_(false), response_(r), url_(url), timestamp_(timestamp) {}
 
     void run() override {
       try {
