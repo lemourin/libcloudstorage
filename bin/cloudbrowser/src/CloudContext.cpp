@@ -21,6 +21,9 @@
 
 using namespace cloudstorage;
 
+CloudContext* gCloudContext;
+std::mutex gMutex;
+
 namespace {
 std::shared_ptr<ServerWrapperFactory> http_server_factory =
     util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create());
@@ -59,6 +62,10 @@ Provider ProviderListModel::provider(QVariant provider) const {
   for (auto&& i : provider_)
     if (i.label_ == label && i.provider_->name() == type) return i;
   return {};
+}
+
+Provider ProviderListModel::provider(int index) const {
+  return provider_[index];
 }
 
 QVariantList ProviderListModel::dump() const {
@@ -108,6 +115,10 @@ CloudContext::CloudContext(QObject* parent)
       cache_size_(updatedCacheSize()),
       interrupt_(std::make_shared<std::atomic_bool>()),
       provider_index_() {
+  {
+    std::unique_lock<std::mutex> lock(gMutex);
+    gCloudContext = this;
+  }
   util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
@@ -148,6 +159,10 @@ CloudContext::~CloudContext() {
   context_thread_pool_ = nullptr;
   *interrupt_ = true;
   util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
+  {
+    std::unique_lock<std::mutex> lock(gMutex);
+    gCloudContext = nullptr;
+  }
 }
 
 QString CloudContext::sanitize(const QString& name) {

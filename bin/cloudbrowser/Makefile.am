@@ -61,9 +61,11 @@ libcloudbrowser_la_SOURCES = \
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/bin/cloudbrowser/src \
 	-I$(top_srcdir)/src \
+	$(libjsoncpp_CFLAGS) \
 	$(qt_CFLAGS)
 
 libcloudbrowser_la_LIBADD = \
+	$(libjsoncpp_LIBS) \
 	$(qt_LIBS) \
 	../../src/libcloudstorage.la
 

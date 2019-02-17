@@ -28,6 +28,7 @@
 #include "IRequest.h"
 #include "Utility/Utility.h"
 
+#include <future>
 #include <sstream>
 
 extern "C" {
@@ -55,13 +56,14 @@ struct ImageSize {
   int height_;
 };
 
+template <class T>
+using Pointer = std::unique_ptr<T, std::function<void(T*)>>;
+
 struct CallbackData {
   std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
   std::chrono::system_clock::time_point start_time_;
+  Pointer<AVIOContext> io_context_;
 };
-
-template <class T>
-using Pointer = std::unique_ptr<T, std::function<void(T*)>>;
 
 template <class T>
 Pointer<T> make(T* d, std::function<void(T**)> f) {
@@ -112,11 +114,90 @@ void initialize() {
   }
 }
 
+Pointer<AVIOContext> create_io_context(
+    ICloudProvider* provider, IItem::Pointer item, uint64_t size,
+    std::chrono::system_clock::time_point start_time,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+  const int BUFFER_SIZE = 1024 * 1024;
+  uint8_t* buffer = static_cast<uint8_t*>(av_malloc(BUFFER_SIZE));
+  struct Data {
+    ICloudProvider* provider_;
+    IItem::Pointer item_;
+    int64_t offset_;
+    uint64_t size_;
+    std::chrono::system_clock::time_point start_time_;
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
+  }* data = new Data{provider, item, 0, size, start_time, interrupt};
+  struct Download : public IDownloadFileCallback {
+    void progress(uint64_t, uint64_t) override {}
+    void receivedData(const char* data, uint32_t size) override {
+      auto bytes = std::min<int>(size, size_);
+      memcpy(buffer_, data, bytes);
+      size_ -= bytes;
+      buffer_ += bytes;
+    }
+    void done(EitherError<void> e) override { semaphore_.set_value(e); }
+
+    char* buffer_;
+    int size_;
+    std::promise<EitherError<void>> semaphore_;
+  };
+  return make<AVIOContext>(
+      avio_alloc_context(
+          buffer, BUFFER_SIZE, 0, data,
+          [](void* d, uint8_t* buffer, int size) -> int {
+            auto data = reinterpret_cast<Data*>(d);
+            Range range;
+            range.start_ = data->offset_;
+            range.size_ = std::min<int>(size, data->size_ - data->offset_);
+            auto cb = std::make_shared<Download>();
+            cb->buffer_ = reinterpret_cast<char*>(buffer);
+            cb->size_ = size;
+            auto future = cb->semaphore_.get_future();
+            auto request =
+                data->provider_->downloadFileAsync(data->item_, cb, range);
+            while (future.wait_for(std::chrono::milliseconds(100)) !=
+                   std::future_status::ready) {
+              if (data->interrupt_(data->start_time_)) {
+                request->cancel();
+                break;
+              }
+            }
+            data->offset_ += size - cb->size_;
+            auto error = future.get().left();
+            return error ? -1 : size - cb->size_;
+          },
+          nullptr,
+          [](void* d, int64_t offset, int whence) -> int64_t {
+            auto data = reinterpret_cast<Data*>(d);
+            whence &= ~AVSEEK_FORCE;
+            if (whence == AVSEEK_SIZE) {
+              return data->size_;
+            }
+            if (whence == SEEK_SET) {
+              data->offset_ = offset;
+            } else if (whence == SEEK_CUR) {
+              data->offset_ += offset;
+            } else if (whence == SEEK_END) {
+              if (data->item_->size() == IItem::UnknownSize) return -1;
+              data->offset_ = data->size_ + offset;
+            } else {
+              return -1;
+            }
+            return data->offset_;
+          }),
+      [data](AVIOContext* ctx) {
+        delete data;
+        avio_context_free(&ctx);
+      });
+}
+
 Pointer<AVFormatContext> create_format_context(
     const std::string& url,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   auto context = avformat_alloc_context();
-  auto data = new CallbackData{interrupt, std::chrono::system_clock::now()};
+  auto data =
+      new CallbackData{interrupt, std::chrono::system_clock::now(), nullptr};
   context->interrupt_callback.opaque = data;
   context->interrupt_callback.callback = [](void* t) -> int {
     auto d = reinterpret_cast<CallbackData*>(t);
@@ -124,6 +205,36 @@ Pointer<AVFormatContext> create_format_context(
   };
   int e = 0;
   if ((e = avformat_open_input(&context, url.c_str(), nullptr, nullptr)) < 0) {
+    avformat_free_context(context);
+    delete data;
+    check(e, "avformat_open_input");
+  } else if ((e = avformat_find_stream_info(context, nullptr)) < 0) {
+    avformat_close_input(&context);
+    delete data;
+    check(e, "avformat_find_stream_info");
+  }
+  return make<AVFormatContext>(context, [data](AVFormatContext* d) {
+    avformat_close_input(&d);
+    delete data;
+  });
+}
+
+Pointer<AVFormatContext> create_format_context(
+    ICloudProvider* provider, IItem::Pointer item, uint64_t size,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+  auto context = avformat_alloc_context();
+  auto start_time = std::chrono::system_clock::now();
+  auto data = new CallbackData{
+      interrupt, start_time,
+      create_io_context(provider, item, size, start_time, interrupt)};
+  context->interrupt_callback.opaque = data;
+  context->interrupt_callback.callback = [](void* t) -> int {
+    auto d = reinterpret_cast<CallbackData*>(t);
+    return d->interrupt_(d->start_time_);
+  };
+  context->pb = data->io_context_.get();
+  int e = 0;
+  if ((e = avformat_open_input(&context, nullptr, nullptr, nullptr)) < 0) {
     avformat_free_context(context);
     delete data;
     check(e, "avformat_open_input");
@@ -330,19 +441,11 @@ ImageSize thumbnail_size(const ImageSize& i, int target) {
 }  // namespace
 
 EitherError<std::string> generate_thumbnail(
-    const std::string& url,
+    ICloudProvider* provider, IItem::Pointer item, uint64_t size,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   try {
     initialize();
-    std::string effective_url = url;
-#ifdef _WIN32
-    const char* file = "file:///";
-#else
-    const char* file = "file://";
-#endif
-    const auto length = strlen(file);
-    if (url.substr(0, length) == file) effective_url = url.substr(length);
-    auto context = create_format_context(effective_url, interrupt);
+    auto context = create_format_context(provider, item, size, interrupt);
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");
@@ -408,6 +511,32 @@ EitherError<std::string> generate_thumbnail(
     const auto length = strlen(file);
     if (url.substr(0, length) == file) effective_url = url.substr(length);
     auto context = create_format_context(effective_url, interrupt);
+    auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
+                                      nullptr, 0);
+    check(stream, "av_find_best_stream");
+    check(avformat_seek_file(context.get(), -1, INT64_MIN,
+                             timestamp * AV_TIME_BASE / 1000, INT64_MAX, 0),
+          "avformat_seek_file");
+    auto codec_context = create_codec_context(context.get(), stream);
+    auto size = thumbnail_size({codec_context->width, codec_context->height},
+                               THUMBNAIL_SIZE);
+    Pointer<AVFrame> current =
+        decode_frame(context.get(), codec_context.get(), stream);
+    if (!current) throw std::logic_error("couldn't get frame");
+    auto rgb_frame = create_rgb_frame(current.get(), size);
+    return encode_frame(rgb_frame.get());
+  } catch (const std::exception& e) {
+    return Error{IHttpRequest::Failure, e.what()};
+  }
+}
+
+EitherError<std::string> generate_thumbnail(
+    ICloudProvider* provider, IItem::Pointer item, int64_t timestamp,
+    uint64_t size,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+  try {
+    initialize();
+    auto context = create_format_context(provider, item, size, interrupt);
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");

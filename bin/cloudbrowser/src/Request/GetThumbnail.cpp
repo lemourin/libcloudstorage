@@ -1,5 +1,7 @@
 #include "GetThumbnail.h"
 
+#include <json/json.h>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QSaveFile>
@@ -92,22 +94,34 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto notifier = notifier_;
       auto interrupt = interrupt_;
       pool_->schedule([path, provider, item, notifier, interrupt] {
-        std::promise<EitherError<std::string>> promise;
-        auto d = provider->getFileDaemonUrlAsync(
-            item, [&](EitherError<std::string> e) { promise.set_value(e); });
-        auto future = promise.get_future();
-        std::future_status status = std::future_status::deferred;
-        while (!interrupt(std::chrono::system_clock::now()) &&
-               status != std::future_status::ready) {
-          status = future.wait_for(CHECK_INTERVAL);
+        std::promise<EitherError<std::string>> url_promise;
+        auto url_request = provider->getFileDaemonUrlAsync(
+            item,
+            [&](EitherError<std::string> e) { url_promise.set_value(e); });
+        auto url_future = url_promise.get_future();
+        auto start_time = std::chrono::system_clock::now();
+        while (url_future.wait_for(CHECK_INTERVAL) !=
+               std::future_status::ready) {
+          if (interrupt(start_time)) {
+            url_request->cancel();
+            break;
+          }
         }
-        if (status != std::future_status::ready) d->cancel();
-        auto r = future.get();
-        if (r.left()) {
-          emit notifier->finishedVariant(r.left());
+        auto url = url_future.get();
+        if (url.left()) {
+          emit notifier->finishedVariant(url.left());
           return notifier->deleteLater();
         }
-        auto e = generate_thumbnail(*r.right(), interrupt);
+        uint64_t size = item->size();
+        if (QString(url.right()->c_str()).startsWith("http") &&
+            size == IItem::UnknownSize) {
+          auto item_id =
+              url.right()->substr(url.right()->find_last_of('/') + 1);
+          std::replace(item_id.begin(), item_id.end(), '/', '-');
+          auto json = util::json::from_string(util::from_base64(item_id));
+          size = json["size"].asUInt64();
+        }
+        auto e = generate_thumbnail(provider.get(), item, size, interrupt);
         if (e.left()) {
           emit notifier->finishedVariant(e.left());
           return notifier->deleteLater();
@@ -228,10 +242,46 @@ class Generator : public QQuickImageResponse {
 
     void run() override {
       try {
-        auto data = generate_thumbnail(
-            url_, timestamp_, [this](std::chrono::system_clock::time_point) {
-              return bool(cancelled_);
-            });
+        EitherError<std::string> data;
+        if (QString(url_.c_str()).startsWith("http")) {
+          std::unique_lock<std::mutex> lock(gMutex);
+          if (!gCloudContext) {
+            throw std::logic_error("no cloud context");
+          }
+          auto item_id = url_.substr(url_.find_last_of('/') + 1);
+          std::replace(item_id.begin(), item_id.end(), '/', '-');
+          auto json = util::json::from_string(util::from_base64(item_id));
+          auto id = json["id"].asString();
+          auto provider_id = std::stoi(json["state"].asString());
+          auto provider = gCloudContext->userProviders()->provider(provider_id);
+          auto size = json["size"].asInt();
+          lock.unlock();
+          std::promise<EitherError<IItem>> item_promise;
+          auto item_request = provider.provider_->getItemDataAsync(
+              id, [&](EitherError<IItem> e) { item_promise.set_value(e); });
+          auto item_future = item_promise.get_future();
+          while (item_future.wait_for(std::chrono::milliseconds(100)) !=
+                 std::future_status::ready) {
+            if (cancelled_) {
+              item_request->cancel();
+              break;
+            }
+          }
+          auto item = item_future.get();
+          if (item.left()) {
+            throw std::logic_error(item.left()->description_);
+          }
+          data = generate_thumbnail(
+              provider.provider_.get(), item.right(), timestamp_, size,
+              [this](std::chrono::system_clock::time_point) {
+                return bool(cancelled_);
+              });
+        } else {
+          data = generate_thumbnail(
+              url_, timestamp_, [this](std::chrono::system_clock::time_point) {
+                return bool(cancelled_);
+              });
+        }
         if (data.left()) throw std::logic_error(data.left()->description_);
         response_->image_ = QImage::fromData(
             reinterpret_cast<const uchar*>(data.right()->c_str()),

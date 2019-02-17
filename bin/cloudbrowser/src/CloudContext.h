@@ -23,6 +23,9 @@
 
 class CloudContext;
 
+extern CloudContext* gCloudContext;
+extern std::mutex gMutex;
+
 class CLOUDBROWSER_API ProviderListModel : public QAbstractListModel {
  public:
   int rowCount(const QModelIndex& = QModelIndex()) const override;
@@ -32,6 +35,7 @@ class CLOUDBROWSER_API ProviderListModel : public QAbstractListModel {
   void add(const Provider&);
   void remove(QVariant provider);
   Provider provider(QVariant provider) const;
+  Provider provider(int index) const;
 
   QVariantList dump() const;
   Q_INVOKABLE QVariantList variant() const;

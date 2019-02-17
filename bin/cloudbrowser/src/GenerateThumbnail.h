@@ -25,16 +25,22 @@
 
 #ifdef WITH_THUMBNAILER
 
+#include "ICloudProvider.h"
 #include "IRequest.h"
 
 namespace cloudstorage {
 
 EitherError<std::string> generate_thumbnail(
-    const std::string& url,
+    ICloudProvider* provider, IItem::Pointer item, uint64_t size,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt);
 
 EitherError<std::string> generate_thumbnail(
     const std::string& url, int64_t timestamp,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt);
+
+EitherError<std::string> generate_thumbnail(
+    ICloudProvider* provider, IItem::Pointer item, int64_t timestamp,
+    uint64_t size,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt);
 
 }  // namespace cloudstorage
