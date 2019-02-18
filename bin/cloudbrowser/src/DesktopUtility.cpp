@@ -2,9 +2,14 @@
 
 #ifdef USE_DESKTOP_UTILITY
 
+#include <QDebug>
 #include <QDesktopServices>
+#include <QGuiApplication>
+#include <QThreadPool>
 #include <QUrl>
+#include <QWindow>
 #include <cstdlib>
+#include "Request/GetThumbnail.h"
 
 #ifdef __unix__
 
@@ -27,13 +32,13 @@ namespace {
 
 #ifdef __unix__
 
-int run_xdg_screensaver(const std::vector<std::string> &args) {
-  std::vector<char *> argv = {strdup("xdg-screensaver")};
+int run_process(const char *name, const std::vector<std::string> &args) {
+  std::vector<char *> argv = {strdup(name)};
   for (auto &&arg : args) argv.push_back(strdup(arg.c_str()));
   argv.push_back(nullptr);
   pid_t pid;
-  auto status = posix_spawnp(&pid, "xdg-screensaver", nullptr, nullptr,
-                             argv.data(), environ);
+  auto status =
+      posix_spawnp(&pid, name, nullptr, nullptr, argv.data(), environ);
   for (auto &&arg : argv) free(arg);
   if (status == 0) {
     if (waitpid(pid, &status, 0) != -1) {
@@ -58,7 +63,7 @@ DesktopUtility::DesktopUtility() : screensaver_enabled_(true), running_(true) {
       condition_.wait_for(lock, std::chrono::seconds(15),
                           [=] { return !running_; });
       if (!running_) break;
-      if (!screensaver_enabled_) run_xdg_screensaver({"reset"});
+      if (!screensaver_enabled_) run_process("xdg-screensaver", {"reset"});
     }
   });
 #endif
@@ -91,7 +96,28 @@ void DesktopUtility::landscapeOrientation() {}
 
 void DesktopUtility::defaultOrientation() {}
 
-void DesktopUtility::showPlayerNotification(bool, QString, QString) {}
+void DesktopUtility::showPlayerNotification(bool playing, QString filename,
+                                            QString title) {
+#ifdef __unix__
+  struct Runnable : public QRunnable {
+    Runnable(QString filename, QString title)
+        : filename_(filename), title_(title) {}
+
+    void run() override {
+      run_process(
+          "notify-send",
+          {"-i", GetThumbnailRequest::thumbnail_path(filename_).toStdString(),
+           title_.toStdString(), filename_.toStdString()});
+    }
+
+    QString filename_;
+    QString title_;
+  };
+  if (!title.isEmpty() && playing &&
+      !QGuiApplication::allWindows().first()->isActive())
+    QThreadPool::globalInstance()->start(new Runnable{filename, title});
+#endif
+}
 
 void DesktopUtility::hidePlayerNotification() {}
 
