@@ -150,6 +150,9 @@ Pointer<AVIOContext> create_io_context(
             Range range;
             range.start_ = data->offset_;
             range.size_ = std::min<int>(size, data->size_ - data->offset_);
+            if (range.size_ == 0) {
+              return AVERROR_EOF;
+            }
             auto cb = std::make_shared<Download>();
             cb->buffer_ = reinterpret_cast<char*>(buffer);
             cb->size_ = size;
