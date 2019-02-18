@@ -10,6 +10,7 @@ AnimatedImage {
 
   function play() {}
   function pause() {}
+  function set_volume(volume) {}
 
   anchors.fill: parent
   fillMode: AnimatedImage.PreserveAspectFit
