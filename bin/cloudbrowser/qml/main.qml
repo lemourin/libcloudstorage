@@ -13,8 +13,8 @@ Kirigami.ApplicationWindow {
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile() || root.height > root.width
   property bool auth_error_occurred: false
-  property real volume: 1
-  property real last_volume: 1
+  property real volume: platform.volume()
+  property real last_volume: platform.volume()
   property int player_count: 0
   property int footer_height: ad_loaded && ad_visible ? 50 : 0
   property CloudItem selected_item

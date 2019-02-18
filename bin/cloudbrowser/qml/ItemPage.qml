@@ -170,6 +170,7 @@ Kirigami.ScrollablePage {
           root.player_count--;
           if (root.player_count === 0) {
             platform.hidePlayerNotification();
+            platform.saveVolume(root.last_volume);
             root.fullscreen_player = false;
             root.visible_player = false;
           }

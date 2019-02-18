@@ -24,6 +24,7 @@
 #define IPLATFORMUTILITY_H
 
 #include <QObject>
+#include <QSettings>
 #include <memory>
 
 #include "Exec.h"
@@ -54,10 +55,20 @@ class CLOUDBROWSER_API IPlatformUtility : public QObject {
   Q_INVOKABLE virtual void showAd() = 0;
   Q_INVOKABLE virtual void hideAd() = 0;
 
+  Q_INVOKABLE qreal volume() const {
+    return settings_.value("volume", 1).toReal();
+  }
+
+  Q_INVOKABLE void saveVolume(qreal value) {
+    settings_.setValue("volume", value);
+  }
+
  signals:
   void notify(QString action);
 
  private:
+  QSettings settings_;
+
   Q_OBJECT
 };
 
