@@ -848,11 +848,14 @@ Item {
         volume_slider.value = 0;
       }
       volume_slider.onMoved();
-    } else if (event.key === Qt.Key_F) {
+    } else if (event.key === Qt.Key_F || event.key === Qt.Key_Escape) {
       event.accepted = true;
       page.state = "overlay_visible";
       timer.cnt = 0;
-      page.fullscreen ^= 1;
+      if (event.key === Qt.Key_F)
+        page.fullscreen ^= 1;
+      else
+        page.fullscreen = false;
     } else if (event.key === Qt.Key_Left) {
       event.accepted = true;
       page.state = "overlay_visible";
