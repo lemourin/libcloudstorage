@@ -218,8 +218,9 @@ QString GetThumbnailRequest::thumbnail_path(const QString& filename) {
 #ifdef WITH_THUMBNAILER
 class Generator : public QQuickImageResponse {
  public:
-  Generator(const std::string& url, int timestamp)
-      : task_(new Runnable(this, url, timestamp)) {
+  Generator(const std::string& url, int timestamp,
+            const std::shared_ptr<util::LRUCache<std::string, IItem>>& cache)
+      : task_(new Runnable(this, url, timestamp)), item_cache_(cache) {
     task_->setAutoDelete(false);
     QThreadPool::globalInstance()->start(task_);
   }
@@ -256,23 +257,29 @@ class Generator : public QQuickImageResponse {
           auto provider = gCloudContext->userProviders()->provider(provider_id);
           auto size = json["size"].asInt();
           lock.unlock();
-          std::promise<EitherError<IItem>> item_promise;
-          auto item_request = provider.provider_->getItemDataAsync(
-              id, [&](EitherError<IItem> e) { item_promise.set_value(e); });
-          auto item_future = item_promise.get_future();
-          while (item_future.wait_for(std::chrono::milliseconds(100)) !=
-                 std::future_status::ready) {
-            if (cancelled_) {
-              item_request->cancel();
-              break;
+          auto item = response_->item_cache_->get(std::to_string(provider_id) +
+                                                  "#" + item_id);
+          if (!item) {
+            std::promise<EitherError<IItem>> item_promise;
+            auto item_request = provider.provider_->getItemDataAsync(
+                id, [&](EitherError<IItem> e) { item_promise.set_value(e); });
+            auto item_future = item_promise.get_future();
+            while (item_future.wait_for(std::chrono::milliseconds(100)) !=
+                   std::future_status::ready) {
+              if (cancelled_) {
+                item_request->cancel();
+                break;
+              }
             }
-          }
-          auto item = item_future.get();
-          if (item.left()) {
-            throw std::logic_error(item.left()->description_);
+            auto item_result = item_future.get();
+            if (item_result.left())
+              throw std::logic_error(item_result.left()->description_);
+            item = item_result.right();
+            response_->item_cache_->put(
+                std::to_string(provider_id) + "#" + item_id, item);
           }
           data = generate_thumbnail(
-              provider.provider_.get(), item.right(), timestamp_, size,
+              provider.provider_.get(), item, timestamp_, size,
               [this](std::chrono::system_clock::time_point) {
                 return bool(cancelled_);
               });
@@ -304,12 +311,13 @@ class Generator : public QQuickImageResponse {
   Runnable* task_;
   QString error_;
   QImage image_;
+  std::shared_ptr<util::LRUCache<std::string, IItem>> item_cache_;
 };
 
 QQuickImageResponse* ThumbnailGenerator::requestImageResponse(const QString& id,
                                                               const QSize&) {
   auto timestamp = id.left(id.indexOf('/')).toLongLong() * 10000;
   auto url = id.right(id.length() - id.indexOf('/') - 1);
-  return new Generator(url.toStdString(), timestamp);
+  return new Generator(url.toStdString(), timestamp, item_cache_);
 }
 #endif

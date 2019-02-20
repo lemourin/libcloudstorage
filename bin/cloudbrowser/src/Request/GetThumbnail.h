@@ -2,6 +2,7 @@
 #define GETTHUMBNAILREQUEST_H
 
 #include "Request/CloudRequest.h"
+#include "Utility/Utility.h"
 
 #include <QObject>
 #include <QQuickAsyncImageProvider>
@@ -37,6 +38,12 @@ class ThumbnailGenerator : public QQuickAsyncImageProvider {
  public:
   QQuickImageResponse* requestImageResponse(
       const QString& id, const QSize& requested_size) override;
+
+ private:
+  std::shared_ptr<
+      cloudstorage::util::LRUCache<std::string, cloudstorage::IItem>>
+      item_cache_ = std::make_shared<
+          cloudstorage::util::LRUCache<std::string, cloudstorage::IItem>>(32);
 };
 #endif
 
