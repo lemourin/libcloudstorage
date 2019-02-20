@@ -117,7 +117,7 @@ Kirigami.ScrollablePage {
         volume: root.last_volume
         title: fullscreen ? item.filename : ""
         focus: true
-        preview: thumbnailer && !item.filename.endsWith(".mpd") && page.label === "Local Drive"
+        preview: false
 
         onVolumeChanged: root.last_volume = volume;
 
