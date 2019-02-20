@@ -139,7 +139,7 @@ Pointer<AVIOContext> create_io_context(
     void done(EitherError<void> e) override { semaphore_.set_value(e); }
 
     char* buffer_;
-    int size_;
+    int64_t size_;
     std::promise<EitherError<void>> semaphore_;
   };
   return make<AVIOContext>(
@@ -149,7 +149,7 @@ Pointer<AVIOContext> create_io_context(
             auto data = reinterpret_cast<Data*>(d);
             Range range;
             range.start_ = data->offset_;
-            range.size_ = std::min<int>(size, data->size_ - data->offset_);
+            range.size_ = std::min<int64_t>(size, data->size_ - data->offset_);
             if (range.size_ == 0) {
               return AVERROR_EOF;
             }
