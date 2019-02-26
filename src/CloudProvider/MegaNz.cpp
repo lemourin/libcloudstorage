@@ -153,6 +153,8 @@ std::string error_description(error e) {
         return "SSL verification failed";
       case API_EGOINGOVERQUOTA:
         return "Not enough quota";
+      case API_EMFAREQUIRED:
+        return "Multi-factor authentication required";
       default:
         return "Unknown error";
     }
@@ -632,7 +634,6 @@ class CloudFileSystemAccess : public FileSystemAccess {
   std::unordered_map<uint32_t, IUploadFileCallback*> callback_;
   uint32_t tag_ = 0;
 };
-
 }  // namespace
 
 class CloudMegaClient {
@@ -686,6 +687,63 @@ class CloudMegaClient {
   std::unique_ptr<MegaClient> client_;
 };
 
+namespace {
+template <class T>
+void mega_login(MegaNz* p, typename Request<EitherError<T>>::Pointer r,
+                const std::string& mail, const std::string& password,
+                const std::string& twofactor,
+                GenericCallback<EitherError<std::string>> complete) {
+  auto login_result = [=](EitherError<error> e) {
+    if (e.left()) return complete(e.left());
+    if (*e.right() != 0)
+      return complete(Error{*e.right(), error_description(*e.right())});
+    auto lock = p->mega()->lock();
+    char buffer[HASH_BUFFER_SIZE];
+    auto length =
+        p->mega()->client()->dumpsession((uint8_t*)buffer, HASH_BUFFER_SIZE);
+    lock.unlock();
+    complete(util::to_base64(std::string(buffer, length)));
+  };
+  auto prelogin_callback = [=](EitherError<PreloginData> e) {
+    if (e.left()) return complete(e.left());
+    auto prelogin = e.right();
+    auto lock = p->mega()->lock();
+    if (prelogin->version_ == 1) {
+      r->template make_subrequest<MegaNz>(
+          &MegaNz::make_request<error>, Type::LOGIN,
+          [&](Listener<error>*, int) {
+            p->mega()->client()->login(
+                mail.c_str(), (uint8_t*)p->passwordHash(password).c_str(),
+                twofactor.empty() ? nullptr : twofactor.c_str());
+            p->mega()->exec(lock);
+          },
+          login_result);
+    } else if (prelogin->version_ == 2) {
+      r->template make_subrequest<MegaNz>(
+          &MegaNz::make_request<error>, Type::LOGIN,
+          [&](Listener<error>*, int) {
+            p->mega()->client()->login2(
+                mail.c_str(), password.c_str(), &prelogin->salt_,
+                twofactor.empty() ? nullptr : twofactor.c_str());
+            p->mega()->exec(lock);
+          },
+          login_result);
+    } else {
+      complete(Error{IHttpRequest::Failure, util::Error::UNIMPLEMENTED});
+    }
+  };
+  auto lock = p->mega()->lock();
+  r->template make_subrequest<MegaNz>(
+      &MegaNz::make_request<PreloginData>, Type::PRELOGIN,
+      [&](Listener<PreloginData>*, int) {
+        p->mega()->client()->prelogin(mail.c_str());
+        p->mega()->exec(lock);
+      },
+      prelogin_callback);
+}
+
+}  // namespace
+
 MegaNz::MegaNz()
     : CloudProvider(util::make_unique<Auth>()), mega_(), authorized_() {}
 
@@ -721,13 +779,23 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
   return std::make_shared<Request<EitherError<Token>>>(
              shared_from_this(), callback,
              [=](Request<EitherError<Token>>::Pointer r) {
-               auto token = authorizationCodeToToken(code);
-               auto ret = token->token_.empty()
-                              ? EitherError<Token>(Error{
-                                    IHttpRequest::Failure,
-                                    util::Error::INVALID_AUTHORIZATION_CODE})
-                              : EitherError<Token>({token->token_, ""});
-               r->done(ret);
+               auto data = credentialsFromString(code);
+               auto email = data["username"].asString();
+               auto password = data["password"].asString();
+               auto twofactor = data["twofactor"].asString();
+               mega_login<Token>(this, r, email, password, twofactor,
+                                 [=](EitherError<std::string> e) {
+                                   if (e.left()) {
+                                     r->done(e.left());
+                                   } else {
+                                     auto token = std::make_shared<Token>();
+                                     Json::Value json;
+                                     json["username"] = email;
+                                     json["session"] = *e.right();
+                                     token->token_ = credentialsToString(json);
+                                     r->done(token);
+                                   }
+                                 });
              })
       ->run();
 }
@@ -754,22 +822,34 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
                 }
               });
         };
-        login(r, [=](EitherError<void> e) {
+        login(r, token(), [=](EitherError<void> e) {
           if (!e.left()) return fetch();
           if (auth_callback()->userConsentRequired(*this) ==
               ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
             auto code = [=](EitherError<std::string> e) {
               if (e.left()) return complete(e.left());
-              {
-                auto lock = auth_lock();
-                auth()->set_access_token(authorizationCodeToToken(*e.right()));
-              }
-              login(r, [=](EitherError<void> e) {
-                if (e.left())
-                  complete(e.left());
-                else
-                  fetch();
-              });
+              auto data = credentialsFromString(*e.right());
+              auto email = data["username"].asString();
+              auto password = data["password"].asString();
+              auto twofactor = data["twofactor"].asString();
+              mega_login<void>(this, r, email, password, twofactor,
+                               [=](EitherError<std::string> e) {
+                                 if (e.left())
+                                   complete(e.left());
+                                 else {
+                                   {
+                                     auto lock = auth_lock();
+                                     auto token =
+                                         util::make_unique<IAuth::Token>();
+                                     Json::Value json;
+                                     json["username"] = email;
+                                     json["session"] = *e.right();
+                                     token->token_ = credentialsToString(json);
+                                     auth()->set_access_token(std::move(token));
+                                   }
+                                   fetch();
+                                 }
+                               });
             };
             r->set_server(
                 r->provider()->auth()->requestAuthorizationCode(code));
@@ -1097,85 +1177,23 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
 }
 
 void MegaNz::login(Request<EitherError<void>>::Pointer r,
-                   AuthorizeRequest::AuthorizeCompleted complete) {
-  auto data = credentialsFromString(token());
-  std::string mail = data["username"].asString();
-  auto password = data["password"].asString();
-  auto prelogin_callback = [=](EitherError<PreloginData> e) {
-    if (e.left()) return complete(nullptr);
-    auto prelogin = e.right();
-    auto lock = mega_->lock();
-    if (prelogin->version_ == 1) {
-      r->make_subrequest<MegaNz>(
-          &MegaNz::make_request<error>, Type::LOGIN,
-          [&](Listener<error>*, int) {
-            util::log("logging in with", mail, password);
-            mega_->client()->login(mail.c_str(),
-                                   (uint8_t*)passwordHash(password).c_str());
-            mega_->exec(lock);
-          },
-          [=](EitherError<error> e) {
-            if (e.left()) return complete(e.left());
-            if (*e.right() != 0)
-              return complete(Error{*e.right(), error_description(*e.right())});
-            {
-              auto lock1 = auth_lock();
-              auto lock2 = mega_->lock();
-              char buffer[HASH_BUFFER_SIZE];
-              auto length = mega_->client()->dumpsession((uint8_t*)buffer,
-                                                         HASH_BUFFER_SIZE);
-              auth()->access_token()->token_ =
-                  util::to_base64(std::string(buffer, length));
-            }
-            complete(nullptr);
-          });
-    } else if (prelogin->version_ == 2) {
-      r->make_subrequest<MegaNz>(
-          &MegaNz::make_request<error>, Type::LOGIN,
-          [&](Listener<error>*, int) {
-            mega_->client()->login2(mail.c_str(), password.c_str(),
-                                    &prelogin->salt_);
-            mega_->exec(lock);
-          },
-          [=](EitherError<error> e) {
-            if (e.left()) return complete(e.left());
-            if (*e.right() != 0)
-              return complete(Error{*e.right(), error_description(*e.right())});
-            {
-              auto lock1 = auth_lock();
-              auto lock2 = mega_->lock();
-              char buffer[HASH_BUFFER_SIZE];
-              auto length = mega_->client()->dumpsession((uint8_t*)buffer,
-                                                         HASH_BUFFER_SIZE);
-              auth()->access_token()->token_ =
-                  util::to_base64(std::string(buffer, length));
-            }
-            complete(nullptr);
-          });
-    } else {
-      complete(Error{IHttpRequest::Failure, util::Error::UNIMPLEMENTED});
-    }
-  };
-  auto session_auth_callback = [=](EitherError<error> e) {
-    if (!e.left() && *e.right() == API_OK) return complete(nullptr);
-    auto lock = mega_->lock();
-    r->make_subrequest<MegaNz>(&MegaNz::make_request<PreloginData>,
-                               Type::PRELOGIN,
-                               [&](Listener<PreloginData>*, int) {
-                                 mega_->client()->prelogin(mail.c_str());
-                                 mega_->exec(lock);
-                               },
-                               prelogin_callback);
-  };
+                   const std::string& token,
+                   AuthorizeRequest::AuthorizeCompleted cb) {
   auto lock = mega_->lock();
+  auto data = credentialsFromString(token);
+  auto session = util::from_base64(data["session"].asString());
   r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::LOGIN,
                              [&](Listener<error>*, int) {
-                               auto session = util::from_base64(access_token());
                                mega_->client()->login((uint8_t*)session.c_str(),
                                                       session.size());
                                mega_->exec(lock);
                              },
-                             session_auth_callback);
+                             [=](EitherError<error> e) {
+                               if (e.left())
+                                 cb(e.left());
+                               else
+                                 cb(nullptr);
+                             });
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {
@@ -1220,18 +1238,6 @@ void MegaNz::ensureAuthorized(typename Request<T>::Pointer r,
     r->reauthorize(f);
   else
     f(nullptr);
-}
-
-IAuth::Token::Pointer MegaNz::authorizationCodeToToken(
-    const std::string& code) const {
-  auto data = credentialsFromString(code);
-  IAuth::Token::Pointer token = util::make_unique<IAuth::Token>();
-  Json::Value json;
-  json["username"] = data["username"].asString();
-  json["password"] = data["password"].asString();
-  token->token_ = credentialsToString(json);
-  token->refresh_token_ = token->token_;
-  return token;
 }
 
 std::string MegaNz::Auth::authorizeLibraryUrl() const {

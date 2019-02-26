@@ -30,21 +30,26 @@
           var json = {
             username: $('#inputEmail').val(),
             password: $('#inputPassword').val(),
+            twofactor: $('#inputTwoFactor').val()
           };
           var code = window.btoa(encodeURIComponent(JSON.stringify(json)));
           window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
           return false;
         };
       </script>
-      <h2 class="text-center">Mega.Nz Login</h2>
-      <h5>Libcloudstorage requires access to your Mega.Nz account in order to display the content of your cloud storage. This
-        page is running locally and is hosted by your machine. The inserted data is going to be safely sent to <a href="mega.nz">Mega.Nz</a>        servers.</h5><br/>
+      <h2 class="text-center">mega.nz Login</h2>
+      <h5>Libcloudstorage requires access to your mega.nz account in order to display the content of your cloud storage. This
+        page is running locally and is hosted by your machine. The inserted data is going to be safely sent to <a href="mega.nz">mega.nz</a> servers.
+        The two factor authentication code is required only if you enabled two factor authorization for your account.</h5><br/>
       <form class="form-horizontal" onsubmit="return submitData()">
         <div class="form-group"><label for="inputEmail" class="col-sm-2 control-label">Email</label>
           <div class="col-sm-10"><input type="email" class="form-control" id="inputEmail" placeholder="Email"></div>
         </div>
         <div class="form-group"><label for="inputPassword" class="col-sm-2 control-label">Password</label>
           <div class="col-sm-10"><input type="password" class="form-control" id="inputPassword" placeholder="Password"></div>
+        </div>
+        <div class="form-group"><label for="inputTwoFactor" class="col-sm-2 control-label">Code</label>
+          <div class="col-sm-10"><input type="text" class="form-control" id="inputTwoFactor" placeholder="Two factor authentication code"></div>
         </div>
         <div class="form-group">
           <div class="col-sm-offset-2 col-sm-10"><button type="submit" id="submit" class="btn btn-default">Sign in</button></div>

@@ -94,8 +94,9 @@ class MegaNz : public CloudProvider {
   std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
       IItem::Pointer item, IDownloadFileCallback*, Range);
 
-  void login(Request<EitherError<void>>::Pointer,
+  void login(Request<EitherError<void>>::Pointer r, const std::string& session,
              AuthorizeRequest::AuthorizeCompleted);
+
   std::string passwordHash(const std::string& password) const;
 
   CloudMegaClient* mega() const { return mega_.get(); }
@@ -106,8 +107,6 @@ class MegaNz : public CloudProvider {
   template <class T>
   void ensureAuthorized(typename Request<T>::Pointer,
                         std::function<void()> on_success);
-
-  IAuth::Token::Pointer authorizationCodeToToken(const std::string& code) const;
 
   void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
   void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
@@ -126,12 +125,12 @@ class MegaNz : public CloudProvider {
     Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
- private:
   template <class T>
   std::shared_ptr<IRequest<EitherError<T>>> make_request(
       Type, std::function<void(Listener<T>*, int)> init,
       GenericCallback<EitherError<T>> callback);
 
+ private:
   std::unique_ptr<CloudMegaClient> mega_;
   std::atomic_bool authorized_;
   std::mutex mutex_;
