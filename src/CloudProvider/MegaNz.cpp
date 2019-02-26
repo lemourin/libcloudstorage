@@ -762,8 +762,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
             r->set_server(
                 r->provider()->auth()->requestAuthorizationCode(code));
           } else {
-            complete(Error{IHttpRequest::Unauthorized,
-                           util::Error::INVALID_CREDENTIALS});
+            complete(Error{IHttpRequest::Unauthorized, e.left()->description_});
           }
         });
       });
@@ -1129,7 +1128,7 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
 
 std::string MegaNz::passwordHash(const std::string& password) const {
   auto lock = mega_->lock();
-  uint8_t buffer[HASH_BUFFER_SIZE];
+  uint8_t buffer[HASH_BUFFER_SIZE] = {};
   mega_->client()->pw_key(password.c_str(), buffer);
   return util::to_base64(std::string(reinterpret_cast<const char*>(buffer)));
 }
