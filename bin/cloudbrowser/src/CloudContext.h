@@ -145,7 +145,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
     std::streambuf::int_type overflow(int_type ch) override;
 
    private:
-    QString current_line_;
+    std::string current_line_;
   };
 
   void loadCachedDirectories();
