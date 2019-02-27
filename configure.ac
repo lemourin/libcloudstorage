@@ -1,4 +1,4 @@
-AC_INIT([libcloudstorage], [1.7])
+AC_INIT([libcloudstorage], [1.8])
 AM_INIT_AUTOMAKE([foreign subdir-objects tar-pax])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_USE_SYSTEM_EXTENSIONS
