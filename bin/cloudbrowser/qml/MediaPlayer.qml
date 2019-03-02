@@ -158,7 +158,7 @@ Item {
               && page.playing && player.item && !player.item.buffering
               && !volume_slider.visible)
             cnt++;
-          if (cnt >= idle_duration / interval) {
+          if (cnt >= idle_duration / interval && (!mobile || (!audio_track_list.item.shown && !subtitle_track_list.item.shown))) {
             page.state = "overlay_invisible";
             cnt = 0;
           }
