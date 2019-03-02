@@ -28,8 +28,8 @@ LIBS += \
     -lc++ \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcloudbrowser.a \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcloudstorage.a \
-    -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega \
-    -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale \
+    -llog -lcurl -lmicrohttpd -ljsoncpp -ltinyxml2 -lcryptopp -lmega \
+    -lmpv -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale \
     -lboost_filesystem -lboost_system \
     -lVLCQtQml -lVLCQtCore -lvlcjni
 
@@ -52,8 +52,6 @@ ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 
 ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/libc++_shared.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libssl.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libcrypto.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libjsoncpp.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libmicrohttpd.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcurl.so \
@@ -63,7 +61,6 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libsqlite3.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libmega.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcryptopp.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libavresample.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavdevice.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavfilter.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libswscale.so \
@@ -73,4 +70,5 @@ ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/lib/libavutil.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_system.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libboost_filesystem.so \
-    $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so
+    $$ANDROID_TOOLCHAIN_PATH/lib/libvlcjni.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libmpv.so \
