@@ -137,5 +137,9 @@ AM_CXXFLAGS += $(libmicrohttpd_CFLAGS)
 libcloudstorage_la_LIBADD += $(libmicrohttpd_LIBS)
 endif
 
+if ANDROID
+libcloudstorage_la_LIBADD += -llog
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcloudstorage.pc

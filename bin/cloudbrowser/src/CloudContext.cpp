@@ -119,7 +119,6 @@ CloudContext::CloudContext(QObject* parent)
     std::unique_lock<std::mutex> lock(gMutex);
     gCloudContext = this;
   }
-  util::log_stream(util::make_unique<std::ostream>(&debug_stream_));
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
   auto providers = settings.value("providers").toList();
@@ -158,7 +157,6 @@ CloudContext::~CloudContext() {
   saveProviders();
   context_thread_pool_ = nullptr;
   *interrupt_ = true;
-  util::log_stream(util::make_unique<std::ostream>(std::cerr.rdbuf()));
   {
     std::unique_lock<std::mutex> lock(gMutex);
     gCloudContext = nullptr;
@@ -622,15 +620,4 @@ void CloudContext::RequestPool::add(std::shared_ptr<ICloudProvider> p,
     request_.push_back({p, r});
   }
   condition_.notify_one();
-}
-
-std::streambuf::int_type CloudContext::DebugStream::overflow(int_type ch) {
-  if (ch == '\n' || current_line_.length() > 1000) {
-    qDebug().noquote() << QString::fromStdString(current_line_);
-    current_line_ = "";
-  }
-  if (ch != '\n') {
-    current_line_ += static_cast<char>(ch);
-  }
-  return 1;
 }

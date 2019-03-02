@@ -140,14 +140,6 @@ class CLOUDBROWSER_API CloudContext : public QObject {
     CloudContext* ctx_;
   };
 
-  class DebugStream : public std::streambuf {
-   public:
-    std::streambuf::int_type overflow(int_type ch) override;
-
-   private:
-    std::string current_line_;
-  };
-
   void loadCachedDirectories();
   void saveCachedDirectories();
   void saveProviders();
@@ -159,7 +151,6 @@ class CLOUDBROWSER_API CloudContext : public QObject {
 
   mutable std::mutex mutex_;
   QJsonDocument config_;
-  DebugStream debug_stream_;
   std::shared_ptr<ServerWrapperFactory> http_server_factory_;
   std::vector<std::shared_ptr<cloudstorage::IHttpServer>> auth_server_;
   std::shared_ptr<cloudstorage::IHttp> http_;

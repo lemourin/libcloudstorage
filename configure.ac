@@ -134,6 +134,8 @@ AS_IF([test "${SYS}" = "mingw32"], [
 ])
 AC_SUBST(SOCKET_LIBS)
 
+AM_CONDITIONAL([ANDROID], [test "${SYS}" = "android"])
+
 AC_ARG_WITH([examples], AS_HELP_STRING([--with-examples]))
 AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 

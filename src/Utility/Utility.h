@@ -29,7 +29,12 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <string>
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 #include "IHttpServer.h"
 #include "IItem.h"
@@ -187,29 +192,42 @@ constexpr auto UNIMPLEMENTED = "unimplemented";
 
 namespace priv {
 CLOUDSTORAGE_API extern std::mutex stream_mutex;
-CLOUDSTORAGE_API extern std::unique_ptr<std::ostream> stream;
 
 template <class... Args>
-void log() {}
+void log(std::ostream&) {}
+
+template <class T>
+void log(std::ostream& stream, T&& t) {
+  stream << t;
+}
 
 template <class First, class... Rest>
-void log(First&& t, Rest&&... rest) {
-  *priv::stream << t << " ";
-  log(std::forward<Rest>(rest)...);
+void log(std::ostream& stream, First&& t, Rest&&... rest) {
+  stream << t << " ";
+  log(stream, std::forward<Rest>(rest)...);
 }
 
 }  // namespace priv
-
-CLOUDSTORAGE_API void log_stream(std::unique_ptr<std::ostream> stream);
 
 template <class... Args>
 void log(Args&&... t) {
   std::lock_guard<std::mutex> lock(priv::stream_mutex);
   std::time_t time = std::time(nullptr);
   auto tm = util::gmtime(time);
-  *priv::stream << "[" << std::put_time(&tm, "%D %T") << "] ";
-  priv::log(std::forward<Args>(t)...);
-  *priv::stream << std::endl;
+  std::stringstream buffer;
+  buffer << "[" << std::put_time(&tm, "%D %T") << "] ";
+  priv::log(buffer, std::forward<Args>(t)...);
+#ifdef __ANDROID__
+  __android_log_print(ANDROID_LOG_DEBUG, "cloudstorage", "%s\n",
+                      buffer.str().c_str());
+#else
+#ifdef __unix__
+  std::cerr << buffer.str() << std::endl;
+#endif
+#endif
+#ifdef _WIN32
+  OutputDebugString(buffer.str().c_str());
+#endif
 }
 
 template <class Key, class Value>
