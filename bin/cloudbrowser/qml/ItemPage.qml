@@ -113,6 +113,7 @@ Kirigami.ScrollablePage {
         anchors.fill: parent
         id: player
         player: cloud.playerBackend
+        mobile: platform.mobile()
         type: item.type
         volume: root.last_volume
         title: fullscreen ? item.filename : ""

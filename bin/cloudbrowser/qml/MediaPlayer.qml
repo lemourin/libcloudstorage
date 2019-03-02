@@ -394,7 +394,7 @@ Item {
 
         id: volume_control
         source: volume_icon(volume_slider.value)
-        visible: (type === "video" || type === "audio") && page.width > extended_view_threshold
+        visible: (type === "video" || type === "audio") && page.width > extended_view_threshold && !mobile
         color: button_color
         isMask: true
         MouseArea {
