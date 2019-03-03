@@ -24,6 +24,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <codecvt>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -226,7 +227,9 @@ void log(Args&&... t) {
 #endif
 #endif
 #ifdef _WIN32
-  OutputDebugString(buffer.str().c_str());
+  OutputDebugString(std::wstring_convert<std::codecvt_utf8<wchar_t>>()
+                        .from_bytes(buffer.str() + "\n")
+                        .c_str());
 #endif
 }
 
