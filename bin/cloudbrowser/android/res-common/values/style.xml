@@ -1,0 +1,5 @@
+<resources>
+  <style name="NoAnimationStyle" parent="android:Theme.Translucent.NoTitleBar.Fullscreen">
+    <item name="android:windowAnimationStyle">@null</item>
+  </style>
+</resources>

@@ -53,6 +53,10 @@ ANDROID_PACKAGE_SOURCE_DIR = $$PWD
 ANDROID_EXTRA_LIBS = \
     $$ANDROID_TOOLCHAIN_PATH/$$(ANDROID_NDK_TOOLS_PREFIX)/lib/libc++_shared.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libjsoncpp.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libharfbuzz.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libfribidi.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libfreetype.so \
+    $$ANDROID_TOOLCHAIN_PATH/lib/libass.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libmicrohttpd.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libcurl.so \
     $$ANDROID_TOOLCHAIN_PATH/lib/libtinyxml2.so \

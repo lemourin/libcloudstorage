@@ -28,6 +28,7 @@
 #include <QOpenGLFramebufferObject>
 #include <QQuickWindow>
 #include <QSGRenderNode>
+#include <QStandardPaths>
 
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
@@ -104,6 +105,19 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
   mpv_observe_property(mpv_.get(), IDLE_ID, "core-idle", MPV_FORMAT_FLAG);
   mpv_observe_property(mpv_.get(), CACHE_TIME_ID, "demuxer-cache-time",
                        MPV_FORMAT_NODE);
+
+#ifdef __ANDROID__
+  auto app_data =
+      QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)
+          .front();
+  auto default_font_path = app_data + "/subfont.ttf";
+  if (!QFile::exists(default_font_path)) {
+    QFile("assets:/subfont.ttf").copy(default_font_path);
+  }
+  mpv_set_option_string(mpv_.get(), "config-dir",
+                        app_data.toStdString().c_str());
+#endif
+
   mpv_request_log_messages(mpv_.get(), "warn");
 
   if (mpv_initialize(mpv_.get()) < 0)
