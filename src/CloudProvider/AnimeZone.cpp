@@ -31,6 +31,11 @@
 
 namespace re = std;
 
+const auto ANIME_NAME = "Anime";
+const auto ANIME_ID = "anime";
+const auto MOVIE_NAME = "Movie";
+const auto MOVIE_ID = "movie";
+
 namespace cloudstorage {
 
 const auto USER_AGENT =
@@ -389,14 +394,14 @@ ICloudProvider::DownloadFileRequest::Pointer AnimeZone::downloadFileAsync(
 IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
     const IItem &directory, const std::string &page_token,
     std::ostream &) const {
-  if (directory.id() == rootDirectory()->id()) {
-    return http()->create(endpoint() + "/anime/lista");
-  }
   auto data = util::json::from_string(directory.id());
   auto type = data["type"].asString();
   if (type == "letter") {
     auto letter = data["letter"].asString();
-    const std::string url = endpoint() + "/anime/lista/" + letter;
+    auto type = data["content_type"].asString();
+    const std::string url = endpoint() + "/anime/" +
+                            (type == "anime" ? "lista" : "filmy") + "/" +
+                            letter;
     auto r = http()->create(url);
     if (page_token != "") {
       r->setParameter("page", page_token);
@@ -417,7 +422,6 @@ IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
 IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
                                              std::istream &response,
                                              std::string &page_token) const {
-  if (directory.id() == rootDirectory()->id()) return rootDirectoryContent();
   std::stringstream stream;
   stream << response.rdbuf();
   auto dir_data = util::json::from_string(directory.id());
@@ -532,7 +536,52 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
       ->run();
 }
 
-IItem::List AnimeZone::rootDirectoryContent() const {
+ICloudProvider::ListDirectoryPageRequest::Pointer
+AnimeZone::listDirectoryPageAsync(IItem::Pointer item,
+                                  const std::string &page_token,
+                                  ListDirectoryPageCallback complete) {
+  auto resolver = [=](Request<EitherError<PageData>>::Pointer r) {
+    if (item->id() == rootDirectory()->id()) {
+      PageData data;
+      data.items_.push_back(util::make_unique<Item>(
+          ANIME_NAME, ANIME_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
+          IItem::FileType::Directory));
+      data.items_.push_back(util::make_unique<Item>(
+          MOVIE_NAME, MOVIE_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
+          IItem::FileType::Directory));
+      return r->done(data);
+    }
+    if (item->id() == ANIME_ID) {
+      PageData data;
+      data.items_ = rootDirectoryContent("anime");
+      return r->done(data);
+    } else if (item->id() == MOVIE_ID) {
+      PageData data;
+      data.items_ = rootDirectoryContent("movie");
+      return r->done(data);
+    }
+    try {
+      r->request(
+          [=](util::Output input) {
+            return listDirectoryRequest(*item, page_token, *input);
+          },
+          [=](EitherError<Response> e) {
+            if (e.left()) return r->done(e.left());
+            PageData result;
+            result.items_ = listDirectoryResponse(*item, e.right()->output(),
+                                                  result.next_token_);
+            r->done(result);
+          });
+    } catch (const Json::Exception &e) {
+      r->done(Error{IHttpRequest::Failure, e.what()});
+    }
+  };
+  return std::make_shared<Request<EitherError<PageData>>>(shared_from_this(),
+                                                          complete, resolver)
+      ->run();
+}
+
+IItem::List AnimeZone::rootDirectoryContent(const std::string &type) const {
   IItem::List result;
   std::vector<char> letters;
   letters.push_back('0');
@@ -541,6 +590,7 @@ IItem::List AnimeZone::rootDirectoryContent() const {
   }
   for (auto l : letters) {
     Json::Value value;
+    value["content_type"] = type;
     value["type"] = "letter";
     value["letter"] = std::string() + l;
     result.push_back(util::make_unique<Item>(

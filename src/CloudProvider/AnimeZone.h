@@ -58,8 +58,12 @@ class AnimeZone : public CloudProvider {
   GetItemUrlRequest::Pointer getItemUrlAsync(IItem::Pointer,
                                              GetItemUrlCallback) override;
 
+  ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
+      IItem::Pointer directory, const std::string& token,
+      ListDirectoryPageCallback) override;
+
  private:
-  IItem::List rootDirectoryContent() const;
+  IItem::List rootDirectoryContent(const std::string& content_type) const;
   IItem::List letterDirectoryContent(const std::string& content,
                                      std::string& next_page_token) const;
   IItem::List animeDirectoryContent(const std::string& anime_name,
