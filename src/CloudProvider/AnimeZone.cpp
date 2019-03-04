@@ -35,6 +35,8 @@ const auto ANIME_NAME = "Anime";
 const auto ANIME_ID = "anime";
 const auto MOVIE_NAME = "Movie";
 const auto MOVIE_ID = "movie";
+const auto RECENTS_NAME = "Recently added";
+const auto RECENTS_ID = "recents";
 
 namespace cloudstorage {
 
@@ -394,6 +396,9 @@ ICloudProvider::DownloadFileRequest::Pointer AnimeZone::downloadFileAsync(
 IHttpRequest::Pointer AnimeZone::listDirectoryRequest(
     const IItem &directory, const std::string &page_token,
     std::ostream &) const {
+  if (directory.id() == RECENTS_ID) {
+    return http()->create(endpoint());
+  }
   auto data = util::json::from_string(directory.id());
   auto type = data["type"].asString();
   if (type == "letter") {
@@ -424,6 +429,8 @@ IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
                                              std::string &page_token) const {
   std::stringstream stream;
   stream << response.rdbuf();
+  if (directory.id() == RECENTS_ID)
+    return recentsDirectoryContent(stream.str(), page_token);
   auto dir_data = util::json::from_string(directory.id());
   if (dir_data["type"] == "letter")
     return letterDirectoryContent(stream.str(), page_token);
@@ -549,6 +556,9 @@ AnimeZone::listDirectoryPageAsync(IItem::Pointer item,
       data.items_.push_back(util::make_unique<Item>(
           MOVIE_NAME, MOVIE_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
           IItem::FileType::Directory));
+      data.items_.push_back(util::make_unique<Item>(
+          RECENTS_NAME, RECENTS_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
+          IItem::FileType::Directory));
       return r->done(data);
     }
     if (item->id() == ANIME_ID) {
@@ -596,6 +606,30 @@ IItem::List AnimeZone::rootDirectoryContent(const std::string &type) const {
     result.push_back(util::make_unique<Item>(
         std::string() + l, util::json::to_string(value), IItem::UnknownSize,
         IItem::UnknownTimeStamp, IItem::FileType::Directory));
+  }
+  return result;
+}
+
+IItem::List AnimeZone::recentsDirectoryContent(const std::string &content,
+                                               std::string &) const {
+  IItem::List result;
+  re::regex anime_rx(
+      R"R(<a href="(\.\/odcinek\/.*\/(\d+))".*title="(.*)" .*>)R");
+  for (auto it = re::sregex_iterator(content.begin(), content.end(), anime_rx);
+       it != re::sregex_iterator(); ++it) {
+    Json::Value value;
+    const auto episode_url = (*it)[1].str();
+    const auto episode_no = (*it)[2].str();
+    const auto episode_title = (*it)[3].str();
+    value["type"] = "episode";
+    value["episode_no"] = episode_no;
+    value["episode_title"] = episode_title;
+    value["episode_url"] = episode_url;
+    value["anime"] = episode_title;
+    result.push_back(util::make_unique<Item>(
+        episode_title + " [" + episode_no + "]", util::json::to_string(value),
+        IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::FileType::Directory));
   }
   return result;
 }
