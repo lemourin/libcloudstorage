@@ -83,6 +83,74 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
   return result;
 }
 
+int to_month(const std::string &name) {
+  if (name == "stycznia")
+    return 1;
+  else if (name == "lutego")
+    return 2;
+  else if (name == "marca")
+    return 3;
+  else if (name == "kwietnia")
+    return 4;
+  else if (name == "maja")
+    return 5;
+  else if (name == "czerwca")
+    return 6;
+  else if (name == "lipca")
+    return 7;
+  else if (name == "sierpnia")
+    return 8;
+  else if (name == "września")
+    return 9;
+  else if (name == "października")
+    return 10;
+  else if (name == "listopada")
+    return 11;
+  else if (name == "grudnia")
+    return 12;
+  else
+    return 1;
+}
+
+int last_sunday(std::tm d) {
+  int month_days = 31;
+  d.tm_wday = (d.tm_wday - (d.tm_mday - 1)) % 7;
+  d.tm_wday = d.tm_wday >= 0 ? d.tm_wday : d.tm_wday + 7;
+  d.tm_mday = 1;
+  int result = 0;
+  while (d.tm_mday <= month_days) {
+    if (d.tm_wday == 0) {
+      result = d.tm_mday;
+    }
+    d.tm_mday++;
+    d.tm_wday = (d.tm_wday + 1) % 7;
+  }
+  return result;
+}
+
+std::chrono::system_clock::time_point date_to_timestamp(
+    const std::string &date) {
+  re::regex regex(R"R((\d+) (\w+) (\d+) o (\d+):(\d+))R");
+  re::smatch match;
+  if (!re::regex_match(date, match, regex)) return IItem::UnknownTimeStamp;
+  const auto day = match[1].str();
+  const auto month = match[2].str();
+  const auto year = match[3].str();
+  const auto hour = match[4].str();
+  const auto minute = match[5].str();
+  std::stringstream buffer;
+  buffer << year << "-" << to_month(month) << "-" << day << "T" << hour << ":"
+         << minute << ":0";
+  auto d = util::gmtime(std::time(nullptr));
+  if ((d.tm_mon >= 3 && d.tm_mon <= 8) ||
+      (d.tm_mon == 2 && d.tm_mday >= last_sunday(d)) ||
+      (d.tm_mon == 9 && d.tm_mday < last_sunday(d)))
+    buffer << "+02:00";
+  else
+    buffer << "+01:00";
+  return util::parse_time(buffer.str());
+}
+
 }  // namespace
 
 namespace openload {
@@ -614,7 +682,7 @@ IItem::List AnimeZone::recentsDirectoryContent(const std::string &content,
                                                std::string &) const {
   IItem::List result;
   re::regex anime_rx(
-      R"R(<a href="(\.\/odcinek\/.*\/(\d+))".*title="(.*)" .*>)R");
+      R"R(<a href="(\.\/odcinek\/[^/]*\/(\d+)).*title="([^"]*)"[^>]*><\/a>[^<]*<div[^>]*>\s*<p[^>]*>.*<\/p>\s*<p[^>]*>\s*.*\s*.*\s*<\/p>\s*<p[^>]*><small title="([^"]*)">)R");
   for (auto it = re::sregex_iterator(content.begin(), content.end(), anime_rx);
        it != re::sregex_iterator(); ++it) {
     Json::Value value;
@@ -628,7 +696,7 @@ IItem::List AnimeZone::recentsDirectoryContent(const std::string &content,
     value["anime"] = episode_title;
     result.push_back(util::make_unique<Item>(
         episode_title + " [" + episode_no + "]", util::json::to_string(value),
-        IItem::UnknownSize, IItem::UnknownTimeStamp,
+        IItem::UnknownSize, date_to_timestamp((*it)[4].str()),
         IItem::FileType::Directory));
   }
   return result;
