@@ -81,43 +81,35 @@ std::vector<PlayerDetails> episode_to_players(const std::string &page) {
 namespace openload {
 
 std::string cipher(const std::string &page) {
-  std::string ciphered_begin =
-      "<div class=\"\" style=\"display:none;\">\n<p style=\"\" id=\"";
-  auto begin =
-      page.find('>', page.find(ciphered_begin) + ciphered_begin.length()) + 1;
-  auto end = page.find('<', begin) - 1;
-  return page.substr(begin, end - begin + 1);
+  re::regex regex(R"R(<p id="\w*"\s*style="">(\w*)</p>)R");
+  re::smatch match;
+  if (re::regex_search(page, match, regex)) {
+    return match[1];
+  } else {
+    if (page.find("We’re Sorry!") != std::string::npos) {
+      throw std::logic_error(util::Error::COULD_NOT_FIND_VIDEO);
+    }
+    throw std::logic_error(util::Error::COULD_NOT_FIND_DECIPHER_CODE);
+  }
 }
 
 std::vector<std::string> values(const std::string &page) {
-  std::string b1search = "var  _1x4bfb36=parseInt('";
-  auto r1begin = page.find(b1search) + b1search.length();
-  auto r1end = page.find("'", r1begin);
-  auto r2begin = page.find('-', r1end) + 1;
-  auto r2end = page.find(';', r2begin);
-
-  std::string b2search = "_0x30725e,(parseInt('";
-  auto r3begin = page.find(b2search) + b2search.length();
-  auto r3end = page.find("'", r3begin);
-  auto r4begin = page.find('-', r3end) + 1;
-  auto r4end = page.find('+', r4begin);
-  auto r5begin = page.find('-', r4begin + 1) + 1;
-  auto r5end = page.find(')', r5begin);
-  auto r6begin = page.find('/', r4end) + 2;
-  auto r6end = page.find('-', r5begin);
-
-  return {page.substr(r1begin, r1end - r1begin),
-          page.substr(r2begin, r2end - r2begin),
-          page.substr(r3begin, r3end - r3begin),
-          page.substr(r4begin, r4end - r4begin),
-          page.substr(r5begin, r5end - r5begin),
-          page.substr(r6begin, r6end - r6begin)};
+  re::regex re1(R"R(var\s+_1x4bfb36=parseInt\('(\d+)',8\)-(\d+);)R");
+  re::smatch match1;
+  if (!re::regex_search(page, match1, re1)) {
+    throw std::logic_error(util::Error::COULD_NOT_PARSE_DECODING_SCRIPT);
+  }
+  re::smatch match2;
+  re::regex re2(
+      R"R(_0x30725e,\(parseInt\('(\d+)',8\)-(\d+)\+0x4-(\d+)\)\/\((\d+)-0x8\))R");
+  if (!re::regex_search(page, match2, re2)) {
+    throw std::logic_error(util::Error::COULD_NOT_PARSE_DECODING_SCRIPT);
+  }
+  return {match1[1], match1[2], match2[1], match2[2], match2[3], match2[4]};
 }
 
 std::string decipher(const std::string &code,
                      const std::vector<std::string> &r) {
-  if (code.empty())
-    throw std::logic_error(util::Error::COULD_NOT_FIND_DECIPHER_CODE);
   auto _0x531f91 = code;
   auto _0x5d72cd = std::string(1, _0x531f91[0]);
   _0x5d72cd = _0x531f91;
@@ -202,7 +194,8 @@ std::string decipher(const std::string &code,
 }
 
 std::string extract_url(const std::string &page) {
-  return "https://openload.co/stream/" + decipher(cipher(page), values(page)) +
+  auto code = cipher(page);
+  return "https://openload.co/stream/" + decipher(code, values(page)) +
          "?mime=true";
 }
 
@@ -240,30 +233,24 @@ std::string unpack_js(std::string p, uint64_t a, uint64_t c,
 }
 
 std::string find_embed_url(const std::string &page) {
-  const auto search = "<IFRAME SRC=\"";
-  auto start = page.find(search) + strlen(search);
-  auto end = page.find("\"", start);
-  return std::string(page.begin() + start, page.begin() + end);
+  re::smatch match;
+  if (!re::regex_search(page, match,
+                        re::regex(R"R(<IFRAME SRC="(.+)" .*>)R"))) {
+    if (page.find("File Not Found") != std::string::npos)
+      throw std::logic_error(util::Error::COULD_NOT_FIND_VIDEO);
+    throw std::logic_error(util::Error::URL_UNAVAILABLE);
+  }
+  return match[1];
 }
 
 std::string extract_url(const std::string &page) {
-  auto start = page.find("p,a,c,k");
-  if (start == std::string::npos) {
+  re::smatch script_match;
+  if (!re::regex_search(
+          page, script_match,
+          re::regex(R"R(eval\(function\(p,a,c,k,e,d\)\{.*\}\((.*)\))R"))) {
     throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
   }
-  start = page.find("return", start);
-  if (start == std::string::npos) {
-    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
-  }
-  start = page.find("'", start);
-  if (start == std::string::npos) {
-    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
-  }
-  auto end = page.find("</script>", start);
-  if (end == std::string::npos) {
-    throw std::logic_error(util::Error::COULD_NOT_FIND_PACKED_SCRIPT);
-  }
-  const std::string code = page.substr(start, end - start);
+  const std::string code = script_match[1];
   re::smatch match;
   re::regex arg_rx("'(.*?)',([0-9]*),([0-9]*),'(.*?)'");
   if (!re::regex_search(code, match, arg_rx)) {
@@ -462,18 +449,16 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
                   if (player == "openload.co") {
                     r->done(openload::extract_url(e.right()->output().str()));
                   } else if (player == "mp4upload.com") {
-                    r->send(
-                        [=](util::Output) {
-                          return http()->create(mp4upload::find_embed_url(
-                              e.right()->output().str()));
-                        },
-                        [=](EitherError<Response> e) {
-                          if (e.left())
-                            r->done(e.left());
-                          else
-                            r->done(mp4upload::extract_url(
-                                e.right()->output().str()));
-                        });
+                    auto url =
+                        mp4upload::find_embed_url(e.right()->output().str());
+                    r->send([=](util::Output) { return http()->create(url); },
+                            [=](EitherError<Response> e) {
+                              if (e.left())
+                                r->done(e.left());
+                              else
+                                r->done(mp4upload::extract_url(
+                                    e.right()->output().str()));
+                            });
                   } else {
                     throw std::logic_error(util::Error::UNSUPPORTED_PLAYER);
                   }

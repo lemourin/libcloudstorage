@@ -150,6 +150,10 @@ constexpr auto INVALID_CREDENTIALS = "invalid credentials";
 constexpr auto INVALID_AUTHORIZATION_CODE = "invalid authorization code";
 constexpr auto PLAYERS_NOT_FOUND = "players not found";
 constexpr auto COULD_NOT_FIND_DECIPHER_CODE = "couldn't find decipher code";
+constexpr auto COULD_NOT_PARSE_DECODING_SCRIPT =
+    "couldn't parse decoding script";
+constexpr auto COULD_NOT_FIND_VIDEO =
+    "deleted by owner or removed due to copyright violation";
 constexpr auto COULD_NOT_FIND_PACKED_SCRIPT = "couldn't find packed script";
 constexpr auto COULD_NOT_EXTRACT_PACKED_ARGUMENTS =
     "couldn't extract packed arguments script";
