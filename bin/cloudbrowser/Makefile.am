@@ -73,6 +73,9 @@ if WITH_QTANDROID
 libcloudbrowser_la_CXXFLAGS += $(qtandroid_CFLAGS)
 libcloudbrowser_la_LIBADD += $(qtandroid_LIBS)
 endif
+if ANDROID
+libcloudbrowser_la_LIBADD += -llog
+endif
 if WITH_QTWEBVIEW
 libcloudbrowser_la_CXXFLAGS += $(qtwebview_CFLAGS)
 libcloudbrowser_la_LIBADD += $(qtwebview_LIBS)
