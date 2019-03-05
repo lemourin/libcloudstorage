@@ -682,7 +682,7 @@ IItem::List AnimeZone::recentsDirectoryContent(const std::string &content,
                                                std::string &) const {
   IItem::List result;
   re::regex anime_rx(
-      R"R(<a href="(\.\/odcinek\/[^/]*\/(\d+)).*title="([^"]*)"[^>]*><\/a>[^<]*<div[^>]*>\s*<p[^>]*>.*<\/p>\s*<p[^>]*>\s*.*\s*.*\s*<\/p>\s*<p[^>]*><small title="([^"]*)">)R");
+      R"R(<a href="(\.\/odcinek\/[^/]*\/(\d+))[^>]*><img src="[^"]*" alt="[^"]*" title="([^"]*)" [^>]*"><\/a>\s*<div[^>]*>\s*<p[^>]*><a[^>]*>[^<]*<\/a><\/p>\s*<p[^>]*>\s*<span[^>]*><span[^>]*><\/span><\/span>\s*<a[^>]*>[^<]*<span[^>]*>[^<]*<\/span><\/a>\s*<\/p>\s*<p[^>]*><small title="([^"]*)">)R");
   for (auto it = re::sregex_iterator(content.begin(), content.end(), anime_rx);
        it != re::sregex_iterator(); ++it) {
     Json::Value value;
