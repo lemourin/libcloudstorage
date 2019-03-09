@@ -832,24 +832,24 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               auto email = data["username"].asString();
               auto password = data["password"].asString();
               auto twofactor = data["twofactor"].asString();
-              mega_login<void>(this, r, email, password, twofactor,
-                               [=](EitherError<std::string> e) {
-                                 if (e.left())
-                                   complete(e.left());
-                                 else {
-                                   {
-                                     auto lock = auth_lock();
-                                     auto token =
-                                         util::make_unique<IAuth::Token>();
-                                     Json::Value json;
-                                     json["username"] = email;
-                                     json["session"] = *e.right();
-                                     token->token_ = credentialsToString(json);
-                                     auth()->set_access_token(std::move(token));
-                                   }
-                                   fetch();
-                                 }
-                               });
+              mega_login<void>(
+                  this, r, email, password, twofactor,
+                  [=](EitherError<std::string> e) {
+                    if (e.left())
+                      complete(e.left());
+                    else {
+                      {
+                        auto lock = auth_lock();
+                        auto token = util::make_unique<IAuth::Token>();
+                        Json::Value json;
+                        json["username"] = email;
+                        json["session"] = *e.right();
+                        token->refresh_token_ = credentialsToString(json);
+                        auth()->set_access_token(std::move(token));
+                      }
+                      fetch();
+                    }
+                  });
             };
             r->set_server(
                 r->provider()->auth()->requestAuthorizationCode(code));
