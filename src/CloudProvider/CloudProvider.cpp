@@ -231,8 +231,8 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
     Hints hints_tmp;
     Json::Value unserialized_json =
         util::json::from_stream(std::stringstream(serialized_data));
-    for (const auto& key : unserialized_json["hints"]) {
-      std::string hint_key = key.asString();
+    for (const auto& key : unserialized_json["hints"].getMemberNames()) {
+      std::string hint_key = key;
       hints_tmp[hint_key] = unserialized_json["hints"][hint_key].asString();
     }
     token_tmp = unserialized_json["token"].asString();
