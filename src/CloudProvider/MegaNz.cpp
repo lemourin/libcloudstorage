@@ -312,7 +312,7 @@ struct App : public MegaApp {
 
   void prelogin_result(int version, string* email, string* salt,
                        error e) override {
-    call(e, PreloginData{version, *email, salt ? *salt : ""});
+    call(e, PreloginData{version, email ? *email : "", salt ? *salt : ""});
   }
 
   void login_result(error e) override { call(e, e); }
