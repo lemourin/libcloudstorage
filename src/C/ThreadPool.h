@@ -32,8 +32,16 @@ extern "C" {
 
 struct cloud_thread_pool;
 
-CLOUDSTORAGE_API struct cloud_thread_pool* cloud_thread_pool_create(
+struct cloud_thread_pool_operations {
+  void (*schedule)(void (*)(const void* param), const void* param,
+                   void* userdata);
+  void (*release)(void* userdata);
+};
+
+CLOUDSTORAGE_API struct cloud_thread_pool* cloud_thread_pool_create_default(
     uint32_t thread_count);
+CLOUDSTORAGE_API struct cloud_thread_pool* cloud_thread_pool_create(
+    struct cloud_thread_pool_operations*, void* userdata);
 CLOUDSTORAGE_API void cloud_thread_pool_release(struct cloud_thread_pool*);
 
 #ifdef __cplusplus

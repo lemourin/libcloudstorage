@@ -23,14 +23,41 @@
 
 #include "ThreadPool.h"
 #include "IThreadPool.h"
+#include "Utility/Utility.h"
 
 using namespace cloudstorage;
 
-cloud_thread_pool *cloud_thread_pool_create(uint32_t thread_count) {
+cloud_thread_pool *cloud_thread_pool_create_default(uint32_t thread_count) {
   return reinterpret_cast<cloud_thread_pool *>(
       IThreadPool::create(thread_count).release());
 }
 
 void cloud_thread_pool_release(cloud_thread_pool *thread_pool) {
   delete reinterpret_cast<IThreadPool *>(thread_pool);
+}
+
+cloud_thread_pool *cloud_thread_pool_create(cloud_thread_pool_operations *d,
+                                            void *userdata) {
+  struct ThreadPool : public IThreadPool {
+    ThreadPool(cloud_thread_pool_operations ops, void *userdata)
+        : operations_(ops), userdata_(userdata) {}
+
+    ~ThreadPool() override { operations_.release(userdata_); }
+
+    void schedule(const Task &f) override {
+      operations_.schedule(
+          [](const void *d) {
+            const Task *task = reinterpret_cast<const Task *>(d);
+            (*task)();
+            delete task;
+          },
+          new Task(f), userdata_);
+    }
+
+    cloud_thread_pool_operations operations_;
+    void *userdata_;
+  };
+
+  return reinterpret_cast<cloud_thread_pool *>(
+      util::make_unique<ThreadPool>(*d, userdata).release());
 }
