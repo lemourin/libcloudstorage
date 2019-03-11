@@ -22,15 +22,78 @@
  *****************************************************************************/
 #include "Crypto.h"
 
+#include <cstdlib>
+
 #include "ICrypto.h"
+#include "Utility/Utility.h"
 
 using namespace cloudstorage;
 
-cloud_crypto *cloud_crypto_create() {
+cloud_crypto *cloud_crypto_create_default() {
   return reinterpret_cast<cloud_crypto *>(
       new std::unique_ptr<ICrypto>(ICrypto::create()));
 }
 
 void cloud_crypto_release(cloud_crypto *d) {
   delete reinterpret_cast<std::unique_ptr<ICrypto> *>(d);
+}
+
+cloud_crypto *cloud_crypto_create(cloud_crypto_operations *d, void *userdata) {
+  struct Crypto : public ICrypto {
+    Crypto(cloud_crypto_operations ops, void *userdata)
+        : operations_(ops), userdata_(userdata) {}
+
+    ~Crypto() override { operations_.release(userdata_); }
+
+    std::string sha256(const std::string &message) override {
+      auto result = operations_.sha256(
+          {reinterpret_cast<const void *>(message.c_str()), message.size()},
+          userdata_);
+      auto r = std::string(reinterpret_cast<const char *>(result.data),
+                           result.length);
+      free(const_cast<void *>(result.data));
+      return r;
+    }
+    std::string hmac_sha256(const std::string &key,
+                            const std::string &message) override {
+      auto result = operations_.hmac_sha256(
+          {reinterpret_cast<const void *>(key.c_str()), key.size()},
+          {reinterpret_cast<const void *>(message.c_str()), message.size()},
+          userdata_);
+      auto r = std::string(reinterpret_cast<const char *>(result.data),
+                           result.length);
+      free(const_cast<void *>(result.data));
+      return r;
+    }
+    std::string hmac_sha1(const std::string &key,
+                          const std::string &message) override {
+      auto result = operations_.hmac_sha1(
+          {reinterpret_cast<const void *>(key.c_str()), key.size()},
+          {reinterpret_cast<const void *>(message.c_str()), message.size()},
+          userdata_);
+      auto r = std::string(reinterpret_cast<const char *>(result.data),
+                           result.length);
+      free(const_cast<void *>(result.data));
+      return r;
+    }
+    std::string hex(const std::string &hash) override {
+      auto result = operations_.hex(
+          {reinterpret_cast<const void *>(hash.c_str()), hash.size()},
+          userdata_);
+      auto r = std::string(reinterpret_cast<const char *>(result.data),
+                           result.length);
+      free(const_cast<void *>(result.data));
+      return r;
+    }
+
+    static std::string to_string(struct cloud_array array) {
+      return std::string(reinterpret_cast<const char *>(array.data),
+                         array.length);
+    }
+
+    cloud_crypto_operations operations_;
+    void *userdata_;
+  };
+  return reinterpret_cast<cloud_crypto *>(
+      util::make_unique<Crypto>(*d, userdata).release());
 }

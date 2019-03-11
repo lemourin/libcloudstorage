@@ -30,8 +30,24 @@ extern "C" {
 #endif  // __cplusplus
 
 struct cloud_crypto;
+struct cloud_array {
+  const void* data;
+  size_t length;
+};
 
-CLOUDSTORAGE_API struct cloud_crypto* cloud_crypto_create();
+struct cloud_crypto_operations {
+  struct cloud_array (*sha256)(struct cloud_array message, void* userdata);
+  struct cloud_array (*hmac_sha256)(struct cloud_array key,
+                                    struct cloud_array message, void* userdata);
+  struct cloud_array (*hmac_sha1)(struct cloud_array key,
+                                  struct cloud_array message, void* userdata);
+  struct cloud_array (*hex)(struct cloud_array hash, void* userdata);
+  void (*release)(void* userdata);
+};
+
+CLOUDSTORAGE_API struct cloud_crypto* cloud_crypto_create_default();
+CLOUDSTORAGE_API struct cloud_crypto* cloud_crypto_create(
+    struct cloud_crypto_operations*, void*);
 CLOUDSTORAGE_API void cloud_crypto_release(struct cloud_crypto*);
 
 #ifdef __cplusplus
