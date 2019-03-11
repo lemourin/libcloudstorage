@@ -179,16 +179,16 @@ cloud_provider_init_data *cloud_provider_init_data_create(
       static_cast<ICloudProvider::Permission>(d->permission);
   if (d->crypto)
     init_data->crypto_engine_ =
-        std::move(*reinterpret_cast<ICrypto::Pointer *>(d->crypto));
+        std::unique_ptr<ICrypto>(reinterpret_cast<ICrypto *>(d->crypto));
   if (d->http)
     init_data->http_engine_ =
-        std::move(*reinterpret_cast<IHttp::Pointer *>(d->http));
+        std::unique_ptr<IHttp>(reinterpret_cast<IHttp *>(d->http));
   if (d->http_server)
-    init_data->http_server_ = std::move(
-        *reinterpret_cast<IHttpServerFactory::Pointer *>(d->http_server));
+    init_data->http_server_ = std::unique_ptr<IHttpServerFactory>(
+        reinterpret_cast<IHttpServerFactory *>(d->http_server));
   if (d->thread_pool)
-    init_data->thread_pool_ =
-        std::move(*reinterpret_cast<IThreadPool::Pointer *>(d->thread_pool));
+    init_data->thread_pool_ = std::unique_ptr<IThreadPool>(
+        reinterpret_cast<IThreadPool *>(d->thread_pool));
   if (d->hints)
     init_data->hints_ = *reinterpret_cast<ICloudProvider::Hints *>(d->hints);
   return reinterpret_cast<cloud_provider_init_data *>(init_data);
