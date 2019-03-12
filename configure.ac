@@ -124,6 +124,7 @@ AC_CONFIG_FILES([
   bin/Makefile
   bin/fuse/Makefile
   bin/cloudbrowser/Makefile
+  bin/common/Makefile
   examples/Makefile
   examples/commandlinebrowser/Makefile
   examples/cinterface/Makefile

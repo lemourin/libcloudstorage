@@ -12,7 +12,6 @@ cloudbrowser_LDADD = libcloudbrowser.la
 noinst_HEADERS = \
 	src/CloudContext.h \
 	src/CloudItem.h \
-	src/HttpServer.h \
 	src/Request/CloudRequest.h \
 	src/Request/ListDirectory.h \
 	src/Request/GetThumbnail.h \
@@ -23,7 +22,7 @@ noinst_HEADERS = \
 	src/Request/MoveItem.h \
 	src/Request/UploadItem.h \
 	src/Request/DownloadItem.h \
-	src/Request/CopyItem.h
+	src/Request/CopyItem.h \
 	src/GenerateThumbnail.h \
 	src/AndroidUtility.h \
 	src/DesktopUtility.h \
@@ -37,7 +36,6 @@ noinst_HEADERS = \
 libcloudbrowser_la_SOURCES = \
 	src/CloudContext.cpp \
 	src/CloudItem.cpp \
-	src/HttpServer.cpp \
 	src/Request/CloudRequest.cpp \
 	src/Request/ListDirectory.cpp \
 	src/Request/GetThumbnail.cpp \
@@ -60,6 +58,7 @@ libcloudbrowser_la_SOURCES = \
 
 libcloudbrowser_la_CXXFLAGS = \
 	-I$(top_srcdir)/bin/cloudbrowser/src \
+	-I$(top_srcdir)/bin/common \
 	-I$(top_srcdir)/src \
 	$(libjsoncpp_CFLAGS) \
 	$(qt_CFLAGS)
@@ -67,6 +66,7 @@ libcloudbrowser_la_CXXFLAGS = \
 libcloudbrowser_la_LIBADD = \
 	$(libjsoncpp_LIBS) \
 	$(qt_LIBS) \
+	../common/libcommon.la \
 	../../src/libcloudstorage.la
 
 if WITH_QTANDROID
@@ -227,7 +227,7 @@ DEPS_res = \
 	resources/icons/material/hdpi/document-decrypt.svg \
 	resources/icons/material/hdpi/dialog-close.svg \
 	resources/icons/material/hdpi/edit-delete.svg \
-	resources/icons/material/hdpi/multimedia-player.svg
+	resources/icons/material/hdpi/multimedia-player.svg \
 	resources/icons/material/index.theme
 
 %.moc.cpp: %.h

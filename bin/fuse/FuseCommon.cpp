@@ -3,7 +3,7 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
-#include "../cloudbrowser/src/HttpServer.h"
+#include "HttpServer.h"
 #include "FuseDokan.h"
 #include "FuseHighLevel.h"
 #include "FuseLowLevel.h"

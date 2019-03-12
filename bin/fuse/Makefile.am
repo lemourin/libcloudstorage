@@ -2,6 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
 	-I$(top_srcdir)/src \
+	-I$(top_srcdir)/bin/common \
 	$(libjsoncpp_CFLAGS)
 
 AM_LDFLAGS = \
@@ -11,25 +12,26 @@ AM_LDFLAGS = \
 bin_PROGRAMS = cloudstorage-fuse
 
 cloudstorage_fuse_SOURCES = \
-	../cloudbrowser/src/HttpServer.cpp \
 	FuseCommon.cpp \
 	FuseLowLevel.cpp \
 	FuseHighLevel.cpp \
 	FuseDokan.cpp \
 	FileSystem.cpp \
+	FuseWinFsp.cpp \
 	main.cpp
 
 noinst_HEADERS = \
-	../cloudbrowser/src/HttpServer.h \
 	FuseCommon.h \
 	FuseLowLevel.h \
 	FuseHighLevel.h \
 	FuseDokan.h \
+	FuseWinFsp.h \
 	IFileSystem.h \
 	FileSystem.h
 
 cloudstorage_fuse_LDADD = \
 	../../src/libcloudstorage.la \
+	../common/libcommon.la \
 	$(libjsoncpp_LIBS)
 
 if WITH_FUSE
