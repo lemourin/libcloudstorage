@@ -397,30 +397,32 @@ cloud_request_upload_file *cloud_provider_upload_file(
           .release());
 }
 
+namespace {
+struct DownloadCallback : public IDownloadFileCallback {
+  DownloadCallback(cloud_request_download_file_callback callback, void *data)
+      : callback_(callback), data_(data) {}
+
+  void receivedData(const char *data, uint32_t length) override {
+    if (callback_.received_data) callback_.received_data(data, length, data_);
+  }
+
+  void progress(uint64_t total, uint64_t now) override {
+    if (callback_.progress) callback_.progress(total, now, data_);
+  }
+
+  void done(EitherError<void> e) override {
+    if (callback_.done)
+      callback_.done(reinterpret_cast<cloud_either_void *>(&e), data_);
+  }
+
+  cloud_request_download_file_callback callback_;
+  void *data_;
+};
+}  // namespace
+
 cloud_request_download_file *cloud_provider_download_file(
     cloud_provider *provider, cloud_item *item, cloud_range range,
     cloud_request_download_file_callback *callback, void *data) {
-  struct DownloadCallback : public IDownloadFileCallback {
-    DownloadCallback(cloud_request_download_file_callback callback, void *data)
-        : callback_(callback), data_(data) {}
-
-    void receivedData(const char *data, uint32_t length) override {
-      if (callback_.received_data) callback_.received_data(data, length, data_);
-    }
-
-    void progress(uint64_t total, uint64_t now) override {
-      if (callback_.progress) callback_.progress(total, now, data_);
-    }
-
-    void done(EitherError<void> e) override {
-      if (callback_.done)
-        callback_.done(reinterpret_cast<cloud_either_void *>(&e), data_);
-    }
-
-    cloud_request_download_file_callback callback_;
-    void *data_;
-  };
-
   return reinterpret_cast<cloud_request_download_file *>(
       reinterpret_cast<ICloudProvider *>(provider)
           ->downloadFileAsync(
@@ -429,5 +431,18 @@ cloud_request_download_file *cloud_provider_download_file(
                   callback ? *callback : cloud_request_download_file_callback{},
                   data),
               Range{range.start, range.size})
+          .release());
+}
+
+cloud_request_download_file *cloud_provider_get_thumbnail(
+    cloud_provider *provider, cloud_item *item,
+    cloud_request_download_file_callback *callback, void *data) {
+  return reinterpret_cast<cloud_request_download_file *>(
+      reinterpret_cast<ICloudProvider *>(provider)
+          ->getThumbnailAsync(
+              *reinterpret_cast<IItem::Pointer *>(item),
+              std::make_shared<DownloadCallback>(
+                  callback ? *callback : cloud_request_download_file_callback{},
+                  data))
           .release());
 }

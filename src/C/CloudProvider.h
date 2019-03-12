@@ -147,6 +147,10 @@ cloud_provider_download_file(struct cloud_provider*, struct cloud_item* item,
                              struct cloud_range range,
                              struct cloud_request_download_file_callback*,
                              void*);
+CLOUDSTORAGE_API struct cloud_request_download_file*
+cloud_provider_get_thumbnail(struct cloud_provider*, struct cloud_item*,
+                             struct cloud_request_download_file_callback*,
+                             void*);
 
 CLOUDSTORAGE_API cloud_string* cloud_provider_serialize_session(
     cloud_string* token, const struct cloud_hints* hints);
