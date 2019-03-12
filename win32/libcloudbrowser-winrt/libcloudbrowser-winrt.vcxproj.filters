@@ -63,9 +63,6 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\FileDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\HttpServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\bin\cloudbrowser\src\WinRTUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -159,6 +156,9 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.cpp">
       <Filter>Source Files\Request</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\bin\common\HttpServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\cloudbrowser\src\AndroidUtility.h">
@@ -176,10 +176,10 @@
     <ClInclude Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\bin\cloudbrowser\src\HttpServer.h">
+    <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h">
+    <ClInclude Include="..\..\bin\common\HttpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

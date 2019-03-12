@@ -56,7 +56,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtGui;../../dependencies/winrt/include/QtANGLE;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtGui;../../dependencies/winrt/include/QtANGLE;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;CLOUDBROWSER_LIBRARY;WITH_VLC_QT;WITH_MPV</PreprocessorDefinitions>
       <CompileAsWinRT>true</CompileAsWinRT>
@@ -75,7 +75,7 @@
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtANGLE;../../dependencies/winrt/include/QtGui;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtANGLE;../../dependencies/winrt/include/QtGui;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_THUMBNAILER;WITH_QTWEBVIEW;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -92,7 +92,6 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\File.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\FileDialog.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp" />
-    <ClCompile Include="..\..\bin\cloudbrowser\src\HttpServer.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\MpvPlayer.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CopyItem.cpp" />
@@ -106,6 +105,7 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\WinRTUtility.cpp" />
+    <ClCompile Include="..\..\bin\common\HttpServer.cpp" />
     <ClCompile Include="Generated\moc_CloudContext.cpp" />
     <ClCompile Include="Generated\moc_CloudItem.cpp" />
     <ClCompile Include="Generated\moc_CloudRequest.cpp" />
@@ -130,8 +130,8 @@
     <ClInclude Include="..\..\bin\cloudbrowser\src\Exec.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\File.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.h" />
-    <ClInclude Include="..\..\bin\cloudbrowser\src\HttpServer.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h" />
+    <ClInclude Include="..\..\bin\common\HttpServer.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\CloudContext.h">
