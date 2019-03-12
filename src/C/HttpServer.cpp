@@ -127,12 +127,14 @@ cloud_http_server_request *cloud_http_server_request_create(
 
     const char *get(const std::string &name) const override {
       cloud_string *str = operations_.get(name.c_str(), userdata_);
+      if (!str) return nullptr;
       storage_ = str;
       free(const_cast<char *>(str));
       return storage_.c_str();
     }
     const char *header(const std::string &name) const override {
       cloud_string *str = operations_.header(name.c_str(), userdata_);
+      if (!str) return nullptr;
       storage_ = str;
       free(const_cast<char *>(str));
       return storage_.c_str();
