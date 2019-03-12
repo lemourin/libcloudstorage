@@ -120,7 +120,7 @@ cloud_http *cloud_http_create(cloud_http_operations *ops, void *userdata) {
 
     IHttpRequest::Pointer create(const std::string &url,
                                  const std::string &method,
-                                 bool follow_redirect = true) const {
+                                 bool follow_redirect = true) const override {
       return std::make_shared<HttpRequest>(
           operations_,
           operations_.create(url.c_str(), method.c_str(), follow_redirect,
