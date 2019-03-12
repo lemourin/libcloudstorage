@@ -119,7 +119,10 @@ libcloudstorage_la_HEADERS = \
 	ICrypto.h \
 	IHttp.h \
 	IHttpServer.h \
-	IThreadPool.h \
+	IThreadPool.h
+
+libcloudstorage_cinterfacedir=$(libcloudstorage_ladir)/C
+libcloudstorage_cinterface_HEADERS = \
 	C/CloudProvider.h \
 	C/CloudStorage.h \
 	C/Crypto.h \
