@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 #include "Item.h"
+#include "CloudStorage.h"
 
 #include <cstring>
 #include "IItem.h"
@@ -33,21 +34,22 @@ void cloud_item_release(cloud_item *item) {
 }
 
 cloud_string *cloud_item_filename(const cloud_item *i) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<const IItem::Pointer *>(i))->filename().c_str());
 }
 
 cloud_string *cloud_item_id(const cloud_item *i) {
-  return strdup((*reinterpret_cast<const IItem::Pointer *>(i))->id().c_str());
+  return cloud_string_create(
+      (*reinterpret_cast<const IItem::Pointer *>(i))->id().c_str());
 }
 
 cloud_string *cloud_item_extension(const struct cloud_item *i) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<const IItem::Pointer *>(i))->extension().c_str());
 }
 
 cloud_string *cloud_item_to_string(const cloud_item *i) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<const IItem::Pointer *>(i))->toString().c_str());
 }
 

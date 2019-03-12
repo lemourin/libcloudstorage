@@ -54,7 +54,14 @@ size_t cloud_string_list_length(cloud_string_list* lst) {
 
 cloud_string* cloud_string_list_get(cloud_string_list* lst, size_t idx) {
   auto str = (reinterpret_cast<std::vector<std::string>*>(lst))->at(idx);
-  return strdup(str.c_str());
+  return cloud_string_create(str.c_str());
+}
+
+cloud_string* cloud_string_create(const char* data) {
+  auto length = strlen(data);
+  auto storage = malloc(length + 1);
+  memcpy(storage, data, length + 1);
+  return reinterpret_cast<char*>(storage);
 }
 
 void cloud_string_release(cloud_string* str) {

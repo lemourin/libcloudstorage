@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 #include "Request.h"
+#include "CloudStorage.h"
 #include "ICloudProvider.h"
 #include "IRequest.h"
 
@@ -37,7 +38,7 @@ void cloud_request_finish(cloud_request *r) {
 }
 
 cloud_string *cloud_error_description(cloud_error *d) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<std::shared_ptr<Error> *>(d))->description_.c_str());
 }
 
@@ -50,12 +51,12 @@ void cloud_error_release(cloud_error *d) {
 }
 
 cloud_string *cloud_token_token(cloud_token *d) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<std::shared_ptr<Token> *>(d))->token_.c_str());
 }
 
 cloud_string *cloud_token_access_token(struct cloud_token *d) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<std::shared_ptr<Token> *>(d))->access_token_.c_str());
 }
 
@@ -78,7 +79,7 @@ void cloud_item_list_release(cloud_item_list *d) {
 }
 
 cloud_string *cloud_page_next_token(cloud_page_data *d) {
-  return strdup(
+  return cloud_string_create(
       (*reinterpret_cast<std::shared_ptr<PageData> *>(d))->next_token_.c_str());
 }
 
@@ -93,8 +94,9 @@ void cloud_page_data_release(cloud_page_data *d) {
 }
 
 cloud_string *cloud_general_data_username(struct cloud_general_data *d) {
-  return strdup((*reinterpret_cast<std::shared_ptr<GeneralData> *>(d))
-                    ->username_.c_str());
+  return cloud_string_create(
+      (*reinterpret_cast<std::shared_ptr<GeneralData> *>(d))
+          ->username_.c_str());
 }
 
 uint64_t cloud_general_data_space_total(struct cloud_general_data *d) {
@@ -251,7 +253,8 @@ cloud_error *cloud_either_string_error(cloud_either_string *d) {
 cloud_string *cloud_either_string_result(cloud_either_string *d) {
   auto r = reinterpret_cast<EitherError<std::string> *>(d);
   if (!r->right()) return nullptr;
-  return reinterpret_cast<cloud_string *>(strdup(r->right()->c_str()));
+  return reinterpret_cast<cloud_string *>(
+      cloud_string_create(r->right()->c_str()));
 }
 
 void cloud_either_string_release(cloud_either_string *d) {

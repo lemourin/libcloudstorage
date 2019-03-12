@@ -48,6 +48,7 @@ CLOUDSTORAGE_API size_t cloud_string_list_length(struct cloud_string_list*);
 CLOUDSTORAGE_API cloud_string* cloud_string_list_get(struct cloud_string_list*,
                                                      size_t idx);
 
+CLOUDSTORAGE_API cloud_string* cloud_string_create(const char*);
 CLOUDSTORAGE_API void cloud_string_release(cloud_string*);
 
 #ifdef __cplusplus

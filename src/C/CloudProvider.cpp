@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 #include "CloudProvider.h"
+#include "CloudStorage.h"
 
 #include <cstring>
 
@@ -39,7 +40,8 @@ void cloud_provider_release(cloud_provider *d) {
 }
 
 cloud_string *cloud_provider_token(cloud_provider *d) {
-  return strdup(reinterpret_cast<ICloudProvider *>(d)->token().c_str());
+  return cloud_string_create(
+      reinterpret_cast<ICloudProvider *>(d)->token().c_str());
 }
 
 cloud_hints *cloud_provider_hints(cloud_provider *d) {
@@ -52,17 +54,19 @@ void cloud_hints_release(cloud_hints *d) {
 }
 
 cloud_string *cloud_provider_name(cloud_provider *d) {
-  return strdup(reinterpret_cast<ICloudProvider *>(d)->name().c_str());
+  return cloud_string_create(
+      reinterpret_cast<ICloudProvider *>(d)->name().c_str());
 }
 
 cloud_string *cloud_provider_endpoint(cloud_provider *d) {
-  return strdup(reinterpret_cast<ICloudProvider *>(d)->endpoint().c_str());
+  return cloud_string_create(
+      reinterpret_cast<ICloudProvider *>(d)->endpoint().c_str());
 }
 
 cloud_string *cloud_provider_authorize_library_url(const cloud_provider *d) {
-  return strdup(reinterpret_cast<const ICloudProvider *>(d)
-                    ->authorizeLibraryUrl()
-                    .c_str());
+  return cloud_string_create(reinterpret_cast<const ICloudProvider *>(d)
+                                 ->authorizeLibraryUrl()
+                                 .c_str());
 }
 
 cloud_item *cloud_provider_root_directory(const cloud_provider *d) {
@@ -205,7 +209,7 @@ void cloud_hints_add(cloud_hints *hints, cloud_string *key,
 
 cloud_string *cloud_provider_token(const cloud_provider *p) {
   const ICloudProvider *provider = reinterpret_cast<const ICloudProvider *>(p);
-  return strdup(provider->token().c_str());
+  return cloud_string_create(provider->token().c_str());
 }
 
 cloud_hints *cloud_provider_hints(const cloud_provider *p) {
@@ -216,7 +220,7 @@ cloud_hints *cloud_provider_hints(const cloud_provider *p) {
 
 cloud_string *cloud_provider_serialize_session(cloud_string *token,
                                                const cloud_hints *hints) {
-  return strdup(
+  return cloud_string_create(
       ICloudProvider::serializeSession(
           token, *reinterpret_cast<const ICloudProvider::Hints *>(hints))
           .c_str());
@@ -230,7 +234,7 @@ int cloud_provider_deserialize_session(cloud_string *data, cloud_string **token,
   if (!ICloudProvider::deserializeSession(data, token_cpp, *hints_cpp)) {
     return -1;
   }
-  *token = strdup(token_cpp.c_str());
+  *token = cloud_string_create(token_cpp.c_str());
   *hints = reinterpret_cast<cloud_hints *>(hints_cpp.release());
   return 0;
 }
