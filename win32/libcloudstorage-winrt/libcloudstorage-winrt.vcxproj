@@ -100,6 +100,14 @@
     <ClInclude Include="..\..\src\CloudProvider\WebDav.h" />
     <ClInclude Include="..\..\src\CloudProvider\YandexDisk.h" />
     <ClInclude Include="..\..\src\CloudProvider\YouTube.h" />
+    <ClInclude Include="..\..\src\C\CloudProvider.h" />
+    <ClInclude Include="..\..\src\C\CloudStorage.h" />
+    <ClInclude Include="..\..\src\C\Crypto.h" />
+    <ClInclude Include="..\..\src\C\Http.h" />
+    <ClInclude Include="..\..\src\C\HttpServer.h" />
+    <ClInclude Include="..\..\src\C\Item.h" />
+    <ClInclude Include="..\..\src\C\Request.h" />
+    <ClInclude Include="..\..\src\C\ThreadPool.h" />
     <ClInclude Include="..\..\src\IAuth.h" />
     <ClInclude Include="..\..\src\ICloudProvider.h" />
     <ClInclude Include="..\..\src\ICloudStorage.h" />
@@ -153,6 +161,32 @@
     <ClCompile Include="..\..\src\CloudProvider\WebDav.cpp" />
     <ClCompile Include="..\..\src\CloudProvider\YandexDisk.cpp" />
     <ClCompile Include="..\..\src\CloudProvider\YouTube.cpp" />
+    <ClCompile Include="..\..\src\C\CloudProvider.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\CloudStorage.cpp" />
+    <ClCompile Include="..\..\src\C\Crypto.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\Http.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\HttpServer.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\Item.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\Request.cpp" />
+    <ClCompile Include="..\..\src\C\ThreadPool.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\src\Request\AuthorizeRequest.cpp" />
     <ClCompile Include="..\..\src\Request\CreateDirectoryRequest.cpp" />
     <ClCompile Include="..\..\src\Request\DeleteItemRequest.cpp" />
@@ -170,7 +204,10 @@
     <ClCompile Include="..\..\src\Request\Request.cpp" />
     <ClCompile Include="..\..\src\Request\UploadFileRequest.cpp" />
     <ClCompile Include="..\..\src\Utility\Auth.cpp" />
-    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp" />
+    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\src\Utility\CryptoPP.cpp" />
     <ClCompile Include="..\..\src\Utility\CurlHttp.cpp" />
     <ClCompile Include="..\..\src\Utility\FileServer.cpp" />

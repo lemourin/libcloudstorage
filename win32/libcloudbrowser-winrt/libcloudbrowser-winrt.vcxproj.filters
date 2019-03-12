@@ -34,6 +34,12 @@
     <Filter Include="Resource Files\resources\icons\material\hdpi">
       <UniqueIdentifier>{f5e98a6b-403c-488d-b7a2-f9621a529ba6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Request">
+      <UniqueIdentifier>{41111fbd-a63a-4669-b2c3-c66e2d266456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Request">
+      <UniqueIdentifier>{5764ff97-9827-4460-995b-5ccefcf269aa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\bin\cloudbrowser\src\AndroidUtility.cpp">
@@ -57,46 +63,10 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\FileDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\bin\cloudbrowser\src\HttpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\bin\cloudbrowser\src\WinRTUtility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CopyItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\DeleteItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\DownloadItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\GetUrl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\ListDirectory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\MoveItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Generated\moc_UploadItem.cpp">
@@ -153,6 +123,42 @@
     <ClCompile Include="Generated\moc_MpvPlayer.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\GetUrl.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CopyItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\DownloadItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\ListDirectory.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\MoveItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\DeleteItem.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.cpp">
+      <Filter>Source Files\Request</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\bin\cloudbrowser\src\AndroidUtility.h">
@@ -190,44 +196,44 @@
     <CustomBuild Include="..\..\bin\cloudbrowser\src\FileDialog.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CopyItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DeleteItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DownloadItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetUrl.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\ListDirectory.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\MoveItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\RenameItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\UploadItem.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\MpvPlayer.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\bin\cloudbrowser\resources.qrc">
       <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CopyItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DeleteItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\DownloadItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\ListDirectory.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\MoveItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\RenameItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\UploadItem.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.h">
+      <Filter>Header Files\Request</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\bin\cloudbrowser\src\Request\GetUrl.h">
+      <Filter>Header Files\Request</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
