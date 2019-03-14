@@ -53,7 +53,9 @@ int find_session(cloud_string** token, struct cloud_hints** hints) {
     result[index++] = letter;
   }
   fclose(file);
-  return cloud_provider_deserialize_session(result, token, hints);
+  int r = cloud_provider_deserialize_session(result, token, hints);
+  free(result);
+  return r;
 }
 
 struct cloud_provider* create_provider(struct cloud_storage* cloud_storage,
