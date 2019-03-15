@@ -644,7 +644,8 @@ class CloudMegaClient {
         fs_(util::make_unique<CloudFileSystemAccess>()),
         client_(util::make_unique<MegaClient>(&app_, nullptr, http_.get(),
                                               fs_.get(), nullptr, nullptr,
-                                              api_key, "libcloudstorage")) {}
+                                              api_key, "libcloudstorage")),
+        random_engine_(device_()) {}
 
   ~CloudMegaClient() {
     auto lock = this->lock();
@@ -678,6 +679,11 @@ class CloudMegaClient {
 
   void exec(std::unique_lock<std::mutex>& lock) { app_.exec(lock); }
 
+  void randomize(uint8_t* buffer, size_t length) {
+    std::uniform_int_distribution<uint32_t> dist(0, UINT8_MAX);
+    for (size_t i = 0; i < length; i++) buffer[i] = dist(random_engine_);
+  }
+
   std::unique_lock<std::mutex> lock() { return app_.lock(); }
 
  private:
@@ -685,6 +691,8 @@ class CloudMegaClient {
   std::unique_ptr<CloudHttp> http_;
   std::unique_ptr<CloudFileSystemAccess> fs_;
   std::unique_ptr<MegaClient> client_;
+  std::random_device device_;
+  std::default_random_engine random_engine_;
 };
 
 namespace {
@@ -995,7 +1003,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
 
             SymmCipher key;
             uint8_t buf[FOLDERNODEKEYLENGTH];
-            PrnGen::genblock(buf, FOLDERNODEKEYLENGTH);
+            mega_->randomize(buf, FOLDERNODEKEYLENGTH);
             folder.nodekey.assign(reinterpret_cast<char*>(buf),
                                   FOLDERNODEKEYLENGTH);
             key.setkey(buf);
