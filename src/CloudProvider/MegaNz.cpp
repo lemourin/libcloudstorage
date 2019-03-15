@@ -402,6 +402,7 @@ struct App : public MegaApp {
   std::vector<std::function<void()>> callback_queue_;
   bool exec_pending_ = false;
   bool removed_ = false;
+  AccountDetails account_details_ = {};
 };
 
 struct CloudHttp : public HttpIO {
@@ -685,6 +686,8 @@ class CloudMegaClient {
   }
 
   std::unique_lock<std::mutex> lock() { return app_.lock(); }
+
+  AccountDetails* account_details() { return &app_.account_details_; }
 
  private:
   App app_;
@@ -1131,8 +1134,9 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<GeneralData>, Type::GENERAL_DATA,
           [&](Listener<GeneralData>*, int) {
-            mega_->client()->getaccountdetails(new AccountDetails, true, false,
-                                               false, false, false, false);
+            mega_->client()->getaccountdetails(mega_->account_details(), true,
+                                               false, false, false, false,
+                                               false);
             mega_->exec(lock);
           },
           [=](EitherError<GeneralData> e) {
