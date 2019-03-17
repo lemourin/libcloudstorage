@@ -58,8 +58,7 @@ IHttpServer::ICallback::Pointer HttpServerWrapper::callback() const {
   return dispatch_->callback(session_);
 }
 
-ServerWrapperFactory::ServerWrapperFactory(
-    std::shared_ptr<IHttpServerFactory> factory)
+ServerWrapperFactory::ServerWrapperFactory(IHttpServerFactory* factory)
     : callback_(std::make_shared<DispatchCallback>()),
       http_server_(
           factory->create(callback_, "", IHttpServer::Type::Authorization)) {}

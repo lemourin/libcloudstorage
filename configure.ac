@@ -128,6 +128,7 @@ AC_CONFIG_FILES([
   examples/Makefile
   examples/commandlinebrowser/Makefile
   examples/cinterface/Makefile
+  examples/promise/Makefile
 ])
 
 SOCKET_LIBS=""

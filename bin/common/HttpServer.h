@@ -25,7 +25,7 @@ class HttpServerWrapper : public cloudstorage::IHttpServer {
   HttpServerWrapper(std::shared_ptr<DispatchCallback>,
                     cloudstorage::IHttpServer::ICallback::Pointer callback,
                     const std::string& session);
-  ~HttpServerWrapper();
+  ~HttpServerWrapper() override;
 
   ICallback::Pointer callback() const override;
 
@@ -36,7 +36,7 @@ class HttpServerWrapper : public cloudstorage::IHttpServer {
 
 class ServerWrapperFactory : public cloudstorage::IHttpServerFactory {
  public:
-  ServerWrapperFactory(std::shared_ptr<cloudstorage::IHttpServerFactory>);
+  ServerWrapperFactory(cloudstorage::IHttpServerFactory*);
   cloudstorage::IHttpServer::Pointer create(
       cloudstorage::IHttpServer::ICallback::Pointer,
       const std::string& session_id, cloudstorage::IHttpServer::Type) override;

@@ -3,11 +3,11 @@
 #include "ICloudStorage.h"
 #include "Utility/Utility.h"
 
-#include "HttpServer.h"
 #include "FuseDokan.h"
 #include "FuseHighLevel.h"
 #include "FuseLowLevel.h"
 #include "FuseWinFsp.h"
+#include "HttpServer.h"
 
 #include <codecvt>
 #include <cstring>
@@ -155,7 +155,8 @@ int fuse_run(fuse_args *args, fuse_cmdline_opts *opts, Json::Value &json) {
   std::shared_ptr<IHttp> http = IHttp::create();
   std::shared_ptr<IThreadPool> thread_pool = IThreadPool::create(1);
   std::shared_ptr<IHttpServerFactory> http_server_factory =
-      util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create());
+      util::make_unique<ServerWrapperFactory>(
+          IHttpServerFactory::create().get());
   auto temporary_directory = json["temporary_directory"].asString();
   if (temporary_directory.empty())
     temporary_directory = util::temporary_directory();

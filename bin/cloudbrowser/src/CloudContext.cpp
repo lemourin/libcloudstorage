@@ -26,7 +26,7 @@ std::mutex gMutex;
 
 namespace {
 std::shared_ptr<ServerWrapperFactory> http_server_factory =
-    util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create());
+    util::make_unique<ServerWrapperFactory>(IHttpServerFactory::create().get());
 }  // namespace
 
 int ProviderListModel::rowCount(const QModelIndex&) const {
