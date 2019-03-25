@@ -1,3 +1,4 @@
+#include <condition_variable>
 #include <fstream>
 #include <iostream>
 
@@ -71,11 +72,19 @@ class Factory : public CloudFactory {
                     streamUploader(
                         std::make_unique<std::stringstream>(std::move(input))))
           .then([=](IItem::Pointer file) {
-            return d->downloadFile(
-                file, FullRange,
-                streamDownloader(std::make_unique<std::stringstream>()));
+            auto stream = std::make_shared<std::stringstream>();
+            return std::make_tuple(
+                d->downloadFile(file, FullRange, streamDownloader(stream)),
+                stream, file);
           })
-          .then([] { log("downloaded"); });
+          .then([=](const std::shared_ptr<std::stringstream>& stream,
+                    IItem::Pointer file) {
+            log("downloaded", stream->str());
+            return std::make_tuple(d->deleteItem(file), file);
+          })
+          .then([](IItem::Pointer file) { log("deleted", file->filename()); })
+          .error<Exception>(
+              [](const auto& d) { log("error happened", d.code(), d.what()); });
     }
   }
 

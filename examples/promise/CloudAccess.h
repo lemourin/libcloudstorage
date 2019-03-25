@@ -33,24 +33,24 @@ namespace {
 template <class T>
 void fulfill(const util::Promise<T>& promise, const EitherError<T>& e) {
   if (e.left()) {
-    promise.fulfill_exception(std::make_exception_ptr(Exception(e.left())));
+    promise.reject(Exception(e.left()));
   } else {
-    promise.fulfill(*e.right());
+    promise.fulfill(std::move(*e.right()));
   }
 }
 template <class T>
 void fulfill(const util::Promise<std::shared_ptr<T>>& promise,
              const EitherError<T>& e) {
   if (e.left()) {
-    promise.fulfill_exception(std::make_exception_ptr(Exception(e.left())));
+    promise.reject(Exception(e.left()));
   } else {
-    promise.fulfill(e.right());
+    promise.fulfill(std::move(e.right()));
   }
 }
 
-void fulfill(const util::Promise<void>& promise, const EitherError<void>& e) {
+void fulfill(const util::Promise<>& promise, const EitherError<void>& e) {
   if (e.left()) {
-    promise.fulfill_exception(std::make_exception_ptr(Exception(e.left())));
+    promise.reject(Exception(e.left()));
   } else {
     promise.fulfill();
   }
@@ -105,11 +105,11 @@ class CloudDownloadCallback {
 };
 
 std::unique_ptr<CloudUploadCallback> streamUploader(
-    std::unique_ptr<std::istream> stream,
+    const std::shared_ptr<std::istream>& stream,
     const std::function<void(uint64_t total, uint64_t now)>& progress =
         nullptr);
 std::unique_ptr<CloudDownloadCallback> streamDownloader(
-    std::unique_ptr<std::ostream> stream,
+    const std::shared_ptr<std::ostream>& stream,
     const std::function<void(uint64_t total, uint64_t now)>& progress =
         nullptr);
 
@@ -131,7 +131,7 @@ class CloudAccess {
   util::Promise<std::string> getDaemonUrl(IItem::Pointer item);
   util::Promise<std::string> getFileUrl(IItem::Pointer item);
   util::Promise<IItem::Pointer> getItemData(const std::string& id);
-  util::Promise<void> deleteItem(IItem::Pointer item);
+  util::Promise<> deleteItem(IItem::Pointer item);
   util::Promise<IItem::Pointer> createDirectory(IItem::Pointer parent,
                                                 const std::string& filename);
   util::Promise<IItem::Pointer> moveItem(IItem::Pointer item,
@@ -143,17 +143,19 @@ class CloudAccess {
   util::Promise<IItem::Pointer> uploadFile(
       IItem::Pointer parent, const std::string& filename,
       std::unique_ptr<CloudUploadCallback>&&);
-  util::Promise<void> downloadFile(IItem::Pointer file, Range range,
-                                   std::unique_ptr<CloudDownloadCallback>&&);
+  util::Promise<> downloadFile(IItem::Pointer file, Range range,
+                               std::unique_ptr<CloudDownloadCallback>&&);
 
  private:
   template <
       typename Method,
       class T = typename RequestType<typename MethodType<Method>::type>::type,
+      class Promise = typename std::conditional<
+          std::is_void<T>::value, util::Promise<>, util::Promise<T>>::type,
       typename... Args>
-  util::Promise<T> wrap(Method method, Args... args) {
+  Promise wrap(Method method, Args... args) {
     using RemovedShared = typename RemoveSharedPtr<T>::type;
-    util::Promise<T> promise;
+    Promise promise;
     auto tag = loop_->next_tag();
     auto request = (provider_.get()->*method)(
         args..., [loop = loop_, promise, tag](EitherError<RemovedShared> e) {

@@ -24,8 +24,8 @@
 
 #include "Utility/Utility.h"
 
-template <class T>
-using Promise = util::Promise<T>;
+template <class... T>
+using Promise = util::Promise<T...>;
 
 namespace cloudstorage {
 
@@ -61,7 +61,7 @@ Promise<IItem::Pointer> CloudAccess::getItemData(const std::string& id) {
   return wrap(&ICloudProvider::getItemDataAsync, id);
 }
 
-Promise<void> CloudAccess::deleteItem(IItem::Pointer item) {
+Promise<> CloudAccess::deleteItem(IItem::Pointer item) {
   return wrap(&ICloudProvider::deleteItemAsync, item);
 }
 
@@ -123,12 +123,12 @@ Promise<IItem::Pointer> CloudAccess::uploadFile(
   return promise;
 }
 
-Promise<void> CloudAccess::downloadFile(
+Promise<> CloudAccess::downloadFile(
     IItem::Pointer file, Range range,
     std::unique_ptr<CloudDownloadCallback>&& cb) {
   struct DownloadCallback : public IDownloadFileCallback {
     DownloadCallback(std::unique_ptr<CloudDownloadCallback>&& cb,
-                     const Promise<void>& promise, uint64_t tag,
+                     const Promise<>& promise, uint64_t tag,
                      const std::shared_ptr<priv::LoopImpl>& loop)
         : callback_(std::move(cb)), promise_(promise), tag_(tag), loop_(loop) {}
 
@@ -145,12 +145,12 @@ Promise<void> CloudAccess::downloadFile(
     }
 
     std::unique_ptr<CloudDownloadCallback> callback_;
-    Promise<void> promise_;
+    Promise<> promise_;
     uint64_t tag_;
     std::shared_ptr<priv::LoopImpl> loop_;
   };
 
-  Promise<void> promise;
+  Promise<> promise;
   auto tag = loop_->next_tag();
   auto request = provider_->downloadFileAsync(
       file,
@@ -165,12 +165,12 @@ std::string CloudAccess::name() const { return provider_->name(); }
 IItem::Pointer CloudAccess::root() const { return provider_->rootDirectory(); }
 
 std::unique_ptr<CloudUploadCallback> streamUploader(
-    std::unique_ptr<std::istream> stream,
+    const std::shared_ptr<std::istream>& stream,
     const std::function<void(uint64_t total, uint64_t now)>& progress) {
   struct Uploader : public CloudUploadCallback {
-    Uploader(std::unique_ptr<std::istream> stream,
+    Uploader(const std::shared_ptr<std::istream>& stream,
              const std::function<void(uint64_t total, uint64_t now)>& progress)
-        : stream_(std::move(stream)), progress_(progress) {}
+        : stream_(stream), progress_(progress) {}
 
     uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
       stream_->seekg(offset);
@@ -187,20 +187,20 @@ std::unique_ptr<CloudUploadCallback> streamUploader(
       if (progress_) progress_(total, now);
     }
 
-    std::unique_ptr<std::istream> stream_;
+    std::shared_ptr<std::istream> stream_;
     std::function<void(uint64_t total, uint64_t now)> progress_;
   };
-  return util::make_unique<Uploader>(std::move(stream), progress);
+  return util::make_unique<Uploader>(stream, progress);
 }
 
 std::unique_ptr<CloudDownloadCallback> streamDownloader(
-    std::unique_ptr<std::ostream> stream,
+    const std::shared_ptr<std::ostream>& stream,
     const std::function<void(uint64_t, uint64_t)>& progress) {
   struct Downloader : public CloudDownloadCallback {
     Downloader(
-        std::unique_ptr<std::ostream> stream,
+        const std::shared_ptr<std::ostream>& stream,
         const std::function<void(uint64_t total, uint64_t now)>& progress)
-        : stream_(std::move(stream)), progress_(progress) {}
+        : stream_(stream), progress_(progress) {}
 
     void receivedData(const char* data, uint32_t length) override {
       stream_->write(data, length);
@@ -210,10 +210,10 @@ std::unique_ptr<CloudDownloadCallback> streamDownloader(
       if (progress_) progress_(total, now);
     }
 
-    std::unique_ptr<std::ostream> stream_;
+    std::shared_ptr<std::ostream> stream_;
     std::function<void(uint64_t total, uint64_t now)> progress_;
   };
-  return util::make_unique<Downloader>(std::move(stream), progress);
+  return util::make_unique<Downloader>(stream, progress);
 }
 
 }  // namespace cloudstorage
