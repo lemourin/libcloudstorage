@@ -25,6 +25,7 @@
 #include "CloudEventLoop.h"
 #include "ICloudStorage.h"
 
+#include <json/json.h>
 #include <atomic>
 
 namespace cloudstorage {
@@ -65,8 +66,9 @@ class CloudFactory {
 
   void onCloudRemoved(const ICloudProvider&);
 
-  void dump(std::ostream& stream);
-  void load(std::istream& stream);
+  bool dumpAccounts(std::ostream& stream);
+  bool loadAccounts(std::istream& stream);
+  bool loadConfig(std::istream& stream);
 
   std::vector<std::shared_ptr<CloudAccess>> providers() const;
 
@@ -81,6 +83,7 @@ class CloudFactory {
   std::vector<IHttpServer::Pointer> http_server_handles_;
   std::unordered_map<uint64_t, std::shared_ptr<CloudAccess>> cloud_access_;
   std::shared_ptr<priv::LoopImpl> loop_;
+  Json::Value config_;
 };
 
 }  // namespace cloudstorage

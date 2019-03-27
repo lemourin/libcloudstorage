@@ -120,7 +120,7 @@ int main() {
   Factory factory(&loop, std::move(init_data));
   {
     std::ifstream config("config.json");
-    factory.load(config);
+    factory.loadAccounts(config);
   }
 
   /*for (const auto& d : factory.availableProviders()) {
@@ -131,7 +131,7 @@ int main() {
 
   {
     std::ofstream config("config.json");
-    factory.dump(config);
+    factory.dumpAccounts(config);
   }
 
   return exec;

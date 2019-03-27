@@ -24,8 +24,6 @@
 #include "HttpServer.h"
 #include "Utility/Utility.h"
 
-#include <json/json.h>
-
 namespace cloudstorage {
 
 namespace {
@@ -191,6 +189,12 @@ CloudAccess CloudFactory::create(
       base_url_ + (base_url_.back() == '/' ? "" : "/") + state;
   init_data.hints_["redirect_uri"] =
       base_url_ + (base_url_.back() == '/' ? "" : "/") + provider_name;
+  if (config_["keys"].isMember(provider_name)) {
+    init_data.hints_["client_id"] =
+        config_["keys"][provider_name]["client_id"].asString();
+    init_data.hints_["client_secret"] =
+        config_["keys"][provider_name]["client_secret"].asString();
+  }
   return CloudAccess(
       loop_, cloud_storage_->provider(provider_name, std::move(init_data)));
 }
@@ -243,7 +247,7 @@ void CloudFactory::onCloudRemoved(const ICloudProvider& d) {
   });
 }
 
-void CloudFactory::dump(std::ostream& stream) {
+bool CloudFactory::dumpAccounts(std::ostream& stream) {
   try {
     Json::Value json;
     Json::Value providers;
@@ -256,11 +260,13 @@ void CloudFactory::dump(std::ostream& stream) {
     }
     json["providers"] = providers;
     stream << json;
+    return true;
   } catch (const Json::Exception&) {
+    return false;
   }
 }
 
-void CloudFactory::load(std::istream& stream) {
+bool CloudFactory::loadAccounts(std::istream& stream) {
   try {
     Json::Value json;
     stream >> json;
@@ -273,7 +279,18 @@ void CloudFactory::load(std::istream& stream) {
       onCloudCreated(cloud);
       cloud_access_.insert({cloud_identifier(*cloud->provider()), cloud});
     }
+    return true;
   } catch (const Json::Exception&) {
+    return false;
+  }
+}
+
+bool CloudFactory::loadConfig(std::istream& stream) {
+  try {
+    stream >> config_;
+    return true;
+  } catch (const Json::Exception&) {
+    return false;
   }
 }
 
