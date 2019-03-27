@@ -11,9 +11,6 @@ using cloudstorage::util::log;
 
 class FactoryCallback : public ICloudFactory::ICallback {
  public:
-  void onCloudTokenReceived(const std::string&,
-                            const EitherError<Token>&) override {}
-
   void onCloudCreated(std::shared_ptr<ICloudAccess> d) override {
     if (d->name() == "google") {
       log("getting general data");
@@ -69,10 +66,6 @@ class FactoryCallback : public ICloudFactory::ICallback {
               [](const auto& d) { log("error happened", d.code(), d.what()); });
     }
   }
-
-  void onCloudRemoved(std::shared_ptr<ICloudAccess>) override {}
-
-  void onEventsAdded() override {}
 };
 
 int main() {

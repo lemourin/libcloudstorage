@@ -42,11 +42,11 @@ class ICloudFactory {
 
     virtual ~ICallback() = default;
 
-    virtual void onCloudTokenReceived(const std::string& provider,
-                                      const EitherError<Token>&) = 0;
-    virtual void onCloudCreated(std::shared_ptr<ICloudAccess> cloud) = 0;
-    virtual void onCloudRemoved(std::shared_ptr<ICloudAccess> cloud) = 0;
-    virtual void onEventsAdded() = 0;
+    virtual void onCloudTokenReceived(const std::string& /* provider */,
+                                      const EitherError<Token>&) {}
+    virtual void onCloudCreated(std::shared_ptr<ICloudAccess>) {}
+    virtual void onCloudRemoved(std::shared_ptr<ICloudAccess>) {}
+    virtual void onEventsAdded() {}
   };
 
   struct InitData {
