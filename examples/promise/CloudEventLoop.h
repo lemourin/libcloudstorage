@@ -27,19 +27,20 @@
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
+#include "ICloudFactory.h"
 #include "IRequest.h"
 #include "IThreadPool.h"
 #include "Promise.h"
 
 namespace cloudstorage {
 
-class Exception : public std::exception {
+class Exception : public IException {
  public:
   Exception(int code, const std::string& description);
   Exception(const std::shared_ptr<Error>&);
 
   const char* what() const noexcept override { return description_.c_str(); }
-  int code() const { return code_; }
+  int code() const override { return code_; }
 
  private:
   int code_;
@@ -85,15 +86,16 @@ class LoopImpl {
 
 class CloudEventLoop {
  public:
-  CloudEventLoop();
-  virtual ~CloudEventLoop();
+  CloudEventLoop(const std::shared_ptr<ICloudFactory::ICallback>& cb);
+  ~CloudEventLoop();
 
   std::shared_ptr<priv::LoopImpl> impl() { return impl_; }
 
-  virtual void onEventAdded();
+  void onEventAdded();
   void processEvents();
 
  private:
+  std::shared_ptr<ICloudFactory::ICallback> callback_;
   std::shared_ptr<priv::LoopImpl> impl_;
 };
 

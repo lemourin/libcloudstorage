@@ -26,15 +26,18 @@
 
 namespace cloudstorage {
 
-CloudEventLoop::CloudEventLoop()
-    : impl_(std::make_shared<priv::LoopImpl>(this)) {}
+CloudEventLoop::CloudEventLoop(
+    const std::shared_ptr<ICloudFactory::ICallback> &cb)
+    : callback_(cb), impl_(std::make_shared<priv::LoopImpl>(this)) {}
 
 CloudEventLoop::~CloudEventLoop() {
   impl_->clear();
   impl_->process_events();
 }
 
-void CloudEventLoop::onEventAdded() {}
+void CloudEventLoop::onEventAdded() {
+  if (callback_) callback_->onEventsAdded();
+}
 
 void CloudEventLoop::processEvents() { impl_->process_events(); }
 

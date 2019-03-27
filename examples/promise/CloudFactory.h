@@ -28,51 +28,45 @@
 #include <json/json.h>
 #include <atomic>
 
+#include "ICloudFactory.h"
+
 namespace cloudstorage {
 
-class CloudFactory {
+class CloudFactory : public ICloudFactory {
  public:
-  struct InitData {
-    std::string base_url_;
-    IHttp::Pointer http_;
-    IHttpServerFactory::Pointer http_server_factory_;
-    ICrypto::Pointer crypto_;
-    IThreadPool::Pointer thread_pool_;
-  };
+  CloudFactory(InitData&&);
+  ~CloudFactory() override;
 
-  struct ProviderInitData {
-    std::string token_;
-    ICloudProvider::Permission permission_;
-    ICloudProvider::Hints hints_;
-  };
-
-  CloudFactory(CloudEventLoop* event_loop, InitData&&);
-  virtual ~CloudFactory();
-
-  CloudAccess create(const std::string& provider_name,
-                     const ProviderInitData&) const;
+  std::unique_ptr<ICloudAccess> create(const std::string& provider_name,
+                                       const ProviderInitData&) const override;
 
   void add(std::unique_ptr<IGenericRequest>&&);
   void invoke(const std::function<void()>&);
 
-  virtual void onCloudTokenReceived(const std::string& provider,
-                                    const EitherError<Token>&);
+  void onCloudTokenReceived(const std::string& provider,
+                            const EitherError<Token>&);
 
-  virtual void onCloudCreated(std::shared_ptr<CloudAccess> cloud);
-  virtual void onCloudRemoved(std::shared_ptr<CloudAccess> cloud);
+  void onCloudCreated(std::shared_ptr<CloudAccess> cloud);
+  void onCloudRemoved(std::shared_ptr<CloudAccess> cloud);
 
-  std::string authorizationUrl(const std::string& provider) const;
-  std::vector<std::string> availableProviders() const;
+  std::string authorizationUrl(const std::string& provider) const override;
+  std::vector<std::string> availableProviders() const override;
 
   void onCloudRemoved(const ICloudProvider&);
 
-  bool dumpAccounts(std::ostream& stream);
-  bool loadAccounts(std::istream& stream);
-  bool loadConfig(std::istream& stream);
+  bool dumpAccounts(std::ostream& stream) override;
+  bool loadAccounts(std::istream& stream) override;
+  bool loadConfig(std::istream& stream) override;
 
-  std::vector<std::shared_ptr<CloudAccess>> providers() const;
+  void processEvents() override;
+
+  std::vector<std::shared_ptr<ICloudAccess>> providers() const override;
+
+  CloudAccess createImpl(const std::string& provider_name,
+                         const ProviderInitData&) const;
 
  private:
+  CloudEventLoop event_loop_;
   std::string base_url_;
   std::shared_ptr<IHttp> http_;
   std::shared_ptr<IHttpServerFactory> http_server_factory_;
@@ -84,6 +78,7 @@ class CloudFactory {
   std::unordered_map<uint64_t, std::shared_ptr<CloudAccess>> cloud_access_;
   std::shared_ptr<priv::LoopImpl> loop_;
   Json::Value config_;
+  std::shared_ptr<ICallback> callback_;
 };
 
 }  // namespace cloudstorage

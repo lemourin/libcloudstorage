@@ -110,7 +110,7 @@ struct HttpCallback : public IHttpServer::ICallback {
       CloudFactory::ProviderInitData data;
       data.permission_ = ICloudProvider::Permission::ReadWrite;
       auto access = std::make_shared<CloudAccess>(
-          factory_->create(state, std::move(data)));
+          factory_->createImpl(state, std::move(data)));
       factory_->add(access->provider()->exchangeCodeAsync(
           code, [factory = factory_, state,
                  access = std::move(access)](EitherError<Token> e) {
@@ -137,9 +137,9 @@ uint64_t cloud_identifier(const ICloudProvider& p) {
 
 }  // namespace
 
-CloudFactory::CloudFactory(CloudEventLoop* event_loop,
-                           CloudFactory::InitData&& d)
-    : base_url_(d.base_url_),
+CloudFactory::CloudFactory(CloudFactory::InitData&& d)
+    : event_loop_(d.callback_),
+      base_url_(d.base_url_),
       http_(std::move(d.http_)),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           d.http_server_factory_.get())),
@@ -147,7 +147,8 @@ CloudFactory::CloudFactory(CloudEventLoop* event_loop,
       thread_pool_(std::move(d.thread_pool_)),
       cloud_storage_(ICloudStorage::create()),
       provider_index_(),
-      loop_(event_loop->impl()) {
+      loop_(event_loop_.impl()),
+      callback_(d.callback_) {
   for (const auto& d : cloud_storage_->providers()) {
     http_server_handles_.emplace_back(
         http_server_factory_->create(util::make_unique<HttpCallback>(this), d,
@@ -162,7 +163,13 @@ CloudFactory::~CloudFactory() {
   cloud_access_.clear();
 }
 
-CloudAccess CloudFactory::create(
+std::unique_ptr<ICloudAccess> CloudFactory::create(
+    const std::string& provider_name,
+    const ICloudFactory::ProviderInitData& data) const {
+  return util::make_unique<CloudAccess>(createImpl(provider_name, data));
+}
+
+CloudAccess CloudFactory::createImpl(
     const std::string& provider_name,
     const CloudFactory::ProviderInitData& data) const {
   ICloudProvider::InitData init_data;
@@ -207,28 +214,31 @@ void CloudFactory::invoke(const std::function<void()>& f) { loop_->invoke(f); }
 
 void CloudFactory::onCloudTokenReceived(const std::string& provider,
                                         const EitherError<Token>& token) {
+  if (callback_) callback_->onCloudTokenReceived(provider, token);
   if (token.right()) {
     ProviderInitData init_data;
     init_data.token_ = token.right()->token_;
     init_data.hints_["access_token"] = token.right()->access_token_;
     auto cloud_access =
-        std::make_shared<CloudAccess>(create(provider, init_data));
+        std::make_shared<CloudAccess>(createImpl(provider, init_data));
     cloud_access_.insert(
         {cloud_identifier(*cloud_access->provider()), cloud_access});
     onCloudCreated(cloud_access);
-  } else {
-    util::log("exchange token failed", token.left()->description_);
   }
 }
 
-void CloudFactory::onCloudCreated(std::shared_ptr<CloudAccess>) {}
+void CloudFactory::onCloudCreated(std::shared_ptr<CloudAccess> d) {
+  if (callback_) callback_->onCloudCreated(d);
+}
 
-void CloudFactory::onCloudRemoved(std::shared_ptr<CloudAccess>) {}
+void CloudFactory::onCloudRemoved(std::shared_ptr<CloudAccess> d) {
+  if (callback_) callback_->onCloudRemoved(d);
+}
 
 std::string CloudFactory::authorizationUrl(const std::string& provider) const {
   ProviderInitData data;
   data.permission_ = ICloudProvider::Permission::ReadWrite;
-  auto p = create(provider, data);
+  auto p = createImpl(provider, data);
   return p.provider()->authorizeLibraryUrl();
 }
 
@@ -275,7 +285,7 @@ bool CloudFactory::loadAccounts(std::istream& stream) {
       data.token_ = d["token"].asString();
       data.hints_["access_token"] = d["access_token"].asString();
       auto cloud =
-          std::make_shared<CloudAccess>(create(d["type"].asString(), data));
+          std::make_shared<CloudAccess>(createImpl(d["type"].asString(), data));
       onCloudCreated(cloud);
       cloud_access_.insert({cloud_identifier(*cloud->provider()), cloud});
     }
@@ -294,12 +304,18 @@ bool CloudFactory::loadConfig(std::istream& stream) {
   }
 }
 
-std::vector<std::shared_ptr<CloudAccess>> CloudFactory::providers() const {
-  std::vector<std::shared_ptr<CloudAccess>> result;
+void CloudFactory::processEvents() { event_loop_.processEvents(); }
+
+std::vector<std::shared_ptr<ICloudAccess>> CloudFactory::providers() const {
+  std::vector<std::shared_ptr<ICloudAccess>> result;
   for (const auto& p : cloud_access_) {
     result.push_back(p.second);
   }
   return result;
+}
+
+std::unique_ptr<ICloudFactory> ICloudFactory::create(InitData&& d) {
+  return util::make_unique<CloudFactory>(std::move(d));
 }
 
 }  // namespace cloudstorage

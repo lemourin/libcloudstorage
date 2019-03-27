@@ -24,6 +24,7 @@
 #define CLOUDACCESS_H
 
 #include "CloudEventLoop.h"
+#include "ICloudAccess.h"
 #include "ICloudProvider.h"
 #include "Promise.h"
 
@@ -88,32 +89,7 @@ struct RequestType<std::unique_ptr<IRequest<EitherError<IItem>>>> {
 };
 }  // namespace
 
-class CloudUploadCallback {
- public:
-  virtual ~CloudUploadCallback() = default;
-
-  virtual uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) = 0;
-  virtual uint64_t size() = 0;
-  virtual void progress(uint64_t total, uint64_t now) = 0;
-};
-
-class CloudDownloadCallback {
- public:
-  virtual ~CloudDownloadCallback() = default;
-  virtual void receivedData(const char* data, uint32_t length) = 0;
-  virtual void progress(uint64_t total, uint64_t now) = 0;
-};
-
-std::unique_ptr<CloudUploadCallback> streamUploader(
-    const std::shared_ptr<std::istream>& stream,
-    const std::function<void(uint64_t total, uint64_t now)>& progress =
-        nullptr);
-std::unique_ptr<CloudDownloadCallback> streamDownloader(
-    const std::shared_ptr<std::ostream>& stream,
-    const std::function<void(uint64_t total, uint64_t now)>& progress =
-        nullptr);
-
-class CloudAccess {
+class CloudAccess : public ICloudAccess {
  public:
   using Pointer = std::unique_ptr<CloudAccess>;
 
@@ -121,34 +97,37 @@ class CloudAccess {
               ICloudProvider::Pointer&& provider);
 
   ICloudProvider* provider() const { return provider_.get(); }
-  std::string name() const;
-  IItem::Pointer root() const;
+  std::string name() const override;
+  IItem::Pointer root() const override;
 
-  util::Promise<Token> exchangeCode(const std::string& code);
-  util::Promise<GeneralData> generalData();
-  util::Promise<IItem::List> listDirectory(IItem::Pointer item);
-  util::Promise<IItem::Pointer> getItem(const std::string& path);
-  util::Promise<std::string> getDaemonUrl(IItem::Pointer item);
-  util::Promise<std::string> getFileUrl(IItem::Pointer item);
-  util::Promise<IItem::Pointer> getItemData(const std::string& id);
-  util::Promise<> deleteItem(IItem::Pointer item);
-  util::Promise<IItem::Pointer> createDirectory(IItem::Pointer parent,
-                                                const std::string& filename);
-  util::Promise<IItem::Pointer> moveItem(IItem::Pointer item,
-                                         IItem::Pointer new_parent);
-  util::Promise<IItem::Pointer> renameItem(IItem::Pointer item,
-                                           const std::string& new_name);
-  util::Promise<PageData> listDirectoryPage(IItem::Pointer item,
-                                            const std::string& token);
-  util::Promise<IItem::Pointer> uploadFile(
+  Promise<Token> exchangeCode(const std::string& code) override;
+  Promise<GeneralData> generalData() override;
+  Promise<IItem::List> listDirectory(IItem::Pointer item) override;
+  Promise<IItem::Pointer> getItem(const std::string& path) override;
+  Promise<std::string> getDaemonUrl(IItem::Pointer item) override;
+  Promise<std::string> getFileUrl(IItem::Pointer item) override;
+  Promise<IItem::Pointer> getItemData(const std::string& id) override;
+  Promise<> deleteItem(IItem::Pointer item) override;
+  Promise<IItem::Pointer> createDirectory(IItem::Pointer parent,
+                                          const std::string& filename) override;
+  Promise<IItem::Pointer> moveItem(IItem::Pointer item,
+                                   IItem::Pointer new_parent) override;
+  Promise<IItem::Pointer> renameItem(IItem::Pointer item,
+                                     const std::string& new_name) override;
+  Promise<PageData> listDirectoryPage(IItem::Pointer item,
+                                      const std::string& token) override;
+  Promise<IItem::Pointer> uploadFile(
       IItem::Pointer parent, const std::string& filename,
-      std::unique_ptr<CloudUploadCallback>&&);
-  util::Promise<> downloadFile(IItem::Pointer file, Range range,
-                               const std::shared_ptr<CloudDownloadCallback>&);
-  util::Promise<> downloadThumbnail(
-      IItem::Pointer file, const std::shared_ptr<CloudDownloadCallback>&);
-  util::Promise<> generateThumbnail(
-      IItem::Pointer file, const std::shared_ptr<CloudDownloadCallback>&);
+      std::unique_ptr<ICloudUploadCallback>&&) override;
+  Promise<> downloadFile(
+      IItem::Pointer file, Range range,
+      const std::shared_ptr<ICloudDownloadCallback>&) override;
+  Promise<> downloadThumbnail(
+      IItem::Pointer file,
+      const std::shared_ptr<ICloudDownloadCallback>&) override;
+  Promise<> generateThumbnail(
+      IItem::Pointer file,
+      const std::shared_ptr<ICloudDownloadCallback>&) override;
 
  private:
   template <
