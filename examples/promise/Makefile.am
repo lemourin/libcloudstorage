@@ -9,12 +9,16 @@ promise_SOURCES = \
 	main.cpp \
 	CloudAccess.cpp \
 	CloudFactory.cpp \
-	CloudEventLoop.cpp
+	CloudEventLoop.cpp \
+	LoginPage.cpp
 
 noinst_HEADERS = \
 	CloudAccess.h \
 	CloudFactory.h \
-	CloudEventLoop.h
+	CloudEventLoop.h \
+	ICloudAccess.h \
+	ICloudFactory.h \
+	LoginPage.h
 
 promise_LDADD = \
 	../../src/libcloudstorage.la \

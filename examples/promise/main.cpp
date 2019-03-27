@@ -123,9 +123,9 @@ int main() {
     factory->loadAccounts(config);
   }
 
-  /*for (const auto& d : factory.availableProviders()) {
-    log(factory.authorizationUrl(d));
-  } */
+  for (const auto& d : factory->availableProviders()) {
+    log(factory->authorizationUrl(d));
+  }
 
   int exec = factory_callback->exec(factory);
 

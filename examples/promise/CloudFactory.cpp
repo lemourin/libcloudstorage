@@ -24,6 +24,10 @@
 #include "HttpServer.h"
 #include "Utility/Utility.h"
 
+#include "LoginPage.h"
+
+#include <cstring>
+
 namespace cloudstorage {
 
 namespace {
@@ -99,12 +103,39 @@ struct HttpServerFactoryWrapper : public IHttpServerFactory {
   std::shared_ptr<IHttpServerFactory> factory_;
 };
 
+#define MAKE_STRING(name) \
+  std::string(reinterpret_cast<const char*>(name), name##_len)
+
 struct HttpCallback : public IHttpServer::ICallback {
   HttpCallback(CloudFactory* factory) : factory_(factory) {}
 
   IHttpServer::IResponse::Pointer handle(
       const IHttpServer::IRequest& request) override {
     auto state = first_url_part(request.url());
+    if (state == "favicon.ico") {
+      return util::response_from_string(request, IHttpRequest::Ok, {},
+                                        MAKE_STRING(cloud_png));
+    } else if (state == "static" &&
+               request.url().length() >= strlen("/static/")) {
+      auto filename = request.url().substr(strlen("/static/"));
+      std::string result;
+      if (filename == "bootstrap.min.css")
+        result = MAKE_STRING(bootstrap_min_css);
+      else if (filename == "bootstrap.min.js")
+        result = MAKE_STRING(bootstrap_min_js);
+      else if (filename == "url.min.js")
+        result = MAKE_STRING(url_min_js);
+      else if (filename == "style.min.css")
+        result = MAKE_STRING(style_min_css);
+      else if (filename == "jquery.min.js")
+        result = MAKE_STRING(jquery_min_js);
+      else if (filename == "vlc-blue.png")
+        result = MAKE_STRING(vlc_blue_png);
+      else
+        return util::response_from_string(request, IHttpRequest::NotFound, {},
+                                          "Not found");
+      return util::response_from_string(request, IHttpRequest::Ok, {}, result);
+    }
     const char* code = request.get("code");
     if (code) {
       CloudFactory::ProviderInitData data;
@@ -118,13 +149,35 @@ struct HttpCallback : public IHttpServer::ICallback {
               factory->onCloudTokenReceived(state, e);
             });
           }));
+      return util::response_from_string(request, IHttpRequest::Ok, {},
+                                        MAKE_STRING(default_success_html));
+    } else if (request.get("error")) {
+      return util::response_from_string(request, IHttpRequest::Ok, {},
+                                        MAKE_STRING(default_error_html));
     }
     if (request.url().find("/login") != std::string::npos) {
-      return util::response_from_string(request, 200, {},
-                                        util::login_page(state));
+      std::string result;
+      if (state == "4shared")
+        result = MAKE_STRING(__4shared_login_html);
+      else if (state == "amazons3")
+        result = MAKE_STRING(amazons3_login_html);
+      else if (state == "animezone")
+        result = MAKE_STRING(animezone_login_html);
+      else if (state == "local")
+        result = MAKE_STRING(local_login_html);
+      else if (state == "localwinrt")
+        result = MAKE_STRING(localwinrt_login_html);
+      else if (state == "mega")
+        result = MAKE_STRING(mega_login_html);
+      else if (state == "webdav")
+        result = MAKE_STRING(webdav_login_html);
+      else
+        return util::response_from_string(request, IHttpRequest::NotFound, {},
+                                          "Not found");
+      return util::response_from_string(request, IHttpRequest::Ok, {}, result);
     }
 
-    return util::response_from_string(request, 200, {}, "ok");
+    return util::response_from_string(request, IHttpRequest::Bad, {}, "");
   }
 
   CloudFactory* factory_;
@@ -154,6 +207,12 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
         http_server_factory_->create(util::make_unique<HttpCallback>(this), d,
                                      IHttpServer::Type::Authorization));
   }
+  http_server_handles_.push_back(
+      http_server_factory_->create(util::make_unique<HttpCallback>(this),
+                                   "static", IHttpServer::Type::FileProvider));
+  http_server_handles_.push_back(http_server_factory_->create(
+      util::make_unique<HttpCallback>(this), "favicon.ico",
+      IHttpServer::Type::FileProvider));
 }
 
 CloudFactory::~CloudFactory() {
