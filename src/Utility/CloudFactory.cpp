@@ -26,6 +26,7 @@
 
 #include "LoginPage.h"
 
+#include <csignal>
 #include <cstring>
 
 namespace cloudstorage {
@@ -397,8 +398,13 @@ void CloudFactory::processEvents() { event_loop_.processEvents(); }
 
 int CloudFactory::exec() {
   std::unique_lock<std::mutex> lock(mutex_);
-  while (!quit_) {
-    empty_condition_.wait(lock, [=] { return quit_ || events_ready_; });
+  static std::atomic_bool interrupt;
+  interrupt = false;
+  std::signal(SIGINT, [](int) { interrupt = true; });
+  while (!quit_ && !interrupt) {
+    empty_condition_.wait_for(lock, std::chrono::milliseconds(100), [=] {
+      return quit_ || events_ready_ || interrupt;
+    });
     if (events_ready_) {
       events_ready_--;
       lock.unlock();
