@@ -144,7 +144,11 @@ class CloudAccess {
       IItem::Pointer parent, const std::string& filename,
       std::unique_ptr<CloudUploadCallback>&&);
   util::Promise<> downloadFile(IItem::Pointer file, Range range,
-                               std::unique_ptr<CloudDownloadCallback>&&);
+                               const std::shared_ptr<CloudDownloadCallback>&);
+  util::Promise<> downloadThumbnail(
+      IItem::Pointer file, const std::shared_ptr<CloudDownloadCallback>&);
+  util::Promise<> generateThumbnail(
+      IItem::Pointer file, const std::shared_ptr<CloudDownloadCallback>&);
 
  private:
   template <
@@ -166,7 +170,7 @@ class CloudAccess {
   }
 
   std::shared_ptr<priv::LoopImpl> loop_;
-  ICloudProvider::Pointer provider_;
+  std::shared_ptr<ICloudProvider> provider_;
 };
 
 }  // namespace cloudstorage

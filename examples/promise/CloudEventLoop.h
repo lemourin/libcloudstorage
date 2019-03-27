@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "IRequest.h"
+#include "IThreadPool.h"
 #include "Promise.h"
 
 namespace cloudstorage {
@@ -57,7 +58,12 @@ class LoopImpl {
   void fulfill(uint64_t tag, const std::function<void()>&);
   void invoke(const std::function<void()>&);
 
+#ifdef WITH_THUMBNAILER
+  void invokeOnThreadPool(const std::function<void()>&);
+#endif
+
   void clear();
+  std::shared_ptr<std::atomic_bool> interrupt() const { return interrupt_; }
 
   uint64_t next_tag();
   void process_events();
@@ -67,6 +73,11 @@ class LoopImpl {
   std::unordered_map<uint64_t, std::shared_ptr<IGenericRequest>> pending_;
   std::atomic_uint64_t last_tag_;
   std::vector<std::function<void()>> events_;
+#ifdef WITH_THUMBNAILER
+  std::mutex thumbnailer_mutex_;
+  IThreadPool::Pointer thumbnailer_thread_pool_;
+#endif
+  std::shared_ptr<std::atomic_bool> interrupt_;
   CloudEventLoop* event_loop_;
 };
 

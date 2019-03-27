@@ -40,7 +40,14 @@ void CloudEventLoop::processEvents() { impl_->process_events(); }
 
 namespace priv {
 
-LoopImpl::LoopImpl(CloudEventLoop *loop) : last_tag_(), event_loop_(loop) {}
+LoopImpl::LoopImpl(CloudEventLoop *loop)
+    : last_tag_(),
+      interrupt_(std::make_shared<std::atomic_bool>(false)),
+      event_loop_(loop) {
+#ifdef WITH_THUMBNAILER
+  thumbnailer_thread_pool_ = IThreadPool::create(2);
+#endif
+}
 
 void LoopImpl::add(uint64_t tag,
                    const std::shared_ptr<IGenericRequest> &request) {
@@ -77,6 +84,17 @@ void LoopImpl::invoke(const std::function<void()> &f) {
   event_loop_->onEventAdded();
 }
 
+#ifdef WITH_THUMBNAILER
+void LoopImpl::invokeOnThreadPool(const std::function<void()> &f) {
+  std::unique_lock<std::mutex> lock(thumbnailer_mutex_);
+  if (thumbnailer_thread_pool_) {
+    thumbnailer_thread_pool_->schedule(f);
+  } else {
+    f();
+  }
+}
+#endif
+
 void LoopImpl::process_events() {
   std::unique_lock<std::mutex> lock(mutex_);
   for (size_t i = 0; i < events_.size(); i++) {
@@ -88,15 +106,24 @@ void LoopImpl::process_events() {
 }
 
 void LoopImpl::clear() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  while (!pending_.empty()) {
-    auto it = pending_.begin();
-    auto request = std::move(it->second);
-    pending_.erase(it);
-    if (request) {
-      lock.unlock();
-      request->cancel();
-      lock.lock();
+  *interrupt_ = true;
+#ifdef WITH_THUMBNAILER
+  {
+    std::unique_lock<std::mutex> lock(thumbnailer_mutex_);
+    thumbnailer_thread_pool_ = nullptr;
+  }
+#endif
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (!pending_.empty()) {
+      auto it = pending_.begin();
+      auto request = std::move(it->second);
+      pending_.erase(it);
+      if (request) {
+        lock.unlock();
+        request->cancel();
+        lock.lock();
+      }
     }
   }
 }

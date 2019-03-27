@@ -23,7 +23,6 @@ noinst_HEADERS = \
 	src/Request/UploadItem.h \
 	src/Request/DownloadItem.h \
 	src/Request/CopyItem.h \
-	src/GenerateThumbnail.h \
 	src/AndroidUtility.h \
 	src/DesktopUtility.h \
 	src/WinRTUtility.h \
@@ -47,7 +46,6 @@ libcloudbrowser_la_SOURCES = \
 	src/Request/UploadItem.cpp \
 	src/Request/DownloadItem.cpp \
 	src/Request/CopyItem.cpp \
-	src/GenerateThumbnail.cpp \
 	src/AndroidUtility.cpp \
 	src/DesktopUtility.cpp \
 	src/WinRTUtility.cpp \

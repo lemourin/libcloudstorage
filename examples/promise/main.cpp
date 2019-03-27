@@ -63,15 +63,33 @@ class Factory : public CloudFactory {
           "/Anime/D/Death Note/1: Odrodzenie./Death Note 1 [PL] "
           "[Openload.co].mp4";
       d->getItem(path)
-          .then([d](IItem::Pointer item) { return d->getDaemonUrl(item); })
-          .then([](std::string url) { log(url); });
+          .then([d](const IItem::Pointer& item) {
+            std::ofstream file("animezone.png", std::ios::binary);
+            return d->generateThumbnail(
+                item, streamDownloader(
+                          std::make_shared<std::ofstream>(std::move(file))));
+          })
+          .then([] { log("animezone thumb downloaded"); })
+          .error<Exception>(
+              [](const Exception& e) { log("animezone", e.what()); });
     } else if (d->name() == "mega") {
+      d->getItem("/Bit Rush _ Login Screen - League of Legends.mp4")
+          .then([d](IItem::Pointer item) {
+            std::ofstream file("thumbnail.png", std::ios::binary);
+            return d->generateThumbnail(
+                item, streamDownloader(
+                          std::make_shared<std::ofstream>(std::move(file))));
+          })
+          .then([] { log("generated thumb"); })
+          .error<Exception>([](const Exception& e) { log(e.what()); });
       std::stringstream input;
       input << "dupa";
+      log("starting upload");
       d->uploadFile(d->root(), "test",
                     streamUploader(
                         std::make_unique<std::stringstream>(std::move(input))))
           .then([=](IItem::Pointer file) {
+            log("upload done");
             auto stream = std::make_shared<std::stringstream>();
             return std::make_tuple(
                 d->downloadFile(file, FullRange, streamDownloader(stream)),
@@ -105,9 +123,9 @@ int main() {
     factory.load(config);
   }
 
-  for (const auto& d : factory.availableProviders()) {
+  /*for (const auto& d : factory.availableProviders()) {
     log(factory.authorizationUrl(d));
-  }
+  } */
 
   int exec = loop.exec();
 

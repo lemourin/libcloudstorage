@@ -24,10 +24,94 @@
 
 #include "Utility/Utility.h"
 
+#ifdef WITH_THUMBNAILER
+#include "GenerateThumbnail.h"
+#endif
+
+#include <json/json.h>
+#include <algorithm>
+#include <future>
+
 template <class... T>
 using Promise = util::Promise<T...>;
 
 namespace cloudstorage {
+
+const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(10);
+const auto CHECK_INTERVAL = std::chrono::milliseconds(100);
+
+namespace {
+struct DownloadCallback : public IDownloadFileCallback {
+  DownloadCallback(const std::shared_ptr<CloudDownloadCallback>& cb,
+                   const Promise<>& promise, uint64_t tag,
+                   const std::shared_ptr<priv::LoopImpl>& loop)
+      : callback_(cb), promise_(promise), tag_(tag), loop_(loop) {}
+
+  void receivedData(const char* data, uint32_t length) override {
+    callback_->receivedData(data, length);
+  }
+
+  void progress(uint64_t total, uint64_t now) override {
+    callback_->progress(total, now);
+  }
+
+  void done(EitherError<void> e) override {
+    loop_->fulfill(tag_, [promise = promise_, e] { fulfill(promise, e); });
+  }
+
+  std::shared_ptr<CloudDownloadCallback> callback_;
+  Promise<> promise_;
+  uint64_t tag_;
+  std::shared_ptr<priv::LoopImpl> loop_;
+};
+
+struct Uploader : public CloudUploadCallback {
+  Uploader(const std::shared_ptr<std::istream>& stream,
+           const std::function<void(uint64_t total, uint64_t now)>& progress)
+      : stream_(stream), progress_(progress) {}
+
+  uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
+    stream_->seekg(offset);
+    stream_->read(data, maxlength);
+    return stream_->gcount();
+  }
+  uint64_t size() override {
+    stream_->seekg(0, std::ios::end);
+    auto position = stream_->tellg();
+    stream_->seekg(0);
+    return position;
+  }
+  void progress(uint64_t total, uint64_t now) override {
+    if (progress_) progress_(total, now);
+  }
+
+  std::shared_ptr<std::istream> stream_;
+  std::function<void(uint64_t total, uint64_t now)> progress_;
+};
+
+struct Downloader : public CloudDownloadCallback {
+  Downloader(const std::shared_ptr<std::ostream>& stream,
+             const std::function<void(uint64_t total, uint64_t now)>& progress)
+      : stream_(stream), progress_(progress) {}
+
+  void receivedData(const char* data, uint32_t length) override {
+    stream_->write(data, length);
+  }
+
+  void progress(uint64_t total, uint64_t now) override {
+    if (progress_) progress_(total, now);
+  }
+
+  std::shared_ptr<std::ostream> stream_;
+  std::function<void(uint64_t total, uint64_t now)> progress_;
+};
+
+bool startsWith(const std::string& string, const std::string& prefix) {
+  if (string.length() < prefix.length()) return false;
+  return string.substr(0, prefix.length()) == prefix;
+}
+
+}  // namespace
 
 CloudAccess::CloudAccess(std::shared_ptr<priv::LoopImpl> loop,
                          ICloudProvider::Pointer&& provider)
@@ -125,39 +209,92 @@ Promise<IItem::Pointer> CloudAccess::uploadFile(
 
 Promise<> CloudAccess::downloadFile(
     IItem::Pointer file, Range range,
-    std::unique_ptr<CloudDownloadCallback>&& cb) {
-  struct DownloadCallback : public IDownloadFileCallback {
-    DownloadCallback(std::unique_ptr<CloudDownloadCallback>&& cb,
-                     const Promise<>& promise, uint64_t tag,
-                     const std::shared_ptr<priv::LoopImpl>& loop)
-        : callback_(std::move(cb)), promise_(promise), tag_(tag), loop_(loop) {}
-
-    void receivedData(const char* data, uint32_t length) override {
-      callback_->receivedData(data, length);
-    }
-
-    void progress(uint64_t total, uint64_t now) override {
-      callback_->progress(total, now);
-    }
-
-    void done(EitherError<void> e) override {
-      loop_->fulfill(tag_, [promise = promise_, e] { fulfill(promise, e); });
-    }
-
-    std::unique_ptr<CloudDownloadCallback> callback_;
-    Promise<> promise_;
-    uint64_t tag_;
-    std::shared_ptr<priv::LoopImpl> loop_;
-  };
-
+    const std::shared_ptr<CloudDownloadCallback>& cb) {
   Promise<> promise;
   auto tag = loop_->next_tag();
   auto request = provider_->downloadFileAsync(
-      file,
-      util::make_unique<DownloadCallback>(std::move(cb), promise, tag, loop_),
+      file, util::make_unique<DownloadCallback>(cb, promise, tag, loop_),
       range);
   loop_->add(tag, std::move(request));
   return promise;
+}
+
+Promise<> CloudAccess::downloadThumbnail(
+    IItem::Pointer file, const std::shared_ptr<CloudDownloadCallback>& cb) {
+  Promise<> promise;
+  auto tag = loop_->next_tag();
+  auto request = provider_->getThumbnailAsync(
+      file, std::make_shared<DownloadCallback>(cb, promise, tag, loop_));
+  loop_->add(tag, std::move(request));
+  return promise;
+}
+
+Promise<> CloudAccess::generateThumbnail(
+    IItem::Pointer item, const std::shared_ptr<CloudDownloadCallback>& cb) {
+  Promise<> result;
+  downloadThumbnail(item, cb)
+      .then([cb, result] { result.fulfill(); })
+      .error<Exception>([item, result, loop = loop_, provider = provider_,
+                         cb](const Exception& e) {
+#ifdef WITH_THUMBNAILER
+        if (item->type() == IItem::FileType::Image ||
+            item->type() == IItem::FileType::Video) {
+          auto interrupt_atomic = loop->interrupt();
+          loop->invokeOnThreadPool([interrupt_atomic, result, item,
+                                    provider = provider, loop, cb] {
+            uint64_t size = item->size();
+            auto interrupt =
+                [=](std::chrono::system_clock::time_point start_time) {
+                  return *interrupt_atomic ||
+                         std::chrono::system_clock::now() - start_time >
+                             MAX_THUMBNAIL_GENERATION_TIME;
+                };
+            if (size == IItem::UnknownSize) {
+              std::promise<EitherError<std::string>> url_promise;
+              auto url_request = provider->getFileDaemonUrlAsync(
+                  item, [&url_promise](EitherError<std::string> e) {
+                    url_promise.set_value(e);
+                  });
+              auto url_future = url_promise.get_future();
+              auto start_time = std::chrono::system_clock::now();
+              while (url_future.wait_for(CHECK_INTERVAL) !=
+                     std::future_status::ready) {
+                if (interrupt(start_time)) {
+                  url_request->cancel();
+                  break;
+                }
+              }
+              auto url = url_future.get();
+              if (url.left()) {
+                return loop->invoke(
+                    [result, url] { result.reject(Exception(url.left())); });
+              }
+              if (startsWith(*url.right(), "http") &&
+                  size == IItem::UnknownSize) {
+                auto item_id =
+                    url.right()->substr(url.right()->find_last_of('/') + 1);
+                std::replace(item_id.begin(), item_id.end(), '/', '-');
+                auto json = util::json::from_string(util::from_base64(item_id));
+                size = json["size"].asUInt64();
+              }
+            }
+            auto thumb =
+                generate_thumbnail(provider.get(), item, size, interrupt);
+            if (thumb.left()) {
+              return loop->invoke(
+                  [result, thumb] { result.reject(Exception(thumb.left())); });
+            }
+            cb->receivedData(thumb.right()->data(), thumb.right()->size());
+            loop->invoke([result] { result.fulfill(); });
+          });
+        } else {
+          result.reject(e);
+        }
+#else
+        result.reject(e);
+#endif
+      });
+  return result;
 }
 
 std::string CloudAccess::name() const { return provider_->name(); }
@@ -167,52 +304,12 @@ IItem::Pointer CloudAccess::root() const { return provider_->rootDirectory(); }
 std::unique_ptr<CloudUploadCallback> streamUploader(
     const std::shared_ptr<std::istream>& stream,
     const std::function<void(uint64_t total, uint64_t now)>& progress) {
-  struct Uploader : public CloudUploadCallback {
-    Uploader(const std::shared_ptr<std::istream>& stream,
-             const std::function<void(uint64_t total, uint64_t now)>& progress)
-        : stream_(stream), progress_(progress) {}
-
-    uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
-      stream_->seekg(offset);
-      stream_->read(data, maxlength);
-      return stream_->gcount();
-    }
-    uint64_t size() override {
-      stream_->seekg(0, std::ios::end);
-      auto position = stream_->tellg();
-      stream_->seekg(0);
-      return position;
-    }
-    void progress(uint64_t total, uint64_t now) override {
-      if (progress_) progress_(total, now);
-    }
-
-    std::shared_ptr<std::istream> stream_;
-    std::function<void(uint64_t total, uint64_t now)> progress_;
-  };
   return util::make_unique<Uploader>(stream, progress);
 }
 
 std::unique_ptr<CloudDownloadCallback> streamDownloader(
     const std::shared_ptr<std::ostream>& stream,
     const std::function<void(uint64_t, uint64_t)>& progress) {
-  struct Downloader : public CloudDownloadCallback {
-    Downloader(
-        const std::shared_ptr<std::ostream>& stream,
-        const std::function<void(uint64_t total, uint64_t now)>& progress)
-        : stream_(stream), progress_(progress) {}
-
-    void receivedData(const char* data, uint32_t length) override {
-      stream_->write(data, length);
-    }
-
-    void progress(uint64_t total, uint64_t now) override {
-      if (progress_) progress_(total, now);
-    }
-
-    std::shared_ptr<std::ostream> stream_;
-    std::function<void(uint64_t total, uint64_t now)> progress_;
-  };
   return util::make_unique<Downloader>(stream, progress);
 }
 
