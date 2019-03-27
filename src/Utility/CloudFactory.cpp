@@ -183,6 +183,30 @@ struct HttpCallback : public IHttpServer::ICallback {
   CloudFactory* factory_;
 };
 
+struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
+  FactoryCallbackWrapper(CloudFactory* factory,
+                         const std::shared_ptr<ICloudFactory::ICallback>& cb)
+      : factory_(factory), cb_(cb) {}
+
+  void onCloudTokenReceived(const std::string& provider,
+                            const EitherError<Token>& token) override {
+    if (cb_) cb_->onCloudTokenReceived(provider, token);
+  }
+  void onCloudCreated(std::shared_ptr<ICloudAccess> cloud) override {
+    if (cb_) cb_->onCloudCreated(cloud);
+  }
+  void onCloudRemoved(std::shared_ptr<ICloudAccess> cloud) override {
+    if (cb_) cb_->onCloudRemoved(cloud);
+  }
+  void onEventsAdded() override {
+    factory_->onEventsAdded();
+    if (cb_) cb_->onEventsAdded();
+  }
+
+  CloudFactory* factory_;
+  std::shared_ptr<ICloudFactory::ICallback> cb_;
+};
+
 uint64_t cloud_identifier(const ICloudProvider& p) {
   auto state = p.hints()["state"];
   return std::stoull(state.substr(p.name().length() + 1));
@@ -191,7 +215,8 @@ uint64_t cloud_identifier(const ICloudProvider& p) {
 }  // namespace
 
 CloudFactory::CloudFactory(CloudFactory::InitData&& d)
-    : event_loop_(d.callback_),
+    : callback_(std::make_shared<FactoryCallbackWrapper>(this, d.callback_)),
+      event_loop_(callback_),
       base_url_(d.base_url_),
       http_(std::move(d.http_)),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
@@ -200,8 +225,7 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
       thread_pool_(std::move(d.thread_pool_)),
       cloud_storage_(ICloudStorage::create()),
       provider_index_(),
-      loop_(event_loop_.impl()),
-      callback_(d.callback_) {
+      loop_(event_loop_.impl()) {
   for (const auto& d : cloud_storage_->providers()) {
     http_server_handles_.emplace_back(
         http_server_factory_->create(util::make_unique<HttpCallback>(this), d,
@@ -265,6 +289,12 @@ CloudAccess CloudFactory::createImpl(
       loop_, cloud_storage_->provider(provider_name, std::move(init_data)));
 }
 
+void CloudFactory::onEventsAdded() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  events_ready_++;
+  empty_condition_.notify_one();
+}
+
 void CloudFactory::add(std::unique_ptr<IGenericRequest>&& request) {
   loop_->add(loop_->next_tag(), std::move(request));
 }
@@ -316,7 +346,7 @@ void CloudFactory::onCloudRemoved(const ICloudProvider& d) {
   });
 }
 
-bool CloudFactory::dumpAccounts(std::ostream& stream) {
+bool CloudFactory::dumpAccounts(std::ostream&& stream) {
   try {
     Json::Value json;
     Json::Value providers;
@@ -335,7 +365,7 @@ bool CloudFactory::dumpAccounts(std::ostream& stream) {
   }
 }
 
-bool CloudFactory::loadAccounts(std::istream& stream) {
+bool CloudFactory::loadAccounts(std::istream&& stream) {
   try {
     Json::Value json;
     stream >> json;
@@ -354,7 +384,7 @@ bool CloudFactory::loadAccounts(std::istream& stream) {
   }
 }
 
-bool CloudFactory::loadConfig(std::istream& stream) {
+bool CloudFactory::loadConfig(std::istream&& stream) {
   try {
     stream >> config_;
     return true;
@@ -365,12 +395,44 @@ bool CloudFactory::loadConfig(std::istream& stream) {
 
 void CloudFactory::processEvents() { event_loop_.processEvents(); }
 
+int CloudFactory::exec() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  while (!quit_) {
+    empty_condition_.wait(lock, [=] { return quit_ || events_ready_; });
+    if (events_ready_) {
+      events_ready_--;
+      lock.unlock();
+      event_loop_.processEvents();
+      lock.lock();
+    }
+  }
+  return 0;
+}
+
+void CloudFactory::quit() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  quit_ = true;
+  empty_condition_.notify_one();
+}
+
 std::vector<std::shared_ptr<ICloudAccess>> CloudFactory::providers() const {
   std::vector<std::shared_ptr<ICloudAccess>> result;
   for (const auto& p : cloud_access_) {
     result.push_back(p.second);
   }
   return result;
+}
+
+std::unique_ptr<ICloudFactory> ICloudFactory::create(
+    const ICloudFactory::ICallback::Pointer& callback) {
+  ICloudFactory::InitData init_data;
+  init_data.base_url_ = "http://localhost:12345";
+  init_data.http_ = IHttp::create();
+  init_data.http_server_factory_ = IHttpServerFactory::create();
+  init_data.crypto_ = ICrypto::create();
+  init_data.thread_pool_ = IThreadPool::create(1);
+  init_data.callback_ = callback;
+  return create(std::move(init_data));
 }
 
 std::unique_ptr<ICloudFactory> ICloudFactory::create(InitData&& d) {

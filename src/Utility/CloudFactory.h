@@ -27,6 +27,7 @@
 
 #include <json/json.h>
 #include <atomic>
+#include <condition_variable>
 
 #include "ICloudFactory.h"
 
@@ -54,18 +55,24 @@ class CloudFactory : public ICloudFactory {
 
   void onCloudRemoved(const ICloudProvider&);
 
-  bool dumpAccounts(std::ostream& stream) override;
-  bool loadAccounts(std::istream& stream) override;
-  bool loadConfig(std::istream& stream) override;
+  bool dumpAccounts(std::ostream&& stream) override;
+  bool loadAccounts(std::istream&& stream) override;
+  bool loadConfig(std::istream&& stream) override;
 
   void processEvents() override;
+
+  int exec() override;
+  void quit() override;
 
   std::vector<std::shared_ptr<ICloudAccess>> providers() const override;
 
   CloudAccess createImpl(const std::string& provider_name,
                          const ProviderInitData&) const;
 
+  void onEventsAdded();
+
  private:
+  std::shared_ptr<ICallback> callback_;
   CloudEventLoop event_loop_;
   std::string base_url_;
   std::shared_ptr<IHttp> http_;
@@ -78,7 +85,10 @@ class CloudFactory : public ICloudFactory {
   std::unordered_map<uint64_t, std::shared_ptr<CloudAccess>> cloud_access_;
   std::shared_ptr<priv::LoopImpl> loop_;
   Json::Value config_;
-  std::shared_ptr<ICallback> callback_;
+  std::mutex mutex_;
+  std::condition_variable empty_condition_;
+  int events_ready_ = false;
+  bool quit_ = false;
 };
 
 }  // namespace cloudstorage
