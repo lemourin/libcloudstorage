@@ -27,7 +27,7 @@
 
 #include "IItem.h"
 #include "IRequest.h"
-#include "Promise.h"
+#include "Utility/Promise.h"
 
 namespace cloudstorage {
 

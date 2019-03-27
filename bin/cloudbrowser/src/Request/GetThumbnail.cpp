@@ -10,7 +10,7 @@
 #include <QUrl>
 
 #include "CloudContext.h"
-#include "GenerateThumbnail.h"
+#include "Utility/GenerateThumbnail.h"
 #include "Utility/Utility.h"
 
 using namespace cloudstorage;

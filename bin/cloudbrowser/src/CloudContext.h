@@ -3,10 +3,10 @@
 
 #include "CloudItem.h"
 #include "Exec.h"
-#include "HttpServer.h"
 #include "ICloudProvider.h"
 #include "Request/CloudRequest.h"
 #include "Request/ListDirectory.h"
+#include "Utility/HttpServer.h"
 
 #include <QAbstractListModel>
 #include <QJsonDocument>

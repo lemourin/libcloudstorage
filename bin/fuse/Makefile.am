@@ -2,7 +2,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = \
 	-I$(top_srcdir)/src \
-	-I$(top_srcdir)/bin/common \
 	$(libjsoncpp_CFLAGS)
 
 AM_LDFLAGS = \
@@ -31,7 +30,6 @@ noinst_HEADERS = \
 
 cloudstorage_fuse_LDADD = \
 	../../src/libcloudstorage.la \
-	../common/libcommon.la \
 	$(libjsoncpp_LIBS)
 
 if WITH_FUSE

@@ -15,8 +15,8 @@
 #include <QUrl>
 #include <unordered_set>
 #include "File.h"
-#include "GenerateThumbnail.h"
 #include "ICloudStorage.h"
+#include "Utility/GenerateThumbnail.h"
 #include "Utility/Utility.h"
 
 using namespace cloudstorage;

@@ -38,9 +38,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include "JQuery.h"
-#include "UrlJS.h"
-
 #ifdef __linux__
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -48,7 +45,12 @@
 #include <pthread.h>
 #endif
 
+#include "LoginPage.h"
+
 namespace cloudstorage {
+
+#define MAKE_STRING(name) \
+  std::string(reinterpret_cast<const char*>(name), name##_len)
 
 const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"aac", "audio/aac"},           {"avi", "video/x-msvideo"},
@@ -63,10 +65,10 @@ const std::unordered_map<std::string, std::string> MIME_TYPE = {
     {"mp4", "video/mp4"},           {"mkv", "video/webm"},
     {"mpd", "application/dash+xml"}};
 
-const std::string CDN = std::string("<script>") + JQUERY_MIN_JS +
+const std::string CDN = std::string("<script>") + MAKE_STRING(jquery_min_js) +
                         "</script>"
                         "<script>" +
-                        URL_MIN_JS + "</script>";
+                        MAKE_STRING(url_min_js) + "</script>";
 
 namespace {
 

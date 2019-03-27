@@ -22,6 +22,12 @@ libcloudstorage_la_SOURCES = \
 	Utility/MicroHttpdServer.cpp \
 	Utility/ThreadPool.cpp \
 	Utility/FileServer.cpp \
+	Utility/CloudAccess.cpp \
+	Utility/CloudEventLoop.cpp \
+	Utility/CloudFactory.cpp \
+	Utility/GenerateThumbnail.cpp \
+	Utility/HttpServer.cpp \
+	Utility/LoginPage.cpp \
 	CloudProvider/CloudProvider.cpp \
 	CloudProvider/GoogleDrive.cpp \
 	CloudProvider/OneDrive.cpp \
@@ -75,8 +81,12 @@ noinst_HEADERS = \
 	Utility/MicroHttpdServer.h \
 	Utility/ThreadPool.h \
 	Utility/FileServer.h \
-	Utility/JQuery.h \
-	Utility/UrlJS.h \
+	Utility/CloudAccess.h \
+	Utility/CloudEventLoop.h \
+	Utility/CloudFactory.h \
+	Utility/GenerateThumbnail.h \
+	Utility/LoginPage.h \
+	Utility/HttpServer.h \
 	CloudProvider/CloudProvider.h \
 	CloudProvider/GoogleDrive.h \
 	CloudProvider/OneDrive.h \
@@ -119,7 +129,10 @@ libcloudstorage_la_HEADERS = \
 	ICrypto.h \
 	IHttp.h \
 	IHttpServer.h \
-	IThreadPool.h
+	IThreadPool.h \
+	ICloudAccess.h \
+	ICloudFactory.h
+
 
 libcloudstorage_cinterfacedir=$(libcloudstorage_ladir)/C
 libcloudstorage_cinterface_HEADERS = \
@@ -131,6 +144,12 @@ libcloudstorage_cinterface_HEADERS = \
 	C/Item.h \
 	C/Request.h \
 	C/ThreadPool.h
+
+libcloudstorage_utilitydir=$(libcloudstorage_ladir)/Utility
+libcloudstorage_utility_HEADERS = \
+	Utility/Promise.h
+
+EXTRA_DIST = Utility/GenerateLoginPage.sh
 
 libcloudstorage_la_LIBADD = \
 	$(libjsoncpp_LIBS) \
@@ -158,6 +177,11 @@ endif
 
 if ANDROID
 libcloudstorage_la_LIBADD += -llog
+endif
+
+if WITH_THUMBNAILER
+AM_CXXFLAGS += $(ffmpeg_CFLAGS)
+libcloudstorage_la_LIBADD += $(ffmpeg_LIBS)
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig
