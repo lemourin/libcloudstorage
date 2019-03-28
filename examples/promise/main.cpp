@@ -68,16 +68,20 @@ class FactoryCallback : public ICloudFactory::ICallback {
   }
 };
 
-int main() {
+int main(int argc, char** argv) {
   auto factory_callback = std::make_shared<FactoryCallback>();
   auto factory = ICloudFactory::create(factory_callback);
-  factory->loadAccounts(std::ifstream("config.json"));
 
-  for (const auto& d : factory->availableProviders()) {
-    log(factory->authorizationUrl(d));
+  if (argc == 2 && argv[1] == std::string("--list")) {
+    log("Available providers:");
+    for (const auto& d : factory->availableProviders()) {
+      log(d, factory->authorizationUrl(d));
+    }
   }
 
+  factory->loadAccounts(std::ifstream("config.json"));
   int exec = factory->exec();
   factory->dumpAccounts(std::ofstream("config.json"));
+
   return exec;
 }
