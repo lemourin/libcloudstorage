@@ -31,7 +31,7 @@
 
 namespace cloudstorage {
 
-using util::Promise;
+using ::util::Promise;
 
 class ICloudUploadCallback {
  public:
