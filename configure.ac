@@ -12,7 +12,7 @@ LT_INIT([win32-dll shared disable-static])
 
 AC_PROG_CXX
 
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_14
 
 PKG_CHECK_MODULES([libjsoncpp], [jsoncpp])
 PKG_CHECK_MODULES([libtinyxml2], [tinyxml2])
