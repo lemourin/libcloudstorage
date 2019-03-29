@@ -26,18 +26,20 @@
 
 #ifdef WITH_MICROHTTPD
 
-#include <microhttpd.h>
-
 #include "IHttpServer.h"
 
 #include <mutex>
+
+struct MHD_Connection;
+struct MHD_Response;
+struct MHD_Daemon;
 
 namespace cloudstorage {
 
 class MicroHttpdServer : public IHttpServer {
  public:
   MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port);
-  ~MicroHttpdServer();
+  ~MicroHttpdServer() override;
 
   class Response : public IResponse {
    public:

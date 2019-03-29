@@ -25,6 +25,7 @@
 
 #include "MicroHttpdServer.h"
 
+#include <microhttpd.h>
 #include "Utility.h"
 
 namespace cloudstorage {
@@ -190,9 +191,9 @@ IHttpServer::Pointer MicroHttpdServerFactory::create(
 IHttpServer::Pointer MicroHttpdServerFactory::create(
     IHttpServer::ICallback::Pointer cb, const std::string&,
     IHttpServer::Type type) {
-  return create(cb,
-                type == IHttpServer::Type::Authorization ? AUTHORIZATION_PORT
-                                                         : FILE_PROVIDER_PORT);
+  return create(cb, type == IHttpServer::Type::Authorization
+                        ? AUTHORIZATION_PORT
+                        : FILE_PROVIDER_PORT);
 }
 
 }  // namespace cloudstorage
