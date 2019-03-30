@@ -80,6 +80,21 @@ AS_IF([test "x$with_filesystem" != "xno"], [
 ])
 AC_SUBST(FILESYSTEM_LIBS)
 
+HAVE_THUMBNAILER=0
+AC_ARG_WITH([ffmpeg], AS_HELP_STRING([--with-ffmpeg]))
+AS_IF([test "x$with_ffmpeg" != "xno"], [
+  PKG_CHECK_MODULES([ffmpeg], [
+    libavcodec libavfilter libavformat libavutil
+    libswresample libswscale
+  ], [
+    HAVE_THUMBNAILER=1
+    AC_DEFINE(WITH_THUMBNAILER)
+  ], [
+    HAVE_THUMBNAILER=0
+    AS_IF([test "x$with_ffmpeg" = "xyes"], [AC_MSG_ERROR([ffmpeg not found])])
+  ])
+])
+
 HAVE_FUSE=0
 HAVE_LEGACY_FUSE=0
 AC_ARG_WITH([fuse], AS_HELP_STRING([--with-fuse]))
@@ -144,7 +159,6 @@ AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" = "xyes"])
 HAVE_QT=0
 HAVE_QTWEBVIEW=0
 HAVE_QTANDROID=0
-HAVE_THUMBNAILER=0
 HAVE_VLC_QT=0
 HAVE_MPV=0
 HAVE_CLOUDBROWSER=0
@@ -152,8 +166,8 @@ HAVE_CLOUDBROWSER=0
 AC_ARG_WITH([vlc-qt], AS_HELP_STRING([--with-vlc-qt]))
 AC_ARG_WITH([mpv], AS_HELP_STRING[--with-mpv])
 AC_ARG_WITH([qtwebview], AS_HELP_STRING([--with-qtwebview]))
-AC_ARG_WITH([ffmpeg], AS_HELP_STRING([--with-ffmpeg]))
 AC_ARG_WITH([cloudbrowser], AS_HELP_STRING([--with-cloudbrowser]))
+
 AS_IF([test "x$with_cloudbrowser" != "xno"], [
   AS_IF([test "$HAVE_CURL" -eq 1 -a "$HAVE_MICROHTTPD" -eq 1], [
     PKG_CHECK_MODULES([qt], [Qt5Core Qt5Gui Qt5Quick], [
@@ -188,18 +202,6 @@ AS_IF([test "x$with_cloudbrowser" != "xno"], [
       ], [
         HAVE_QTWEBVIEW=0
         AS_IF([test "x$with_qtwebview" = "xyes"], [AC_MSG_ERROR([qtwebview not found])])
-      ])
-    ])
-    AS_IF([test "x$with_ffmpeg" != "xno"], [
-      PKG_CHECK_MODULES([ffmpeg], [
-        libavcodec libavfilter libavformat libavutil
-        libswresample libswscale
-      ], [
-        HAVE_THUMBNAILER=1
-        AC_DEFINE(WITH_THUMBNAILER)
-      ], [
-        HAVE_THUMBNAILER=0
-        AS_IF([test "x$with_ffmpeg" = "xyes"], [AC_MSG_ERROR([ffmpeg not found])])
       ])
     ])
     AS_IF([test "x$with_vlc_qt" != "xno"], [
