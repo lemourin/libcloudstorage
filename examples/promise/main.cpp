@@ -11,7 +11,7 @@ using cloudstorage::util::log;
 
 class FactoryCallback : public ICloudFactory::ICallback {
  public:
-  void onCloudCreated(std::shared_ptr<ICloudAccess> d) override {
+  void onCloudCreated(const std::shared_ptr<ICloudAccess>& d) override {
     if (d->name() == "google") {
       log("getting general data");
       d->generalData().then([](GeneralData d) {

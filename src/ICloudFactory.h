@@ -44,8 +44,8 @@ class ICloudFactory {
 
     virtual void onCloudTokenReceived(const std::string& /* provider */,
                                       const EitherError<Token>&) {}
-    virtual void onCloudCreated(std::shared_ptr<ICloudAccess>) {}
-    virtual void onCloudRemoved(std::shared_ptr<ICloudAccess>) {}
+    virtual void onCloudCreated(const std::shared_ptr<ICloudAccess>&) {}
+    virtual void onCloudRemoved(const std::shared_ptr<ICloudAccess>&) {}
     virtual void onEventsAdded() {}
   };
 
@@ -66,8 +66,9 @@ class ICloudFactory {
 
   virtual ~ICloudFactory() = default;
 
-  virtual std::unique_ptr<ICloudAccess> create(
-      const std::string& provider_name, const ProviderInitData&) const = 0;
+  virtual std::shared_ptr<ICloudAccess> create(const std::string& provider_name,
+                                               const ProviderInitData&) = 0;
+  virtual void remove(const std::shared_ptr<ICloudAccess>&) = 0;
 
   virtual std::string authorizationUrl(const std::string& provider) const = 0;
 

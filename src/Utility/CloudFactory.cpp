@@ -26,6 +26,7 @@
 
 #include "LoginPage.h"
 
+#include <algorithm>
 #include <csignal>
 #include <cstring>
 
@@ -193,10 +194,10 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
                             const EitherError<Token>& token) override {
     if (cb_) cb_->onCloudTokenReceived(provider, token);
   }
-  void onCloudCreated(std::shared_ptr<ICloudAccess> cloud) override {
+  void onCloudCreated(const std::shared_ptr<ICloudAccess>& cloud) override {
     if (cb_) cb_->onCloudCreated(cloud);
   }
-  void onCloudRemoved(std::shared_ptr<ICloudAccess> cloud) override {
+  void onCloudRemoved(const std::shared_ptr<ICloudAccess>& cloud) override {
     if (cb_) cb_->onCloudRemoved(cloud);
   }
   void onEventsAdded() override {
@@ -247,10 +248,23 @@ CloudFactory::~CloudFactory() {
   cloud_access_.clear();
 }
 
-std::unique_ptr<ICloudAccess> CloudFactory::create(
+std::shared_ptr<ICloudAccess> CloudFactory::create(
     const std::string& provider_name,
-    const ICloudFactory::ProviderInitData& data) const {
-  return util::make_unique<CloudAccess>(createImpl(provider_name, data));
+    const ICloudFactory::ProviderInitData& data) {
+  auto result = std::make_shared<CloudAccess>(createImpl(provider_name, data));
+  cloud_access_.insert({cloud_identifier(*result->provider()), result});
+  return std::static_pointer_cast<ICloudAccess>(result);
+}
+
+void CloudFactory::remove(const std::shared_ptr<ICloudAccess>& d) {
+  for (auto it = cloud_access_.begin(); it != cloud_access_.end();) {
+    if (it->second == d) {
+      onCloudRemoved(it->second);
+      it = cloud_access_.erase(it);
+    } else {
+      it++;
+    }
+  }
 }
 
 CloudAccess CloudFactory::createImpl(

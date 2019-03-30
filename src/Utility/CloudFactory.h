@@ -38,8 +38,9 @@ class CloudFactory : public ICloudFactory {
   CloudFactory(InitData&&);
   ~CloudFactory() override;
 
-  std::unique_ptr<ICloudAccess> create(const std::string& provider_name,
-                                       const ProviderInitData&) const override;
+  std::shared_ptr<ICloudAccess> create(const std::string& provider_name,
+                                       const ProviderInitData&) override;
+  void remove(const std::shared_ptr<ICloudAccess>&) override;
 
   void add(std::unique_ptr<IGenericRequest>&&);
   void invoke(const std::function<void()>&);
