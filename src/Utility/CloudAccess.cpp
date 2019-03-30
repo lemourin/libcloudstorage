@@ -301,6 +301,8 @@ std::string CloudAccess::name() const { return provider_->name(); }
 
 IItem::Pointer CloudAccess::root() const { return provider_->rootDirectory(); }
 
+std::string CloudAccess::token() const { return provider_->token(); }
+
 std::unique_ptr<ICloudUploadCallback> ICloudAccess::streamUploader(
     const std::shared_ptr<std::istream>& stream,
     const std::function<void(uint64_t total, uint64_t now)>& progress) {

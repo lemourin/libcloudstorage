@@ -99,6 +99,7 @@ class CloudAccess : public ICloudAccess {
   ICloudProvider* provider() const { return provider_.get(); }
   std::string name() const override;
   IItem::Pointer root() const override;
+  std::string token() const override;
 
   Promise<Token> exchangeCode(const std::string& code) override;
   Promise<GeneralData> generalData() override;

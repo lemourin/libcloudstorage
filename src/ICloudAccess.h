@@ -57,6 +57,7 @@ class ICloudAccess {
 
   virtual std::string name() const = 0;
   virtual IItem::Pointer root() const = 0;
+  virtual std::string token() const = 0;
 
   virtual Promise<Token> exchangeCode(const std::string& code) = 0;
   virtual Promise<GeneralData> generalData() = 0;
