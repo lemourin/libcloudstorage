@@ -54,14 +54,15 @@ struct UploadCallback : public IUploadFileCallback {
   uint64_t size() override { return callback_->size(); }
 
   void progress(uint64_t total, uint64_t now) override {
-    callback_->progress(total, now);
+    loop_->invoke(
+        [callback = callback_, total, now] { callback->progress(total, now); });
   }
 
   void done(EitherError<IItem> e) override {
     loop_->fulfill(tag_, [promise = promise_, e] { fulfill(promise, e); });
   }
 
-  std::unique_ptr<ICloudUploadCallback> callback_;
+  std::shared_ptr<ICloudUploadCallback> callback_;
   Promise<IItem::Pointer> promise_;
   uint64_t tag_;
   std::shared_ptr<priv::LoopImpl> loop_;
@@ -78,7 +79,8 @@ struct DownloadCallback : public IDownloadFileCallback {
   }
 
   void progress(uint64_t total, uint64_t now) override {
-    callback_->progress(total, now);
+    loop_->invoke(
+        [callback = callback_, total, now] { callback->progress(total, now); });
   }
 
   void done(EitherError<void> e) override {
@@ -327,6 +329,7 @@ Promise<IItem::Pointer> CloudAccess::copyItem(
                              if (progress) progress(2 * total, total + now);
                            }));
       })
+      .then([result](IItem::Pointer item) { result.fulfill(std::move(item)); })
       .error<Exception>(
           [result](Exception&& e) { result.reject(std::move(e)); });
   return result;
