@@ -74,6 +74,7 @@ class ICloudFactory {
 
   virtual std::string authorizationUrl(const std::string& provider) const = 0;
   virtual std::string pretty(const std::string& provider) const = 0;
+  virtual bool httpServerAvailable() const = 0;
 
   virtual void processEvents() = 0;
 

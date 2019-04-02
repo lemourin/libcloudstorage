@@ -31,6 +31,8 @@
 
 #include "ICloudFactory.h"
 
+class ServerWrapperFactory;
+
 namespace cloudstorage {
 
 class CloudFactory : public ICloudFactory {
@@ -56,6 +58,7 @@ class CloudFactory : public ICloudFactory {
   std::string authorizationUrl(const std::string& provider) const override;
   std::string pretty(const std::string& provider) const override;
   std::vector<std::string> availableProviders() const override;
+  bool httpServerAvailable() const override;
 
   void onCloudRemoved(const ICloudProvider&);
 
@@ -80,7 +83,7 @@ class CloudFactory : public ICloudFactory {
   CloudEventLoop event_loop_;
   std::string base_url_;
   std::shared_ptr<IHttp> http_;
-  std::shared_ptr<IHttpServerFactory> http_server_factory_;
+  std::shared_ptr<ServerWrapperFactory> http_server_factory_;
   std::shared_ptr<ICrypto> crypto_;
   std::shared_ptr<IThreadPool> thread_pool_;
   ICloudStorage::Pointer cloud_storage_;

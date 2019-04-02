@@ -389,6 +389,10 @@ std::vector<std::string> CloudFactory::availableProviders() const {
   return cloud_storage_->providers();
 }
 
+bool CloudFactory::httpServerAvailable() const {
+  return http_server_factory_->serverAvailable();
+}
+
 void CloudFactory::onCloudRemoved(const ICloudProvider& d) {
   auto identifier = cloud_identifier(d);
   loop_->invoke([=] {
