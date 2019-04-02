@@ -93,7 +93,7 @@ struct DownloadCallback : public IDownloadFileCallback {
 
 struct Uploader : public ICloudUploadCallback {
   Uploader(const std::shared_ptr<std::istream>& stream,
-           const std::function<void(uint64_t total, uint64_t now)>& progress)
+           const ICloudAccess::ProgressCallback& progress)
       : stream_(stream), progress_(progress) {}
 
   uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
@@ -112,12 +112,12 @@ struct Uploader : public ICloudUploadCallback {
   }
 
   std::shared_ptr<std::istream> stream_;
-  std::function<void(uint64_t total, uint64_t now)> progress_;
+  ICloudAccess::ProgressCallback progress_;
 };
 
 struct Downloader : public ICloudDownloadCallback {
   Downloader(const std::shared_ptr<std::ostream>& stream,
-             const std::function<void(uint64_t total, uint64_t now)>& progress)
+             const ICloudAccess::ProgressCallback& progress)
       : stream_(stream), progress_(progress) {}
 
   void receivedData(const char* data, uint32_t length) override {
@@ -129,7 +129,7 @@ struct Downloader : public ICloudDownloadCallback {
   }
 
   std::shared_ptr<std::ostream> stream_;
-  std::function<void(uint64_t total, uint64_t now)> progress_;
+  ICloudAccess::ProgressCallback progress_;
 };
 
 bool startsWith(const std::string& string, const std::string& prefix) {
@@ -297,6 +297,41 @@ Promise<> CloudAccess::generateThumbnail(
   return result;
 }
 
+Promise<IItem::Pointer> CloudAccess::copyItem(
+    IItem::Pointer source_item,
+    const std::shared_ptr<ICloudAccess>& target_provider,
+    IItem::Pointer target_parent, const std::string& target_filename,
+    std::unique_ptr<std::iostream>&& buffer,
+    const ICloudAccess::ProgressCallback& progress) {
+  std::shared_ptr<std::iostream> buffer_ptr = std::move(buffer);
+  Promise<IItem::Pointer> result;
+  if (source_item->type() == IItem::FileType::Directory) {
+    result.reject(Exception(600, "Copying directories not implemented"));
+    return result;
+  }
+  if (target_parent->type() != IItem::FileType::Directory) {
+    result.reject(Exception(600, "Target not a directory"));
+    return result;
+  }
+  downloadFile(source_item, FullRange,
+               streamDownloader(buffer_ptr,
+                                [progress](uint64_t total, uint64_t now) {
+                                  if (progress) progress(2 * total, now);
+                                }))
+      .then([target_provider, target_parent, target_filename, progress,
+             buffer_ptr] {
+        return target_provider->uploadFile(
+            target_parent, target_filename,
+            streamUploader(buffer_ptr,
+                           [progress](uint64_t total, uint64_t now) {
+                             if (progress) progress(2 * total, total + now);
+                           }));
+      })
+      .error<Exception>(
+          [result](Exception&& e) { result.reject(std::move(e)); });
+  return result;
+}
+
 std::string CloudAccess::name() const { return provider_->name(); }
 
 IItem::Pointer CloudAccess::root() const { return provider_->rootDirectory(); }
@@ -305,13 +340,13 @@ std::string CloudAccess::token() const { return provider_->token(); }
 
 std::unique_ptr<ICloudUploadCallback> ICloudAccess::streamUploader(
     const std::shared_ptr<std::istream>& stream,
-    const std::function<void(uint64_t total, uint64_t now)>& progress) {
+    const ICloudAccess::ProgressCallback& progress) {
   return util::make_unique<Uploader>(stream, progress);
 }
 
 std::unique_ptr<ICloudDownloadCallback> ICloudAccess::streamDownloader(
     const std::shared_ptr<std::ostream>& stream,
-    const std::function<void(uint64_t, uint64_t)>& progress) {
+    const ICloudAccess::ProgressCallback& progress) {
   return util::make_unique<Downloader>(stream, progress);
 }
 

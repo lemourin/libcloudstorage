@@ -52,6 +52,7 @@ class ICloudDownloadCallback {
 class ICloudAccess {
  public:
   using Pointer = std::unique_ptr<ICloudAccess>;
+  using ProgressCallback = std::function<void(uint64_t total, uint64_t now)>;
 
   virtual ~ICloudAccess() = default;
 
@@ -85,15 +86,19 @@ class ICloudAccess {
       IItem::Pointer file, const std::shared_ptr<ICloudDownloadCallback>&) = 0;
   virtual Promise<> generateThumbnail(
       IItem::Pointer file, const std::shared_ptr<ICloudDownloadCallback>&) = 0;
+  virtual Promise<IItem::Pointer> copyItem(
+      IItem::Pointer source_item,
+      const std::shared_ptr<ICloudAccess>& target_provider,
+      IItem::Pointer target_parent, const std::string& target_filename,
+      std::unique_ptr<std::iostream>&& buffer,
+      const ProgressCallback& progress = nullptr) = 0;
 
   static std::unique_ptr<ICloudUploadCallback> streamUploader(
       const std::shared_ptr<std::istream>& stream,
-      const std::function<void(uint64_t total, uint64_t now)>& progress =
-          nullptr);
+      const ProgressCallback& progress = nullptr);
   static std::unique_ptr<ICloudDownloadCallback> streamDownloader(
       const std::shared_ptr<std::ostream>& stream,
-      const std::function<void(uint64_t total, uint64_t now)>& progress =
-          nullptr);
+      const ProgressCallback& progress = nullptr);
 };
 }  // namespace cloudstorage
 
