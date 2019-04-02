@@ -140,17 +140,9 @@ struct HttpCallback : public IHttpServer::ICallback {
     }
     const char* code = request.get("code");
     if (code) {
-      CloudFactory::ProviderInitData data;
-      data.permission_ = ICloudProvider::Permission::ReadWrite;
-      auto access = std::make_shared<CloudAccess>(
-          factory_->createImpl(state, std::move(data)));
-      factory_->add(access->provider()->exchangeCodeAsync(
-          code, [factory = factory_, state,
-                 access = std::move(access)](EitherError<Token> e) {
-            factory->invoke([factory, state, e, access = std::move(access)] {
-              factory->onCloudTokenReceived(state, e);
-            });
-          }));
+      factory_->invoke([factory = factory_, state, code = std::string(code)] {
+        factory->onCloudAuthenticationCodeReceived(state, code);
+      });
       return util::response_from_string(request, IHttpRequest::Ok, {},
                                         MAKE_STRING(default_success_html));
     } else if (request.get("error")) {
@@ -189,6 +181,11 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
   FactoryCallbackWrapper(CloudFactory* factory,
                          const std::shared_ptr<ICloudFactory::ICallback>& cb)
       : factory_(factory), cb_(cb) {}
+
+  void onCloudAuthenticationCodeReceived(const std::string& provider,
+                                         const std::string& code) override {
+    if (cb_) cb_->onCloudAuthenticationCodeReceived(provider, code);
+  }
 
   void onCloudTokenReceived(const std::string& provider,
                             const EitherError<Token>& token) override {
@@ -329,6 +326,22 @@ void CloudFactory::onCloudTokenReceived(const std::string& provider,
         {cloud_identifier(*cloud_access->provider()), cloud_access});
     onCloudCreated(cloud_access);
   }
+}
+
+void CloudFactory::onCloudAuthenticationCodeReceived(
+    const std::string& provider, const std::string& code) {
+  if (callback_) callback_->onCloudAuthenticationCodeReceived(provider, code);
+  CloudFactory::ProviderInitData data;
+  data.permission_ = ICloudProvider::Permission::ReadWrite;
+  auto access =
+      std::make_shared<CloudAccess>(createImpl(provider, std::move(data)));
+  add(access->provider()->exchangeCodeAsync(
+      code, [factory = this, provider,
+             access = std::move(access)](EitherError<Token> e) {
+        factory->invoke([factory, provider, e, access = std::move(access)] {
+          factory->onCloudTokenReceived(provider, e);
+        });
+      }));
 }
 
 void CloudFactory::onCloudCreated(std::shared_ptr<CloudAccess> d) {

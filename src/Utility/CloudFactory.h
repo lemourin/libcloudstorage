@@ -47,6 +47,8 @@ class CloudFactory : public ICloudFactory {
 
   void onCloudTokenReceived(const std::string& provider,
                             const EitherError<Token>&);
+  void onCloudAuthenticationCodeReceived(const std::string& provider,
+                                         const std::string& code);
 
   void onCloudCreated(std::shared_ptr<CloudAccess> cloud);
   void onCloudRemoved(std::shared_ptr<CloudAccess> cloud);
