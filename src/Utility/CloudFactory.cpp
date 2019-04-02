@@ -346,6 +346,32 @@ std::string CloudFactory::authorizationUrl(const std::string& provider) const {
   return p.provider()->authorizeLibraryUrl();
 }
 
+std::string CloudFactory::pretty(const std::string& provider) const {
+  const std::unordered_map<std::string, std::string> name_map = {
+      {"amazon", "Amazon Drive"},
+      {"amazons3", "Amazon S3"},
+      {"box", "Box"},
+      {"dropbox", "Dropbox"},
+      {"google", "Google Drive"},
+      {"hubic", "hubiC"},
+      {"mega", "Mega"},
+      {"onedrive", "One Drive"},
+      {"pcloud", "pCloud"},
+      {"webdav", "WebDAV"},
+      {"yandex", "Yandex Disk"},
+      {"youtube", "YouTube"},
+      {"gphotos", "Google Photos"},
+      {"local", "Local Drive"},
+      {"localwinrt", "Local Drive"},
+      {"animezone", "Anime Zone"},
+      {"4shared", "4shared"}};
+  auto it = name_map.find(provider);
+  if (it != name_map.end())
+    return it->second.c_str();
+  else
+    return "";
+}
+
 std::vector<std::string> CloudFactory::availableProviders() const {
   return cloud_storage_->providers();
 }

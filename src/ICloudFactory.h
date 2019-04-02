@@ -71,6 +71,7 @@ class ICloudFactory {
   virtual void remove(const std::shared_ptr<ICloudAccess>&) = 0;
 
   virtual std::string authorizationUrl(const std::string& provider) const = 0;
+  virtual std::string pretty(const std::string& provider) const = 0;
 
   virtual void processEvents() = 0;
 
