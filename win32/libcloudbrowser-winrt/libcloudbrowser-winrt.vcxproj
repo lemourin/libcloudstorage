@@ -54,7 +54,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtGui;../../dependencies/winrt/include/QtANGLE;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -75,7 +75,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/winrt/include/QtCore/5.12.1/;../../dependencies/winrt/include/QtCore/5.12.1/QtCore;../../dependencies/winrt/include/QtWebView;../../dependencies/winrt/include/QtQml;../../dependencies/winrt/include/QtCore;../../dependencies/winrt/include;../../dependencies/winrt/include/QtQuick;../../dependencies/winrt/include/QtANGLE;../../dependencies/winrt/include/QtGui;../../dependencies/win32/include;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>

@@ -206,7 +206,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;WITH_THUMBNAILER;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -229,7 +229,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;WITH_THUMBNAILER;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

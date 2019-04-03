@@ -80,7 +80,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common/;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -102,7 +102,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
