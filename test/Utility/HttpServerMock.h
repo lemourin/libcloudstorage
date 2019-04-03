@@ -40,7 +40,7 @@ class HttpServerMock : public IHttpServer {
                        IResponse::Pointer(int, const IResponse::Headers&, int,
                                           IResponse::ICallback*));
     IResponse::Pointer response(int code, const IResponse::Headers& headers,
-                                int size,
+                                int64_t size,
                                 IResponse::ICallback::Pointer cb) const {
       return mocked_response(code, headers, size, cb.get());
     }

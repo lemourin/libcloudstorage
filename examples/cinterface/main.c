@@ -286,7 +286,7 @@ void get_general_data(struct cloud_provider* provider) {
 uint64_t upload_size(void* data) { return strlen((cloud_string*)data); }
 
 uint32_t upload_put_data(char* buffer, uint32_t maxlength,
-                         uint32_t requested_offset, void* data) {
+                         uint64_t requested_offset, void* data) {
   cloud_string* str = data;
   int length = strlen(str);
   int size = length - requested_offset >= maxlength ? maxlength
