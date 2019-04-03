@@ -39,10 +39,10 @@ namespace cloudstorage {
 
 namespace {
 void upload(Request<EitherError<IItem>>::Pointer r,
-            const std::string& session_id, const std::string& path, int sent,
-            IUploadFileCallback* callback) {
+            const std::string& session_id, const std::string& path,
+            uint64_t sent, IUploadFileCallback* callback) {
   auto size = callback->size();
-  auto length = std::make_shared<int>(0);
+  auto length = std::make_shared<uint64_t>(0);
   r->send(
       [=](util::Output stream) {
         std::vector<char> buffer(CHUNK_SIZE);
@@ -62,7 +62,7 @@ void upload(Request<EitherError<IItem>>::Pointer r,
         auto request = r->provider()->http()->create(upload_url, "POST");
         if (sent != 0) {
           json["cursor"]["session_id"] = session_id;
-          json["cursor"]["offset"] = sent;
+          json["cursor"]["offset"] = Json::Int64(static_cast<int64_t>(sent));
         }
         request->setHeaderParameter("Content-Type", "application/octet-stream");
         request->setHeaderParameter("Dropbox-API-Arg",

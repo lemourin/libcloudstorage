@@ -38,10 +38,10 @@ namespace cloudstorage {
 
 namespace {
 void upload(Request<EitherError<IItem>>::Pointer r,
-            const std::string& upload_url, int sent,
+            const std::string& upload_url, uint64_t sent,
             IUploadFileCallback* callback, Json::Value response) {
   auto size = callback->size();
-  auto length = std::make_shared<int>(0);
+  auto length = std::make_shared<uint64_t>(0);
   if (sent >= size)
     return r->done(
         static_cast<OneDrive*>(r->provider().get())->toItem(response));
