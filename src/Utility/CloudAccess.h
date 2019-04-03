@@ -30,7 +30,6 @@
 
 namespace cloudstorage {
 
-namespace {
 template <class T>
 void fulfill(const util::Promise<T>& promise, const EitherError<T>& e) {
   if (e.left()) {
@@ -49,13 +48,7 @@ void fulfill(const util::Promise<std::shared_ptr<T>>& promise,
   }
 }
 
-void fulfill(const util::Promise<>& promise, const EitherError<void>& e) {
-  if (e.left()) {
-    promise.reject(Exception(e.left()));
-  } else {
-    promise.fulfill();
-  }
-}
+void fulfill(const util::Promise<>& promise, const EitherError<void>& e);
 
 template <class T>
 struct RemoveSharedPtr {
@@ -87,7 +80,6 @@ template <>
 struct RequestType<std::unique_ptr<IRequest<EitherError<IItem>>>> {
   using type = std::shared_ptr<IItem>;
 };
-}  // namespace
 
 class CloudAccess : public ICloudAccess {
  public:

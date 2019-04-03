@@ -62,7 +62,7 @@ void ListDirectoryModel::remove(int idx) {
   endRemoveRows();
 }
 
-void ListDirectoryModel::match(const IItem::List& lst) {
+void ListDirectoryModel::assign(const IItem::List& lst) {
   std::unordered_set<std::string> id;
   for (size_t i = lst.size(); i-- > 0;) {
     auto idx = find(lst[i]);
@@ -110,7 +110,7 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
   auto cached = context->cachedDirectory(cache_key);
   bool cache_found = !cached.empty();
   if (!cached.empty()) {
-    list_.match(cached);
+    list_.assign(cached);
   }
   set_done(false);
 
@@ -133,7 +133,7 @@ void ListDirectoryRequest::update(CloudContext* context, CloudItem* item) {
               emit errorOccurred(provider, r.left()->code_,
                                  r.left()->description_.c_str());
             } else {
-              if (cache_found) list_.match(*r.right());
+              if (cache_found) list_.assign(*r.right());
               emit finished(cache_key, *r.right());
               set_done(true);
             }

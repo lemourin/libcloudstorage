@@ -141,6 +141,14 @@ bool startsWith(const std::string& string, const std::string& prefix) {
 
 }  // namespace
 
+void fulfill(const Promise<>& promise, const EitherError<void>& e) {
+  if (e.left()) {
+    promise.reject(Exception(e.left()));
+  } else {
+    promise.fulfill();
+  }
+}
+
 CloudAccess::CloudAccess(std::shared_ptr<priv::LoopImpl> loop,
                          ICloudProvider::Pointer&& provider)
     : loop_(loop), provider_(std::move(provider)) {}

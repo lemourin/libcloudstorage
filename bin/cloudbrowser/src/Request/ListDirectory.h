@@ -43,7 +43,7 @@ class CLOUDBROWSER_API ListDirectoryModel : public QAbstractListModel {
   const std::vector<cloudstorage::IItem::Pointer>& list() const {
     return list_;
   }
-  void match(const std::vector<cloudstorage::IItem::Pointer>&);
+  void assign(const std::vector<cloudstorage::IItem::Pointer>&);
 
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int) const override;
