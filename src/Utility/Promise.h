@@ -157,11 +157,11 @@ class Promise {
     static void call(std::tuple<T...>&& d, const PromiseType& p,
                      const std::shared_ptr<ResultTuple>& result) {
       using CurrentType =
-	  typename std::tuple_element<Index, std::tuple<T...>>::type;
+          typename std::tuple_element<Index, std::tuple<T...>>::type;
       auto element = std::move(std::get<Index>(d));
       auto continuation = [d = std::move(d), p, result]() mutable {
-	EvaluateThen<Index - 1, ResultIndex - SlotsReserved<CurrentType>::value,
-	             std::tuple<T...>>::call(std::move(d), p, result);
+        EvaluateThen<Index - 1, ResultIndex - SlotsReserved<CurrentType>::value,
+                     std::tuple<T...>>::call(std::move(d), p, result);
       };
       AppendElement<CurrentType>::template call<ResultIndex>(
           std::move(element), p, result, continuation);
@@ -176,7 +176,7 @@ class Promise {
     template <class... Q>
     struct Call<std::tuple<Q...>> {
       template <class Promise>
-      static void call(std::tuple<T...>&& d, const Promise& p,
+      static void call(std::tuple<T...>&&, const Promise& p,
                        const std::shared_ptr<std::tuple<Q...>>& result) {
         SequenceGenerator<std::tuple_size<std::tuple<Q...>>::value>::type::call(
             [p](Q&&... args) { p.fulfill(std::move(args)...); }, *result);
@@ -203,8 +203,8 @@ class Promise {
         auto r = cb(std::move(args)...);
         auto common_state = std::make_shared<StateTuple>();
         EvaluateThen<static_cast<int>(std::tuple_size<Tuple>::value) - 1,
-	             static_cast<int>(std::tuple_size<StateTuple>::value) - 1,
-	             Tuple>::call(std::move(r), promise, common_state);
+                     static_cast<int>(std::tuple_size<StateTuple>::value) - 1,
+                     Tuple>::call(std::move(r), promise, common_state);
       } catch (...) {
         promise.reject(std::current_exception());
       }
@@ -333,7 +333,7 @@ class Promise {
 template <class Element>
 struct AppendElement {
   template <int Index, class PromiseType, class ResultTuple, class Callable>
-  static void call(Element&& result, const PromiseType& p,
+  static void call(Element&& result, const PromiseType&,
                    const std::shared_ptr<ResultTuple>& output,
                    Callable&& callable) {
     std::get<Index>(*output) = std::move(result);
