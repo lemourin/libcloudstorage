@@ -49,7 +49,7 @@ struct cloud_http_server_request_operations {
   cloud_string* (*method)(void* userdata);
   cloud_string* (*url)(void* userdata);
   struct cloud_http_server_response* (*response)(
-      int code, const struct cloud_http_server_response_headers*, int size,
+      int code, const struct cloud_http_server_response_headers*, int64_t size,
       struct cloud_http_server_response_callback*);
 
   void (*release_response)(struct cloud_http_server_response*);

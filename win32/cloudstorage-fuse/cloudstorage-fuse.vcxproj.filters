@@ -32,7 +32,7 @@
     <ClCompile Include="..\..\bin\fuse\FuseWinFsp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\bin\common\HttpServer.cpp">
+    <ClCompile Include="..\..\src\Utility\HttpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,9 +56,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\bin\fuse\FuseWinFsp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\bin\common\HttpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

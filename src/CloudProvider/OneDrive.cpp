@@ -40,7 +40,7 @@ namespace {
 void upload(Request<EitherError<IItem>>::Pointer r,
             const std::string& upload_url, int sent,
             IUploadFileCallback* callback, Json::Value response) {
-  int size = callback->size();
+  auto size = callback->size();
   auto length = std::make_shared<int>(0);
   if (sent >= size)
     return r->done(

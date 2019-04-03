@@ -40,12 +40,12 @@
 #undef CreateDirectory
 
 const std::string AUDIO_DIRECTORY = "Audio";
-const std::string AUDIO_DIRECTORY_ID = cloudstorage::util::to_base64(
-    R"({"type":3,"id":"audio"})");
+const std::string AUDIO_DIRECTORY_ID =
+    cloudstorage::util::to_base64(R"({"type":3,"id":"audio"})");
 
 const std::string HIGH_QUALITY_DIRECTORY = "High Quality";
-const std::string HIGH_QUALITY_DIRECTORY_ID = cloudstorage::util::to_base64(
-    R"({"type":6,"id":"high quality"})");
+const std::string HIGH_QUALITY_DIRECTORY_ID =
+    cloudstorage::util::to_base64(R"({"type":6,"id":"high quality"})");
 
 const std::string LIKED_VIDEOS = "Liked videos";
 const std::string UPLOADED_VIDEOS = "Uploaded videos";
@@ -172,7 +172,7 @@ VideoInfo video_info(const std::string& url) {
     else if (key == "clen")
       result.size = std::stoull(value);
     else if (key == "size") {
-      int it = value.find('x');
+      size_t it = value.find('x');
       result.width = std::stoul(std::string(value.begin(), value.begin() + it));
       result.height =
           std::stoul(std::string(value.begin() + it + 1, value.end()));
@@ -387,9 +387,8 @@ std::string generate_dash_manifest(const std::string& duration,
     auto type = mimetype.substr(0, mimetype.find('/'));
     r << R"(
       <AdaptationSet mimeType=")"
-      << mimetype <<
-        R"(" contentType=")" << type <<
-        R"(" bitstreamSwitching="true" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1" startWithSAP="1">)";
+      << mimetype << R"(" contentType=")" << type
+      << R"(" bitstreamSwitching="true" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1" startWithSAP="1">)";
     for (const auto& stream : d.second) {
       r << R"(
         <Representation id=")"
@@ -529,7 +528,8 @@ ICloudProvider::DownloadFileRequest::Pointer YouTube::downloadFileAsync(
     auto drange = range;
     if (drange.size_ == Range::Full)
       drange.size_ = manifest.size() - range.start_;
-    cb->receivedData(manifest.data() + drange.start_, drange.size_);
+    cb->receivedData(manifest.data() + drange.start_,
+                     static_cast<uint32_t>(drange.size_));
     cb->progress(drange.size_, drange.size_);
     r->done(nullptr);
   };

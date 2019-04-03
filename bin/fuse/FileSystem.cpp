@@ -611,7 +611,7 @@ void FileSystem::fsync(FileId inode, DataSynchronizedCallback cb) {
     uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
       node_->store_->seekg(offset);
       node_->store_->read(data, maxlength);
-      return node_->store_->gcount();
+      return static_cast<uint32_t>(node_->store_->gcount());
     }
 
     uint64_t size() override { return size_; }
@@ -738,7 +738,7 @@ std::string FileSystem::sanitize(const std::string& name) {
   for (auto&& c : name)
     if (forbidden.find(c) == std::string::npos) res += c;
   if (res.empty()) return res;
-  int index = res.size() - 1;
+  int index = static_cast<int>(res.size()) - 1;
   while (index >= 0 && (res[index] == '.' || res[index] == ' ')) {
     index--;
   }

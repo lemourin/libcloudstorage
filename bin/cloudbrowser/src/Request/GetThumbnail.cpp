@@ -292,7 +292,7 @@ class Generator : public QQuickImageResponse {
         if (data.left()) throw std::logic_error(data.left()->description_);
         response_->image_ = QImage::fromData(
             reinterpret_cast<const uchar*>(data.right()->c_str()),
-            data.right()->size());
+            static_cast<int>(data.right()->size()));
         emit response_->finished();
       } catch (const std::exception& e) {
         response_->error_ = e.what();

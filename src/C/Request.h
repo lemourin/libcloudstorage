@@ -105,7 +105,7 @@ struct cloud_request_upload_file_callback {
   uint64_t (*size)(void* data);
   void (*done)(struct cloud_either_item*, void* data);
   uint32_t (*put_data)(char* buffer, uint32_t maxlength,
-                       uint32_t requested_offset, void* data);
+                       uint64_t requested_offset, void* data);
 };
 struct cloud_request_download_file_callback {
   void (*received_data)(const char* data, uint32_t length, void* userdata);

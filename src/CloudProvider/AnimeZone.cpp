@@ -256,7 +256,7 @@ std::string decipher(const std::string &code,
       auto _0x1a9381 = _0x30725e & _0x2de433;
       auto _0x1a0e90 = (_0x41e0ff / 9) * i;
       _0x1a9381 = _0x1a9381 >> _0x1a0e90;
-      auto _0x3fa834 = std::string(1, _0x1a9381 - 1);
+      auto _0x3fa834 = std::string(1, static_cast<char>(_0x1a9381 - 1));
       if (_0x3fa834 != "$") {
         _0x1bf6e5 += _0x3fa834;
       }

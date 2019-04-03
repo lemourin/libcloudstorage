@@ -108,7 +108,7 @@ class UploadFileCallback : public cloudstorage::IUploadFileCallback {
   uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
     file_.seekg(offset);
     file_.read(data, maxlength);
-    return file_.gcount();
+    return static_cast<uint32_t>(file_.gcount());
   }
 
   uint64_t size() override { return size_; }

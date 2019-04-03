@@ -30,7 +30,7 @@ std::shared_ptr<ServerWrapperFactory> http_server_factory =
 }  // namespace
 
 int ProviderListModel::rowCount(const QModelIndex&) const {
-  return provider_.size();
+  return static_cast<int>(provider_.size());
 }
 
 QVariant ProviderListModel::data(const QModelIndex& index, int) const {
@@ -47,7 +47,7 @@ void ProviderListModel::remove(QVariant provider) {
   for (size_t i = 0; i < provider_.size();)
     if (provider_[i].label_ == label &&
         provider_[i].provider_->name() == type) {
-      beginRemoveRows(QModelIndex(), i, i);
+      beginRemoveRows(QModelIndex(), static_cast<int>(i), static_cast<int>(i));
       provider_.erase(provider_.begin() + i);
       endRemoveRows();
       emit updated();

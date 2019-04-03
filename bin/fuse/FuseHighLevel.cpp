@@ -81,7 +81,7 @@ int read(const char *path, char *buffer, size_t size, FUSE_OFF_T offset,
               [&](EitherError<std::string> e) {
                 if (e.left()) return ret.set_value(-EIO);
                 memcpy(buffer, e.right()->data(), e.right()->size());
-                ret.set_value(e.right()->size());
+                ret.set_value(static_cast<int>(e.right()->size()));
               });
   });
   return ret.get_future().get();
@@ -166,10 +166,10 @@ int write(const char *path, const char *data, size_t size, FUSE_OFF_T offset,
   auto ctx = context();
   ctx->getattr(path, [&](EitherError<IFileSystem::INode> e) {
     if (e.left()) return ret.set_value(-ENOENT);
-    ctx->write(e.right()->inode(), data, size, offset,
-               [&](EitherError<uint32_t> e) {
+    ctx->write(e.right()->inode(), data, static_cast<uint32_t>(size),
+               static_cast<uint64_t>(offset), [&](EitherError<uint32_t> e) {
                  if (e.left()) return ret.set_value(-ENOENT);
-                 ret.set_value(*e.right());
+                 ret.set_value(static_cast<int>(*e.right()));
                });
   });
   return ret.get_future().get();

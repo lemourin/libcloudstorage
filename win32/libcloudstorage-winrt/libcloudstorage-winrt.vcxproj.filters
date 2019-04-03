@@ -364,9 +364,6 @@
     <ClCompile Include="..\..\src\Utility\ThreadPool.cpp">
       <Filter>Source Files\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\C\Request.cpp">
-      <Filter>Source Files\Request</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\C\ThreadPool.cpp">
       <Filter>Source Files\C</Filter>
     </ClCompile>
@@ -405,6 +402,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Utility\LoginPage.cpp">
       <Filter>Source Files\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\Request.cpp">
+      <Filter>Source Files\C</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -131,7 +131,7 @@ Pointer<AVIOContext> create_io_context(
   struct Download : public IDownloadFileCallback {
     void progress(uint64_t, uint64_t) override {}
     void receivedData(const char* data, uint32_t size) override {
-      auto bytes = std::min<int>(size, size_);
+      auto bytes = std::min<int64_t>(size, size_);
       memcpy(buffer_, data, bytes);
       size_ -= bytes;
       buffer_ += bytes;
@@ -168,7 +168,7 @@ Pointer<AVIOContext> create_io_context(
             }
             data->offset_ += size - cb->size_;
             auto error = future.get().left();
-            return error ? -1 : size - cb->size_;
+            return error ? -1 : static_cast<int>(size - cb->size_);
           },
           nullptr,
           [](void* d, int64_t offset, int whence) -> int64_t {

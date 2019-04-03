@@ -326,6 +326,8 @@
       <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtQuick;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -334,6 +336,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Qml.lib;Qt5Svg.lib;Qt5Network.lib;Qt5Multimedia.lib;Qt5WebView.lib;Qt5Quick.lib;VLCQtQml.lib;mpv.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -345,12 +348,15 @@
       <PreprocessorDefinitions>_DEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtQuick;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avformat.lib;avcodec.lib;avdevice.lib;avfilter.lib;avutil.lib;swresample.lib;swscale.lib;VLCQtQml.lib;mpv.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Qmld.lib;Qt5Quickd.lib;Qt5Svgd.lib;Qt5Networkd.lib;Qt5Multimediad.lib;Qt5WebViewd.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -32,7 +32,7 @@
 #include <unordered_set>
 
 namespace mega {
-class Node;
+struct Node;
 }
 
 namespace cloudstorage {

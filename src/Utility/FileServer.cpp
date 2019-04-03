@@ -80,7 +80,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
       buf[i] = data_.front();
       data_.pop();
     }
-    return cnt;
+    return static_cast<int>(cnt);
   }
 
   void put(const char* data, uint32_t length) {
@@ -227,7 +227,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
     else if (status_ == InProgress)
       return Suspend;
     else
-      return buffer_->read(buf, max);
+      return buffer_->read(buf, static_cast<uint32_t>(max));
   }
 
   std::atomic_int status_;

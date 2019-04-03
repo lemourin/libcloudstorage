@@ -44,7 +44,7 @@ void ListDirectoryModel::clear() {
 int ListDirectoryModel::find(IItem::Pointer item) const {
   if (id_.find(item->id()) == std::end(id_)) return -1;
   for (size_t i = 0; i < list_.size(); i++)
-    if (list_[i]->id() == item->id()) return i;
+    if (list_[i]->id() == item->id()) return static_cast<int>(i);
   return -1;
 }
 
@@ -79,7 +79,7 @@ void ListDirectoryModel::assign(const IItem::List& lst) {
   }
   for (size_t i = 0; i < list().size();) {
     if (id.find(list()[i]->id()) == std::end(id)) {
-      remove(i);
+      remove(static_cast<int>(i));
     } else {
       i++;
     }

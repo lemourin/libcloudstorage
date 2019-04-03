@@ -41,7 +41,7 @@ namespace {
 void upload(Request<EitherError<IItem>>::Pointer r,
             const std::string& session_id, const std::string& path, int sent,
             IUploadFileCallback* callback) {
-  int size = callback->size();
+  auto size = callback->size();
   auto length = std::make_shared<int>(0);
   r->send(
       [=](util::Output stream) {

@@ -66,7 +66,7 @@ void cloud_token_release(cloud_token *d) {
 
 int cloud_item_list_length(const cloud_item_list *d) {
   auto r = reinterpret_cast<const std::shared_ptr<IItem::List> *>(d);
-  return (*r)->size();
+  return static_cast<int>((*r)->size());
 }
 
 cloud_item *cloud_item_list_get(const cloud_item_list *d, int index) {

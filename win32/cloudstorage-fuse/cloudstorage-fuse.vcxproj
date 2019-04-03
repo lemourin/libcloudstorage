@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\bin\common\HttpServer.cpp" />
     <ClCompile Include="..\..\bin\fuse\FileSystem.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseCommon.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseDokan.cpp" />
@@ -19,9 +18,9 @@
     <ClCompile Include="..\..\bin\fuse\FuseLowLevel.cpp" />
     <ClCompile Include="..\..\bin\fuse\FuseWinFsp.cpp" />
     <ClCompile Include="..\..\bin\fuse\main.cpp" />
+    <ClCompile Include="..\..\src\Utility\HttpServer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\bin\common\HttpServer.h" />
     <ClInclude Include="..\..\bin\fuse\FileSystem.h" />
     <ClInclude Include="..\..\bin\fuse\FuseCommon.h" />
     <ClInclude Include="..\..\bin\fuse\FuseDokan.h" />
@@ -85,6 +84,8 @@
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common/;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,6 +94,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>jsoncpp.lib;dokan2.lib;dokanfuse2.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -104,12 +106,15 @@
       <PreprocessorDefinitions>WITH_LEGACY_FUSE;WITH_DOKAN;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>jsoncpp.lib;dokan2.lib;dokanfuse2.lib;winfsp-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

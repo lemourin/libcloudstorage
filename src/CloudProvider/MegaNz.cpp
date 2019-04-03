@@ -61,12 +61,20 @@
 #endif
 
 #include <json/json.h>
-#include <mega.h>
 #include <array>
 #include <condition_variable>
 #include <cstring>
 #include <fstream>
 #include <queue>
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4275)
+#endif
+#include <mega.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #ifdef DELETE
 #undef DELETE
@@ -271,7 +279,7 @@ struct App : public MegaApp {
   }
 
   dstime pread_failure(error e, int retry, void* d, dstime) override {
-    auto it = callback_.find(reinterpret_cast<uintptr_t>(d));
+    auto it = callback_.find(static_cast<int>(reinterpret_cast<uintptr_t>(d)));
     if (retry >= 4 && it != callback_.end()) {
       auto request = static_cast<Listener<error>*>(it->second.second.get());
       request->done(Error{e, error_description(e)});
@@ -282,12 +290,12 @@ struct App : public MegaApp {
 
   bool pread_data(uint8_t* data, m_off_t length, m_off_t, m_off_t, m_off_t,
                   void* d) override {
-    auto it = callback_.find(reinterpret_cast<uintptr_t>(d));
+    auto it = callback_.find(static_cast<int>(reinterpret_cast<uintptr_t>(d)));
     if (it != callback_.end()) {
       auto request =
           std::static_pointer_cast<Listener<error>>(it->second.second);
-      auto result =
-          request->receivedData(reinterpret_cast<const char*>(data), length);
+      auto result = request->receivedData(reinterpret_cast<const char*>(data),
+                                          static_cast<uint32_t>(length));
       auto lock = request->lock();
       request->received_bytes_ += length;
       if (request->received_bytes_ == request->total_bytes_) {
@@ -506,7 +514,9 @@ struct CloudHttp : public HttpIO {
     while (!read_update_.empty()) {
       auto r = read_update_.front();
       read_update_.pop_front();
-      if (r.first) r.first->put((void*)r.second.c_str(), r.second.size());
+      if (r.first)
+        r.first->put((void*)r.second.c_str(),
+                     static_cast<unsigned int>(r.second.size()));
     }
     while (!queue_.empty()) {
       auto r = queue_.back();
@@ -589,7 +599,8 @@ class CloudFileSystemAccess : public FileSystemAccess {
       localname = *str;
       type = FILENODE;
       retry = false;
-      auto it = fs_->callback_.find(std::stoull(localname));
+      auto it =
+          fs_->callback_.find(static_cast<uint32_t>(std::stoull(localname)));
       if (it == fs_->callback_.end()) return false;
       callback_ = it->second;
       sysstat(&mtime, &size);
@@ -1196,8 +1207,9 @@ void MegaNz::login(Request<EitherError<void>>::Pointer r,
   auto session = util::from_base64(data["session"].asString());
   r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::LOGIN,
                              [&](Listener<error>*, int) {
-                               mega_->client()->login((uint8_t*)session.c_str(),
-                                                      session.size());
+                               mega_->client()->login(
+                                   (uint8_t*)session.c_str(),
+                                   static_cast<int>(session.size()));
                                mega_->exec(lock);
                              },
                              [=](EitherError<error> e) {

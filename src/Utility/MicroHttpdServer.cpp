@@ -80,7 +80,7 @@ IHttpServerFactory::Pointer IHttpServerFactory::create() {
 
 MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
                                      const IResponse::Headers& headers,
-                                     int size,
+                                     int64_t size,
                                      IResponse::ICallback::Pointer callback)
     : data_(std::make_shared<SharedData>()),
       connection_(connection),
@@ -164,7 +164,7 @@ MicroHttpdServer::~MicroHttpdServer() {
 }
 
 MicroHttpdServer::IResponse::Pointer MicroHttpdServer::Request::response(
-    int code, const IResponse::Headers& headers, int size,
+    int code, const IResponse::Headers& headers, int64_t size,
     IResponse::ICallback::Pointer cb) const {
   return util::make_unique<Response>(connection_, code, headers, size,
                                      std::move(cb));

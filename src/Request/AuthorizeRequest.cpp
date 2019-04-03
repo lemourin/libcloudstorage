@@ -87,7 +87,7 @@ void AuthorizeRequest::sendCancel() {
       std::string url() const override { return "/"; }
       std::string method() const override { return "GET"; }
       IHttpServer::IResponse::Pointer response(
-          int, const IHttpServer::IResponse::Headers&, int,
+          int, const IHttpServer::IResponse::Headers&, int64_t,
           IHttpServer::IResponse::ICallback::Pointer) const override {
         return nullptr;
       }

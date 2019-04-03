@@ -98,7 +98,7 @@ struct Uploader : public ICloudUploadCallback {
   uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
     stream_->seekg(offset);
     stream_->read(data, maxlength);
-    return stream_->gcount();
+    return static_cast<uint32_t>(stream_->gcount());
   }
   uint64_t size() override {
     stream_->seekg(0, std::ios::end);
@@ -291,7 +291,8 @@ Promise<> CloudAccess::generateThumbnail(
               return loop->invoke(
                   [result, thumb] { result.reject(Exception(thumb.left())); });
             }
-            cb->receivedData(thumb.right()->data(), thumb.right()->size());
+            cb->receivedData(thumb.right()->data(),
+                             static_cast<uint32_t>(thumb.right()->size()));
             loop->invoke([result] { result.fulfill(); });
           });
         } else {

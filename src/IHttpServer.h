@@ -77,7 +77,7 @@ class CLOUDSTORAGE_API IHttpServer {
     virtual std::string url() const = 0;
 
     virtual IResponse::Pointer response(
-        int code, const IResponse::Headers&, int size,
+        int code, const IResponse::Headers&, int64_t size,
         IResponse::ICallback::Pointer) const = 0;
   };
 

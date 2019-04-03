@@ -114,7 +114,7 @@ void Auth::set_redirect_uri(const std::string& uri) { redirect_uri_ = uri; }
 
 std::string Auth::redirect_uri_path() const {
   const char* http = "http://";
-  int cnt = std::count(http, http + strlen(http), '/') + 1;
+  auto cnt = std::count(http, http + strlen(http), '/') + 1;
   std::string str = redirect_uri();
   for (size_t i = 0; i < str.length(); i++) {
     if (str[i] == '/') cnt--;

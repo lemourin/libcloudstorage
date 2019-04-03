@@ -41,7 +41,7 @@ std::string escapePath(const std::string& str) {
   std::string data = util::Url::escape(str);
   std::string slash = util::Url::escape("/");
   std::string result;
-  for (uint32_t i = 0; i < data.size();)
+  for (size_t i = 0; i < data.size();)
     if (data.substr(i, slash.length()) == slash) {
       result += "/";
       i += slash.length();

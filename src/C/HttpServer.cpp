@@ -153,7 +153,7 @@ cloud_http_server_request *cloud_http_server_request_create(
     }
 
     IHttpServer::IResponse::Pointer response(
-        int code, const IHttpServer::IResponse::Headers &headers, int size,
+        int code, const IHttpServer::IResponse::Headers &headers, int64_t size,
         IHttpServer::IResponse::ICallback::Pointer callback) const override {
       cloud_http_server_response *r = operations_.response(
           code,

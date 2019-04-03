@@ -97,7 +97,8 @@ std::streambuf::int_type UploadStreamWrapper::underflow() {
   }
   if (read_ < size_ && !prefix_) {
     uint32_t size =
-        callback_(buffer_ + read_data, BUFFER_SIZE - read_data, read_);
+        callback_(buffer_ + read_data,
+                  static_cast<uint32_t>(BUFFER_SIZE - read_data), read_);
     read_data += size;
     read_ += size;
   }

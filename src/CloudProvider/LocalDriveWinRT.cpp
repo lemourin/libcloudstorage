@@ -154,7 +154,7 @@ void get_file(const std::string &path,
 }
 
 void get_file_list(LocalDriveWinRT *p, const std::string &path,
-                   IVectorView<StorageFile ^> ^ files, int idx,
+                   IVectorView<StorageFile ^> ^ files, unsigned int idx,
                    std::shared_ptr<PageData> result,
                    std::function<void(std::shared_ptr<PageData>)> callback) {
   if (idx >= files->Size) {
@@ -180,7 +180,7 @@ void read_file(Request<EitherError<void>>::Pointer r, DataReader ^ data_reader,
   if (r->is_cancelled())
     return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   auto chunk_size = std::min<uint64_t>(size, BUFFER_SIZE);
-  create_task(data_reader->LoadAsync(chunk_size))
+  create_task(data_reader->LoadAsync(static_cast<unsigned int>(chunk_size)))
       .then([=](task<unsigned int> t) {
         try {
           auto byte_count = t.get();
@@ -188,7 +188,8 @@ void read_file(Request<EitherError<void>>::Pointer r, DataReader ^ data_reader,
           data_reader->ReadBytes(bytes);
           std::vector<char> buffer(byte_count);
           for (auto i = 0u; i < bytes->Length; i++) buffer[i] = bytes[i];
-          callback->receivedData(buffer.data(), buffer.size());
+          callback->receivedData(buffer.data(),
+                                 static_cast<uint32_t>(buffer.size()));
           callback->progress(total_size - (size - byte_count), total_size);
           read_file(r, data_reader, size - byte_count, total_size, callback);
         } catch (Platform::Exception ^ e) {
@@ -217,8 +218,8 @@ void write_file(Request<EitherError<IItem>>::Pointer r, const std::string &path,
     return r->done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
   auto chunk_size = std::min<uint64_t>(size, BUFFER_SIZE);
   std::vector<char> buffer(chunk_size);
-  auto current_chunk =
-      callback->putData(buffer.data(), chunk_size, total_size - size);
+  auto current_chunk = callback->putData(
+      buffer.data(), static_cast<uint32_t>(chunk_size), total_size - size);
   auto bytes = ref new Array<byte>(current_chunk);
   for (auto i = 0u; i < current_chunk; i++) bytes[i] = buffer[i];
   data_writer->WriteBytes(bytes);

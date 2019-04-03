@@ -175,7 +175,8 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
                   std::min<size_t>(BUFFER_SIZE, range.size_ - bytes_read)))
             return r->done(
                 Error{IHttpRequest::Failure, util::Error::COULD_NOT_READ_FILE});
-          callback->receivedData(buffer.data(), stream.gcount());
+          callback->receivedData(buffer.data(),
+                                 static_cast<uint32_t>(stream.gcount()));
           bytes_read += stream.gcount();
           callback->progress(range.size_, bytes_read);
         }

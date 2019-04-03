@@ -175,19 +175,19 @@ std::tm gmtime(time_t time) {
 
   tmbuf.tm_sec = dayclock % 60;
   tmbuf.tm_min = (dayclock % 3600) / 60;
-  tmbuf.tm_hour = dayclock / 3600;
+  tmbuf.tm_hour = static_cast<int>(dayclock / 3600);
   tmbuf.tm_wday = (dayno + 4) % 7;
   while (dayno >= year_size(year)) {
     dayno -= year_size(year);
     year++;
   }
   tmbuf.tm_year = year - 1900;
-  tmbuf.tm_yday = dayno;
+  tmbuf.tm_yday = static_cast<int>(dayno);
   while (dayno >= ytab[leap_year(year)][tmbuf.tm_mon]) {
     dayno -= ytab[leap_year(year)][tmbuf.tm_mon];
     tmbuf.tm_mon++;
   }
-  tmbuf.tm_mday = dayno + 1;
+  tmbuf.tm_mday = static_cast<int>(dayno + 1);
   return tmbuf;
 }
 
@@ -360,14 +360,14 @@ IHttpServer::IResponse::Pointer response_from_string(
     DataProvider(const std::string& data) : position_(), data_(data) {}
 
     int putData(char* buffer, size_t max) override {
-      int cnt = std::min<int>(data_.length() - position_, max);
+      auto cnt = std::min<size_t>(data_.length() - position_, max);
       memcpy(buffer, data_.data() + position_, cnt);
       position_ += cnt;
-      return cnt;
+      return static_cast<int>(cnt);
     }
 
    private:
-    int position_;
+    size_t position_;
     std::string data_;
   };
   return request.response(code, headers, data.length(),
