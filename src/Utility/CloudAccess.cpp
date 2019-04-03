@@ -32,9 +32,6 @@
 #include <algorithm>
 #include <future>
 
-template <class... T>
-using Promise = util::Promise<T...>;
-
 namespace cloudstorage {
 
 const auto MAX_THUMBNAIL_GENERATION_TIME = std::chrono::seconds(10);

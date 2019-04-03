@@ -18,7 +18,6 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Exec.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\File.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\FileDialog.cpp" />
-    <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\MpvPlayer.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CloudRequest.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CopyItem.cpp" />
@@ -32,7 +31,8 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\UploadItem.cpp" />
     <ClCompile Include="..\..\bin\cloudbrowser\src\WinRTUtility.cpp" />
-    <ClCompile Include="..\..\bin\common\HttpServer.cpp" />
+    <ClCompile Include="..\..\src\Utility\GenerateThumbnail.cpp" />
+    <ClCompile Include="..\..\src\Utility\HttpServer.cpp" />
     <ClCompile Include="Generated\moc_CloudContext.cpp" />
     <ClCompile Include="Generated\moc_CloudItem.cpp" />
     <ClCompile Include="Generated\moc_CloudRequest.cpp" />
@@ -56,9 +56,7 @@
     <ClInclude Include="..\..\bin\cloudbrowser\src\DesktopUtility.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\Exec.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\File.h" />
-    <ClInclude Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.h" />
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h" />
-    <ClInclude Include="..\..\bin\common\HttpServer.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\bin\cloudbrowser\src\CloudContext.h">

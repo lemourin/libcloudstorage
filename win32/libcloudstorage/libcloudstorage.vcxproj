@@ -37,6 +37,8 @@
     <ClInclude Include="..\..\src\C\Request.h" />
     <ClInclude Include="..\..\src\C\ThreadPool.h" />
     <ClInclude Include="..\..\src\IAuth.h" />
+    <ClInclude Include="..\..\src\ICloudAccess.h" />
+    <ClInclude Include="..\..\src\ICloudFactory.h" />
     <ClInclude Include="..\..\src\ICloudProvider.h" />
     <ClInclude Include="..\..\src\ICloudStorage.h" />
     <ClInclude Include="..\..\src\ICrypto.h" />
@@ -62,12 +64,19 @@
     <ClInclude Include="..\..\src\Request\Request.h" />
     <ClInclude Include="..\..\src\Request\UploadFileRequest.h" />
     <ClInclude Include="..\..\src\Utility\Auth.h" />
+    <ClInclude Include="..\..\src\Utility\CloudAccess.h" />
+    <ClInclude Include="..\..\src\Utility\CloudEventLoop.h" />
+    <ClInclude Include="..\..\src\Utility\CloudFactory.h" />
     <ClInclude Include="..\..\src\Utility\CloudStorage.h" />
     <ClInclude Include="..\..\src\Utility\CryptoPP.h" />
     <ClInclude Include="..\..\src\Utility\CurlHttp.h" />
     <ClInclude Include="..\..\src\Utility\FileServer.h" />
+    <ClInclude Include="..\..\src\Utility\GenerateThumbnail.h" />
+    <ClInclude Include="..\..\src\Utility\HttpServer.h" />
     <ClInclude Include="..\..\src\Utility\Item.h" />
+    <ClInclude Include="..\..\src\Utility\LoginPage.h" />
     <ClInclude Include="..\..\src\Utility\MicroHttpdServer.h" />
+    <ClInclude Include="..\..\src\Utility\Promise.h" />
     <ClInclude Include="..\..\src\Utility\ThreadPool.h" />
     <ClInclude Include="..\..\src\Utility\Utility.h" />
   </ItemGroup>
@@ -138,11 +147,17 @@
     <ClCompile Include="..\..\src\Request\Request.cpp" />
     <ClCompile Include="..\..\src\Request\UploadFileRequest.cpp" />
     <ClCompile Include="..\..\src\Utility\Auth.cpp" />
+    <ClCompile Include="..\..\src\Utility\CloudAccess.cpp" />
+    <ClCompile Include="..\..\src\Utility\CloudEventLoop.cpp" />
+    <ClCompile Include="..\..\src\Utility\CloudFactory.cpp" />
     <ClCompile Include="..\..\src\Utility\CloudStorage.cpp" />
     <ClCompile Include="..\..\src\Utility\CryptoPP.cpp" />
     <ClCompile Include="..\..\src\Utility\CurlHttp.cpp" />
     <ClCompile Include="..\..\src\Utility\FileServer.cpp" />
+    <ClCompile Include="..\..\src\Utility\GenerateThumbnail.cpp" />
+    <ClCompile Include="..\..\src\Utility\HttpServer.cpp" />
     <ClCompile Include="..\..\src\Utility\Item.cpp" />
+    <ClCompile Include="..\..\src\Utility\LoginPage.cpp" />
     <ClCompile Include="..\..\src\Utility\MicroHttpdServer.cpp" />
     <ClCompile Include="..\..\src\Utility\ThreadPool.cpp" />
     <ClCompile Include="..\..\src\Utility\Utility.cpp" />
@@ -192,7 +207,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;WITH_THUMBNAILER;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;ZLIB_WINAPI;UNICODE;WIN32;USE_CRYPTOPP;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;MEGA_LINKED_AS_SHARED_LIBRARY;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -200,7 +215,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;cryptlib.lib;cares.lib;winhttp.lib;ws2_32.lib;advapi32.lib;ssleay32.lib;libeay32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;cryptlib.lib;cares.lib;winhttp.lib;ws2_32.lib;advapi32.lib;ssleay32.lib;libeay32.lib;shlwapi.lib;avcodec.lib;avformat.lib;avfilter.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib;../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -212,7 +227,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MEGA;WITH_MICROHTTPD;WITH_CRYPTOPP;WITH_THUMBNAILER;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;MEGA_LINKED_AS_SHARED_LIBRARY;ENABLE_SYNC;HAVE_BOOST_FILESYSTEM_HPP</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -221,7 +236,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurl.lib;libmicrohttpd-dll.lib;jsoncpp.lib;tinyxml2.lib;mega.lib;winhttp.lib;ws2_32.lib;advapi32.lib;cryptlib.lib;avcodec.lib;avformat.lib;avfilter.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../dependencies/win32/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

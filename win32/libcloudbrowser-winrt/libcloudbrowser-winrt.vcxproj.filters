@@ -135,9 +135,6 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\GetThumbnail.cpp">
       <Filter>Source Files\Request</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\RenameItem.cpp">
       <Filter>Source Files\Request</Filter>
     </ClCompile>
@@ -156,7 +153,10 @@
     <ClCompile Include="..\..\bin\cloudbrowser\src\Request\CreateDirectory.cpp">
       <Filter>Source Files\Request</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\bin\common\HttpServer.cpp">
+    <ClCompile Include="..\..\src\Utility\HttpServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Utility\GenerateThumbnail.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -173,13 +173,7 @@
     <ClInclude Include="..\..\bin\cloudbrowser\src\File.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\bin\cloudbrowser\src\GenerateThumbnail.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\bin\cloudbrowser\src\WinRTUtility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\bin\common\HttpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

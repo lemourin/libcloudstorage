@@ -26,12 +26,11 @@
 #include "CloudEventLoop.h"
 #include "ICloudAccess.h"
 #include "ICloudProvider.h"
-#include "Promise.h"
 
 namespace cloudstorage {
 
 template <class T>
-void fulfill(const util::Promise<T>& promise, const EitherError<T>& e) {
+void fulfill(const Promise<T>& promise, const EitherError<T>& e) {
   if (e.left()) {
     promise.reject(Exception(e.left()));
   } else {
@@ -39,7 +38,7 @@ void fulfill(const util::Promise<T>& promise, const EitherError<T>& e) {
   }
 }
 template <class T>
-void fulfill(const util::Promise<std::shared_ptr<T>>& promise,
+void fulfill(const Promise<std::shared_ptr<T>>& promise,
              const EitherError<T>& e) {
   if (e.left()) {
     promise.reject(Exception(e.left()));
@@ -48,7 +47,7 @@ void fulfill(const util::Promise<std::shared_ptr<T>>& promise,
   }
 }
 
-void fulfill(const util::Promise<>& promise, const EitherError<void>& e);
+void fulfill(const Promise<>& promise, const EitherError<void>& e);
 
 template <class T>
 struct RemoveSharedPtr {
@@ -132,12 +131,12 @@ class CloudAccess : public ICloudAccess {
   template <
       typename Method,
       class T = typename RequestType<typename MethodType<Method>::type>::type,
-      class Promise = typename std::conditional<
-          std::is_void<T>::value, util::Promise<>, util::Promise<T>>::type,
+      class PromiseType = typename std::conditional<std::is_void<T>::value,
+                                                Promise<>, Promise<T>>::type,
       typename... Args>
-  Promise wrap(Method method, Args... args) {
+  PromiseType wrap(Method method, Args... args) {
     using RemovedShared = typename RemoveSharedPtr<T>::type;
-    Promise promise;
+    PromiseType promise;
     auto tag = loop_->next_tag();
     auto request = (provider_.get()->*method)(
         args..., [loop = loop_, promise, tag](EitherError<RemovedShared> e) {
