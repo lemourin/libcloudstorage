@@ -156,7 +156,7 @@ std::chrono::system_clock::time_point date_to_timestamp(
 namespace openload {
 
 std::string cipher(const std::string &page) {
-  re::regex regex(R"R(<p id="\w*"\s*style="">(\w*)</p>)R");
+  re::regex regex(R"R(<p[^>]*>([a-f0-9]{100,})<\/p>)R");
   re::smatch match;
   if (re::regex_search(page, match, regex)) {
     return match[1];
