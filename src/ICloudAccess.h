@@ -49,7 +49,7 @@ class ICloudDownloadCallback {
   virtual void progress(uint64_t total, uint64_t now) = 0;
 };
 
-class ICloudAccess {
+class CLOUDSTORAGE_API ICloudAccess {
  public:
   using Pointer = std::unique_ptr<ICloudAccess>;
   using ProgressCallback = std::function<void(uint64_t total, uint64_t now)>;

@@ -29,12 +29,12 @@
 
 namespace cloudstorage {
 
-class IException : public std::exception {
+class CLOUDSTORAGE_API IException : public std::exception {
  public:
   virtual int code() const = 0;
 };
 
-class ICloudFactory {
+class CLOUDSTORAGE_API ICloudFactory {
  public:
   class ICallback {
    public:

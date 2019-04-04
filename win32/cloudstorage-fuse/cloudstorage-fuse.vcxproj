@@ -85,7 +85,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common/;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4251;4275;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,7 +107,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include;../../bin/common;../../src;../../dependencies/win32/include/dokan;../../dependencies/win32/include/winfsp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4251;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4251;4275;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
