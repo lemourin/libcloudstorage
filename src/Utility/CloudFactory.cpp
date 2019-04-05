@@ -423,6 +423,10 @@ bool CloudFactory::dumpAccounts(std::ostream&& stream) {
   }
 }
 
+bool CloudFactory::dumpAccounts(std::ostream& stream) {
+  return dumpAccounts(std::move(stream));
+}
+
 bool CloudFactory::loadAccounts(std::istream&& stream) {
   try {
     Json::Value json;
@@ -442,6 +446,10 @@ bool CloudFactory::loadAccounts(std::istream&& stream) {
   }
 }
 
+bool CloudFactory::loadAccounts(std::istream& stream) {
+  return loadAccounts(std::move(stream));
+}
+
 bool CloudFactory::loadConfig(std::istream&& stream) {
   try {
     stream >> config_;
@@ -449,6 +457,10 @@ bool CloudFactory::loadConfig(std::istream&& stream) {
   } catch (const Json::Exception&) {
     return false;
   }
+}
+
+bool CloudFactory::loadConfig(std::istream& stream) {
+  return loadConfig(std::move(stream));
 }
 
 void CloudFactory::processEvents() { event_loop_.processEvents(); }

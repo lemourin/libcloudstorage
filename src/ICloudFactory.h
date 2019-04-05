@@ -81,8 +81,13 @@ class CLOUDSTORAGE_API ICloudFactory {
   virtual std::vector<std::string> availableProviders() const = 0;
   virtual std::vector<std::shared_ptr<ICloudAccess>> providers() const = 0;
 
+  virtual bool dumpAccounts(std::ostream& stream) = 0;
   virtual bool dumpAccounts(std::ostream&& stream) = 0;
+
+  virtual bool loadAccounts(std::istream& stream) = 0;
   virtual bool loadAccounts(std::istream&& stream) = 0;
+
+  virtual bool loadConfig(std::istream& stream) = 0;
   virtual bool loadConfig(std::istream&& stream) = 0;
 
   virtual int exec() = 0;

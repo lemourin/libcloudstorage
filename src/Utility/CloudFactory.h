@@ -62,8 +62,13 @@ class CloudFactory : public ICloudFactory {
 
   void onCloudRemoved(const ICloudProvider&);
 
+  bool dumpAccounts(std::ostream& stream) override;
   bool dumpAccounts(std::ostream&& stream) override;
+
+  bool loadAccounts(std::istream& stream) override;
   bool loadAccounts(std::istream&& stream) override;
+
+  bool loadConfig(std::istream& stream) override;
   bool loadConfig(std::istream&& stream) override;
 
   void processEvents() override;
