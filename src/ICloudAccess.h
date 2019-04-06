@@ -25,9 +25,9 @@
 
 #include <memory>
 
+#include "ICloudProvider.h"
 #include "IItem.h"
 #include "IRequest.h"
-#include "ICloudProvider.h"
 #include "Utility/Promise.h"
 
 namespace cloudstorage {
@@ -80,7 +80,7 @@ class CLOUDSTORAGE_API ICloudAccess {
                                               const std::string& token) = 0;
   virtual Promise<IItem::Pointer> uploadFile(
       IItem::Pointer parent, const std::string& filename,
-      std::unique_ptr<ICloudUploadCallback>&&) = 0;
+      const std::shared_ptr<ICloudUploadCallback>&) = 0;
   virtual Promise<> downloadFile(
       IItem::Pointer file, Range range,
       const std::shared_ptr<ICloudDownloadCallback>&) = 0;

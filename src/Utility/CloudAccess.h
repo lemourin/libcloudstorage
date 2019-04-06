@@ -111,7 +111,7 @@ class CloudAccess : public ICloudAccess {
                                       const std::string& token) override;
   Promise<IItem::Pointer> uploadFile(
       IItem::Pointer parent, const std::string& filename,
-      std::unique_ptr<ICloudUploadCallback>&&) override;
+      const std::shared_ptr<ICloudUploadCallback>&) override;
   Promise<> downloadFile(
       IItem::Pointer file, Range range,
       const std::shared_ptr<ICloudDownloadCallback>&) override;

@@ -39,7 +39,7 @@ const auto CHECK_INTERVAL = std::chrono::milliseconds(100);
 
 namespace {
 struct UploadCallback : public IUploadFileCallback {
-  UploadCallback(std::unique_ptr<ICloudUploadCallback>&& cb,
+  UploadCallback(const std::shared_ptr<ICloudUploadCallback>& cb,
                  const Promise<IItem::Pointer>& promise, uint64_t tag,
                  const std::shared_ptr<priv::LoopImpl>& loop)
       : callback_(std::move(cb)), promise_(promise), tag_(tag), loop_(loop) {}
@@ -204,7 +204,7 @@ Promise<PageData> CloudAccess::listDirectoryPage(IItem::Pointer item,
 
 Promise<IItem::Pointer> CloudAccess::uploadFile(
     IItem::Pointer parent, const std::string& filename,
-    std::unique_ptr<ICloudUploadCallback>&& cb) {
+    const std::shared_ptr<ICloudUploadCallback>& cb) {
   Promise<IItem::Pointer> promise;
   auto tag = loop_->next_tag();
   auto request = provider_->uploadFileAsync(
