@@ -6,6 +6,8 @@
 #include <mutex>
 #include <type_traits>
 
+#include "Utility/Utility.h"
+
 namespace util {
 
 namespace v2 {
@@ -158,13 +160,13 @@ class Promise {
                      const std::shared_ptr<ResultTuple>& result) {
       using CurrentType =
           typename std::tuple_element<Index, std::tuple<T...>>::type;
-      auto element = std::move(std::get<Index>(d));
+      auto element = std::get<Index>(d);
       auto continuation = [d = std::move(d), p, result]() mutable {
         EvaluateThen<Index - 1, ResultIndex - SlotsReserved<CurrentType>::value,
                      std::tuple<T...>>::call(std::move(d), p, result);
       };
       AppendElement<CurrentType>::template call<ResultIndex>(
-          std::move(element), p, result, continuation);
+          std::forward<CurrentType>(element), p, result, continuation);
     }
   };
 
@@ -179,7 +181,7 @@ class Promise {
       static void call(std::tuple<T...>&&, const Promise& p,
                        const std::shared_ptr<std::tuple<Q...>>& result) {
         SequenceGenerator<std::tuple_size<std::tuple<Q...>>::value>::type::call(
-            [p](Q&&... args) { p.fulfill(std::move(args)...); }, *result);
+            [p](Q&&... args) { p.fulfill(std::forward<Q>(args)...); }, *result);
       }
     };
 
@@ -200,7 +202,7 @@ class Promise {
     data_->on_fulfill_ = [promise, cb](Ts&&... args) mutable {
       try {
         using StateTuple = typename ReturnedTuple<ReturnedPromise>::type;
-        auto r = cb(std::move(args)...);
+        auto r = cb(std::forward<Ts>(args)...);
         auto common_state = std::make_shared<StateTuple>();
         EvaluateThen<static_cast<int>(std::tuple_size<Tuple>::value) - 1,
                      static_cast<int>(std::tuple_size<StateTuple>::value) - 1,
@@ -213,12 +215,16 @@ class Promise {
       promise.reject(std::move(e));
     };
     if (data_->error_ready_) {
+      auto callback = std::move(data_->on_reject_);
+      data_->on_reject_ = nullptr;
       lock.unlock();
-      data_->on_reject_(std::move(data_->exception_));
+      callback(std::move(data_->exception_));
     } else if (data_->ready_) {
+      auto callback = std::move(data_->on_fulfill_);
+      data_->on_fulfill_ = nullptr;
       lock.unlock();
       SequenceGenerator<std::tuple_size<std::tuple<Ts...>>::value>::type::call(
-          data_->on_fulfill_, data_->value_);
+          callback, data_->value_);
     }
     return promise;
   }
@@ -227,7 +233,7 @@ class Promise {
                                    ReturnType<Callable>>::value>::type>
   Promise<> then(Callable&& cb) {
     return then([cb](Ts&&... args) {
-      cb(std::move(args)...);
+      cb(std::forward<Ts>(args)...);
       return std::make_tuple();
     });
   }
@@ -240,7 +246,7 @@ class Promise {
                 typename PromiseType<std::tuple<ReturnType<Callable>>>::type>
   ReturnedPromise then(Callable&& cb) {
     return then([cb](Ts&&... args) mutable {
-      return std::make_tuple(cb(std::move(args)...));
+      return std::make_tuple(cb(std::forward<Ts>(args)...));
     });
   }
 
@@ -258,7 +264,7 @@ class Promise {
       }
     };
     data_->on_fulfill_ = [promise](Ts&&... args) {
-      promise.fulfill(std::move(args)...);
+      promise.fulfill(std::forward<Ts>(args)...);
     };
     if (data_->error_ready_) {
       lock.unlock();
@@ -273,7 +279,7 @@ class Promise {
     Promise<Ts...> promise;
     data_->on_reject_ = e;
     data_->on_fulfill_ = [promise](Ts&&... args) {
-      promise.fulfill(std::move(args)...);
+      promise.fulfill(std::forward<Ts>(args)...);
     };
     if (data_->error_ready_) {
       lock.unlock();
@@ -287,7 +293,7 @@ class Promise {
     data_->ready_ = true;
     if (data_->on_fulfill_) {
       lock.unlock();
-      data_->on_fulfill_(std::move(value)...);
+      data_->on_fulfill_(std::forward<Ts>(value)...);
       data_->on_fulfill_ = nullptr;
     } else {
       data_->value_ = std::make_tuple(std::move(value)...);
@@ -336,7 +342,7 @@ struct AppendElement {
   static void call(Element&& result, const PromiseType&,
                    const std::shared_ptr<ResultTuple>& output,
                    Callable&& callable) {
-    std::get<Index>(*output) = std::move(result);
+    std::get<Index>(*output) = std::forward<Element>(result);
     callable();
   }
 };
@@ -352,15 +358,15 @@ struct SetRange<Index, Tuple> {
 template <int Index, typename Tuple, class First, class... Rest>
 struct SetRange<Index, Tuple, First, Rest...> {
   static void call(Tuple& d, First&& f, Rest&&... rest) {
-    std::get<Index>(d) = std::move(f);
-    SetRange<Index + 1, Tuple, Rest...>::call(d, std::move(rest)...);
+    std::get<Index>(d) = std::forward<First>(f);
+    SetRange<Index + 1, Tuple, Rest...>::call(d, std::forward<Rest>(rest)...);
   }
 };
 
 template <class... PromisedType>
 struct AppendElement<Promise<PromisedType...>> {
   template <int Index, class PromiseType, class ResultTuple, class Callable>
-  static void call(Promise<PromisedType...>&& d, const PromiseType& p,
+  static void call(Promise<PromisedType...>& d, const PromiseType& p,
                    const std::shared_ptr<ResultTuple>& output,
                    Callable&& callable) {
     d.then([output,
@@ -370,7 +376,8 @@ struct AppendElement<Promise<PromisedType...>> {
                         std::tuple_size<std::tuple<PromisedType...>>::value) +
                     1,
                 ResultTuple, PromisedType...>::call(*output,
-                                                    std::move(args)...);
+                                                    std::forward<PromisedType>(
+                                                        args)...);
        callable();
        return std::make_tuple();
      })
