@@ -49,6 +49,29 @@ class Exception : public IException {
 
 class CloudEventLoop;
 
+class IFunction {
+ public:
+  using Pointer = std::unique_ptr<IFunction>;
+
+  virtual void operator()() = 0;
+};
+
+template <class Func>
+class Function : public IFunction {
+ public:
+  Function(Func&& f) : f_(std::move(f)) {}
+
+  void operator()() override { f_(); }
+
+ private:
+  Func f_;
+};
+
+template <class Func>
+IFunction::Pointer make_function(Func&& f) {
+  return std::make_unique<Function<Func>>(std::move(f));
+}
+
 namespace priv {
 
 class LoopImpl {
@@ -56,11 +79,26 @@ class LoopImpl {
   LoopImpl(CloudEventLoop*);
 
   void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
-  void fulfill(uint64_t tag, const std::function<void()>&);
-  void invoke(const std::function<void()>&);
+  void fulfill(uint64_t tag, IFunction::Pointer&&);
+  void invoke(IFunction::Pointer&&);
+
+  template <class Func>
+  void invoke(Func&& f) {
+    invoke(make_function(std::move(f)));
+  }
+
+  template <class Func>
+  void fulfill(uint64_t tag, Func&& f) {
+    fulfill(tag, make_function(std::move(f)));
+  }
 
 #ifdef WITH_THUMBNAILER
-  void invokeOnThreadPool(const std::function<void()>&);
+  void invokeOnThreadPool(IFunction::Pointer&&);
+
+  template <class Func>
+  void invokeOnThreadPool(Func&& f) {
+    invokeOnThreadPool(make_function(std::move(f)));
+  }
 #endif
 
   void clear();
@@ -73,7 +111,7 @@ class LoopImpl {
   std::mutex mutex_;
   std::unordered_map<uint64_t, std::shared_ptr<IGenericRequest>> pending_;
   std::atomic_uint64_t last_tag_;
-  std::vector<std::function<void()>> events_;
+  std::vector<IFunction::Pointer> events_;
 #ifdef WITH_THUMBNAILER
   std::mutex thumbnailer_mutex_;
   IThreadPool::Pointer thumbnailer_thread_pool_;

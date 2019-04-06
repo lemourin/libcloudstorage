@@ -311,7 +311,7 @@ void CloudFactory::add(std::unique_ptr<IGenericRequest>&& request) {
   loop_->add(loop_->next_tag(), std::move(request));
 }
 
-void CloudFactory::invoke(const std::function<void()>& f) { loop_->invoke(f); }
+void CloudFactory::invoke(IFunction::Pointer&& f) { loop_->invoke(std::move(f)); }
 
 void CloudFactory::onCloudTokenReceived(const std::string& provider,
                                         const EitherError<Token>& token) {

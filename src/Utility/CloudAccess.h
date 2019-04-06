@@ -132,16 +132,17 @@ class CloudAccess : public ICloudAccess {
   template <
       typename Method,
       class T = typename RequestType<typename MethodType<Method>::type>::type,
-      class PromiseType = typename std::conditional<std::is_void<T>::value,
-                                                Promise<>, Promise<T>>::type,
+      class PromiseType = typename std::conditional<
+          std::is_void<T>::value, Promise<>, Promise<T>>::type,
       typename... Args>
   PromiseType wrap(Method method, Args... args) {
     using RemovedShared = typename RemoveSharedPtr<T>::type;
     PromiseType promise;
     auto tag = loop_->next_tag();
     auto request = (provider_.get()->*method)(
-        args..., [loop = loop_, promise, tag](EitherError<RemovedShared> e) {
-          loop->fulfill(tag, [=] { fulfill(promise, e); });
+        std::forward<Args>(args)...,
+        [loop = loop_, promise, tag](EitherError<RemovedShared> e) {
+          loop->fulfill(tag, [promise, e] { fulfill(promise, e); });
         });
     loop_->add(tag, std::move(request));
     return promise;
