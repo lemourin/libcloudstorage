@@ -6,8 +6,6 @@
 #include <mutex>
 #include <type_traits>
 
-#include "Utility/Utility.h"
-
 namespace util {
 
 namespace v2 {
