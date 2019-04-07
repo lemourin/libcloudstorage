@@ -45,7 +45,7 @@ class CloudFactory : public ICloudFactory {
   void remove(const std::shared_ptr<ICloudAccess>&) override;
 
   void add(std::unique_ptr<IGenericRequest>&&);
-  void invoke(Function<void()>&&);
+  void invoke(std::function<void()>&&);
 
   void onCloudTokenReceived(const std::string& provider,
                             const EitherError<Token>&);

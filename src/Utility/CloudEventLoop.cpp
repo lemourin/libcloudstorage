@@ -63,7 +63,7 @@ void LoopImpl::add(uint64_t tag,
   }
 }
 
-void LoopImpl::fulfill(uint64_t tag, Function<void()> &&f) {
+void LoopImpl::fulfill(uint64_t tag, std::function<void()> &&f) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto it = pending_.find(tag);
@@ -79,7 +79,7 @@ void LoopImpl::fulfill(uint64_t tag, Function<void()> &&f) {
   invoke(std::move(f));
 }
 
-void LoopImpl::invoke(Function<void()> &&f) {
+void LoopImpl::invoke(std::function<void()> &&f) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
     events_.emplace_back(std::move(f));
@@ -88,13 +88,10 @@ void LoopImpl::invoke(Function<void()> &&f) {
 }
 
 #ifdef WITH_THUMBNAILER
-void LoopImpl::invokeOnThreadPool(Function<void()> &&f) {
+void LoopImpl::invokeOnThreadPool(std::function<void()> &&f) {
   std::unique_lock<std::mutex> lock(thumbnailer_mutex_);
   if (thumbnailer_thread_pool_) {
-    thumbnailer_thread_pool_->schedule(
-        [func = std::make_shared<Function<void()>>(std::move(f))] {
-          (*func)();
-        });
+    thumbnailer_thread_pool_->schedule(std::move(f));
   } else {
     f();
   }
@@ -103,9 +100,9 @@ void LoopImpl::invokeOnThreadPool(Function<void()> &&f) {
 
 void LoopImpl::process_events() {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (size_t i = 0; i < events_.size(); i++) {
+  for (const auto& e : events_) {
     lock.unlock();
-    events_[i]();
+    e();
     lock.lock();
   }
   events_.clear();

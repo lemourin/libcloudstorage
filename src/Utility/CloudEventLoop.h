@@ -24,9 +24,9 @@
 #define CLOUDEVENTLOOP_H
 
 #include <atomic>
-#include <deque>
 #include <unordered_map>
 #include <unordered_set>
+#include <list>
 #include "ICloudFactory.h"
 #include "IRequest.h"
 #include "IThreadPool.h"
@@ -51,62 +51,16 @@ class CloudEventLoop;
 
 namespace priv {
 
-template <class>
-class IFunction;
-
-template <class Ret, class... Args>
-class IFunction<Ret(Args...)> {
- public:
-  using Pointer = std::unique_ptr<IFunction>;
-
-  virtual Ret operator()(Args&&...) const = 0;
-};
-
-template <class, class>
-class FunctionImpl;
-
-template <class Func, class Ret, class... Args>
-class FunctionImpl<Ret(Args...), Func> : public IFunction<Ret(Args...)> {
- public:
-  FunctionImpl(Func&& f) : f_(std::move(f)) {}
-
-  Ret operator()(Args&&... args) const override {
-    return f_(std::forward<Args>(args)...);
-  }
-
- private:
-  Func f_;
-};
-
-template <class>
-class Function;
-
-template <class Ret, class... Args>
-class Function<Ret(Args...)> {
- public:
-  template <class Func>
-  Function(Func&& f)
-      : func_(
-            std::make_unique<FunctionImpl<Ret(Args...), Func>>(std::move(f))) {}
-
-  Ret operator()(Args&&... args) const {
-    return (*func_)(std::forward<Args>(args)...);
-  }
-
- private:
-  typename IFunction<Ret(Args...)>::Pointer func_;
-};
-
 class LoopImpl {
  public:
   LoopImpl(CloudEventLoop*);
 
   void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
-  void fulfill(uint64_t tag, Function<void()>&&);
-  void invoke(Function<void()>&&);
+  void fulfill(uint64_t tag, std::function<void()>&&);
+  void invoke(std::function<void()>&&);
 
 #ifdef WITH_THUMBNAILER
-  void invokeOnThreadPool(Function<void()>&&);
+  void invokeOnThreadPool(std::function<void()>&&);
 #endif
 
   void clear();
@@ -119,7 +73,7 @@ class LoopImpl {
   std::mutex mutex_;
   std::unordered_map<uint64_t, std::shared_ptr<IGenericRequest>> pending_;
   std::atomic_uint64_t last_tag_;
-  std::vector<Function<void()>> events_;
+  std::list<std::function<void()>> events_;
 #ifdef WITH_THUMBNAILER
   std::mutex thumbnailer_mutex_;
   IThreadPool::Pointer thumbnailer_thread_pool_;
@@ -129,9 +83,6 @@ class LoopImpl {
 };
 
 }  // namespace priv
-
-template <class T>
-using Function = priv::Function<T>;
 
 class CloudEventLoop {
  public:
