@@ -199,7 +199,7 @@ class Promise {
   ReturnedPromise then(Callable&& cb) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     ReturnedPromise promise;
-    data_->on_fulfill_ = [promise, cb](Ts&&... args) mutable {
+    data_->on_fulfill_ = [promise, cb = std::move(cb)](Ts&&... args) mutable {
       try {
         using StateTuple = typename ReturnedTuple<ReturnedPromise>::type;
         auto r = cb(std::forward<Ts>(args)...);
@@ -232,7 +232,7 @@ class Promise {
   template <typename Callable, typename = typename std::enable_if<std::is_void<
                                    ReturnType<Callable>>::value>::type>
   Promise<> then(Callable&& cb) {
-    return then([cb](Ts&&... args) {
+    return then([cb = std::move(cb)](Ts&&... args) mutable {
       cb(std::forward<Ts>(args)...);
       return std::make_tuple();
     });
@@ -245,7 +245,7 @@ class Promise {
             typename ReturnedPromise =
                 typename PromiseType<std::tuple<ReturnType<Callable>>>::type>
   ReturnedPromise then(Callable&& cb) {
-    return then([cb](Ts&&... args) mutable {
+    return then([cb = std::move(cb)](Ts&&... args) mutable {
       return std::make_tuple(cb(std::forward<Ts>(args)...));
     });
   }
@@ -254,7 +254,8 @@ class Promise {
   Promise<Ts...> error(Callable&& e) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     Promise<Ts...> promise;
-    data_->on_reject_ = [promise, cb = std::move(e)](std::exception_ptr&& e) {
+    data_->on_reject_ = [promise,
+                         cb = std::move(e)](std::exception_ptr&& e) mutable {
       try {
         std::rethrow_exception(std::move(e));
       } catch (Exception& exception) {
@@ -366,7 +367,7 @@ struct SetRange<Index, Tuple, First, Rest...> {
 template <class... PromisedType>
 struct AppendElement<Promise<PromisedType...>> {
   template <int Index, class PromiseType, class ResultTuple, class Callable>
-  static void call(Promise<PromisedType...>& d, const PromiseType& p,
+  static void call(Promise<PromisedType...>&& d, const PromiseType& p,
                    const std::shared_ptr<ResultTuple>& output,
                    Callable&& callable) {
     d.then([output,
