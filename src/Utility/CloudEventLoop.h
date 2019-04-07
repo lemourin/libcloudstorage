@@ -49,56 +49,64 @@ class Exception : public IException {
 
 class CloudEventLoop;
 
-class IFunction {
+namespace priv {
+
+template <class>
+class IFunction;
+
+template <class Ret, class... Args>
+class IFunction<Ret(Args...)> {
  public:
   using Pointer = std::unique_ptr<IFunction>;
 
-  virtual void operator()() = 0;
+  virtual Ret operator()(Args&&...) const = 0;
 };
 
-template <class Func>
-class Function : public IFunction {
- public:
-  Function(Func&& f) : f_(std::move(f)) {}
+template <class, class>
+class FunctionImpl;
 
-  void operator()() override { f_(); }
+template <class Func, class Ret, class... Args>
+class FunctionImpl<Ret(Args...), Func> : public IFunction<Ret(Args...)> {
+ public:
+  FunctionImpl(Func&& f) : f_(std::move(f)) {}
+
+  Ret operator()(Args&&... args) const override {
+    return f_(std::forward<Args>(args)...);
+  }
 
  private:
   Func f_;
 };
 
-template <class Func>
-IFunction::Pointer make_function(Func&& f) {
-  return std::make_unique<Function<Func>>(std::move(f));
-}
+template <class>
+class Function;
 
-namespace priv {
+template <class Ret, class... Args>
+class Function<Ret(Args...)> {
+ public:
+  template <class Func>
+  Function(Func&& f)
+      : func_(
+            std::make_unique<FunctionImpl<Ret(Args...), Func>>(std::move(f))) {}
+
+  Ret operator()(Args&&... args) const {
+    return (*func_)(std::forward<Args>(args)...);
+  }
+
+ private:
+  typename IFunction<Ret(Args...)>::Pointer func_;
+};
 
 class LoopImpl {
  public:
   LoopImpl(CloudEventLoop*);
 
   void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
-  void fulfill(uint64_t tag, IFunction::Pointer&&);
-  void invoke(IFunction::Pointer&&);
-
-  template <class Func>
-  void invoke(Func&& f) {
-    invoke(make_function(std::move(f)));
-  }
-
-  template <class Func>
-  void fulfill(uint64_t tag, Func&& f) {
-    fulfill(tag, make_function(std::move(f)));
-  }
+  void fulfill(uint64_t tag, Function<void()>&&);
+  void invoke(Function<void()>&&);
 
 #ifdef WITH_THUMBNAILER
-  void invokeOnThreadPool(IFunction::Pointer&&);
-
-  template <class Func>
-  void invokeOnThreadPool(Func&& f) {
-    invokeOnThreadPool(make_function(std::move(f)));
-  }
+  void invokeOnThreadPool(Function<void()>&&);
 #endif
 
   void clear();
@@ -111,7 +119,7 @@ class LoopImpl {
   std::mutex mutex_;
   std::unordered_map<uint64_t, std::shared_ptr<IGenericRequest>> pending_;
   std::atomic_uint64_t last_tag_;
-  std::vector<IFunction::Pointer> events_;
+  std::vector<Function<void()>> events_;
 #ifdef WITH_THUMBNAILER
   std::mutex thumbnailer_mutex_;
   IThreadPool::Pointer thumbnailer_thread_pool_;
@@ -121,6 +129,9 @@ class LoopImpl {
 };
 
 }  // namespace priv
+
+template <class T>
+using Function = priv::Function<T>;
 
 class CloudEventLoop {
  public:

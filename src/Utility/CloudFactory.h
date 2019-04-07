@@ -45,12 +45,7 @@ class CloudFactory : public ICloudFactory {
   void remove(const std::shared_ptr<ICloudAccess>&) override;
 
   void add(std::unique_ptr<IGenericRequest>&&);
-
-  void invoke(IFunction::Pointer&&);
-  template <class Func>
-  void invoke(Func&& f) {
-    invoke(make_function(std::move(f)));
-  }
+  void invoke(Function<void()>&&);
 
   void onCloudTokenReceived(const std::string& provider,
                             const EitherError<Token>&);
