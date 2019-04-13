@@ -7,4 +7,5 @@ Name: libcloudstorage
 Description: cloud storage access library
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lcloudstorage
+Libs.private: @LIBS@
 Cflags: -I${includedir}

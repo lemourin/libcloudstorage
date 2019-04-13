@@ -22,6 +22,7 @@ AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
 AS_IF([test "x$with_mega" != "xno"], [
   PKG_CHECK_MODULES([libmega], [libmega], [
     HAVE_MEGA=1
+    LIBS="$LIBS -lmega"
     AC_DEFINE(WITH_MEGA)
   ], [
     HAVE_MEGA=0
@@ -35,6 +36,7 @@ AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
 AS_IF([test "x$with_cryptopp" != "xno"], [
   PKG_CHECK_MODULES([libcryptopp], [libcrypto++], [
     HAVE_CRYPTOPP=1
+    LIBS="$LIBS -lcryptopp"
     AC_DEFINE(WITH_CRYPTOPP)
   ], [
     HAVE_CRYPTOPP=0
@@ -48,6 +50,7 @@ AC_ARG_WITH([curl], AS_HELP_STRING([--with-curl]))
 AS_IF([test "x$with_curl" != "xno"], [
   PKG_CHECK_MODULES([libcurl], [libcurl], [
     HAVE_CURL=1
+    LIBS="$LIBS -lcurl"
     AC_DEFINE(WITH_CURL)
   ], [
     HAVE_CURL=0
@@ -61,6 +64,7 @@ AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
 AS_IF([test "x$with_microhttpd" != "xno"], [
   PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [
     HAVE_MICROHTTPD=1
+    LIBS="$LIBS -lmicrohttpd"
     AC_DEFINE(WITH_MICROHTTPD)
   ], [
     HAVE_MICROHTTPD=0
@@ -74,6 +78,7 @@ AC_ARG_WITH([filesystem], AS_HELP_STRING([--with-filesystem]))
 AS_IF([test "x$with_filesystem" != "xno"], [
   AC_CHECK_HEADERS(boost/filesystem.hpp, [
     FILESYSTEM_LIBS="-lboost_system -lboost_filesystem"
+    LIBS="$LIBS $FILESYSTEM_LIBS"
   ], [
     AS_IF([test "x$with_filesystem" = "xyes"], [AC_MSG_ERROR([boost-filesystem not found])])
   ])
@@ -88,6 +93,7 @@ AS_IF([test "x$with_ffmpeg" != "xno"], [
     libswresample libswscale
   ], [
     HAVE_THUMBNAILER=1
+    LIBS="$LIBS -lavcodec -lavfilter -lavformat -lavutil -lswresample -lswscale"
     AC_DEFINE(WITH_THUMBNAILER)
   ], [
     HAVE_THUMBNAILER=0
@@ -149,6 +155,7 @@ SOCKET_LIBS=""
 AS_IF([test "${SYS}" = "mingw32"], [
   SOCKET_LIBS="-lws2_32"
 ])
+LIBS="$LIBS $SOCKET_LIBS"
 AC_SUBST(SOCKET_LIBS)
 
 AM_CONDITIONAL([ANDROID], [test "${SYS}" = "android"])
