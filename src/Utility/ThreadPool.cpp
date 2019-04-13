@@ -43,7 +43,7 @@ ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
           }
           if (!tasks_.empty()) {
             task = std::move(tasks_.front());
-            tasks_.pop();
+            tasks_.pop_front();
           } else {
             break;
           }
@@ -67,7 +67,7 @@ ThreadPool::~ThreadPool() {
 
 void ThreadPool::schedule(const Task &f) {
   std::unique_lock<std::mutex> lock(mutex_);
-  tasks_.emplace(std::move(f));
+  tasks_.push_back(std::move(f));
   if (tasks_.size() == 1) {
     worker_cv_.notify_one();
   }
