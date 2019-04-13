@@ -187,9 +187,9 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
     if (cb_) cb_->onCloudAuthenticationCodeReceived(provider, code);
   }
 
-  void onCloudTokenExchangeFailed(const std::string& provider,
-                                  const IException& exception) override {
-    if (cb_) cb_->onCloudTokenExchangeFailed(provider, exception);
+  void onCloudAuthenticationCodeExchangeFailed(
+      const std::string& provider, const IException& exception) override {
+    if (cb_) cb_->onCloudAuthenticationCodeExchangeFailed(provider, exception);
   }
   void onCloudCreated(const std::shared_ptr<ICloudAccess>& cloud) override {
     if (cb_) cb_->onCloudCreated(cloud);
@@ -318,7 +318,8 @@ void CloudFactory::invoke(std::function<void()>&& f) {
 void CloudFactory::onCloudTokenReceived(const std::string& provider,
                                         const EitherError<Token>& token) {
   if (callback_ && token.left())
-    callback_->onCloudTokenExchangeFailed(provider, Exception(token.left()));
+    callback_->onCloudAuthenticationCodeExchangeFailed(provider,
+                                                       Exception(token.left()));
   if (token.right()) {
     ProviderInitData init_data;
     init_data.token_ = token.right()->token_;

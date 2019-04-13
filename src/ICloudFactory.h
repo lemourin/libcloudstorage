@@ -42,8 +42,8 @@ class CLOUDSTORAGE_API ICloudFactory {
 
     virtual ~ICallback() = default;
 
-    virtual void onCloudTokenExchangeFailed(const std::string& /* provider */,
-                                            const IException&) {}
+    virtual void onCloudAuthenticationCodeExchangeFailed(
+        const std::string& /* provider */, const IException&) {}
     virtual void onCloudAuthenticationCodeReceived(
         const std::string& /* provider */, const std::string&) {}
     virtual void onCloudCreated(const std::shared_ptr<ICloudAccess>&) {}
