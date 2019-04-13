@@ -57,6 +57,7 @@ class LoopImpl {
 
   void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
   void fulfill(uint64_t tag, std::function<void()>&&);
+  void cancel(uint64_t tag);
   void invoke(std::function<void()>&&);
 
 #ifdef WITH_THUMBNAILER
@@ -78,6 +79,7 @@ class LoopImpl {
   std::mutex thumbnailer_mutex_;
   IThreadPool::Pointer thumbnailer_thread_pool_;
 #endif
+  IThreadPool::Pointer cancellation_thread_pool_;
   std::shared_ptr<std::atomic_bool> interrupt_;
   CloudEventLoop* event_loop_;
 };

@@ -45,6 +45,7 @@ namespace priv {
 
 LoopImpl::LoopImpl(CloudEventLoop *loop)
     : last_tag_(),
+      cancellation_thread_pool_(IThreadPool::create(1)),
       interrupt_(std::make_shared<std::atomic_bool>(false)),
       event_loop_(loop) {
 #ifdef WITH_THUMBNAILER
@@ -79,6 +80,20 @@ void LoopImpl::fulfill(uint64_t tag, std::function<void()> &&f) {
   invoke(std::move(f));
 }
 
+void LoopImpl::cancel(uint64_t tag) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto it = pending_.find(tag);
+    if (it != pending_.end()) {
+      auto request = std::move(it->second);
+      pending_.erase(it);
+      lock.unlock();
+      cancellation_thread_pool_->schedule(
+          [request = std::move(request)] { request->cancel(); });
+    }
+  }
+}
+
 void LoopImpl::invoke(std::function<void()> &&f) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -100,7 +115,7 @@ void LoopImpl::invokeOnThreadPool(std::function<void()> &&f) {
 
 void LoopImpl::process_events() {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (const auto& e : events_) {
+  for (const auto &e : events_) {
     lock.unlock();
     e();
     lock.lock();

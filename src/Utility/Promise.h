@@ -214,12 +214,16 @@ class Promise {
     };
     if (data_->error_ready_) {
       auto callback = std::move(data_->on_reject_);
+      data_->on_fulfill_ = nullptr;
       data_->on_reject_ = nullptr;
+      data_->on_cancel_ = nullptr;
       lock.unlock();
       callback(std::move(data_->exception_));
     } else if (data_->ready_) {
       auto callback = std::move(data_->on_fulfill_);
       data_->on_fulfill_ = nullptr;
+      data_->on_reject_ = nullptr;
+      data_->on_cancel_ = nullptr;
       lock.unlock();
       SequenceGenerator<std::tuple_size<std::tuple<Ts...>>::value>::type::call(
           callback, data_->value_);
@@ -266,10 +270,26 @@ class Promise {
       promise.fulfill(std::forward<Ts>(args)...);
     };
     if (data_->error_ready_) {
+      auto callback = std::move(data_->on_reject_);
+      data_->on_reject_ = nullptr;
+      data_->on_fulfill_ = nullptr;
+      data_->on_cancel_ = nullptr;
       lock.unlock();
-      data_->on_reject_(std::move(data_->exception_));
+      callback(std::move(data_->exception_));
     }
     return promise;
+  }
+
+  template <class Func>
+  void cancel(Func&& f) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    data_->on_cancel_ = std::move(f);
+    if (data_->cancelled_) {
+      auto cb = std::move(data_->on_cancel_);
+      data_->on_cancel_ = nullptr;
+      lock.unlock();
+      cb();
+    }
   }
 
   template <typename Callable>
@@ -291,9 +311,12 @@ class Promise {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     data_->ready_ = true;
     if (data_->on_fulfill_) {
-      lock.unlock();
-      data_->on_fulfill_(std::forward<Ts>(value)...);
+      auto callback = std::move(data_->on_fulfill_);
+      data_->on_reject_ = nullptr;
       data_->on_fulfill_ = nullptr;
+      data_->on_cancel_ = nullptr;
+      lock.unlock();
+      callback(std::forward<Ts>(value)...);
     } else {
       data_->value_ = std::make_tuple(std::move(value)...);
     }
@@ -311,11 +334,24 @@ class Promise {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     data_->error_ready_ = true;
     if (data_->on_reject_) {
-      lock.unlock();
-      data_->on_reject_(std::move(e));
+      auto callback = std::move(data_->on_reject_);
       data_->on_reject_ = nullptr;
+      data_->on_fulfill_ = nullptr;
+      data_->on_cancel_ = nullptr;
+      lock.unlock();
+      callback(std::move(e));
     } else {
       data_->exception_ = std::move(e);
+    }
+  }
+
+  void cancel() const {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    data_->cancelled_ = true;
+    if (data_->on_cancel_) {
+      auto callback = std::move(data_->on_cancel_);
+      lock.unlock();
+      callback();
     }
   }
 
@@ -327,8 +363,10 @@ class Promise {
     std::mutex mutex_;
     bool ready_ = false;
     bool error_ready_ = false;
+    bool cancelled_ = false;
     std::function<void(Ts&&...)> on_fulfill_;
     std::function<void(std::exception_ptr&&)> on_reject_;
+    std::function<void()> on_cancel_;
     std::tuple<Ts...> value_;
     std::exception_ptr exception_;
   };

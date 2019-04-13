@@ -222,6 +222,7 @@ Promise<> CloudAccess::downloadFile(
   auto request = provider_->downloadFileAsync(
       file, util::make_unique<DownloadCallback>(cb, promise, tag, loop_),
       range);
+  promise.cancel([tag, loop = loop_] { loop->cancel(tag); });
   loop_->add(tag, std::move(request));
   return promise;
 }
@@ -232,6 +233,7 @@ Promise<> CloudAccess::downloadThumbnail(
   auto tag = loop_->next_tag();
   auto request = provider_->getThumbnailAsync(
       file, std::make_shared<DownloadCallback>(cb, promise, tag, loop_));
+  promise.cancel([tag, loop = loop_] { loop->cancel(tag); });
   loop_->add(tag, std::move(request));
   return promise;
 }
@@ -239,20 +241,23 @@ Promise<> CloudAccess::downloadThumbnail(
 Promise<> CloudAccess::generateThumbnail(
     IItem::Pointer item, const std::shared_ptr<ICloudDownloadCallback>& cb) {
   Promise<> result;
-  downloadThumbnail(item, cb)
-      .then([cb, result] { result.fulfill(); })
+
+  auto current_interrupt = std::make_shared<std::atomic_bool>(false);
+  auto download_promise = downloadThumbnail(item, cb);
+  download_promise.then([cb, result] { result.fulfill(); })
       .error<Exception>([item, result, loop = loop_, provider = provider_,
-                         cb](const Exception& e) {
+                         current_interrupt, cb](const Exception& e) {
 #ifdef WITH_THUMBNAILER
         if (item->type() == IItem::FileType::Image ||
             item->type() == IItem::FileType::Video) {
           auto interrupt_atomic = loop->interrupt();
           loop->invokeOnThreadPool([interrupt_atomic, result, item,
-                                    provider = provider, loop, cb] {
+                                    current_interrupt, provider = provider,
+                                    loop, cb] {
             uint64_t size = item->size();
             auto interrupt =
                 [=](std::chrono::system_clock::time_point start_time) {
-                  return *interrupt_atomic ||
+                  return *interrupt_atomic || *current_interrupt ||
                          std::chrono::system_clock::now() - start_time >
                              MAX_THUMBNAIL_GENERATION_TIME;
                 };
@@ -302,6 +307,12 @@ Promise<> CloudAccess::generateThumbnail(
         result.reject(e);
 #endif
       });
+
+  result.cancel([download_promise, current_interrupt] {
+    download_promise.cancel();
+    *current_interrupt = true;
+  });
+
   return result;
 }
 
@@ -321,23 +332,46 @@ Promise<IItem::Pointer> CloudAccess::copyItem(
     result.reject(Exception(600, "Target not a directory"));
     return result;
   }
-  downloadFile(source_item, FullRange,
-               streamDownloader(buffer_ptr,
-                                [progress](uint64_t total, uint64_t now) {
-                                  if (progress) progress(2 * total, now);
-                                }))
+  auto download_promise = downloadFile(
+      source_item, FullRange,
+      streamDownloader(buffer_ptr, [progress](uint64_t total, uint64_t now) {
+        if (progress) progress(2 * total, now);
+      }));
+  struct Data {
+    std::mutex mutex_;
+    Promise<IItem::Pointer> promise_;
+    bool cancelled_ = false;
+  };
+  auto upload_promise = std::make_shared<Data>();
+  download_promise
       .then([target_provider, target_parent, target_filename, progress,
-             buffer_ptr] {
-        return target_provider->uploadFile(
-            target_parent, target_filename,
-            streamUploader(buffer_ptr,
-                           [progress](uint64_t total, uint64_t now) {
-                             if (progress) progress(2 * total, total + now);
-                           }));
+             buffer_ptr, upload_promise] {
+        std::unique_lock<std::mutex> lock(upload_promise->mutex_);
+        if (upload_promise->cancelled_) {
+          Promise<IItem::Pointer> promise;
+          promise.reject(
+              Exception(IHttpRequest::Aborted, util::Error::ABORTED));
+          return promise;
+        }
+        return upload_promise->promise_ = target_provider->uploadFile(
+                   target_parent, target_filename,
+                   streamUploader(buffer_ptr,
+                                  [progress](uint64_t total, uint64_t now) {
+                                    if (progress)
+                                      progress(2 * total, total + now);
+                                  }));
       })
       .then([result](IItem::Pointer item) { result.fulfill(std::move(item)); })
       .error<Exception>(
           [result](Exception&& e) { result.reject(std::move(e)); });
+
+  result.cancel([download_promise, upload_promise] {
+    download_promise.cancel();
+    std::unique_lock<std::mutex> lock(upload_promise->mutex_);
+    upload_promise->cancelled_ = true;
+    upload_promise->promise_.cancel();
+  });
+
   return result;
 }
 

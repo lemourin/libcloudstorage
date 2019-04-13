@@ -144,6 +144,7 @@ class CloudAccess : public ICloudAccess {
         [loop = loop_, promise, tag](EitherError<RemovedShared> e) {
           loop->fulfill(tag, [promise, e] { fulfill(promise, e); });
         });
+    promise.cancel([loop = loop_, tag] { loop->cancel(tag); });
     loop_->add(tag, std::move(request));
     return promise;
   }
