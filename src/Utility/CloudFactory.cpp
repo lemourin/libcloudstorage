@@ -187,9 +187,9 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
     if (cb_) cb_->onCloudAuthenticationCodeReceived(provider, code);
   }
 
-  void onCloudTokenReceived(const std::string& provider,
-                            const EitherError<Token>& token) override {
-    if (cb_) cb_->onCloudTokenReceived(provider, token);
+  void onCloudTokenExchangeFailed(const std::string& provider,
+                                  const IException& exception) override {
+    if (cb_) cb_->onCloudTokenExchangeFailed(provider, exception);
   }
   void onCloudCreated(const std::shared_ptr<ICloudAccess>& cloud) override {
     if (cb_) cb_->onCloudCreated(cloud);
@@ -311,11 +311,14 @@ void CloudFactory::add(std::unique_ptr<IGenericRequest>&& request) {
   loop_->add(loop_->next_tag(), std::move(request));
 }
 
-void CloudFactory::invoke(std::function<void()>&& f) { loop_->invoke(std::move(f)); }
+void CloudFactory::invoke(std::function<void()>&& f) {
+  loop_->invoke(std::move(f));
+}
 
 void CloudFactory::onCloudTokenReceived(const std::string& provider,
                                         const EitherError<Token>& token) {
-  if (callback_) callback_->onCloudTokenReceived(provider, token);
+  if (callback_ && token.left())
+    callback_->onCloudTokenExchangeFailed(provider, Exception(token.left()));
   if (token.right()) {
     ProviderInitData init_data;
     init_data.token_ = token.right()->token_;
