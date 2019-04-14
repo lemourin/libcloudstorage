@@ -22,7 +22,7 @@ AC_ARG_WITH([mega], AS_HELP_STRING([--with-mega]))
 AS_IF([test "x$with_mega" != "xno"], [
   PKG_CHECK_MODULES([libmega], [libmega], [
     HAVE_MEGA=1
-    LIBS="$LIBS -lmega"
+    LIBS="$LIBS $libmega_LIBS"
     AC_DEFINE(WITH_MEGA)
   ], [
     HAVE_MEGA=0
@@ -36,7 +36,7 @@ AC_ARG_WITH([cryptopp], AS_HELP_STRING([--with-cryptopp]))
 AS_IF([test "x$with_cryptopp" != "xno"], [
   PKG_CHECK_MODULES([libcryptopp], [libcrypto++], [
     HAVE_CRYPTOPP=1
-    LIBS="$LIBS -lcryptopp"
+    LIBS="$LIBS $libcryptopp_LIBS"
     AC_DEFINE(WITH_CRYPTOPP)
   ], [
     HAVE_CRYPTOPP=0
@@ -50,7 +50,7 @@ AC_ARG_WITH([curl], AS_HELP_STRING([--with-curl]))
 AS_IF([test "x$with_curl" != "xno"], [
   PKG_CHECK_MODULES([libcurl], [libcurl], [
     HAVE_CURL=1
-    LIBS="$LIBS -lcurl"
+    LIBS="$LIBS $libcurl_LIBS"
     AC_DEFINE(WITH_CURL)
   ], [
     HAVE_CURL=0
@@ -64,7 +64,7 @@ AC_ARG_WITH([microhttpd], AS_HELP_STRING([--with-microhttpd]))
 AS_IF([test "x$with_microhttpd" != "xno"], [
   PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [
     HAVE_MICROHTTPD=1
-    LIBS="$LIBS -lmicrohttpd"
+    LIBS="$LIBS $libmicrohttpd_LIBS"
     AC_DEFINE(WITH_MICROHTTPD)
   ], [
     HAVE_MICROHTTPD=0
@@ -93,7 +93,7 @@ AS_IF([test "x$with_ffmpeg" != "xno"], [
     libswresample libswscale
   ], [
     HAVE_THUMBNAILER=1
-    LIBS="$LIBS -lavcodec -lavfilter -lavformat -lavutil -lswresample -lswscale"
+    LIBS="$LIBS $ffmpeg_LIBS"
     AC_DEFINE(WITH_THUMBNAILER)
   ], [
     HAVE_THUMBNAILER=0
