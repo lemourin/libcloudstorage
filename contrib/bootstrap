@@ -316,20 +316,12 @@ install_libxml2() {
 
 fetch_ffmpeg() {
   fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
-  if [ ! -f .patched ]; then
-    patch \
-      libavformat/dashdec.c < \
-      ../../patches/ffmpeg-enable-dash-seeking.patch
-    if [ $? != 0 ]; then
-      echo "Couldn't patch ffmpeg source."
-      exit 1
-    fi
-    touch .patched
-  fi
 }
 
 install_ffmpeg() {
-  sudo apt install -y yasm
+  if [ $(yasm --version) -ne 0 ]; then
+    sudo apt install -y yasm
+  fi
 
   ./configure \
     --prefix=$INSTALL_PATH \
@@ -560,7 +552,7 @@ install "vorbis" 1.3.6
 install "ebml" 1.3.6
 install "matroska" 1.4.9
 install "libxml2" 2.9.7
-install "ffmpeg" 4.1
+install "ffmpeg" 4.1.3
 install "vlc" 3.0.4
 install "vlcqt" 1.1.1
 install "mpv" 0.29.1
