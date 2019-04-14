@@ -1,0 +1,301 @@
+#!/usr/bin/env bash
+
+if [ -z "$ANDROID_NDK_ROOT" ]; then
+  echo "ANDROID_NDK_ROOT not set"
+  exit 
+fi
+
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 [ arm | x86 ]"
+  exit 1
+fi
+
+BUILD=$1
+
+if [ $BUILD == "x86" ]; then
+  ARCH=i686-linux-android16
+elif [ $BUILD == "arm" ]; then
+  ARCH=armv7a-linux-androideabi16
+fi
+
+export INSTALL_PATH=$PWD/$ARCH
+export CURRENT_DIR=$PWD
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export CMAKE_PREFIX_PATH=$INSTALL_PATH
+export PATH=$INSTALL_PATH/bin:$PATH
+export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang
+export CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++
+export CXXFLAGS="-fPIC"
+export CFLAGS="-fPIC"
+export LDFLAGS="-fPIC"
+CONCURRENCY=4
+
+unpack() {
+  if [[ ! -d $1 ]]; then
+    tar xf $1.$2
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't extract $1.$2"
+      exit 1
+    fi
+    cd $1
+  else
+    cd $1
+  fi
+}
+
+fetch() {
+  EXT=${2##*.}
+  if [[ ! -f $2 ]]; then
+    DEST=$(tempfile)
+    wget $1 -O $DEST
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't fetch $1"
+      exit 1
+    else
+      mv $DEST $2
+    fi
+  fi
+  unpack `basename $2 .tar.$EXT` tar.$EXT
+}
+
+fetch_url() {
+  fetch $1 ${1##*/}
+}
+
+fetch_github() {
+  TARBALL=${1##*/}
+  REPO_URL=${1%%/archive/*}
+  REPO_NAME=${REPO_URL##*/}
+  NAME=${TARBALL##v}
+  fetch $1 $REPO_NAME-$NAME
+}
+
+run_make() {
+  make -j $CONCURRENCY && make install
+}
+
+fetch_jsoncpp() {
+  fetch_github https://github.com/open-source-parsers/jsoncpp/archive/$1.tar.gz
+}
+
+install_jsoncpp() {
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0
+  run_make
+}
+
+fetch_tinyxml2() {
+  fetch_github https://github.com/leethomason/tinyxml2/archive/$1.tar.gz
+}
+
+install_tinyxml2() {
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
+  run_make
+}
+
+fetch_openssl() {
+  fetch_url https://www.openssl.org/source/openssl-$1.tar.gz
+}
+
+install_openssl() {
+  if [ $BUILD == "x86" ]; then
+    SSL_TYPE="linux-x86";
+  elif [ $BUILD == "arm" ]; then
+    SSL_TYPE="linux-armv4";
+  fi
+  ./Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE no-shared
+  run_make
+}
+
+fetch_cares() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
+}
+
+install_cares() {
+  ./buildconf
+  ./configure --prefix=$INSTALL_PATH --host=armv7a-linux-androideabi16 --enable-static --disable-shared
+  run_make
+}
+
+fetch_nghttp2() {
+  fetch_url https://github.com/nghttp2/nghttp2/releases/download/v$1/nghttp2-$1.tar.gz
+}
+
+install_nghttp2() {
+  ./buildconf
+  ./configure --prefix=$INSTALL_PATH --enable-lib-only --enable-static --disable-shared --host=$ARCH
+  run_make
+}
+
+fetch_curl() {
+  fetch_url https://github.com/curl/curl/releases/download/curl-${1//./_}/curl-$1.tar.gz
+}
+
+install_curl() {
+  ./configure --prefix=$INSTALL_PATH --with-ssl=$INSTALL_PATH --with-nghttp2 --enable-ares \
+    --host=$ARCH --enable-static --disable-shared
+  run_make
+}
+
+fetch_microhttpd() {
+  fetch_url https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-$1.tar.gz
+}
+
+install_microhttpd() {
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
+  run_make
+}
+
+fetch_cryptopp() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/weidai11/cryptopp/archive/CRYPTOPP_$VERSION.tar.gz
+}
+
+install_cryptopp() {
+  make -f GNUmakefile-cross -j $CONCURRENCY static CXXFLAGS="$CXXFLAGS -I$ANDROID_NDK_ROOT/sources/android/cpufeatures" libcryptopp.a && \
+    make -f GNUmakefile-cross -j $CONCURRENCY install-lib PREFIX=$INSTALL_PATH
+}
+
+fetch_sqlite() {
+  fetch_url https://www.sqlite.org/2018/sqlite-autoconf-$1.tar.gz
+}
+
+install_sqlite() {
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
+  run_make
+}
+
+fetch_megasdk() {
+  fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
+}
+
+install_megasdk() {
+  ./autogen.sh
+  ./configure --prefix=$INSTALL_PATH \
+    --without-freeimage \
+    --disable-examples \
+    --with-cryptopp=$INSTALL_PATH \
+    --with-sqlite=$INSTALL_PATH \
+    --with-openssl=$INSTALL_PATH \
+    --with-cares=$INSTALL_PATH \
+    --with-curl=$INSTALL_PATH \
+    --host=$ARCH \
+    --enable-static \
+    --disable-shared
+  make CXXFLAGS="-D_LIBCPP_HAS_NO_OFF_T_FUNCTIONS $CXXFLAGS" -j $CONCURRENCY && make install
+}
+
+fetch_ffmpeg() {
+  fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
+}
+
+install_ffmpeg() {
+  if [ $(yasm --version) -ne 0 ]; then
+    sudo apt install -y yasm
+  fi
+
+  ./configure \
+    --prefix=$INSTALL_PATH \
+    --target-os=android \
+    --cc=$CC \
+    --cxx=$CXX \
+    --enable-cross-compile \
+    --disable-asm \
+    --disable-avdevice \
+    --disable-programs
+
+  run_make
+}
+
+fetch_boost() {
+  fetch_url https://dl.bintray.com/boostorg/release/$1/source/boost_${1//./_}.tar.gz
+}
+
+install_boost() {
+  ./bootstrap.sh
+  cd libs/filesystem/build
+  
+  cat > $CURRENT_DIR/user-config.jam << EOF
+using clang : arm : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi16-clang++ ;
+using clang : x86 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android16-clang++ ;
+EOF
+
+  HOME=$CURRENT_DIR ../../../b2 install \
+    --prefix=$INSTALL_PATH \
+    -toolset=$ARCH \
+    cxxflags=-fPIC \
+    linkflags=-fPIC \
+    link=static \
+    runtime-link=static \
+    target-os=android \
+    toolset=clang-$BUILD && \
+  rm $CURRENT_DIR/user-config.jam
+}
+
+install_run() {
+  BASE_DIRECTORY=$PWD
+  fetch_$1 $2
+  if [[ ! -f .done ]]; then
+    BUILD_DIRECTORY=$PWD
+    install_$1 $2
+    if [[ $? -eq 0 ]]; then
+      cd $BUILD_DIRECTORY
+      touch .done
+    else
+      echo "Failed to build $1"
+      exit 1
+    fi
+  fi
+  cd $BASE_DIRECTORY
+}
+
+install() {
+  uppercase=`echo $1 | awk '{print toupper($0)}'`
+  name=${uppercase}_INSTALL
+  if [[ $INSTALL_LISTED -eq 1 ]]; then
+    if [[ ${!name} -eq 1 ]]; then
+      install_run $1 $2
+    fi
+  else
+    if [[ "x${!name}" != "x0" ]]; then
+      install_run $1 $2
+    fi
+  fi
+}
+
+INSTALL_LISTED=0
+
+for i in $@; do
+  if [[ "$i" == *without-* ]]; then
+    component=${i##"--without-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    declare "${uppercase_component}_INSTALL"="0"
+  fi
+
+  if [[ "$i" == *with-* ]]; then
+    component=${i##"--with-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    INSTALL_LISTED=1
+    declare "${uppercase_component}_INSTALL"="1"
+  fi
+done
+
+mkdir tarballs-$ARCH -p
+cd tarballs-$ARCH
+
+install "openssl" 1.1.1b
+install "jsoncpp" 1.8.3
+install "tinyxml2" 6.0.0
+install "cares" 1.15.0
+install "nghttp2" 1.28.0
+install "curl" 7.57.0
+install "microhttpd" 0.9.58
+install "cryptopp" 8.1.0
+install "sqlite" 3240000
+install "megasdk" 3.4.7
+install "ffmpeg" 4.1.3
+install "boost" 1.69.0
