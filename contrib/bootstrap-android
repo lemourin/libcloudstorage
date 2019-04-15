@@ -117,7 +117,7 @@ fetch_cares() {
 
 install_cares() {
   ./buildconf
-  ./configure --prefix=$INSTALL_PATH --host=armv7a-linux-androideabi16 --enable-static --disable-shared
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
   run_make
 }
 
