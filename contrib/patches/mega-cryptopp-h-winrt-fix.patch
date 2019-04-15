@@ -1,0 +1,11 @@
+--- cryptopp.h.orig	2019-04-15 10:56:30.782511500 +0200
++++ cryptopp.h	2019-04-15 10:57:42.935064500 +0200
+@@ -47,7 +47,7 @@
+ class MEGA_API PrnGen
+ {
+ public:
+-    static CryptoPP::AutoSeededRandomPool rng;
++    static CryptoPP::RandomPool rng;
+ 
+     /**
+      * @brief Generates a block of random bytes of length `len` into a buffer

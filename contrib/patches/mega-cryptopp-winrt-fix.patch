@@ -1,0 +1,4 @@
+31c31
+< AutoSeededRandomPool PrnGen::rng;
+---
+> RandomPool PrnGen::rng;

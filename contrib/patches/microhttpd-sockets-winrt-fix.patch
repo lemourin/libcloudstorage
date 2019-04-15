@@ -1,0 +1,11 @@
+--- mhd_sockets.c.orig	2019-04-14 22:47:44.080137800 +0200
++++ mhd_sockets.c	2019-04-14 22:47:46.670759300 +0200
+@@ -451,7 +451,7 @@
+                     F_SETFD,
+                     flags | FD_CLOEXEC)) )
+     return 0;
+-#elif defined(MHD_WINSOCK_SOCKETS)
++#elif defined(MHD_WINSOCK_SOCKETS) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+   if (! SetHandleInformation ((HANDLE)sock,
+                               HANDLE_FLAG_INHERIT,
+                               0))

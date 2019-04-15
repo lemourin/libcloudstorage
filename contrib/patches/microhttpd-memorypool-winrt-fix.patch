@@ -1,0 +1,17 @@
+--- memorypool.c.orig	2019-04-15 15:01:53.587257600 +0200
++++ memorypool.c	2019-04-15 15:02:24.877623000 +0200
+@@ -117,11 +117,13 @@
+ 			 MAP_PRIVATE | MAP_ANONYMOUS,
+                          -1,
+                          0);
+-#elif defined(_WIN32)
++#elif defined(_WIN32) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+     pool->memory = VirtualAlloc (NULL,
+                                  max,
+                                  MEM_COMMIT | MEM_RESERVE,
+                                  PAGE_READWRITE);
++#else
++    pool->memory = MAP_FAILED;
+ #endif
+ #else
+   pool->memory = MAP_FAILED;

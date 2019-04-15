@@ -1,0 +1,11 @@
+--- ares_library_init.c.orig	2019-04-15 02:24:17.081690400 +0200
++++ ares_library_init.c	2019-04-15 02:24:18.628580600 +0200
+@@ -62,7 +62,7 @@
+ 
+ static int ares_win32_init(void)
+ {
+-#ifdef USE_WINSOCK
++#if defined(USE_WINSOCK) && !defined(WINDOWS_PHONE)
+ 
+   hnd_iphlpapi = 0;
+   hnd_iphlpapi = LoadLibraryW(L"iphlpapi.dll");

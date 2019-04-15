@@ -1,0 +1,10 @@
+--- connection.c.orig	2019-04-15 15:05:35.353073400 +0200
++++ connection.c	2019-04-15 15:05:40.778131500 +0200
+@@ -3080,7 +3080,6 @@
+         connection->state = MHD_CONNECTION_FOOTERS_SENT; /* have no footers */
+       return;
+     case MHD_CONNECTION_NORMAL_BODY_UNREADY:
+-      mhd_assert (0);
+       return;
+     case MHD_CONNECTION_CHUNKED_BODY_READY:
+       ret = connection->send_cls (connection,

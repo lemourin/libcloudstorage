@@ -1,0 +1,422 @@
+#!/usr/bin/env bash
+
+# For OpenSSL perl shipped with msys2 is not good enough; make sure
+# shell sees perl installed from e.g. http://strawberryperl.com/
+
+# native CMake is also required: https://cmake.org/download/
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 [ x64 ] [ Debug | Release ]"
+  exit 1
+fi
+
+BUILD=$1
+
+if [ $BUILD != "x64" ]; then
+  echo "Unsupported architecture $BUILD"
+  exit 1
+fi
+
+BUILD_TYPE=$2
+
+if [ $BUILD_TYPE != "Debug" ] && [ $BUILD_TYPE != "Release" ]; then
+  echo "Unsupported build type $BUILD_TYPE"
+  exit 1
+fi
+
+if [ $BUILD_TYPE == "Debug" ]; then
+  RUNTIME="MDd"
+elif [ $BUILD_TYPE == "Release" ]; then
+  RUNTIME="MD"
+fi
+
+export INSTALL_PATH=$PWD/winrt/$BUILD/$BUILD_TYPE
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export CURRENT_DIR=$PWD
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export CMAKE_PREFIX_PATH=$INSTALL_PATH
+export PATH=$INSTALL_PATH/bin:$PATH
+export CMAKE_GENERATOR="Visual Studio 15 2017 Win64"
+export PATCH=/usr/bin/patch
+export PKG_CONFIG=/usr/bin/pkg-config
+
+NATIVE_PATH=$(cygpath -w $INSTALL_PATH)
+
+mkdir -p $INSTALL_PATH/include
+mkdir -p $INSTALL_PATH/lib/pkgconfig
+
+CONCURRENCY=4
+
+unpack() {
+  if [[ ! -d $1 ]]; then
+    tar xf $1.$2
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't extract $1.$2"
+      exit 1
+    fi
+    cd $1
+  else
+    cd $1
+  fi
+}
+
+fetch() {
+  EXT=${2##*.}
+  if [[ ! -f $2 ]]; then
+    DEST=$(mktemp /tmp/build-winrt.XXXXXX)
+    wget $1 -O $DEST
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't fetch $1"
+      exit 1
+    else
+      mv $DEST $2
+    fi
+  fi
+  unpack $(basename $2 .tar.$EXT) tar.$EXT
+}
+
+fetch_url() {
+  fetch $1 ${1##*/}
+}
+
+fetch_github() {
+  TARBALL=${1##*/}
+  REPO_URL=${1%%/archive/*}
+  REPO_NAME=${REPO_URL##*/}
+  NAME=${TARBALL##v}
+  fetch $1 $REPO_NAME-$NAME
+}
+
+run_make() {
+  make -j $CONCURRENCY && make install
+}
+
+fetch_jsoncpp() {
+  fetch_github https://github.com/open-source-parsers/jsoncpp/archive/$1.tar.gz
+}
+
+fetch_zlib() {
+  fetch_url https://www.zlib.net/zlib-$1.tar.gz
+}
+
+install_zlib() {
+  mkdir -p build && cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 \
+    -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
+    -G "$CMAKE_GENERATOR"
+  if [ $BUILD_TYPE == "Release" ]; then
+    ZLIB_LIBRARY="zlibstatic"
+  elif [ $BUILD_TYPE == "Debug" ]; then
+    ZLIB_LIBRARY="zlibstaticd"
+  fi
+  cat > $INSTALL_PATH/lib/pkgconfig/zlib.pc << EOF
+prefix=${NATIVE_PATH//\\/\\\\}
+exec_prefix=\${prefix}
+libdir=\${prefix}\\\\lib
+includedir=\${prefix}\\\\include
+
+Name: zlib
+Description: zlib
+Version: $1
+Libs: -L\${libdir} -l$ZLIB_LIBRARY
+Cflags: -I\${includedir}
+EOF
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h
+}
+
+fetch_libxml2() {
+  fetch ftp://xmlsoft.org/libxml2/libxml2-sources-$1.tar.gz libxml2-$1.tar.gz
+}
+
+install_libxml2() {
+  cd win32
+  cscript configure.js compiler=msvc cruntime=-$RUNTIME prefix=$INSTALL_PATH iconv=no static=yes catalog=no modules=no http=no &&
+    nmake -f Makefile.msvc libxmla &&
+    cd .. &&
+    mkdir -p $INSTALL_PATH/include/libxml2 &&
+    cp -r include/libxml $INSTALL_PATH/include/libxml2 &&
+    cp -r win32/bin.msvc/libxml2_a.lib $INSTALL_PATH/lib
+  cat > $INSTALL_PATH/lib/pkgconfig/libxml-2.0.pc << EOF
+prefix=${NATIVE_PATH//\\/\\\\}
+exec_prefix=\${prefix}
+libdir=\${prefix}\\\\lib
+includedir=\${prefix}\\\\include
+
+Name: libXML
+Description: libXML library version2.
+Version: $1
+Libs: -L\${libdir} -llibxml2_a
+Cflags: -I\${includedir} -I\${includedir}\\\\libxml2
+EOF
+}
+
+install_jsoncpp() {
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0 \
+    -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
+    -DCMAKE_CXX_FLAGS="-sdl-" \
+    -G "$CMAKE_GENERATOR"
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_tinyxml2() {
+  fetch_github https://github.com/leethomason/tinyxml2/archive/$1.tar.gz
+}
+
+install_tinyxml2() {
+  mkdir -p build
+  cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1 \
+    -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
+    -DCMAKE_CXX_FLAGS="-sdl-" \
+    -G "$CMAKE_GENERATOR"
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_openssl() {
+  fetch_url https://www.openssl.org/source/openssl-$1.tar.gz
+}
+
+install_openssl() {
+  if [ $BUILD == "x64" ]; then
+    SSL_TYPE="VC-WIN64A-ONECORE";
+  fi
+  perl Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE no-shared no-tests no-ui-console no-async no-dso no-asm &&
+    nmake build_generated libssl.lib libcrypto.lib && (nmake install || echo 0)
+}
+
+fetch_cares() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
+  if [ ! -f .patched ]; then
+    $PATCH ares_library_init.c < ../../patches/cares-library-init-winrt-fix.patch && \
+      $PATCH ares_gethostbyaddr.c < ../../patches/cares-gethostbyaddr-winrt-fix.patch && \
+      $PATCH ares_gethostbyname.c < ../../patches/cares-gethostbyname-winrt-fix.patch && \
+      $PATCH config-win32.h < ../../patches/cares-config-winrt-fix.patch
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch cares"
+      exit 1
+    fi
+    touch .patched
+  fi
+}
+
+install_cares() {
+  cp ares_build.h.dist ares_build.h
+  INSTALL_DIR=$INSTALL_PATH nmake -f Makefile.msvc install || echo 0
+}
+
+fetch_nghttp2() {
+  fetch_url https://github.com/nghttp2/nghttp2/releases/download/v$1/nghttp2-$1.tar.gz
+}
+
+install_nghttp2() {
+  sed -i 's/SHARED/STATIC/g' lib/CMakeLists.txt
+  mkdir -p build && cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+    -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
+    -DENABLE_LIB_ONLY=1 \
+    -G "$CMAKE_GENERATOR"
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_curl() {
+  fetch_url https://github.com/curl/curl/releases/download/curl-${1//./_}/curl-$1.tar.gz
+  if [ ! -f .patched ]; then
+    $PATCH lib/vtls/openssl.c < ../../patches/curl-openssl-no-ui.patch
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch curl"
+      exit 1
+    fi
+    touch .patched
+  fi
+}
+
+install_curl() {
+  mkdir -p build && cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+    -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
+    -G "$CMAKE_GENERATOR" \
+    -DCMAKE_C_FLAGS="-DNGHTTP2_STATICLIB" \
+    -DBUILD_CURL_EXE=0 \
+    -DBUILD_TESTING=0 \
+    -DCURL_STATICLIB=1 \
+    -DCURL_WINDOWS_SSPI=0 \
+    -DCURL_ZLIB=0 \
+    -DCURL_DISABLE_TELNET=1 \
+    -DUSE_NGHTTP2=1 \
+    -DENABLE_ARES=1 \
+    -DCARES_LIBRARY=$INSTALL_PATH/lib/libcares.lib \
+    -DCMAKE_USE_OPENSSL=1 \
+    -DUSE_WIN32_LDAP=0
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_microhttpd() {
+  fetch_url https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-$1.tar.gz
+  if [ ! -f .patched ]; then
+    $PATCH w32/VS2017/libmicrohttpd.vcxproj < ../../patches/microhttpd-enable-winrt.patch &&
+      $PATCH src/microhttpd/connection.c < ../../patches/microhttpd-connection-winrt-fix.patch &&
+      $PATCH src/microhttpd/mhd_sockets.c < ../../patches/microhttpd-sockets-winrt-fix.patch &&
+      $PATCH src/microhttpd/memorypool.c < ../../patches/microhttpd-memorypool-winrt-fix.patch
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch microhttpd"
+      exit 1
+    fi
+    touch .patched
+  fi
+}
+
+install_microhttpd() {
+  msbuild.exe w32/VS2017/libmicrohttpd.vcxproj -p:Configuration=$BUILD_TYPE-static &&
+    cp w32/VS2017/Output/$BUILD/microhttpd.h $INSTALL_PATH/include/ &&
+    cp w32/VS2017/Output/$BUILD/libmicrohttpd* $INSTALL_PATH/lib
+}
+
+fetch_cryptopp() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/weidai11/cryptopp/archive/CRYPTOPP_$VERSION.tar.gz
+  if [ ! -f .patched ]; then
+    $PATCH cryptlib.vcxproj < ../../patches/cryptlib-winrt-enable.patch
+    sed -i s/\(WINAPI_FAMILY_PARTITION\(WINAPI_PARTITION_DESKTOP\)\)/WINAPI_FAMILY_PARTITION\(WINAPI_PARTITION_DESKTOP\)/g config.h
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch cryptlib.vcxproj"
+      exit 1;
+    fi
+    touch .patched
+  fi
+}
+
+install_cryptopp() {
+  msbuild.exe cryptlib.vcxproj -p:Configuration=$BUILD_TYPE &&
+    mkdir -p $INSTALL_PATH/include/cryptopp &&
+    cp *.h $INSTALL_PATH/include/cryptopp &&
+    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib
+}
+
+fetch_sqlite() {
+  fetch_url https://www.sqlite.org/2018/sqlite-autoconf-$1.tar.gz
+}
+
+install_sqlite() {
+  cp sqlite3.h $INSTALL_PATH/include/ &&
+    cp sqlite3.c $INSTALL_PATH/lib/
+}
+
+fetch_megasdk() {
+  fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    $PATCH examples/win32/libmega.vcxproj < ../../patches/mega-enabled-winrt.patch &&
+      $PATCH src/megaclient.cpp < ../../patches/mega-client-winrt-fix.patch && 
+      $PATCH src/crypto/cryptopp.cpp < ../../patches/mega-cryptopp-winrt-fix.patch &&
+      $PATCH include/mega/crypto/cryptopp.h < ../../patches/mega-cryptopp-h-winrt-fix.patch
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch megasdk"
+      exit 1;
+    fi
+    touch .patched
+  fi
+}
+
+install_megasdk() {
+  UseEnv=true LIB="$LIB;$INSTALL_PATH/lib" INCLUDE="$INCLUDE;$(cygpath -w $INSTALL_PATH)\\include" \
+    msbuild.exe examples/win32/libmega.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp -r include/mega* $INSTALL_PATH/include &&
+    cp examples/win32/mega.pdb examples/win32/$BUILD/$BUILD_TYPE/libmega/* $INSTALL_PATH/lib
+}
+
+fetch_ffmpeg() {
+  fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
+}
+
+install_ffmpeg() {
+  export INCLUDE="$NATIVE_PATH\\include;$NATIVE_PATH\\include\\libxml2;$INCLUDE"
+  ./configure \
+    --prefix=$INSTALL_PATH \
+    --pkg-config=$PKG_CONFIG \
+    --toolchain=msvc \
+    --extra-ldflags="-APPCONTAINER WindowsApp.lib -libpath:$NATIVE_PATH\\lib" \
+    --extra-cflags="-$RUNTIME -DWINAPI_FAMILY=WINAPI_FAMILY_APP -D_WIN32_WINNT=0x0A00 -DLIBXML_STATIC" \
+    --enable-cross-compile \
+    --enable-zlib \
+    --enable-libxml2 \
+    --target-os=win32 \
+    --enable-static \
+    --disable-shared \
+    --disable-avdevice \
+    --disable-programs &&
+  run_make &&
+  mv $INSTALL_PATH/lib/libavutil.a $INSTALL_PATH/lib/avutil.lib && \
+  mv $INSTALL_PATH/lib/libavcodec.a $INSTALL_PATH/lib/avcodec.lib && \
+  mv $INSTALL_PATH/lib/libavfilter.a $INSTALL_PATH/lib/avfilter.lib && \
+  mv $INSTALL_PATH/lib/libavformat.a $INSTALL_PATH/lib/avformat.lib && \
+  mv $INSTALL_PATH/lib/libswresample.a $INSTALL_PATH/lib/swresample.lib && \
+  mv $INSTALL_PATH/lib/libswscale.a $INSTALL_PATH/lib/swscale.lib
+}
+
+install_run() {
+  BASE_DIRECTORY=$PWD
+  fetch_$1 $2
+  if [[ ! -f .done ]]; then
+    BUILD_DIRECTORY=$PWD
+    install_$1 $2
+    if [[ $? -eq 0 ]]; then
+      cd $BUILD_DIRECTORY
+      touch .done
+    else
+      echo "Failed to build $1"
+      exit 1
+    fi
+  fi
+  cd $BASE_DIRECTORY
+}
+
+install() {
+  uppercase=`echo $1 | awk '{print toupper($0)}'`
+  name=${uppercase}_INSTALL
+  if [[ $INSTALL_LISTED -eq 1 ]]; then
+    if [[ ${!name} -eq 1 ]]; then
+      install_run $1 $2
+    fi
+  else
+    if [[ "x${!name}" != "x0" ]]; then
+      install_run $1 $2
+    fi
+  fi
+}
+
+INSTALL_LISTED=0
+
+for i in $@; do
+  if [[ "$i" == *without-* ]]; then
+    component=${i##"--without-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    declare "${uppercase_component}_INSTALL"="0"
+  fi
+
+  if [[ "$i" == *with-* ]]; then
+    component=${i##"--with-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    INSTALL_LISTED=1
+    declare "${uppercase_component}_INSTALL"="1"
+  fi
+done
+
+mkdir tarballs-winrt-$BUILD-$BUILD_TYPE -p
+cd tarballs-winrt-$BUILD-$BUILD_TYPE
+
+install "zlib" 1.2.11
+install "libxml2" 2.9.9
+install "openssl" 1.1.1b
+install "jsoncpp" 1.8.3
+install "tinyxml2" 6.0.0
+install "cares" 1.15.0
+install "nghttp2" 1.28.0
+install "curl" 7.57.0
+install "microhttpd" 0.9.58
+install "cryptopp" 8.1.0
+install "sqlite" 3240000
+install "megasdk" 3.4.7
+install "ffmpeg" 4.1.3

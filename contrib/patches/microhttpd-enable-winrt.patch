@@ -1,0 +1,46 @@
+--- libmicrohttpd.vcxproj.orig	2019-04-14 22:33:37.249988100 +0200
++++ libmicrohttpd.vcxproj	2019-04-14 22:36:43.510527200 +0200
+@@ -72,6 +72,9 @@
+     <ProjectGuid>{9CFB0342-A9E7-483E-BEE5-A1DE22584C5A}</ProjectGuid>
+     <Keyword>Win32Proj</Keyword>
+     <RootNamespace>libmicrohttpd</RootNamespace>
++    <AppContainerApplication>true</AppContainerApplication>
++    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
++    <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup>
+@@ -96,10 +99,32 @@
+   <Import Project="$(MhdW32Common)common-build-settings.vcxproj" />
+   <Import Project="$(MhdW32Common)libmicrohttpd-build-settings.vcxproj" />
+   <PropertyGroup />
+-  <ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-static|Win32'">
+     <ClCompile />
+     <Link />
+     <Lib />
++    <ClCompile>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <CompileAsWinRT>false</CompileAsWinRT>
++    </ClCompile>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-static|x64'">
++    <ClCompile>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <CompileAsWinRT>false</CompileAsWinRT>
++    </ClCompile>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-static|Win32'">
++    <ClCompile>
++      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
++      <CompileAsWinRT>false</CompileAsWinRT>
++    </ClCompile>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-static|x64'">
++    <ClCompile>
++      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
++      <CompileAsWinRT>false</CompileAsWinRT>
++    </ClCompile>
+   </ItemDefinitionGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">

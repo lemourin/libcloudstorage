@@ -1,0 +1,11 @@
+--- openssl.c.orig	2019-04-15 11:02:59.379136800 +0200
++++ openssl.c	2019-04-15 11:03:09.766193900 +0200
+@@ -38,6 +38,8 @@
+ #include <limits.h>
+ #endif
+ 
++#undef HAVE_OPENSSL_ENGINE_H
++
+ #include "urldata.h"
+ #include "sendf.h"
+ #include "formdata.h" /* for the boundary function */

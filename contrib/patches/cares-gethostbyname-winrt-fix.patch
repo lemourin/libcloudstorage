@@ -1,0 +1,11 @@
+--- ares_gethostbyname.c.orig	2019-04-15 02:42:29.840645200 +0200
++++ ares_gethostbyname.c	2019-04-15 02:42:35.005960200 +0200
+@@ -372,8 +372,6 @@
+       RegCloseKey(hkeyHosts);
+     }
+   }
+-  else if (platform == WIN_9X)
+-    GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
+   else
+     return ARES_ENOTFOUND;
+ 
