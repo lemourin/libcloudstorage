@@ -197,6 +197,7 @@ class Promise {
   ReturnedPromise then(Callable&& cb) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     ReturnedPromise promise;
+    promise.data_->on_cancel_ = propagateCancel();
     data_->on_fulfill_ = [promise, cb = std::move(cb)](Ts&&... args) mutable {
       try {
         using StateTuple = typename ReturnedTuple<ReturnedPromise>::type;
@@ -211,18 +212,6 @@ class Promise {
     };
     data_->on_reject_ = [promise](std::exception_ptr&& e) {
       promise.reject(std::move(e));
-    };
-    promise.data_->on_cancel_ = [data_weak = std::weak_ptr<CommonData>(data_)] {
-      auto data = data_weak.lock();
-      if (data) {
-        auto lock = std::unique_lock<std::mutex>(data->mutex_);
-        if (data->on_cancel_) {
-          auto callback = std::move(data->on_cancel_);
-          data->on_cancel_ = nullptr;
-          lock.unlock();
-          callback();
-        }
-      }
     };
     if (data_->error_ready_) {
       auto callback = std::move(data_->on_reject_);
@@ -268,6 +257,7 @@ class Promise {
   Promise<Ts...> error(Callable&& e) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     Promise<Ts...> promise;
+    promise.data_->on_cancel_ = propagateCancel();
     data_->on_reject_ = [promise,
                          cb = std::move(e)](std::exception_ptr&& e) mutable {
       try {
@@ -309,13 +299,18 @@ class Promise {
   Promise<Ts...> error_ptr(Callable&& e) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     Promise<Ts...> promise;
+    promise.data_->on_cancel_ = propagateCancel();
     data_->on_reject_ = e;
     data_->on_fulfill_ = [promise](Ts&&... args) {
       promise.fulfill(std::forward<Ts>(args)...);
     };
     if (data_->error_ready_) {
+      auto callback = std::move(data_->on_reject_);
+      data_->on_reject_ = nullptr;
+      data_->on_fulfill_ = nullptr;
+      data_->on_cancel_ = nullptr;
       lock.unlock();
-      data_->on_reject_(std::move(data_->exception_));
+      callback(std::move(data_->exception_));
     }
     return promise;
   }
@@ -371,6 +366,22 @@ class Promise {
  private:
   template <class... T>
   friend class Promise;
+
+  template <class... T>
+  auto propagateCancel() const {
+    return [data_weak = std::weak_ptr<CommonData>(data_)] {
+      auto data = data_weak.lock();
+      if (data) {
+        auto lock = std::unique_lock<std::mutex>(data->mutex_);
+        if (data->on_cancel_) {
+          auto callback = std::move(data->on_cancel_);
+          data->on_cancel_ = nullptr;
+          lock.unlock();
+          callback();
+        }
+      }
+    };
+  }
 
   struct CommonData {
     std::mutex mutex_;
