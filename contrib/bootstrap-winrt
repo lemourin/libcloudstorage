@@ -297,7 +297,8 @@ install_cryptopp() {
   msbuild.exe cryptlib.vcxproj -p:Configuration=$BUILD_TYPE &&
     mkdir -p $INSTALL_PATH/include/cryptopp &&
     cp *.h $INSTALL_PATH/include/cryptopp &&
-    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib
+    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib &&
+    cp $BUILD/cryptlib/$BUILD_TYPE/cryptlib.pdb $INSTALL_PATH/lib
 }
 
 fetch_sqlite() {
