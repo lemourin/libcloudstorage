@@ -332,45 +332,28 @@ Promise<IItem::Pointer> CloudAccess::copyItem(
     result.reject(Exception(600, "Target not a directory"));
     return result;
   }
-  auto download_promise = downloadFile(
-      source_item, FullRange,
-      streamDownloader(buffer_ptr, [progress](uint64_t total, uint64_t now) {
-        if (progress) progress(2 * total, now);
-      }));
-  struct Data {
-    std::mutex mutex_;
-    Promise<IItem::Pointer> promise_;
-    bool cancelled_ = false;
-  };
-  auto upload_promise = std::make_shared<Data>();
-  download_promise
-      .then([target_provider, target_parent, target_filename, progress,
-             buffer_ptr, upload_promise] {
-        std::unique_lock<std::mutex> lock(upload_promise->mutex_);
-        if (upload_promise->cancelled_) {
-          Promise<IItem::Pointer> promise;
-          promise.reject(
-              Exception(IHttpRequest::Aborted, util::Error::ABORTED));
-          return promise;
-        }
-        return upload_promise->promise_ = target_provider->uploadFile(
-                   target_parent, target_filename,
-                   streamUploader(buffer_ptr,
-                                  [progress](uint64_t total, uint64_t now) {
-                                    if (progress)
-                                      progress(2 * total, total + now);
-                                  }));
-      })
-      .then([result](IItem::Pointer item) { result.fulfill(std::move(item)); })
-      .error<Exception>(
-          [result](Exception&& e) { result.reject(std::move(e)); });
+  auto dependent_promise =
+      downloadFile(source_item, FullRange,
+                   streamDownloader(buffer_ptr,
+                                    [progress](uint64_t total, uint64_t now) {
+                                      if (progress) progress(2 * total, now);
+                                    }))
+          .then([target_provider, target_parent, target_filename, progress,
+                 buffer_ptr] {
+            return target_provider->uploadFile(
+                target_parent, target_filename,
+                streamUploader(buffer_ptr,
+                               [progress](uint64_t total, uint64_t now) {
+                                 if (progress) progress(2 * total, total + now);
+                               }));
+          })
+          .then([result](IItem::Pointer item) {
+            result.fulfill(std::move(item));
+          })
+          .error<Exception>(
+              [result](Exception&& e) { result.reject(std::move(e)); });
 
-  result.cancel([download_promise, upload_promise] {
-    download_promise.cancel();
-    std::unique_lock<std::mutex> lock(upload_promise->mutex_);
-    upload_promise->cancelled_ = true;
-    upload_promise->promise_.cancel();
-  });
+  result.cancel([dependent_promise] { dependent_promise.cancel(); });
 
   return result;
 }

@@ -212,6 +212,18 @@ class Promise {
     data_->on_reject_ = [promise](std::exception_ptr&& e) {
       promise.reject(std::move(e));
     };
+    promise.data_->on_cancel_ = [data_weak = std::weak_ptr<CommonData>(data_)] {
+      auto data = data_weak.lock();
+      if (data) {
+        auto lock = std::unique_lock<std::mutex>(data->mutex_);
+        if (data->on_cancel_) {
+          auto callback = std::move(data->on_cancel_);
+          data->on_cancel_ = nullptr;
+          lock.unlock();
+          callback();
+        }
+      }
+    };
     if (data_->error_ready_) {
       auto callback = std::move(data_->on_reject_);
       data_->on_fulfill_ = nullptr;
@@ -283,6 +295,7 @@ class Promise {
   template <class Func>
   void cancel(Func&& f) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
+    if (data_->ready_ || data_->error_ready_) return;
     data_->on_cancel_ = std::move(f);
     if (data_->cancelled_) {
       auto cb = std::move(data_->on_cancel_);
