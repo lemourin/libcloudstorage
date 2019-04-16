@@ -183,7 +183,8 @@ install_openssl() {
   if [ $BUILD == "x64" ]; then
     SSL_TYPE="VC-WIN64A-ONECORE";
   fi
-  perl Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE no-shared no-tests no-ui-console no-async no-dso no-asm &&
+  perl Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE \
+    no-shared no-tests no-ui-console no-async no-dso no-asm -DOPENSSL_NO_CAPIENG &&
     nmake build_generated libssl.lib libcrypto.lib && (nmake install || echo 0)
 }
 
@@ -192,6 +193,7 @@ fetch_cares() {
   fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
   if [ ! -f .patched ]; then
     $PATCH ares_library_init.c < ../../patches/cares-library-init-winrt-fix.patch && \
+      $PATCH ares_init.c < ../../patches/cares-init-winrt-fix.patch && \
       $PATCH ares_gethostbyaddr.c < ../../patches/cares-gethostbyaddr-winrt-fix.patch && \
       $PATCH ares_gethostbyname.c < ../../patches/cares-gethostbyname-winrt-fix.patch && \
       $PATCH config-win32.h < ../../patches/cares-config-winrt-fix.patch

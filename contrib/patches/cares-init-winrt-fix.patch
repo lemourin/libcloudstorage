@@ -1,0 +1,21 @@
+--- ares_init.c.orig	2019-04-16 02:56:38.336273400 +0200
++++ ares_init.c	2019-04-16 03:07:24.322584900 +0200
+@@ -61,7 +61,7 @@
+ #include "ares_platform.h"
+ #include "ares_private.h"
+ 
+-#ifdef WATT32
++#if defined(WATT32) || defined(WINDOWS_PHONE)
+ #undef WIN32  /* Redefined in MingW/MSVC headers */
+ #endif
+ 
+@@ -1658,6 +1658,9 @@
+ 
+     res_ndestroy(&res);
+   }
++#elif defined(WINDOWS_PHONE)
++  /* don't override ARES_OPT_SERVER */
++  return ARES_SUCCESS;
+ #else
+   {
+     char *p;

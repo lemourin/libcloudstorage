@@ -1,11 +1,21 @@
---- ares_gethostbyname.c.orig	2019-04-15 02:42:29.840645200 +0200
-+++ ares_gethostbyname.c	2019-04-15 02:42:35.005960200 +0200
-@@ -372,8 +372,6 @@
-       RegCloseKey(hkeyHosts);
-     }
-   }
--  else if (platform == WIN_9X)
--    GetWindowsDirectoryA(PATH_HOSTS, MAX_PATH);
-   else
-     return ARES_ENOTFOUND;
+--- ares_gethostbyname.c.orig	2019-04-16 03:18:49.168555100 +0200
++++ ares_gethostbyname.c	2019-04-16 03:21:52.363283000 +0200
+@@ -45,7 +45,7 @@
+ #include "ares_nowarn.h"
+ #include "ares_private.h"
  
+-#ifdef WATT32
++#if defined(WATT32) || defined(WINDOWS_PHONE)
+ #undef WIN32
+ #endif
+ 
+@@ -385,6 +385,9 @@
+ 
+   if (!PATH_HOSTS)
+     return ARES_ENOTFOUND;
++#elif defined(WINDOWS_PHONE)
++  const char *PATH_HOSTS;
++  return ARES_ENOTFOUND;
+ #endif
+ 
+   fp = fopen(PATH_HOSTS, "r");
