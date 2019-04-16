@@ -249,7 +249,7 @@ install_curl() {
     -DCURL_ZLIB=0 \
     -DCURL_DISABLE_TELNET=1 \
     -DUSE_NGHTTP2=1 \
-    -DENABLE_ARES=1 \
+    -DENABLE_ARES=0 \
     -DCARES_LIBRARY=$INSTALL_PATH/lib/libcares.lib \
     -DCMAKE_USE_OPENSSL=1 \
     -DUSE_WIN32_LDAP=0
