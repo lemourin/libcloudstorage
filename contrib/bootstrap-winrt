@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
+# This script should be invoked from msys2 shell which can see
+# proper cl compiler. This can be achieved by running:
+# > vcvarsall x64 uwp
+# Then invoke msys2_shell.cmd from your msys2 installation folder
+# in a way so that the environment set by vcvarsall is preserved.
+#
 # For OpenSSL perl shipped with msys2 is not good enough; make sure
 # shell sees perl installed from e.g. http://strawberryperl.com/
-
-# native CMake is also required: https://cmake.org/download/
+#
+# Native CMake is also required: https://cmake.org/download/
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 [ x64 ] [ Debug | Release ]"
