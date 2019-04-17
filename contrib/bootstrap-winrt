@@ -129,7 +129,8 @@ Libs: -L\${libdir} -l$ZLIB_LIBRARY
 Cflags: -I\${includedir}
 EOF
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h
+    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h &&
+    cp zlibstatic.dir/$BUILD_TYPE/zlibstatic.pdb $INSTALL_PATH/lib
 }
 
 fetch_libxml2() {
@@ -165,7 +166,8 @@ install_jsoncpp() {
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DCMAKE_CXX_FLAGS="-sdl-" \
     -G "$CMAKE_GENERATOR"
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp src/lib_json/jsoncpp_lib_static.dir/$BUILD_TYPE/jsoncpp_lib_static.pdb $INSTALL_PATH/lib
 }
 
 fetch_tinyxml2() {
@@ -179,7 +181,8 @@ install_tinyxml2() {
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DCMAKE_CXX_FLAGS="-sdl-" \
     -G "$CMAKE_GENERATOR"
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp tinyxml2_static.dir/$BUILD_TYPE/tinyxml2_static.pdb $INSTALL_PATH/lib
 }
 
 fetch_openssl() {
@@ -228,7 +231,8 @@ install_nghttp2() {
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DENABLE_LIB_ONLY=1 \
     -G "$CMAKE_GENERATOR"
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp lib/nghttp2.dir/$BUILD_TYPE/nghttp2.pdb $INSTALL_PATH/lib
 }
 
 fetch_curl() {
@@ -260,7 +264,8 @@ install_curl() {
     -DCARES_LIBRARY=$INSTALL_PATH/lib/libcares.lib \
     -DCMAKE_USE_OPENSSL=1 \
     -DUSE_WIN32_LDAP=0
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp lib/libcurl.dir/$BUILD_TYPE/libcurl.pdb $INSTALL_PATH/lib
 }
 
 fetch_microhttpd() {
