@@ -85,6 +85,8 @@ AS_IF([test "x$with_filesystem" != "xno"], [
 ])
 AC_SUBST(FILESYSTEM_LIBS)
 
+AC_CHECK_HEADERS(jni.h)
+
 HAVE_THUMBNAILER=0
 AC_ARG_WITH([ffmpeg], AS_HELP_STRING([--with-ffmpeg]))
 AS_IF([test "x$with_ffmpeg" != "xno"], [

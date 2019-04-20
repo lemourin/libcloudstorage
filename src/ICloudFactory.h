@@ -93,6 +93,7 @@ class CLOUDSTORAGE_API ICloudFactory {
   virtual int exec() = 0;
   virtual void quit() = 0;
 
+  static void initialize(void* javaVM);
   static std::unique_ptr<ICloudFactory> create(const ICallback::Pointer&);
   static std::unique_ptr<ICloudFactory> create(InitData&&);
 };

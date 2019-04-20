@@ -23,6 +23,7 @@
 #include "ThreadPool.h"
 
 #include <algorithm>
+
 #include "Utility/Utility.h"
 
 namespace cloudstorage {
@@ -31,6 +32,7 @@ ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
   for (uint32_t i = 0; i < thread_count; ++i) {
     workers_.emplace_back([this]() {
       util::set_thread_name("cs-threadpool");
+      util::attach_thread();
       while (true) {
         Task task;
         {
@@ -50,6 +52,7 @@ ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
         }
         task();
       }
+      util::detach_thread();
     });
   }
 }

@@ -50,7 +50,7 @@ class CloudProviderWrapper : public ICloudProvider {
  public:
   CloudProviderWrapper(std::shared_ptr<CloudProvider> p) : p_(p) {}
 
-  ~CloudProviderWrapper() { p_->destroy(); }
+  ~CloudProviderWrapper() override { p_->destroy(); }
 
   std::string token() const override { return p_->token(); }
 
@@ -231,6 +231,13 @@ ICloudStorage::Pointer ICloudStorage::create() {
   return util::make_unique<CloudStorage>();
 }
 
+void ICloudStorage::initialize(void* vm) {
+#ifdef HAVE_JNI_H
+  util::set_java_vm(reinterpret_cast<JavaVM*>(vm));
+#else
+  (void)vm;
+#endif
+}
 void CloudStorage::add(CloudProviderFactory f) { providers_[f()->name()] = f; }
 
 }  // namespace cloudstorage

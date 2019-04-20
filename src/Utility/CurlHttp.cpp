@@ -33,6 +33,10 @@
 #include "IRequest.h"
 #include "Utility.h"
 
+#ifdef HAVE_JNI_H
+#include <jni.h>
+#endif
+
 const uint32_t MAX_URL_LENGTH = 1024;
 const uint32_t POLL_TIMEOUT = 100;
 
@@ -137,6 +141,7 @@ CurlHttp::Worker::~Worker() {
 
 void CurlHttp::Worker::work() {
   util::set_thread_name("cs-curl");
+  util::attach_thread();
   auto handle = curl_multi_init();
   while (!done_ || !pending_.empty()) {
     std::unique_lock<std::mutex> lock(lock_);
@@ -169,6 +174,7 @@ void CurlHttp::Worker::work() {
     } while (msg);
   }
   curl_multi_cleanup(handle);
+  util::detach_thread();
 }
 
 void CurlHttp::Worker::add(RequestData::Pointer r) {

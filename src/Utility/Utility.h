@@ -49,6 +49,10 @@
 
 #endif
 
+#ifdef HAVE_JNI_H
+#include <jni.h>
+#endif
+
 namespace Json {
 class Value;
 }  // namespace Json
@@ -141,6 +145,13 @@ CLOUDSTORAGE_API time_t timegm(const std::tm&);
 CLOUDSTORAGE_API std::string to_base64(const std::string&);
 CLOUDSTORAGE_API std::string from_base64(const std::string&);
 CLOUDSTORAGE_API void set_thread_name(const std::string&);
+
+#ifdef HAVE_JNI_H
+void set_java_vm(JavaVM*);
+#endif
+
+void attach_thread();
+void detach_thread();
 
 namespace Error {
 

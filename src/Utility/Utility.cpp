@@ -100,6 +100,10 @@ bool operator!=(const Range& r1, const Range& r2) { return !(r1 == r2); }
 
 namespace util {
 
+#ifdef HAVE_JNI_H
+JavaVM* javaVM = nullptr;
+#endif
+
 namespace priv {
 std::unique_ptr<std::ostream> stream =
     util::make_unique<std::ostream>(std::cout.rdbuf());
@@ -568,6 +572,31 @@ std::unordered_map<std::string, std::string> parse_cookie(
     it += 2;
   }
   return result;
+}
+
+#ifdef HAVE_JNI_H
+
+void set_java_vm(JavaVM* vm) { javaVM = vm; }
+
+JavaVM* java_vm() { return javaVM; }
+
+#endif
+
+void attach_thread() {
+#ifdef HAVE_JNI_H
+  if (java_vm()) {
+    JNIEnv* env;
+    java_vm()->AttachCurrentThread(&env, nullptr);
+  }
+#endif
+}
+
+void detach_thread() {
+#ifdef HAVE_JNI_H
+  if (java_vm()) {
+    java_vm()->DetachCurrentThread();
+  }
+#endif
 }
 
 }  // namespace util

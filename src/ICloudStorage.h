@@ -56,6 +56,7 @@ class CLOUDSTORAGE_API ICloudStorage {
       const std::string& name, ICloudProvider::InitData&&) const = 0;
 
   static ICloudStorage::Pointer create();
+  static void initialize(void*);
 };
 
 }  // namespace cloudstorage

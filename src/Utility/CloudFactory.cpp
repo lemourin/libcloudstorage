@@ -518,4 +518,8 @@ std::unique_ptr<ICloudFactory> ICloudFactory::create(InitData&& d) {
   return util::make_unique<CloudFactory>(std::move(d));
 }
 
+void ICloudFactory::initialize(void* javaVM) {
+  ICloudStorage::initialize(javaVM);
+}
+
 }  // namespace cloudstorage
