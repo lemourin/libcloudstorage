@@ -88,12 +88,6 @@ class CLOUDSTORAGE_API ICloudAccess {
       IItem::Pointer file, const std::shared_ptr<ICloudDownloadCallback>&) = 0;
   virtual Promise<> generateThumbnail(
       IItem::Pointer file, const std::shared_ptr<ICloudDownloadCallback>&) = 0;
-  virtual Promise<IItem::Pointer> copyItem(
-      IItem::Pointer source_item,
-      const std::shared_ptr<ICloudAccess>& target_provider,
-      IItem::Pointer target_parent, const std::string& target_filename,
-      std::unique_ptr<std::iostream>&& buffer,
-      const ProgressCallback& progress = nullptr) = 0;
 
   static std::unique_ptr<ICloudUploadCallback> streamUploader(
       const std::shared_ptr<std::istream>& stream,

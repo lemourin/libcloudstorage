@@ -316,48 +316,6 @@ Promise<> CloudAccess::generateThumbnail(
   return result;
 }
 
-Promise<IItem::Pointer> CloudAccess::copyItem(
-    IItem::Pointer source_item,
-    const std::shared_ptr<ICloudAccess>& target_provider,
-    IItem::Pointer target_parent, const std::string& target_filename,
-    std::unique_ptr<std::iostream>&& buffer,
-    const ICloudAccess::ProgressCallback& progress) {
-  std::shared_ptr<std::iostream> buffer_ptr = std::move(buffer);
-  Promise<IItem::Pointer> result;
-  if (source_item->type() == IItem::FileType::Directory) {
-    result.reject(Exception(600, "Copying directories not implemented"));
-    return result;
-  }
-  if (target_parent->type() != IItem::FileType::Directory) {
-    result.reject(Exception(600, "Target not a directory"));
-    return result;
-  }
-  auto dependent_promise =
-      downloadFile(source_item, FullRange,
-                   streamDownloader(buffer_ptr,
-                                    [progress](uint64_t total, uint64_t now) {
-                                      if (progress) progress(2 * total, now);
-                                    }))
-          .then([target_provider, target_parent, target_filename, progress,
-                 buffer_ptr] {
-            return target_provider->uploadFile(
-                target_parent, target_filename,
-                streamUploader(buffer_ptr,
-                               [progress](uint64_t total, uint64_t now) {
-                                 if (progress) progress(2 * total, total + now);
-                               }));
-          })
-          .then([result](IItem::Pointer item) {
-            result.fulfill(std::move(item));
-          })
-          .error<Exception>(
-              [result](Exception&& e) { result.reject(std::move(e)); });
-
-  result.cancel([dependent_promise] { dependent_promise.cancel(); });
-
-  return result;
-}
-
 std::string CloudAccess::name() const { return provider_->name(); }
 
 IItem::Pointer CloudAccess::root() const { return provider_->rootDirectory(); }
