@@ -24,9 +24,9 @@
 #define CLOUDEVENTLOOP_H
 
 #include <atomic>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
-#include <list>
 #include "ICloudFactory.h"
 #include "IRequest.h"
 #include "IThreadPool.h"
@@ -53,7 +53,7 @@ namespace priv {
 
 class LoopImpl {
  public:
-  LoopImpl(CloudEventLoop*);
+  LoopImpl(IThreadPoolFactory* factory, CloudEventLoop*);
 
   void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
   void fulfill(uint64_t tag, std::function<void()>&&);
@@ -88,7 +88,8 @@ class LoopImpl {
 
 class CloudEventLoop {
  public:
-  CloudEventLoop(const std::shared_ptr<ICloudFactory::ICallback>& cb);
+  CloudEventLoop(IThreadPoolFactory* factory,
+                 const std::shared_ptr<ICloudFactory::ICallback>& cb);
   ~CloudEventLoop();
 
   std::shared_ptr<priv::LoopImpl> impl() { return impl_; }

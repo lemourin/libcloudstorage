@@ -215,13 +215,14 @@ uint64_t cloud_identifier(const ICloudProvider& p) {
 
 CloudFactory::CloudFactory(CloudFactory::InitData&& d)
     : callback_(std::make_shared<FactoryCallbackWrapper>(this, d.callback_)),
-      event_loop_(callback_),
+      event_loop_(d.thread_pool_factory_.get(), callback_),
       base_url_(d.base_url_),
       http_(std::move(d.http_)),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
           d.http_server_factory_.get())),
       crypto_(std::move(d.crypto_)),
-      thread_pool_(std::move(d.thread_pool_)),
+      thread_pool_(d.thread_pool_factory_->create(1)),
+      thread_pool_factory_(std::move(d.thread_pool_factory_)),
       cloud_storage_(ICloudStorage::create()),
       provider_index_(),
       loop_(event_loop_.impl()) {
@@ -509,7 +510,12 @@ std::unique_ptr<ICloudFactory> ICloudFactory::create(
   init_data.http_ = IHttp::create();
   init_data.http_server_factory_ = IHttpServerFactory::create();
   init_data.crypto_ = ICrypto::create();
-  init_data.thread_pool_ = IThreadPool::create(1);
+  struct ThreadPoolFactory : public IThreadPoolFactory {
+    IThreadPool::Pointer create(uint32_t size) {
+      return IThreadPool::create(size);
+    }
+  };
+  init_data.thread_pool_factory_ = util::make_unique<ThreadPoolFactory>();
   init_data.callback_ = callback;
   return create(std::move(init_data));
 }

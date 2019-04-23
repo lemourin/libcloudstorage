@@ -91,6 +91,7 @@ class CloudFactory : public ICloudFactory {
   std::shared_ptr<ServerWrapperFactory> http_server_factory_;
   std::shared_ptr<ICrypto> crypto_;
   std::shared_ptr<IThreadPool> thread_pool_;
+  std::unique_ptr<IThreadPoolFactory> thread_pool_factory_;
   ICloudStorage::Pointer cloud_storage_;
   mutable std::atomic_uint64_t provider_index_;
   std::vector<IHttpServer::Pointer> http_server_handles_;

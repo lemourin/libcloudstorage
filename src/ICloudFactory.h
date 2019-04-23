@@ -34,6 +34,14 @@ class CLOUDSTORAGE_API IException : public std::exception {
   virtual int code() const = 0;
 };
 
+class CLOUDSTORAGE_API IThreadPoolFactory {
+ public:
+  using Pointer = std::unique_ptr<IThreadPoolFactory>;
+
+  virtual ~IThreadPoolFactory() = default;
+  virtual IThreadPool::Pointer create(uint32_t requested_thread_count) = 0;
+};
+
 class CLOUDSTORAGE_API ICloudFactory {
  public:
   class ICallback {
@@ -56,7 +64,7 @@ class CLOUDSTORAGE_API ICloudFactory {
     IHttp::Pointer http_;
     IHttpServerFactory::Pointer http_server_factory_;
     ICrypto::Pointer crypto_;
-    IThreadPool::Pointer thread_pool_;
+    IThreadPoolFactory::Pointer thread_pool_factory_;
     ICallback::Pointer callback_;
   };
 

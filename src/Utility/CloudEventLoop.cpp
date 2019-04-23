@@ -27,8 +27,9 @@
 namespace cloudstorage {
 
 CloudEventLoop::CloudEventLoop(
+    IThreadPoolFactory *factory,
     const std::shared_ptr<ICloudFactory::ICallback> &cb)
-    : callback_(cb), impl_(std::make_shared<priv::LoopImpl>(this)) {}
+    : callback_(cb), impl_(std::make_shared<priv::LoopImpl>(factory, this)) {}
 
 CloudEventLoop::~CloudEventLoop() {
   impl_->clear();
@@ -43,13 +44,13 @@ void CloudEventLoop::processEvents() { impl_->process_events(); }
 
 namespace priv {
 
-LoopImpl::LoopImpl(CloudEventLoop *loop)
+LoopImpl::LoopImpl(IThreadPoolFactory *factory, CloudEventLoop *loop)
     : last_tag_(),
-      cancellation_thread_pool_(IThreadPool::create(1)),
+      cancellation_thread_pool_(factory->create(1)),
       interrupt_(std::make_shared<std::atomic_bool>(false)),
       event_loop_(loop) {
 #ifdef WITH_THUMBNAILER
-  thumbnailer_thread_pool_ = IThreadPool::create(2);
+  thumbnailer_thread_pool_ = factory->create(2);
 #endif
 }
 
