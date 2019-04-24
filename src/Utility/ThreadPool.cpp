@@ -37,7 +37,7 @@ ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
         Task task;
         {
           std::unique_lock<std::mutex> lock(mutex_);
-          if (destroyed_) {
+          if (destroyed_ && tasks_.empty()) {
             break;
           }
           while (tasks_.empty() && !destroyed_) {
