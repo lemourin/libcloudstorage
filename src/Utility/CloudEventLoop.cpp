@@ -109,6 +109,7 @@ void LoopImpl::invokeOnThreadPool(std::function<void()> &&f) {
   if (thumbnailer_thread_pool_) {
     thumbnailer_thread_pool_->schedule(std::move(f));
   } else {
+    lock.unlock();
     f();
   }
 }
