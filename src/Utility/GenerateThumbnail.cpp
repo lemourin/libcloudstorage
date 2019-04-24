@@ -191,6 +191,7 @@ Pointer<AVIOContext> create_io_context(
           }),
       [data](AVIOContext* ctx) {
         delete data;
+        av_free(ctx->buffer);
         avio_context_free(&ctx);
       });
 }
@@ -267,21 +268,15 @@ Pointer<AVCodecContext> create_codec_context(AVFormatContext* context,
 }
 
 Pointer<AVPacket> create_packet() {
-  auto packet = new AVPacket;
-  av_init_packet(packet);
-  packet->data = nullptr;
-  packet->size = 0;
-  return Pointer<AVPacket>(packet, [](AVPacket* packet) {
-    av_packet_unref(packet);
-    delete packet;
-  });
+  return Pointer<AVPacket>(av_packet_alloc(),
+                           [](AVPacket* packet) { av_packet_free(&packet); });
 }
 
 Pointer<AVFrame> decode_frame(AVFormatContext* context,
                               AVCodecContext* codec_context, int stream_index) {
   Pointer<AVFrame> result_frame;
-  auto packet = create_packet();
   while (!result_frame) {
+    auto packet = create_packet();
     auto read_packet = av_read_frame(context, packet.get());
     if (read_packet != 0 && read_packet != AVERROR_EOF) {
       check(read_packet, "av_read_frame");
