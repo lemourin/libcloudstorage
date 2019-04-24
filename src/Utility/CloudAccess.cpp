@@ -243,8 +243,9 @@ Promise<> CloudAccess::generateThumbnail(
   Promise<> result;
 
   auto current_interrupt = std::make_shared<std::atomic_bool>(false);
-  auto download_promise = downloadThumbnail(item, cb);
-  download_promise.then([cb, result] { result.fulfill(); })
+  auto download_promise =
+      std::make_shared<Promise<>>(downloadThumbnail(item, cb));
+  download_promise->then([cb, result] { result.fulfill(); })
       .error<Exception>([item, result, loop = loop_, provider = provider_,
                          current_interrupt, cb](const Exception& e) {
 #ifdef WITH_THUMBNAILER
@@ -308,10 +309,13 @@ Promise<> CloudAccess::generateThumbnail(
 #endif
       });
 
-  result.cancel([download_promise, current_interrupt] {
-    download_promise.cancel();
-    *current_interrupt = true;
-  });
+  result.cancel(
+      [download_promise_ptr = std::weak_ptr<Promise<>>(download_promise),
+       current_interrupt] {
+        auto promise = download_promise_ptr.lock();
+        if (promise) promise->cancel();
+        *current_interrupt = true;
+      });
 
   return result;
 }
