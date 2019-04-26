@@ -60,6 +60,36 @@ class HttpDataCallback : public IDownloadFileCallback {
   std::shared_ptr<Buffer> buffer_;
 };
 
+class StreamRequest : public Request<EitherError<void>> {
+ public:
+  using Request::Request;
+
+  void cancel() override {
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      if (!done_called_) {
+        done_called_ = true;
+        lock.unlock();
+        Request::done(Error{IHttpRequest::Aborted, util::Error::ABORTED});
+      }
+    }
+    Request::cancel();
+  }
+
+  void done(EitherError<void> e) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!done_called_) {
+      done_called_ = true;
+      lock.unlock();
+      Request::done(e);
+    }
+  }
+
+ private:
+  bool done_called_ = false;
+  std::mutex mutex_;
+};
+
 struct Buffer : public std::enable_shared_from_this<Buffer> {
   using Pointer = std::shared_ptr<Buffer>;
 
@@ -135,7 +165,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
   std::queue<char> data_;
   std::mutex response_mutex_;
   IHttpServer::IResponse* response_;
-  Request<EitherError<void>>::Pointer request_;
+  std::shared_ptr<StreamRequest> request_;
   IItem::Pointer item_;
   Range range_;
   std::mutex delayed_mutex_;
@@ -177,7 +207,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       Range range, std::shared_ptr<Cache> cache) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       auto p = r->provider().get();
-      buffer_->request_ = r;
+      buffer_->request_ = std::static_pointer_cast<StreamRequest>(r);
       auto item_received = [=](EitherError<IItem> e) {
         if (e.left()) {
           status_ = Failed;
@@ -211,13 +241,12 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       else
         item_received(cached_item);
     };
-    return std::make_shared<Request<EitherError<void>>>(
-               provider,
-               [=](EitherError<void> e) {
-                 if (e.left()) status_ = Failed;
-                 buffer_->resume();
-               },
-               resolver)
+    return std::make_shared<StreamRequest>(provider,
+                                           [=](EitherError<void> e) {
+                                             if (e.left()) status_ = Failed;
+                                             buffer_->resume();
+                                           },
+                                           resolver)
         ->run();
   }
 
