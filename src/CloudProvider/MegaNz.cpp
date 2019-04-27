@@ -792,8 +792,9 @@ std::string MegaNz::name() const { return "mega"; }
 std::string MegaNz::endpoint() const { return file_url(); }
 
 void MegaNz::destroy() {
-  CloudProvider::destroy();
+  cancelStreamRequests();
   mega_ = nullptr;
+  CloudProvider::destroy();
 }
 
 ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(

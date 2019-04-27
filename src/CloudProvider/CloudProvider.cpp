@@ -195,19 +195,7 @@ void CloudProvider::initialize(InitData&& data) {
 }
 
 void CloudProvider::destroy() {
-  {
-    std::unique_lock<std::mutex> lock(stream_request_mutex_);
-    deleted_ = true;
-    while (!stream_requests_.empty()) {
-      {
-        auto r = *stream_requests_.begin();
-        stream_requests_.erase(stream_requests_.begin());
-        lock.unlock();
-        r->cancel();
-      }
-      lock.lock();
-    }
-  }
+  cancelStreamRequests();
   file_daemon_ = nullptr;
   crypto_ = nullptr;
   http_ = nullptr;
@@ -386,6 +374,20 @@ std::string CloudProvider::defaultFileDaemonUrl(const IItem& item,
   auto id = util::to_base64(util::json::to_string(json));
   std::replace(id.begin(), id.end(), '/', '-');
   return file_url() + "/" + id;
+}
+
+void CloudProvider::cancelStreamRequests() {
+  std::unique_lock<std::mutex> lock(stream_request_mutex_);
+  deleted_ = true;
+  while (!stream_requests_.empty()) {
+    {
+      auto r = *stream_requests_.begin();
+      stream_requests_.erase(stream_requests_.begin());
+      lock.unlock();
+      r->cancel();
+    }
+    lock.lock();
+  }
 }
 
 ICloudProvider::DownloadFileRequest::Pointer
