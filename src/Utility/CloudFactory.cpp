@@ -240,9 +240,14 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
 }
 
 CloudFactory::~CloudFactory() {
-  loop_->clear();
-  loop_->process_events();
+  http_server_factory_ = nullptr;
+  crypto_ = nullptr;
+  thread_pool_ = nullptr;
+  thread_pool_factory_ = nullptr;
+  http_ = nullptr;
   http_server_handles_.clear();
+  loop_->clear();
+  loop_ = nullptr;
   cloud_access_.clear();
 }
 

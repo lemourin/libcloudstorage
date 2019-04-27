@@ -88,9 +88,14 @@ void LoopImpl::cancel(uint64_t tag) {
     if (it != pending_.end()) {
       auto request = std::move(it->second);
       pending_.erase(it);
-      lock.unlock();
-      cancellation_thread_pool_->schedule(
-          [request = std::move(request)] { request->cancel(); });
+      if (cancellation_thread_pool_) {
+        lock.unlock();
+        cancellation_thread_pool_->schedule(
+            [request = std::move(request)] { request->cancel(); });
+      } else {
+        lock.unlock();
+        request->cancel();
+      }
     }
   }
 }
@@ -133,6 +138,7 @@ void LoopImpl::clear() {
     thumbnailer_thread_pool_ = nullptr;
   }
 #endif
+  cancellation_thread_pool_ = nullptr;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     while (!pending_.empty()) {
@@ -144,6 +150,9 @@ void LoopImpl::clear() {
         request->cancel();
         lock.lock();
       }
+      lock.unlock();
+      process_events();
+      lock.lock();
     }
   }
 }
