@@ -4,7 +4,7 @@ import org.kde.kirigami 2.1 as Kirigami
 
 Kirigami.ScrollablePage {
   id: page
-  anchors.fill: parent
+
   title: "Remove Provider"
 
   ListView {

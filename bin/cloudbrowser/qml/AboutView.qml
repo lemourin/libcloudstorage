@@ -4,7 +4,6 @@ import QtQuick.Layouts 1.2
 import org.kde.kirigami 2.1 as Kirigami
 
 Kirigami.ScrollablePage {
-  anchors.fill: parent
   title: "Credits"
 
   ListView {

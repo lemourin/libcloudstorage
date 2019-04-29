@@ -4,7 +4,7 @@ import org.kde.kirigami 2.1 as Kirigami
 
 Kirigami.ScrollablePage {
   id: page
-  anchors.fill: parent
+
   title: "Add Provider"
 
   function open_auth(url) {
@@ -21,7 +21,6 @@ Kirigami.ScrollablePage {
       property string url: ""
       id: webview_page
       title: "Authorization"
-      anchors.fill: parent
       onUrlChanged: if (view.item) view.item.url = url
       Loader {
         id: view
