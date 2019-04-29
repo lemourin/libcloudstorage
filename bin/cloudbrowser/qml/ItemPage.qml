@@ -10,7 +10,7 @@ Kirigami.ScrollablePage {
   property string label
 
   id: page
-  anchors.fill: parent
+
   supportsRefreshing: true
 
   onIsCurrentPageChanged: {
