@@ -407,4 +407,7 @@
       <Filter>Source Files\C</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
