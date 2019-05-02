@@ -14,6 +14,7 @@ build:
 before_build:
   - cd win32
   - nuget restore
+  - cd ..
 
 after_build:
   - mkdir win32\x64\%CONFIGURATION%\package
