@@ -7,8 +7,8 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.16299.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.10586.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.10240.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -101,6 +101,14 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <None Include="../$(Platform)/$(Configuration)/libcloudstorage-winrt/libcloudstorage-winrt.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="../$(Platform)/$(Configuration)/libcloudbrowser-winrt/libcloudbrowser-winrt.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <None Include="../../dependencies/winrt/bin/KF5Kirigami2.dll">
       <DeploymentContent>true</DeploymentContent>
@@ -149,6 +157,7 @@
     </None>
     <None Include="../../dependencies/winrt/bin/avutil-56.dll">
       <DeploymentContent>true</DeploymentContent>
+      <Visible>false</Visible>
     </None>
     <None Include="../../dependencies/winrt/bin/swresample-3.dll">
       <DeploymentContent>true</DeploymentContent>
@@ -250,6 +259,7 @@
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <None Include="../../dependencies/winrt-debug/bin/KF5Kirigami2.dll">
       <DeploymentContent>true</DeploymentContent>
+      <Visible>false</Visible>
     </None>
     <None Include="../../dependencies/winrt/bin/mpv-1.dll">
       <DeploymentContent>true</DeploymentContent>
@@ -395,10 +405,5 @@
   </ItemGroup>
   <ItemGroup>
     <SDKReference Include="Microsoft.VCLibs.120, Version=14.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libcloudbrowser-winrt\libcloudbrowser-winrt.vcxproj">
-      <Project>{0ea64d57-2abc-44cd-9adc-f21d566df640}</Project>
-    </ProjectReference>
   </ItemGroup>
 </Project>

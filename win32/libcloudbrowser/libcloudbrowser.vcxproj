@@ -147,11 +147,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\libcloudstorage\libcloudstorage.vcxproj">
-      <Project>{9194bbb3-78d1-46ff-bbbc-e6926ab1f9a6}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\..\bin\cloudbrowser\qml\AboutView.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\AndroidFileDialog.qml" />
     <None Include="..\..\bin\cloudbrowser\qml\FileDialog.qml" />
@@ -268,6 +263,11 @@
     <Image Include="..\..\bin\cloudbrowser\resources\vlc-qt.png" />
     <Image Include="..\..\bin\cloudbrowser\resources\vlc.png" />
     <Image Include="..\..\bin\cloudbrowser\resources\mpv.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libcloudstorage\libcloudstorage.vcxproj">
+      <Project>{9194bbb3-78d1-46ff-bbbc-e6926ab1f9a6}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

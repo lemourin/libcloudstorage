@@ -251,6 +251,12 @@
     <None Include="../../dependencies/winrt-debug/bin/iconengines">
       <Filter>Dependencies</Filter>
     </None>
+    <None Include="../$(Platform)/$(Configuration)/libcloudstorage-winrt/libcloudstorage-winrt.dll">
+      <Filter>Dependencies</Filter>
+    </None>
+    <None Include="../$(Platform)/$(Configuration)/libcloudbrowser-winrt/libcloudbrowser-winrt.dll">
+      <Filter>Dependencies</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\logo_44x44.png">
