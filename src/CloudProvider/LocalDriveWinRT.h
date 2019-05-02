@@ -27,9 +27,6 @@
 
 #ifdef WINRT
 
-#include <collection.h>
-#include <ppltasks.h>
-
 #include "CloudProvider.h"
 #include "Utility/Item.h"
 
@@ -69,11 +66,6 @@ class LocalDriveWinRT : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
-
-  IItem::Pointer toItem(Windows::Storage::StorageFolder ^,
-                        const std::string& path) const;
-  IItem::Pointer toItem(Windows::Storage::StorageFile ^,
-                        const std::string& path, uint64_t size) const;
 
  private:
   class Auth : public cloudstorage::Auth {
