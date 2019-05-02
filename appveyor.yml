@@ -11,6 +11,10 @@ configuration: Release
 build:
   project: win32\cloudstorage.sln
 
+before_build:
+  - cd win32
+  - nuget restore
+
 after_build:
   - mkdir win32\x64\%CONFIGURATION%\package
   - mkdir win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
