@@ -120,26 +120,25 @@ IItem::Pointer to_item(const StorageFile &f, const std::string &path,
 
 IAsyncOperation<IStorageItem> get_item(const std::string &path) {
   auto current = path;
-  auto winrt_list = co_await root_directory();
-  std::vector<IStorageItem> list;
-  for (const auto &d : winrt_list) list.push_back(d);
+  auto list = co_await root_directory();
   while (true) {
     auto first = winrt::to_hstring(get_first_part(current));
-    auto it = std::find_if(list.begin(), list.end(), [first](const auto &d) {
+    auto it = std::find_if(begin(list), end(list), [first](const auto &d) {
       return d.Name() == first;
     });
-    if (it == list.end()) {
+    if (it == end(list)) {
       winrt::throw_hresult(TYPE_E_ELEMENTNOTFOUND);
     }
+    auto current_item = *it;
     current = get_rest(current);
     if (current.empty() || current == "\\") {
-      co_return *it;
+      co_return current_item;
     }
-    if (it->IsOfType(StorageItemTypes::Folder)) {
-      auto new_list = co_await it->as<StorageFolder>().GetItemsAsync();
-      list = {};
+    if (current_item.IsOfType(StorageItemTypes::Folder)) {
+      auto new_list = co_await current_item.as<StorageFolder>().GetItemsAsync();
+      list.Clear();
       for (auto &&d : new_list) {
-        list.emplace_back(std::move(d));
+        list.Append(std::move(d));
       }
     }
   }
