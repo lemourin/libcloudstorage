@@ -58,7 +58,7 @@ namespace {
   } catch (const winrt::hresult_error &) { \
   }
 
-IAsyncOperation<IVector<IStorageItem>> root_directory() {
+IAsyncOperation<IVectorView<IStorageItem>> root_directory() {
   static std::vector<IStorageItem> vector;
   static std::atomic_bool initialized = false;
   if (!initialized.exchange(true)) {
@@ -73,9 +73,9 @@ IAsyncOperation<IVector<IStorageItem>> root_directory() {
     ADD_FOLDER(vector, KnownFolders::SavedPictures);
     ADD_FOLDER(vector, KnownFolders::VideosLibrary);
   }
-  auto result = winrt::single_threaded_vector<IStorageItem>();
-  for (const auto &v : vector) result.Append(v);
-  co_return result;
+  co_return winrt::single_threaded_vector<IStorageItem>(
+      std::vector<IStorageItem>(vector))
+      .GetView();
 }
 
 std::string get_first_part(const std::string &path) {
@@ -135,11 +135,7 @@ IAsyncOperation<IStorageItem> get_item(const std::string &path) {
       co_return current_item;
     }
     if (current_item.IsOfType(StorageItemTypes::Folder)) {
-      auto new_list = co_await current_item.as<StorageFolder>().GetItemsAsync();
-      list.Clear();
-      for (auto &&d : new_list) {
-        list.Append(std::move(d));
-      }
+      list = co_await current_item.as<StorageFolder>().GetItemsAsync();
     }
   }
 }
