@@ -37,6 +37,7 @@ class AnimeZone : public CloudProvider {
                    const IHttpRequest::HeaderParameters&) const override;
   std::string name() const override;
   std::string endpoint() const override;
+  IItem::Pointer rootDirectory() const override;
   bool isSuccess(int code,
                  const IHttpRequest::HeaderParameters&) const override;
   OperationSet supportedOperations() const override;

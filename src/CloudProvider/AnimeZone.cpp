@@ -31,14 +31,14 @@
 
 namespace re = std;
 
-const auto ANIME_NAME = "Anime";
-const auto ANIME_ID = "anime";
-const auto MOVIE_NAME = "Movie";
-const auto MOVIE_ID = "movie";
-const auto RECENTS_NAME = "Recently added";
-const auto RECENTS_ID = "recents";
-
 namespace cloudstorage {
+
+const auto ANIME_NAME = "Anime";
+const auto ANIME_ID = R"({"id":"anime"})";
+const auto MOVIE_NAME = "Movie";
+const auto MOVIE_ID = R"({"id":"movie"})";
+const auto RECENTS_NAME = "Recently added";
+const auto RECENTS_ID = R"({"id":"recents"})";
 
 const auto USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -403,6 +403,12 @@ std::string AnimeZone::name() const { return "animezone"; }
 
 std::string AnimeZone::endpoint() const { return "https://www.animezone.pl"; }
 
+IItem::Pointer AnimeZone::rootDirectory() const {
+  return util::make_unique<Item>("/", R"({"id":"root"})", IItem::UnknownSize,
+                                 IItem::UnknownTimeStamp,
+                                 IItem::FileType::Directory);
+}
+
 bool AnimeZone::isSuccess(int code,
                           const IHttpRequest::HeaderParameters &headers) const {
   return IHttpRequest::isSuccess(code) && extract_session(headers) == "";
@@ -514,7 +520,6 @@ IItem::List AnimeZone::listDirectoryResponse(const IItem &directory,
 
 ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
-  auto value = util::json::from_string(item->id());
   auto fetch_player = [=](Request<EitherError<std::string>>::Pointer r,
                           const std::string &url) {
     r->send([=](util::Output) { return http()->create(url); },
@@ -575,6 +580,7 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
         });
   };
   auto fetch_player_list = [=](Request<EitherError<std::string>>::Pointer r) {
+    auto value = util::json::from_string(item->id());
     r->request(
         [=](util::Output) {
           return http()->create(value["origin"].asString());
