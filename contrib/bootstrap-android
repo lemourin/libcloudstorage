@@ -6,16 +6,23 @@ if [ -z "$ANDROID_NDK_ROOT" ]; then
 fi
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 [ arm | x86 ]"
+  echo "Usage: $0 [ armv7a | aarch64 | x86 | x86_64 ]"
   exit 1
 fi
 
 BUILD=$1
 
-if [ $BUILD == "x86" ]; then
-  ARCH=i686-linux-android16
-elif [ $BUILD == "arm" ]; then
+if [ $BUILD == "armv7a" ]; then
   ARCH=armv7a-linux-androideabi16
+elif [ $BUILD == "aarch64" ]; then
+  ARCH=aarch64-linux-android21
+elif [ $BUILD == "x86" ]; then
+  ARCH=i686-linux-android16
+elif [ $BUILD == "x86_64" ]; then
+  ARCH=x86_64-linux-android21
+else
+  echo "Unsupported arch $BUILD"
+  exit 1
 fi
 
 export INSTALL_PATH=$PWD/$ARCH
@@ -103,8 +110,12 @@ fetch_openssl() {
 install_openssl() {
   if [ $BUILD == "x86" ]; then
     SSL_TYPE="linux-x86";
-  elif [ $BUILD == "arm" ]; then
+  elif [ $BUILD == "x86_64" ]; then
+    SSL_TYPE="linux-x86_64"
+  elif [ $BUILD == "armv7a" ]; then
     SSL_TYPE="linux-armv4";
+  elif [ $BUILD == "aarch64" ]; then
+    SSL_TYPE="linux-aarch64";
   fi
   ./Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE no-shared
   run_make
@@ -156,7 +167,11 @@ fetch_cryptopp() {
 }
 
 install_cryptopp() {
-  make -f GNUmakefile-cross -j $CONCURRENCY static CXXFLAGS="$CXXFLAGS -I$ANDROID_NDK_ROOT/sources/android/cpufeatures" libcryptopp.a && \
+  if [ $BUILD == "aarch64" ] || [ $BUILD == "x86_64" ]; then
+    CRYPTOPP_EXTRA_FLAGS="-DCRYPTOPP_DISABLE_ASM";
+  fi
+  make -f GNUmakefile-cross -j $CONCURRENCY static \
+    CXXFLAGS="$CXXFLAGS -I$ANDROID_NDK_ROOT/sources/android/cpufeatures $CRYPTOPP_EXTRA_FLAGS" libcryptopp.a && \
     make -f GNUmakefile-cross -j $CONCURRENCY install-lib PREFIX=$INSTALL_PATH
 }
 
@@ -226,15 +241,17 @@ install_boost() {
   cd libs/filesystem/build
   
   cat > $CURRENT_DIR/user-config.jam << EOF
-using clang : arm : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi16-clang++ ;
-using clang : x86 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android16-clang++ ;
+using clang : armv7a : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
+using clang : aarch64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
+using clang : x86 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
+using clang : x86_64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
 EOF
 
   HOME=$CURRENT_DIR ../../../b2 install \
     --prefix=$INSTALL_PATH \
     -toolset=$ARCH \
-    cxxflags=-fPIC \
-    linkflags=-fPIC \
+    cxxflags="$CXXFLAGS" \
+    linkflags="$LDFLAGS" \
     link=static \
     runtime-link=static \
     target-os=android \
