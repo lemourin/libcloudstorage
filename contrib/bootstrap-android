@@ -25,8 +25,8 @@ export CMAKE_PREFIX_PATH=$INSTALL_PATH
 export PATH=$INSTALL_PATH/bin:$PATH
 export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang
 export CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++
-export CXXFLAGS="-fPIC"
-export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC -Oz"
+export CFLAGS="-fPIC -Oz"
 export LDFLAGS="-fPIC"
 CONCURRENCY=4
 
@@ -203,8 +203,14 @@ install_ffmpeg() {
     --target-os=android \
     --cc=$CC \
     --cxx=$CXX \
-    --enable-cross-compile \
+    --disable-everything \
     --disable-asm \
+    --enable-cross-compile \
+    --enable-decoder=h264,hevc,vp8,vp9,mpeg4,mjpeg,theora,png,svg,bmp,webp,tiff,gif \
+    --enable-demuxer=mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe \
+    --enable-parser=mjpeg \
+    --enable-encoder=png \
+    --enable-filter=thumbnail,buffer,buffer_sink,scale \
     --disable-avdevice \
     --disable-programs
 
