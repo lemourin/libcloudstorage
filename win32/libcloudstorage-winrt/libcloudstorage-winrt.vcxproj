@@ -81,7 +81,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../dependencies/win32/include/cares;../../dependencies/win32/include/mega/wincurl;../../dependencies/win32/include;../../src;%(AdditionalIncludeDirectories);$(ProjectDir);$(GeneratedFilesDir);$(IntDir)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MICROHTTPD;WITH_MEGA;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;WINDOWS_PHONE;SQLITE_OS_WINRT;WITH_THUMBNAILER</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LIBCLOUDSTORAGE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_CURL;WITH_MICROHTTPD;WITH_MEGA;WITH_CRYPTOPP;CLOUDSTORAGE_LIBRARY;WIN32_LEAN_AND_MEAN;USE_CRYPTOPP;ZLIB_WINAPI;WIN32;USE_CURL;USE_OPENSSL;USE_SQLITE;ENABLE_SYNC;WINDOWS_PHONE;SQLITE_OS_WINRT;WITH_THUMBNAILER</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4251;4275;4996</DisableSpecificWarnings>
