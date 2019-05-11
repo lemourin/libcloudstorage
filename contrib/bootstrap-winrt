@@ -5,11 +5,6 @@
 # > vcvarsall x64 uwp
 # Then invoke msys2_shell.cmd from your msys2 installation folder
 # in a way so that the environment set by vcvarsall is preserved.
-#
-# For OpenSSL perl shipped with msys2 is not good enough; make sure
-# shell sees perl installed from e.g. http://strawberryperl.com/
-#
-# Native CMake is also required: https://cmake.org/download/
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 [ x64 ] [ Debug | Release ]"
@@ -36,23 +31,35 @@ elif [ $BUILD_TYPE == "Release" ]; then
   RUNTIME="MD"
 fi
 
-export INSTALL_PATH=$PWD/winrt/$BUILD/$BUILD_TYPE
-export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
-export CURRENT_DIR=$PWD
-export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
-export CMAKE_PREFIX_PATH=$INSTALL_PATH
-export PATH=$INSTALL_PATH/bin:$PATH
-export CMAKE_GENERATOR="Visual Studio 15 2017 Win64"
-export TOOLSET="vc141"
-export PATCH=/usr/bin/patch
-export PKG_CONFIG=/usr/bin/pkg-config
+PERL_SEARCH=$(reg Query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\Perl_program_file\\shell\\Execute Perl Program\\command" | grep perl.exe)
+if [ $? -ne 0 ]; then
+  echo "Please install perl from http://strawberryperl.com/"
+  exit 1
+fi
 
+CMAKE_SEARCH=$(reg Query HKEY_LOCAL_MACHINE\\SOFTWARE\\Kitware\\CMake | grep InstallDir)
+if [ $? -ne 0 ]; then
+  echo "Please install cmake from https://cmake.org/download/"
+  exit 1
+fi
+
+PERL=$(echo $(cygpath $(echo $PERL_SEARCH | sed -E 's/\(Default\) REG_SZ (\S+perl.exe) \"%1\" %\*/\1/')))
+CMAKE="$(echo $(cygpath $(echo $CMAKE_SEARCH | sed -E 's/InstallDir REG_SZ (\S+)/\1/'))bin/cmake.exe)"
+INSTALL_PATH=$PWD/winrt/$BUILD/$BUILD_TYPE
+CURRENT_DIR=$PWD
+PLATFORM_TOOLSET=141
+CMAKE_PREFIX_PATH=$INSTALL_PATH
+CMAKE_GENERATOR="Visual Studio 16 2019"
+CMAKE_ARCH=$BUILD
+CMAKE_TOOLSET="v$PLATFORM_TOOLSET"
 NATIVE_PATH=$(cygpath -w $INSTALL_PATH)
+CONCURRENCY=4
+
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export PATH=$INSTALL_PATH/bin:$PATH
 
 mkdir -p $INSTALL_PATH/include
 mkdir -p $INSTALL_PATH/lib/pkgconfig
-
-CONCURRENCY=4
 
 unpack() {
   if [[ ! -d $1 ]]; then
@@ -108,9 +115,9 @@ fetch_zlib() {
 
 install_zlib() {
   mkdir -p build && cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 \
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 \
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
-    -G "$CMAKE_GENERATOR"
+    -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET
   if [ $BUILD_TYPE == "Release" ]; then
     ZLIB_LIBRARY="zlibstatic"
   elif [ $BUILD_TYPE == "Debug" ]; then
@@ -130,7 +137,9 @@ Cflags: -I\${includedir}
 EOF
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
     sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h &&
-    cp zlibstatic.dir/$BUILD_TYPE/zlibstatic.pdb $INSTALL_PATH/lib
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp zlibstatic.dir/$BUILD_TYPE/zlibstatic.pdb $INSTALL_PATH/lib
+    fi
 }
 
 fetch_libxml2() {
@@ -162,12 +171,14 @@ EOF
 install_jsoncpp() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0 \
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0 \
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DCMAKE_CXX_FLAGS="-sdl-" \
-    -G "$CMAKE_GENERATOR"
+    -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    cp src/lib_json/jsoncpp_lib_static.dir/$BUILD_TYPE/jsoncpp_lib_static.pdb $INSTALL_PATH/lib
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp src/lib_json/jsoncpp_lib_static.dir/$BUILD_TYPE/jsoncpp_lib_static.pdb $INSTALL_PATH/lib
+    fi
 }
 
 fetch_tinyxml2() {
@@ -177,12 +188,14 @@ fetch_tinyxml2() {
 install_tinyxml2() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1 \
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1 \
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DCMAKE_CXX_FLAGS="-sdl-" \
-    -G "$CMAKE_GENERATOR"
+    -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    cp tinyxml2_static.dir/$BUILD_TYPE/tinyxml2_static.pdb $INSTALL_PATH/lib
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp tinyxml2_static.dir/$BUILD_TYPE/tinyxml2_static.pdb $INSTALL_PATH/lib
+    fi
 }
 
 fetch_openssl() {
@@ -193,7 +206,7 @@ install_openssl() {
   if [ $BUILD == "x64" ]; then
     SSL_TYPE="VC-WIN64A-ONECORE";
   fi
-  perl Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE \
+  "$PERL" Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE \
     no-shared no-tests no-ui-console no-async no-dso no-asm -DOPENSSL_NO_CAPIENG &&
     nmake build_generated libssl.lib libcrypto.lib && (nmake install || echo 0)
 }
@@ -202,11 +215,11 @@ fetch_cares() {
   VERSION=${1//./_}
   fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
   if [ ! -f .patched ]; then
-    $PATCH ares_library_init.c < ../../patches/cares-library-init-winrt-fix.patch && \
-      $PATCH ares_init.c < ../../patches/cares-init-winrt-fix.patch && \
-      $PATCH ares_gethostbyaddr.c < ../../patches/cares-gethostbyaddr-winrt-fix.patch && \
-      $PATCH ares_gethostbyname.c < ../../patches/cares-gethostbyname-winrt-fix.patch && \
-      $PATCH config-win32.h < ../../patches/cares-config-winrt-fix.patch
+    patch ares_library_init.c < ../../patches/cares-library-init-winrt-fix.patch && \
+      patch ares_init.c < ../../patches/cares-init-winrt-fix.patch && \
+      patch ares_gethostbyaddr.c < ../../patches/cares-gethostbyaddr-winrt-fix.patch && \
+      patch ares_gethostbyname.c < ../../patches/cares-gethostbyname-winrt-fix.patch && \
+      patch config-win32.h < ../../patches/cares-config-winrt-fix.patch
     if [ $? -ne 0 ]; then
       echo "Couldn't patch cares"
       exit 1
@@ -227,18 +240,20 @@ fetch_nghttp2() {
 install_nghttp2() {
   sed -i 's/SHARED/STATIC/g' lib/CMakeLists.txt
   mkdir -p build && cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
     -DENABLE_LIB_ONLY=1 \
-    -G "$CMAKE_GENERATOR"
+    -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    cp lib/nghttp2.dir/$BUILD_TYPE/nghttp2.pdb $INSTALL_PATH/lib
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp lib/nghttp2.dir/$BUILD_TYPE/nghttp2.pdb $INSTALL_PATH/lib
+    fi
 }
 
 fetch_curl() {
   fetch_url https://github.com/curl/curl/releases/download/curl-${1//./_}/curl-$1.tar.gz
   if [ ! -f .patched ]; then
-    $PATCH lib/vtls/openssl.c < ../../patches/curl-openssl-no-ui.patch
+    patch lib/vtls/openssl.c < ../../patches/curl-openssl-no-ui.patch
     if [ $? -ne 0 ]; then
       echo "Couldn't patch curl"
       exit 1
@@ -249,9 +264,9 @@ fetch_curl() {
 
 install_curl() {
   mkdir -p build && cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
     -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 \
-    -G "$CMAKE_GENERATOR" \
+    -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET \
     -DCMAKE_C_FLAGS="-DNGHTTP2_STATICLIB" \
     -DBUILD_CURL_EXE=0 \
     -DBUILD_TESTING=0 \
@@ -265,16 +280,20 @@ install_curl() {
     -DCMAKE_USE_OPENSSL=1 \
     -DUSE_WIN32_LDAP=0
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    cp lib/libcurl.dir/$BUILD_TYPE/libcurl.pdb $INSTALL_PATH/lib
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp lib/libcurl.dir/$BUILD_TYPE/libcurl.pdb $INSTALL_PATH/lib
+    fi
 }
 
 fetch_microhttpd() {
   fetch_url https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-$1.tar.gz
   if [ ! -f .patched ]; then
-    $PATCH w32/VS2017/libmicrohttpd.vcxproj < ../../patches/microhttpd-enable-winrt.patch &&
-      $PATCH src/microhttpd/connection.c < ../../patches/microhttpd-connection-winrt-fix.patch &&
-      $PATCH src/microhttpd/mhd_sockets.c < ../../patches/microhttpd-sockets-winrt-fix.patch &&
-      $PATCH src/microhttpd/memorypool.c < ../../patches/microhttpd-memorypool-winrt-fix.patch
+    patch w32/VS2017/libmicrohttpd.vcxproj < ../../patches/microhttpd-enable-winrt.patch &&
+      patch src/microhttpd/connection.c < ../../patches/microhttpd-connection-winrt-fix.patch &&
+      patch src/microhttpd/mhd_sockets.c < ../../patches/microhttpd-sockets-winrt-fix.patch &&
+      patch src/microhttpd/memorypool.c < ../../patches/microhttpd-memorypool-winrt-fix.patch &&
+      sed -i s/vc141/vc$PLATFORM_TOOLSET/g w32/VS2017/libmicrohttpd.vcxproj &&
+      sed -i -E 's/<WholeProgramOptimization [^>]*>true<\/WholeProgramOptimization>/<WholeProgramOptimization>false<\/WholeProgramOptimization>/g' w32/VS2017/libmicrohttpd.vcxproj
     if [ $? -ne 0 ]; then
       echo "Couldn't patch microhttpd"
       exit 1
@@ -284,7 +303,6 @@ fetch_microhttpd() {
 }
 
 install_microhttpd() {
-  sed -i s/vc141/$TOOLSET/g w32/VS2017/libmicrohttpd.vcxproj
   msbuild.exe w32/VS2017/libmicrohttpd.vcxproj -p:Configuration=$BUILD_TYPE-static &&
     cp w32/VS2017/Output/$BUILD/microhttpd.h $INSTALL_PATH/include/ &&
     cp w32/VS2017/Output/$BUILD/libmicrohttpd* $INSTALL_PATH/lib
@@ -294,7 +312,7 @@ fetch_cryptopp() {
   VERSION=${1//./_}
   fetch_github https://github.com/weidai11/cryptopp/archive/CRYPTOPP_$VERSION.tar.gz
   if [ ! -f .patched ]; then
-    $PATCH cryptlib.vcxproj < ../../patches/cryptlib-winrt-enable.patch
+    patch cryptlib.vcxproj < ../../patches/cryptlib-winrt-enable.patch
     sed -i s/\(WINAPI_FAMILY_PARTITION\(WINAPI_PARTITION_DESKTOP\)\)/WINAPI_FAMILY_PARTITION\(WINAPI_PARTITION_DESKTOP\)/g config.h
     if [ $? -ne 0 ]; then
       echo "Couldn't patch cryptlib.vcxproj"
@@ -324,10 +342,10 @@ install_sqlite() {
 fetch_megasdk() {
   fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
   if [ ! -f .patched ]; then
-    $PATCH examples/win32/libmega.vcxproj < ../../patches/mega-enabled-winrt.patch &&
-      $PATCH src/megaclient.cpp < ../../patches/mega-client-winrt-fix.patch && 
-      $PATCH src/crypto/cryptopp.cpp < ../../patches/mega-cryptopp-winrt-fix.patch &&
-      $PATCH include/mega/crypto/cryptopp.h < ../../patches/mega-cryptopp-h-winrt-fix.patch
+    patch examples/win32/libmega.vcxproj < ../../patches/mega-enabled-winrt.patch &&
+      patch src/megaclient.cpp < ../../patches/mega-client-winrt-fix.patch &&
+      patch src/crypto/cryptopp.cpp < ../../patches/mega-cryptopp-winrt-fix.patch &&
+      patch include/mega/crypto/cryptopp.h < ../../patches/mega-cryptopp-h-winrt-fix.patch
     if [ $? -ne 0 ]; then
       echo "Couldn't patch megasdk"
       exit 1;
@@ -348,10 +366,9 @@ fetch_ffmpeg() {
 }
 
 install_ffmpeg() {
-  export INCLUDE="$NATIVE_PATH\\include;$NATIVE_PATH\\include\\libxml2;$INCLUDE"
-  ./configure \
+  FFMPEG_INCLUDE="$NATIVE_PATH\\include;$NATIVE_PATH\\include\\libxml2;$INCLUDE"
+  INCLUDE=$FFMPEG_INCLUDE ./configure \
     --prefix=$INSTALL_PATH \
-    --pkg-config=$PKG_CONFIG \
     --toolchain=msvc \
     --extra-ldflags="-APPCONTAINER WindowsApp.lib -libpath:$NATIVE_PATH\\lib" \
     --extra-cflags="-$RUNTIME -DWINAPI_FAMILY=WINAPI_FAMILY_APP -D_WIN32_WINNT=0x0A00 -DLIBXML_STATIC" \
@@ -363,7 +380,7 @@ install_ffmpeg() {
     --disable-shared \
     --disable-avdevice \
     --disable-programs &&
-  run_make &&
+  INCLUDE=$FFMPEG_INCLUDE run_make &&
   mv $INSTALL_PATH/lib/libavutil.a $INSTALL_PATH/lib/avutil.lib && \
   mv $INSTALL_PATH/lib/libavcodec.a $INSTALL_PATH/lib/avcodec.lib && \
   mv $INSTALL_PATH/lib/libavfilter.a $INSTALL_PATH/lib/avfilter.lib && \
