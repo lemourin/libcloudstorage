@@ -30,7 +30,7 @@
           var json = {
             username: $('#inputUsername').val(),
             password: $('#inputPassword').val(),
-            webdav_url: $('#inputHost').val()
+            endpoint: $('#inputHost').val()
           };
           var code = window.btoa(encodeURIComponent(JSON.stringify(json)));
           window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;

@@ -113,7 +113,7 @@ class WebDav : public CloudProvider {
  private:
   bool unpackCredentials(const std::string& code) override;
 
-  std::string webdav_url_;
+  std::string endpoint_;
   std::string user_;
   std::string password_;
 };

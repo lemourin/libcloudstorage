@@ -87,7 +87,7 @@ std::string WebDav::name() const { return "webdav"; }
 
 std::string WebDav::endpoint() const {
   auto lock = auth_lock();
-  return webdav_url_;
+  return endpoint_;
 }
 
 std::string WebDav::token() const {
@@ -95,7 +95,7 @@ std::string WebDav::token() const {
   Json::Value json;
   json["username"] = user_;
   json["password"] = password_;
-  json["webdav_url"] = webdav_url_;
+  json["endpoint"] = endpoint_;
   return credentialsToString(json);
 }
 
@@ -211,7 +211,7 @@ GeneralData WebDav::getGeneralDataResponse(std::istream& stream) const {
   data.space_total_ =
       quota_available->GetText() ? std::stoull(quota_available->GetText()) : 0;
   auto lock = auth_lock();
-  auto url = util::Url(webdav_url_);
+  auto url = util::Url(endpoint_);
   data.username_ = url.protocol() + "://" + user_ + "@" + url.host() +
                    url.path() + (url.query().empty() ? "" : "?" + url.query());
   return data;
@@ -232,7 +232,7 @@ IItem::Pointer WebDav::renameItemResponse(const IItem& item,
   auto i = util::make_unique<Item>(name, getPath(item.id()) + "/" + name,
                                    item.size(), item.timestamp(), item.type());
   auto lock = auth_lock();
-  auto url = util::Url(webdav_url_);
+  auto url = util::Url(endpoint_);
   i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
              url.host() + url.path() + i->id() + url.query());
   return std::move(i);
@@ -244,7 +244,7 @@ IItem::Pointer WebDav::moveItemResponse(const IItem& source, const IItem& dest,
       util::make_unique<Item>(source.filename(), dest.id() + source.filename(),
                               source.size(), source.timestamp(), source.type());
   auto lock = auth_lock();
-  auto url = util::Url(webdav_url_);
+  auto url = util::Url(endpoint_);
   i->set_url(url.protocol() + "://" + user_ + ":" + password_ + "@" +
              url.host() + url.path() + i->id() + url.query());
   return std::move(i);
@@ -284,7 +284,7 @@ IItem::Pointer WebDav::toItem(const tinyxml2::XMLElement* node) const {
       type = IItem::FileType::Directory;
     }
   auto lock = auth_lock();
-  auto url = util::Url(webdav_url_);
+  auto url = util::Url(endpoint_);
   std::string id = element->GetText();
   id = id.substr(url.path().length());
   if (id.back() == '/') type = IItem::FileType::Directory;
@@ -315,7 +315,7 @@ bool WebDav::unpackCredentials(const std::string& code) {
     auto json = credentialsFromString(code);
     user_ = json["username"].asString();
     password_ = json["password"].asString();
-    webdav_url_ = json["webdav_url"].asString();
+    endpoint_ = json["endpoint"].asString();
     return true;
   } catch (const Json::Exception&) {
     return false;
