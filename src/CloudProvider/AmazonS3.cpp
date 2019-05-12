@@ -88,13 +88,16 @@ std::string AmazonS3::token() const {
   json["username"] = access_id();
   json["password"] = secret();
   json["bucket"] = bucket();
+  json["endpoint"] = s3_endpoint();
   return credentialsToString(json);
 }
 
 std::string AmazonS3::name() const { return "amazons3"; }
 
 std::string AmazonS3::endpoint() const {
-  return "https://" + bucket() + ".s3." + region() + ".amazonaws.com";
+  util::Url endpoint(s3_endpoint());
+  return endpoint.protocol() + "://s3." + region() + "." + endpoint.host() +
+         "/" + bucket();
 }
 
 IItem::Pointer AmazonS3::rootDirectory() const {
@@ -274,9 +277,12 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 ICloudProvider::GeneralDataRequest::Pointer AmazonS3::getGeneralDataAsync(
     GeneralDataCallback callback) {
   auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+    auto endpoint = this->s3_endpoint();
+    auto bucket = this->bucket();
     GeneralData data;
     data.space_total_ = data.space_used_ = 0;
-    data.username_ = bucket();
+    data.username_ =
+        endpoint == "https://amazonaws.com" ? bucket : endpoint + "/" + bucket;
     r->done(data);
   };
   return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
@@ -524,6 +530,11 @@ std::string AmazonS3::bucket() const {
   return bucket_;
 }
 
+std::string AmazonS3::s3_endpoint() const {
+  auto lock = auth_lock();
+  return s3_endpoint_.empty() ? "https://amazonaws.com" : s3_endpoint_;
+}
+
 std::string AmazonS3::region() const {
   auto lock = auth_lock();
   return region_;
@@ -536,6 +547,7 @@ bool AmazonS3::unpackCredentials(const std::string& code) {
     access_id_ = json["username"].asString();
     secret_ = json["password"].asString();
     bucket_ = json["bucket"].asString();
+    s3_endpoint_ = json["endpoint"].asString();
     region_ = "us-east-1";
     return true;
   } catch (const Json::Exception&) {

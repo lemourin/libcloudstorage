@@ -92,6 +92,7 @@ class AmazonS3 : public CloudProvider {
   std::string secret() const;
   std::string region() const;
   std::string bucket() const;
+  std::string s3_endpoint() const;
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -115,6 +116,7 @@ class AmazonS3 : public CloudProvider {
   std::string secret_;
   std::string region_;
   std::string bucket_;
+  std::string s3_endpoint_;
 };
 
 }  // namespace cloudstorage
