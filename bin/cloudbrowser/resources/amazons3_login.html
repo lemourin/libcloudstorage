@@ -26,11 +26,15 @@
     </nav>
     <div class="container center-block">
       <script>
+        $('#inputEndpoint').ready(function() {
+          $('#inputEndpoint').val("https://amazonaws.com");
+        });
         function submitData() {
           var json = {
             username: $('#inputAccessKey').val(),
             password: $('#inputSecretKey').val(),
-            bucket: $('#inputBucketName').val()
+            bucket: $('#inputBucketName').val(),
+            endpoint: $('#inputEndpoint').val()
           };
           var code = window.btoa(encodeURIComponent(JSON.stringify(json)));
           window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
@@ -42,6 +46,9 @@
         S3 requires generating an access and a secret token in order to be used in external applications. To generate those
         tokens, go to "My security credentials", then "Access Keys" and create them.</h5><br/>
       <form class="form-horizontal" onsubmit="return submitData()">
+        <div class="form-group"><label for="inputEndpoint" class="col-sm-2 control-label">Endpoint</label>
+          <div class="col-sm-10"><input type="text" class="form-control" id="inputEndpoint" placeholder="Endpoint"></div>
+        </div>
         <div class="form-group"><label for="inputBucketName" class="col-sm-2 control-label">Bucket Name</label>
           <div class="col-sm-10"><input type="text" class="form-control" id="inputBucketName" placeholder="Bucket Name"></div>
         </div>
