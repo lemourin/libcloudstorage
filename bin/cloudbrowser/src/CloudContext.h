@@ -145,7 +145,8 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   void saveProviders();
   void receivedCode(std::string provider, std::string code);
   cloudstorage::ICloudProvider::Pointer provider(
-      const std::string& name, const cloudstorage::Token& token) const;
+      const std::string& name, const cloudstorage::Token& token,
+      const cloudstorage::ICloudProvider::Hints& hints = {}) const;
   cloudstorage::ICloudProvider::InitData init_data(
       const std::string& name) const;
 

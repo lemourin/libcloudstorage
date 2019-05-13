@@ -73,7 +73,8 @@ QVariantList ProviderListModel::dump() const {
   for (auto&& p : provider_) {
     QVariantMap dict;
     dict["token"] = p.provider_->token().c_str();
-    dict["access_token"] = p.provider_->hints()["access_token"].c_str();
+    dict["hints"] =
+        ICloudProvider::serializeSession("", p.provider_->hints()).c_str();
     dict["type"] = p.provider_->name().c_str();
     dict["label"] = p.label_.c_str();
     array.append(dict);
@@ -125,10 +126,15 @@ CloudContext::CloudContext(QObject* parent)
   for (auto j : providers) {
     auto obj = j.toMap();
     auto label = obj["label"].toString().toStdString();
+    std::string token;
+    ICloudProvider::Hints hints;
+    ICloudProvider::deserializeSession(obj["hints"].toString().toStdString(),
+                                       token, hints);
     auto provider =
         this->provider(obj["type"].toString().toStdString(),
                        Token{obj["token"].toString().toStdString(),
-                             obj["access_token"].toString().toStdString()});
+                             obj["access_token"].toString().toStdString()},
+                       hints);
     if (provider) user_provider_model_.add({label, std::move(provider)});
   }
   for (auto p : ICloudStorage::create()->providers()) {
@@ -463,8 +469,9 @@ void CloudContext::receivedCode(std::string provider, std::string code) {
   emit receivedCode(provider.c_str());
 }
 
-ICloudProvider::Pointer CloudContext::provider(const std::string& name,
-                                               const Token& token) const {
+ICloudProvider::Pointer CloudContext::provider(
+    const std::string& name, const Token& token,
+    const ICloudProvider::Hints& hints) const {
   class HttpWrapper : public IHttp {
    public:
     HttpWrapper(std::shared_ptr<IHttp> http) : http_(http) {}
@@ -512,6 +519,7 @@ ICloudProvider::Pointer CloudContext::provider(const std::string& name,
   };
   auto data = init_data(name);
   data.token_ = token.token_;
+  data.hints_.insert(hints.begin(), hints.end());
   data.hints_["access_token"] = token.access_token_;
   data.hints_["file_url"] =
       "http://127.0.0.1:12345/" + std::to_string(provider_index_);
