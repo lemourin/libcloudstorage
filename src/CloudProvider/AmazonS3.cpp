@@ -148,20 +148,23 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
   auto auth = [=](AuthorizeRequest::Pointer r,
                   AuthorizeRequest::Callback complete) {
     this->getRegion(r, [=](EitherError<void> e) {
-      if (e.left())
-        reauth(r, [=](EitherError<void> e) {
-          if (e.left())
-            complete(e);
-          else {
-            this->getRegion(r, [=](EitherError<void> e) {
-              if (e.left())
-                complete(e);
-              else
-                this->getEndpoint(r, complete);
-            });
-          }
-        });
-      else
+      if (e.left()) {
+        if (e.left()->code_ == IHttpRequest::Unauthorized)
+          reauth(r, [=](EitherError<void> e) {
+            if (e.left())
+              complete(e);
+            else {
+              this->getRegion(r, [=](EitherError<void> e) {
+                if (e.left())
+                  complete(e);
+                else
+                  this->getEndpoint(r, complete);
+              });
+            }
+          });
+        else
+          complete(e.left());
+      } else
         this->getEndpoint(r, complete);
     });
   };
