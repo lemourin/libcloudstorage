@@ -80,6 +80,13 @@ void AmazonS3::initialize(InitData&& init_data) {
   if (init_data.token_.empty())
     init_data.token_ = credentialsToString(Json::Value(Json::objectValue));
   unpackCredentials(init_data.token_);
+  {
+    auto lock = auth_lock();
+    setWithHint(init_data.hints_, "rewritten_endpoint",
+                [&](const std::string& v) { rewritten_endpoint_ = v; });
+    setWithHint(init_data.hints_, "region",
+                [&](const std::string& v) { region_ = v; });
+  }
   CloudProvider::initialize(std::move(init_data));
 }
 
@@ -95,9 +102,11 @@ std::string AmazonS3::token() const {
 std::string AmazonS3::name() const { return "amazons3"; }
 
 std::string AmazonS3::endpoint() const {
-  util::Url endpoint(s3_endpoint());
-  return endpoint.protocol() + "://s3." + region() + "." + endpoint.host() +
-         "/" + bucket();
+  auto lock = auth_lock();
+  if (!rewritten_endpoint_.empty())
+    return rewritten_endpoint_;
+  else
+    return s3_endpoint_ + "/" + bucket_;
 }
 
 IItem::Pointer AmazonS3::rootDirectory() const {
@@ -106,59 +115,55 @@ IItem::Pointer AmazonS3::rootDirectory() const {
                                  IItem::FileType::Directory);
 }
 
+ICloudProvider::Hints AmazonS3::hints() const {
+  auto hints = CloudProvider::hints();
+  auto lock = auth_lock();
+  hints.insert(
+      {{"rewritten_endpoint", rewritten_endpoint_}, {"region", region_}});
+  return hints;
+}
+
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
+  auto reauth = [=](AuthorizeRequest::Pointer r,
+                    AuthorizeRequest::Callback complete) {
+    if (auth_callback()->userConsentRequired(*this) !=
+        ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
+      return complete(
+          Error{IHttpRequest::Unauthorized, util::Error::INVALID_CREDENTIALS});
+    }
+    auto code = [=](EitherError<std::string> code) {
+      (void)r;
+      if (code.left())
+        complete(code.left());
+      else {
+        if (unpackCredentials(*code.right()))
+          complete(nullptr);
+        else
+          complete(Error{IHttpRequest::Failure,
+                         util::Error::INVALID_AUTHORIZATION_CODE});
+      }
+    };
+    r->set_server(this->auth()->requestAuthorizationCode(code));
+  };
   auto auth = [=](AuthorizeRequest::Pointer r,
-                  AuthorizeRequest::AuthorizeCompleted complete) {
-    r->send(
-        [=](util::Output) {
-          auto r = http()->create(endpoint() + "/", "GET");
-          authorizeRequest(*r);
-          return r;
-        },
-        [=](EitherError<Response> e) {
-          if (e.left()) {
-            if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
-              tinyxml2::XMLDocument document;
-              if (document.Parse(e.left()->description_.c_str()) != 0)
-                return complete(Error{IHttpRequest::Failure,
-                                      util::Error::FAILED_TO_PARSE_XML});
-              auto endpoint =
-                  document.RootElement()->FirstChildElement("Endpoint");
-              if (!endpoint || !endpoint->GetText())
-                return complete(
-                    Error{IHttpRequest::Failure, util::Error::INVALID_XML});
-              std::stringstream stream(endpoint->GetText());
-              std::string bucket, s3, region;
-              std::getline(stream, bucket, '.');
-              std::getline(stream, s3, '.');
-              std::getline(stream, region, '.');
-              {
-                auto lock = auth_lock();
-                region_ = region;
-              }
-              return complete(nullptr);
-            }
-            if (auth_callback()->userConsentRequired(*this) !=
-                ICloudProvider::IAuthCallback::Status::
-                    WaitForAuthorizationCode) {
-              return complete(Error{IHttpRequest::Unauthorized,
-                                    util::Error::INVALID_CREDENTIALS});
-            }
-            auto code = [=](EitherError<std::string> code) {
-              (void)r;
-              if (code.left())
-                complete(code.left());
+                  AuthorizeRequest::Callback complete) {
+    this->getRegion(r, [=](EitherError<void> e) {
+      if (e.left())
+        reauth(r, [=](EitherError<void> e) {
+          if (e.left())
+            complete(e);
+          else {
+            this->getRegion(r, [=](EitherError<void> e) {
+              if (e.left())
+                complete(e);
               else
-                complete(unpackCredentials(*code.right())
-                             ? EitherError<void>(nullptr)
-                             : EitherError<void>(Error{
-                                   IHttpRequest::Failure,
-                                   util::Error::INVALID_AUTHORIZATION_CODE}));
-            };
-            r->set_server(this->auth()->requestAuthorizationCode(code));
-          } else
-            complete(nullptr);
+                this->getEndpoint(r, complete);
+            });
+          }
         });
+      else
+        this->getEndpoint(r, complete);
+    });
   };
   return std::make_shared<AuthorizeRequest>(shared_from_this(), auth);
 }
@@ -281,8 +286,9 @@ ICloudProvider::GeneralDataRequest::Pointer AmazonS3::getGeneralDataAsync(
     auto bucket = this->bucket();
     GeneralData data;
     data.space_total_ = data.space_used_ = 0;
-    data.username_ =
-        endpoint == "https://amazonaws.com" ? bucket : endpoint + "/" + bucket;
+    data.username_ = endpoint == "https://s3.amazonaws.com"
+                         ? bucket
+                         : endpoint + "/" + bucket;
     r->done(data);
   };
   return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
@@ -431,9 +437,10 @@ IItem::List AmazonS3::listDirectoryResponse(
 
 void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   if (!crypto()) throw std::runtime_error("no crypto functions provided");
+  std::string region = this->region().empty() ? "us-east-1" : this->region();
   std::string current_date = currentDate();
   std::string time = currentDateAndTime();
-  std::string scope = current_date + "/" + region() + "/s3/aws4_request";
+  std::string scope = current_date + "/" + region + "/s3/aws4_request";
   util::Url url(request.url());
   request.setParameter("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
   request.setParameter("X-Amz-Credential", access_id() + "/" + scope);
@@ -490,7 +497,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   std::string string_to_sign = "AWS4-HMAC-SHA256\n" + time + "\n" + scope +
                                "\n" + hex(hash(canonical_request));
   std::string key =
-      sign(sign(sign(sign("AWS4" + secret(), current_date), region()), "s3"),
+      sign(sign(sign(sign("AWS4" + secret(), current_date), region), "s3"),
            "aws4_request");
   std::string signature = hex(sign(key, string_to_sign));
 
@@ -506,7 +513,7 @@ bool AmazonS3::reauthorize(int code,
   return CloudProvider::reauthorize(code, h) ||
          code == IHttpRequest::Forbidden ||
          code == IHttpRequest::PermamentRedirect || access_id().empty() ||
-         secret().empty();
+         secret().empty() || region().empty();
 }
 
 bool AmazonS3::isSuccess(int code,
@@ -532,7 +539,7 @@ std::string AmazonS3::bucket() const {
 
 std::string AmazonS3::s3_endpoint() const {
   auto lock = auth_lock();
-  return s3_endpoint_.empty() ? "https://amazonaws.com" : s3_endpoint_;
+  return s3_endpoint_.empty() ? "https://s3.amazonaws.com" : s3_endpoint_;
 }
 
 std::string AmazonS3::region() const {
@@ -548,7 +555,6 @@ bool AmazonS3::unpackCredentials(const std::string& code) {
     secret_ = json["password"].asString();
     bucket_ = json["bucket"].asString();
     s3_endpoint_ = json["endpoint"].asString();
-    region_ = "us-east-1";
     return true;
   } catch (const Json::Exception&) {
     return false;
@@ -563,6 +569,86 @@ std::string AmazonS3::getUrl(const Item& item) const {
   for (const auto& p : request->parameters())
     parameters += p.first + "=" + p.second + "&";
   return request->url() + "?" + parameters;
+}
+
+void AmazonS3::getRegion(AuthorizeRequest::Pointer r,
+                         AuthorizeRequest::AuthorizeCompleted complete) {
+  r->send(
+      [=](util::Output) {
+        auto r = http()->create(endpoint() + "/", "GET");
+        r->setParameter("location", "");
+        authorizeRequest(*r);
+        return r;
+      },
+      [=](EitherError<Response> e) {
+        if (e.left()) {
+          if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
+            tinyxml2::XMLDocument document;
+            if (document.Parse(e.left()->description_.c_str()) != 0)
+              return complete(Error{IHttpRequest::Failure,
+                                    util::Error::FAILED_TO_PARSE_XML});
+            auto endpoint =
+                document.RootElement()->FirstChildElement("Endpoint");
+            if (!endpoint || !endpoint->GetText())
+              return complete(
+                  Error{IHttpRequest::Failure, util::Error::INVALID_XML});
+            {
+              auto lock = auth_lock();
+              rewritten_endpoint_ = endpoint->GetText();
+            }
+            return getRegion(r, complete);
+          }
+          complete(e.left());
+        } else {
+          tinyxml2::XMLDocument document;
+          if (document.Parse(e.right()->output().str().c_str()) != 0)
+            return complete(
+                Error{IHttpRequest::Failure, util::Error::FAILED_TO_PARSE_XML});
+          auto location = document.RootElement();
+          if (!location || !location->GetText())
+            return complete(
+                Error{IHttpRequest::Failure, util::Error::INVALID_XML});
+          {
+            auto lock = auth_lock();
+            region_ = location->GetText();
+          }
+          complete(nullptr);
+        }
+      });
+}
+
+void AmazonS3::getEndpoint(AuthorizeRequest::Pointer r,
+                           AuthorizeRequest::AuthorizeCompleted complete) {
+  r->send(
+      [=](util::Output) {
+        auto r = http()->create(endpoint() + "/", "GET");
+        authorizeRequest(*r);
+        return r;
+      },
+      [=](EitherError<Response> e) {
+        if (e.left()) {
+          if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
+            tinyxml2::XMLDocument document;
+            if (document.Parse(e.left()->description_.c_str()) != 0)
+              return complete(Error{IHttpRequest::Failure,
+                                    util::Error::FAILED_TO_PARSE_XML});
+            auto endpoint =
+                document.RootElement()->FirstChildElement("Endpoint");
+            if (!endpoint || !endpoint->GetText())
+              return complete(
+                  Error{IHttpRequest::Failure, util::Error::INVALID_XML});
+            {
+              auto lock = auth_lock();
+              rewritten_endpoint_ = endpoint->GetText();
+            }
+            return complete(nullptr);
+          } else {
+            complete(e.left());
+          }
+        } else {
+          complete(nullptr);
+        }
+      });
 }
 
 std::string AmazonS3::Auth::authorizeLibraryUrl() const {
