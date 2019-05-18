@@ -62,15 +62,10 @@ IAsyncOperation<IVectorView<IStorageItem>> root_directory() {
   static std::vector<IStorageItem> vector;
   static std::atomic_bool initialized = false;
   if (!initialized.exchange(true)) {
-    ADD_FOLDER(vector, KnownFolders::AppCaptures);
-    ADD_FOLDER(vector, KnownFolders::CameraRoll);
-    ADD_FOLDER(vector, KnownFolders::DocumentsLibrary);
-    ADD_FOLDER(vector, KnownFolders::HomeGroup);
+    ADD_FOLDER(vector, KnownFolders::RemovableDevices);
     ADD_FOLDER(vector, KnownFolders::MediaServerDevices);
     ADD_FOLDER(vector, KnownFolders::MusicLibrary);
-    ADD_FOLDER(vector, KnownFolders::Objects3D);
     ADD_FOLDER(vector, KnownFolders::PicturesLibrary);
-    ADD_FOLDER(vector, KnownFolders::SavedPictures);
     ADD_FOLDER(vector, KnownFolders::VideosLibrary);
   }
   co_return winrt::single_threaded_vector<IStorageItem>(
@@ -202,15 +197,19 @@ LocalDriveWinRT::listDirectoryPageAsync(IItem::Pointer item,
           auto folder = co_await get_folder(current_path);
           auto items = co_await folder.GetItemsAsync();
           auto result = std::make_shared<PageData>();
+          auto set = std::make_shared<std::unordered_set<std::string>>();
           for (const auto &d : items) {
-            if (d.IsOfType(StorageItemTypes::File)) {
-              auto file = d.as<StorageFile>();
-              auto props = co_await file.GetBasicPropertiesAsync();
-              result->items_.push_back(
-                  to_item(file, current_path, props.Size()));
-            } else if (d.IsOfType(StorageItemTypes::Folder)) {
-              auto folder = d.as<StorageFolder>();
-              result->items_.push_back(to_item(folder, current_path));
+            if (set->find(winrt::to_string(d.Name())) == end(*set)) {
+              set->insert(winrt::to_string(d.Name()));
+              if (d.IsOfType(StorageItemTypes::File)) {
+                auto file = d.as<StorageFile>();
+                auto props = co_await file.GetBasicPropertiesAsync();
+                result->items_.push_back(
+                    to_item(file, current_path, props.Size()));
+              } else if (d.IsOfType(StorageItemTypes::Folder)) {
+                auto folder = d.as<StorageFolder>();
+                result->items_.push_back(to_item(folder, current_path));
+              }
             }
           }
           r->done(result);
