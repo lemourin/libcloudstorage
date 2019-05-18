@@ -79,42 +79,43 @@ IAsyncOperation<IVectorView<IStorageItem>> root_directory() {
 }
 
 std::string get_first_part(const std::string &path) {
-  auto idx = path.find_first_of('\\', 1);
+  auto idx = path.find_first_of('/', 1);
   return path.substr(1, idx - 1);
 }
 
 std::string get_rest(const std::string &path) {
-  auto idx = path.find_first_of('\\', 1);
+  auto idx = path.find_first_of('/', 1);
   return idx == std::string::npos ? "" : path.substr(idx);
 }
 
 std::string parent_path(const std::string &path) {
   if (path.empty()) return "";
-  if (path.back() == '\\') {
+  if (path.back() == '/') {
     auto d = std::string(path.begin(), path.begin() + path.size() - 1);
-    return d.substr(0, d.find_last_of('\\') + 1);
+    return d.substr(0, d.find_last_of('/') + 1);
   } else {
-    return path.substr(0, path.find_last_of('\\') + 1);
+    return path.substr(0, path.find_last_of('/') + 1);
   }
 }
 
 IItem::Pointer to_item(const StorageFolder &f, const std::string &path) {
+  auto date = f.DateCreated().time_since_epoch().count();
   return util::make_unique<Item>(
-      to_string(f.Name()), path + to_string(f.Name()) + "\\",
-      IItem::UnknownSize,
-      std::chrono::system_clock::time_point(std::chrono::seconds(
-          f.DateCreated().time_since_epoch().count() / 10000000 -
-          11644473600LL)),
+      to_string(f.Name()), path + to_string(f.Name()) + "/", IItem::UnknownSize,
+      date == 0 ? IItem::UnknownTimeStamp
+                : std::chrono::system_clock::time_point(
+                      std::chrono::seconds(date / 10000000 - 11644473600LL)),
       IItem::FileType::Directory);
 }
 
 IItem::Pointer to_item(const StorageFile &f, const std::string &path,
                        uint64_t size) {
+  auto date = f.DateCreated().time_since_epoch().count();
   return util::make_unique<Item>(
       to_string(f.Name()), path + to_string(f.Name()), size,
-      std::chrono::system_clock::time_point(std::chrono::seconds(
-          f.DateCreated().time_since_epoch().count() / 10000000 -
-          11644473600LL)),
+      date == 0 ? IItem::UnknownTimeStamp
+                : std::chrono::system_clock::time_point(
+                      std::chrono::seconds(date / 10000000 - 11644473600LL)),
       IItem::FileType::Unknown);
 }
 
@@ -122,16 +123,16 @@ IAsyncOperation<IStorageItem> get_item(const std::string &path) {
   auto current = path;
   auto list = co_await root_directory();
   while (true) {
-    auto first = winrt::to_hstring(get_first_part(current));
-    auto it = std::find_if(begin(list), end(list), [first](const auto &d) {
-      return d.Name() == first;
-    });
+    auto it = std::find_if(begin(list), end(list),
+                           [first = get_first_part(current)](const auto &d) {
+                             return winrt::to_string(d.Name()) == first;
+                           });
     if (it == end(list)) {
       winrt::throw_hresult(TYPE_E_ELEMENTNOTFOUND);
     }
     auto current_item = *it;
     current = get_rest(current);
-    if (current.empty() || current == "\\") {
+    if (current.empty() || current == "/") {
       co_return current_item;
     }
     if (current_item.IsOfType(StorageItemTypes::Folder)) {
@@ -159,7 +160,7 @@ std::string LocalDriveWinRT::name() const { return "localwinrt"; }
 std::string LocalDriveWinRT::endpoint() const { return ""; }
 
 IItem::Pointer LocalDriveWinRT::rootDirectory() const {
-  return util::make_unique<Item>("root", "\\", IItem::UnknownSize,
+  return util::make_unique<Item>("root", "/", IItem::UnknownSize,
                                  IItem::UnknownTimeStamp,
                                  IItem::FileType::Directory);
 }
@@ -235,7 +236,7 @@ ICloudProvider::GetItemDataRequest::Pointer LocalDriveWinRT::getItemDataAsync(
         }
         try {
           auto path = id;
-          if (path.back() == '\\') {
+          if (path.back() == '/') {
             auto directory = co_await get_folder(path);
             r->done(to_item(directory, parent_path(path)));
           } else {
@@ -319,7 +320,7 @@ ICloudProvider::DeleteItemRequest::Pointer LocalDriveWinRT::deleteItemAsync(
               Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
         try {
           auto path = item->id();
-          if (path.back() == '\\') {
+          if (path.back() == '/') {
             auto directory = co_await get_folder(path);
             co_await directory.DeleteAsync(
                 StorageDeleteOption::PermanentDelete);
@@ -347,7 +348,7 @@ ICloudProvider::RenameItemRequest::Pointer LocalDriveWinRT::renameItemAsync(
         try {
           auto path = item->id();
           auto new_name = winrt::to_hstring(name);
-          if (path.back() == '\\') {
+          if (path.back() == '/') {
             auto directory = co_await get_folder(path);
             co_await directory.RenameAsync(new_name);
             r->done(to_item(directory, parent_path(path)));
@@ -379,7 +380,7 @@ ICloudProvider::MoveItemRequest::Pointer LocalDriveWinRT::moveItemAsync(
           if (source_path.empty())
             co_return r->done(
                 Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
-          if (source_path.back() == '\\') {
+          if (source_path.back() == '/') {
             r->done(Error{IHttpRequest::Failure, util::Error::UNIMPLEMENTED});
           } else {
             auto source_file = co_await get_file(source_path);
