@@ -53,6 +53,10 @@
 #include <jni.h>
 #endif
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 namespace Json {
 class Value;
 }  // namespace Json
@@ -237,8 +241,12 @@ void log(Args&&... t) {
   __android_log_print(ANDROID_LOG_DEBUG, "cloudstorage", "%s\n",
                       buffer.str().c_str());
 #else
+#ifdef EMSCRIPTEN
+  EM_ASM({ console.log(Module.UTF8ToString($0)); }, buffer.str().c_str());
+#else
 #ifdef __unix__
   std::cerr << buffer.str() << std::endl;
+#endif
 #endif
 #endif
 #ifdef _WIN32
