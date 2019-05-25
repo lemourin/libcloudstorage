@@ -416,8 +416,13 @@ struct App : public MegaApp {
 struct CloudHttp : public HttpIO {
   class HttpCallback : public IHttpRequest::ICallback {
    public:
+    struct AbortState {
+      std::mutex mutex_;
+      bool abort_ = false;
+    };
+
     HttpCallback(App* app, std::function<void(const char*, uint32_t)> read,
-                 std::shared_ptr<std::atomic_bool> abort)
+                 std::shared_ptr<AbortState> abort)
         : app_(app), stream_(read), abort_(abort), progress_() {}
 
     ~HttpCallback() override {}
@@ -427,7 +432,10 @@ struct CloudHttp : public HttpIO {
       return IHttpRequest::isSuccess(code);
     }
 
-    bool abort() override { return *abort_; }
+    bool abort() override {
+      std::unique_lock<std::mutex> lock(abort_->mutex_);
+      return abort_->abort_;
+    }
 
     bool pause() override { return false; }
 
@@ -445,22 +453,26 @@ struct CloudHttp : public HttpIO {
 
     App* app_;
     DownloadStreamWrapper stream_;
-    std::shared_ptr<std::atomic_bool> abort_;
+    std::shared_ptr<AbortState> abort_;
     std::atomic_uint64_t progress_;
   };
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
     if (http_ == nullptr) return;
-    auto abort_mark = std::make_shared<std::atomic_bool>(false);
+    auto abort_mark = std::make_shared<HttpCallback::AbortState>();
     auto request = http_->create(r->posturl, "POST");
     auto callback = std::make_shared<HttpCallback>(
         app_,
         [=](const char* d, uint32_t cnt) {
-          if (!*abort_mark) {
-            auto lock = app_->lock();
-            read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
-            app_->exec(lock);
+          {
+            std::unique_lock<std::mutex> lock(abort_mark->mutex_);
+            if (abort_mark->abort_) {
+              return;
+            }
           }
+          auto lock = app_->lock();
+          read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
+          app_->exec(lock);
         },
         abort_mark);
     auto input = std::make_shared<std::stringstream>();
@@ -476,14 +488,19 @@ struct CloudHttp : public HttpIO {
     app_->enqueue([=] {
       request->send(
           [=](EitherError<IHttpRequest::Response> e) {
+            {
+              std::unique_lock<std::mutex> lock(abort_mark->mutex_);
+              if (abort_mark->abort_) {
+                return;
+              }
+            }
             auto lock = app_->lock();
             pending_requests_--;
+            queue_.push_back({r, e});
             if (!http_ && pending_requests_ == 0) {
               no_requests_.set_value();
-            } else if (!*abort_mark) {
-              queue_.push_back({r, e});
-              app_->exec(lock);
             }
+            app_->exec(lock);
           },
           input, output, output, callback);
     });
@@ -495,7 +512,12 @@ struct CloudHttp : public HttpIO {
     h->status = REQ_FAILURE;
     if (h->httpiohandle) {
       auto r = static_cast<std::shared_ptr<HttpCallback>*>(h->httpiohandle);
-      *((*r)->abort_) = true;
+      std::unique_lock<std::mutex> lock((*r)->abort_->mutex_);
+      (*r)->abort_->abort_ = true;
+      pending_requests_--;
+      if (!http_ && pending_requests_ == 0) {
+        no_requests_.set_value();
+      }
       delete r;
       h->httpiohandle = nullptr;
     }
