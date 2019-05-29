@@ -206,11 +206,6 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
   std::shared_ptr<ICloudFactory::ICallback> cb_;
 };
 
-uint64_t cloud_identifier(const ICloudProvider& p) {
-  auto state = p.hints()["state"];
-  return std::stoull(state.substr(p.name().length() + 1));
-}
-
 }  // namespace
 
 CloudFactory::CloudFactory(CloudFactory::InitData&& d)
@@ -224,7 +219,6 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
       thread_pool_(d.thread_pool_factory_->create(1)),
       thread_pool_factory_(std::move(d.thread_pool_factory_)),
       cloud_storage_(ICloudStorage::create()),
-      provider_index_(),
       loop_(event_loop_.impl()) {
   for (const auto& d : cloud_storage_->providers()) {
     http_server_handles_.emplace_back(
@@ -255,7 +249,7 @@ std::shared_ptr<ICloudAccess> CloudFactory::create(
     const std::string& provider_name,
     const ICloudFactory::ProviderInitData& data) {
   auto result = std::make_shared<CloudAccess>(createImpl(provider_name, data));
-  cloud_access_.insert({cloud_identifier(*result->provider()), result});
+  cloud_access_.insert({result->provider(), result});
   return std::static_pointer_cast<ICloudAccess>(result);
 }
 
@@ -290,8 +284,7 @@ CloudAccess CloudFactory::createImpl(
                    : nullptr;
   init_data.callback_ =
       util::make_unique<AuthCallback>(const_cast<CloudFactory*>(this));
-  auto index = provider_index_++;
-  auto state = provider_name + "-" + std::to_string(index);
+  auto state = provider_name;
   if (init_data.hints_.find("state") == init_data.hints_.end())
     init_data.hints_["state"] = state;
   if (init_data.hints_.find("file_url") == init_data.hints_.end())
@@ -337,8 +330,7 @@ void CloudFactory::onCloudTokenReceived(const std::string& provider,
     init_data.hints_["access_token"] = token.right()->access_token_;
     auto cloud_access =
         std::make_shared<CloudAccess>(createImpl(provider, init_data));
-    cloud_access_.insert(
-        {cloud_identifier(*cloud_access->provider()), cloud_access});
+    cloud_access_.insert({cloud_access->provider(), cloud_access});
     onCloudCreated(cloud_access);
   }
 }
@@ -408,9 +400,8 @@ bool CloudFactory::httpServerAvailable() const {
 }
 
 void CloudFactory::onCloudRemoved(const ICloudProvider& d) {
-  auto identifier = cloud_identifier(d);
-  loop_->invoke([=] {
-    auto it = cloud_access_.find(identifier);
+  loop_->invoke([this, id = &d] {
+    auto it = cloud_access_.find(id);
     if (it != cloud_access_.end()) {
       onCloudRemoved(it->second);
       cloud_access_.erase(it);
@@ -452,7 +443,7 @@ bool CloudFactory::loadAccounts(std::istream&& stream) {
       auto cloud =
           std::make_shared<CloudAccess>(createImpl(d["type"].asString(), data));
       onCloudCreated(cloud);
-      cloud_access_.insert({cloud_identifier(*cloud->provider()), cloud});
+      cloud_access_.insert({cloud->provider(), cloud});
     }
     return true;
   } catch (const Json::Exception&) {

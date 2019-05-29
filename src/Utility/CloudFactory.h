@@ -97,9 +97,9 @@ class CloudFactory : public ICloudFactory {
   std::shared_ptr<IThreadPool> thread_pool_;
   std::unique_ptr<IThreadPoolFactory> thread_pool_factory_;
   ICloudStorage::Pointer cloud_storage_;
-  mutable std::atomic_uint64_t provider_index_;
   std::vector<IHttpServer::Pointer> http_server_handles_;
-  std::unordered_map<uint64_t, std::shared_ptr<CloudAccess>> cloud_access_;
+  std::unordered_map<const ICloudProvider*, std::shared_ptr<CloudAccess>>
+      cloud_access_;
   std::shared_ptr<priv::LoopImpl> loop_;
   Json::Value config_;
   std::mutex mutex_;
