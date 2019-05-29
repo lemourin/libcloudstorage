@@ -80,7 +80,10 @@ class CLOUDSTORAGE_API ICloudFactory {
                                                const ProviderInitData&) = 0;
   virtual void remove(const std::shared_ptr<ICloudAccess>&) = 0;
 
-  virtual std::string authorizationUrl(const std::string& provider) const = 0;
+  virtual std::string authorizationUrl(
+      const std::string& provider,
+      const ProviderInitData& = ProviderInitData{
+          "", ICloudProvider::Permission::ReadWrite, {}}) const = 0;
   virtual std::string pretty(const std::string& provider) const = 0;
   virtual bool httpServerAvailable() const = 0;
 

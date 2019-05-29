@@ -55,7 +55,8 @@ class CloudFactory : public ICloudFactory {
   void onCloudCreated(std::shared_ptr<CloudAccess> cloud);
   void onCloudRemoved(std::shared_ptr<CloudAccess> cloud);
 
-  std::string authorizationUrl(const std::string& provider) const override;
+  std::string authorizationUrl(const std::string& provider,
+                               const ProviderInitData& data) const override;
   std::string pretty(const std::string& provider) const override;
   std::vector<std::string> availableProviders() const override;
   bool httpServerAvailable() const override;

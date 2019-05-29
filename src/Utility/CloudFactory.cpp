@@ -367,9 +367,8 @@ void CloudFactory::onCloudRemoved(std::shared_ptr<CloudAccess> d) {
   if (callback_) callback_->onCloudRemoved(d);
 }
 
-std::string CloudFactory::authorizationUrl(const std::string& provider) const {
-  ProviderInitData data;
-  data.permission_ = ICloudProvider::Permission::ReadWrite;
+std::string CloudFactory::authorizationUrl(const std::string& provider,
+                                           const ProviderInitData& data) const {
   auto p = createImpl(provider, data);
   return p.provider()->authorizeLibraryUrl();
 }
