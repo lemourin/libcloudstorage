@@ -292,16 +292,21 @@ CloudAccess CloudFactory::createImpl(
       util::make_unique<AuthCallback>(const_cast<CloudFactory*>(this));
   auto index = provider_index_++;
   auto state = provider_name + "-" + std::to_string(index);
-  init_data.hints_["state"] = state;
-  init_data.hints_["file_url"] =
-      base_url_ + (base_url_.back() == '/' ? "" : "/") + state;
-  init_data.hints_["redirect_uri"] =
-      base_url_ + (base_url_.back() == '/' ? "" : "/") + provider_name;
+  if (init_data.hints_.find("state") == init_data.hints_.end())
+    init_data.hints_["state"] = state;
+  if (init_data.hints_.find("file_url") == init_data.hints_.end())
+    init_data.hints_["file_url"] =
+        base_url_ + (base_url_.back() == '/' ? "" : "/") + state;
+  if (init_data.hints_.find("redirect_uri") == init_data.hints_.end())
+    init_data.hints_["redirect_uri"] =
+        base_url_ + (base_url_.back() == '/' ? "" : "/") + provider_name;
   if (config_["keys"].isMember(provider_name)) {
-    init_data.hints_["client_id"] =
-        config_["keys"][provider_name]["client_id"].asString();
-    init_data.hints_["client_secret"] =
-        config_["keys"][provider_name]["client_secret"].asString();
+    if (init_data.hints_.find("client_id") == init_data.hints_.end())
+      init_data.hints_["client_id"] =
+          config_["keys"][provider_name]["client_id"].asString();
+    if (init_data.hints_.find("client_secret") == init_data.hints_.end())
+      init_data.hints_["client_secret"] =
+          config_["keys"][provider_name]["client_secret"].asString();
   }
   return CloudAccess(
       loop_, cloud_storage_->provider(provider_name, std::move(init_data)));
