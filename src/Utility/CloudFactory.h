@@ -78,6 +78,9 @@ class CloudFactory : public ICloudFactory {
   void quit() override;
 
   std::vector<std::shared_ptr<ICloudAccess>> providers() const override;
+  Promise<Token> exchangeAuthorizationCode(const std::string& provider,
+                                           const ProviderInitData&,
+                                           const std::string& code) override;
 
   CloudAccess createImpl(const std::string& provider_name,
                          const ProviderInitData&) const;

@@ -93,7 +93,6 @@ class CloudAccess : public ICloudAccess {
   std::string token() const override;
   ICloudProvider::Hints hints() const override;
 
-  Promise<Token> exchangeCode(const std::string& code) override;
   Promise<GeneralData> generalData() override;
   Promise<IItem::List> listDirectory(IItem::Pointer item) override;
   Promise<IItem::Pointer> getItem(const std::string& path) override;

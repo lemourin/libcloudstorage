@@ -104,6 +104,10 @@ class CLOUDSTORAGE_API ICloudFactory {
   virtual int exec() = 0;
   virtual void quit() = 0;
 
+  virtual Promise<Token> exchangeAuthorizationCode(const std::string& provider,
+                                                   const ProviderInitData&,
+                                                   const std::string& code) = 0;
+
   static void initialize(void* javaVM);
   static std::unique_ptr<ICloudFactory> create(const ICallback::Pointer&);
   static std::unique_ptr<ICloudFactory> create(InitData&&);

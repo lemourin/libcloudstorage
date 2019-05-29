@@ -62,7 +62,6 @@ class CLOUDSTORAGE_API ICloudAccess {
   virtual std::string token() const = 0;
   virtual ICloudProvider::Hints hints() const = 0;
 
-  virtual Promise<Token> exchangeCode(const std::string& code) = 0;
   virtual Promise<GeneralData> generalData() = 0;
   virtual Promise<IItem::List> listDirectory(IItem::Pointer item) = 0;
   virtual Promise<IItem::Pointer> getItem(const std::string& path) = 0;

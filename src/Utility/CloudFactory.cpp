@@ -512,6 +512,25 @@ std::vector<std::shared_ptr<ICloudAccess>> CloudFactory::providers() const {
   return result;
 }
 
+Promise<Token> CloudFactory::exchangeAuthorizationCode(
+    const std::string& provider, const ProviderInitData& data,
+    const std::string& code) {
+  Promise<Token> result;
+  auto access =
+      std::make_shared<CloudAccess>(createImpl(provider, std::move(data)));
+  add(access->provider()->exchangeCodeAsync(
+      code, [factory = this, provider, result,
+             access = std::move(access)](EitherError<Token> e) {
+        factory->invoke([provider, result, e, access = std::move(access)] {
+          if (e.left())
+            result.reject(Exception(e.left()->code_, e.left()->description_));
+          else
+            result.fulfill(std::move(*e.right()));
+        });
+      }));
+  return result;
+}
+
 std::unique_ptr<ICloudFactory> ICloudFactory::create(
     const ICloudFactory::ICallback::Pointer& callback) {
   ICloudFactory::InitData init_data;

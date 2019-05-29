@@ -150,10 +150,6 @@ CloudAccess::CloudAccess(std::shared_ptr<priv::LoopImpl> loop,
                          ICloudProvider::Pointer&& provider)
     : loop_(loop), provider_(std::move(provider)) {}
 
-Promise<Token> CloudAccess::exchangeCode(const std::string& code) {
-  return wrap(&ICloudProvider::exchangeCodeAsync, code);
-}
-
 Promise<GeneralData> CloudAccess::generalData() {
   return wrap(&ICloudProvider::getGeneralDataAsync);
 }
