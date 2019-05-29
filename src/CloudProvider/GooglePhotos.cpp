@@ -45,7 +45,7 @@ const auto SHARED_NAME = "Shared with me";
 ICloudProvider::GeneralDataRequest::Pointer getGeneralDataUsingOpenId(
     CloudProvider *p, GeneralDataCallback callback) {
   auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
-    r->request(
+    r->send(
         [=](util::Output) {
           return p->http()->create(
               "https://accounts.google.com/.well-known/openid-configuration");
