@@ -253,9 +253,9 @@ std::shared_ptr<ICloudAccess> CloudFactory::create(
   return std::static_pointer_cast<ICloudAccess>(result);
 }
 
-void CloudFactory::remove(const std::shared_ptr<ICloudAccess>& d) {
+void CloudFactory::remove(const ICloudAccess& d) {
   for (auto it = cloud_access_.begin(); it != cloud_access_.end();) {
-    if (it->second == d) {
+    if (it->second.get() == &d) {
       onCloudRemoved(it->second);
       it = cloud_access_.erase(it);
     } else {

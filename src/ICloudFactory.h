@@ -78,7 +78,7 @@ class CLOUDSTORAGE_API ICloudFactory {
 
   virtual std::shared_ptr<ICloudAccess> create(const std::string& provider_name,
                                                const ProviderInitData&) = 0;
-  virtual void remove(const std::shared_ptr<ICloudAccess>&) = 0;
+  virtual void remove(const ICloudAccess&) = 0;
 
   virtual std::string authorizationUrl(
       const std::string& provider,
