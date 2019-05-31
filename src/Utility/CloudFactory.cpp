@@ -284,7 +284,8 @@ CloudAccess CloudFactory::createImpl(
                    : nullptr;
   init_data.callback_ =
       util::make_unique<AuthCallback>(const_cast<CloudFactory*>(this));
-  auto state = provider_name;
+  auto state =
+      std::to_string(reinterpret_cast<intptr_t>(init_data.callback_.get()));
   if (init_data.hints_.find("state") == init_data.hints_.end())
     init_data.hints_["state"] = state;
   if (init_data.hints_.find("file_url") == init_data.hints_.end())
