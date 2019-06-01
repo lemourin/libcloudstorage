@@ -740,9 +740,7 @@ IItem::List AnimeZone::animeDirectoryContent(const std::string &anime_name,
                                              const std::string &content) const {
   IItem::List result;
   re::regex episode_rx(
-      "<strong>([^<]*)</"
-      "strong>[^\n]*\n[^\"]*\"episode-title\">([^<]*)<(?:[^\n]*\n)*?.*?<a "
-      "href=\"..(/odcinek[^\"]*)\"");
+      R"(<td[^>]*><strong>([^<]*)<\/strong><\/td>\s*<td[^>]*>([^<]*)<\/td>\s*<td[^>]*><\/td>\s*<td[^>]*>.*\s*.*\s*<td[^>]*><a href="..(\/[^"]*))");
   auto list_start = content.find("</thead>");
   if (list_start == std::string::npos) {
     return result;
