@@ -61,7 +61,7 @@ class CloudFactory : public ICloudFactory {
   std::vector<std::string> availableProviders() const override;
   bool httpServerAvailable() const override;
 
-  void onCloudRemoved(const ICloudProvider&);
+  void onCloudRemoved(ICloudAccess*);
 
   bool dumpAccounts(std::ostream& stream) override;
   bool dumpAccounts(std::ostream&& stream) override;
@@ -82,8 +82,8 @@ class CloudFactory : public ICloudFactory {
                                            const ProviderInitData&,
                                            const std::string& code) override;
 
-  CloudAccess createImpl(const std::string& provider_name,
-                         const ProviderInitData&) const;
+  std::unique_ptr<CloudAccess> createImpl(const std::string& provider_name,
+                                          const ProviderInitData&) const;
 
   void onEventsAdded();
 
@@ -98,8 +98,7 @@ class CloudFactory : public ICloudFactory {
   std::unique_ptr<IThreadPoolFactory> thread_pool_factory_;
   ICloudStorage::Pointer cloud_storage_;
   std::vector<IHttpServer::Pointer> http_server_handles_;
-  std::unordered_map<const ICloudProvider*, std::shared_ptr<CloudAccess>>
-      cloud_access_;
+  std::unordered_set<std::shared_ptr<CloudAccess>> cloud_access_;
   std::shared_ptr<priv::LoopImpl> loop_;
   Json::Value config_;
   std::mutex mutex_;

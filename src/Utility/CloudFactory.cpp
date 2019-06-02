@@ -82,13 +82,14 @@ struct AuthCallback : public ICloudProvider::IAuthCallback {
     return Status::None;
   }
 
-  void done(const ICloudProvider& p, EitherError<void> e) override {
+  void done(const ICloudProvider&, EitherError<void> e) override {
     if (e.left()) {
-      factory_->onCloudRemoved(p);
+      factory_->onCloudRemoved(access_);
     }
   }
 
   CloudFactory* factory_;
+  ICloudAccess* access_ = nullptr;
 };
 
 struct HttpServerFactoryWrapper : public IHttpServerFactory {
@@ -248,23 +249,23 @@ CloudFactory::~CloudFactory() {
 std::shared_ptr<ICloudAccess> CloudFactory::create(
     const std::string& provider_name,
     const ICloudFactory::ProviderInitData& data) {
-  auto result = std::make_shared<CloudAccess>(createImpl(provider_name, data));
-  cloud_access_.insert({result->provider(), result});
+  auto result = std::shared_ptr<CloudAccess>(createImpl(provider_name, data));
+  cloud_access_.insert(result);
   return std::static_pointer_cast<ICloudAccess>(result);
 }
 
 void CloudFactory::remove(const ICloudAccess& d) {
-  for (auto it = cloud_access_.begin(); it != cloud_access_.end();) {
-    if (it->second.get() == &d) {
-      onCloudRemoved(it->second);
-      it = cloud_access_.erase(it);
-    } else {
-      it++;
-    }
+  auto tmp = std::shared_ptr<CloudAccess>(
+      static_cast<CloudAccess*>(const_cast<ICloudAccess*>(&d)),
+      [](ICloudAccess*) {});
+  auto it = cloud_access_.find(tmp);
+  if (it != cloud_access_.end()) {
+    onCloudRemoved(*it);
+    cloud_access_.erase(it);
   }
 }
 
-CloudAccess CloudFactory::createImpl(
+std::unique_ptr<CloudAccess> CloudFactory::createImpl(
     const std::string& provider_name,
     const CloudFactory::ProviderInitData& data) const {
   ICloudProvider::InitData init_data;
@@ -284,6 +285,7 @@ CloudAccess CloudFactory::createImpl(
                    : nullptr;
   init_data.callback_ =
       util::make_unique<AuthCallback>(const_cast<CloudFactory*>(this));
+  auto auth_callback = static_cast<AuthCallback*>(init_data.callback_.get());
   auto state =
       std::to_string(reinterpret_cast<intptr_t>(init_data.callback_.get()));
   if (init_data.hints_.find("state") == init_data.hints_.end())
@@ -302,8 +304,10 @@ CloudAccess CloudFactory::createImpl(
       init_data.hints_["client_secret"] =
           config_["keys"][provider_name]["client_secret"].asString();
   }
-  return CloudAccess(
+  auto result = util::make_unique<CloudAccess>(
       loop_, cloud_storage_->provider(provider_name, std::move(init_data)));
+  auth_callback->access_ = result.get();
+  return result;
 }
 
 void CloudFactory::onEventsAdded() {
@@ -330,8 +334,8 @@ void CloudFactory::onCloudTokenReceived(const std::string& provider,
     init_data.token_ = token.right()->token_;
     init_data.hints_["access_token"] = token.right()->access_token_;
     auto cloud_access =
-        std::make_shared<CloudAccess>(createImpl(provider, init_data));
-    cloud_access_.insert({cloud_access->provider(), cloud_access});
+        std::shared_ptr<CloudAccess>(createImpl(provider, init_data));
+    cloud_access_.insert(cloud_access);
     onCloudCreated(cloud_access);
   }
 }
@@ -342,7 +346,7 @@ void CloudFactory::onCloudAuthenticationCodeReceived(
   CloudFactory::ProviderInitData data;
   data.permission_ = ICloudProvider::Permission::ReadWrite;
   auto access =
-      std::make_shared<CloudAccess>(createImpl(provider, std::move(data)));
+      std::shared_ptr<CloudAccess>(createImpl(provider, std::move(data)));
   add(access->provider()->exchangeCodeAsync(
       code, [factory = this, provider,
              access = std::move(access)](EitherError<Token> e) {
@@ -363,7 +367,7 @@ void CloudFactory::onCloudRemoved(std::shared_ptr<CloudAccess> d) {
 std::string CloudFactory::authorizationUrl(const std::string& provider,
                                            const ProviderInitData& data) const {
   auto p = createImpl(provider, data);
-  return p.provider()->authorizeLibraryUrl();
+  return p->provider()->authorizeLibraryUrl();
 }
 
 std::string CloudFactory::pretty(const std::string& provider) const {
@@ -400,11 +404,13 @@ bool CloudFactory::httpServerAvailable() const {
   return http_server_factory_->serverAvailable();
 }
 
-void CloudFactory::onCloudRemoved(const ICloudProvider& d) {
-  loop_->invoke([this, id = &d] {
-    auto it = cloud_access_.find(id);
+void CloudFactory::onCloudRemoved(ICloudAccess* d) {
+  loop_->invoke([this, id = d] {
+    auto tmp = std::shared_ptr<CloudAccess>(static_cast<CloudAccess*>(id),
+                                            [](ICloudAccess*) {});
+    auto it = cloud_access_.find(tmp);
     if (it != cloud_access_.end()) {
-      onCloudRemoved(it->second);
+      onCloudRemoved(*it);
       cloud_access_.erase(it);
     }
   });
@@ -416,9 +422,9 @@ bool CloudFactory::dumpAccounts(std::ostream&& stream) {
     Json::Value providers;
     for (const auto& d : cloud_access_) {
       Json::Value provider;
-      provider["type"] = d.second->provider()->name();
-      provider["token"] = d.second->provider()->token();
-      provider["access_token"] = d.second->provider()->hints()["access_token"];
+      provider["type"] = d->provider()->name();
+      provider["token"] = d->provider()->token();
+      provider["access_token"] = d->provider()->hints()["access_token"];
       providers.append(provider);
     }
     json["providers"] = providers;
@@ -442,9 +448,9 @@ bool CloudFactory::loadAccounts(std::istream&& stream) {
       data.token_ = d["token"].asString();
       data.hints_["access_token"] = d["access_token"].asString();
       auto cloud =
-          std::make_shared<CloudAccess>(createImpl(d["type"].asString(), data));
+          std::shared_ptr<CloudAccess>(createImpl(d["type"].asString(), data));
       onCloudCreated(cloud);
-      cloud_access_.insert({cloud->provider(), cloud});
+      cloud_access_.insert(cloud);
     }
     return true;
   } catch (const Json::Exception&) {
@@ -497,11 +503,8 @@ void CloudFactory::quit() {
 }
 
 std::vector<std::shared_ptr<ICloudAccess>> CloudFactory::providers() const {
-  std::vector<std::shared_ptr<ICloudAccess>> result;
-  for (const auto& p : cloud_access_) {
-    result.push_back(p.second);
-  }
-  return result;
+  return std::vector<std::shared_ptr<ICloudAccess>>(cloud_access_.begin(),
+                                                    cloud_access_.end());
 }
 
 Promise<Token> CloudFactory::exchangeAuthorizationCode(
@@ -509,7 +512,7 @@ Promise<Token> CloudFactory::exchangeAuthorizationCode(
     const std::string& code) {
   Promise<Token> result;
   auto access =
-      std::make_shared<CloudAccess>(createImpl(provider, std::move(data)));
+      std::shared_ptr<CloudAccess>(createImpl(provider, std::move(data)));
   add(access->provider()->exchangeCodeAsync(
       code, [factory = this, provider, result,
              access = std::move(access)](EitherError<Token> e) {
