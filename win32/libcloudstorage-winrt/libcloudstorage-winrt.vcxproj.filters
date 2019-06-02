@@ -334,9 +334,6 @@
     <ClCompile Include="..\..\src\Request\UploadFileRequest.cpp">
       <Filter>Source Files\Request</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\C\CloudStorage.cpp">
-      <Filter>Source Files\Utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Utility\CryptoPP.cpp">
       <Filter>Source Files\Utility</Filter>
     </ClCompile>
@@ -379,9 +376,6 @@
     <ClCompile Include="..\..\src\C\Crypto.cpp">
       <Filter>Source Files\C</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp">
-      <Filter>Source Files\C</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\C\CloudProvider.cpp">
       <Filter>Source Files\C</Filter>
     </ClCompile>
@@ -405,6 +399,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\C\Request.cpp">
       <Filter>Source Files\C</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\C\CloudStorage.cpp">
+      <Filter>Source Files\C</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Utility\CloudStorage.cpp">
+      <Filter>Source Files\Utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
