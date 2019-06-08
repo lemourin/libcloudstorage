@@ -224,7 +224,6 @@ class HttpData : public IHttpServer::IResponse::ICallback {
             buffer_->item_ = e.right();
             buffer_->range_ = range;
             cache->put(file, e.right());
-            p->addStreamRequest(r);
             r->make_subrequest(
                 &CloudProvider::downloadFileRangeAsync, e.right(),
                 Range{range.start_,
@@ -241,13 +240,15 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       else
         item_received(cached_item);
     };
-    return std::make_shared<StreamRequest>(provider,
-                                           [=](EitherError<void> e) {
-                                             if (e.left()) status_ = Failed;
-                                             buffer_->resume();
-                                           },
-                                           resolver)
-        ->run();
+    auto result = std::make_shared<StreamRequest>(provider,
+                                                  [=](EitherError<void> e) {
+                                                    if (e.left())
+                                                      status_ = Failed;
+                                                    buffer_->resume();
+                                                  },
+                                                  resolver);
+    provider->addStreamRequest(result);
+    return result->run();
   }
 
   int putData(char* buf, size_t max) override {
