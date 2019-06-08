@@ -70,7 +70,10 @@ struct CryptoWrapper : public ICrypto {
 struct ThreadPoolWrapper : public IThreadPool {
   ThreadPoolWrapper(std::shared_ptr<IThreadPool> pool) : thread_pool_(pool) {}
 
-  void schedule(const Task& f) override { thread_pool_->schedule(f); }
+  void schedule(const Task& f,
+                const std::chrono::system_clock::time_point& when) override {
+    thread_pool_->schedule(f, when);
+  }
 
   std::shared_ptr<IThreadPool> thread_pool_;
 };

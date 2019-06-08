@@ -272,20 +272,39 @@ class Listener : public IRequest<EitherError<Result>> {
 struct App : public MegaApp {
   App(MegaNz* mega) : mega_(mega) {}
 
-  void notify_retry(dstime, retryreason_t) override { client->abortbackoff(); }
+  void exec_delayed(const std::chrono::system_clock::time_point& when) {
+    std::weak_ptr<MegaNz> ref(
+        std::static_pointer_cast<MegaNz>(mega_->shared_from_this()));
+    mega_->thread_pool()->schedule(
+        [this, ref] {
+          auto mega = ref.lock();
+          if (mega) {
+            auto lock = this->lock();
+            this->exec(lock);
+          }
+        },
+        when);
+  }
 
-  void transfer_failed(Transfer*, error, dstime) override {
-    client->abortbackoff();
+  void notify_retry(dstime time, retryreason_t) override {
+    exec_delayed(std::chrono::system_clock::now() +
+                 std::chrono::milliseconds(100 * time));
+  }
+
+  void transfer_failed(Transfer*, error, dstime time) override {
+    exec_delayed(std::chrono::system_clock::now() +
+                 std::chrono::milliseconds(100 * time));
   }
 
   dstime pread_failure(error e, int retry, void* d, dstime) override {
     auto it = callback_.find(static_cast<int>(reinterpret_cast<uintptr_t>(d)));
-    if (retry >= 4 && it != callback_.end()) {
+    if (retry >= 8 && it != callback_.end()) {
       auto request = static_cast<Listener<error>*>(it->second.second.get());
       request->done(Error{e, error_description(e)});
       callback_.erase(it);
+      return ~0u;
     }
-    return 0;
+    return 1 << retry;
   }
 
   bool pread_data(uint8_t* data, m_off_t length, m_off_t, m_off_t, m_off_t,

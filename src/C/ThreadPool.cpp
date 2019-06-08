@@ -44,14 +44,15 @@ cloud_thread_pool *cloud_thread_pool_create(cloud_thread_pool_operations *d,
 
     ~ThreadPool() override { operations_.release(userdata_); }
 
-    void schedule(const Task &f) override {
+    void schedule(const Task &f,
+                  const std::chrono::system_clock::time_point &when) override {
       operations_.schedule(
           [](const void *d) {
             const Task *task = reinterpret_cast<const Task *>(d);
             (*task)();
             delete task;
           },
-          new Task(f), userdata_);
+          new Task(f), std::chrono::system_clock::to_time_t(when), userdata_);
     }
 
     cloud_thread_pool_operations operations_;

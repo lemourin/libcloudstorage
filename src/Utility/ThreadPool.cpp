@@ -28,7 +28,9 @@
 
 namespace cloudstorage {
 
-ThreadPool::ThreadPool(uint32_t thread_count) : destroyed_(false) {
+ThreadPool::ThreadPool(uint32_t thread_count)
+    : destroyed_(false),
+      delayed_tasks_thread_(std::bind(&ThreadPool::handleDelayedTasks, this)) {
   for (uint32_t i = 0; i < thread_count; ++i) {
     workers_.emplace_back([this]() {
       util::set_thread_name("cs-threadpool");
@@ -66,14 +68,45 @@ ThreadPool::~ThreadPool() {
     worker.join();
     lock.lock();
   }
+  lock.unlock();
+  delayed_tasks_thread_.join();
+  lock.lock();
 }
 
-void ThreadPool::schedule(const Task &f) {
+void ThreadPool::schedule(const Task &f,
+                          const std::chrono::system_clock::time_point &when) {
   std::unique_lock<std::mutex> lock(mutex_);
-  tasks_.push_back(std::move(f));
-  if (tasks_.size() == 1) {
-    worker_cv_.notify_one();
+  if (when <= std::chrono::system_clock::now()) {
+    tasks_.push_back(std::move(f));
+  } else {
+    delayed_tasks_.insert({when, f});
   }
+  worker_cv_.notify_all();
+}
+
+void ThreadPool::handleDelayedTasks() {
+  util::set_thread_name("cs-threadpool");
+  util::attach_thread();
+  while (true) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (destroyed_ && delayed_tasks_.empty()) {
+      break;
+    }
+    while (delayed_tasks_.empty() && !destroyed_) {
+      worker_cv_.wait_for(lock, std::chrono::milliseconds(100));
+    }
+    if (!delayed_tasks_.empty()) {
+      if (delayed_tasks_.begin()->first <= std::chrono::system_clock::now() ||
+          destroyed_) {
+        auto task = std::move(*delayed_tasks_.begin());
+        delayed_tasks_.erase(delayed_tasks_.begin());
+        lock.unlock();
+        task.second();
+        lock.lock();
+      }
+    }
+  }
+  util::detach_thread();
 }
 
 IThreadPool::Pointer IThreadPool::create(uint32_t threads) {

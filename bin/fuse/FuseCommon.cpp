@@ -72,7 +72,10 @@ IHttpRequest::Pointer HttpWrapper::create(const std::string &url,
   return http_->create(url, method, follow_redirect);
 }
 
-void ThreadPoolWrapper::schedule(const Task &f) { thread_pool_->schedule(f); }
+void ThreadPoolWrapper::schedule(
+    const Task &f, const std::chrono::system_clock::time_point &when) {
+  thread_pool_->schedule(f, when);
+}
 
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest &request) {

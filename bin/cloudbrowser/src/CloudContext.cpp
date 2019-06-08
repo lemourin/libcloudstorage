@@ -504,7 +504,10 @@ ICloudProvider::Pointer CloudContext::provider(
     ThreadPoolWrapper(std::shared_ptr<IThreadPool> thread_pool)
         : thread_pool_(thread_pool) {}
 
-    void schedule(const Task& f) override { thread_pool_->schedule(f); }
+    void schedule(const Task& f,
+                  const std::chrono::system_clock::time_point& when) override {
+      thread_pool_->schedule(f, when);
+    }
 
    private:
     std::shared_ptr<IThreadPool> thread_pool_;

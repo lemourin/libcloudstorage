@@ -33,7 +33,7 @@ extern "C" {
 struct cloud_thread_pool;
 
 struct cloud_thread_pool_operations {
-  void (*schedule)(void (*)(const void* param), const void* param,
+  void (*schedule)(void (*)(const void* param), const void* param, time_t when,
                    void* userdata);
   void (*release)(void* userdata);
 };

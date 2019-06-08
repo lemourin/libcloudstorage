@@ -23,6 +23,7 @@
 #ifndef ITHREADPOOL_H
 #define ITHREADPOOL_H
 
+#include <chrono>
 #include <functional>
 #include <memory>
 
@@ -39,7 +40,9 @@ class CLOUDSTORAGE_API IThreadPool {
 
   static Pointer create(uint32_t thread_count);
 
-  virtual void schedule(const Task& f) = 0;
+  virtual void schedule(const Task& f,
+                        const std::chrono::system_clock::time_point& when =
+                            std::chrono::system_clock::now()) = 0;
 };
 
 }  // namespace cloudstorage

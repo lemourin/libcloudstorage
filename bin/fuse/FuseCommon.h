@@ -69,7 +69,8 @@ class ThreadPoolWrapper : public IThreadPool {
   ThreadPoolWrapper(std::shared_ptr<IThreadPool> thread_pool)
       : thread_pool_(thread_pool) {}
 
-  void schedule(const Task &f) override;
+  void schedule(const Task &f,
+                const std::chrono::system_clock::time_point &) override;
 
  private:
   std::shared_ptr<IThreadPool> thread_pool_;

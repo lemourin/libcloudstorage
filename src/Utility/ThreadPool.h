@@ -24,10 +24,11 @@
 #define THREADPOOL_H
 
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <thread>
-#include <list>
 #include "IThreadPool.h"
 
 namespace cloudstorage {
@@ -36,14 +37,20 @@ class ThreadPool : public IThreadPool {
  public:
   ThreadPool(uint32_t thread_count);
   ~ThreadPool() override;
-  void schedule(const Task &f) override;
+  void schedule(const Task& f,
+                const std::chrono::system_clock::time_point& when) override;
 
  private:
+  void handleDelayedTasks();
+
   std::mutex mutex_;
   std::condition_variable worker_cv_;
   std::list<Task> tasks_;
   std::list<std::thread> workers_;
+  std::set<std::pair<std::chrono::system_clock::time_point, Task>>
+      delayed_tasks_;
   bool destroyed_;
+  std::thread delayed_tasks_thread_;
 };
 
 }  // namespace cloudstorage
