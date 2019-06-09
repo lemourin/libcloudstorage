@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="57864PaweWegner.CloudStorageBrowser" Publisher="CN=45E1A990-1A96-4132-833F-79DEA509C305" Version="1.14.0.0" />
+  <Identity Name="57864PaweWegner.CloudStorageBrowser" Publisher="CN=lemourin" Version="1.14.0.0" />
   <mp:PhoneIdentity PhoneProductId="fc3aea53-56dd-4a61-a0fb-8f4f565a6d02" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>Cloud Storage Browser</DisplayName>
