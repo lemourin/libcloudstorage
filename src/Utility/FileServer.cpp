@@ -206,7 +206,6 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       std::shared_ptr<CloudProvider> provider, const std::string& file,
       Range range, std::shared_ptr<Cache> cache) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
-      auto p = r->provider().get();
       buffer_->request_ = std::static_pointer_cast<StreamRequest>(r);
       auto item_received = [=](EitherError<IItem> e) {
         if (e.left()) {
