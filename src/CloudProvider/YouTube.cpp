@@ -313,7 +313,7 @@ void get_stream(
       std::string url;
       while (std::getline(stream, url, ',')) {
         auto d = video_info(url);
-        d.adaptive_ = data.second;
+        d.adaptive = data.second;
         result.push_back(d);
         if (!d.scrambled_signature.empty()) scrambled_signature = true;
       }
@@ -431,11 +431,11 @@ VideoInfo get_stream(const std::vector<VideoInfo>& d, const IItem& item) {
   for (const auto& d : d) {
     if (d.bitrate > result.bitrate) {
       if (id.type & YouTubeItem::Audio) {
-        if (d.type.find("audio/mp4") != std::string::npos && d.adaptive_)
+        if (d.type.find("audio/mp4") != std::string::npos && d.adaptive)
           result = d;
       } else {
         if (d.type.find("video/mp4") != std::string::npos &&
-            d.adaptive_ == bool(id.type & YouTubeItem::Stream))
+            d.adaptive == bool(id.type & YouTubeItem::Stream))
           result = d;
       }
     }
@@ -749,7 +749,7 @@ std::string YouTube::generateDashManifest(
   int index = 0;
   VideoInfo best_audio = {}, best_video = {};
   for (const auto& v : video_info) {
-    if (v.adaptive_) {
+    if (v.adaptive) {
       auto id = from_string(i.id());
       id.type = YouTubeItem::Stream | YouTubeItem::HighQuality |
                 (id.type & YouTubeItem::RelatedPlaylist);

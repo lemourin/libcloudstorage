@@ -45,7 +45,7 @@ struct VideoInfo {
   uint32_t height;
   uint32_t framerate;
   uint32_t samplerate;
-  bool adaptive_;
+  bool adaptive;
 };
 
 class YouTube : public CloudProvider {
