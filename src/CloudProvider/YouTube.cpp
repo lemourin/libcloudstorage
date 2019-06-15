@@ -149,7 +149,7 @@ VideoInfo video_info(const std::string& url) {
     std::getline(stream, key, '=');
     std::getline(stream, value, '=');
     if (key == "s")
-      result.scrambled_signature = value;
+      result.scrambled_signature = util::Url::unescape(value);
     else if (key == "sig")
       result.signature = value;
     else if (key == "type") {
@@ -180,6 +180,8 @@ VideoInfo video_info(const std::string& url) {
       result.framerate = std::stoul(value);
     else if (key == "audio_sample_rate")
       result.samplerate = std::stoul(value);
+    else if (key == "sp")
+      result.signature_keyname = value;
   }
   return result;
 }
@@ -335,7 +337,7 @@ void get_stream(
                 if (signature.left()) {
                   return complete(signature.left());
                 }
-                v.url += "&signature=" + *signature.right();
+                v.url += "&" + v.signature_keyname + "=" + *signature.right();
                 decoded.emplace_back(v);
               } else {
                 decoded.emplace_back(v);

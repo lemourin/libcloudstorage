@@ -46,6 +46,7 @@ struct VideoInfo {
   uint32_t framerate;
   uint32_t samplerate;
   bool adaptive;
+  std::string signature_keyname = "signature";
 };
 
 class YouTube : public CloudProvider {
