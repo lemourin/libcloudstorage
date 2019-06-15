@@ -459,18 +459,25 @@ struct CloudHttp : public HttpIO {
     bool pause() override { return false; }
 
     void progressDownload(uint64_t, uint64_t now) override {
-      auto lock = app_->lock();
-      progress_ = now;
-      app_->exec(lock);
+      std::unique_lock<std::recursive_mutex> callbackLock(mutex_);
+      if (app_) {
+        auto lock = app_->lock();
+        progress_ = now;
+        app_->exec(lock);
+      }
     }
 
     void progressUpload(uint64_t, uint64_t now) override {
-      auto lock = app_->lock();
-      progress_ = now;
-      app_->exec(lock);
+      std::unique_lock<std::recursive_mutex> callbackLock(mutex_);
+      if (app_) {
+        auto lock = app_->lock();
+        progress_ = now;
+        app_->exec(lock);
+      }
     }
 
     App* app_;
+    std::recursive_mutex mutex_;
     DownloadStreamWrapper stream_;
     std::shared_ptr<AbortState> abort_;
     std::atomic_uint64_t progress_;
@@ -531,6 +538,10 @@ struct CloudHttp : public HttpIO {
     h->status = REQ_FAILURE;
     if (h->httpiohandle) {
       auto r = static_cast<std::shared_ptr<HttpCallback>*>(h->httpiohandle);
+      {
+        std::unique_lock<std::recursive_mutex> lock((*r)->mutex_);
+        (*r)->app_ = nullptr;
+      }
       std::unique_lock<std::mutex> lock((*r)->abort_->mutex_);
       (*r)->abort_->abort_ = true;
       pending_requests_--;
