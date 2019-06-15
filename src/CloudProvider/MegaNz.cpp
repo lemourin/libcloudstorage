@@ -372,9 +372,9 @@ struct App : public MegaApp {
   void setattr_result(handle, error e) override { call(e, e); }
 
   void exec(std::unique_lock<std::mutex>& lock) {
-    if (exec_pending_ || removed_) return;
+    if (exec_pending_) return;
     exec_pending_ = true;
-    client->exec();
+    if (client) client->exec();
     lock.unlock();
     bool empty;
     {
@@ -428,7 +428,6 @@ struct App : public MegaApp {
       callback_;
   std::vector<std::function<void()>> callback_queue_;
   bool exec_pending_ = false;
-  bool removed_ = false;
   AccountDetails account_details_ = {};
 };
 
@@ -459,8 +458,8 @@ struct CloudHttp : public HttpIO {
     bool pause() override { return false; }
 
     void progressDownload(uint64_t, uint64_t now) override {
-      std::unique_lock<std::recursive_mutex> callbackLock(mutex_);
-      if (app_) {
+      std::unique_lock<std::mutex> abort_lock(abort_->mutex_);
+      if (!abort_->abort_) {
         auto lock = app_->lock();
         progress_ = now;
         app_->exec(lock);
@@ -468,8 +467,8 @@ struct CloudHttp : public HttpIO {
     }
 
     void progressUpload(uint64_t, uint64_t now) override {
-      std::unique_lock<std::recursive_mutex> callbackLock(mutex_);
-      if (app_) {
+      std::unique_lock<std::mutex> abort_lock(abort_->mutex_);
+      if (!abort_->abort_) {
         auto lock = app_->lock();
         progress_ = now;
         app_->exec(lock);
@@ -477,7 +476,6 @@ struct CloudHttp : public HttpIO {
     }
 
     App* app_;
-    std::recursive_mutex mutex_;
     DownloadStreamWrapper stream_;
     std::shared_ptr<AbortState> abort_;
     std::atomic_uint64_t progress_;
@@ -514,12 +512,9 @@ struct CloudHttp : public HttpIO {
     app_->enqueue([=] {
       request->send(
           [=](EitherError<IHttpRequest::Response> e) {
-            {
-              std::unique_lock<std::mutex> lock(abort_mark->mutex_);
-              if (abort_mark->abort_) {
-                return;
-              }
-            }
+            std::unique_lock<std::mutex> abort_lock(abort_mark->mutex_);
+            if (abort_mark->abort_) return;
+            abort_mark->abort_ = true;
             auto lock = app_->lock();
             pending_requests_--;
             queue_.push_back({r, e});
@@ -538,16 +533,16 @@ struct CloudHttp : public HttpIO {
     h->status = REQ_FAILURE;
     if (h->httpiohandle) {
       auto r = static_cast<std::shared_ptr<HttpCallback>*>(h->httpiohandle);
-      {
-        std::unique_lock<std::recursive_mutex> lock((*r)->mutex_);
-        (*r)->app_ = nullptr;
-      }
-      std::unique_lock<std::mutex> lock((*r)->abort_->mutex_);
-      (*r)->abort_->abort_ = true;
-      pending_requests_--;
-      if (!http_ && pending_requests_ == 0) {
-        no_requests_.set_value();
-      }
+      app_->enqueue([this, r = *r] {
+        std::unique_lock<std::mutex> abort_lock(r->abort_->mutex_);
+        if (r->abort_->abort_) return;
+        r->abort_->abort_ = true;
+        auto lock = app_->lock();
+        pending_requests_--;
+        if (!http_ && pending_requests_ == 0) {
+          no_requests_.set_value();
+        }
+      });
       delete r;
       h->httpiohandle = nullptr;
     }
@@ -714,7 +709,7 @@ class CloudMegaClient {
   ~CloudMegaClient() {
     auto lock = this->lock();
     client_ = nullptr;
-    app_.removed_ = true;
+    app_.exec(lock);
     http_->http_ = nullptr;
     if (http_->pending_requests_ > 0) {
       lock.unlock();
