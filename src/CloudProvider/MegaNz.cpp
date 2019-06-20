@@ -708,6 +708,7 @@ class CloudMegaClient {
 
   ~CloudMegaClient() {
     auto lock = this->lock();
+    app_.client = nullptr;
     client_ = nullptr;
     app_.exec(lock);
     http_->http_ = nullptr;
