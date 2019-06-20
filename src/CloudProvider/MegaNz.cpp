@@ -462,6 +462,7 @@ struct CloudHttp : public HttpIO {
       if (!abort_->abort_) {
         auto lock = app_->lock();
         progress_ = now;
+        abort_lock.unlock();
         app_->exec(lock);
       }
     }
@@ -471,6 +472,7 @@ struct CloudHttp : public HttpIO {
       if (!abort_->abort_) {
         auto lock = app_->lock();
         progress_ = now;
+        abort_lock.unlock();
         app_->exec(lock);
       }
     }
