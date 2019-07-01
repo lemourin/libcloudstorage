@@ -15,13 +15,12 @@ addons:
       name: lemourin/libcloudstorage
       description: Build submitted via Travis CI
     notification_email: pawel.wegner95@gmail.com
-    build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template
+    build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template && mkdir build-coverity && cd build-coverity && PKG_CONFIG_PATH=$PWD/contrib/x86_64-linux-gnu/lib/pkgconfig ../configure CXX=g++-7 CC=gcc-7
     build_command: make -j 4
     branch_pattern: coverity
 
 before_install:
-- echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END
-  CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+- echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 - cd contrib
 - wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.5-rc1/x86_64-linux-gnu.tar.gz
 - tar xf x86_64-linux-gnu.tar.gz
@@ -32,7 +31,7 @@ before_install:
 script:
 - mkdir build
 - cd build
-- PKG_CONFIG_LIBDIR=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+- PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig
   ../configure --with-examples CXXFLAGS="-Wall -Wextra -Werror -g -O0 -fsanitize=address"
   LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make -j 4
