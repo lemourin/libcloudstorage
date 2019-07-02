@@ -297,14 +297,15 @@ struct App : public MegaApp {
   }
 
   dstime pread_failure(error e, int retry, void* d, dstime) override {
+    const auto MAX_RETRY_COUNT = 7;
     auto it = callback_.find(static_cast<int>(reinterpret_cast<uintptr_t>(d)));
-    if (retry >= 8 && it != callback_.end()) {
+    if (retry > MAX_RETRY_COUNT && it != callback_.end()) {
       auto request = static_cast<Listener<error>*>(it->second.second.get());
       request->done(Error{e, error_description(e)});
       callback_.erase(it);
       return ~0u;
     }
-    return 1 << retry;
+    return retry > MAX_RETRY_COUNT ? ~0u : 1 << retry;
   }
 
   bool pread_data(uint8_t* data, m_off_t length, m_off_t, m_off_t, m_off_t,
