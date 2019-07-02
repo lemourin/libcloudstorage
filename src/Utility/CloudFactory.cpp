@@ -537,7 +537,7 @@ std::unique_ptr<ICloudFactory> ICloudFactory::create(
   init_data.http_server_factory_ = IHttpServerFactory::create();
   init_data.crypto_ = ICrypto::create();
   struct ThreadPoolFactory : public IThreadPoolFactory {
-    IThreadPool::Pointer create(uint32_t size) {
+    IThreadPool::Pointer create(uint32_t size) override {
       return IThreadPool::create(size);
     }
   };
