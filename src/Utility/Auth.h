@@ -108,10 +108,11 @@ class Auth : public IAuth {
   std::string login_page_;
   std::string success_page_;
   std::string error_page_;
-  ICloudProvider::Permission permission_;
+  ICloudProvider::Permission permission_ =
+      ICloudProvider::Permission::ReadWrite;
   Token::Pointer access_token_;
-  IHttp* http_;
-  IHttpServerFactory* http_server_;
+  IHttp* http_ = nullptr;
+  IHttpServerFactory* http_server_ = nullptr;
 };
 
 }  // namespace cloudstorage

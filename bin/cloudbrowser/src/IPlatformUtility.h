@@ -35,8 +35,6 @@ class CLOUDBROWSER_API IPlatformUtility : public QObject {
  public:
   using Pointer = std::unique_ptr<IPlatformUtility>;
 
-  virtual ~IPlatformUtility() = default;
-
   static Pointer create();
 
   Q_INVOKABLE virtual void initialize(QWindow* window) const = 0;

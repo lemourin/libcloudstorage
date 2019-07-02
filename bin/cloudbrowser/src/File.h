@@ -11,8 +11,7 @@
 
 class AndroidFile : public QIODevice {
  public:
-  AndroidFile(QString);
-  virtual ~AndroidFile() = default;
+  AndroidFile(const QString &);
 
   bool open(OpenMode) override;
   void close() override;
@@ -36,8 +35,7 @@ using File = AndroidFile;
 
 class WinRTFile : public QIODevice {
  public:
-  WinRTFile(QString);
-  virtual ~WinRTFile() = default;
+  WinRTFile(const QString &);
 
   bool open(OpenMode) override;
   void close() override;
@@ -69,8 +67,7 @@ using File = WinRTFile;
 
 class DesktopFile : public QFile {
  public:
-  DesktopFile(QString);
-  virtual ~DesktopFile() = default;
+  DesktopFile(const QString &);
 };
 
 using File = DesktopFile;

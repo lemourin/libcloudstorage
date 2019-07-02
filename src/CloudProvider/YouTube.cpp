@@ -78,16 +78,16 @@ struct YouTubeItem {
   std::string name;
   IItem::TimeStamp timestamp;
 
-  YouTubeItem() {}
+  YouTubeItem() = default;
 
-  YouTubeItem(int type, int stream_index, const std::string& id,
-              const std::string& video_id, const std::string& name,
-              const IItem::TimeStamp& timestamp = IItem::UnknownTimeStamp)
+  YouTubeItem(int type, int stream_index, std::string id, std::string video_id,
+              std::string name,
+              IItem::TimeStamp timestamp = IItem::UnknownTimeStamp)
       : type(type),
         stream_index(stream_index),
-        id(id),
-        video_id(video_id),
-        name(name),
+        id(std::move(id)),
+        video_id(std::move(video_id)),
+        name(std::move(name)),
         timestamp(timestamp) {}
 };
 
@@ -156,7 +156,7 @@ VideoInfo video_info(const std::string& url) {
       result.type = util::Url::unescape(value);
       auto text = "codecs=\"";
       auto it = result.type.find(text) + strlen(text);
-      auto it_end = result.type.find("\"", it);
+      auto it_end = result.type.find('"', it);
       result.codec =
           std::string(result.type.begin() + it, result.type.begin() + it_end);
     } else if (key == "url")
@@ -296,8 +296,8 @@ EitherError<std::string> descramble(const std::string& scrambled,
 
 template <class Result>
 void get_stream(
-    typename Request<Result>::Pointer r, const std::string& video_id,
-    std::function<void(EitherError<std::vector<VideoInfo>>)> complete) {
+    const typename Request<Result>::Pointer& r, const std::string& video_id,
+    const std::function<void(EitherError<std::vector<VideoInfo>>)>& complete) {
   auto get_config = [](std::stringstream& stream) {
     const std::string player_str = "ytplayer.config = ";
     if (!find(stream, player_str))
@@ -780,7 +780,7 @@ std::string YouTube::generateDashManifest(
   return generate_dash_manifest(duration, {best_video, best_audio});
 }
 
-Item::Pointer YouTube::toItem(const Json::Value& v, std::string kind,
+Item::Pointer YouTube::toItem(const Json::Value& v, const std::string& kind,
                               int type) const {
   if (kind == "youtube#playlistListResponse") {
     auto item = util::make_unique<Item>(

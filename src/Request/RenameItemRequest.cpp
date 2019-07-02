@@ -28,10 +28,10 @@
 namespace cloudstorage {
 
 RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
-                                     IItem::Pointer item,
+                                     const IItem::Pointer& item,
                                      const std::string& name,
-                                     RenameItemCallback callback)
-    : Request(p, callback, [=](Request::Pointer request) {
+                                     const RenameItemCallback& callback)
+    : Request(std::move(p), callback, [=](Request::Pointer request) {
         this->request(
             [=](util::Output stream) {
               return p->renameItemRequest(*item, name, *stream);

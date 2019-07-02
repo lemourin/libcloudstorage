@@ -29,8 +29,7 @@ class CLOUDBROWSER_API CloudItem : public QObject {
   Q_PROPERTY(QString timestamp READ timestamp CONSTANT)
   Q_PROPERTY(QString type READ type CONSTANT)
 
-  CloudItem(const Provider&, cloudstorage::IItem::Pointer,
-            QObject* parent = nullptr);
+  CloudItem(Provider, cloudstorage::IItem::Pointer, QObject* parent = nullptr);
 
   cloudstorage::IItem::Pointer item() const { return item_; }
   const Provider& provider() const { return provider_; }
@@ -38,7 +37,7 @@ class CLOUDBROWSER_API CloudItem : public QObject {
   qint64 size() const;
   QString timestamp() const;
   QString type() const;
-  Q_INVOKABLE bool supports(QString operation) const;
+  Q_INVOKABLE bool supports(const QString& operation) const;
   ListDirectoryCacheKey key() const;
 
  private:

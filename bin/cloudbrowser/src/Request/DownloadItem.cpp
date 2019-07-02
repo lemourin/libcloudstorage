@@ -13,7 +13,7 @@ namespace {
 
 class DownloadCallback : public IDownloadFileCallback {
  public:
-  DownloadCallback(RequestNotifier* notifier, QUrl path)
+  DownloadCallback(RequestNotifier* notifier, const QUrl& path)
       : notifier_(notifier), file_(path.toString()) {
     file_.open(QFile::WriteOnly);
   }

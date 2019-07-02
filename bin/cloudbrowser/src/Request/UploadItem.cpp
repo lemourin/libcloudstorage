@@ -12,7 +12,7 @@ using namespace cloudstorage;
 namespace {
 class UploadCallback : public IUploadFileCallback {
  public:
-  UploadCallback(RequestNotifier* notifier, QString path)
+  UploadCallback(RequestNotifier* notifier, const QString& path)
       : notifier_(notifier), file_(path) {
     file_.open(QFile::ReadOnly);
   }
@@ -42,7 +42,7 @@ class UploadCallback : public IUploadFileCallback {
 }  // namespace
 
 void UploadItemRequest::update(CloudContext* context, CloudItem* parent,
-                               QString path, QString filename) {
+                               const QString& path, const QString& filename) {
   set_done(false);
   auto object = new RequestNotifier;
   auto provider = parent->provider().variant();

@@ -51,7 +51,7 @@ class HttpServerCallback : public IHttpServer::ICallback {
 
 class HttpDataCallback : public IDownloadFileCallback {
  public:
-  HttpDataCallback(std::shared_ptr<Buffer> d) : buffer_(d) {}
+  HttpDataCallback(std::shared_ptr<Buffer> d) : buffer_(std::move(d)) {}
 
   void receivedData(const char* data, uint32_t length) override;
   void done(EitherError<void> e) override;
@@ -76,7 +76,7 @@ class StreamRequest : public Request<EitherError<void>> {
     Request::cancel();
   }
 
-  void done(EitherError<void> e) {
+  void done(const EitherError<void>& e) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (!done_called_) {
       done_called_ = true;
@@ -118,7 +118,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
     for (uint32_t i = 0; i < length; i++) data_.push(data[i]);
   }
 
-  void done(EitherError<void> e) {
+  void done(const EitherError<void>& e) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (e.left()) {
       abort_ = true;
@@ -142,7 +142,7 @@ struct Buffer : public std::enable_shared_from_this<Buffer> {
     return data_.size();
   }
 
-  void continue_download(EitherError<void> e) {
+  void continue_download(const EitherError<void>& e) {
     if (e.left() || range_.size_ < CHUNK_SIZE) return done(e);
     range_.size_ -= CHUNK_SIZE;
     range_.start_ += CHUNK_SIZE;
@@ -190,10 +190,11 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   static constexpr int Success = 1;
   static constexpr int Failed = 2;
 
-  HttpData(Buffer::Pointer d, std::shared_ptr<CloudProvider> p,
-           const std::string& file, Range range, std::shared_ptr<Cache> cache)
+  HttpData(Buffer::Pointer d, const std::shared_ptr<CloudProvider>& p,
+           const std::string& file, Range range,
+           const std::shared_ptr<Cache>& cache)
       : status_(InProgress),
-        buffer_(d),
+        buffer_(std::move(d)),
         provider_(p),
         request_(request(p, file, range, cache)) {}
 
@@ -204,7 +205,7 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 
   std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
       std::shared_ptr<CloudProvider> provider, const std::string& file,
-      Range range, std::shared_ptr<Cache> cache) {
+      Range range, const std::shared_ptr<Cache>& cache) {
     auto resolver = [=](Request<EitherError<void>>::Pointer r) {
       buffer_->request_ = std::static_pointer_cast<StreamRequest>(r);
       auto item_received = [=](EitherError<IItem> e) {
@@ -266,7 +267,8 @@ class HttpData : public IHttpServer::IResponse::ICallback {
 };
 
 HttpServerCallback::HttpServerCallback(std::shared_ptr<CloudProvider> p)
-    : item_cache_(util::make_unique<Cache>(CACHE_SIZE)), provider_(p) {}
+    : item_cache_(util::make_unique<Cache>(CACHE_SIZE)),
+      provider_(std::move(p)) {}
 
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest& request) {
@@ -330,6 +332,4 @@ IHttpServer::Pointer FileServer::create(std::shared_ptr<CloudProvider> p,
   return p->http_server()->create(util::make_unique<HttpServerCallback>(p),
                                   session, IHttpServer::Type::FileProvider);
 }
-
-FileServer::FileServer() {}
 }  // namespace cloudstorage

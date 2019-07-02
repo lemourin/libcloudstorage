@@ -35,8 +35,8 @@ class GetItemDataRequest : public Request<EitherError<IItem>> {
   using Callback = GetItemDataCallback;
 
   GetItemDataRequest(std::shared_ptr<CloudProvider>, const std::string& id,
-                     Callback);
-  ~GetItemDataRequest();
+                     const Callback&);
+  ~GetItemDataRequest() override;
 };
 
 }  // namespace cloudstorage

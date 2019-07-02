@@ -119,7 +119,7 @@ Pointer<AVIOContext> create_io_context(
     std::chrono::system_clock::time_point start_time,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   const int BUFFER_SIZE = 1024 * 1024;
-  uint8_t* buffer = static_cast<uint8_t*>(av_malloc(BUFFER_SIZE));
+  auto buffer = static_cast<uint8_t*>(av_malloc(BUFFER_SIZE));
   struct Data {
     ICloudProvider* provider_;
     IItem::Pointer item_;
@@ -127,7 +127,8 @@ Pointer<AVIOContext> create_io_context(
     uint64_t size_;
     std::chrono::system_clock::time_point start_time_;
     std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
-  }* data = new Data{provider, item, 0, size, start_time, interrupt};
+  }* data = new Data{provider, std::move(item), 0,
+                     size,     start_time,      std::move(interrupt)};
   struct Download : public IDownloadFileCallback {
     void progress(uint64_t, uint64_t) override {}
     void receivedData(const char* data, uint32_t size) override {
@@ -200,8 +201,8 @@ Pointer<AVFormatContext> create_format_context(
     const std::string& url,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   auto context = avformat_alloc_context();
-  auto data =
-      new CallbackData{interrupt, std::chrono::system_clock::now(), nullptr};
+  auto data = new CallbackData{std::move(interrupt),
+                               std::chrono::system_clock::now(), nullptr};
   context->interrupt_callback.opaque = data;
   context->interrupt_callback.callback = [](void* t) -> int {
     auto d = reinterpret_cast<CallbackData*>(t);
@@ -228,9 +229,10 @@ Pointer<AVFormatContext> create_format_context(
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   auto context = avformat_alloc_context();
   auto start_time = std::chrono::system_clock::now();
-  auto data = new CallbackData{
-      interrupt, start_time,
-      create_io_context(provider, item, size, start_time, interrupt)};
+  auto data =
+      new CallbackData{interrupt, start_time,
+                       create_io_context(provider, std::move(item), size,
+                                         start_time, std::move(interrupt))};
   context->interrupt_callback.opaque = data;
   context->interrupt_callback.callback = [](void* t) -> int {
     auto d = reinterpret_cast<CallbackData*>(t);
@@ -444,7 +446,8 @@ EitherError<std::string> generate_thumbnail(
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   try {
     initialize();
-    auto context = create_format_context(provider, item, size, interrupt);
+    auto context = create_format_context(provider, std::move(item), size,
+                                         std::move(interrupt));
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");
@@ -509,7 +512,7 @@ EitherError<std::string> generate_thumbnail(
 #endif
     const auto length = strlen(file);
     if (url.substr(0, length) == file) effective_url = url.substr(length);
-    auto context = create_format_context(effective_url, interrupt);
+    auto context = create_format_context(effective_url, std::move(interrupt));
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");
@@ -535,7 +538,8 @@ EitherError<std::string> generate_thumbnail(
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   try {
     initialize();
-    auto context = create_format_context(provider, item, size, interrupt);
+    auto context = create_format_context(provider, std::move(item), size,
+                                         std::move(interrupt));
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");

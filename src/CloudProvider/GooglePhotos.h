@@ -78,7 +78,7 @@ class GooglePhotos : public CloudProvider {
                                                const std::string& url,
                                                IDownloadFileCallback::Pointer);
   IRequest<EitherError<std::string>>::Pointer getUploadUrl(
-      IItem::Pointer, const std::string& filename, uint64_t size,
+      const IItem::Pointer&, const std::string& filename, uint64_t size,
       std::function<void(EitherError<std::string>)> cb);
 };
 

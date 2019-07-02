@@ -30,8 +30,8 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
-                                   AuthorizationFlow callback)
-    : Request(p,
+                                   const AuthorizationFlow& callback)
+    : Request(std::move(p),
               [=](EitherError<void> e) {
                 provider()->auth_callback()->done(*provider(), e);
               },
@@ -46,8 +46,8 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
 
 AuthorizeRequest::~AuthorizeRequest() { AuthorizeRequest::cancel(); }
 
-void AuthorizeRequest::resolve(Request::Pointer request,
-                               AuthorizationFlow callback) {
+void AuthorizeRequest::resolve(const Request::Pointer& request,
+                               const AuthorizationFlow& callback) {
   auto on_complete = [=](EitherError<void> result) {
     std::unique_lock<std::mutex> lock(provider()->current_authorization_mutex_);
     while (!provider()->auth_callbacks_.empty()) {
@@ -76,7 +76,7 @@ void AuthorizeRequest::sendCancel() {
   if (auth_server) {
     class Request : public IHttpServer::IRequest {
      public:
-      Request(const std::string& state) : state_(state) {}
+      Request(std::string state) : state_(std::move(state)) {}
       const char* get(const std::string& name) const override {
         if (name == "error") return "cancelled";
         if (name == "accepted") return "false";
@@ -124,7 +124,7 @@ void AuthorizeRequest::finish() {
   Request::finish();
 }
 
-void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
+void AuthorizeRequest::set_server(const std::shared_ptr<IHttpServer>& p) {
   std::unique_lock<std::mutex> lock(lock_);
   auth_server_ = p;
   if (p && server_cancelled_) {
@@ -133,7 +133,7 @@ void AuthorizeRequest::set_server(std::shared_ptr<IHttpServer> p) {
   }
 }
 
-void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
+void AuthorizeRequest::oauth2Authorization(const AuthorizeCompleted& complete) {
   auto auth = provider()->auth();
   auto auth_callback = provider()->auth_callback();
   send([=](util::Output input) { return auth->refreshTokenRequest(*input); },
@@ -180,7 +180,8 @@ void AuthorizeRequest::oauth2Authorization(AuthorizeCompleted complete) {
        });
 }
 
-SimpleAuthorization::SimpleAuthorization(std::shared_ptr<CloudProvider> p)
+SimpleAuthorization::SimpleAuthorization(
+    const std::shared_ptr<CloudProvider>& p)
     : AuthorizeRequest(p, [=](AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         if (p->auth_callback()->userConsentRequired(*p) !=

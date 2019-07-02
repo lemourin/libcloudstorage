@@ -45,14 +45,14 @@ class DownloadFileRequest : public Request<EitherError<void>> {
       std::function<IHttpRequest::Pointer(const IItem&, std::ostream&)>;
   using ICallback = IDownloadFileCallback;
 
-  DownloadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer file,
-                      ICallback::Pointer, Range,
-                      RequestFactory request_factory);
-  ~DownloadFileRequest();
+  DownloadFileRequest(std::shared_ptr<CloudProvider>,
+                      const IItem::Pointer& file, const ICallback::Pointer&,
+                      Range, const RequestFactory& request_factory);
+  ~DownloadFileRequest() override;
 
  private:
-  void resolve(Request::Pointer request, IItem::Pointer file, ICallback*, Range,
-               RequestFactory request_factory);
+  void resolve(const Request::Pointer& request, const IItem::Pointer& file,
+               ICallback*, Range, const RequestFactory& request_factory);
 
   DownloadStreamWrapper stream_wrapper_;
 };
@@ -62,11 +62,12 @@ class DownloadFileFromUrlRequest : public Request<EitherError<void>> {
   using ICallback = IDownloadFileCallback;
 
   DownloadFileFromUrlRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                             ICallback::Pointer, Range);
-  ~DownloadFileFromUrlRequest();
+                             const ICallback::Pointer&, Range);
+  ~DownloadFileFromUrlRequest() override;
 
  private:
-  void resolve(Request::Pointer, IItem::Pointer, ICallback*, Range);
+  void resolve(const Request::Pointer&, const IItem::Pointer&, ICallback*,
+               Range);
 
   DownloadStreamWrapper stream_wrapper_;
 };

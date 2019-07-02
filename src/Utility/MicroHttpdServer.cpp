@@ -45,7 +45,7 @@ int http_request_callback(void* cls, MHD_Connection* c, const char* url,
                           const char* method, const char* /*version*/,
                           const char* /*upload_data*/, size_t* upload_data_size,
                           void** con_cls) {
-  MicroHttpdServer* server = static_cast<MicroHttpdServer*>(cls);
+  auto server = static_cast<MicroHttpdServer*>(cls);
   if (auto d = static_cast<ConnectionData*>(*con_cls)) {
     int ret = MHD_YES;
     if (*upload_data_size == 0) {
@@ -118,7 +118,7 @@ MicroHttpdServer::Response::Response(MHD_Connection* connection, int code,
   response_ = MHD_create_response_from_callback(
       size == UnknownSize ? MHD_SIZE_UNKNOWN : size, CHUNK_SIZE, data_provider,
       data.release(), release_data);
-  for (auto it : headers)
+  for (const auto& it : headers)
     MHD_add_response_header(response_, it.first.c_str(), it.second.c_str());
 }
 
@@ -154,10 +154,10 @@ std::string MicroHttpdServer::Request::method() const { return method_; }
 
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
     : http_server_(MHD_start_daemon(
-          MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, NULL, NULL,
-          http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
+          MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, nullptr,
+          nullptr, http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
           http_request_completed, this, MHD_OPTION_END)),
-      callback_(cb) {}
+      callback_(std::move(cb)) {}
 
 MicroHttpdServer::~MicroHttpdServer() {
   if (http_server_) MHD_stop_daemon(http_server_);

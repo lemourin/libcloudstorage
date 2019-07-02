@@ -77,11 +77,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
                                     data_.error_page_);
 }
 
-Auth::Auth()
-    : redirect_uri_(DEFAULT_REDIRECT_URI),
-      permission_(ICloudProvider::Permission::ReadWrite),
-      http_(),
-      http_server_() {}
+Auth::Auth() : redirect_uri_(DEFAULT_REDIRECT_URI) {}
 
 void Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
   http_ = http;

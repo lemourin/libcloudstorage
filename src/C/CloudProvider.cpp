@@ -208,12 +208,12 @@ void cloud_hints_add(cloud_hints *hints, cloud_string *key,
 }
 
 cloud_string *cloud_provider_token(const cloud_provider *p) {
-  const ICloudProvider *provider = reinterpret_cast<const ICloudProvider *>(p);
+  const auto provider = reinterpret_cast<const ICloudProvider *>(p);
   return cloud_string_create(provider->token().c_str());
 }
 
 cloud_hints *cloud_provider_hints(const cloud_provider *p) {
-  const ICloudProvider *provider = reinterpret_cast<const ICloudProvider *>(p);
+  const auto provider = reinterpret_cast<const ICloudProvider *>(p);
   return reinterpret_cast<cloud_hints *>(
       new ICloudProvider::Hints(provider->hints()));
 }

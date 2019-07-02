@@ -31,19 +31,21 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
-                                         IItem::Pointer file,
-                                         ICallback::Pointer cb, Range range,
-                                         RequestFactory request_factory)
-    : Request(p, [=](EitherError<void> e) { cb->done(e); },
+                                         const IItem::Pointer& file,
+                                         const ICallback::Pointer& cb,
+                                         Range range,
+                                         const RequestFactory& request_factory)
+    : Request(std::move(p), [=](EitherError<void> e) { cb->done(e); },
               std::bind(&DownloadFileRequest::resolve, this, _1, file, cb.get(),
                         range, request_factory)),
       stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
 
-void DownloadFileRequest::resolve(Request::Pointer request, IItem::Pointer file,
+void DownloadFileRequest::resolve(const Request::Pointer& request,
+                                  const IItem::Pointer& file,
                                   ICallback* callback, Range range,
-                                  RequestFactory request_factory) {
+                                  const RequestFactory& request_factory) {
   send(
       [=](util::Output input) {
         auto request = request_factory(*file, *input);
@@ -88,16 +90,16 @@ std::streamsize DownloadStreamWrapper::xsputn(const char_type* data,
 
 DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer file,
-    ICallback::Pointer cb, Range range)
-    : Request(p, [=](EitherError<void> e) { cb->done(e); },
+    const ICallback::Pointer& cb, Range range)
+    : Request(std::move(p), [=](EitherError<void> e) { cb->done(e); },
               std::bind(&DownloadFileFromUrlRequest::resolve, this, _1, file,
                         cb.get(), range)),
       stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileFromUrlRequest::~DownloadFileFromUrlRequest() { cancel(); }
 
-void DownloadFileFromUrlRequest::resolve(Request::Pointer r,
-                                         IItem::Pointer file,
+void DownloadFileFromUrlRequest::resolve(const Pointer& r,
+                                         const IItem::Pointer& file,
                                          ICallback* callback, Range range) {
   auto download = [=](std::string url,
                       std::function<void(EitherError<void>)> cb) {

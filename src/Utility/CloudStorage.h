@@ -42,7 +42,7 @@ class CloudStorage : public ICloudStorage {
                                    ICloudProvider::InitData&&) const override;
 
  private:
-  void add(CloudProviderFactory);
+  void add(const CloudProviderFactory&);
 
   template <class T>
   void add() {

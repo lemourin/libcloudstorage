@@ -31,10 +31,10 @@ HttpCallback::HttpCallback(
     std::function<int()> status,
     std::function<bool(int, const IHttpRequest::HeaderParameters&)> is_success,
     ProgressFunction progress_download, ProgressFunction progress_upload)
-    : status_(status),
-      is_success_(is_success),
-      progress_download_(progress_download),
-      progress_upload_(progress_upload) {}
+    : status_(std::move(status)),
+      is_success_(std::move(is_success)),
+      progress_download_(std::move(progress_download)),
+      progress_upload_(std::move(progress_upload)) {}
 
 bool HttpCallback::isSuccess(int code,
                              const IHttpRequest::HeaderParameters& h) const {

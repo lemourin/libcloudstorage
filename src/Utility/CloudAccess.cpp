@@ -39,10 +39,13 @@ const auto CHECK_INTERVAL = std::chrono::milliseconds(100);
 
 namespace {
 struct UploadCallback : public IUploadFileCallback {
-  UploadCallback(const std::shared_ptr<ICloudUploadCallback>& cb,
-                 const Promise<IItem::Pointer>& promise, uint64_t tag,
-                 const std::shared_ptr<priv::LoopImpl>& loop)
-      : callback_(std::move(cb)), promise_(promise), tag_(tag), loop_(loop) {}
+  UploadCallback(std::shared_ptr<ICloudUploadCallback> cb,
+                 Promise<IItem::Pointer> promise, uint64_t tag,
+                 std::shared_ptr<priv::LoopImpl> loop)
+      : callback_(std::move(cb)),
+        promise_(std::move(promise)),
+        tag_(tag),
+        loop_(std::move(loop)) {}
 
   uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
     return callback_->putData(data, maxlength, offset);
@@ -66,10 +69,13 @@ struct UploadCallback : public IUploadFileCallback {
 };
 
 struct DownloadCallback : public IDownloadFileCallback {
-  DownloadCallback(const std::shared_ptr<ICloudDownloadCallback>& cb,
-                   const Promise<>& promise, uint64_t tag,
-                   const std::shared_ptr<priv::LoopImpl>& loop)
-      : callback_(cb), promise_(promise), tag_(tag), loop_(loop) {}
+  DownloadCallback(std::shared_ptr<ICloudDownloadCallback> cb,
+                   Promise<> promise, uint64_t tag,
+                   std::shared_ptr<priv::LoopImpl> loop)
+      : callback_(std::move(cb)),
+        promise_(std::move(promise)),
+        tag_(tag),
+        loop_(std::move(loop)) {}
 
   void receivedData(const char* data, uint32_t length) override {
     callback_->receivedData(data, length);
@@ -91,9 +97,9 @@ struct DownloadCallback : public IDownloadFileCallback {
 };
 
 struct Uploader : public ICloudUploadCallback {
-  Uploader(const std::shared_ptr<std::istream>& stream,
-           const ICloudAccess::ProgressCallback& progress)
-      : stream_(stream), progress_(progress) {}
+  Uploader(std::shared_ptr<std::istream> stream,
+           ICloudAccess::ProgressCallback progress)
+      : stream_(std::move(stream)), progress_(std::move(progress)) {}
 
   uint32_t putData(char* data, uint32_t maxlength, uint64_t offset) override {
     stream_->seekg(offset);
@@ -115,9 +121,9 @@ struct Uploader : public ICloudUploadCallback {
 };
 
 struct Downloader : public ICloudDownloadCallback {
-  Downloader(const std::shared_ptr<std::ostream>& stream,
-             const ICloudAccess::ProgressCallback& progress)
-      : stream_(stream), progress_(progress) {}
+  Downloader(std::shared_ptr<std::ostream> stream,
+             ICloudAccess::ProgressCallback progress)
+      : stream_(std::move(stream)), progress_(std::move(progress)) {}
 
   void receivedData(const char* data, uint32_t length) override {
     stream_->write(data, length);
@@ -148,7 +154,7 @@ void fulfill(const Promise<>& promise, const EitherError<void>& e) {
 
 CloudAccess::CloudAccess(std::shared_ptr<priv::LoopImpl> loop,
                          ICloudProvider::Pointer&& provider)
-    : loop_(loop), provider_(std::move(provider)) {}
+    : loop_(std::move(loop)), provider_(std::move(provider)) {}
 
 Promise<GeneralData> CloudAccess::generalData() {
   return wrap(&ICloudProvider::getGeneralDataAsync);
@@ -205,7 +211,7 @@ Promise<IItem::Pointer> CloudAccess::uploadFile(
   auto tag = loop_->next_tag();
   auto request = provider_->uploadFileAsync(
       parent, filename,
-      util::make_unique<UploadCallback>(std::move(cb), promise, tag, loop_));
+      util::make_unique<UploadCallback>(cb, promise, tag, loop_));
   loop_->add(tag, std::move(request));
   return promise;
 }

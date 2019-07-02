@@ -41,16 +41,16 @@ struct AuthSession {
 };
 
 std::string find_authenticity_token(const std::string &page) {
-  auto token = "\"oauth_authenticity_token\" value=\"";
+  auto token = R"("oauth_authenticity_token" value=")";
   auto start = page.find(token) + strlen(token);
-  auto end = page.find("\"", start);
+  auto end = page.find('"', start);
   return std::string(page.begin() + start, page.begin() + end);
 }
 
 void do_oauth_fetch_session(
-    AuthorizeRequest::Pointer r, const std::string &username,
+    const AuthorizeRequest::Pointer &r, const std::string &username,
     const std::string &password, const std::string &oauth_token,
-    std::function<void(EitherError<AuthSession>)> complete) {
+    const std::function<void(EitherError<AuthSession>)> &complete) {
   auto p = r->provider().get();
   r->send(
       [=](util::Output) {
@@ -81,11 +81,11 @@ void do_oauth_fetch_session(
       });
 }
 
-void do_oauth_consent(AuthorizeRequest::Pointer r, const std::string &username,
-                      const std::string &password,
+void do_oauth_consent(const AuthorizeRequest::Pointer &r,
+                      const std::string &username, const std::string &password,
                       const std::string &oauth_token,
                       const AuthSession &session,
-                      std::function<void(EitherError<void>)> complete) {
+                      const std::function<void(EitherError<void>)> &complete) {
   auto p = r->provider().get();
   r->send(
       [=](util::Output input) {
@@ -106,11 +106,10 @@ void do_oauth_consent(AuthorizeRequest::Pointer r, const std::string &username,
       });
 }
 
-void do_oauth_authorize(AuthorizeRequest::Pointer r,
-                        const std::string &username,
-                        const std::string &password,
-                        const std::string &oauth_token,
-                        std::function<void(EitherError<void>)> complete) {
+void do_oauth_authorize(
+    const AuthorizeRequest::Pointer &r, const std::string &username,
+    const std::string &password, const std::string &oauth_token,
+    const std::function<void(EitherError<void>)> &complete) {
   do_oauth_fetch_session(r, username, password, oauth_token,
                          [=](EitherError<AuthSession> e) {
                            if (e.left()) return complete(e.left());
@@ -122,10 +121,10 @@ void do_oauth_authorize(AuthorizeRequest::Pointer r,
 }
 
 void do_oauth_token(
-    AuthorizeRequest::Pointer r, const std::string &oauth_token,
+    const AuthorizeRequest::Pointer &r, const std::string &oauth_token,
     const std::string &oauth_token_secret,
-    std::function<void(EitherError<std::pair<std::string, std::string>>)>
-        complete) {
+    const std::function<void(EitherError<std::pair<std::string, std::string>>)>
+        &complete) {
   auto p = r->provider().get();
   r->send(
       [=](util::Output input) {
@@ -154,9 +153,9 @@ void do_oauth_token(
 }
 
 void do_oauth_initiate(
-    AuthorizeRequest::Pointer r,
-    std::function<void(EitherError<std::pair<std::string, std::string>>)>
-        complete) {
+    const AuthorizeRequest::Pointer &r,
+    const std::function<void(EitherError<std::pair<std::string, std::string>>)>
+        &complete) {
   auto p = r->provider().get();
   r->send(
       [=](util::Output stream) {
@@ -181,9 +180,10 @@ void do_oauth_initiate(
 }
 
 template <class Result>
-void do_get_cookie(typename Request<Result>::Pointer r,
-                   const std::string &username, const std::string &password,
-                   std::function<void(EitherError<std::string>)> complete) {
+void do_get_cookie(
+    const typename Request<Result>::Pointer &r, const std::string &username,
+    const std::string &password,
+    const std::function<void(EitherError<std::string>)> &complete) {
   auto p = r->provider().get();
   r->send(
       [=](util::Output input) {
@@ -214,10 +214,10 @@ void do_get_cookie(typename Request<Result>::Pointer r,
 }
 
 void do_oauth(
-    AuthorizeRequest::Pointer r, const std::string &username,
+    const AuthorizeRequest::Pointer &r, const std::string &username,
     const std::string &password,
-    std::function<void(EitherError<std::pair<std::string, std::string>>)>
-        complete) {
+    const std::function<void(EitherError<std::pair<std::string, std::string>>)>
+        &complete) {
   do_oauth_initiate(r, [=](EitherError<std::pair<std::string, std::string>> d) {
     if (d.left()) return complete(d.left());
     do_oauth_authorize(
@@ -229,8 +229,8 @@ void do_oauth(
 }
 
 void do_user_interaction(
-    AuthorizeRequest::Pointer r,
-    std::function<void(EitherError<std::string>)> complete) {
+    const AuthorizeRequest::Pointer &r,
+    const std::function<void(EitherError<std::string>)> &complete) {
   if (r->provider()->auth_callback()->userConsentRequired(*r->provider()) !=
       ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
     return complete(
@@ -240,10 +240,10 @@ void do_user_interaction(
 }
 
 void do_authorize(
-    AuthorizeRequest::Pointer r, const std::string &username,
+    const AuthorizeRequest::Pointer &r, const std::string &username,
     const std::string &password,
-    std::function<void(EitherError<std::pair<std::string, std::string>>)>
-        complete) {
+    const std::function<void(EitherError<std::pair<std::string, std::string>>)>
+        &complete) {
   do_oauth(r, username, password,
            [=](EitherError<std::pair<std::string, std::string>> e) {
              if (e.left()) {
@@ -300,14 +300,14 @@ void FourShared::authorizeRequest(IHttpRequest &request) const {
       "cookie", "Login=" + username_ + "; Password=" + password_ + ";");
   std::stringstream auth_header;
   auth_header << "OAuth oauth_token=\"" << oauth_token_
-              << "\", oauth_consumer_key=\"" << auth()->client_id()
-              << "\", oauth_signature_method=\"PLAINTEXT\", oauth_signature=\""
+              << R"(", oauth_consumer_key=")" << auth()->client_id()
+              << R"(", oauth_signature_method="PLAINTEXT", oauth_signature=")"
               << auth()->client_secret() << "&" << oauth_token_secret_
-              << "\", oauth_timestamp=\""
+              << R"(", oauth_timestamp=")"
               << std::chrono::duration_cast<std::chrono::seconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count()
-              << "\", oauth_nonce=\"" << oauth_nonce++ << "\"";
+              << R"(", oauth_nonce=")" << oauth_nonce++ << '"';
   request.setHeaderParameter("Authorization", auth_header.str());
 }
 
@@ -388,13 +388,13 @@ IItem::List FourShared::listDirectoryResponse(
   auto json = util::json::from_stream(data);
   IItem::List result;
   if (json.isMember("folders")) {
-    for (auto d : json["folders"]) {
+    for (const auto &d : json["folders"]) {
       result.push_back(toItem(d));
     }
     next_page_token = "files";
   }
   if (json.isMember("files"))
-    for (auto d : json["files"]) {
+    for (const auto &d : json["files"]) {
       result.push_back(toItem(d));
     }
   return result;
@@ -608,9 +608,9 @@ ICloudProvider::GetItemUrlRequest::Pointer FourShared::getItemUrlAsync(
             });
   };
   auto find_link = [=](const std::string &page) {
-    auto search = "id=\"baseDownloadLink\" value=\"";
+    auto search = R"(id="baseDownloadLink" value=")";
     auto begin = page.find(search) + strlen(search);
-    auto end = page.find("\"", begin);
+    auto end = page.find('"', begin);
     return std::string(page.begin() + begin, page.begin() + end);
   };
   auto get_url = [=](CurrentRequest::Pointer r, const std::string &url,

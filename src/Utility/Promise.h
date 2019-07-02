@@ -198,7 +198,8 @@ class Promise {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     ReturnedPromise promise;
     promise.data_->on_cancel_ = propagateCancel();
-    data_->on_fulfill_ = [promise, cb = std::move(cb)](Ts&&... args) mutable {
+    data_->on_fulfill_ = [promise, cb = std::forward<Callable>(cb)](
+                             Ts&&... args) mutable {
       try {
         using StateTuple = typename ReturnedTuple<ReturnedPromise>::type;
         auto r = cb(std::forward<Ts>(args)...);
@@ -235,7 +236,7 @@ class Promise {
   template <typename Callable, typename = typename std::enable_if<std::is_void<
                                    ReturnType<Callable>>::value>::type>
   Promise<> then(Callable&& cb) {
-    return then([cb = std::move(cb)](Ts&&... args) mutable {
+    return then([cb = std::forward<Callable>(cb)](Ts&&... args) mutable {
       cb(std::forward<Ts>(args)...);
       return std::make_tuple();
     });
@@ -248,7 +249,7 @@ class Promise {
             typename ReturnedPromise =
                 typename PromiseType<std::tuple<ReturnType<Callable>>>::type>
   ReturnedPromise then(Callable&& cb) {
-    return then([cb = std::move(cb)](Ts&&... args) mutable {
+    return then([cb = std::forward<Callable>(cb)](Ts&&... args) mutable {
       return std::make_tuple(cb(std::forward<Ts>(args)...));
     });
   }
@@ -258,8 +259,8 @@ class Promise {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     Promise<Ts...> promise;
     promise.data_->on_cancel_ = propagateCancel();
-    data_->on_reject_ = [promise,
-                         cb = std::move(e)](std::exception_ptr&& e) mutable {
+    data_->on_reject_ = [promise, cb = std::forward<Callable>(e)](
+                            std::exception_ptr&& e) mutable {
       try {
         std::rethrow_exception(std::move(e));
       } catch (Exception& exception) {
@@ -286,7 +287,7 @@ class Promise {
   void cancel(Func&& f) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     if (data_->ready_ || data_->error_ready_) return;
-    data_->on_cancel_ = std::move(f);
+    data_->on_cancel_ = std::forward<Func>(f);
     if (data_->cancelled_) {
       auto cb = std::move(data_->on_cancel_);
       data_->on_cancel_ = nullptr;
@@ -335,7 +336,7 @@ class Promise {
                 std::exception,
                 typename std::remove_reference<Exception>::type>::value>::type>
   void reject(Exception&& e) const {
-    reject(std::make_exception_ptr(std::move(e)));
+    reject(std::make_exception_ptr(std::forward<Exception>(e)));
   }
 
   void reject(std::exception_ptr&& e) const {
@@ -430,8 +431,8 @@ struct AppendElement<Promise<PromisedType...>> {
   static void call(Promise<PromisedType...>&& d, const PromiseType& p,
                    const std::shared_ptr<ResultTuple>& output,
                    Callable&& callable) {
-    d.then([output,
-            callable = std::move(callable)](PromisedType&&... args) mutable {
+    d.then([output, callable = std::forward<Callable>(callable)](
+               PromisedType&&... args) mutable {
        SetRange<Index -
                     static_cast<int>(
                         std::tuple_size<std::tuple<PromisedType...>>::value) +

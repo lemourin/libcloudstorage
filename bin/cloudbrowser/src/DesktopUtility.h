@@ -18,7 +18,7 @@
 class CLOUDBROWSER_API DesktopUtility : public IPlatformUtility {
  public:
   DesktopUtility();
-  ~DesktopUtility();
+  ~DesktopUtility() override;
 
   void initialize(QWindow*) const override;
   bool mobile() const override;
@@ -39,7 +39,7 @@ class CLOUDBROWSER_API DesktopUtility : public IPlatformUtility {
   std::mutex mutex_;
   std::condition_variable condition_;
   std::atomic_bool screensaver_enabled_;
-  bool running_;
+  bool running_ = true;
   std::thread thread_;
 };
 

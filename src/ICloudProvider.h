@@ -255,10 +255,11 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual ExchangeCodeRequest::Pointer exchangeCodeAsync(
       const std::string& code,
-      ExchangeCodeCallback = [](EitherError<Token>) {}) = 0;
+      ExchangeCodeCallback = [](const EitherError<Token>&) {}) = 0;
 
   virtual GetItemUrlRequest::Pointer getItemUrlAsync(
-      IItem::Pointer, GetItemUrlCallback = [](EitherError<std::string>) {}) = 0;
+      IItem::Pointer,
+      GetItemUrlCallback = [](const EitherError<std::string>&) {}) = 0;
 
   /**
    * Lists directory.
@@ -280,7 +281,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual GetItemRequest::Pointer getItemAsync(
       const std::string& absolute_path,
-      GetItemCallback callback = [](EitherError<IItem>) {}) = 0;
+      GetItemCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   /**
    * Downloads the item, the file is provided by callback.
@@ -320,7 +321,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual GetItemDataRequest::Pointer getItemDataAsync(
       const std::string& id,
-      GetItemDataCallback callback = [](EitherError<IItem>) {}) = 0;
+      GetItemDataCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   /**
    * Downloads thumbnail image, before calling the function, make sure provided
@@ -343,7 +344,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual DeleteItemRequest::Pointer deleteItemAsync(
       IItem::Pointer item,
-      DeleteItemCallback callback = [](EitherError<void>) {}) = 0;
+      DeleteItemCallback callback = [](const EitherError<void>&) {}) = 0;
 
   /**
    * Creates directory in cloud provider.
@@ -358,7 +359,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual CreateDirectoryRequest::Pointer createDirectoryAsync(
       IItem::Pointer parent, const std::string& name,
-      CreateDirectoryCallback callback = [](EitherError<IItem>) {}) = 0;
+      CreateDirectoryCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   /**
    * Moves item.
@@ -373,7 +374,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual MoveItemRequest::Pointer moveItemAsync(
       IItem::Pointer source, IItem::Pointer destination,
-      MoveItemCallback callback = [](EitherError<IItem>) {}) = 0;
+      MoveItemCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   /**
    * Renames item.
@@ -388,7 +389,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual RenameItemRequest::Pointer renameItemAsync(
       IItem::Pointer item, const std::string& name,
-      RenameItemCallback callback = [](EitherError<IItem>) {}) = 0;
+      RenameItemCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   /**
    * Lists directory, but returns only one page of items.
@@ -401,7 +402,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual ListDirectoryPageRequest::Pointer listDirectoryPageAsync(
       IItem::Pointer directory, const std::string& token = "",
-      ListDirectoryPageCallback = [](EitherError<PageData>) {}) = 0;
+      ListDirectoryPageCallback = [](const EitherError<PageData>&) {}) = 0;
 
   /**
    * Simplified version of listDirectoryAsync.
@@ -411,8 +412,8 @@ class CLOUDSTORAGE_API ICloudProvider {
    * @return object representing the pending request
    */
   virtual ListDirectoryRequest::Pointer listDirectorySimpleAsync(
-      IItem::Pointer item,
-      ListDirectoryCallback callback = [](EitherError<IItem::List>) {}) = 0;
+      IItem::Pointer item, ListDirectoryCallback callback =
+                               [](const EitherError<IItem::List>&) {}) = 0;
 
   /**
    * Simplified version of downloadFileAsync.
@@ -427,7 +428,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer item, const std::string& filename,
-      DownloadFileCallback callback = [](EitherError<void>) {}) = 0;
+      DownloadFileCallback callback = [](const EitherError<void>&) {}) = 0;
 
   /**
    * Simplified version of getThumbnailAsync.
@@ -442,7 +443,7 @@ class CLOUDSTORAGE_API ICloudProvider {
    */
   virtual DownloadFileRequest::Pointer getThumbnailAsync(
       IItem::Pointer item, const std::string& filename,
-      GetThumbnailCallback callback = [](EitherError<void>) {}) = 0;
+      GetThumbnailCallback callback = [](const EitherError<void>&) {}) = 0;
 
   /**
    * Simplified version of uploadFileAsync.
@@ -461,14 +462,14 @@ class CLOUDSTORAGE_API ICloudProvider {
   virtual UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer parent, const std::string& path,
       const std::string& filename,
-      UploadFileCallback callback = [](EitherError<IItem>) {}) = 0;
+      UploadFileCallback callback = [](const EitherError<IItem>&) {}) = 0;
 
   virtual GeneralDataRequest::Pointer getGeneralDataAsync(
-      GeneralDataCallback = [](EitherError<GeneralData>) {}) = 0;
+      GeneralDataCallback = [](const EitherError<GeneralData>&) {}) = 0;
 
   virtual GetItemUrlRequest::Pointer getFileDaemonUrlAsync(
       IItem::Pointer item,
-      GetItemUrlCallback = [](EitherError<std::string>) {}) = 0;
+      GetItemUrlCallback = [](const EitherError<std::string>&) {}) = 0;
 };
 
 }  // namespace cloudstorage

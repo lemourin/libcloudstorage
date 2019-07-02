@@ -6,7 +6,7 @@
 using namespace cloudstorage;
 
 void RenameItemRequest::update(CloudContext* context, CloudItem* item,
-                               QString name) {
+                               const QString& name) {
   set_done(false);
   auto object = new RequestNotifier;
   auto provider = item->provider().variant();

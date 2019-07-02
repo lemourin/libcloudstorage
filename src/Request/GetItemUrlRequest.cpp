@@ -28,40 +28,41 @@
 namespace cloudstorage {
 
 GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
-                                     IItem::Pointer item,
-                                     GetItemUrlCallback callback)
-    : Request(p, callback, [=](Request<EitherError<std::string>>::Pointer r) {
-        if (item->type() == IItem::FileType::Directory)
-          return r->done(Error{IHttpRequest::ServiceUnavailable,
-                               util::Error::URL_UNAVAILABLE});
-        std::stringstream dummy;
-        if (!provider()->getItemUrlRequest(*item, dummy)) {
-          auto url = static_cast<Item*>(item.get())->url();
-          if (url.empty())
-            return r->done(Error{IHttpRequest::ServiceUnavailable,
-                                 util::Error::URL_UNAVAILABLE});
-          else
-            return r->done(url);
-        }
-        r->request(
-            [=](util::Output input) {
-              return provider()->getItemUrlRequest(*item, *input);
-            },
-            [=](EitherError<Response> e) {
-              try {
-                if (e.left())
-                  r->done(e.left());
-                else {
-                  auto url = provider()->getItemUrlResponse(
-                      *item, e.right()->headers(), e.right()->output());
-                  static_cast<Item*>(item.get())->set_url(url);
-                  r->done(url);
+                                     const IItem::Pointer& item,
+                                     const GetItemUrlCallback& callback)
+    : Request(std::move(p), callback,
+              [=](Request<EitherError<std::string>>::Pointer r) {
+                if (item->type() == IItem::FileType::Directory)
+                  return r->done(Error{IHttpRequest::ServiceUnavailable,
+                                       util::Error::URL_UNAVAILABLE});
+                std::stringstream dummy;
+                if (!provider()->getItemUrlRequest(*item, dummy)) {
+                  auto url = static_cast<Item*>(item.get())->url();
+                  if (url.empty())
+                    return r->done(Error{IHttpRequest::ServiceUnavailable,
+                                         util::Error::URL_UNAVAILABLE});
+                  else
+                    return r->done(url);
                 }
-              } catch (const std::exception& e) {
-                r->done(Error{IHttpRequest::Failure, e.what()});
-              }
-            });
-      }) {}
+                r->request(
+                    [=](util::Output input) {
+                      return provider()->getItemUrlRequest(*item, *input);
+                    },
+                    [=](EitherError<Response> e) {
+                      try {
+                        if (e.left())
+                          r->done(e.left());
+                        else {
+                          auto url = provider()->getItemUrlResponse(
+                              *item, e.right()->headers(), e.right()->output());
+                          static_cast<Item*>(item.get())->set_url(url);
+                          r->done(url);
+                        }
+                      } catch (const std::exception& e) {
+                        r->done(Error{IHttpRequest::Failure, e.what()});
+                      }
+                    });
+              }) {}
 
 GetItemUrlRequest::~GetItemUrlRequest() { cancel(); }
 

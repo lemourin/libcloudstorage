@@ -57,12 +57,14 @@ class UploadFileRequest : public Request<EitherError<IItem>> {
  public:
   using ICallback = IUploadFileCallback;
 
-  UploadFileRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
-                    const std::string& filename, ICallback::Pointer);
+  UploadFileRequest(std::shared_ptr<CloudProvider>,
+                    const IItem::Pointer& directory,
+                    const std::string& filename, const ICallback::Pointer&);
 
-  static void resolve(Request::Pointer, UploadStreamWrapper::Pointer,
-                      IItem::Pointer directory, std::string filename,
-                      ICallback::Pointer);
+  static void resolve(const Request::Pointer&,
+                      const UploadStreamWrapper::Pointer&,
+                      const IItem::Pointer& directory,
+                      const std::string& filename, const ICallback::Pointer&);
 };
 
 }  // namespace cloudstorage

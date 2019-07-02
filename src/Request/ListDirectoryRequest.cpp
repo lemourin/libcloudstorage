@@ -30,16 +30,16 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 ListDirectoryRequest::ListDirectoryRequest(std::shared_ptr<CloudProvider> p,
-                                           IItem::Pointer directory,
-                                           ICallback::Pointer cb)
-    : Request(p, [=](EitherError<IItem::List> e) { cb->done(e); },
+                                           const IItem::Pointer& directory,
+                                           const ICallback::Pointer& cb)
+    : Request(std::move(p), [=](EitherError<IItem::List> e) { cb->done(e); },
               std::bind(&ListDirectoryRequest::resolve, this, _1, directory,
                         cb.get())) {}
 
 ListDirectoryRequest::~ListDirectoryRequest() { cancel(); }
 
-void ListDirectoryRequest::resolve(Request::Pointer request,
-                                   IItem::Pointer directory,
+void ListDirectoryRequest::resolve(const Request::Pointer& request,
+                                   const IItem::Pointer& directory,
                                    ICallback* callback) {
   if (directory->type() != IItem::FileType::Directory)
     request->done(Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});
@@ -47,22 +47,22 @@ void ListDirectoryRequest::resolve(Request::Pointer request,
     work(directory, "", callback);
 }
 
-void ListDirectoryRequest::work(IItem::Pointer directory,
+void ListDirectoryRequest::work(const IItem::Pointer& directory,
                                 std::string page_token, ICallback* callback) {
   auto request = this->shared_from_this();
-  request->make_subrequest(&CloudProvider::listDirectoryPageAsync, directory,
-                           page_token, [=](EitherError<PageData> e) {
-                             if (e.left()) return request->done(e.left());
-                             for (auto& t : e.right()->items_) {
-                               callback->receivedItem(t);
-                               result_.push_back(t);
-                             }
-                             if (!e.right()->next_token_.empty())
-                               work(directory, e.right()->next_token_,
-                                    callback);
-                             else
-                               request->done(result_);
-                           });
+  request->make_subrequest(
+      &CloudProvider::listDirectoryPageAsync, directory, std::move(page_token),
+      [=](EitherError<PageData> e) {
+        if (e.left()) return request->done(e.left());
+        for (auto& t : e.right()->items_) {
+          callback->receivedItem(t);
+          result_.push_back(t);
+        }
+        if (!e.right()->next_token_.empty())
+          work(directory, std::move(e.right()->next_token_), callback);
+        else
+          request->done(result_);
+      });
 }
 
 }  // namespace cloudstorage

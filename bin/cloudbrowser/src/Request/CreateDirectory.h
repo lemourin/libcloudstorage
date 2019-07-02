@@ -11,7 +11,8 @@ class CloudItem;
 
 class CLOUDBROWSER_API CreateDirectoryRequest : public Request {
  public:
-  Q_INVOKABLE void update(CloudContext*, CloudItem* parent, QString name);
+  Q_INVOKABLE void update(CloudContext*, CloudItem* parent,
+                          const QString& name);
 
  signals:
   void createdDirectory();

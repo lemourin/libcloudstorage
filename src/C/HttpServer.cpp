@@ -32,7 +32,9 @@ class HttpServer : public IHttpServer {
  public:
   HttpServer(cloud_http_server *server, cloud_http_server_operations ops,
              ICallback::Pointer callback)
-      : http_server_(server), operations_(ops), callback_(callback) {}
+      : http_server_(server),
+        operations_(ops),
+        callback_(std::move(callback)) {}
 
   ~HttpServer() override { operations_.release_http_server(http_server_); }
 

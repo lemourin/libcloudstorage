@@ -14,18 +14,18 @@ class IFileDialog : public QObject {
       QString filename READ filename WRITE setFilename NOTIFY filenameChanged)
   Q_PROPERTY(QString url READ url NOTIFY urlChanged)
 
-  IFileDialog();
+  IFileDialog() = default;
 
   Q_INVOKABLE virtual void open() = 0;
 
   QString filename() const { return filename_; }
-  void setFilename(QString);
+  void setFilename(const QString&);
 
   bool selectExisting() const { return select_existing_; }
   void setSelectExisting(bool);
 
   QString url() const { return url_; }
-  void setUrl(QString);
+  void setUrl(const QString&);
 
  signals:
   void ready();
@@ -34,7 +34,7 @@ class IFileDialog : public QObject {
   void filenameChanged();
 
  private:
-  bool select_existing_;
+  bool select_existing_ = false;
   QString url_;
   QString filename_;
 

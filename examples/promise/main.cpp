@@ -1,22 +1,20 @@
 #include <condition_variable>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include "ICloudFactory.h"
-#include "Utility/Utility.h"
 
 using namespace cloudstorage;
-
-using cloudstorage::util::log;
 
 class FactoryCallback : public ICloudFactory::ICallback {
  public:
   void onCloudCreated(const std::shared_ptr<ICloudAccess>& d) override {
     if (d->name() == "google") {
-      log("getting general data");
+      std::cout << "getting general data\n";
       d->generalData().then([](GeneralData d) {
-        log("got general data here", d.username_, d.space_used_,
-            d.space_total_);
+        std::cout << "got general data here " << d.username_ << " "
+                  << d.space_used_ << " " << d.space_total_ << "\n";
       });
     } else if (d->name() == "animezone") {
       const auto path =
@@ -29,9 +27,10 @@ class FactoryCallback : public ICloudFactory::ICallback {
                 item, ICloudAccess::streamDownloader(
                           std::make_shared<std::ofstream>(std::move(file))));
           })
-          .then([] { log("animezone thumb downloaded"); })
-          .error<IException>(
-              [](const IException& e) { log("animezone", e.what()); });
+          .then([] { std::cout << "animezone thumb downloaded\n"; })
+          .error<IException>([](const IException& e) {
+            std::cout << "animezone " << e.what();
+          });
     } else if (d->name() == "mega") {
       d->getItem("/Bit Rush _ Login Screen - League of Legends.mp4")
           .then([d](IItem::Pointer item) {
@@ -40,16 +39,17 @@ class FactoryCallback : public ICloudFactory::ICallback {
                 item, ICloudAccess::streamDownloader(
                           std::make_shared<std::ofstream>(std::move(file))));
           })
-          .then([] { log("generated thumb"); })
-          .error<IException>([](const IException& e) { log(e.what()); });
+          .then([] { std::cout << "generated thumb\n"; })
+          .error<IException>(
+              [](const IException& e) { std::cout << e.what() << "\n"; });
       std::stringstream input;
-      input << "dupa";
-      log("starting upload");
+      input << "example content";
+      std::cout << "starting upload\n";
       d->uploadFile(d->root(), "test",
                     ICloudAccess::streamUploader(
                         std::make_unique<std::stringstream>(std::move(input))))
           .then([=](IItem::Pointer file) {
-            log("upload done");
+            std::cout << "upload done\n";
             auto stream = std::make_shared<std::stringstream>();
             return std::make_tuple(
                 d->downloadFile(file, FullRange,
@@ -58,12 +58,16 @@ class FactoryCallback : public ICloudFactory::ICallback {
           })
           .then([=](const std::shared_ptr<std::stringstream>& stream,
                     IItem::Pointer file) {
-            log("downloaded", stream->str());
+            std::cout << "downloaded " << stream->str() << "\n";
             return std::make_tuple(d->deleteItem(file), file);
           })
-          .then([](IItem::Pointer file) { log("deleted", file->filename()); })
-          .error<IException>(
-              [](const auto& d) { log("error happened", d.code(), d.what()); });
+          .then([](IItem::Pointer file) {
+            std::cout << "deleted " << file->filename() << "\n";
+          })
+          .error<IException>([](const auto& d) {
+            std::cout << "error happened " << d.code() << " " << d.what()
+                      << "\n";
+          });
     }
   }
 };
@@ -73,9 +77,9 @@ int main(int argc, char** argv) {
   auto factory = ICloudFactory::create(factory_callback);
 
   if (argc == 2 && argv[1] == std::string("--list")) {
-    log("Available providers:");
+    std::cout << "Available providers:\n";
     for (const auto& d : factory->availableProviders()) {
-      log(d, factory->authorizationUrl(d));
+      std::cout << d << " " << factory->authorizationUrl(d) << "\n";
     }
   }
 

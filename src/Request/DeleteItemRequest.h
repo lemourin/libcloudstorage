@@ -30,9 +30,9 @@ namespace cloudstorage {
 
 class DeleteItemRequest : public Request<EitherError<void>> {
  public:
-  DeleteItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer item,
-                    DeleteItemCallback);
-  ~DeleteItemRequest();
+  DeleteItemRequest(std::shared_ptr<CloudProvider>, const IItem::Pointer &item,
+                    const DeleteItemCallback &);
+  ~DeleteItemRequest() override;
 };
 
 }  // namespace cloudstorage

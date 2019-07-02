@@ -30,12 +30,7 @@
 using namespace cloudstorage;
 using ::testing::_;
 using ::testing::AtLeast;
-using ::testing::ByMove;
-using ::testing::DoAll;
-using ::testing::Invoke;
-using ::testing::InvokeArgument;
 using ::testing::Return;
-using ::testing::WithArgs;
 
 class AuthCallback : public ICloudProvider::IAuthCallback {
   Status userConsentRequired(const ICloudProvider&) override {
@@ -47,9 +42,9 @@ class AuthCallback : public ICloudProvider::IAuthCallback {
 
 class GoogleDriveTest : public ::testing::Test {
  public:
-  void SetUp() {}
+  void SetUp() override {}
 
-  void TearDown() {}
+  void TearDown() override {}
 };
 
 std::shared_ptr<HttpRequestMock> request_mock() {
@@ -86,7 +81,7 @@ ACTION(AuthorizedSend) {
   arg0(IHttpRequest::Response{IHttpRequest::Ok, {}, arg2, arg3});
 }
 
-ACTION(CreateServer) {
+ACTION(CreateServer) {  // NOLINT
   auto server = util::make_unique<HttpServerMock>();
   auto request = util::make_unique<HttpServerMock::RequestMock>();
   EXPECT_CALL(*request, get("state")).WillRepeatedly(Return("DEFAULT_STATE"));
@@ -96,7 +91,7 @@ ACTION(CreateServer) {
   EXPECT_CALL(*request, mocked_response(IHttpRequest::Ok, _, _, _));
   EXPECT_CALL(*server, callback()).WillRepeatedly(Return(arg0));
   arg0->handle(*request);
-  return server;
+  return server;  // NOLINT
 }
 
 ACTION(CreateFileServer) { return util::make_unique<HttpServerMock>(); }
@@ -105,7 +100,7 @@ TEST_F(GoogleDriveTest, ListDirectoryTest) {
   ICloudProvider::InitData data;
   data.http_engine_ = util::make_unique<HttpMock>();
   data.callback_ = util::make_unique<AuthCallback>();
-  const HttpMock& http = static_cast<const HttpMock&>(*data.http_engine_);
+  const auto& http = static_cast<const HttpMock&>(*data.http_engine_);
   auto provider = ICloudStorage::create()->provider("google", std::move(data));
   auto request = request_mock();
   EXPECT_CALL(*request, send(_, _, _, _, _)).WillOnce(CallSend());
@@ -124,9 +119,8 @@ TEST_F(GoogleDriveTest, AuthorizationTest) {
   data.http_engine_ = util::make_unique<HttpMock>();
   data.http_server_ = util::make_unique<HttpServerFactoryMock>();
   data.callback_ = util::make_unique<AuthCallback>();
-  const HttpMock& http = static_cast<const HttpMock&>(*data.http_engine_);
-  HttpServerFactoryMock& http_factory =
-      static_cast<HttpServerFactoryMock&>(*data.http_server_);
+  const auto& http = static_cast<const HttpMock&>(*data.http_engine_);
+  auto& http_factory = static_cast<HttpServerFactoryMock&>(*data.http_server_);
   EXPECT_CALL(http_factory, create(_, _, IHttpServer::Type::FileProvider))
       .WillOnce(CreateFileServer());
   auto provider = ICloudStorage::create()->provider("google", std::move(data));

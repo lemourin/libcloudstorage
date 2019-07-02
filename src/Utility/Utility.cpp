@@ -26,9 +26,9 @@
 #include "IItem.h"
 #include "IRequest.h"
 
-#include <json/json.h>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <codecvt>
 #include <cstdlib>
 #include <cstring>
@@ -110,7 +110,8 @@ std::unique_ptr<std::ostream> stream =
 std::mutex stream_mutex;
 }  // namespace priv
 
-FileId::FileId(bool folder, const std::string& id) : folder_(folder), id_(id) {}
+FileId::FileId(bool folder, std::string id)
+    : folder_(folder), id_(std::move(id)) {}
 
 FileId::FileId(const std::string& str) : folder_() {
   try {
@@ -227,7 +228,7 @@ IItem::TimeStamp parse_time(const std::string& str) {
              &time.tm_mday, &time.tm_hour, &time.tm_min, &sec, buffer) == 7) {
     time.tm_year -= 1900;
     time.tm_mon--;
-    time.tm_sec = (int)(sec + 0.5);
+    time.tm_sec = std::lround(sec);
     if (buffer != std::string("Z")) {
       int offset_hour, offset_minute;
       if (sscanf(buffer, "%d:%d", &offset_hour, &offset_minute) == 2) {
@@ -317,7 +318,7 @@ std::string Url::unescape(const std::string& str) {
       auto ch1 = from_hex(str[i + 1]);
       auto ch2 = from_hex(str[i + 2]);
       auto ch = (ch1 << 4) | ch2;
-      result += ch;
+      result += char(ch);
       i += 2;
     } else {
       result += str[i];
@@ -331,8 +332,7 @@ std::string Url::escape(const std::string& value) {
   escaped << std::setfill('0');
   escaped << std::hex;
 
-  for (std::string::const_iterator i = value.begin(); i != value.end(); i++) {
-    std::string::value_type c = *i;
+  for (auto c : value) {
     if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
       escaped << c;
       continue;
@@ -361,7 +361,7 @@ IHttpServer::IResponse::Pointer response_from_string(
     const IHttpServer::IResponse::Headers& headers, const std::string& data) {
   class DataProvider : public IHttpServer::IResponse::ICallback {
    public:
-    DataProvider(const std::string& data) : position_(), data_(data) {}
+    DataProvider(std::string data) : position_(), data_(std::move(data)) {}
 
     int putData(char* buffer, size_t max) override {
       auto cnt = std::min<size_t>(data_.length() - position_, max);

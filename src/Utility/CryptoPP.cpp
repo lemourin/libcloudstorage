@@ -38,7 +38,7 @@ ICrypto::Pointer ICrypto::create() { return util::make_unique<CryptoPP>(); }
 std::string CryptoPP::sha256(const std::string& message) {
   ::CryptoPP::SHA256 hash;
   std::string result;
-  ::CryptoPP::StringSource(
+  ::CryptoPP::StringSource(  // NOLINT
       message, true,
       new ::CryptoPP::HashFilter(hash, new ::CryptoPP::StringSink(result)));
   return result;
@@ -47,32 +47,37 @@ std::string CryptoPP::sha256(const std::string& message) {
 std::string CryptoPP::hmac_sha256(const std::string& key,
                                   const std::string& message) {
   std::string mac;
-  ::CryptoPP::HMAC<::CryptoPP::SHA256> hmac((uint8_t*)key.c_str(), key.length());
-  ::CryptoPP::StringSource(
+  ::CryptoPP::HMAC<::CryptoPP::SHA256> hmac(  // NOLINT
+      reinterpret_cast<const uint8_t*>(key.c_str()), key.length());
+  ::CryptoPP::StringSource(  // NOLINT
       message, true,
       new ::CryptoPP::HashFilter(hmac, new ::CryptoPP::StringSink(mac)));
   std::string result;
-  ::CryptoPP::StringSource(mac, true, new ::CryptoPP::StringSink(result));
+  ::CryptoPP::StringSource(mac, true,  // NOLINT
+                           new ::CryptoPP::StringSink(result));
   return result;
 }
 
 std::string CryptoPP::hmac_sha1(const std::string& key,
                                 const std::string& message) {
   std::string mac;
-  ::CryptoPP::HMAC<::CryptoPP::SHA1> hmac((uint8_t*)key.c_str(), key.length());
-  ::CryptoPP::StringSource(
+  ::CryptoPP::HMAC<::CryptoPP::SHA1> hmac(  // NOLINT
+      reinterpret_cast<const uint8_t*>(key.c_str()), key.length());
+  ::CryptoPP::StringSource(  // NOLINT
       message, true,
       new ::CryptoPP::HashFilter(hmac, new ::CryptoPP::StringSink(mac)));
   std::string result;
-  ::CryptoPP::StringSource(mac, true, new ::CryptoPP::StringSink(result));
+  ::CryptoPP::StringSource(mac, true,  // NOLINT
+                           new ::CryptoPP::StringSink(result));
   return result;
 }
 
 std::string CryptoPP::hex(const std::string& hash) {
   std::string result;
-  ::CryptoPP::StringSource(
+  ::CryptoPP::StringSource(  // NOLINT
       hash, true,
-      new ::CryptoPP::HexEncoder(new ::CryptoPP::StringSink(result), false));
+      new ::CryptoPP::HexEncoder(new ::CryptoPP::StringSink(result),  // NOLINT
+                                 false));
   return result;
 }
 

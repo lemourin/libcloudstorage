@@ -100,8 +100,7 @@ class CurlHttp : public IHttp {
 class CurlHttpRequest : public IHttpRequest,
                         public std::enable_shared_from_this<CurlHttpRequest> {
  public:
-  CurlHttpRequest(const std::string& url, const std::string& method,
-                  bool follow_redirect,
+  CurlHttpRequest(std::string url, std::string method, bool follow_redirect,
                   std::shared_ptr<CurlHttp::Worker> worker);
   std::unique_ptr<CURL, CurlDeleter> init() const;
 
@@ -117,11 +116,11 @@ class CurlHttpRequest : public IHttpRequest,
   const std::string& method() const override;
   bool follow_redirect() const override;
 
-  RequestData::Pointer prepare(CompleteCallback,
-                               std::shared_ptr<std::istream> data,
+  RequestData::Pointer prepare(const CompleteCallback&,
+                               const std::shared_ptr<std::istream>& data,
                                std::shared_ptr<std::ostream> response,
                                std::shared_ptr<std::ostream> error_stream,
-                               ICallback::Pointer = nullptr) const;
+                               const ICallback::Pointer& = nullptr) const;
 
   void send(CompleteCallback, std::shared_ptr<std::istream> data,
             std::shared_ptr<std::ostream> response,

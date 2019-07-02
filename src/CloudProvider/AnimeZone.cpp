@@ -705,9 +705,9 @@ IItem::List AnimeZone::recentsDirectoryContent(const std::string &content,
     value["episode_url"] = episode_url;
     value["anime"] = episode_title;
     result.push_back(util::make_unique<Item>(
-        episode_title + " [" + episode_no + "]", util::json::to_string(value),
-        IItem::UnknownSize, date_to_timestamp((*it)[4].str()),
-        IItem::FileType::Directory));
+        std::string(episode_title).append(" [").append(episode_no).append("]"),
+        util::json::to_string(value), IItem::UnknownSize,
+        date_to_timestamp((*it)[4].str()), IItem::FileType::Directory));
   }
   return result;
 }

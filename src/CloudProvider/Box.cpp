@@ -99,13 +99,14 @@ IHttpRequest::Pointer Box::uploadFileRequest(
   Json::Value parent;
   parent["id"] = FileId(directory.id()).id_;
   json["parent"] = parent;
-  prefix_stream << "--" << separator << "\r\n"
-                << "Content-Disposition: form-data; name=\"attributes\"\r\n\r\n"
-                << util::json::to_string(json) << "\r\n"
-                << "--" << separator << "\r\n"
-                << "Content-Disposition: form-data; name=\"file\"; filename=\""
-                << util::Url::escapeHeader(filename) << "\"\r\n"
-                << "Content-Type: application/octet-stream\r\n\r\n";
+  prefix_stream
+      << "--" << separator << "\r\n"
+      << R"(Content-Disposition: form-data; name="attributes"\r\n\r\n)"
+      << util::json::to_string(json) << "\r\n"
+      << "--" << separator << "\r\n"
+      << R"(Content-Disposition: form-data; name="file"; filename=")"
+      << util::Url::escapeHeader(filename) << R"("\r\n)"
+      << "Content-Type: application/octet-stream\r\n\r\n";
   suffix_stream << "\r\n--" << separator << "--";
   return request;
 }

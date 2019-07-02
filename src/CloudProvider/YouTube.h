@@ -93,7 +93,8 @@ class YouTube : public CloudProvider {
   std::string generateDashManifest(
       const IItem& i, const std::vector<VideoInfo>& video_info) const;
 
-  Item::Pointer toItem(const Json::Value&, std::string kind, int type) const;
+  Item::Pointer toItem(const Json::Value&, const std::string& kind,
+                       int type) const;
 
   class Auth : public cloudstorage::GoogleDrive::Auth {
    public:

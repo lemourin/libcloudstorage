@@ -57,9 +57,7 @@
 #include <emscripten.h>
 #endif
 
-namespace Json {
-class Value;
-}  // namespace Json
+#include <json/json.h>
 
 namespace cloudstorage {
 
@@ -74,7 +72,7 @@ using Output = std::shared_ptr<std::ostream>;
 using Input = std::shared_ptr<std::istream>;
 
 struct CLOUDSTORAGE_API FileId {
-  FileId(bool, const std::string&);
+  FileId(bool, std::string);
   FileId(const std::string&);
 
   operator std::string() const;

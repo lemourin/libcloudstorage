@@ -30,7 +30,7 @@ using namespace cloudstorage;
 
 class HttpServerMock : public IHttpServer {
  public:
-  class RequestMock : public IHttpServer::IRequest {
+  class RequestMock : public IHttpServer::IRequest {  // NOLINT
    public:
     MOCK_CONST_METHOD1(get, const char*(const std::string& name));
     MOCK_CONST_METHOD1(header, const char*(const std::string& name));

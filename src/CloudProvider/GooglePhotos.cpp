@@ -200,7 +200,7 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::getThumbnailAsync(
    public:
     Wrapper(IDownloadFileCallback::Pointer wrapped,
             std::function<void(EitherError<void>)> done)
-        : wrapped_(wrapped), done_(done) {}
+        : wrapped_(std::move(wrapped)), done_(std::move(done)) {}
     void receivedData(const char *data, uint32_t length) override {
       wrapped_->receivedData(data, length);
     }
@@ -392,15 +392,15 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFromUrl(
 }
 
 IRequest<EitherError<std::string>>::Pointer GooglePhotos::getUploadUrl(
-    IItem::Pointer, const std::string &filename, uint64_t size,
+    const IItem::Pointer &, const std::string &filename, uint64_t size,
     std::function<void(EitherError<std::string>)> cb) {
   return std::make_shared<Request<EitherError<std::string>>>(
-             shared_from_this(), cb,
+             shared_from_this(), std::move(cb),
              [=](Request<EitherError<std::string>>::Pointer r) {
                r->request(
                    [=](util::Output) {
                      auto extension =
-                         filename.substr(filename.find_last_of(".") + 1);
+                         filename.substr(filename.find_last_of('.') + 1);
                      auto request =
                          http()->create(endpoint() + "/uploads", "POST");
                      request->setHeaderParameter("X-Goog-Upload-Command",

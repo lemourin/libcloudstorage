@@ -27,7 +27,7 @@ class ListDirectory : public IListDirectoryCallback {
 
 void ListDirectoryModel::set_provider(const Provider& p) { provider_ = p; }
 
-void ListDirectoryModel::add(IItem::Pointer t) {
+void ListDirectoryModel::add(const IItem::Pointer& t) {
   beginInsertRows(QModelIndex(), rowCount(), rowCount());
   list_.push_back(t);
   id_.insert(t->id());
@@ -41,14 +41,14 @@ void ListDirectoryModel::clear() {
   endRemoveRows();
 }
 
-int ListDirectoryModel::find(IItem::Pointer item) const {
+int ListDirectoryModel::find(const IItem::Pointer& item) const {
   if (id_.find(item->id()) == std::end(id_)) return -1;
   for (size_t i = 0; i < list_.size(); i++)
     if (list_[i]->id() == item->id()) return static_cast<int>(i);
   return -1;
 }
 
-void ListDirectoryModel::insert(int idx, IItem::Pointer item) {
+void ListDirectoryModel::insert(int idx, const IItem::Pointer& item) {
   beginInsertRows(QModelIndex(), idx, idx);
   list_.insert(list_.begin() + idx, item);
   id_.insert(item->id());

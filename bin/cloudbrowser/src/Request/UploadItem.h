@@ -13,7 +13,7 @@ class CLOUDBROWSER_API UploadItemRequest : public Request {
   qreal progress() const { return progress_; }
 
   Q_INVOKABLE void update(CloudContext* context, CloudItem* parent,
-                          QString path, QString filename);
+                          const QString& path, const QString& filename);
 
  signals:
   void progressChanged();

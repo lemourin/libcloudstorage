@@ -272,7 +272,7 @@ IHttpRequest::Pointer GoogleDrive::moveItemRequest(const IItem& s,
                         "id,name,thumbnailLink,trashed,"
                         "mimeType,iconLink,parents,size,modifiedTime");
   std::string current_parents;
-  for (auto str : source.parents()) current_parents += str + ",";
+  for (const auto& str : source.parents()) current_parents += str + ",";
   current_parents.pop_back();
   request->setParameter("removeParents", current_parents);
   request->setParameter("addParents", destination.id());
@@ -309,7 +309,7 @@ IItem::List GoogleDrive::listDirectoryResponse(
     std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);
   IItem::List result;
-  for (Json::Value v : response["files"]) result.push_back(toItem(v));
+  for (const auto& v : response["files"]) result.push_back(toItem(v));
   if (item.id() == rootDirectory()->id())
     result.push_back(util::make_unique<Item>(
         SHARED_FILENAME, SHARED_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -408,7 +408,7 @@ IItem::Pointer GoogleDrive::toItem(const Json::Value& v) const {
                               : icon_link(v["iconLink"].asString()));
   item->set_mime_type(v["mimeType"].asString());
   std::vector<std::string> parents;
-  for (auto id : v["parents"]) parents.push_back(id.asString());
+  for (const auto& id : v["parents"]) parents.push_back(id.asString());
   item->set_parents(parents);
   return std::move(item);
 }

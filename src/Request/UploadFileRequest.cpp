@@ -29,22 +29,23 @@ using namespace std::placeholders;
 
 namespace cloudstorage {
 
-UploadFileRequest::UploadFileRequest(std::shared_ptr<CloudProvider> p,
-                                     IItem::Pointer directory,
-                                     const std::string& filename,
-                                     UploadFileRequest::ICallback::Pointer cb)
+UploadFileRequest::UploadFileRequest(
+    std::shared_ptr<CloudProvider> p, const IItem::Pointer& directory,
+    const std::string& filename,
+    const UploadFileRequest::ICallback::Pointer& cb)
     : Request(
-          p, [=](EitherError<IItem> e) { cb->done(e); },
+          std::move(p), [=](EitherError<IItem> e) { cb->done(e); },
           std::bind(&UploadFileRequest::resolve, _1,
                     std::make_shared<UploadStreamWrapper>(
                         std::bind(&ICallback::putData, cb.get(), _1, _2, _3),
                         cb->size()),
                     directory, filename, cb)) {}
 
-void UploadFileRequest::resolve(Request::Pointer r,
-                                UploadStreamWrapper::Pointer stream_wrapper,
-                                IItem::Pointer directory, std::string filename,
-                                ICallback::Pointer callback) {
+void UploadFileRequest::resolve(
+    const Request::Pointer& r,
+    const UploadStreamWrapper::Pointer& stream_wrapper,
+    const IItem::Pointer& directory, const std::string& filename,
+    const ICallback::Pointer& callback) {
   r->send(
       [=](util::Output) {
         stream_wrapper->reset();
@@ -80,7 +81,7 @@ void UploadStreamWrapper::reset() {
 
 UploadStreamWrapper::pos_type UploadStreamWrapper::seekoff(
     off_type off, std::ios_base::seekdir way, std::ios_base::openmode) {
-  if (off != 0) return pos_type(off_type(-1));
+  if (off != 0) return {off_type(-1)};
   if (way == std::ios_base::beg)
     return position_ = 0;
   else if (way == std::ios_base::end)

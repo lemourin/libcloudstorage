@@ -30,9 +30,9 @@ namespace cloudstorage {
 
 class CreateDirectoryRequest : public Request<EitherError<IItem>> {
  public:
-  CreateDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                         const std::string&, CreateDirectoryCallback);
-  ~CreateDirectoryRequest();
+  CreateDirectoryRequest(std::shared_ptr<CloudProvider>, const IItem::Pointer&,
+                         const std::string&, const CreateDirectoryCallback&);
+  ~CreateDirectoryRequest() override;
 };
 
 }  // namespace cloudstorage

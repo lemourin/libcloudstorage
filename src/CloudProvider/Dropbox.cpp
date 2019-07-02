@@ -38,7 +38,7 @@ const int CHUNK_SIZE = 60 * 1024 * 1024;
 namespace cloudstorage {
 
 namespace {
-void upload(Request<EitherError<IItem>>::Pointer r,
+void upload(const Request<EitherError<IItem>>::Pointer& r,
             const std::string& session_id, const std::string& path,
             uint64_t sent, IUploadFileCallback* callback) {
   auto size = callback->size();

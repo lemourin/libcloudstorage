@@ -28,10 +28,10 @@
 namespace cloudstorage {
 
 MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
-                                 IItem::Pointer source,
-                                 IItem::Pointer destination,
-                                 MoveItemCallback callback)
-    : Request(p, callback, [=](Request::Pointer request) {
+                                 const IItem::Pointer& source,
+                                 const IItem::Pointer& destination,
+                                 const MoveItemCallback& callback)
+    : Request(std::move(p), callback, [=](Request::Pointer request) {
         if (destination->type() != IItem::FileType::Directory)
           return request->done(
               Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});

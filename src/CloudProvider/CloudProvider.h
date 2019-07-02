@@ -291,16 +291,16 @@ class CloudProvider : public ICloudProvider,
   static Json::Value credentialsFromString(const std::string&);
   static std::string credentialsToString(const Json::Value& json);
 
-  void addStreamRequest(std::shared_ptr<ICloudProvider::DownloadFileRequest>);
+  void addStreamRequest(const std::shared_ptr<DownloadFileRequest>&);
   void removeStreamRequest(
-      std::shared_ptr<ICloudProvider::DownloadFileRequest>);
+      const std::shared_ptr<ICloudProvider::DownloadFileRequest>&);
 
   DownloadFileRequest::Pointer downloadFileRangeAsync(
       IItem::Pointer, Range, IDownloadFileCallback::Pointer);
 
  protected:
   void setWithHint(const Hints& hints, const std::string& name,
-                   std::function<void(std::string)>) const;
+                   const std::function<void(std::string)>&) const;
   std::string defaultFileDaemonUrl(const IItem& item, uint64_t size) const;
   void cancelStreamRequests();
 

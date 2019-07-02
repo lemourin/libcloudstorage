@@ -35,10 +35,10 @@ struct hash<ListDirectoryCacheKey> {
 class CLOUDBROWSER_API ListDirectoryModel : public QAbstractListModel {
  public:
   void set_provider(const Provider&);
-  void add(cloudstorage::IItem::Pointer);
+  void add(const cloudstorage::IItem::Pointer&);
   void clear();
-  int find(cloudstorage::IItem::Pointer) const;
-  void insert(int idx, cloudstorage::IItem::Pointer);
+  int find(const cloudstorage::IItem::Pointer&) const;
+  void insert(int idx, const cloudstorage::IItem::Pointer&);
   void remove(int idx);
   const std::vector<cloudstorage::IItem::Pointer>& list() const {
     return list_;

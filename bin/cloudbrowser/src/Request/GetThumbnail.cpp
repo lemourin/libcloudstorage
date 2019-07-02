@@ -42,11 +42,11 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       std::shared_ptr<IThreadPool> pool, RequestNotifier* notifier,
       std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
       std::function<bool(std::chrono::system_clock::time_point)> interrupt)
-      : pool_(pool),
+      : pool_(std::move(pool)),
         notifier_(notifier),
-        provider_(p),
-        item_(item),
-        interrupt_(interrupt) {}
+        provider_(std::move(p)),
+        item_(std::move(item)),
+        interrupt_(std::move(interrupt)) {}
 
   void receivedData(const char* data, uint32_t length) override {
     data_ += std::string(data, length);
@@ -57,7 +57,7 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
                                     static_cast<qint64>(now));
   }
 
-  static void submit(RequestNotifier* notifier, QString path,
+  static void submit(RequestNotifier* notifier, const QString& path,
                      const std::string& data) {
     auto e = save(path, data);
     if (e.left()) {
@@ -71,7 +71,8 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
     notifier->deleteLater();
   }
 
-  static EitherError<std::string> save(QString path, const std::string& data) {
+  static EitherError<std::string> save(const QString& path,
+                                       const std::string& data) {
     QSaveFile file(path);
     if (!file.open(QFile::WriteOnly))
       return Error{IHttpRequest::Bad, "couldn't open file"};
@@ -137,9 +138,9 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       auto notifier = notifier_;
       auto path =
           GetThumbnailRequest::thumbnail_path(item_->filename().c_str());
-      auto data = std::move(data_);
-      pool_->schedule(
-          [notifier, path, data] { submit(notifier, path, std::move(data)); });
+      pool_->schedule([notifier, path, data = std::move(data_)] {
+        submit(notifier, path, data);
+      });
     }
   }
 
@@ -219,8 +220,9 @@ QString GetThumbnailRequest::thumbnail_path(const QString& filename) {
 class Generator : public QQuickImageResponse {
  public:
   Generator(const std::string& url, int timestamp,
-            const std::shared_ptr<util::LRUCache<std::string, IItem>>& cache)
-      : task_(new Runnable(this, url, timestamp)), item_cache_(cache) {
+            std::shared_ptr<util::LRUCache<std::string, IItem>> cache)
+      : task_(new Runnable(this, url, timestamp)),
+        item_cache_(std::move(cache)) {
     task_->setAutoDelete(false);
     QThreadPool::globalInstance()->start(task_);
   }
@@ -238,8 +240,11 @@ class Generator : public QQuickImageResponse {
  private:
   class Runnable : public QRunnable {
    public:
-    Runnable(Generator* r, const std::string& url, int timestamp)
-        : cancelled_(false), response_(r), url_(url), timestamp_(timestamp) {}
+    Runnable(Generator* r, std::string url, int timestamp)
+        : cancelled_(false),
+          response_(r),
+          url_(std::move(url)),
+          timestamp_(timestamp) {}
 
     void run() override {
       try {

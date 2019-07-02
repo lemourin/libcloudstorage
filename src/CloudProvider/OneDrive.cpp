@@ -37,9 +37,9 @@ using namespace std::placeholders;
 namespace cloudstorage {
 
 namespace {
-void upload(Request<EitherError<IItem>>::Pointer r,
+void upload(const Request<EitherError<IItem>>::Pointer& r,
             const std::string& upload_url, uint64_t sent,
-            IUploadFileCallback* callback, Json::Value response) {
+            IUploadFileCallback* callback, const Json::Value& response) {
   auto size = callback->size();
   auto length = std::make_shared<uint64_t>(0);
   if (sent >= size)
@@ -298,7 +298,7 @@ IItem::List OneDrive::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   IItem::List result;
   auto response = util::json::from_stream(stream);
-  for (Json::Value v : response["value"]) result.push_back(toItem(v));
+  for (const auto& v : response["value"]) result.push_back(toItem(v));
   if (response.isMember("@odata.nextLink"))
     next_page_token = response["@odata.nextLink"].asString();
   return result;

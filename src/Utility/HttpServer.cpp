@@ -27,7 +27,7 @@ IHttpServer::IResponse::Pointer DispatchCallback::handle(
 void DispatchCallback::add(const std::string& ssid,
                            IHttpServer::ICallback::Pointer cb) {
   std::lock_guard<std::mutex> lock(lock_);
-  client_callback_[ssid] = cb;
+  client_callback_[ssid] = std::move(cb);
 }
 
 void DispatchCallback::remove(const std::string& ssid) {
@@ -48,8 +48,8 @@ IHttpServer::ICallback::Pointer DispatchCallback::callback(
 HttpServerWrapper::HttpServerWrapper(std::shared_ptr<DispatchCallback> d,
                                      IHttpServer::ICallback::Pointer callback,
                                      const std::string& session)
-    : dispatch_(d), session_(session) {
-  dispatch_->add(session, callback);
+    : dispatch_(std::move(d)), session_(session) {
+  dispatch_->add(session, std::move(callback));
 }
 
 HttpServerWrapper::~HttpServerWrapper() { dispatch_->remove(session_); }

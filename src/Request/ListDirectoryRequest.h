@@ -33,13 +33,16 @@ class ListDirectoryRequest : public Request<EitherError<IItem::List>> {
  public:
   using ICallback = IListDirectoryCallback;
 
-  ListDirectoryRequest(std::shared_ptr<CloudProvider>, IItem::Pointer directory,
-                       ICallback::Pointer);
-  ~ListDirectoryRequest();
+  ListDirectoryRequest(std::shared_ptr<CloudProvider>,
+                       const IItem::Pointer& directory,
+                       const ICallback::Pointer&);
+  ~ListDirectoryRequest() override;
 
  private:
-  void resolve(Request::Pointer, IItem::Pointer directory, ICallback* cb);
-  void work(IItem::Pointer directory, std::string page_token, ICallback*);
+  void resolve(const Request::Pointer&, const IItem::Pointer& directory,
+               ICallback* cb);
+  void work(const IItem::Pointer& directory, std::string page_token,
+            ICallback*);
 
   IItem::List result_;
 };

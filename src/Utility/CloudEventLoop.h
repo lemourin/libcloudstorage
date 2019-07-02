@@ -36,7 +36,7 @@ namespace cloudstorage {
 
 class Exception : public IException {
  public:
-  Exception(int code, const std::string& description);
+  Exception(int code, std::string description);
   Exception(const std::shared_ptr<Error>&);
 
   const char* what() const noexcept override { return description_.c_str(); }
@@ -89,7 +89,7 @@ class LoopImpl {
 class CloudEventLoop {
  public:
   CloudEventLoop(IThreadPoolFactory* factory,
-                 const std::shared_ptr<ICloudFactory::ICallback>& cb);
+                 std::shared_ptr<ICloudFactory::ICallback> cb);
   ~CloudEventLoop();
 
   std::shared_ptr<priv::LoopImpl> impl() { return impl_; }

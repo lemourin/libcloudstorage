@@ -49,7 +49,7 @@ namespace curl {
 namespace {
 
 size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
-  RequestData* data = static_cast<RequestData*>(userdata);
+  auto data = static_cast<RequestData*>(userdata);
   if (!data->http_code_)
     curl_easy_getinfo(data->handle_.get(), CURLINFO_RESPONSE_CODE,
                       &data->http_code_);
@@ -75,7 +75,7 @@ size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
 }
 
 size_t read_callback(char* buffer, size_t size, size_t nmemb, void* userdata) {
-  RequestData* data = static_cast<RequestData*>(userdata);
+  auto data = static_cast<RequestData*>(userdata);
   auto stream = data->data_.get();
   stream->read(buffer, size * nmemb);
   return stream->gcount();
@@ -85,7 +85,7 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
                        void* userdata) {
   auto header_data = static_cast<IHttpRequest::HeaderParameters*>(userdata);
   std::string header(buffer, buffer + size * nitems);
-  auto pos = header.find_first_of(":");
+  auto pos = header.find_first_of(':');
   const auto http_prefix = "HTTP/";
   if (header.substr(0, strlen(http_prefix)) == http_prefix) {
     header_data->clear();
@@ -104,8 +104,8 @@ size_t header_callback(char* buffer, size_t size, size_t nitems,
 
 int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow,
                       curl_off_t ultotal, curl_off_t ulnow) {
-  RequestData* data = static_cast<RequestData*>(clientp);
-  CurlHttpRequest::ICallback* callback = (data->callback_.get());
+  auto data = static_cast<RequestData*>(clientp);
+  auto callback = data->callback_.get();
   if (callback) {
     if (ultotal != 0)
       callback->progressUpload(static_cast<uint64_t>(ultotal),
@@ -204,14 +204,13 @@ void RequestData::done(int code) {
   complete_({ret, response_headers_, stream_, error_stream_});
 }
 
-CurlHttpRequest::CurlHttpRequest(const std::string& url,
-                                 const std::string& method,
+CurlHttpRequest::CurlHttpRequest(std::string url, std::string method,
                                  bool follow_redirect,
                                  std::shared_ptr<CurlHttp::Worker> worker)
-    : url_(url),
-      method_(method),
+    : url_(std::move(url)),
+      method_(std::move(method)),
       follow_redirect_(follow_redirect),
-      worker_(worker) {}
+      worker_(std::move(worker)) {}
 
 std::unique_ptr<CURL, CurlDeleter> CurlHttpRequest::init() const {
   std::unique_ptr<CURL, CurlDeleter> handle(curl_easy_init());
@@ -256,18 +255,18 @@ const std::string& CurlHttpRequest::url() const { return url_; }
 const std::string& CurlHttpRequest::method() const { return method_; }
 
 RequestData::Pointer CurlHttpRequest::prepare(
-    CompleteCallback complete, std::shared_ptr<std::istream> data,
+    const CompleteCallback& complete, const std::shared_ptr<std::istream>& data,
     std::shared_ptr<std::ostream> response,
     std::shared_ptr<std::ostream> error_stream,
-    ICallback::Pointer callback) const {
+    const ICallback::Pointer& callback) const {
   auto cb_data =
       util::make_unique<RequestData>(RequestData{init(),
                                                  headerParametersToList(),
                                                  headerParameters(),
                                                  {},
                                                  data,
-                                                 response,
-                                                 error_stream,
+                                                 std::move(response),
+                                                 std::move(error_stream),
                                                  callback,
                                                  complete,
                                                  follow_redirect(),

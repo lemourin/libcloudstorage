@@ -57,7 +57,7 @@ static void *get_proc_address_mpv(void *, const char *name) {
 
 class MpvRenderer : public QQuickFramebufferObject::Renderer {
  public:
-  MpvRenderer(const std::shared_ptr<mpv_handle> &mpv) : mpv_(mpv) {
+  MpvRenderer(std::shared_ptr<mpv_handle> mpv) : mpv_(std::move(mpv)) {
     mpv_opengl_init_params gl_init_params{get_proc_address_mpv, nullptr,
                                           nullptr};
     mpv_render_param params[]{
@@ -140,7 +140,7 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
 QString MpvPlayer::uri() const { return uri_; }
 
 void MpvPlayer::setUri(QString uri) {
-  uri_ = uri;
+  uri_ = std::move(uri);
   emit uriChanged();
   if (!initialized_) {
     invoke_load_ = true;
@@ -154,7 +154,7 @@ qreal MpvPlayer::position() const { return position_; }
 void MpvPlayer::setPosition(qreal position) {
   position_ = position;
   emit positionChanged();
-  int64_t p = position * duration() / 1000;
+  auto p = static_cast<int64_t>(position * duration() / 1000);
   mpv_set_property_async(mpv_.get(), POSITION_ID, "playback-time",
                          MPV_FORMAT_INT64, &p);
 }

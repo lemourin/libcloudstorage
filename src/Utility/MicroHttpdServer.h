@@ -45,7 +45,7 @@ class MicroHttpdServer : public IHttpServer {
    public:
     Response(MHD_Connection* connection, int code, const IResponse::Headers&,
              int64_t size, IResponse::ICallback::Pointer);
-    ~Response();
+    ~Response() override;
 
     MHD_Response* response() const { return response_; }
     int code() const { return code_; }

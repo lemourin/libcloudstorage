@@ -30,8 +30,9 @@ namespace cloudstorage {
 
 class ListDirectoryPageRequest : public Request<EitherError<PageData>> {
  public:
-  ListDirectoryPageRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                           const std::string&, ListDirectoryPageCallback);
+  ListDirectoryPageRequest(std::shared_ptr<CloudProvider>,
+                           const IItem::Pointer &, const std::string &,
+                           const ListDirectoryPageCallback &);
 };
 
 }  // namespace cloudstorage

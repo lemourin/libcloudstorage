@@ -28,28 +28,29 @@
 namespace cloudstorage {
 
 ListDirectoryPageRequest::ListDirectoryPageRequest(
-    std::shared_ptr<CloudProvider> p, IItem::Pointer directory,
-    const std::string& token, ListDirectoryPageCallback completed)
-    : Request(p, completed, [=](Request<EitherError<PageData>>::Pointer r) {
-        if (directory->type() != IItem::FileType::Directory)
-          return r->done(
-              Error{IHttpRequest::Bad, util::Error::NOT_A_DIRECTORY});
-        r->request(
-            [=](util::Output input) {
-              return r->provider()->listDirectoryRequest(*directory, token,
-                                                         *input);
-            },
-            [=](EitherError<Response> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                std::string next_token;
-                auto lst = r->provider()->listDirectoryResponse(
-                    *directory, e.right()->output(), next_token);
-                r->done(PageData{lst, next_token});
-              } catch (const std::exception& e) {
-                r->done(Error{IHttpRequest::Failure, e.what()});
-              }
-            });
-      }) {}
+    std::shared_ptr<CloudProvider> p, const IItem::Pointer& directory,
+    const std::string& token, const ListDirectoryPageCallback& completed)
+    : Request(std::move(p), completed,
+              [=](Request<EitherError<PageData>>::Pointer r) {
+                if (directory->type() != IItem::FileType::Directory)
+                  return r->done(
+                      Error{IHttpRequest::Bad, util::Error::NOT_A_DIRECTORY});
+                r->request(
+                    [=](util::Output input) {
+                      return r->provider()->listDirectoryRequest(*directory,
+                                                                 token, *input);
+                    },
+                    [=](EitherError<Response> e) {
+                      if (e.left()) return r->done(e.left());
+                      try {
+                        std::string next_token;
+                        auto lst = r->provider()->listDirectoryResponse(
+                            *directory, e.right()->output(), next_token);
+                        r->done(PageData{lst, next_token});
+                      } catch (const std::exception& e) {
+                        r->done(Error{IHttpRequest::Failure, e.what()});
+                      }
+                    });
+              }) {}
 
 }  // namespace cloudstorage

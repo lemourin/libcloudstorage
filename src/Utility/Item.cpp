@@ -29,7 +29,7 @@
 #include <algorithm>
 #include <cctype>
 
-#define SIZE(x) (sizeof(x) / sizeof(x[0]))
+#define SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 const std::string VIDEO_EXTENSIONS[] = {
     "3g2", "3gp", "asf", "avi", "flv", "m4v", "mkv", "mov",
@@ -58,8 +58,8 @@ bool find(const std::string* array, int length, std::string str) {
 
 Item::Item(std::string filename, std::string id, size_t size,
            TimeStamp timestamp, FileType type)
-    : filename_(filename),
-      id_(id),
+    : filename_(std::move(filename)),
+      id_(std::move(id)),
       url_(),
       size_(size),
       timestamp_(timestamp),
@@ -72,7 +72,9 @@ Item::Item(std::string filename, std::string id, size_t size,
 
 std::string Item::filename() const { return filename_; }
 
-void Item::set_filename(std::string filename) { filename_ = filename; }
+void Item::set_filename(std::string filename) {
+  filename_ = std::move(filename);
+}
 
 std::string Item::extension() const {
   return filename_.substr(filename_.find_last_of('.') + 1, std::string::npos);
@@ -130,7 +132,7 @@ std::string Item::url() const {
 
 void Item::set_url(std::string url) {
   std::lock_guard<std::mutex> lock(mutex_);
-  url_ = url;
+  url_ = std::move(url);
 }
 
 std::string Item::thumbnail_url() const {
@@ -140,7 +142,7 @@ std::string Item::thumbnail_url() const {
 
 void Item::set_thumbnail_url(std::string url) {
   std::lock_guard<std::mutex> lock(mutex_);
-  thumbnail_url_ = url;
+  thumbnail_url_ = std::move(url);
 }
 
 bool Item::is_hidden() const { return is_hidden_; }

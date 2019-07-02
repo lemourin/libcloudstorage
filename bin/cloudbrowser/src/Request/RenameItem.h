@@ -8,7 +8,7 @@ class CloudItem;
 
 class CLOUDBROWSER_API RenameItemRequest : public Request {
  public:
-  Q_INVOKABLE void update(CloudContext*, CloudItem* item, QString name);
+  Q_INVOKABLE void update(CloudContext*, CloudItem* item, const QString& name);
 
  signals:
   void itemRenamed();

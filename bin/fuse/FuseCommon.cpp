@@ -50,7 +50,7 @@ std::wstring from_string(const std::string &str) {
   return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
 }
 
-struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i) {
+struct FUSE_STAT item_to_stat(const IFileSystem::INode::Pointer &i) {
   struct FUSE_STAT ret = {};
 #ifndef _WIN32
   if (i->timestamp() != IItem::UnknownTimeStamp)
@@ -99,10 +99,11 @@ ICloudProvider::Pointer create(
     std::string temporary_directory, Json::Value config) {
   class ServerFactoryWrapper : public IHttpServerFactory {
    public:
-    ServerFactoryWrapper(std::shared_ptr<IHttpServerFactory> f) : factory_(f) {}
+    ServerFactoryWrapper(std::shared_ptr<IHttpServerFactory> f)
+        : factory_(std::move(f)) {}
     IHttpServer::Pointer create(IHttpServer::ICallback::Pointer cb,
                                 const std::string &ssid,
-                                IHttpServer::Type type) {
+                                IHttpServer::Type type) override {
       return factory_->create(cb, ssid, type);
     }
 
@@ -127,15 +128,16 @@ ICloudProvider::Pointer create(
       "http://127.0.0.1:12345/" + std::to_string(index);
   init_data.hints_["state"] = std::to_string(index);
   init_data.hints_["access_token"] = config["access_token"].asString();
-  init_data.hints_["temporary_directory"] = temporary_directory;
+  init_data.hints_["temporary_directory"] = std::move(temporary_directory);
   return ICloudStorage::create()->provider(config["type"].asString(),
                                            std::move(init_data));
 }
 
 std::vector<IFileSystem::ProviderEntry> providers(
     const Json::Value &data,
-    std::shared_ptr<IHttpServerFactory> http_server_factory,
-    std::shared_ptr<IHttp> http, std::shared_ptr<IThreadPool> thread_pool,
+    const std::shared_ptr<IHttpServerFactory> &http_server_factory,
+    const std::shared_ptr<IHttp> &http,
+    const std::shared_ptr<IThreadPool> &thread_pool,
     const std::string &temporary_directory) {
   std::vector<IFileSystem::ProviderEntry> providers;
   int index = 0;

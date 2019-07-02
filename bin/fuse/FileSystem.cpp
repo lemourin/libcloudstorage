@@ -34,7 +34,8 @@ IItem::Pointer auth_item(const std::string& url) {
       IItem::UnknownTimeStamp, IItem::FileType::Unknown);
 }
 
-std::string id(std::shared_ptr<ICloudProvider> p, IItem::Pointer i) {
+std::string id(const std::shared_ptr<ICloudProvider>& p,
+               const IItem::Pointer& i) {
   Json::Value json;
   if (p) json["p"] = p->name();
   json["i"] = i->filename() + i->id();
@@ -47,7 +48,11 @@ FileSystem::Node::Node() : parent_(), inode_(), size_() {}
 
 FileSystem::Node::Node(std::shared_ptr<ICloudProvider> p, IItem::Pointer item,
                        FileId parent, FileId inode, uint64_t size)
-    : provider_(p), item_(item), parent_(parent), inode_(inode), size_(size) {}
+    : provider_(std::move(p)),
+      item_(std::move(item)),
+      parent_(parent),
+      inode_(inode),
+      size_(size) {}
 
 FileSystem::Node::~Node() {
   if (store_) (void)std::remove(cache_filename_.c_str());
@@ -78,16 +83,15 @@ std::shared_ptr<IGenericRequest> FileSystem::Node::upload_request() const {
 }
 
 void FileSystem::Node::set_upload_request(std::shared_ptr<IGenericRequest> r) {
-  upload_request_ = r;
+  upload_request_ = std::move(r);
 }
 
 FileSystem::FileSystem(const std::vector<ProviderEntry>& provider,
-                       IHttp::Pointer http,
-                       const std::string& temporary_directory)
+                       IHttp::Pointer http, std::string temporary_directory)
     : next_(1),
       running_(true),
       http_(std::move(http)),
-      temporary_directory_(temporary_directory),
+      temporary_directory_(std::move(temporary_directory)),
       cancelled_request_thread_(std::async(
           std::launch::async, std::bind(&FileSystem::cancelled, this))),
       cleanup_(std::async(std::launch::async,
@@ -158,7 +162,7 @@ void FileSystem::cancelled() {
 void FileSystem::cancel(std::shared_ptr<IGenericRequest> r) {
   {
     std::unique_lock<mutex> lock(request_data_mutex_);
-    cancelled_request_.push_back(r);
+    cancelled_request_.emplace_back(std::move(r));
   }
   cancelled_request_condition_.notify_one();
 }
@@ -190,7 +194,7 @@ FileSystem::Node::Pointer FileSystem::add(std::shared_ptr<ICloudProvider> p,
     return it->second;
 }
 
-void FileSystem::set(FileId idx, Node::Pointer node) {
+void FileSystem::set(FileId idx, const Node::Pointer& node) {
   std::lock_guard<mutex> lock(node_data_mutex_);
   if (node->item()) {
     node_map_[idx] = node;
@@ -321,7 +325,7 @@ void FileSystem::getattr(const std::string& full_path,
 }
 
 void FileSystem::get_path(FileId node, const std::string& path,
-                          GetItemCallback callback) {
+                          const GetItemCallback& callback) {
   if (path.empty() || path == "/") return getattr(node, callback);
   auto it = path.find_first_of('/', 1);
   auto filename =
@@ -532,7 +536,7 @@ void FileSystem::rename(FileId parent, const char* name, FileId newparent,
             std::lock_guard<mutex> lock(node_data_mutex_);
             this->invalidate(node->inode());
             auto& old_lst = node_directory_[parent];
-            auto it = std::find(old_lst.begin(), old_lst.end(), node->inode());
+            auto it = old_lst.find(node->inode());
             if (it != std::end(old_lst)) old_lst.erase(it);
             auto nit = node_directory_.find(newparent);
             if (nit != std::end(node_directory_))
@@ -601,8 +605,11 @@ void FileSystem::fsync(FileId inode, DataSynchronizedCallback cb) {
   class UploadCallback : public IUploadFileCallback {
    public:
     UploadCallback(FileSystem* ctx, std::shared_ptr<ICloudProvider> provider,
-                   Node::Pointer node, DeleteItemCallback cb)
-        : fuse_(ctx), provider_(provider), node_(node), callback_(cb) {
+                   Node::Pointer node, const DeleteItemCallback& cb)
+        : fuse_(ctx),
+          provider_(std::move(provider)),
+          node_(std::move(node)),
+          callback_(cb) {
       node_->store_->seekg(0, std::ios::end);
       size_ = node_->store_->tellg();
       node_->store_->seekg(std::ios::beg);
@@ -665,10 +672,12 @@ void FileSystem::mkdir(FileId parent, const char* name,
        })});
 }
 
-void FileSystem::rename_async(std::shared_ptr<ICloudProvider> p,
-                              IItem::Pointer item, IItem::Pointer parent,
-                              IItem::Pointer destination, const char* name,
-                              RenameItemCallback callback) {
+void FileSystem::rename_async(const std::shared_ptr<ICloudProvider>& p,
+                              const IItem::Pointer& item,
+                              const IItem::Pointer& parent,
+                              const IItem::Pointer& destination,
+                              const char* name,
+                              const RenameItemCallback& callback) {
   if (!p || !item || !parent || !destination)
     return callback(Error{IHttpRequest::ServiceUnavailable, ""});
   auto move = [=](IItem::Pointer item) {
@@ -687,20 +696,20 @@ void FileSystem::rename_async(std::shared_ptr<ICloudProvider> p,
   }
 }
 
-void FileSystem::list_directory_async(std::shared_ptr<ICloudProvider> p,
-                                      IItem::Pointer i,
-                                      cloudstorage::ListDirectoryCallback cb) {
+void FileSystem::list_directory_async(
+    const std::shared_ptr<ICloudProvider>& p, const IItem::Pointer& i,
+    const cloudstorage::ListDirectoryCallback& cb) {
   if (!p || !i) return cb(Error{IHttpRequest::ServiceUnavailable, ""});
   add({p, p->listDirectorySimpleAsync(i, cb)});
 }
 
-void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
-                                     IItem::Pointer item, Range range,
-                                     DownloadItemCallback cb) {
+void FileSystem::download_item_async(const std::shared_ptr<ICloudProvider>& p,
+                                     const IItem::Pointer& item, Range range,
+                                     const DownloadItemCallback& cb) {
   if (!p || !item) return cb(Error{IHttpRequest::ServiceUnavailable, ""});
   class Callback : public IDownloadFileCallback {
    public:
-    Callback(DownloadItemCallback cb)
+    Callback(const DownloadItemCallback& cb)
         : start_(std::chrono::system_clock::now()), callback_(cb) {}
 
     void receivedData(const char* data, uint32_t length) override {
@@ -727,8 +736,9 @@ void FileSystem::download_item_async(std::shared_ptr<ICloudProvider> p,
   add({p, p->downloadFileAsync(item, util::make_unique<Callback>(cb), range)});
 }
 
-void FileSystem::get_url_async(std::shared_ptr<ICloudProvider> p,
-                               IItem::Pointer i, GetItemUrlCallback cb) {
+void FileSystem::get_url_async(const std::shared_ptr<ICloudProvider>& p,
+                               const IItem::Pointer& i,
+                               const GetItemUrlCallback& cb) {
   add({p, p->getItemUrlAsync(i, cb)});
 }
 

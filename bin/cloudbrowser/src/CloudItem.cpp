@@ -8,8 +8,8 @@
 
 using namespace cloudstorage;
 
-CloudItem::CloudItem(const Provider& p, IItem::Pointer item, QObject* parent)
-    : QObject(parent), provider_(p), item_(item) {}
+CloudItem::CloudItem(Provider p, IItem::Pointer item, QObject* parent)
+    : QObject(parent), provider_(std::move(p)), item_(std::move(item)) {}
 
 QString CloudItem::filename() const { return item_->filename().c_str(); }
 
@@ -48,7 +48,7 @@ QString CloudItem::type() const {
   }
 }
 
-bool CloudItem::supports(QString operation) const {
+bool CloudItem::supports(const QString& operation) const {
   auto provider = this->provider().provider_;
   if (operation == "delete")
     return provider->supportedOperations() & ICloudProvider::DeleteItem;

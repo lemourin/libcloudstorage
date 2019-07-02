@@ -46,7 +46,7 @@ ThreadPool::ThreadPool(uint32_t thread_count)
             worker_cv_.wait(lock);
           }
           if (!tasks_.empty()) {
-            task = std::move(tasks_.front());
+            task = tasks_.front();
             tasks_.pop_front();
           } else {
             break;
@@ -77,7 +77,7 @@ void ThreadPool::schedule(const Task &f,
                           const std::chrono::system_clock::time_point &when) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (when <= std::chrono::system_clock::now()) {
-    tasks_.push_back(std::move(f));
+    tasks_.emplace_back(f);
   } else {
     delayed_tasks_.insert({when, f});
   }
@@ -98,7 +98,7 @@ void ThreadPool::handleDelayedTasks() {
     if (!delayed_tasks_.empty()) {
       if (delayed_tasks_.begin()->first <= std::chrono::system_clock::now() ||
           destroyed_) {
-        auto task = std::move(*delayed_tasks_.begin());
+        auto task = *delayed_tasks_.begin();
         delayed_tasks_.erase(delayed_tasks_.begin());
         lock.unlock();
         task.second();

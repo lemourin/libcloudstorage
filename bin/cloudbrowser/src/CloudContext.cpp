@@ -41,7 +41,7 @@ QHash<int, QByteArray> ProviderListModel::roleNames() const {
   return {{Qt::DisplayRole, "modelData"}};
 }
 
-void ProviderListModel::remove(QVariant provider) {
+void ProviderListModel::remove(const QVariant& provider) {
   auto label = provider.toMap()["label"].toString().toStdString();
   auto type = provider.toMap()["type"].toString().toStdString();
   for (size_t i = 0; i < provider_.size();)
@@ -56,7 +56,7 @@ void ProviderListModel::remove(QVariant provider) {
     }
 }
 
-Provider ProviderListModel::provider(QVariant provider) const {
+Provider ProviderListModel::provider(const QVariant& provider) const {
   auto label = provider.toMap()["label"].toString().toStdString();
   auto type = provider.toMap()["type"].toString().toStdString();
   for (auto&& i : provider_)
@@ -114,8 +114,7 @@ CloudContext::CloudContext(QObject* parent)
       thumbnailer_thread_pool_(IThreadPool::create(2)),
       pool_(std::make_shared<RequestPool>()),
       cache_size_(updatedCacheSize()),
-      interrupt_(std::make_shared<std::atomic_bool>()),
-      provider_index_() {
+      interrupt_(std::make_shared<std::atomic_bool>()) {
   {
     std::unique_lock<std::mutex> lock(gMutex);
     gCloudContext = this;
@@ -123,7 +122,7 @@ CloudContext::CloudContext(QObject* parent)
   std::lock_guard<std::mutex> lock(mutex_);
   QSettings settings;
   auto providers = settings.value("providers").toList();
-  for (auto j : providers) {
+  for (const auto& j : providers) {
     auto obj = j.toMap();
     auto label = obj["label"].toString().toStdString();
     std::string token;
@@ -137,7 +136,7 @@ CloudContext::CloudContext(QObject* parent)
                        hints);
     if (provider) user_provider_model_.add({label, std::move(provider)});
   }
-  for (auto p : ICloudStorage::create()->providers()) {
+  for (const auto& p : ICloudStorage::create()->providers()) {
     auth_server_.push_back(http_server_factory_->create(
         util::make_unique<HttpServerCallback>(this), p,
         IHttpServer::Type::Authorization));
@@ -268,19 +267,19 @@ QString CloudContext::playerBackend() const {
   return settings.value("playerBackend", default_player).toString();
 }
 
-void CloudContext::setPlayerBackend(QString str) {
+void CloudContext::setPlayerBackend(const QString& str) {
   QSettings settings;
   settings.setValue("playerBackend", str);
   emit playerBackendChanged();
 }
 
-QString CloudContext::authorizationUrl(QString provider) const {
+QString CloudContext::authorizationUrl(const QString& provider) const {
   return this->provider(provider.toStdString(), Token{})
       ->authorizeLibraryUrl()
       .c_str();
 }
 
-QObject* CloudContext::root(QVariant provider) {
+QObject* CloudContext::root(const QVariant& provider) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto p = user_provider_model_.provider(provider);
   if (p.provider_) {
@@ -292,7 +291,7 @@ QObject* CloudContext::root(QVariant provider) {
   }
 }
 
-void CloudContext::removeProvider(QVariant provider) {
+void CloudContext::removeProvider(const QVariant& provider) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     user_provider_model_.remove(provider);
@@ -300,7 +299,7 @@ void CloudContext::removeProvider(QVariant provider) {
   saveProviders();
 }
 
-QString CloudContext::pretty(QString provider) const {
+QString CloudContext::pretty(const QString& provider) const {
   const std::unordered_map<std::string, std::string> name_map = {
       {"amazon", "Amazon Drive"},
       {"amazons3", "Amazon S3"},
@@ -326,12 +325,12 @@ QString CloudContext::pretty(QString provider) const {
     return "";
 }
 
-QVariantMap CloudContext::readUrl(QString url) const {
+QVariantMap CloudContext::readUrl(const QString& url) const {
   util::Url result(url.toStdString());
   QVariantMap r;
   r["protocol"] = result.protocol().c_str();
   r["host"] = result.host().c_str();
-  for (auto str : QString(result.query().c_str()).split('&')) {
+  for (const auto& str : QString(result.query().c_str()).split('&')) {
     auto lst = str.split('=');
     if (lst.size() == 2)
       r[lst[0]] = util::Url::unescape(lst[1].toStdString()).c_str();
@@ -347,7 +346,7 @@ void CloudContext::hideCursor() const {
   QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
 }
 
-QString CloudContext::supportUrl(QString name) const {
+QString CloudContext::supportUrl(const QString& name) const {
   return config_.object()["support_url"].toObject()[name].toString();
 }
 
@@ -392,7 +391,7 @@ void CloudContext::showCursor() const {
 
 void CloudContext::add(std::shared_ptr<ICloudProvider> p,
                        std::shared_ptr<IGenericRequest> r) {
-  pool_->add(p, r);
+  pool_->add(std::move(p), std::move(r));
 }
 
 void CloudContext::add(const std::string& name, const std::string& label,
@@ -404,7 +403,7 @@ void CloudContext::add(const std::string& name, const std::string& label,
   saveProviders();
 }
 
-void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
+void CloudContext::cacheDirectory(const ListDirectoryCacheKey& directory,
                                   const IItem::List& lst) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -417,7 +416,7 @@ void CloudContext::cacheDirectory(ListDirectoryCacheKey directory,
   });
 }
 
-IItem::List CloudContext::cachedDirectory(ListDirectoryCacheKey key) {
+IItem::List CloudContext::cachedDirectory(const ListDirectoryCacheKey& key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = list_directory_cache_.find(key);
   if (it == std::end(list_directory_cache_))
@@ -426,7 +425,7 @@ IItem::List CloudContext::cachedDirectory(ListDirectoryCacheKey key) {
     return it->second;
 }
 
-void CloudContext::schedule(std::function<void()> f) {
+void CloudContext::schedule(const std::function<void()>& f) {
   context_thread_pool_->schedule(f);
 }
 
@@ -442,7 +441,8 @@ std::shared_ptr<CloudContext::RequestPool> CloudContext::request_pool() const {
   return pool_;
 }
 
-void CloudContext::receivedCode(std::string provider, std::string code) {
+void CloudContext::receivedCode(const std::string& provider,
+                                const std::string& code) {
   auto p = ICloudStorage::create()->provider(provider, init_data(provider));
   auto r = p->exchangeCodeAsync(code, [=](EitherError<Token> e) {
     QVariantMap provider_variant{{"type", provider.c_str()},
@@ -474,7 +474,7 @@ ICloudProvider::Pointer CloudContext::provider(
     const ICloudProvider::Hints& hints) const {
   class HttpWrapper : public IHttp {
    public:
-    HttpWrapper(std::shared_ptr<IHttp> http) : http_(http) {}
+    HttpWrapper(std::shared_ptr<IHttp> http) : http_(std::move(http)) {}
 
     IHttpRequest::Pointer create(const std::string& url,
                                  const std::string& method,
@@ -488,7 +488,7 @@ ICloudProvider::Pointer CloudContext::provider(
   class HttpServerFactoryWrapper : public IHttpServerFactory {
    public:
     HttpServerFactoryWrapper(std::shared_ptr<IHttpServerFactory> factory)
-        : factory_(factory) {}
+        : factory_(std::move(factory)) {}
 
     IHttpServer::Pointer create(IHttpServer::ICallback::Pointer cb,
                                 const std::string& session_id,
@@ -502,7 +502,7 @@ ICloudProvider::Pointer CloudContext::provider(
   class ThreadPoolWrapper : public IThreadPool {
    public:
     ThreadPoolWrapper(std::shared_ptr<IThreadPool> thread_pool)
-        : thread_pool_(thread_pool) {}
+        : thread_pool_(std::move(thread_pool)) {}
 
     void schedule(const Task& f,
                   const std::chrono::system_clock::time_point& when) override {
@@ -628,7 +628,7 @@ void CloudContext::RequestPool::add(std::shared_ptr<ICloudProvider> p,
                                     std::shared_ptr<IGenericRequest> r) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    request_.push_back({p, r});
+    request_.push_back({std::move(p), std::move(r)});
   }
   condition_.notify_one();
 }

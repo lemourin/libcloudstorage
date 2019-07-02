@@ -79,7 +79,7 @@ class FileSystem : public IFileSystem {
   };
 
   FileSystem(const std::vector<ProviderEntry> &, IHttp::Pointer http,
-             const std::string &temporary_directory);
+             std::string temporary_directory);
   ~FileSystem() override;
 
   FileId mknod(FileId parent, const char *name) override;
@@ -109,25 +109,28 @@ class FileSystem : public IFileSystem {
   Node::Pointer add(std::shared_ptr<ICloudProvider>, FileId parent,
                     IItem::Pointer);
 
-  void set(FileId, Node::Pointer);
+  void set(FileId, const Node::Pointer &);
 
   Node::Pointer get(FileId node);
-  void get_path(FileId node, const std::string &path, GetItemCallback);
+  void get_path(FileId node, const std::string &path, const GetItemCallback &);
 
   void invalidate(FileId);
   void cleanup();
   void cancelled();
   void cancel(std::shared_ptr<IGenericRequest>);
 
-  void list_directory_async(std::shared_ptr<ICloudProvider>, IItem::Pointer,
-                            cloudstorage::ListDirectoryCallback);
-  void download_item_async(std::shared_ptr<ICloudProvider>, IItem::Pointer,
-                           Range, DownloadItemCallback);
-  void get_url_async(std::shared_ptr<ICloudProvider>, IItem::Pointer,
-                     GetItemUrlCallback);
-  void rename_async(std::shared_ptr<ICloudProvider>, IItem::Pointer item,
-                    IItem::Pointer parent, IItem::Pointer destination,
-                    const char *name, RenameItemCallback);
+  void list_directory_async(const std::shared_ptr<ICloudProvider> &,
+                            const IItem::Pointer &,
+                            const cloudstorage::ListDirectoryCallback &);
+  void download_item_async(const std::shared_ptr<ICloudProvider> &,
+                           const IItem::Pointer &, Range,
+                           const DownloadItemCallback &);
+  void get_url_async(const std::shared_ptr<ICloudProvider> &,
+                     const IItem::Pointer &, const GetItemUrlCallback &);
+  void rename_async(const std::shared_ptr<ICloudProvider> &,
+                    const IItem::Pointer &item, const IItem::Pointer &parent,
+                    const IItem::Pointer &destination, const char *name,
+                    const RenameItemCallback &);
 
   mutable mutex node_data_mutex_;
   mutable mutex request_data_mutex_;

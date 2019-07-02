@@ -33,8 +33,8 @@ class CLOUDBROWSER_API ProviderListModel : public QAbstractListModel {
   QHash<int, QByteArray> roleNames() const override;
 
   void add(const Provider&);
-  void remove(QVariant provider);
-  Provider provider(QVariant provider) const;
+  void remove(const QVariant& provider);
+  Provider provider(const QVariant& provider) const;
   Provider provider(int index) const;
 
   QVariantList dump() const;
@@ -81,7 +81,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   };
 
   CloudContext(QObject* parent = nullptr);
-  ~CloudContext();
+  ~CloudContext() override;
 
   static QString sanitize(const QString& filename);
 
@@ -92,17 +92,17 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   bool httpServerAvailable() const;
   QString playerBackend() const;
 
-  void setPlayerBackend(QString);
+  void setPlayerBackend(const QString&);
 
-  Q_INVOKABLE QString authorizationUrl(QString provider) const;
-  Q_INVOKABLE QObject* root(QVariant provider);
-  Q_INVOKABLE void removeProvider(QVariant label);
-  Q_INVOKABLE QString pretty(QString provider) const;
-  Q_INVOKABLE QVariantMap readUrl(QString url) const;
+  Q_INVOKABLE QString authorizationUrl(const QString& provider) const;
+  Q_INVOKABLE QObject* root(const QVariant& provider);
+  Q_INVOKABLE void removeProvider(const QVariant& label);
+  Q_INVOKABLE QString pretty(const QString& provider) const;
+  Q_INVOKABLE QVariantMap readUrl(const QString& url) const;
   Q_INVOKABLE QString home() const;
   Q_INVOKABLE void showCursor() const;
   Q_INVOKABLE void hideCursor() const;
-  Q_INVOKABLE QString supportUrl(QString name) const;
+  Q_INVOKABLE QString supportUrl(const QString& name) const;
   qint64 cacheSize() const;
   Q_INVOKABLE void clearCache();
 
@@ -114,10 +114,10 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   void add(const std::string& provider_name, const std::string& provider_label,
            const cloudstorage::Token& token);
 
-  void cacheDirectory(ListDirectoryCacheKey directory,
+  void cacheDirectory(const ListDirectoryCacheKey& directory,
                       const std::vector<cloudstorage::IItem::Pointer>&);
-  cloudstorage::IItem::List cachedDirectory(ListDirectoryCacheKey);
-  void schedule(std::function<void()>);
+  cloudstorage::IItem::List cachedDirectory(const ListDirectoryCacheKey&);
+  void schedule(const std::function<void()>&);
   std::shared_ptr<cloudstorage::IThreadPool> thumbnailer_thread_pool() const;
   std::shared_ptr<std::atomic_bool> interrupt() const;
   std::shared_ptr<RequestPool> request_pool() const;
@@ -143,7 +143,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   void loadCachedDirectories();
   void saveCachedDirectories();
   void saveProviders();
-  void receivedCode(std::string provider, std::string code);
+  void receivedCode(const std::string& provider, const std::string& code);
   cloudstorage::ICloudProvider::Pointer provider(
       const std::string& name, const cloudstorage::Token& token,
       const cloudstorage::ICloudProvider::Hints& hints = {}) const;
@@ -165,7 +165,7 @@ class CLOUDBROWSER_API CloudContext : public QObject {
   qint64 cache_size_;
   ProviderListModel user_provider_model_;
   std::shared_ptr<std::atomic_bool> interrupt_;
-  mutable int provider_index_;
+  mutable int provider_index_ = 0;
 
   Q_OBJECT
 };

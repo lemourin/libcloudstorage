@@ -317,8 +317,8 @@ IHttpRequest::Pointer HubiC::getItemUrlRequest(const IItem &item,
   return r;
 }
 
-IItem::List HubiC::listDirectoryResponse(
-    const IItem &, std::istream &stream, std::string &next_page_token) const {
+IItem::List HubiC::listDirectoryResponse(const IItem &, std::istream &stream,
+                                         std::string &next_page_token) const {
   auto json = util::json::from_stream(stream);
   IItem::List result;
   for (auto &&v : json)

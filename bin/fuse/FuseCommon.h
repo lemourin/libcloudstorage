@@ -92,7 +92,7 @@ class HttpServerCallback : public IHttpServer::ICallback {
   std::promise<HttpServerData> &promise_;
 };
 
-struct FUSE_STAT item_to_stat(IFileSystem::INode::Pointer i);
+struct FUSE_STAT item_to_stat(const IFileSystem::INode::Pointer &i);
 cloudstorage::ICloudProvider::Pointer create(
     std::shared_ptr<IHttp> http, std::shared_ptr<IThreadPool> thread_pool,
     std::string temporary_directory, Json::Value config);

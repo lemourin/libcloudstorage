@@ -29,36 +29,39 @@ namespace cloudstorage {
 
 ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
-                                         ExchangeCodeCallback callback)
-    : Request(p, callback, [=](Request<EitherError<Token>>::Pointer r) {
-        std::stringstream stream;
-        if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
-          return r->done(Token{authorization_code, ""});
-        r->send(
-            [=](util::Output input) {
-              auto lock = provider()->auth_lock();
-              auto previous_code = provider()->auth()->authorization_code();
-              provider()->auth()->set_authorization_code(authorization_code);
-              auto request =
-                  provider()->auth()->exchangeAuthorizationCodeRequest(*input);
-              provider()->auth()->set_authorization_code(previous_code);
-              return request;
-            },
-            [=](EitherError<Response> e) {
-              if (e.left()) return r->done(e.left());
-              try {
-                auto lock = provider()->auth_lock();
-                auto auth_token =
-                    provider()->auth()->exchangeAuthorizationCodeResponse(
-                        e.right()->output());
-                lock.unlock();
-                Token token{auth_token->refresh_token_, auth_token->token_};
-                r->done(token);
-              } catch (const std::exception& e) {
-                r->done(Error{IHttpRequest::Failure, e.what()});
-              }
-            });
-      }) {}
+                                         const ExchangeCodeCallback& callback)
+    : Request(
+          std::move(p), callback, [=](Request<EitherError<Token>>::Pointer r) {
+            std::stringstream stream;
+            if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
+              return r->done(Token{authorization_code, ""});
+            r->send(
+                [=](util::Output input) {
+                  auto lock = provider()->auth_lock();
+                  auto previous_code = provider()->auth()->authorization_code();
+                  provider()->auth()->set_authorization_code(
+                      authorization_code);
+                  auto request =
+                      provider()->auth()->exchangeAuthorizationCodeRequest(
+                          *input);
+                  provider()->auth()->set_authorization_code(previous_code);
+                  return request;
+                },
+                [=](EitherError<Response> e) {
+                  if (e.left()) return r->done(e.left());
+                  try {
+                    auto lock = provider()->auth_lock();
+                    auto auth_token =
+                        provider()->auth()->exchangeAuthorizationCodeResponse(
+                            e.right()->output());
+                    lock.unlock();
+                    Token token{auth_token->refresh_token_, auth_token->token_};
+                    r->done(token);
+                  } catch (const std::exception& e) {
+                    r->done(Error{IHttpRequest::Failure, e.what()});
+                  }
+                });
+          }) {}
 
 ExchangeCodeRequest::~ExchangeCodeRequest() { cancel(); }
 

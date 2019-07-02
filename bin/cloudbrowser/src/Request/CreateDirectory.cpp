@@ -6,7 +6,7 @@
 using namespace cloudstorage;
 
 void CreateDirectoryRequest::update(CloudContext* context, CloudItem* parent,
-                                    QString name) {
+                                    const QString& name) {
   set_done(false);
   auto object = new RequestNotifier;
   auto provider = parent->provider().variant();

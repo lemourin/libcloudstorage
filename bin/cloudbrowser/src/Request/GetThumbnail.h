@@ -16,7 +16,7 @@ class CLOUDBROWSER_API GetThumbnailRequest : public Request {
   Q_PROPERTY(QString source READ source NOTIFY sourceChanged)
 
   GetThumbnailRequest();
-  ~GetThumbnailRequest();
+  ~GetThumbnailRequest() override;
 
   QString source() const { return source_; }
   Q_INVOKABLE void update(CloudContext* context, CloudItem* item);

@@ -48,7 +48,7 @@ namespace {
 
 class CloudProviderWrapper : public ICloudProvider {
  public:
-  CloudProviderWrapper(std::shared_ptr<CloudProvider> p) : p_(p) {}
+  CloudProviderWrapper(std::shared_ptr<CloudProvider> p) : p_(std::move(p)) {}
 
   ~CloudProviderWrapper() override { p_->destroy(); }
 
@@ -214,7 +214,7 @@ CloudStorage::CloudStorage() {
 
 std::vector<std::string> CloudStorage::providers() const {
   std::vector<std::string> result;
-  for (auto r : providers_) result.push_back(r.first);
+  for (const auto& r : providers_) result.emplace_back(r.first);
   return result;
 }
 
@@ -238,6 +238,8 @@ void ICloudStorage::initialize(void* vm) {
   (void)vm;
 #endif
 }
-void CloudStorage::add(CloudProviderFactory f) { providers_[f()->name()] = f; }
+void CloudStorage::add(const CloudProviderFactory& f) {
+  providers_[f()->name()] = f;
+}
 
 }  // namespace cloudstorage

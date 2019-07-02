@@ -71,7 +71,7 @@ class Request : public IRequest<ReturnValue>,
   class Wrapper : public IRequest<ReturnValue> {
    public:
     Wrapper(typename Request<ReturnValue>::Pointer);
-    ~Wrapper();
+    ~Wrapper() override;
 
     void finish() override;
     void cancel() override;
@@ -84,7 +84,7 @@ class Request : public IRequest<ReturnValue>,
   };
 
   Request(std::shared_ptr<CloudProvider>, Callback, Resolver);
-  ~Request();
+  ~Request() override;
 
   void finish() override;
   void cancel() override;
@@ -95,15 +95,17 @@ class Request : public IRequest<ReturnValue>,
   typename Wrapper::Pointer run();
   void done(const ReturnValue&);
 
-  void reauthorize(AuthorizeCompleted);
+  void reauthorize(const AuthorizeCompleted&);
 
-  void send(RequestFactory factory, RequestCompleted, InputFactory,
-            std::shared_ptr<std::ostream> output, ProgressFunction download,
-            ProgressFunction upload, bool authorized);
+  void send(const RequestFactory& factory, const RequestCompleted&,
+            const InputFactory&, const std::shared_ptr<std::ostream>& output,
+            const ProgressFunction& download, const ProgressFunction& upload,
+            bool authorized);
 
-  void request(RequestFactory factory, RequestCompleted);
-  void send(RequestFactory factory, RequestCompleted);
-  void query(RequestFactory factory, IHttpRequest::CompleteCallback);
+  void request(const RequestFactory& factory, const RequestCompleted&);
+  void send(const RequestFactory& factory, const RequestCompleted&);
+  void query(const RequestFactory& factory,
+             const IHttpRequest::CompleteCallback&);
 
   std::shared_ptr<CloudProvider> provider() const;
 
@@ -122,22 +124,22 @@ class Request : public IRequest<ReturnValue>,
     }
   }
 
-  void authorize(IHttpRequest::Pointer r);
+  void authorize(const IHttpRequest::Pointer& r);
   bool reauthorize(int code, const IHttpRequest::HeaderParameters&);
 
  private:
   friend class AuthorizeRequest;
 
   std::unique_ptr<HttpCallback> http_callback(
-      ProgressFunction progress_download = nullptr,
-      ProgressFunction progress_upload = nullptr);
+      const ProgressFunction& progress_download = nullptr,
+      const ProgressFunction& progress_upload = nullptr);
 
-  void send(IHttpRequest*, IHttpRequest::CompleteCallback complete,
-            std::shared_ptr<std::istream> input,
-            std::shared_ptr<std::ostream> output,
-            std::shared_ptr<std::ostream> error,
-            ProgressFunction download = nullptr,
-            ProgressFunction upload = nullptr);
+  void send(IHttpRequest*, const IHttpRequest::CompleteCallback& complete,
+            const std::shared_ptr<std::istream>& input,
+            const std::shared_ptr<std::ostream>& output,
+            const std::shared_ptr<std::ostream>& error,
+            const ProgressFunction& download = nullptr,
+            const ProgressFunction& upload = nullptr);
 
   void subrequest(std::shared_ptr<IGenericRequest>);
 

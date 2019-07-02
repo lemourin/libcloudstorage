@@ -7,7 +7,7 @@
 #include <QAndroidJniEnvironment>
 #include "AndroidUtility.h"
 
-AndroidFile::AndroidFile(QString uri) : uri_(uri) {}
+AndroidFile::AndroidFile(const QString &uri) : uri_(uri) {}
 
 bool AndroidFile::open(QIODevice::OpenMode mode) {
   QAndroidJniEnvironment env;
@@ -99,7 +99,7 @@ using namespace concurrency;
 std::mutex WinRTFile::mutex_;
 std::map<QString, StorageFile ^> WinRTFile::registered_file_;
 
-WinRTFile::WinRTFile(QString path) {
+WinRTFile::WinRTFile(const QString &path) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = registered_file_.find(path);
   if (it != registered_file_.end()) {
@@ -200,7 +200,8 @@ qint64 WinRTFile::readData(char *data, qint64 max_size) {
 #ifndef WINRT
 #ifndef __ANDROID__
 
-DesktopFile::DesktopFile(QString path) : QFile(QUrl(path).toLocalFile()) {}
+DesktopFile::DesktopFile(const QString &path)
+    : QFile(QUrl(path).toLocalFile()) {}
 
 #endif
 #endif

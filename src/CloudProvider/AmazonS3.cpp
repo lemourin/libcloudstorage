@@ -453,13 +453,13 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
 
   std::vector<std::pair<std::string, std::string>> header_parameters;
   for (auto q : request.headerParameters())
-    header_parameters.push_back({util::to_lower(q.first), q.second});
+    header_parameters.emplace_back(util::to_lower(q.first), q.second);
   std::sort(header_parameters.begin(), header_parameters.end());
 
   std::string signed_headers;
   {
     bool first = false;
-    for (auto q : header_parameters) {
+    for (const auto& q : header_parameters) {
       if (first)
         signed_headers += ";";
       else
@@ -471,13 +471,13 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
 
   std::vector<std::pair<std::string, std::string>> query_parameters;
   for (auto q : request.parameters())
-    query_parameters.push_back({q.first, q.second});
+    query_parameters.emplace_back(q.first, q.second);
   std::sort(query_parameters.begin(), query_parameters.end());
 
   std::string canonical_request = request.method() + "\n" + url.path() + "\n";
 
   bool first = false;
-  for (auto q : query_parameters) {
+  for (const auto& q : query_parameters) {
     if (first)
       canonical_request += "&";
     else
@@ -487,7 +487,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   }
   canonical_request += "\n";
 
-  for (auto q : header_parameters)
+  for (const auto& q : header_parameters)
     canonical_request += util::Url::escape(q.first) + ":" + q.second + "\n";
   canonical_request += "\n";
   canonical_request += signed_headers + "\n";
@@ -507,7 +507,7 @@ void AmazonS3::authorizeRequest(IHttpRequest& request) const {
   request.setParameter("X-Amz-Signature", signature);
 
   auto params = request.parameters();
-  for (auto p : params)
+  for (const auto& p : params)
     request.setParameter(p.first, util::Url::escape(p.second));
 }
 
@@ -574,8 +574,8 @@ std::string AmazonS3::getUrl(const Item& item) const {
   return request->url() + "?" + parameters;
 }
 
-void AmazonS3::getRegion(AuthorizeRequest::Pointer r,
-                         AuthorizeRequest::AuthorizeCompleted complete) {
+void AmazonS3::getRegion(const AuthorizeRequest::Pointer& r,
+                         const AuthorizeRequest::AuthorizeCompleted& complete) {
   r->send(
       [=](util::Output) {
         auto r = http()->create(endpoint() + "/", "GET");
@@ -620,8 +620,9 @@ void AmazonS3::getRegion(AuthorizeRequest::Pointer r,
       });
 }
 
-void AmazonS3::getEndpoint(AuthorizeRequest::Pointer r,
-                           AuthorizeRequest::AuthorizeCompleted complete) {
+void AmazonS3::getEndpoint(
+    const AuthorizeRequest::Pointer& r,
+    const AuthorizeRequest::AuthorizeCompleted& complete) {
   r->send(
       [=](util::Output) {
         auto r = http()->create(endpoint() + "/", "GET");

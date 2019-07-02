@@ -34,12 +34,11 @@ cloud_http *cloud_http_create_default() {
 cloud_http *cloud_http_create(cloud_http_operations *ops, void *userdata) {
   struct HttpRequest : public IHttpRequest {
     HttpRequest(cloud_http_operations ops, cloud_http_request *request,
-                const std::string &url, const std::string &method,
-                bool follow_redirect)
+                std::string url, std::string method, bool follow_redirect)
         : operations_(ops),
           request_(request),
-          url_(url),
-          method_(method),
+          url_(std::move(url)),
+          method_(std::move(method)),
           follow_redirect_(follow_redirect) {}
 
     ~HttpRequest() override { operations_.release_http_request(request_); }

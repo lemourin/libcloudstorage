@@ -54,7 +54,7 @@ int run_process(const char *name, const std::vector<std::string> &args) {
 #endif
 }  // namespace
 
-DesktopUtility::DesktopUtility() : screensaver_enabled_(true), running_(true) {
+DesktopUtility::DesktopUtility() : screensaver_enabled_(true) {
 #ifdef __unix__
   thread_ = std::thread([=] {
     cloudstorage::util::set_thread_name("cb-screensaver");
@@ -101,7 +101,7 @@ void DesktopUtility::showPlayerNotification(bool playing, QString filename,
 #ifdef __unix__
   struct Runnable : public QRunnable {
     Runnable(QString filename, QString title)
-        : filename_(filename), title_(title) {}
+        : filename_(std::move(filename)), title_(std::move(title)) {}
 
     void run() override {
       run_process(

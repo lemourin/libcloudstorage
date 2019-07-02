@@ -44,13 +44,13 @@ class Download : public cloudstorage::IDownloadFileCallback {
            std::shared_ptr<CloudContext::RequestPool> pool,
            cloudstorage::IItem::Pointer dest,
            std::shared_ptr<cloudstorage::ICloudProvider> p,
-           const std::string& filename)
+           std::string filename)
       : notifier_(notifier),
         temp_file_(cloudstorage::util::make_unique<QTemporaryFile>()),
-        pool_(pool),
-        destination_(dest),
-        destination_provider_(p),
-        filename_(filename) {
+        pool_(std::move(pool)),
+        destination_(std::move(dest)),
+        destination_provider_(std::move(p)),
+        filename_(std::move(filename)) {
     temp_file_->open();
   }
 

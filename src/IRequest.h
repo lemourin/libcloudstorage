@@ -183,11 +183,11 @@ struct Error {
 template <class Left, class Right>
 class Either {
  public:
-  Either() {}
+  Either() = default;
   Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
   Either(const Right& right) : right_(std::make_shared<Right>(right)) {}
-  Either(std::shared_ptr<Left> left) : left_(left) {}
-  Either(std::shared_ptr<Right> right) : right_(right) {}
+  Either(std::shared_ptr<Left> left) : left_(std::move(left)) {}
+  Either(std::shared_ptr<Right> right) : right_(std::move(right)) {}
 
   std::shared_ptr<Left> left() const { return left_; }
   std::shared_ptr<Right> right() const { return right_; }
@@ -200,10 +200,10 @@ class Either {
 template <class Left>
 class Either<Left, void> {
  public:
-  Either() {}
+  Either() = default;
   Either(std::nullptr_t) {}
   Either(const Left& left) : left_(std::make_shared<Left>(left)) {}
-  Either(std::shared_ptr<Left> left) : left_(left) {}
+  Either(std::shared_ptr<Left> left) : left_(std::move(left)) {}
 
   std::shared_ptr<Left> left() const { return left_; }
 
@@ -214,7 +214,7 @@ class Either<Left, void> {
 template <class... Arguments>
 class GenericCallback {
  public:
-  GenericCallback() {}
+  GenericCallback() = default;
 
   GenericCallback(const GenericCallback& d) : functor_(d.functor_) {}
 

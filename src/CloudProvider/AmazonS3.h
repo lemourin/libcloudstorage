@@ -112,10 +112,10 @@ class AmazonS3 : public CloudProvider {
  private:
   bool unpackCredentials(const std::string&) override;
   std::string getUrl(const Item&) const;
-  void getRegion(AuthorizeRequest::Pointer r,
-                 AuthorizeRequest::AuthorizeCompleted complete);
-  void getEndpoint(AuthorizeRequest::Pointer r,
-                   AuthorizeRequest::AuthorizeCompleted complete);
+  void getRegion(const AuthorizeRequest::Pointer& r,
+                 const AuthorizeRequest::AuthorizeCompleted& complete);
+  void getEndpoint(const AuthorizeRequest::Pointer& r,
+                   const AuthorizeRequest::AuthorizeCompleted& complete);
 
   std::string access_id_;
   std::string secret_;

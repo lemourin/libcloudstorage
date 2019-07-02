@@ -53,7 +53,8 @@ class Callback : public cloudstorage::ICloudProvider::IAuthCallback {
 
 IItem::Pointer getChild(ICloudProvider* provider, IItem::Pointer item,
                         const std::string& filename) {
-  auto lst = provider->listDirectorySimpleAsync(item)->result().right();
+  auto lst =
+      provider->listDirectorySimpleAsync(std::move(item))->result().right();
   if (!lst) return nullptr;
   for (auto i : *lst)
     if (i->filename() == filename) return i;
@@ -84,14 +85,14 @@ int main(int, char**) {
     if (command == "ls") {
       if (current_directory == nullptr) {
         std::cout << "Select a provider: \n";
-        for (auto p : ICloudStorage::create()->providers())
+        for (const auto& p : ICloudStorage::create()->providers())
           std::cout << p << "\n";
       } else {
         auto lst = current_provider->listDirectorySimpleAsync(current_directory)
                        ->result()
                        .right();
         if (lst)
-          for (auto item : *lst) {
+          for (const auto& item : *lst) {
             std::cout << item->filename() << "\n";
           }
       }
@@ -103,7 +104,7 @@ int main(int, char**) {
         ICloudProvider::InitData data;
         data.token_ = token;
         data.permission_ = ICloudProvider::Permission::ReadWrite;
-        data.callback_ = std::unique_ptr<Callback>(new Callback());
+        data.callback_ = std::make_unique<Callback>();
         auto provider =
             ICloudStorage::create()->provider(provider_name, std::move(data));
         if (provider) {

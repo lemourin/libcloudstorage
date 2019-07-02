@@ -48,7 +48,7 @@ struct compare<T, T> {
 
 }  // namespace
 
-Response::Response(IHttpRequest::Response r) : http_(r) {}
+Response::Response(IHttpRequest::Response r) : http_(std::move(r)) {}
 
 int Response::http_code() const { return http_.http_code_; }
 
@@ -65,7 +65,8 @@ std::stringstream& Response::error_output() {
 }
 
 template <class T>
-Request<T>::Wrapper::Wrapper(typename Request<T>::Pointer r) : request_(r) {}
+Request<T>::Wrapper::Wrapper(typename Request<T>::Pointer r)
+    : request_(std::move(r)) {}
 
 template <class T>
 Request<T>::Wrapper::~Wrapper() {
@@ -101,9 +102,9 @@ template <class T>
 Request<T>::Request(std::shared_ptr<CloudProvider> provider, Callback callback,
                     Resolver resolver)
     : future_(value_.get_future()),
-      resolver_(resolver),
-      callback_(callback),
-      provider_(provider),
+      resolver_(std::move(resolver)),
+      callback_(std::move(callback)),
+      provider_(std::move(provider)),
       status_(None) {}
 
 template <class T>
@@ -219,7 +220,8 @@ void Request<T>::done(const T& t) {
 
 template <class T>
 std::unique_ptr<HttpCallback> Request<T>::http_callback(
-    ProgressFunction progress_download, ProgressFunction progress_upload) {
+    const ProgressFunction& progress_download,
+    const ProgressFunction& progress_upload) {
   return util::make_unique<HttpCallback>(
       [=] {
         std::unique_lock<std::mutex> lock(status_mutex_);
@@ -230,7 +232,7 @@ std::unique_ptr<HttpCallback> Request<T>::http_callback(
 }
 
 template <class T>
-void Request<T>::reauthorize(AuthorizeCompleted c) {
+void Request<T>::reauthorize(const AuthorizeCompleted& c) {
   auto p = provider();
   std::unique_lock<std::mutex> lock(p->current_authorization_mutex_);
   if (is_cancelled()) {
@@ -253,7 +255,7 @@ void Request<T>::reauthorize(AuthorizeCompleted c) {
 }
 
 template <class T>
-void Request<T>::authorize(IHttpRequest::Pointer r) {
+void Request<T>::authorize(const IHttpRequest::Pointer& r) {
   if (r) provider()->authorizeRequest(*r);
 }
 
@@ -264,22 +266,24 @@ bool Request<T>::reauthorize(int code,
 }
 
 template <class T>
-void Request<T>::request(RequestFactory factory, RequestCompleted complete) {
+void Request<T>::request(const RequestFactory& factory,
+                         const RequestCompleted& complete) {
   this->send(factory, complete,
              [] { return std::make_shared<std::stringstream>(); },
              std::make_shared<std::stringstream>(), nullptr, nullptr, true);
 }
 
 template <class T>
-void Request<T>::send(RequestFactory factory, RequestCompleted complete) {
+void Request<T>::send(const RequestFactory& factory,
+                      const RequestCompleted& complete) {
   this->send(factory, complete,
              [] { return std::make_shared<std::stringstream>(); },
              std::make_shared<std::stringstream>(), nullptr, nullptr, false);
 }
 
 template <class T>
-void Request<T>::query(RequestFactory factory,
-                       IHttpRequest::CompleteCallback complete) {
+void Request<T>::query(const RequestFactory& factory,
+                       const IHttpRequest::CompleteCallback& complete) {
   auto input = std::make_shared<std::stringstream>();
   auto request = factory(input);
   this->send(request.get(), complete, input,
@@ -288,11 +292,12 @@ void Request<T>::query(RequestFactory factory,
 }
 
 template <class T>
-void Request<T>::send(RequestFactory factory, RequestCompleted complete,
-                      InputFactory input_factory,
-                      std::shared_ptr<std::ostream> output,
-                      ProgressFunction download, ProgressFunction upload,
-                      bool authorized) {
+void Request<T>::send(const RequestFactory& factory,
+                      const RequestCompleted& complete,
+                      const InputFactory& input_factory,
+                      const std::shared_ptr<std::ostream>& output,
+                      const ProgressFunction& download,
+                      const ProgressFunction& upload, bool authorized) {
   auto request = this->shared_from_this();
   auto input = input_factory();
   auto error_stream = std::make_shared<std::stringstream>();
@@ -339,11 +344,12 @@ void Request<T>::send(RequestFactory factory, RequestCompleted complete,
 
 template <class T>
 void Request<T>::send(IHttpRequest* request,
-                      IHttpRequest::CompleteCallback complete,
-                      std::shared_ptr<std::istream> input,
-                      std::shared_ptr<std::ostream> output,
-                      std::shared_ptr<std::ostream> error,
-                      ProgressFunction download, ProgressFunction upload) {
+                      const IHttpRequest::CompleteCallback& complete,
+                      const std::shared_ptr<std::istream>& input,
+                      const std::shared_ptr<std::ostream>& output,
+                      const std::shared_ptr<std::ostream>& error,
+                      const ProgressFunction& download,
+                      const ProgressFunction& upload) {
   if (request)
     request->send(complete, input, output, error,
                   http_callback(download, upload));

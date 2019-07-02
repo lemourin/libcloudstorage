@@ -29,8 +29,9 @@
 namespace cloudstorage {
 
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
-                                       const std::string& id, Callback callback)
-    : Request(p, callback, [=](Request::Pointer request) {
+                                       const std::string& id,
+                                       const Callback& callback)
+    : Request(std::move(p), callback, [=](Request::Pointer request) {
         this->request(
             [=](util::Output input) {
               return provider()->getItemDataRequest(id, *input);

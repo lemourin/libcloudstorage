@@ -33,7 +33,7 @@ class FileServer : public IHttpServer {
                                      const std::string& session);
 
  private:
-  FileServer();
+  FileServer() = default;
 };
 
 }  // namespace cloudstorage

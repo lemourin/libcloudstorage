@@ -26,10 +26,10 @@
 
 namespace cloudstorage {
 
-CloudEventLoop::CloudEventLoop(
-    IThreadPoolFactory *factory,
-    const std::shared_ptr<ICloudFactory::ICallback> &cb)
-    : callback_(cb), impl_(std::make_shared<priv::LoopImpl>(factory, this)) {}
+CloudEventLoop::CloudEventLoop(IThreadPoolFactory *factory,
+                               std::shared_ptr<ICloudFactory::ICallback> cb)
+    : callback_(std::move(cb)),
+      impl_(std::make_shared<priv::LoopImpl>(factory, this)) {}
 
 CloudEventLoop::~CloudEventLoop() {
   impl_->clear();
@@ -112,7 +112,7 @@ void LoopImpl::invoke(std::function<void()> &&f) {
 void LoopImpl::invokeOnThreadPool(std::function<void()> &&f) {
   std::unique_lock<std::mutex> lock(thumbnailer_mutex_);
   if (thumbnailer_thread_pool_) {
-    thumbnailer_thread_pool_->schedule(std::move(f));
+    thumbnailer_thread_pool_->schedule(f);
   } else {
     lock.unlock();
     f();
@@ -161,8 +161,8 @@ uint64_t LoopImpl::next_tag() { return last_tag_++; }
 
 }  // namespace priv
 
-Exception::Exception(int code, const std::string &description)
-    : code_(code), description_(description) {}
+Exception::Exception(int code, std::string description)
+    : code_(code), description_(std::move(description)) {}
 
 Exception::Exception(const std::shared_ptr<Error> &e)
     : Exception(e->code_, e->description_) {}

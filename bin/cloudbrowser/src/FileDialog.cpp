@@ -1,21 +1,19 @@
 #include "FileDialog.h"
 #include "File.h"
 
-IFileDialog::IFileDialog() : select_existing_() {}
-
 void IFileDialog::setSelectExisting(bool e) {
   if (select_existing_ == e) return;
   select_existing_ = e;
   emit selectExistingChanged();
 }
 
-void IFileDialog::setUrl(QString e) {
+void IFileDialog::setUrl(const QString& e) {
   if (url_ == e) return;
   url_ = e;
   emit urlChanged();
 }
 
-void IFileDialog::setFilename(QString e) {
+void IFileDialog::setFilename(const QString& e) {
   if (filename_ == e) return;
   filename_ = e;
   emit filenameChanged();
@@ -47,11 +45,11 @@ void FileDialog::open() {
                                 &result_receiver_);
 }
 
-FileDialog::ActivityReceiver::ActivityReceiver(FileDialog *dialog)
+FileDialog::ActivityReceiver::ActivityReceiver(FileDialog* dialog)
     : file_dialog_(dialog) {}
 
 void FileDialog::ActivityReceiver::done(int request_code, int result_code,
-                                        const QAndroidJniObject &data) {
+                                        const QAndroidJniObject& data) {
   if (request_code != REQUEST_CODE || result_code != -1) return;
   auto uri = data.callObjectMethod("getData", "()Landroid/net/Uri;");
   auto filename = AndroidUtility::activity().callObjectMethod(

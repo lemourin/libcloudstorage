@@ -37,17 +37,18 @@ class AuthorizeRequest : public Request<EitherError<void>> {
   using AuthorizationFlow = std::function<void(
       std::shared_ptr<AuthorizeRequest>, AuthorizeCompleted)>;
 
-  AuthorizeRequest(std::shared_ptr<CloudProvider>, AuthorizationFlow = nullptr);
-  ~AuthorizeRequest();
+  AuthorizeRequest(std::shared_ptr<CloudProvider>,
+                   const AuthorizationFlow& = nullptr);
+  ~AuthorizeRequest() override;
 
-  void oauth2Authorization(AuthorizeCompleted);
+  void oauth2Authorization(const AuthorizeCompleted&);
   void sendCancel();
   void cancel() override;
   void finish() override;
-  void set_server(std::shared_ptr<IHttpServer>);
+  void set_server(const std::shared_ptr<IHttpServer>&);
 
  private:
-  void resolve(Request::Pointer, AuthorizationFlow callback);
+  void resolve(const Request::Pointer&, const AuthorizationFlow& callback);
 
   std::string state_;
   std::mutex lock_;
@@ -57,7 +58,7 @@ class AuthorizeRequest : public Request<EitherError<void>> {
 
 class SimpleAuthorization : public AuthorizeRequest {
  public:
-  SimpleAuthorization(std::shared_ptr<CloudProvider>);
+  SimpleAuthorization(const std::shared_ptr<CloudProvider>&);
 };
 
 }  // namespace cloudstorage

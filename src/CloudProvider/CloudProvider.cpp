@@ -57,7 +57,7 @@ namespace {
 
 class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
  public:
-  ListDirectoryCallback(cloudstorage::ListDirectoryCallback callback)
+  ListDirectoryCallback(const cloudstorage::ListDirectoryCallback& callback)
       : callback_(callback) {}
 
   void receivedItem(cloudstorage::IItem::Pointer) override {}
@@ -74,7 +74,7 @@ class ListDirectoryCallback : public cloudstorage::IListDirectoryCallback {
 class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
  public:
   DownloadFileCallback(const std::string& filename,
-                       cloudstorage::DownloadFileCallback callback)
+                       const cloudstorage::DownloadFileCallback& callback)
       : file_(filename, std::ios_base::out | std::ios_base::binary),
         callback_(callback) {}
 
@@ -97,7 +97,7 @@ class DownloadFileCallback : public cloudstorage::IDownloadFileCallback {
 class UploadFileCallback : public cloudstorage::IUploadFileCallback {
  public:
   UploadFileCallback(const std::string& path,
-                     cloudstorage::UploadFileCallback callback)
+                     const cloudstorage::UploadFileCallback& callback)
       : file_(path, std::ios_base::in | std::ios_base::binary),
         callback_(callback) {
     file_.seekg(0, std::ios::end);
@@ -223,8 +223,7 @@ bool ICloudProvider::deserializeSession(const std::string& serialized_data,
     Hints hints_tmp;
     Json::Value unserialized_json =
         util::json::from_stream(std::stringstream(serialized_data));
-    for (const auto& key : unserialized_json["hints"].getMemberNames()) {
-      std::string hint_key = key;
+    for (const auto& hint_key : unserialized_json["hints"].getMemberNames()) {
       hints_tmp[hint_key] = unserialized_json["hints"][hint_key].asString();
     }
     token_tmp = unserialized_json["token"].asString();
@@ -357,9 +356,9 @@ std::unique_lock<std::mutex> CloudProvider::auth_lock() const {
   return std::unique_lock<std::mutex>(auth_mutex_);
 }
 
-void CloudProvider::setWithHint(const ICloudProvider::Hints& hints,
-                                const std::string& name,
-                                std::function<void(std::string)> f) const {
+void CloudProvider::setWithHint(
+    const ICloudProvider::Hints& hints, const std::string& name,
+    const std::function<void(std::string)>& f) const {
   auto it = hints.find(name);
   if (it != hints.end()) f(it->second);
 }
@@ -432,7 +431,7 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
    public:
     DownloadCallback(IDownloadFileCallback::Pointer c,
                      std::function<void(EitherError<void>)> continuation)
-        : callback_(c), continuation_(continuation) {}
+        : callback_(std::move(c)), continuation_(std::move(continuation)) {}
 
     void receivedData(const char* data, uint32_t length) override {
       callback_->receivedData(data, length);
@@ -717,7 +716,7 @@ IItem::Pointer CloudProvider::createDirectoryResponse(
 }
 
 void CloudProvider::addStreamRequest(
-    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
+    const std::shared_ptr<ICloudProvider::DownloadFileRequest>& r) {
   std::unique_lock<std::mutex> lock(stream_request_mutex_);
   stream_requests_.insert(r);
   if (deleted_) {
@@ -727,7 +726,7 @@ void CloudProvider::addStreamRequest(
 }
 
 void CloudProvider::removeStreamRequest(
-    std::shared_ptr<ICloudProvider::DownloadFileRequest> r) {
+    const std::shared_ptr<ICloudProvider::DownloadFileRequest>& r) {
   r->cancel();
   std::lock_guard<std::mutex> lock(stream_request_mutex_);
   stream_requests_.erase(r);
@@ -736,7 +735,7 @@ void CloudProvider::removeStreamRequest(
 ICloudProvider::DownloadFileRequest::Pointer
 CloudProvider::downloadFileRangeAsync(IItem::Pointer item, Range range,
                                       IDownloadFileCallback::Pointer callback) {
-  return downloadFileAsync(item, callback, range);
+  return downloadFileAsync(std::move(item), std::move(callback), range);
 }
 
 }  // namespace cloudstorage

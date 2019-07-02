@@ -30,9 +30,9 @@ namespace cloudstorage {
 
 class RenameItemRequest : public Request<EitherError<IItem>> {
  public:
-  RenameItemRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                    const std::string&, RenameItemCallback);
-  ~RenameItemRequest();
+  RenameItemRequest(std::shared_ptr<CloudProvider>, const IItem::Pointer&,
+                    const std::string&, const RenameItemCallback&);
+  ~RenameItemRequest() override;
 };
 
 }  // namespace cloudstorage

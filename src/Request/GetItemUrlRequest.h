@@ -30,9 +30,9 @@ namespace cloudstorage {
 
 class GetItemUrlRequest : public Request<EitherError<std::string>> {
  public:
-  GetItemUrlRequest(std::shared_ptr<CloudProvider>, IItem::Pointer,
-                    GetItemUrlCallback);
-  ~GetItemUrlRequest();
+  GetItemUrlRequest(std::shared_ptr<CloudProvider>, const IItem::Pointer &,
+                    const GetItemUrlCallback &);
+  ~GetItemUrlRequest() override;
 };
 
 }  // namespace cloudstorage

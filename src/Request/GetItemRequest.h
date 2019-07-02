@@ -33,13 +33,14 @@ class GetItemRequest : public Request<EitherError<IItem>> {
   using Callback = GetItemCallback;
 
   GetItemRequest(std::shared_ptr<CloudProvider>, const std::string& path,
-                 Callback callback);
-  ~GetItemRequest();
+                 const Callback& callback);
+  ~GetItemRequest() override;
 
  private:
   IItem::Pointer getItem(const IItem::List& items,
                          const std::string& name) const;
-  void work(IItem::Pointer item, std::string path, Callback);
+  void work(const IItem::Pointer& item, const std::string& path,
+            const Callback&);
 };
 
 }  // namespace cloudstorage

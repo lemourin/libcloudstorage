@@ -52,8 +52,8 @@ class CloudFactory : public ICloudFactory {
   void onCloudAuthenticationCodeReceived(const std::string& provider,
                                          const std::string& code);
 
-  void onCloudCreated(std::shared_ptr<CloudAccess> cloud);
-  void onCloudRemoved(std::shared_ptr<CloudAccess> cloud);
+  void onCloudCreated(const std::shared_ptr<CloudAccess>& cloud);
+  void onCloudRemoved(const std::shared_ptr<CloudAccess>& cloud);
 
   std::string authorizationUrl(const std::string& provider,
                                const ProviderInitData& data) const override;
