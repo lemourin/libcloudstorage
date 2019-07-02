@@ -96,7 +96,7 @@ ACTION(CreateServer) {
   EXPECT_CALL(*request, mocked_response(IHttpRequest::Ok, _, _, _));
   EXPECT_CALL(*server, callback()).WillRepeatedly(Return(arg0));
   arg0->handle(*request);
-  return std::move(server);
+  return server;
 }
 
 ACTION(CreateFileServer) { return util::make_unique<HttpServerMock>(); }
