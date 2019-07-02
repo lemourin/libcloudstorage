@@ -25,7 +25,7 @@
 #include "ICloudProvider.h"
 #include "IRequest.h"
 
-#include <string.h>
+#include <cstring>
 
 using namespace cloudstorage;
 
