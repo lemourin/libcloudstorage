@@ -44,7 +44,7 @@ AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
   }
 }
 
-AuthorizeRequest::~AuthorizeRequest() { cancel(); }
+AuthorizeRequest::~AuthorizeRequest() { AuthorizeRequest::cancel(); }
 
 void AuthorizeRequest::resolve(Request::Pointer request,
                                AuthorizationFlow callback) {

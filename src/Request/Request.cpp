@@ -69,7 +69,7 @@ Request<T>::Wrapper::Wrapper(typename Request<T>::Pointer r) : request_(r) {}
 
 template <class T>
 Request<T>::Wrapper::~Wrapper() {
-  cancel();
+  Wrapper::cancel();
 }
 
 template <class T>
@@ -108,7 +108,7 @@ Request<T>::Request(std::shared_ptr<CloudProvider> provider, Callback callback,
 
 template <class T>
 Request<T>::~Request() {
-  cancel();
+  Request<T>::finish();
 }
 
 template <class T>

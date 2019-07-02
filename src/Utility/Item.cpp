@@ -66,7 +66,8 @@ Item::Item(std::string filename, std::string id, size_t size,
       thumbnail_url_(),
       type_(type),
       is_hidden_(false) {
-  if (type_ == IItem::FileType::Unknown) type_ = fromExtension(extension());
+  if (type_ == IItem::FileType::Unknown)
+    type_ = fromExtension(Item::extension());
 }
 
 std::string Item::filename() const { return filename_; }
