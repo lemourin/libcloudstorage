@@ -8,8 +8,11 @@ addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-trusty-7
     packages:
     - g++-7
+    - clang-7
+    - clang-tidy-7
   coverity_scan:
     project:
       name: lemourin/libcloudstorage
@@ -31,13 +34,18 @@ before_install:
 script:
 - mkdir build
 - cd build
-- PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig
-  ../configure --with-examples CXXFLAGS="-Wall -Wextra -Werror -g -O0 -fsanitize=address"
+- export PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig
+- ../configure --with-examples CXXFLAGS="-Wall -Wextra -Werror -g -O0 -fsanitize=address"
   LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make -j 4
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-sign-compare -j 4
 - cat test/test-suite.log
 - cd ..
+- clang-tidy-7 $(find src bin test examples -name "*.cpp") --
+  -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
+  -Itest/googletest/googletest/include
+  -Itest/googletest/googlemock/include
+  -DWITH_FUSE -DWITH_MPV -DWITH_CURL -DWITH_MICROHTTPD -DWITH_THUMBNAILER -DWITH_CRYPTOPP -fPIC
 
 before_deploy:
 - CC=gcc-7 CXX=g++-7 ./packaging/appimage/create-appimage.sh

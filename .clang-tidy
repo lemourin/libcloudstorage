@@ -1,6 +1,6 @@
 ---
 Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,portability-*,performance-*,misc-*,bugprone-*'
-WarningsAsErrors: ''
+WarningsAsErrors: 'clang-diagnostic-*,clang-analyzer-*,modernize-*,portability-*,performance-*,misc-*,bugprone-*'
 HeaderFilterRegex: '^(src|bin).*'
 AnalyzeTemporaryDtors: false
 FormatStyle:     none
