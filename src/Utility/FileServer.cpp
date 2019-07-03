@@ -81,7 +81,10 @@ class StreamRequest : public Request<EitherError<void>> {
     if (!done_called_) {
       done_called_ = true;
       lock.unlock();
-      Request::done(e);
+      try {
+        Request::done(e);
+      } catch (const std::runtime_error&) {
+      }
     }
   }
 
