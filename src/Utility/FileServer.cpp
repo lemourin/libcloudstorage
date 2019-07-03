@@ -76,7 +76,7 @@ class StreamRequest : public Request<EitherError<void>> {
     Request::cancel();
   }
 
-  void done(const EitherError<void>& e) {
+  void done(const EitherError<void>& e) noexcept {
     std::unique_lock<std::mutex> lock(mutex_);
     if (!done_called_) {
       done_called_ = true;
