@@ -2,8 +2,8 @@
 #define FUSE_LOW_LEVEL_H
 
 #ifdef WITH_FUSE
-#include "FuseCommon.h"
 #include <json/json.h>
+#include "FuseCommon.h"
 
 #define FUSE_LOWLEVEL
 

@@ -40,7 +40,7 @@ class CryptoPP : public ICrypto {
   std::string hex(const std::string& hash) override;
 };
 
-}  // namespace cloudstroage
+}  // namespace cloudstorage
 
 #endif  // WITH_CRYPTOPP
 

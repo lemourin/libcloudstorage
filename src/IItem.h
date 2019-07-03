@@ -49,7 +49,8 @@ class CLOUDSTORAGE_API IItem {
   using TimeStamp = std::chrono::system_clock::time_point;
   using List = std::vector<IItem::Pointer>;
 
-  static constexpr size_t UnknownSize = (std::numeric_limits<std::size_t>::max)();
+  static constexpr size_t UnknownSize =
+      (std::numeric_limits<std::size_t>::max)();
   static const TimeStamp UnknownTimeStamp;
 
   enum class FileType { Directory, Video, Audio, Image, Unknown };
