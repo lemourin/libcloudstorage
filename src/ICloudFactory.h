@@ -70,7 +70,8 @@ class CLOUDSTORAGE_API ICloudFactory {
 
   struct ProviderInitData {
     std::string token_;
-    ICloudProvider::Permission permission_;
+    ICloudProvider::Permission permission_ =
+        ICloudProvider::Permission::ReadWrite;
     ICloudProvider::Hints hints_;
   };
 
