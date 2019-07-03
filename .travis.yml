@@ -24,6 +24,14 @@ addons:
     branch_pattern: coverity
 
 before_install:
+- for i in $(find test src bin examples -type f \( -regex '.*\.\(h\|cpp\|c\)$' ! -regex 'test/googletest/.*$' \)); do
+    clang-format-7 $i | diff - $i > /dev/null;
+    if [[ $? -ne 0 ]]; then
+      echo "File $i not formatted.";
+      FAIL=true;
+    fi;
+  done;
+  [ "$FAIL" != "true" ]
 - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 - cd contrib
 - wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.5-rc1/x86_64-linux-gnu.tar.gz
@@ -42,13 +50,6 @@ script:
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-sign-compare -j 4
 - cat test/test-suite.log
 - cd ..
-- for i in $(find test src bin examples -type f \( -regex '.*\.\(h\|cpp\|c\)$' ! -regex 'test/googletest/.*$' \)); do
-    clang-format-7 $i | diff - $i > /dev/null;
-    if [[ $? -ne 0 ]]; then
-      echo "File $i not formatted.";
-      exit 1;
-    fi;
-  done;
 - clang-tidy-7 $(find src bin test examples -name "*.cpp") --
   -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
   -Itest/googletest/googletest/include
