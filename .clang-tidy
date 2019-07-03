@@ -1,7 +1,7 @@
 ---
 Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,portability-*,performance-*,misc-*,bugprone-*'
 WarningsAsErrors: 'clang-diagnostic-*,clang-analyzer-*,modernize-*,portability-*,performance-*,misc-*,bugprone-*'
-HeaderFilterRegex: '^(src|bin).*'
+HeaderFilterRegex: '^(src|bin|examples|test/Utility).*$'
 AnalyzeTemporaryDtors: false
 FormatStyle:     none
 User:            lemourin

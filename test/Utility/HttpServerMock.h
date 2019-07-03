@@ -32,16 +32,16 @@ class HttpServerMock : public IHttpServer {
  public:
   class RequestMock : public IHttpServer::IRequest {  // NOLINT
    public:
-    MOCK_CONST_METHOD1(get, const char*(const std::string& name));
-    MOCK_CONST_METHOD1(header, const char*(const std::string& name));
-    MOCK_CONST_METHOD0(method, std::string());
-    MOCK_CONST_METHOD0(url, std::string());
+    MOCK_CONST_METHOD1(get, const char*(const std::string& name));     // NOLINT
+    MOCK_CONST_METHOD1(header, const char*(const std::string& name));  // NOLINT
+    MOCK_CONST_METHOD0(method, std::string());                         // NOLINT
+    MOCK_CONST_METHOD0(url, std::string());                            // NOLINT
     MOCK_CONST_METHOD4(mocked_response,
                        IResponse::Pointer(int, const IResponse::Headers&, int,
                                           IResponse::ICallback*));
-    IResponse::Pointer response(int code, const IResponse::Headers& headers,
-                                int64_t size,
-                                IResponse::ICallback::Pointer cb) const {
+    IResponse::Pointer response(
+        int code, const IResponse::Headers& headers, int64_t size,
+        IResponse::ICallback::Pointer cb) const override {
       return mocked_response(code, headers, size, cb.get());
     }
   };
