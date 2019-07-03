@@ -13,6 +13,7 @@ addons:
     - g++-7
     - clang-7
     - clang-tidy-7
+    - clang-format-7
   coverity_scan:
     project:
       name: lemourin/libcloudstorage
@@ -41,6 +42,13 @@ script:
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-sign-compare -j 4
 - cat test/test-suite.log
 - cd ..
+- for i in $(find test src bin examples -type f \( -regex '.*\.\(h\|cpp\|c\)$' ! -regex 'test/googletest/.*$' \)); do
+    clang-format-7 $i | diff - $i > /dev/null;
+    if [[ $? -ne 0 ]]; then
+      echo "File $i not formatted.";
+      exit 1;
+    fi;
+  done;
 - clang-tidy-7 $(find src bin test examples -name "*.cpp") --
   -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
   -Itest/googletest/googletest/include
