@@ -394,8 +394,7 @@ IItem::List AmazonS3::listDirectoryResponse(
   if (document.Parse(sstream.str().c_str()) != tinyxml2::XML_SUCCESS)
     throw std::logic_error(util::Error::FAILED_TO_PARSE_XML);
   IItem::List result;
-  if (auto name_element = document.RootElement()->FirstChildElement("Name")) {
-    std::string bucket = name_element->GetText();
+  if (document.RootElement()->FirstChildElement("Name")) {
     for (auto child = document.RootElement()->FirstChildElement("Contents");
          child; child = child->NextSiblingElement("Contents")) {
       auto size_element = child->FirstChildElement("Size");

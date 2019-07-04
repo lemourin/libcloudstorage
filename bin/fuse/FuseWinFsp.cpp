@@ -79,8 +79,6 @@ std::string error_string(HRESULT r) {
 NTSTATUS get_security_by_name(FSP_FILE_SYSTEM *fs, PWSTR filename,
                               PUINT32 attributes,
                               PSECURITY_DESCRIPTOR descriptor, SIZE_T *size) {
-  auto c = static_cast<FspContext *>(fs->UserContext);
-  auto d = static_cast<SECURITY_DESCRIPTOR *>(descriptor);
   *size = sizeof(SECURITY_DESCRIPTOR);
   return STATUS_SUCCESS;
 }

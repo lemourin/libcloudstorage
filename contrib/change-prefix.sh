@@ -39,7 +39,7 @@ fi
 if [ $# != 2 ]
 then
     old_prefix=/usr/local
-    new_prefix=`pwd`
+    new_prefix=$(pwd)
 else
     old_prefix=$1
     new_prefix=$2
@@ -47,7 +47,7 @@ fi
 
 # process [dir] [filemask] [text only]
 process() {
-    for file in `find $1 \( ! -name \`basename $1\` -o -type f \) -prune -type f -name "$2"`
+    for file in $(find $1 \( ! -name $(basename $1) -o -type f \) -prune -type f -name "$2")
     do
         if [ -n "$3" ]
         then

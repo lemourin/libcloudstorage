@@ -8,7 +8,6 @@ import android.database.Cursor;
 import android.provider.OpenableColumns;
 import android.net.Uri;
 import android.content.pm.ActivityInfo;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -97,7 +96,6 @@ public class CloudBrowser extends QtActivity {
     @Override
     public void onDestroy() {
         m_notification_helper.release();
-        System.exit(0);
         super.onDestroy();
     }
 

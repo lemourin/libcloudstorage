@@ -71,7 +71,11 @@ void UploadFileRequest::resolve(
 
 UploadStreamWrapper::UploadStreamWrapper(
     std::function<uint32_t(char*, uint32_t, uint64_t)> callback, uint64_t size)
-    : callback_(std::move(callback)), size_(size), read_(), position_() {}
+    : buffer_(),
+      callback_(std::move(callback)),
+      size_(size),
+      read_(),
+      position_() {}
 
 void UploadStreamWrapper::reset() {
   prefix_ = std::stringstream();
