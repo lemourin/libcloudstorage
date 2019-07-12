@@ -55,9 +55,9 @@ class LoopImpl {
  public:
   LoopImpl(IThreadPoolFactory* factory, CloudEventLoop*);
 
-  void add(uint64_t tag, const std::shared_ptr<IGenericRequest>&);
-  void fulfill(uint64_t tag, std::function<void()>&&);
-  void cancel(uint64_t tag);
+  void add(uintptr_t tag, const std::shared_ptr<IGenericRequest>&);
+  void fulfill(uintptr_t tag, std::function<void()>&&);
+  void cancel(uintptr_t tag);
   void invoke(std::function<void()>&&);
 
 #ifdef WITH_THUMBNAILER
@@ -67,13 +67,11 @@ class LoopImpl {
   void clear();
   std::shared_ptr<std::atomic_bool> interrupt() const { return interrupt_; }
 
-  uint64_t next_tag();
   void process_events();
 
  private:
   std::mutex mutex_;
   std::unordered_map<uint64_t, std::shared_ptr<IGenericRequest>> pending_;
-  std::atomic_uint64_t last_tag_;
   std::list<std::function<void()>> events_;
 #ifdef WITH_THUMBNAILER
   std::mutex thumbnailer_mutex_;

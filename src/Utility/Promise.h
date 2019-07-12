@@ -364,6 +364,8 @@ class Promise {
     }
   }
 
+  uintptr_t id() const { return reinterpret_cast<uintptr_t>(data_.get()); }
+
  private:
   template <class... T>
   friend class Promise;

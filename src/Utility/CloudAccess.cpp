@@ -208,7 +208,7 @@ Promise<IItem::Pointer> CloudAccess::uploadFile(
     IItem::Pointer parent, const std::string& filename,
     const std::shared_ptr<ICloudUploadCallback>& cb) {
   Promise<IItem::Pointer> promise;
-  auto tag = loop_->next_tag();
+  auto tag = promise.id();
   auto request = provider_->uploadFileAsync(
       parent, filename,
       util::make_unique<UploadCallback>(cb, promise, tag, loop_));
@@ -220,7 +220,7 @@ Promise<> CloudAccess::downloadFile(
     IItem::Pointer file, Range range,
     const std::shared_ptr<ICloudDownloadCallback>& cb) {
   Promise<> promise;
-  auto tag = loop_->next_tag();
+  auto tag = promise.id();
   auto request = provider_->downloadFileAsync(
       file, util::make_unique<DownloadCallback>(cb, promise, tag, loop_),
       range);
@@ -232,7 +232,7 @@ Promise<> CloudAccess::downloadFile(
 Promise<> CloudAccess::downloadThumbnail(
     IItem::Pointer file, const std::shared_ptr<ICloudDownloadCallback>& cb) {
   Promise<> promise;
-  auto tag = loop_->next_tag();
+  auto tag = promise.id();
   auto request = provider_->getThumbnailAsync(
       file, std::make_shared<DownloadCallback>(cb, promise, tag, loop_));
   promise.cancel([tag, loop = loop_] { loop->cancel(tag); });

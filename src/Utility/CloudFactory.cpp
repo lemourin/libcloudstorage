@@ -321,7 +321,8 @@ void CloudFactory::onEventsAdded() {
 }
 
 void CloudFactory::add(std::unique_ptr<IGenericRequest>&& request) {
-  loop_->add(loop_->next_tag(), std::move(request));
+  auto tag = reinterpret_cast<uintptr_t>(request.get());
+  loop_->add(tag, std::move(request));
 }
 
 void CloudFactory::invoke(std::function<void()>&& f) {

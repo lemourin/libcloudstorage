@@ -131,7 +131,7 @@ class CloudAccess : public ICloudAccess {
   PromiseType wrap(Method method, Args... args) {
     using RemovedShared = typename RemoveSharedPtr<T>::type;
     PromiseType promise;
-    auto tag = loop_->next_tag();
+    auto tag = promise.id();
     auto request = (provider_.get()->*method)(
         std::forward<Args>(args)...,
         [loop = loop_, promise, tag](EitherError<RemovedShared> e) {

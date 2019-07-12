@@ -45,8 +45,7 @@ void CloudEventLoop::processEvents() { impl_->process_events(); }
 namespace priv {
 
 LoopImpl::LoopImpl(IThreadPoolFactory *factory, CloudEventLoop *loop)
-    : last_tag_(),
-      cancellation_thread_pool_(factory->create(1)),
+    : cancellation_thread_pool_(factory->create(1)),
       interrupt_(std::make_shared<std::atomic_bool>(false)),
       event_loop_(loop) {
 #ifdef WITH_THUMBNAILER
@@ -54,7 +53,7 @@ LoopImpl::LoopImpl(IThreadPoolFactory *factory, CloudEventLoop *loop)
 #endif
 }
 
-void LoopImpl::add(uint64_t tag,
+void LoopImpl::add(uintptr_t tag,
                    const std::shared_ptr<IGenericRequest> &request) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto it = pending_.find(tag);
@@ -65,7 +64,7 @@ void LoopImpl::add(uint64_t tag,
   }
 }
 
-void LoopImpl::fulfill(uint64_t tag, std::function<void()> &&f) {
+void LoopImpl::fulfill(uintptr_t tag, std::function<void()> &&f) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto it = pending_.find(tag);
@@ -81,21 +80,19 @@ void LoopImpl::fulfill(uint64_t tag, std::function<void()> &&f) {
   invoke(std::move(f));
 }
 
-void LoopImpl::cancel(uint64_t tag) {
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    auto it = pending_.find(tag);
-    if (it != pending_.end()) {
-      auto request = std::move(it->second);
-      pending_.erase(it);
-      if (cancellation_thread_pool_) {
-        lock.unlock();
-        cancellation_thread_pool_->schedule(
-            [request = std::move(request)] { request->cancel(); });
-      } else {
-        lock.unlock();
-        request->cancel();
-      }
+void LoopImpl::cancel(uintptr_t tag) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  auto it = pending_.find(tag);
+  if (it != pending_.end()) {
+    auto request = std::move(it->second);
+    pending_.erase(it);
+    if (cancellation_thread_pool_) {
+      lock.unlock();
+      cancellation_thread_pool_->schedule(
+          [request = std::move(request)] { request->cancel(); });
+    } else {
+      lock.unlock();
+      request->cancel();
     }
   }
 }
@@ -156,8 +153,6 @@ void LoopImpl::clear() {
     }
   }
 }
-
-uint64_t LoopImpl::next_tag() { return last_tag_++; }
 
 }  // namespace priv
 
