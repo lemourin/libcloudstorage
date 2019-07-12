@@ -649,10 +649,10 @@ class CloudFileSystemAccess : public FileSystemAccess {
       localname = *str;
       type = FILENODE;
       retry = false;
-      auto it =
-          fs_->callback_.find(static_cast<uint32_t>(std::stoull(localname)));
+      auto it = fs_->callback_.find(
+          reinterpret_cast<IUploadFileCallback*>(std::stoull(localname)));
       if (it == fs_->callback_.end()) return false;
-      callback_ = it->second;
+      callback_ = *it;
       sysstat(&mtime, &size);
       return true;
     }
@@ -693,8 +693,7 @@ class CloudFileSystemAccess : public FileSystemAccess {
   DirAccess* newdiraccess() override { return nullptr; }
   FileAccess* newfileaccess() override { return new CloudFileAccess(this); }
 
-  std::unordered_map<uint32_t, IUploadFileCallback*> callback_;
-  uint32_t tag_ = 0;
+  std::unordered_set<IUploadFileCallback*> callback_;
 };
 }  // namespace
 
@@ -732,13 +731,13 @@ class CloudMegaClient {
     return tag;
   }
 
-  int register_file(IUploadFileCallback* callback) {
-    auto tag = fs_->tag_++;
-    fs_->callback_[tag] = callback;
-    return tag;
+  void register_file(IUploadFileCallback* callback) {
+    fs_->callback_.insert(callback);
   }
 
-  void remove_file(int tag) { fs_->callback_.erase(fs_->callback_.find(tag)); }
+  void remove_file(IUploadFileCallback* tag) {
+    fs_->callback_.erase(fs_->callback_.find(tag));
+  }
 
   void exec(std::unique_lock<std::mutex>& lock) { app_.exec(lock); }
 
@@ -977,24 +976,24 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
         return r->done(
             Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       }
-      auto tag = std::make_shared<uint32_t>(0);
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<handle>, Type::UPLOAD,
           [&](Listener<handle>* r, int) {
             r->upload_callback_ = callback;
-            *tag = mega_->register_file(callback);
+            mega_->register_file(callback);
             auto upload = new FileUpload;
             upload->listener_ = r;
             upload->size_ = callback->size();
             upload->h = node->nodehandle;
             upload->name = filename;
-            upload->localname = std::to_string(*tag);
+            upload->localname =
+                std::to_string(reinterpret_cast<uintptr_t>(callback));
             mega_->client()->startxfer(PUT, upload);
             mega_->exec(lock);
           },
           [=](EitherError<handle> e) {
             auto lock = mega_->lock();
-            mega_->remove_file(*tag);
+            mega_->remove_file(callback);
             if (e.left()) {
               lock.unlock();
               return r->done(e.left());
