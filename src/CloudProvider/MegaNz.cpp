@@ -440,9 +440,8 @@ struct CloudHttp : public HttpIO {
       bool abort_ = false;
     };
 
-    HttpCallback(App* app, std::function<void(const char*, uint32_t)> read,
-                 std::shared_ptr<AbortState> abort)
-        : app_(app), stream_(read), abort_(abort), progress_() {}
+    HttpCallback(App* app, std::function<void(const char*, uint32_t)> read)
+        : app_(app), stream_(read), progress_() {}
 
     ~HttpCallback() override {}
 
@@ -482,26 +481,32 @@ struct CloudHttp : public HttpIO {
     DownloadStreamWrapper stream_;
     std::shared_ptr<AbortState> abort_;
     std::atomic_uint64_t progress_;
+    std::shared_ptr<AbortState> removed_;
   };
 
   void post(struct HttpReq* r, const char* data, unsigned length) override {
     if (http_ == nullptr) return;
     auto abort_mark = std::make_shared<HttpCallback::AbortState>();
+    auto removed_mark = std::make_shared<HttpCallback::AbortState>();
     auto request = http_->create(r->posturl, "POST");
-    auto callback = std::make_shared<HttpCallback>(
-        app_,
-        [=](const char* d, uint32_t cnt) {
+    auto callback =
+        std::make_shared<HttpCallback>(app_, [=](const char* d, uint32_t cnt) {
           {
             std::unique_lock<std::mutex> lock(abort_mark->mutex_);
             if (abort_mark->abort_) {
               return;
             }
           }
+          {
+            std::unique_lock<std::mutex> remove_lock(removed_mark->mutex_);
+            if (!removed_mark->abort_)
+              read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
+          }
           auto lock = app_->lock();
-          read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
           app_->exec(lock);
-        },
-        abort_mark);
+        });
+    callback->abort_ = abort_mark;
+    callback->removed_ = removed_mark;
     auto input = std::make_shared<std::stringstream>();
     auto output = std::make_shared<std::ostream>(&callback->stream_);
     if (!data) {
@@ -520,9 +525,13 @@ struct CloudHttp : public HttpIO {
             abort_mark->abort_ = true;
             auto lock = app_->lock();
             pending_requests_--;
-            queue_.push_back({r, e});
             if (!http_ && pending_requests_ == 0) {
               no_requests_.set_value();
+            }
+            {
+              std::unique_lock<std::mutex> remove_lock(
+                  callback->removed_->mutex_);
+              if (!callback->removed_->abort_) queue_.push_back({r, e});
             }
             app_->exec(lock);
           },
@@ -536,6 +545,10 @@ struct CloudHttp : public HttpIO {
     h->status = REQ_FAILURE;
     if (h->httpiohandle) {
       auto r = static_cast<std::shared_ptr<HttpCallback>*>(h->httpiohandle);
+      {
+        std::unique_lock<std::mutex> remove_lock((*r)->removed_->mutex_);
+        (*r)->removed_->abort_ = true;
+      }
       app_->enqueue([this, r = *r] {
         std::unique_lock<std::mutex> abort_lock(r->abort_->mutex_);
         if (r->abort_->abort_) return;
