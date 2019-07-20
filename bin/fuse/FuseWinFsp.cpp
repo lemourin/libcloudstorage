@@ -117,7 +117,6 @@ NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
   auto hint = FspFileSystemGetOperationContext()->Request->Hint;
   auto transferred = *bytes_transferred;
   if (pattern) {
-    NTSTATUS result;
     FspFileSystemReadDirectoryBuffer(&file->directory_buffer_, pattern, buffer,
                                      buffer_length, bytes_transferred);
     return STATUS_SUCCESS;
@@ -158,8 +157,9 @@ NTSTATUS read_directory(FSP_FILE_SYSTEM *fs, PVOID file_context, PWSTR pattern,
             } info;
             std::wstring filename =
                 from_string(c->context()->sanitize(entry->filename()));
-            info.d.Size = FIELD_OFFSET(FSP_FSCTL_DIR_INFO, FileNameBuf) +
-                          filename.length() * sizeof(wchar_t);
+            info.d.Size =
+                FIELD_OFFSET(FSP_FSCTL_DIR_INFO, FileNameBuf) +
+                static_cast<UINT16>(filename.length() * sizeof(wchar_t));
             node_to_file_info(entry.get(), &info.d.FileInfo);
             memcpy(info.d.FileNameBuf, filename.c_str(),
                    filename.length() * sizeof(wchar_t));
@@ -191,7 +191,8 @@ NTSTATUS get_volume_info(FSP_FILE_SYSTEM *,
   volume_info->FreeSize = 0;
   volume_info->TotalSize = 0;
   wcscpy(volume_info->VolumeLabel, L"cloudstorage");
-  volume_info->VolumeLabelLength = wcslen(volume_info->VolumeLabel);
+  volume_info->VolumeLabelLength =
+      static_cast<UINT16>(wcslen(volume_info->VolumeLabel));
   return S_OK;
 }
 
@@ -230,7 +231,7 @@ NTSTATUS read(FSP_FILE_SYSTEM *fs, PVOID file_context, PVOID buffer,
         auto b = e.right();
         memcpy(buffer, b->c_str(), b->size());
         response.IoStatus.Status = STATUS_SUCCESS;
-        response.IoStatus.Information = b->size();
+        response.IoStatus.Information = static_cast<UINT32>(b->size());
         FspFileSystemSendResponse(fs, &response);
       });
   return STATUS_PENDING;
