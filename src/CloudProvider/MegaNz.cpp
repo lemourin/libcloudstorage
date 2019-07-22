@@ -524,6 +524,7 @@ struct CloudHttp : public HttpIO {
             if (abort_mark->abort_) return;
             abort_mark->abort_ = true;
             auto lock = app_->lock();
+            abort_lock.unlock();
             pending_requests_--;
             if (!http_ && pending_requests_ == 0) {
               no_requests_.set_value();
