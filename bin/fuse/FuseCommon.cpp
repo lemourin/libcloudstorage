@@ -249,6 +249,10 @@ int fuse_run(int argc, char **argv) {
     auto server = cloudstorage::IHttpServerFactory::create()->create(
         std::make_shared<cloudstorage::HttpServerCallback>(result), "",
         IHttpServer::Type::Authorization);
+    if (!server) {
+      std::cerr << "Couldn't initialize http server.\n";
+      return 1;
+    }
     auto key = result.get_future().get();
     ICloudProvider::InitData data;
     data.permission_ = ICloudProvider::Permission::ReadWrite;
