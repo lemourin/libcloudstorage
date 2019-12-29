@@ -5,6 +5,14 @@
 # > vcvarsall x64 uwp
 # Then invoke msys2_shell.cmd from your msys2 installation folder
 # in a way so that the environment set by vcvarsall is preserved.
+#
+# Make sure the following are installed by pacman and not overriden
+# by anything else: patch, pkg-config, nasm, make.
+#
+# Native cmake and strawberry perl will be needed.
+#
+# Make sure /usr/bin/link doesn't override the link.exe coming
+# from Visual Studio.
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 [ x64 ] [ Debug | Release ]"
@@ -31,6 +39,21 @@ elif [ $BUILD_TYPE == "Release" ]; then
   RUNTIME="MD"
 fi
 
+if [ "$(which link)" == "/usr/bin/link" ]; then
+  echo "/usr/bin/link overrides Visual Studio's link.exe. Please rename /usr/bin/link."
+  exit 1
+fi
+
+if [ "$(which patch)" != "/usr/bin/patch" ]; then
+  echo "Wrong patch executable detected. Remove Strawberry Perl from PATH."
+  exit 1
+fi
+
+command -v patch >/dev/null 2>&1 || { echo >&2 "patch is not installed"; exit 1; }
+command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
+
 PERL_SEARCH=$(reg Query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\Perl_program_file\\shell\\Execute Perl Program\\command" | grep perl.exe)
 if [ $? -ne 0 ]; then
   echo "Please install perl from http://strawberryperl.com/"
@@ -47,7 +70,7 @@ PERL=$(echo $(cygpath $(echo $PERL_SEARCH | sed -E 's/\(Default\) REG_SZ (\S+per
 CMAKE="$(echo $(cygpath $(echo $CMAKE_SEARCH | sed -E 's/InstallDir REG_SZ (\S+)/\1/'))bin/cmake.exe)"
 INSTALL_PATH=$PWD/winrt/$BUILD/$BUILD_TYPE
 CURRENT_DIR=$PWD
-PLATFORM_TOOLSET=141
+PLATFORM_TOOLSET=142
 CMAKE_PREFIX_PATH=$INSTALL_PATH
 CMAKE_GENERATOR="Visual Studio 16 2019"
 CMAKE_ARCH=$BUILD
