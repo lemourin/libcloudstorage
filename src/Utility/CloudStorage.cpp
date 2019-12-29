@@ -38,7 +38,6 @@
 #include "CloudProvider/PCloud.h"
 #include "CloudProvider/WebDav.h"
 #include "CloudProvider/YandexDisk.h"
-#include "CloudProvider/YouTube.h"
 
 #include "Utility/Utility.h"
 
@@ -192,7 +191,6 @@ CloudStorage::CloudStorage() {
   add<OneDrive>();
   add<Dropbox>();
   add<Box>();
-  add<YouTube>();
   add<YandexDisk>();
   add<WebDav>();
   add<AmazonS3>();

@@ -110,9 +110,6 @@
     <ClInclude Include="..\..\src\CloudProvider\YandexDisk.h">
       <Filter>Header Files\CloudProvider</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\CloudProvider\YouTube.h">
-      <Filter>Header Files\CloudProvider</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\C\CloudStorage.h">
       <Filter>Header Files\C</Filter>
     </ClInclude>
@@ -284,9 +281,6 @@
       <Filter>Source Files\CloudProvider</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\CloudProvider\YandexDisk.cpp">
-      <Filter>Source Files\CloudProvider</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\CloudProvider\YouTube.cpp">
       <Filter>Source Files\CloudProvider</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Request\AuthorizeRequest.cpp">

@@ -25,7 +25,6 @@ Supported cloud providers:
 * `hubiC`
 * `4shared`
 * `Google Photos` (partial)
-* `YouTube` (partial)
 
 Supported operations on files:
 ==============================

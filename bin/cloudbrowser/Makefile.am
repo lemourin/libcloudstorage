@@ -146,7 +146,6 @@ DEPS_res = \
 	resources/providers/pcloud.png \
 	resources/providers/mega.png \
 	resources/providers/webdav.png \
-	resources/providers/youtube.png \
 	resources/providers/yandex.png \
 	resources/providers/gphotos.png \
 	resources/providers/hubic.png \

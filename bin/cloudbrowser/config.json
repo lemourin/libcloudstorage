@@ -42,10 +42,6 @@
     "yandex": {
       "client_id": "04d700d432884c4381c07e760213ed8a",
       "client_secret": "197f9693caa64f0ebb51d201110074f9"
-    },
-    "youtube": {
-      "client_id": "646432077068-hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent.com",
-      "client_secret": "1f0FG5ch-kKOanTAv1Bqdp9U"
     }
   }
 }

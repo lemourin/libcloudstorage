@@ -34,7 +34,6 @@ libcloudstorage_la_SOURCES = \
 	CloudProvider/Dropbox.cpp \
 	CloudProvider/AmazonS3.cpp \
 	CloudProvider/Box.cpp \
-	CloudProvider/YouTube.cpp \
 	CloudProvider/YandexDisk.cpp \
 	CloudProvider/WebDav.cpp \
 	CloudProvider/PCloud.cpp \
@@ -93,7 +92,6 @@ noinst_HEADERS = \
 	CloudProvider/Dropbox.h \
 	CloudProvider/Box.h \
 	CloudProvider/AmazonS3.h \
-	CloudProvider/YouTube.h \
 	CloudProvider/YandexDisk.h \
 	CloudProvider/WebDav.h \
 	CloudProvider/PCloud.h \

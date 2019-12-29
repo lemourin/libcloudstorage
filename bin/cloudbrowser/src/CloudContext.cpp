@@ -312,7 +312,6 @@ QString CloudContext::pretty(const QString& provider) const {
       {"pcloud", "pCloud"},
       {"webdav", "WebDAV"},
       {"yandex", "Yandex Disk"},
-      {"youtube", "YouTube"},
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"},
       {"localwinrt", "Local Drive"},

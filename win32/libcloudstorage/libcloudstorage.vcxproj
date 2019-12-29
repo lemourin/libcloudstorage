@@ -27,7 +27,6 @@
     <ClInclude Include="..\..\src\CloudProvider\PCloud.h" />
     <ClInclude Include="..\..\src\CloudProvider\WebDav.h" />
     <ClInclude Include="..\..\src\CloudProvider\YandexDisk.h" />
-    <ClInclude Include="..\..\src\CloudProvider\YouTube.h" />
     <ClInclude Include="..\..\src\C\CloudProvider.h" />
     <ClInclude Include="..\..\src\C\CloudStorage.h" />
     <ClInclude Include="..\..\src\C\Crypto.h" />
@@ -97,7 +96,6 @@
     <ClCompile Include="..\..\src\CloudProvider\PCloud.cpp" />
     <ClCompile Include="..\..\src\CloudProvider\WebDav.cpp" />
     <ClCompile Include="..\..\src\CloudProvider\YandexDisk.cpp" />
-    <ClCompile Include="..\..\src\CloudProvider\YouTube.cpp" />
     <ClCompile Include="..\..\src\C\CloudProvider.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)C/</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)C/</ObjectFileName>

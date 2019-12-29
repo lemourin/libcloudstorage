@@ -276,9 +276,6 @@
     <Image Include="..\..\bin\cloudbrowser\resources\providers\yandex.png">
       <Filter>Resource Files\resources\providers</Filter>
     </Image>
-    <Image Include="..\..\bin\cloudbrowser\resources\providers\youtube.png">
-      <Filter>Resource Files\resources\providers</Filter>
-    </Image>
     <Image Include="..\..\bin\cloudbrowser\resources\cloud.png">
       <Filter>Resource Files\resources</Filter>
     </Image>
