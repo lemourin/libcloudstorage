@@ -248,9 +248,16 @@ void log(Args&&... t) {
 #endif
 #endif
 #ifdef _WIN32
-  OutputDebugString(std::wstring_convert<std::codecvt_utf8<wchar_t>>()
-                        .from_bytes(buffer.str() + "\n")
-                        .c_str());
+  const size_t MAX_LENGTH = 2048;
+  auto output = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(
+      buffer.str() + "\n");
+  for (size_t i = 0; i < output.length(); i += MAX_LENGTH) {
+    OutputDebugString(
+        std::wstring(output.substr(i, output.length() - i < MAX_LENGTH
+                                          ? output.length() - i
+                                          : MAX_LENGTH))
+            .c_str());
+  }
 #endif
 }
 
