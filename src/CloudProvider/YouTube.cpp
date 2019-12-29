@@ -186,6 +186,35 @@ VideoInfo video_info(const std::string& url) {
   return result;
 }
 
+VideoInfo new_video_info(const Json::Value& json) {
+  auto d = video_info(json["cipher"].asString());
+  if (json.isMember("bitrate")) d.bitrate = json["bitrate"].asInt();
+  if (json.isMember("qualityLabel"))
+    d.quality_label = json["qualityLabel"].asString();
+  if (json.isMember("mimeType")) {
+    d.type = json["mimeType"].asString();
+    auto text = "codecs=\"";
+    auto it = d.type.find(text) + strlen(text);
+    auto it_end = d.type.find('"', it);
+    d.codec = std::string(d.type.begin() + it, d.type.begin() + it_end);
+  }
+  if (json.isMember("audioSampleRate"))
+    d.samplerate = std::stoi(json["audioSampleRate"].asString());
+  if (json.isMember("contentLength"))
+    d.size = std::stoi(json["contentLength"].asString());
+  if (json.isMember("indexRange"))
+    d.index_range = json["indexRange"]["start"].asString() + "-" +
+                    json["indexRange"]["end"].asString();
+  if (json.isMember("initRange"))
+    d.init_range = json["initRange"]["start"].asString() + "-" +
+                   json["initRange"]["end"].asString();
+  if (json.isMember("fps")) d.framerate = json["fps"].asInt();
+  if (json.isMember("width")) d.width = json["width"].asInt();
+  if (json.isMember("height")) d.height = json["height"].asInt();
+  if (json.isMember("url")) d.url = json["url"].asString();
+  return d;
+}
+
 bool find(std::stringstream& stream, const std::string& pattern) {
   std::deque<char> buffer;
   stream.seekg(0);
@@ -315,6 +344,18 @@ void get_stream(
       std::string url;
       while (std::getline(stream, url, ',')) {
         auto d = video_info(url);
+        d.adaptive = data.second;
+        result.push_back(d);
+        if (!d.scrambled_signature.empty()) scrambled_signature = true;
+      }
+    }
+    auto streaming_data = util::json::from_string(
+        json["args"]["player_response"].asString())["streamingData"];
+    for (const auto& data :
+         {std::make_pair(streaming_data["adaptiveFormats"], true),
+          std::make_pair(streaming_data["formats"], false)}) {
+      for (const auto& json : data.first) {
+        auto d = new_video_info(json);
         d.adaptive = data.second;
         result.push_back(d);
         if (!d.scrambled_signature.empty()) scrambled_signature = true;
