@@ -307,17 +307,6 @@ std::string unpack_js(std::string p, uint64_t a, uint64_t c,
   return p;
 }
 
-std::string find_embed_url(const std::string &page) {
-  re::smatch match;
-  if (!re::regex_search(page, match,
-                        re::regex(R"R(<IFRAME SRC="(.+)" .*>)R"))) {
-    if (page.find("File Not Found") != std::string::npos)
-      throw std::logic_error(util::Error::COULD_NOT_FIND_VIDEO);
-    throw std::logic_error(util::Error::URL_UNAVAILABLE);
-  }
-  return match[1];
-}
-
 std::string extract_url(const std::string &page) {
   re::smatch script_match;
   if (!re::regex_search(
@@ -522,39 +511,26 @@ ICloudProvider::GetItemUrlRequest::Pointer AnimeZone::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
   auto fetch_player = [=](Request<EitherError<std::string>>::Pointer r,
                           const std::string &url) {
-    r->send(
-        [=](util::Output) { return http()->create(url); },
-        [=](EitherError<Response> e) {
-          if (e.left()) {
-            r->done(e.left());
-          } else {
-            try {
-              auto value = util::json::from_string(item->id());
-              const std::string player = value["player"].asString();
-              if (player == "openload.co") {
-                r->done(openload::extract_url(e.right()->output().str()));
-              } else if (player == "mp4upload.com") {
-                auto url = mp4upload::find_embed_url(e.right()->output().str());
-                r->send([=](util::Output) { return http()->create(url); },
-                        [=](EitherError<Response> e) {
-                          if (e.left())
-                            r->done(e.left());
-                          else
-                            try {
-                              r->done(mp4upload::extract_url(
-                                  e.right()->output().str()));
-                            } catch (const std::exception &e) {
-                              r->done(Error{IHttpRequest::Failure, e.what()});
-                            }
-                        });
+    r->send([=](util::Output) { return http()->create(url); },
+            [=](EitherError<Response> e) {
+              if (e.left()) {
+                r->done(e.left());
               } else {
-                throw std::logic_error(util::Error::UNSUPPORTED_PLAYER);
+                try {
+                  auto value = util::json::from_string(item->id());
+                  const std::string player = value["player"].asString();
+                  if (player == "openload.co") {
+                    r->done(openload::extract_url(e.right()->output().str()));
+                  } else if (player == "mp4upload.com") {
+                    r->done(mp4upload::extract_url(e.right()->output().str()));
+                  } else {
+                    throw std::logic_error(util::Error::UNSUPPORTED_PLAYER);
+                  }
+                } catch (const std::exception &e) {
+                  r->done(Error{IHttpRequest::Failure, e.what()});
+                }
               }
-            } catch (const std::exception &e) {
-              r->done(Error{IHttpRequest::Failure, e.what()});
-            }
-          }
-        });
+            });
   };
   auto fetch_frame = [=](Request<EitherError<std::string>>::Pointer r,
                          const std::string &origin, const std::string &code) {
