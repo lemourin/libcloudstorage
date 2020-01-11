@@ -39,21 +39,6 @@ elif [ $BUILD_TYPE == "Release" ]; then
   RUNTIME="MD"
 fi
 
-if [ "$(which link)" == "/usr/bin/link" ]; then
-  echo "/usr/bin/link overrides Visual Studio's link.exe. Please rename /usr/bin/link."
-  exit 1
-fi
-
-if [ "$(which patch)" != "/usr/bin/patch" ]; then
-  echo "Wrong patch executable detected. Remove Strawberry Perl from PATH."
-  exit 1
-fi
-
-command -v patch >/dev/null 2>&1 || { echo >&2 "patch is not installed"; exit 1; }
-command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
-command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
-command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
-
 PERL_SEARCH=$(reg Query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\Perl_program_file\\shell\\Execute Perl Program\\command" | grep perl.exe)
 if [ $? -ne 0 ]; then
   echo "Please install perl from http://strawberryperl.com/"
@@ -63,6 +48,22 @@ fi
 CMAKE_SEARCH=$(reg Query HKEY_LOCAL_MACHINE\\SOFTWARE\\Kitware\\CMake | grep InstallDir)
 if [ $? -ne 0 ]; then
   echo "Please install cmake from https://cmake.org/download/"
+  exit 1
+fi
+
+command -v cl >/dev/null 2>&1 || { echo >&2 "cl.exe not found"; exit 1; }
+command -v patch >/dev/null 2>&1 || { echo >&2 "patch is not installed"; exit 1; }
+command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
+
+if [ "$(which link)" == "/usr/bin/link" ]; then
+  echo "/usr/bin/link overrides Visual Studio's link.exe. Please rename /usr/bin/link."
+  exit 1
+fi
+
+if [ "$(which patch)" != "/usr/bin/patch" ]; then
+  echo "Wrong patch executable detected. Remove Strawberry Perl from PATH."
   exit 1
 fi
 
