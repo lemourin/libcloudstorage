@@ -316,7 +316,7 @@ fetch_microhttpd() {
       patch src/microhttpd/connection.c < ../../patches/microhttpd-connection-winrt-fix.patch &&
       patch src/microhttpd/mhd_sockets.c < ../../patches/microhttpd-sockets-winrt-fix.patch &&
       patch src/microhttpd/memorypool.c < ../../patches/microhttpd-memorypool-winrt-fix.patch &&
-      sed -i s/vc141/vc$PLATFORM_TOOLSET/g w32/VS2017/libmicrohttpd.vcxproj &&
+      sed -i s/v141/v$PLATFORM_TOOLSET/g w32/VS2017/libmicrohttpd.vcxproj &&
       sed -i -E 's/<WholeProgramOptimization [^>]*>true<\/WholeProgramOptimization>/<WholeProgramOptimization>false<\/WholeProgramOptimization>/g' w32/VS2017/libmicrohttpd.vcxproj
     if [ $? -ne 0 ]; then
       echo "Couldn't patch microhttpd"
