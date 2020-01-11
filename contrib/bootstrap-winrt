@@ -367,6 +367,7 @@ fetch_megasdk() {
   fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
   if [ ! -f .patched ]; then
     patch examples/win32/libmega.vcxproj < ../../patches/mega-enabled-winrt.patch &&
+      sed -i s/v141/v$PLATFORM_TOOLSET/g examples/win32/libmega.vcxproj &&
       patch src/megaclient.cpp < ../../patches/mega-client-winrt-fix.patch &&
       patch src/crypto/cryptopp.cpp < ../../patches/mega-cryptopp-winrt-fix.patch &&
       patch include/mega/crypto/cryptopp.h < ../../patches/mega-cryptopp-h-winrt-fix.patch
