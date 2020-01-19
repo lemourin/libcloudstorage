@@ -2,7 +2,7 @@
 
 if [ -z "$ANDROID_NDK_ROOT" ]; then
   echo "ANDROID_NDK_ROOT not set"
-  exit 
+  exit 1
 fi
 
 if [ $# -lt 1 ]; then
@@ -13,29 +13,58 @@ fi
 BUILD=$1
 
 if [ $BUILD == "armv7a" ]; then
-  ARCH=armv7a-linux-androideabi16
+  ARCH=armv7a-linux-androideabi
+  MIN_API_LEVEL=16
+  CMAKE_ANDROID_ABI=armeabi-v7a
 elif [ $BUILD == "aarch64" ]; then
-  ARCH=aarch64-linux-android21
+  ARCH=aarch64-linux-android
+  MIN_API_LEVEL=21
+  CMAKE_ANDROID_ABI=arm64-v8a
 elif [ $BUILD == "x86" ]; then
-  ARCH=i686-linux-android16
+  ARCH=i686-linux-android
+  MIN_API_LEVEL=16
+  CMAKE_ANDROID_ABI=x86
 elif [ $BUILD == "x86_64" ]; then
-  ARCH=x86_64-linux-android21
+  ARCH=x86_64-linux-android
+  MIN_API_LEVEL=21
+  CMAKE_ANDROID_ABI=x86_64
 else
   echo "Unsupported arch $BUILD"
   exit 1
 fi
 
-export INSTALL_PATH=$PWD/$ARCH
-export CURRENT_DIR=$PWD
+command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
+command -v perl >/dev/null 2>&1 || { echo >&2 "perl is not installed"; exit 1; }
+command -v libtool >/dev/null 2>&1 || { echo >&2 "libtool not found"; exit 1; }
+command -v aclocal >/dev/null 2>&1 || { echo >&2 "automake is not installed"; exit 1; }
+command -v autom4te >/dev/null 2>&1 || { echo >&2 "autoconf is not installed"; exit 1; }
+command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
+
+HOST_ARCH=$(ls $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt | head -n 1)
+CONCURRENCY=4
+TOOLCHAIN=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake
+GENERATOR="Unix Makefiles"
+
+export INSTALL_PATH=$PWD/$ARCH$MIN_API_LEVEL
 export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
 export CMAKE_PREFIX_PATH=$INSTALL_PATH
 export PATH=$INSTALL_PATH/bin:$PATH
-export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang
-export CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++
+export CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang
+export CXX=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang++
+if [ $BUILD == "armv7a" ]; then
+  export RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/arm-linux-androideabi-ranlib
+  export AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/arm-linux-androideabi-ar
+  export NM=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/arm-linux-androideabi-nm
+else
+  export RANLIB=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH-ranlib
+  export AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH-ar
+  export NM=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH-nm
+fi
 export CXXFLAGS="-fPIC -Oz"
 export CFLAGS="-fPIC -Oz"
 export LDFLAGS="-fPIC"
-CONCURRENCY=4
 
 unpack() {
   if [[ ! -d $1 ]]; then
@@ -53,7 +82,7 @@ unpack() {
 fetch() {
   EXT=${2##*.}
   if [[ ! -f $2 ]]; then
-    DEST=$(tempfile)
+    DEST=$(mktemp /tmp/build-android.XXXXXX)
     wget $1 -O $DEST
     if [[ $? -ne 0 ]]; then
       echo "Couldn't fetch $1"
@@ -77,6 +106,15 @@ fetch_github() {
   fetch $1 $REPO_NAME-$NAME
 }
 
+run_cmake() {
+  cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
+    -G "$GENERATOR" \
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
+    -DANDROID_ABI="$CMAKE_ANDROID_ABI" \
+    -DANDROID_PLATFORM=$MIN_API_LEVEL $@
+}
+
 run_make() {
   make -j $CONCURRENCY && make install
 }
@@ -88,7 +126,7 @@ fetch_jsoncpp() {
 install_jsoncpp() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0
+  run_cmake -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0
   run_make
 }
 
@@ -99,7 +137,7 @@ fetch_tinyxml2() {
 install_tinyxml2() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
+  run_cmake -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
   run_make
 }
 
@@ -128,7 +166,7 @@ fetch_cares() {
 
 install_cares() {
   ./buildconf
-  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH$MIN_API_LEVEL --enable-static --disable-shared
   run_make
 }
 
@@ -138,7 +176,7 @@ fetch_nghttp2() {
 
 install_nghttp2() {
   ./buildconf
-  ./configure --prefix=$INSTALL_PATH --enable-lib-only --enable-static --disable-shared --host=$ARCH
+  ./configure --prefix=$INSTALL_PATH --enable-lib-only --enable-static --disable-shared --host=$ARCH$MIN_API_LEVEL
   run_make
 }
 
@@ -148,7 +186,7 @@ fetch_curl() {
 
 install_curl() {
   ./configure --prefix=$INSTALL_PATH --with-ssl=$INSTALL_PATH --with-nghttp2 --enable-ares \
-    --host=$ARCH --enable-static --disable-shared
+    --host=$ARCH$MIN_API_LEVEL --enable-static --disable-shared
   run_make
 }
 
@@ -157,7 +195,7 @@ fetch_microhttpd() {
 }
 
 install_microhttpd() {
-  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH$MIN_API_LEVEL --enable-static --disable-shared
   run_make
 }
 
@@ -180,7 +218,7 @@ fetch_sqlite() {
 }
 
 install_sqlite() {
-  ./configure --prefix=$INSTALL_PATH --host=$ARCH --enable-static --disable-shared
+  ./configure --prefix=$INSTALL_PATH --host=$ARCH$MIN_API_LEVEL --enable-static --disable-shared
   run_make
 }
 
@@ -198,7 +236,7 @@ install_megasdk() {
     --with-openssl=$INSTALL_PATH \
     --with-cares=$INSTALL_PATH \
     --with-curl=$INSTALL_PATH \
-    --host=$ARCH \
+    --host=$ARCH$MIN_API_LEVEL \
     --enable-static \
     --disable-shared
   make CXXFLAGS="-D_LIBCPP_HAS_NO_OFF_T_FUNCTIONS $CXXFLAGS" -j $CONCURRENCY && make install
@@ -209,15 +247,15 @@ fetch_ffmpeg() {
 }
 
 install_ffmpeg() {
-  if [ ! $(command -v yasm) ]; then
-    sudo apt install -y yasm
-  fi
-
   ./configure \
     --prefix=$INSTALL_PATH \
     --target-os=android \
     --cc=$CC \
     --cxx=$CXX \
+    --nm=$NM \
+    --ar=$AR \
+    --ranlib=$RANLIB \
+    --disable-doc \
     --disable-everything \
     --disable-asm \
     --enable-cross-compile \
@@ -240,23 +278,23 @@ install_boost() {
   ./bootstrap.sh
   cd libs/filesystem/build
   
-  cat > $CURRENT_DIR/user-config.jam << EOF
-using clang : armv7a : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
-using clang : aarch64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
-using clang : x86 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
-using clang : x86_64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/$ARCH-clang++ ;
+  cat > user-config.jam << EOF
+using clang : armv7a : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang++ ;
+using clang : aarch64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang++ ;
+using clang : x86 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang++ ;
+using clang : x86_64 : $ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$HOST_ARCH/bin/$ARCH$MIN_API_LEVEL-clang++ ;
 EOF
 
-  HOME=$CURRENT_DIR ../../../b2 install \
+  HOME=$PWD ../../../b2 install \
     --prefix=$INSTALL_PATH \
-    -toolset=$ARCH \
+    -toolset=$ARCH$MIN_API_LEVEL \
     cxxflags="$CXXFLAGS" \
     linkflags="$LDFLAGS" \
     link=static \
     runtime-link=static \
     target-os=android \
     toolset=clang-$BUILD && \
-  rm $CURRENT_DIR/user-config.jam
+  rm user-config.jam
 }
 
 install_run() {
@@ -307,8 +345,8 @@ for i in $@; do
   fi
 done
 
-mkdir tarballs-$ARCH -p
-cd tarballs-$ARCH
+mkdir tarballs-$ARCH$MIN_API_LEVEL -p
+cd tarballs-$ARCH$MIN_API_LEVEL
 
 install "openssl" 1.1.1b
 install "jsoncpp" 1.8.3
