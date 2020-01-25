@@ -308,8 +308,9 @@ std::unique_ptr<CloudAccess> CloudFactory::createImpl(
       init_data.hints_["client_secret"] =
           config_["keys"][provider_name]["client_secret"].asString();
   }
-  auto result = util::make_unique<CloudAccess>(
-      loop_, cloud_storage_->provider(provider_name, std::move(init_data)));
+  auto provider = cloud_storage_->provider(provider_name, std::move(init_data));
+  if (!provider) return nullptr;
+  auto result = util::make_unique<CloudAccess>(loop_, std::move(provider));
   auth_callback->access_ = result.get();
   return result;
 }
