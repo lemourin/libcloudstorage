@@ -25,17 +25,17 @@
 
 #include <time.h>
 
-#ifndef CLOUDSTORAGE_API
-#ifdef _MSC_VER
+#if _MSC_VER && !CLOUDSTORAGE_STATIC_LINK
+
 #ifdef CLOUDSTORAGE_LIBRARY
 #define CLOUDSTORAGE_API __declspec(dllexport)
 #else
 #define CLOUDSTORAGE_API __declspec(dllimport)
 #endif
+
 #else
 #define CLOUDSTORAGE_API
-#endif
-#endif
+#endif  // _MSC_VER
 
 #ifdef __cplusplus
 extern "C" {

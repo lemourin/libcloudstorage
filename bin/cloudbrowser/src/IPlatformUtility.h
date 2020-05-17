@@ -31,7 +31,7 @@
 
 class QWindow;
 
-class CLOUDBROWSER_API IPlatformUtility : public QObject {
+class IPlatformUtility : public QObject {
  public:
   using Pointer = std::unique_ptr<IPlatformUtility>;
 

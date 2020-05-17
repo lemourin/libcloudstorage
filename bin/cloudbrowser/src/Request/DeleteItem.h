@@ -6,7 +6,7 @@
 class CloudContext;
 class CloudItem;
 
-class CLOUDBROWSER_API DeleteItemRequest : public Request {
+class DeleteItemRequest : public Request {
  public:
   Q_INVOKABLE void update(CloudContext*, CloudItem*);
 

@@ -26,7 +26,7 @@ class CloudContext;
 extern CloudContext* gCloudContext;
 extern std::mutex gMutex;
 
-class CLOUDBROWSER_API ProviderListModel : public QAbstractListModel {
+class ProviderListModel : public QAbstractListModel {
  public:
   int rowCount(const QModelIndex& = QModelIndex()) const override;
   QVariant data(const QModelIndex& index, int role) const override;
@@ -48,7 +48,7 @@ class CLOUDBROWSER_API ProviderListModel : public QAbstractListModel {
   Q_OBJECT
 };
 
-class CLOUDBROWSER_API CloudContext : public QObject {
+class CloudContext : public QObject {
  public:
   Q_PROPERTY(QStringList providers READ providers CONSTANT)
   Q_PROPERTY(ProviderListModel* userProviders READ userProviders CONSTANT)

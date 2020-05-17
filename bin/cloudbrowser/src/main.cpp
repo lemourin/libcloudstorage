@@ -23,4 +23,19 @@
 
 #include "Exec.h"
 
-int main(int argc, char** argv) { return exec_cloudbrowser(argc, argv); }
+#ifdef _WIN32
+
+#include <windows.h>
+
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#define WINRT
+#endif
+
+#endif
+
+int main(int argc, char** argv) {
+#ifdef WINRT
+  CoInitializeEx(0, COINIT_MULTITHREADED);
+#endif
+  return exec_cloudbrowser(argc, argv);
+}

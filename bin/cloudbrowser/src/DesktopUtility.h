@@ -15,7 +15,7 @@
 #include "Exec.h"
 #include "IPlatformUtility.h"
 
-class CLOUDBROWSER_API DesktopUtility : public IPlatformUtility {
+class DesktopUtility : public IPlatformUtility {
  public:
   DesktopUtility();
   ~DesktopUtility() override;

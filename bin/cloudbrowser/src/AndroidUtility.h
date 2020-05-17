@@ -11,7 +11,7 @@
 #include "IPlatformUtility.h"
 #include "IRequest.h"
 
-class CLOUDBROWSER_API AndroidUtility : public IPlatformUtility {
+class AndroidUtility : public IPlatformUtility {
  public:
   class IResultListener
       : public cloudstorage::IGenericCallback<int, int,

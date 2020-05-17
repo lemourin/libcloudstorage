@@ -6,7 +6,7 @@
 class CloudContext;
 class CloudItem;
 
-class CLOUDBROWSER_API RenameItemRequest : public Request {
+class RenameItemRequest : public Request {
  public:
   Q_INVOKABLE void update(CloudContext*, CloudItem* item, const QString& name);
 

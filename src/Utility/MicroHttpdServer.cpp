@@ -154,7 +154,7 @@ std::string MicroHttpdServer::Request::method() const { return method_; }
 
 MicroHttpdServer::MicroHttpdServer(IHttpServer::ICallback::Pointer cb, int port)
     : http_server_(MHD_start_daemon(
-          MHD_USE_POLL_INTERNALLY | MHD_USE_SUSPEND_RESUME, port, nullptr,
+          MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_SUSPEND_RESUME, port, nullptr,
           nullptr, http_request_callback, this, MHD_OPTION_NOTIFY_COMPLETED,
           http_request_completed, this, MHD_OPTION_END)),
       callback_(std::move(cb)) {}

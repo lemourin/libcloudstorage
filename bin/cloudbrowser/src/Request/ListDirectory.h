@@ -11,7 +11,7 @@
 
 class CloudContext;
 
-struct CLOUDBROWSER_API ListDirectoryCacheKey {
+struct ListDirectoryCacheKey {
   std::string provider_type_;
   std::string provider_label_;
   std::string directory_id_;
@@ -32,7 +32,7 @@ struct hash<ListDirectoryCacheKey> {
 };
 }  // namespace std
 
-class CLOUDBROWSER_API ListDirectoryModel : public QAbstractListModel {
+class ListDirectoryModel : public QAbstractListModel {
  public:
   void set_provider(const Provider&);
   void add(const cloudstorage::IItem::Pointer&);
@@ -56,7 +56,7 @@ class CLOUDBROWSER_API ListDirectoryModel : public QAbstractListModel {
   Q_OBJECT
 };
 
-class CLOUDBROWSER_API ListDirectoryRequest : public Request {
+class ListDirectoryRequest : public Request {
  public:
   Q_PROPERTY(ListDirectoryModel* list READ list CONSTANT)
 

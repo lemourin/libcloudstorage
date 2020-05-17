@@ -23,7 +23,7 @@
 #ifndef EXEC_H
 #define EXEC_H
 
-#ifdef _MSC_VER
+#if _MSC_VER && CLOUDBROWSER_MSVC_LEGACY_PROJECT
 
 #ifdef CLOUDBROWSER_LIBRARY
 #define CLOUDBROWSER_API __declspec(dllexport)

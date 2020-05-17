@@ -14,7 +14,7 @@
 
 #include "IPlatformUtility.h"
 
-class CLOUDBROWSER_API WinRTUtility : public IPlatformUtility {
+class WinRTUtility : public IPlatformUtility {
  public:
   WinRTUtility();
   ~WinRTUtility();

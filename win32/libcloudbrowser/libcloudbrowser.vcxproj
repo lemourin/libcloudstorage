@@ -322,7 +322,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY;CLOUDBROWSER_MSVC_LEGACY_PROJECT</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtQuick;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -344,7 +344,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;LIBCLOUDBROWSER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WITH_QTWEBVIEW;WITH_THUMBNAILER;WITH_VLC_QT;WITH_MPV;CLOUDBROWSER_LIBRARY;CLOUDBROWSER_MSVC_LEGACY_PROJECT</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../bin/cloudbrowser/src;../../bin/common;../../src;../../dependencies/win32/include/QtWebView;../../dependencies/win32/include/QtQml;../../dependencies/win32/include/QtCore;../../dependencies/win32/include;../../dependencies/win32/include/QtQuick;../../dependencies/win32/include/QtGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>

@@ -22,7 +22,7 @@ class RequestNotifier : public QObject {
   Q_OBJECT
 };
 
-class CLOUDBROWSER_API Request : public QObject {
+class Request : public QObject {
  public:
   Q_PROPERTY(bool done READ done WRITE set_done NOTIFY doneChanged)
 

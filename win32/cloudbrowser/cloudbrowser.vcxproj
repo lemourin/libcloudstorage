@@ -63,6 +63,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <PreprocessorDefinitions>CLOUDBROWSER_MSVC_LEGACY_PROJECT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -80,6 +81,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <PreprocessorDefinitions>CLOUDBROWSER_MSVC_LEGACY_PROJECT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>../../dependencies/win32-debug/lib</AdditionalLibraryDirectories>

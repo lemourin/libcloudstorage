@@ -5,12 +5,11 @@
 #include <QVariant>
 #include <memory>
 
-#include "Exec.h"
 #include "ICloudProvider.h"
 
 struct ListDirectoryCacheKey;
 
-struct CLOUDBROWSER_API Provider {
+struct Provider {
   std::string label_;
   std::shared_ptr<cloudstorage::ICloudProvider> provider_;
 
@@ -22,7 +21,7 @@ struct CLOUDBROWSER_API Provider {
   }
 };
 
-class CLOUDBROWSER_API CloudItem : public QObject {
+class CloudItem : public QObject {
  public:
   Q_PROPERTY(QString filename READ filename CONSTANT)
   Q_PROPERTY(qint64 size READ size CONSTANT)

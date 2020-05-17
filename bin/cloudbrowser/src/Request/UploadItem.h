@@ -6,7 +6,7 @@
 class CloudContext;
 class CloudItem;
 
-class CLOUDBROWSER_API UploadItemRequest : public Request {
+class UploadItemRequest : public Request {
  public:
   Q_PROPERTY(qreal progress READ progress NOTIFY progressChanged)
 

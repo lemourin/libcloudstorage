@@ -62,6 +62,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatSpecificWarningsAsErrors>
       </TreatSpecificWarningsAsErrors>
+      <PreprocessorDefinitions>CLOUDBROWSER_MSVC_LEGACY_PROJECT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;libcloudbrowser-winrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -77,6 +78,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatSpecificWarningsAsErrors>
       </TreatSpecificWarningsAsErrors>
+      <PreprocessorDefinitions>CLOUDBROWSER_MSVC_LEGACY_PROJECT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformTarget)\$(ConfigurationName)\libcloudbrowser-winrt;../../dependencies/winrt/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

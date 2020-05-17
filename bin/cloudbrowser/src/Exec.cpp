@@ -56,6 +56,34 @@
 #include <VLCQtQml/Qml.h>
 #endif
 
+#ifdef QT_STATICPLUGIN
+
+#include <QtPlugin>
+
+#define KIRIGAMI_BUILD_TYPE_STATIC
+#include "kirigamiplugin.h"
+
+Q_IMPORT_PLUGIN(QtQuick2Plugin)
+Q_IMPORT_PLUGIN(QtQuick2WindowPlugin)
+Q_IMPORT_PLUGIN(QtQuickControls2Plugin)
+Q_IMPORT_PLUGIN(QtQuickLayoutsPlugin)
+Q_IMPORT_PLUGIN(QtQuickTemplates2Plugin)
+Q_IMPORT_PLUGIN(QtQuickControls2MaterialStylePlugin)
+Q_IMPORT_PLUGIN(QtQmlModelsPlugin)
+Q_IMPORT_PLUGIN(QtQmlPlugin)
+Q_IMPORT_PLUGIN(QSvgPlugin)
+Q_IMPORT_PLUGIN(QSvgIconPlugin)
+Q_IMPORT_PLUGIN(QtLabsPlatformPlugin)
+Q_IMPORT_PLUGIN(QtGraphicalEffectsPlugin)
+Q_IMPORT_PLUGIN(QtGraphicalEffectsPrivatePlugin)
+Q_IMPORT_PLUGIN(KirigamiPlugin)
+
+#ifdef WITH_QTWEBVIEW
+Q_IMPORT_PLUGIN(QWebViewModule)
+#endif
+
+#endif
+
 void register_types() {
   qRegisterMetaType<cloudstorage::IItem::Pointer>();
   qRegisterMetaType<
@@ -97,11 +125,23 @@ void register_types() {
 #ifdef WITH_MPV
   qmlRegisterType<MpvPlayer>("libcloudstorage", 1, 0, "MpvPlayer");
 #endif
+
+#ifdef QT_STATICPLUGIN
+#ifdef WITH_QTWEBVIEW
+  qobject_cast<QQmlExtensionPlugin*>(
+      qt_static_plugin_QWebViewModule().instance())
+      ->registerTypes("QtWebView");
+#endif
+#ifdef KIRIGAMI_BUILD_TYPE_STATIC
+  KirigamiPlugin::getInstance().registerTypes();
+#endif
+#endif
 }
 
 int exec_cloudbrowser(int argc, char** argv) {
   try {
     Q_INIT_RESOURCE(resources);
+
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -139,6 +179,7 @@ int exec_cloudbrowser(int argc, char** argv) {
 
     IPlatformUtility::Pointer platform = IPlatformUtility::create();
     QQmlApplicationEngine engine;
+
 #ifdef WITH_QTWEBVIEW
     engine.rootContext()->setContextProperty("qtwebview", QVariant(true));
 #else

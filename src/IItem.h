@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#ifdef _MSC_VER
+#if _MSC_VER && !CLOUDSTORAGE_STATIC_LINK
 
 #ifdef CLOUDSTORAGE_LIBRARY
 #define CLOUDSTORAGE_API __declspec(dllexport)
