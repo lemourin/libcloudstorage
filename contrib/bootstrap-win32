@@ -1,0 +1,950 @@
+#!/usr/bin/env bash
+
+# This script should be invoked from msys2 shell which can see
+# proper cl compiler. This can be achieved by running:
+# > vcvarsall x64
+# Then invoke msys2_shell.cmd from your msys2 installation folder
+# in a way so that the environment set by vcvarsall is preserved.
+#
+# Make sure the following are installed by pacman and not overriden
+# by anything else: patch, pkg-config, nasm, make.
+#
+# Native cmake and strawberry perl will be needed.
+#
+# Make sure /usr/bin/link doesn't override the link.exe coming
+# from Visual Studio.
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 [ x64 ] [ Debug | Release ]"
+  exit 1
+fi
+
+BUILD=$1
+
+if [ $BUILD != "x64" ]; then
+  echo "Unsupported architecture $BUILD"
+  exit 1
+fi
+
+BUILD_TYPE=$2
+
+if [ $BUILD_TYPE != "Debug" ] && [ $BUILD_TYPE != "Release" ]; then
+  echo "Unsupported build type $BUILD_TYPE"
+  exit 1
+fi
+
+if [ $BUILD_TYPE == "Debug" ]; then
+  RUNTIME="MDd"
+elif [ $BUILD_TYPE == "Release" ]; then
+  RUNTIME="MD"
+fi
+
+PERL_SEARCH=$(reg Query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\Perl_program_file\\shell\\Execute Perl Program\\command" | grep perl.exe)
+if [ $? -ne 0 ]; then
+  echo "Please install perl from http://strawberryperl.com/"
+  exit 1
+fi
+
+CMAKE_SEARCH=$(reg Query HKEY_LOCAL_MACHINE\\SOFTWARE\\Kitware\\CMake | grep InstallDir)
+if [ $? -ne 0 ]; then
+  echo "Please install cmake from https://cmake.org/download/"
+  exit 1
+fi
+
+command -v cl >/dev/null 2>&1 || { echo >&2 "cl.exe not found"; exit 1; }
+command -v patch >/dev/null 2>&1 || { echo >&2 "patch is not installed"; exit 1; }
+command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
+command -v /usr/bin/python >/dev/null 2>&1 || { echo >&2 "msys2 python is not installed"; exit 1; }
+
+mv /usr/bin/python /usr/bin/python-hidden
+command -v python >/dev/null 2>&1
+NATIVE_PYTHON_FOUND=$?
+mv /usr/bin/python-hidden /usr/bin/python
+if [ ! $NATIVE_PYTHON_FOUND ]; then
+  echo >&2 "native python is not installed";
+  exit 1;
+fi
+
+if [ "$(which link)" == "/usr/bin/link" ]; then
+  echo "/usr/bin/link overrides Visual Studio's link.exe. Please rename /usr/bin/link."
+  exit 1
+fi
+
+if [ "$(which patch)" != "/usr/bin/patch" ]; then
+  echo "Wrong patch executable detected. Remove Strawberry Perl from PATH."
+  exit 1
+fi
+
+PERL=$(echo $(cygpath $(echo $PERL_SEARCH | sed -E 's/\(Default\) REG_SZ (\S+perl.exe) \"%1\" %\*/\1/')))
+CMAKE="$(echo $(cygpath $(echo $CMAKE_SEARCH | sed -E 's/InstallDir REG_SZ (\S+)/\1/'))bin/cmake.exe)"
+INSTALL_PATH=$PWD/win32/$BUILD/$BUILD_TYPE
+CURRENT_DIR=$PWD
+PLATFORM_TOOLSET=142
+CMAKE_PREFIX_PATH=$INSTALL_PATH
+CMAKE_GENERATOR="Visual Studio 16 2019"
+MESON_GENERATOR=vs2019
+CMAKE_ARCH=$BUILD
+CMAKE_TOOLSET="v$PLATFORM_TOOLSET"
+NATIVE_PATH=$(cygpath -w -m $INSTALL_PATH)
+CONCURRENCY=4
+
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export PATH=$INSTALL_PATH/bin:$PATH
+
+mkdir -p $INSTALL_PATH/include
+mkdir -p $INSTALL_PATH/lib/pkgconfig
+
+unpack() {
+  if [[ ! -d $1 ]]; then
+    tar xf $1.$2
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't extract $1.$2"
+      exit 1
+    fi
+    cd $1
+  else
+    cd $1
+  fi
+}
+
+fetch() {
+  EXT=${2##*.}
+  if [[ ! -f $2 ]]; then
+    DEST=$(mktemp /tmp/build-win32.XXXXXX)
+    wget $1 -O $DEST
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't fetch $1"
+      exit 1
+    else
+      mv $DEST $2
+    fi
+  fi
+  unpack $(basename $2 .tar.$EXT) tar.$EXT
+}
+
+run_cmake() {
+  mkdir -p build && cd build
+  "$CMAKE" .. -G "$CMAKE_GENERATOR" -A "$CMAKE_ARCH" -T "$CMAKE_TOOLSET" \
+    -DCMAKE_PREFIX_PATH=$INSTALL_PATH \
+    -DBUILD_SHARED_LIBS=0 \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+    $@
+}
+
+fetch_url() {
+  fetch $1 ${1##*/}
+}
+
+fetch_github() {
+  TARBALL=${1##*/}
+  REPO_URL=${1%%/archive/*}
+  REPO_NAME=${REPO_URL##*/}
+  NAME=${TARBALL##v}
+  fetch $1 $REPO_NAME-$NAME
+}
+
+meson() {
+  mv /usr/bin/python /usr/bin/python-hidden
+  python $(dirname $(which python))/Scripts/meson.exe $@
+  mv /usr/bin/python-hidden /usr/bin/python
+}
+
+run_make() {
+  make -j $CONCURRENCY && make install
+}
+
+fetch_jsoncpp() {
+  fetch_github https://github.com/open-source-parsers/jsoncpp/archive/$1.tar.gz
+}
+
+fetch_zlib() {
+  fetch_url https://www.zlib.net/zlib-$1.tar.gz
+}
+
+install_zlib() {
+  run_cmake
+  if [ $BUILD_TYPE == "Release" ]; then
+    ZLIB_LIBRARY="zlibstatic"
+  elif [ $BUILD_TYPE == "Debug" ]; then
+    ZLIB_LIBRARY="zlibstaticd"
+  fi
+  cat > $INSTALL_PATH/lib/pkgconfig/zlib.pc << EOF
+prefix=${NATIVE_PATH//\\/\\\\}
+exec_prefix=\${prefix}
+libdir=\${prefix}\\\\lib
+includedir=\${prefix}\\\\include
+
+Name: zlib
+Description: zlib
+Version: $1
+Libs: -L\${libdir} -l$ZLIB_LIBRARY
+Cflags: -I\${includedir}
+EOF
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h &&
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp zlibstatic.dir/$BUILD_TYPE/zlibstatic.pdb $INSTALL_PATH/lib
+    fi
+}
+
+fetch_libxml2() {
+  fetch ftp://xmlsoft.org/libxml2/libxml2-sources-$1.tar.gz libxml2-$1.tar.gz
+}
+
+install_libxml2() {
+  cd win32
+  cscript configure.js compiler=msvc cruntime=-$RUNTIME prefix=$INSTALL_PATH iconv=no static=yes catalog=no modules=no http=no &&
+    nmake -f Makefile.msvc libxmla &&
+    cd .. &&
+    mkdir -p $INSTALL_PATH/include/libxml2 &&
+    cp -r include/libxml $INSTALL_PATH/include/libxml2 &&
+    cp -r win32/bin.msvc/libxml2_a.lib $INSTALL_PATH/lib
+  cat > $INSTALL_PATH/lib/pkgconfig/libxml-2.0.pc << EOF
+prefix=${NATIVE_PATH//\\/\\\\}
+exec_prefix=\${prefix}
+libdir=\${prefix}\\\\lib
+includedir=\${prefix}\\\\include
+
+Name: libXML
+Description: libXML library version2.
+Version: $1
+Libs: -L\${libdir} -llibxml2_a
+Cflags: -I\${includedir} -I\${includedir}\\\\libxml2
+EOF
+}
+
+install_jsoncpp() {
+  run_cmake -DJSONCPP_WITH_TESTS=0 -DCMAKE_CXX_FLAGS="-sdl-"
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp src/lib_json/jsoncpp_lib_static.dir/$BUILD_TYPE/jsoncpp_lib_static.pdb $INSTALL_PATH/lib
+    fi
+}
+
+fetch_tinyxml2() {
+  fetch_github https://github.com/leethomason/tinyxml2/archive/$1.tar.gz
+}
+
+install_tinyxml2() {
+  run_cmake -DBUILD_STATIC_LIBS=1 -DCMAKE_CXX_FLAGS="-sdl-"
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp tinyxml2_static.dir/$BUILD_TYPE/tinyxml2_static.pdb $INSTALL_PATH/lib
+    fi
+}
+
+fetch_openssl() {
+  fetch_url https://www.openssl.org/source/openssl-$1.tar.gz
+}
+
+install_openssl() {
+  if [ $BUILD == "x64" ]; then
+    SSL_TYPE="VC-WIN64A";
+  fi
+  "$PERL" Configure --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl $SSL_TYPE \
+    no-shared no-tests no-ui-console no-async no-dso no-asm -DOPENSSL_NO_CAPIENG &&
+    nmake build_generated libssl.lib libcrypto.lib && (nmake install || echo 0)
+}
+
+fetch_cares() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
+}
+
+install_cares() {
+  cp ares_build.h.dist ares_build.h
+  INSTALL_DIR=$INSTALL_PATH nmake -f Makefile.msvc install || echo 0
+}
+
+fetch_nghttp2() {
+  fetch_url https://github.com/nghttp2/nghttp2/releases/download/v$1/nghttp2-$1.tar.gz
+}
+
+install_nghttp2() {
+  sed -i 's/SHARED/STATIC/g' lib/CMakeLists.txt
+  run_cmake -DENABLE_LIB_ONLY=1
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp lib/nghttp2.dir/$BUILD_TYPE/nghttp2.pdb $INSTALL_PATH/lib
+    fi
+}
+
+fetch_curl() {
+  fetch_url https://github.com/curl/curl/releases/download/curl-${1//./_}/curl-$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch lib/vtls/openssl.c < ../../patches/curl-openssl-no-ui.patch
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch curl"
+      exit 1
+    fi
+    touch .patched
+  fi
+}
+
+install_curl() {
+  run_cmake \
+    -DCMAKE_C_FLAGS="-DNGHTTP2_STATICLIB" \
+    -DBUILD_CURL_EXE=0 \
+    -DBUILD_TESTING=0 \
+    -DCURL_STATICLIB=1 \
+    -DCURL_WINDOWS_SSPI=0 \
+    -DCURL_ZLIB=0 \
+    -DCURL_DISABLE_TELNET=1 \
+    -DUSE_NGHTTP2=1 \
+    -DENABLE_ARES=0 \
+    -DCARES_LIBRARY=$INSTALL_PATH/lib/libcares.lib \
+    -DCMAKE_USE_OPENSSL=1 \
+    -DUSE_WIN32_LDAP=0
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+    if [ $BUILD_TYPE == "Debug" ]; then
+      cp lib/libcurl.dir/$BUILD_TYPE/libcurl.pdb $INSTALL_PATH/lib
+    fi
+}
+
+fetch_microhttpd() {
+  fetch_url https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch w32/VS2017/libmicrohttpd.vcxproj < ../../patches/microhttpd-enable-winrt.patch &&
+      patch src/microhttpd/connection.c < ../../patches/microhttpd-connection-winrt-fix.patch &&
+      sed -i "s|<AppContainerApplication>true</AppContainerApplication>||g" w32/VS2017/libmicrohttpd.vcxproj &&
+      sed -i s/v141/v$PLATFORM_TOOLSET/g w32/VS2017/libmicrohttpd.vcxproj &&
+      sed -i -E 's/<WholeProgramOptimization [^>]*>true<\/WholeProgramOptimization>/<WholeProgramOptimization>false<\/WholeProgramOptimization>/g' w32/VS2017/libmicrohttpd.vcxproj
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch microhttpd"
+      exit 1
+    fi
+    touch .patched
+  fi
+}
+
+install_microhttpd() {
+  msbuild.exe w32/VS2017/libmicrohttpd.vcxproj -p:Configuration=$BUILD_TYPE-static &&
+    cp w32/VS2017/Output/$BUILD/microhttpd.h $INSTALL_PATH/include/ &&
+    cp w32/VS2017/Output/$BUILD/libmicrohttpd* $INSTALL_PATH/lib
+}
+
+fetch_cryptopp() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/weidai11/cryptopp/archive/CRYPTOPP_$VERSION.tar.gz
+  if [ ! -f .patched ]; then
+    patch cryptlib.vcxproj < ../../patches/cryptlib-winrt-enable.patch &&
+      sed -i "s|<AppContainerApplication>true</AppContainerApplication>||g" cryptlib.vcxproj
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch cryptlib.vcxproj"
+      exit 1;
+    fi
+    touch .patched
+  fi
+}
+
+install_cryptopp() {
+  msbuild.exe cryptlib.vcxproj -p:Configuration=$BUILD_TYPE &&
+    mkdir -p $INSTALL_PATH/include/cryptopp &&
+    cp *.h $INSTALL_PATH/include/cryptopp &&
+    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib &&
+    cp $BUILD/cryptlib/$BUILD_TYPE/cryptlib.pdb $INSTALL_PATH/lib
+}
+
+fetch_sqlite() {
+  fetch_url https://www.sqlite.org/2018/sqlite-autoconf-$1.tar.gz
+}
+
+install_sqlite() {
+  cp sqlite3.h $INSTALL_PATH/include/ &&
+    cp sqlite3.c $INSTALL_PATH/lib/
+}
+
+fetch_megasdk() {
+  fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch examples/win32/libmega.vcxproj < ../../patches/mega-enabled-winrt.patch &&
+      sed -i s/v141/v$PLATFORM_TOOLSET/g examples/win32/libmega.vcxproj &&
+      sed -i "s|WINDOWS_PHONE;|USE_CURL;USE_CPPTHREAD;|g" examples/win32/libmega.vcxproj &&
+      sed -i "s|<AppContainerApplication>true</AppContainerApplication>||g" examples/win32/libmega.vcxproj
+    if [ $? -ne 0 ]; then
+      echo "Couldn't patch megasdk"
+      exit 1;
+    fi
+    touch .patched
+  fi
+}
+
+install_megasdk() {
+  UseEnv=true LIB="$LIB;$INSTALL_PATH/lib" INCLUDE="$INCLUDE;$(cygpath -w $INSTALL_PATH)\\include" \
+    msbuild.exe examples/win32/libmega.vcxproj -p:Configuration=$BUILD_TYPE &&
+    cp -r include/mega* $INSTALL_PATH/include &&
+    cp examples/win32/mega.pdb examples/win32/$BUILD/$BUILD_TYPE/mega.lib $INSTALL_PATH/lib
+}
+
+fetch_ffmpeg() {
+  fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
+}
+
+install_ffmpeg() {
+  FFMPEG_INCLUDE="$NATIVE_PATH\\include;$NATIVE_PATH\\include\\libxml2;$INCLUDE"
+  INCLUDE=$FFMPEG_INCLUDE ./configure \
+    --prefix=$INSTALL_PATH \
+    --toolchain=msvc \
+    --extra-ldflags="-libpath:$NATIVE_PATH/lib" \
+    --extra-libs="ws2_32.lib" \
+    --extra-cflags="-$RUNTIME -D_WIN32_WINNT=0x0A00 -DLIBXML_STATIC" \
+    --enable-cross-compile \
+    --enable-zlib \
+    --enable-libxml2 \
+    --target-os=win32 \
+    --enable-static \
+    --disable-shared \
+    --disable-avdevice \
+    --disable-programs &&
+  INCLUDE=$FFMPEG_INCLUDE run_make &&
+  mv $INSTALL_PATH/lib/libavutil.a $INSTALL_PATH/lib/avutil.lib && \
+  mv $INSTALL_PATH/lib/libavcodec.a $INSTALL_PATH/lib/avcodec.lib && \
+  mv $INSTALL_PATH/lib/libavfilter.a $INSTALL_PATH/lib/avfilter.lib && \
+  mv $INSTALL_PATH/lib/libavformat.a $INSTALL_PATH/lib/avformat.lib && \
+  mv $INSTALL_PATH/lib/libswresample.a $INSTALL_PATH/lib/swresample.lib && \
+  mv $INSTALL_PATH/lib/libswscale.a $INSTALL_PATH/lib/swscale.lib
+}
+
+fetch_freetype2() {
+  fetch_url https://download.savannah.gnu.org/releases/freetype/freetype-$1.tar.gz
+}
+
+install_freetype2() {
+  run_cmake \
+    -DCMAKE_DISABLE_FIND_PACKAGE_HarfBuzz=TRUE \
+    -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE \
+    -DCMAKE_DISABLE_FIND_PACKAGE_BZip2=TRUE \
+    -DCMAKE_DISABLE_FIND_PACKAGE_PNG=TRUE && \
+  cp ../include/freetype/config/ftconfig.h include/freetype/config &&
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_fribidi() {
+  fetch_url https://github.com/fribidi/fribidi/releases/download/v$1/fribidi-$1.tar.bz2
+}
+
+install_fribidi() {
+  if [ $BUILD_TYPE == "Release" ]; then
+    MESON_BUILD_TYPE="release"
+  elif [ $BUILD_TYPE == "Debug" ]; then
+    MESON_BUILD_TYPE="debug"
+  fi
+  mkdir build -p && cd build &&
+  meson ..  --prefix=$INSTALL_PATH --backend=$MESON_GENERATOR --buildtype=$MESON_BUILD_TYPE --default-library=static &&
+  if [ $BUILD_TYPE == "Release" ]; then
+    for i in $(find | grep -E "\.vcxproj$"); do echo $i; sed -i "s/MultiThreaded/MultiThreadedDLL/g" $i; done
+  fi
+  echo "#define FRIBIDI_STATIC" >> lib/fribidi-config.h
+  MSBuild.exe fribidi.sln -p:Configuration=$MESON_BUILD_TYPE -p:Platform=$CMAKE_ARCH -p:PlatformToolset=$CMAKE_TOOLSET &&
+    mkdir -p $INSTALL_PATH/include/fribidi &&
+    cp ../lib/*.h $INSTALL_PATH/include/fribidi &&
+    cp lib/fribidi-config.h $INSTALL_PATH/include/fribidi &&
+    cp lib/libfribidi.a $INSTALL_PATH/lib/libfribidi.lib
+}
+
+fetch_harfbuzz() {
+  fetch_url https://github.com/harfbuzz/harfbuzz/releases/download/$1/harfbuzz-$1.tar.bz2
+  if [ ! -f .patched ]; then
+    for i in $(find -type f | grep -E "\.((h)|(hh)|(c)|(cc))$"); do
+      sed -i "s/data_destroy_/wrapped_data_destroy_/g" $i &&
+      sed -i "s/hb_/wrapped_hb_/g" $i
+    done &&
+    touch .patched
+  fi
+}
+
+install_harfbuzz() {
+  run_cmake -DHB_HAVE_FREETYPE=1 -DHB_HAVE_DIRECTWRITE=1
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
+}
+
+fetch_ass() {
+  fetch_url https://github.com/libass/libass/releases/download/$1/libass-$1.tar.gz
+  if [ ! -f .patched ]; then
+    for i in $(find -type f | grep -E "\.((h)|(c))$"); do sed -i "s/hb_/wrapped_hb_/g" $i; done
+    touch .patched
+  fi
+}
+
+install_ass() {
+  mkdir -p build && cd build
+  cat > config.h << EOF
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
+
+#define CONFIG_DIRECTWRITE	1
+#define CONFIG_RASTERIZER	1
+#define CONFIG_HARFBUZZ 1
+#define CONFIG_ASM			0
+
+#ifdef _M_IX86
+#define __i386__
+#elif _M_AMD64
+#define __x86_64__
+#endif
+EOF
+  cat > dirent.h << 'EOF'
+#ifndef DIRENT_INCLUDED
+#define DIRENT_INCLUDED
+
+/*
+Declaration of POSIX directory browsing functions and types for Win32.
+Author:  Kevlin Henney (kevlin@acm.org, kevlin@curbralan.com)
+History: Created March 1997. Updated June 2003.
+Rights:  See end of file.
+*/
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	typedef struct DIR DIR;
+
+	struct dirent
+	{
+		char *d_name;
+	};
+
+	DIR           *opendir(const char *);
+	int           closedir(DIR *);
+	struct dirent *readdir(DIR *);
+	void          rewinddir(DIR *);
+
+	/*
+	Copyright Kevlin Henney, 1997, 2003. All rights reserved.
+	Permission to use, copy, modify, and distribute this software and its
+	documentation for any purpose is hereby granted without fee, provided
+	that this copyright and permissions notice appear in all copies and
+	derivatives.
+	This software is supplied "as is" without express or implied warranty.
+	But that said, if there are any problems please get in touch.
+	*/
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+EOF
+  cat > dirent.c << 'EOF'
+/*
+Implementation of POSIX directory browsing functions and types for Win32.
+Author:  Kevlin Henney (kevlin@acm.org, kevlin@curbralan.com)
+History: Created March 1997. Updated June 2003 and July 2012.
+Rights:  See end of file.
+*/
+
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
+
+#include <dirent.h>
+#include <errno.h>
+#include <io.h> /* _findfirst and _findnext set errno iff they return -1 */
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	typedef ptrdiff_t handle_type; /* C99's intptr_t not sufficiently portable */
+
+	struct DIR
+	{
+		handle_type         handle; /* -1 for failed rewind */
+		struct _finddata_t  info;
+		struct dirent       result; /* d_name null iff first time */
+		char                *name;  /* null-terminated char string */
+	};
+
+	DIR *opendir(const char *name)
+	{
+		DIR *dir = 0;
+
+		if (name && name[0])
+		{
+			size_t base_length = strlen(name);
+			const char *all = /* search pattern must end with suitable wildcard */
+				strchr("/\\", name[base_length - 1]) ? "*" : "/*";
+
+			if ((dir = (DIR *)malloc(sizeof *dir)) != 0 &&
+				(dir->name = (char *)malloc(base_length + strlen(all) + 1)) != 0)
+			{
+				strcat(strcpy(dir->name, name), all);
+
+				if ((dir->handle =
+					(handle_type)_findfirst(dir->name, &dir->info)) != -1)
+				{
+					dir->result.d_name = 0;
+				}
+				else /* rollback */
+				{
+					free(dir->name);
+					free(dir);
+					dir = 0;
+				}
+			}
+			else /* rollback */
+			{
+				free(dir);
+				dir = 0;
+				errno = ENOMEM;
+			}
+		}
+		else
+		{
+			errno = EINVAL;
+		}
+
+		return dir;
+	}
+
+	int closedir(DIR *dir)
+	{
+		int result = -1;
+
+		if (dir)
+		{
+			if (dir->handle != -1)
+			{
+				result = _findclose(dir->handle);
+			}
+
+			free(dir->name);
+			free(dir);
+		}
+
+		if (result == -1) /* map all errors to EBADF */
+		{
+			errno = EBADF;
+		}
+
+		return result;
+	}
+
+	struct dirent *readdir(DIR *dir)
+	{
+		struct dirent *result = 0;
+
+		if (dir && dir->handle != -1)
+		{
+			if (!dir->result.d_name || _findnext(dir->handle, &dir->info) != -1)
+			{
+				result = &dir->result;
+				result->d_name = dir->info.name;
+			}
+		}
+		else
+		{
+			errno = EBADF;
+		}
+
+		return result;
+	}
+
+	void rewinddir(DIR *dir)
+	{
+		if (dir && dir->handle != -1)
+		{
+			_findclose(dir->handle);
+			dir->handle = (handle_type)_findfirst(dir->name, &dir->info);
+			dir->result.d_name = 0;
+		}
+		else
+		{
+			errno = EBADF;
+		}
+	}
+
+#ifdef __cplusplus
+}
+#endif
+
+/*
+Copyright Kevlin Henney, 1997, 2003, 2012. All rights reserved.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose is hereby granted without fee, provided
+that this copyright and permissions notice appear in all copies and
+derivatives.
+This software is supplied "as is" without express or implied warranty.
+But that said, if there are any problems please get in touch.
+*/
+EOF
+  sed -i -E "s/const int max_subdiv = ([0-9]+);/#define max_subdiv \\1/g" ../libass/ass_outline.c
+  sed -i -E "s/const int n_outlines = ([0-9]+);/#define n_outlines \\1/g" ../libass/ass_render.c
+  cl -I $PWD -I $INSTALL_PATH/include/freetype2 -I $INSTALL_PATH/include/harfbuzz -I $INSTALL_PATH/include/fribidi -c \
+    -$RUNTIME \
+    dirent.c \
+    ../libass/ass.c \
+    ../libass/ass_bitmap.c \
+    ../libass/ass_blur.c \
+    ../libass/ass_cache.c \
+    ../libass/ass_directwrite.c \
+    ../libass/ass_drawing.c \
+    ../libass/ass_font.c \
+    ../libass/ass_fontselect.c \
+    ../libass/ass_library.c \
+    ../libass/ass_outline.c \
+    ../libass/ass_parse.c \
+    ../libass/ass_rasterizer.c \
+    ../libass/ass_rasterizer_c.c \
+    ../libass/ass_render.c \
+    ../libass/ass_render_api.c \
+    ../libass/ass_shaper.c \
+    ../libass/ass_string.c \
+    ../libass/ass_strtod.c \
+    ../libass/ass_utils.c &&
+  lib -out:$INSTALL_PATH/lib/ass.lib *.obj &&
+  mkdir -p $INSTALL_PATH/include/ass &&
+  cp ../libass/ass.h ../libass/ass_types.h $INSTALL_PATH/include/ass &&
+  cat > $INSTALL_PATH/lib/pkgconfig/libass.pc << EOF
+prefix=${NATIVE_PATH//\\/\\\\}
+exec_prefix=\${prefix}
+libdir=\${prefix}\\\\lib
+includedir=\${prefix}\\\\include
+
+Name: libass
+Description: libass
+Version: $1
+Libs: -L\${libdir} -lass
+Cflags: -I\${includedir}
+EOF
+}
+
+fetch_mpv() {
+  fetch_github https://github.com/mpv-player/mpv/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch -p1 -i ../../patches/mpv-enable-clang-win32-build.patch
+    touch .patched
+  fi
+}
+
+install_mpv() {
+  if [ $BUILD_TYPE == "Debug" ]; then
+    EXTRA_CFLAGS="-g"
+    EXTRA_LIBS="-lzlibstaticd -lfreetyped"
+    MSCRT="-lmsvcrtd"
+  elif [ $BUILD_TYPE == "Release" ]; then
+    EXTRA_CFLAGS="-O2"
+    EXTRA_LIBS="-lzlibstatic -lfreetype"
+    MSCRT="-lmsvcrt"
+  fi
+
+  mkdir -p pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libavcodec.pc pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libavfilter.pc pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libavutil.pc pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libswresample.pc pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libswscale.pc pkg-config &&
+    cp $INSTALL_PATH/lib/pkgconfig/libavformat.pc pkg-config &&
+    sed -E "s/(zlibstatic(d)?\.lib)|(ole32\.lib)|(user32\.lib)|(\-libpath\:\S*)//g" -i pkg-config/libavcodec.pc
+    sed -E "s/(zlibstatic(d)?\.lib)|(secur32\.lib)|(ws2_32\.lib)|(libxml2_a\.lib)|(\-libpath\:\S*)//g" -i pkg-config/libavformat.pc
+    sed -E "s/(user32\.lib)|(bcrypt\.lib)//g" -i pkg-config/libavutil.pc &&
+    cp $INSTALL_PATH/lib/pkgconfig/libass.pc pkg-config
+
+  /usr/bin/python ./bootstrap.py
+  PKG_CONFIG_LIBDIR="$PWD/pkg-config" \
+  CFLAGS="$EXTRA_CFLAGS -Wno-everything -DCINTERFACE -DFILE_FS_DEVICE_INFORMATION=FILE_NOTIFY_INFORMATION -DWIN32_LEAN_AND_MEAN -Dclose=_close -Dstrncasecmp=_strnicmp -Dstrcasecmp=_stricmp -DWINBOOL=BOOL -DUNICODE -DCOBJMACROS -DSTDIN_FILENO=0 -DSTDOUT_FILENO=1 -DSTDERR_FILENO=2 -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D__MINGW32__ -D__MINGW64_VERSION_MAJOR -DM_PI=3.14 -DM_SQRT2=1.41 -DM_LN10=2.30 -I $NATIVE_PATH/include" \
+  LDFLAGS="-L $NATIVE_PATH/lib $EXTRA_LIBS -lharfbuzz -llibfribidi -llibxml2_a -lws2_32 -ldxgi -ld3d11 -lbcrypt -lsecur32 -luser32 -ladvapi32 -lshell32 -ldwrite $MSCRT" \
+    /usr/bin/python waf configure \
+      --disable-iconv \
+      --check-c-compiler=clang \
+      DEST_OS=win32 \
+      CC=clang \
+      --enable-libmpv-static \
+      --prefix $INSTALL_PATH && \
+    ./waf install &&
+    mv $INSTALL_PATH/lib/libmpv.a $INSTALL_PATH/lib/mpv.lib
+}
+
+fetch_qt() {
+  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
+}
+
+install_qt() {
+  QT_DIR=$PWD
+  mkdir -p /c/tmp/qt-win32-build && cd /c/tmp/qt-win32-build &&
+  $QT_DIR/configure.bat -platform win32-clang-msvc -opensource -confirm-license -skip qtmultimedia -skip qt3d -skip qtwebview -nomake tests -nomake examples -debug-and-release -static -prefix $INSTALL_PATH &&
+  nmake && nmake install
+}
+
+fetch_ecm() {
+  fetch_github https://github.com/KDE/extra-cmake-modules/archive/v$1.tar.gz
+}
+
+install_ecm() {
+  mkdir -p build
+  cd build
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET &&
+  "$CMAKE" --install .
+}
+
+fetch_kirigami() {
+  fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch -p0 -i ../../patches/kirigami_qrc_in_fix.patch &&
+      rm kirigami.qrc &&
+      touch .patched
+  fi
+}
+
+install_kirigami() {
+  mkdir -p build
+  cd build
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -G "$CMAKE_GENERATOR" -A $CMAKE_ARCH -T $CMAKE_TOOLSET \
+    -DQt5_DIR=$INSTALL_PATH/../Release/lib/cmake/Qt5 \
+    -DQt5LinguistTools_DIR=$INSTALL_PATH/../Release/lib/cmake/Qt5LinguistTools &&
+  msbuild.exe ALL_BUILD.vcxproj -p:Configuration=$BUILD_TYPE &&
+  "$CMAKE" .. -DSTATIC_LIBRARY=1 &&
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
+  cp ../src/kirigamiplugin.h $INSTALL_PATH/include
+}
+
+fetch_boost() {
+  fetch_url https://dl.bintray.com/boostorg/release/$1/source/boost_${1//./_}.tar.gz
+}
+
+install_boost() {
+  if [ $BUILD == "x64" ]; then
+    ARCH_OPTS="address-model=64 architecture=ia64"
+  elif [ $BUILD == "x86" ]; then
+    ARCH_OPTS="address-model=32 architecture=x86"
+  fi
+
+  ./bootstrap.bat --with-toolset=msvc &&
+  cd libs/filesystem/build &&
+
+  ../../../b2 install \
+    --prefix=$INSTALL_PATH \
+    --abbreviate-paths \
+    link=static \
+    runtime-link=shared \
+    target-os=windows \
+    ${ARCH_OPTS} \
+    variant="debug,release"
+}
+
+install_run() {
+  BASE_DIRECTORY=$PWD
+  fetch_$1 $2
+  if [[ ! -f .done ]]; then
+    BUILD_DIRECTORY=$PWD
+    install_$1 $2
+    if [[ $? -eq 0 ]]; then
+      cd $BUILD_DIRECTORY
+      touch .done
+    else
+      echo "Failed to build $1"
+      exit 1
+    fi
+  fi
+  cd $BASE_DIRECTORY
+}
+
+fetch_dokany() {
+  fetch_github  https://github.com/dokan-dev/dokany/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    sed -i "s/DynamicLibrary/StaticLibrary/g" dokan_fuse/dokan_fuse.vcxproj dokan/dokan.vcxproj &&
+    sed -i -E "s/<TargetExt.*>$//g " dokan_fuse/dokan_fuse.vcxproj dokan/dokan.vcxproj &&
+    sed -i "s|<WholeProgramOptimization>true</WholeProgramOptimization>||g" dokan_fuse/dokan_fuse.vcxproj dokan/dokan.vcxproj &&
+    sed -i -E "s/DllMain/DllMainDokanFuse/g" dokan_fuse/src/dokanfuse.cpp &&
+    sed -i -E "s/DllMain/DllMainDokan/g" dokan/dokan.c &&
+    touch .patched
+  fi
+}
+
+install_dokany() {
+  msbuild.exe dokan_fuse/dokan_fuse.vcxproj -p:Configuration=$BUILD_TYPE -p:Platform=$BUILD &&
+  msbuild.exe dokan/dokan.vcxproj -p:Configuration=$BUILD_TYPE -p:Platform=$BUILD &&
+  cp dokan_fuse/$BUILD/$BUILD_TYPE/dokanfuse2.lib dokan/$BUILD/$BUILD_TYPE/dokan2.lib $INSTALL_PATH/lib &&
+  mkdir -p $INSTALL_PATH/include/dokan_fuse $INSTALL_PATH/include/dokan &&
+  cp -r dokan_fuse/include/* $INSTALL_PATH/include/dokan_fuse &&
+  cp sys/public.h $INSTALL_PATH/include/dokan &&
+  cp dokan/*.h $INSTALL_PATH/include/dokan
+}
+
+fetch_winfsp() {
+  fetch_github https://github.com/billziss-gh/winfsp/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    sed -i "s/DynamicLibrary/StaticLibrary/g" build/VStudio/winfsp_dll.vcxproj &&
+    sed -i "s/MultiThreaded/MultiThreadedDLL/g" build/VStudio/winfsp_dll.vcxproj &&
+    sed -i "s|<WholeProgramOptimization>true</WholeProgramOptimization>||g" build/VStudio/winfsp_dll.vcxproj &&
+    sed -i 's|<TargetName>$(SolutionName)-$(PlatformTarget)</TargetName>|<TargetName>winfsp</TargetName>|g' build/VStudio/winfsp_dll.vcxproj
+    touch .patched
+  fi
+}
+
+install_winfsp() {
+  msbuild.exe build/VStudio/winfsp_dll.vcxproj -p:Configuration=$BUILD_TYPE -p:Platform=$BUILD &&
+  cp build/VStudio/build/$BUILD_TYPE/winfsp.lib $INSTALL_PATH/lib &&
+  cp -r inc/winfsp $INSTALL_PATH/include && cp -r inc/fuse $INSTALL_PATH/include/winfsp &&
+  sed -i -E "s/#define FSP_API .*$/#define FSP_API/g" $INSTALL_PATH/include/winfsp/winfsp.h &&
+  sed -i -E "s/#define FSP_FUSE_API .*$/#define FSP_FUSE_API/g" $INSTALL_PATH/include/winfsp/fuse/winfsp_fuse.h
+}
+
+install() {
+  uppercase=`echo $1 | awk '{print toupper($0)}'`
+  name=${uppercase}_INSTALL
+  if [[ $INSTALL_LISTED -eq 1 ]]; then
+    if [[ ${!name} -eq 1 ]]; then
+      install_run $1 $2
+    fi
+  else
+    if [[ "x${!name}" != "x0" ]]; then
+      install_run $1 $2
+    fi
+  fi
+}
+
+INSTALL_LISTED=0
+
+for i in $@; do
+  if [[ "$i" == *without-* ]]; then
+    component=${i##"--without-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    declare "${uppercase_component}_INSTALL"="0"
+  fi
+
+  if [[ "$i" == *with-* ]]; then
+    component=${i##"--with-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    INSTALL_LISTED=1
+    declare "${uppercase_component}_INSTALL"="1"
+  fi
+done
+
+mkdir tarballs-win32-$BUILD-$BUILD_TYPE -p
+cd tarballs-win32-$BUILD-$BUILD_TYPE
+
+install "zlib" 1.2.11
+install "libxml2" 2.9.9
+install "openssl" 1.1.1b
+install "jsoncpp" 1.8.3
+install "tinyxml2" 6.0.0
+install "cares" 1.15.0
+install "nghttp2" 1.28.0
+install "curl" 7.57.0
+install "microhttpd" 0.9.58
+install "cryptopp" 8.1.0
+install "sqlite" 3240000
+install "megasdk" 3.4.7
+install "ffmpeg" 4.1.3
+install "freetype2" 2.9.1
+install "fribidi" 1.0.5
+install "harfbuzz" 1.9.0
+install "ass" 0.14.0
+install "mpv" 0.32.0
+if [ $BUILD_TYPE == "Release" ]; then
+  install "qt" 5.15.0
+fi
+install "ecm" 5.70.0
+install "kirigami" 5.66.0
+if [ $BUILD_TYPE == "Release" ]; then
+  install "boost" 1.73.0
+fi
+install "dokany" 2.0.0-BETA2
+install "winfsp" 1.6

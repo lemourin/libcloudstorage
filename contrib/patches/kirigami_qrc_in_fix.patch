@@ -1,0 +1,10 @@
+--- kirigami.qrc.in.orig	2020-06-03 23:09:29.124460300 +0200
++++ kirigami.qrc.in	2020-06-03 23:11:43.215039900 +0200
+@@ -1,5 +1,7 @@
+ <RCC>
+     <qresource prefix="/org/kde/kirigami/">
++        <file alias="ItemViewHeader.qml">@kirigami_QML_DIR@/src/controls/ItemViewHeader.qml</file>
++        <file alias="AbstractItemViewHeader.qml">@kirigami_QML_DIR@/src/controls/AbstractItemViewHeader.qml</file>
+         <file alias="AbstractApplicationWindow.qml">@kirigami_QML_DIR@/src/controls/AbstractApplicationWindow.qml</file>
+         <file alias="ContextDrawer.qml">@kirigami_QML_DIR@/src/controls/ContextDrawer.qml</file>
+         <file alias="Action.qml">@kirigami_QML_DIR@/src/controls/Action.qml</file>
