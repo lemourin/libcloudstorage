@@ -1,0 +1,48 @@
+diff --git a/audio/out/ao_wasapi_utils.c b/audio/out/ao_wasapi_utils.c
+index 3e8b10ac79..1a25a72978 100644
+--- a/audio/out/ao_wasapi_utils.c
++++ b/audio/out/ao_wasapi_utils.c
+@@ -76,6 +76,10 @@ DEFINE_GUID(IID_IMMDeviceEnumerator, 0xa95664d2, 0x9614, 0x4f35, 0xa7, 0x46, 0xd
+ DEFINE_GUID(IID_IMMNotificationClient, 0x7991eec9, 0x7e89, 0x4d85, 0x83, 0x90, 0x6c, 0x70, 0x3c, 0xec, 0x60, 0xc0);
+ DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xbcde0395, 0xe52f, 0x467c, 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e);
+ 
++#ifdef HAVE_UWP
++HRESULT wuCreateDefaultAudioRenderer(IUnknown **res);
++#endif
++
+ struct wasapi_sample_fmt {
+     int mp_format;  // AF_FORMAT_*
+     int bits;       // aka wBitsPerSample
+@@ -936,21 +940,9 @@ retry:
+             return false;
+         }
+     } else {
++#ifdef HAVE_UWP
+         MP_VERBOSE(ao, "Trying UWP wrapper.\n");
+ 
+-        HRESULT (*wuCreateDefaultAudioRenderer)(IUnknown **res) = NULL;
+-        HANDLE lib = LoadLibraryW(L"wasapiuwp2.dll");
+-        if (!lib) {
+-            MP_ERR(ao, "Wrapper not found: %d\n", (int)GetLastError());
+-            return false;
+-        }
+-
+-        wuCreateDefaultAudioRenderer =
+-            (void*)GetProcAddress(lib, "wuCreateDefaultAudioRenderer");
+-        if (!wuCreateDefaultAudioRenderer) {
+-            MP_ERR(ao, "Function not found.\n");
+-            return false;
+-        }
+         IUnknown *res = NULL;
+         hr = wuCreateDefaultAudioRenderer(&res);
+         MP_VERBOSE(ao, "Device: %s %p\n", mp_HRESULT_to_str(hr), res);
+@@ -967,6 +959,9 @@ retry:
+                      mp_HRESULT_to_str(hr));
+             return false;
+         }
++#else
++        return false
++#endif
+     }
+ 
+     // In the event of an align hack, we've already done this.
