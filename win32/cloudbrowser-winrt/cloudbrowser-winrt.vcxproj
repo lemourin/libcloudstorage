@@ -52,7 +52,7 @@
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
-    <PackageCertificateThumbprint>343C01DE926CDD93B8BF240A46208DB947C95CE9</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>42faddd85c8e52ef19e6bbd29663c824d395f462</PackageCertificateThumbprint>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
