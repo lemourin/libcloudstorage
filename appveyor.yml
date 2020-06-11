@@ -2,31 +2,32 @@ image: Visual Studio 2019
 
 install:
   - git submodule update --init --recursive
-  - appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-msvc-2017.7z
-  - 7z x x86_64-msvc-2017.7z
+  - cd contrib
+  - appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.9/win32-x64-vs2019.7z
+  - 7z x win32-x64-vs2019.7z
+  - cd ..
 
 platform: x64
 configuration: Release
 
 build:
-  project: win32\cloudstorage.sln
+  project: build\cloudstorage.sln
 
 before_build:
-  - cd win32
-  - nuget restore
+  - mkdir build
+  - cd build
+  - set PREFIX_PATH_DEBUG=%cd%\..\contrib\win32\x64\Debug
+  - set PREFIX_PATH_RELEASE=%cd%\..\contrib\win32\x64\Release
+  - cmake .. -DPREFIX_PATH_DEBUG="%PREFIX_PATH_DEBUG%" -DPREFIX_PATH_RELEASE="%PREFIX_PATH_RELEASE%"
+      -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
+      -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
   - cd ..
 
-after_build:
-  - mkdir win32\x64\%CONFIGURATION%\package
-  - mkdir win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
-  - xcopy /s /e /y dependencies\win32\bin win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
-  - del win32\x64\%CONFIGURATION%\package\cloudbrowser-win32\moc.exe
-  - del win32\x64\%CONFIGURATION%\package\cloudbrowser-win32\rcc.exe
-  - copy win32\x64\%CONFIGURATION%\*.exe win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
-  - copy win32\x64\%CONFIGURATION%\*.dll win32\x64\%CONFIGURATION%\package\cloudbrowser-win32
+test_script:
+  - msbuild build/RUN_TESTS.vcxproj
 
 artifacts:
-  - path: win32\x64\$(configuration)\package
+  - path: build\bin\cloudbrowser\$(configuration)\cloudbrowser.exe
     name: cloudbrowser-win32
 
 deploy:
