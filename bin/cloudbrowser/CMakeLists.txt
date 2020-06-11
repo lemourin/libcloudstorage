@@ -94,14 +94,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
     endif()
     target_link_libraries(cloudbrowser PRIVATE Qt5::CorePrivate)
     set(ASSET_FILES
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/Assets/logo_44x44.png
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/Assets/logo_150x150.png
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/Assets/logo_620x300.png
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/Assets/logo_store.png
+        winrt/Assets/logo_44x44.png
+        winrt/Assets/logo_150x150.png
+        winrt/Assets/logo_620x300.png
+        winrt/Assets/logo_store.png
     )
     set(RESOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/Package.appxmanifest
-        ${CMAKE_SOURCE_DIR}/win32/cloudbrowser-winrt/cloudbrowser-winrt_TemporaryKey.pfx
+        winrt/Package.appxmanifest
+        winrt/cloudbrowser-winrt_TemporaryKey.pfx
     )
     set_property(SOURCE ${RESOURCE_FILES} PROPERTY VS_DEPLOYMENT_CONTENT 1)
     set_property(SOURCE ${ASSET_FILES} ${RESOURCE_FILES} PROPERTY VS_DEPLOYMENT_CONTENT 1)
