@@ -4,10 +4,10 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/14018/badge.svg)](https://scan.coverity.com/projects/lemourin-libcloudstorage)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/927fdff765294da3964e92194193d2b4)](https://www.codacy.com/app/lemourin/libcloudstorage?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lemourin/libcloudstorage&amp;utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/badge/chat-discord-brightgreen.svg)](https://discord.gg/BJajAKZ)
-[![License: LGPL v2.1](https://img.shields.io/badge/license-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
+[![License: LGPLv2.1](https://img.shields.io/badge/license-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 
-A `C++`  library providing access to  files located in various  cloud services  
-licensed under `GNU LGPLv2.1`. It is  focused on the basic operations on those  
+A `C++` library providing access to files located in various cloud services
+licensed under `GNU LGPLv2.1`. It is focused on the basic operations on those
 services.
 
 Supported cloud providers:
@@ -54,60 +54,53 @@ Building:
 
 The generic way to build and install it is:
 
-* `cmake`
-* `make`
-* `sudo make install`
+* `mkdir build && cd build && cmake .. && make && sudo make install`
 
 Optional dependency notes:
 
 * `libcryptopp`:
 
-  when  not  found,  `ICrypto`  interface  needs to  be  implemented,  can  be  
-  explicitly disabled with `--with-cryptopp=no`
+  when not found, `ICrypto` interface needs to be implemented
 
 * `libcurl`
 
-  when not found, `IHttp` interface needs to be implemented, can be explicitly  
-  disabled with `--with-curl=no`
+  when not found, `IHttp` interface needs to be implemented
 
 * `libmicrohttpd`
 
-  when  not found,  `IHttpServer` interface  needs to  be implemented,  can be  
-  explicitly disabled with `--with-microhttpd=no`
+  when not found, `IHttpServer` interface needs to be implemented
 
 * `boost-filesystem`
 
-  when  found,  `LocalDrive` provider  representing  local  directory will  be  
-  included, can be explicitly disabled with `--with-filesystem=no`
+  when found, `LocalDrive` provider representing local directory will be
+  included
 
 * `mega`
 
-  when  not  found,  `mega`  cloud  provider will  not  be  included,  can  be  
-  explicitly disabled with `--with-mega=no`
+  when not found, `mega` cloud provider will not be included
 
 FUSE:
 =====
 
-In `bin/fuse`  there is  implemented a  user space  file  system  using `fuse`  
-(https://github.com/libfuse/libfuse) library. It will be  build when `fuse` is  
-found  (unless explicitly  disabled  with `--with-fuse=no`).  The file  system  
-is  implemented  using `libfuse`'s  low  level  api;  however high  level  api  
-implementation is  also provided. The  file system supports  moving, renaming,  
-creating  directories, reading  and writing  new files.  Writing over  already  
-present  files in  cloud  provider  is not  supported.  The  file system  uses  
-asynchronous  I/O to  its full  potency. It  doesn't cache  files anywhere  by  
-itself which implies no local storage  overhead. Most cloud providers are fast  
-enough when it comes to watching  videos; with `mega.nz` being the fastest and  
+In `bin/fuse` there is implemented a user space file system using `fuse`
+(https://github.com/libfuse/libfuse) library. It will be build when `fuse` is
+found. The file system is implemented using `libfuse`'s low level api; however
+high level api implementation is also provided. The file system supports
+moving, renaming, creating directories, reading and writing new files. Writing
+over already present files in cloud provider is not supported. The file system
+uses asynchronous I/O to its full potency. It doesn't cache files anywhere by
+itself which implies no local storage overhead. Most cloud providers are fast
+enough when it comes to watching videos; with `mega.nz` being the fastest and
 `Google Drive` being the slowest.
 
 ## Windows:
 
-It is possible  to run `cloudstorage-fuse` under  `Windows` using `Dokan`  
+It is possible to run `cloudstorage-fuse` under `Windows` using `Dokan`
 (https://github.com/dokan-dev/dokany).
 
 ## Usage:
 
-To add cloud providers to file system, first the cloud providers need to be  
+To add cloud providers to file system, first the cloud providers need to be
 added. This can be done by calling:
 
 `cloudstorage-fuse --add=provider_label`
@@ -119,10 +112,9 @@ After cloud providers are added, the file system can be mount using:
 Cloud Browser:
 ==============
 
-In `bin/cloudbrowser`  there is  a program which  provides easy  graphics user  
-interface for  all the features  implemented in `libcloudstorage`. It  will be  
-built  when  its  dependencies  are found,  unless  explicitly  disabled  with  
-`--with-cloudbrowser=no`.
+In `bin/cloudbrowser` there is a program which provides easy graphics user
+interface for all the features implemented in `libcloudstorage`. It will be
+built when its dependencies are found.
 
 Cloud Browser dependencies:
 
@@ -136,12 +128,12 @@ Cloud Browser dependencies:
 
 * `ffmpeg`
 
-  when  found,  Cloud  Browser  will generate  fallback  thumbnails  if  cloud  
-  provider doesn't provide any
+  when found, Cloud Browser will generate fallback thumbnails if cloud provider
+  doesn't provide any
 
 * `vlc-qt` (https://github.com/vlc-qt/vlc-qt)
 
-  when  found, Cloud  Browser  will  use  vlc-based  media  player instead  of  
+  when found, Cloud Browser will use vlc-based media player instead of
   QtMultimedia-based one
 
 * `mpv`
@@ -150,9 +142,9 @@ Cloud Browser dependencies:
 
 Screenshot:
 
-  <a href="https://imgur.com/a/bF4CIS1">
-    <img src="https://i.imgur.com/oZ6kYHN.png" width="640" />
-  </a>
+<a href="https://imgur.com/a/bF4CIS1">
+  <img src="https://i.imgur.com/oZ6kYHN.png" width="640" />
+</a>
 
 
 Apps that use libcloudstorage:
