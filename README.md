@@ -54,8 +54,7 @@ Building:
 
 The generic way to build and install it is:
 
-* `./bootstrap`
-* `./configure`
+* `cmake`
 * `make`
 * `sudo make install`
 
