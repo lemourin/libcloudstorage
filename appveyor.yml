@@ -34,6 +34,6 @@ deploy:
   provider: GitHub
   artifact: cloudbrowser-win32
   auth_token:
-    secure: GX3Ea/dVTl4V5//OacxzlTwd97bpNwtjZ28pLDkp1fdf5IDDvuwC/bZS02j313yi
+    secure: kSr0k5pxggXRrdpJ+zcVKsQtMLSBOKVA0609omsG+DL9U4/35vuC5ntlA0yqFSfm
   on:
     appveyor_repo_tag: true
