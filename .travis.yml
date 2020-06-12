@@ -19,7 +19,7 @@ addons:
       name: lemourin/libcloudstorage
       description: Build submitted via Travis CI
     notification_email: pawel.wegner95@gmail.com
-    build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template && mkdir build-coverity && cd build-coverity && PKG_CONFIG_PATH=$PWD/contrib/x86_64-linux-gnu/lib/pkgconfig ../configure CXX=g++-7 CC=gcc-7
+    build_command_prepend: cov-configure --comptype gcc --compiler gcc-7 --template && mkdir build-coverity && cd build-coverity && CXX=g++-7 CC=gcc-7 cmake .. -DCMAKE_PREFIX_PATH=$PWD/../contrib/x86_64-linux-gnu
     build_command: make -j 4
     branch_pattern: coverity
 
@@ -37,18 +37,20 @@ before_install:
 - wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.5-rc1/x86_64-linux-gnu.tar.gz
 - tar xf x86_64-linux-gnu.tar.gz
 - ./change-prefix.sh
+- wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
+- chmod +x cmake-3.17.3-Linux-x86_64.sh
+- ./cmake-3.17.3-Linux-x86_64.sh --skip-license --prefix=$PWD/x86_64-linux-gnu
+- export PATH="$PWD/x86_64-linux-gnu/bin:$PATH"
 - cd ..
-- ./bootstrap
 
 script:
 - mkdir build
 - cd build
 - export PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig
-- ../configure --with-examples CXXFLAGS="-Wall -Wextra -Werror -g -O0 -fsanitize=address"
-  LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7
+- CXXFLAGS="-Wall -Wextra -Werror -g -O0 -fsanitize=address"
+  LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-7 CXX=g++-7 cmake .. -DCMAKE_PREFIX_PATH=$PWD/../contrib/x86_64-linux-gnu
 - LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make -j 4
-- LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make check CXXFLAGS=-Wno-sign-compare -j 4
-- cat test/test-suite.log
+- LD_LIBRARY_PATH=$PWD/../contrib/x86_64-linux-gnu/lib make test CXXFLAGS=-Wno-sign-compare -j 4
 - cd ..
 - clang-tidy-7 $(find src bin test examples -name "*.cpp") --
   -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
