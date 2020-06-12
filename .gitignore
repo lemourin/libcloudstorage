@@ -34,5 +34,10 @@ build*
 libcloudstorage*
 .clang_complete
 .vscode
+.vs
 *.pro.user
-contrib/tarballs
+contrib/tarballs*
+contrib/win32
+contrib/winrt
+contrib/*.7z
+CMakeSettings.json
