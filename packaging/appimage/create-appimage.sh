@@ -50,12 +50,10 @@ cd ..
 mkdir build -p
 cd build
 
-libcryptopp_CFLAGS="-I${CONTRIB_DIR}/include" libcryptopp_LIBS=-lcryptopp \
-PKG_CONFIG_LIBDIR=$CONTRIB_DIR/lib/pkgconfig \
-  ../../../configure \
-  --prefix=$PWD/../cloudbrowser-appimage/usr \
-  CXXFLAGS="-I${CONTRIB_DIR}/include $CXXFLAGS" \
-  LDFLAGS="-L${CONTRIB_DIR}/lib $LDFLAGS"
+CXXFLAGS="-I${CONTRIB_DIR}/include $CXXFLAGS" \
+LDFLAGS="-L${CONTRIB_DIR}/lib $LDFLAGS" cmake ../../../ \
+  -DCMAKE_PREFIX_PATH=$CONTRIB_DIR \
+  -DCMAKE_INSTALL_PREFIX=$PWD/../cloudbrowser-appimage/usr
 
 LD_LIBRARY_PATH=$CONTRIB_DIR/lib/ make -j 4 install
 
