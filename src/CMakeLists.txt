@@ -122,15 +122,14 @@ target_sources(cloudstorage PRIVATE
     Utility/CurlHttp.h
     Utility/FileServer.cpp
     Utility/FileServer.h
-    Utility/GenerateLoginPage.sh
     Utility/GenerateThumbnail.cpp
     Utility/GenerateThumbnail.h
     Utility/HttpServer.cpp
     Utility/HttpServer.h
     Utility/Item.cpp
     Utility/Item.h
-    Utility/LoginPage.cpp
-    Utility/LoginPage.h
+    ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.h
     Utility/MicroHttpdServer.cpp
     Utility/MicroHttpdServer.h
     Utility/Promise.h
@@ -149,6 +148,31 @@ set_target_properties(cloudstorage-c-api
     PROPERTIES
         PUBLIC_HEADER "${cloudstorage-c-api_PUBLIC_HEADERS}"
         POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
+)
+
+set(cloudstorage-resources
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/4shared_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/amazons3_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/animezone_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/local_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/localwinrt_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/mega_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/webdav_login.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/default_error.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/default_success.html
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/bootstrap.min.css
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/bootstrap.min.js
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/url.min.js
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/style.min.css
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/jquery.min.js
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/cloud.png
+    ${CMAKE_SOURCE_DIR}/bin/cloudbrowser/resources/vlc-blue.png
+)
+
+add_custom_command(
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.cpp ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.h
+    COMMAND resource-generator ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage ${cloudstorage-resources}
+    DEPENDS ${cloudstorage-resources} resource-generator
 )
 
 target_link_libraries(cloudstorage PRIVATE Threads::Threads cloudstorage-c-api)
@@ -204,7 +228,7 @@ if(cryptopp_LIBRARY)
     cloudstorage_target_link_library(cloudstorage cryptopp)
 endif()
 
-target_include_directories(cloudstorage PUBLIC ".")
+target_include_directories(cloudstorage PUBLIC "." ${CMAKE_CURRENT_BINARY_DIR}/Utility)
 target_include_directories(cloudstorage-c-api PUBLIC ".")
 
 check_include_files(jni.h HAVE_JNI_H)

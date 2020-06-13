@@ -84,6 +84,17 @@ if(avcodec_LIBRARY AND avfilter_LIBRARY AND avformat_LIBRARY AND avutil_LIBRARY 
     set(ffmpeg_FOUND true)
 endif()
 
+if(NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(tools)
+else()
+    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory build-tools)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir build-tools ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/tools)
+    foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E chdir build-tools ${CMAKE_COMMAND} --build . --config ${CONFIG})
+    endforeach()
+    include(${CMAKE_BINARY_DIR}/build-tools/ImportExecutables.cmake)
+endif()
+
 if(curl_LIBRARY AND microhttpd_LIBRARY)
     add_subdirectory(src)
     add_subdirectory(bin)
