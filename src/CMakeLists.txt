@@ -253,6 +253,10 @@ if(WIN32)
     target_link_libraries(cloudstorage PRIVATE ws2_32)
 endif()
 
+if(ANDROID)
+    target_link_libraries(cloudstorage PUBLIC log)
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" AND MSVC)
     target_compile_options(cloudstorage PRIVATE /await)
     target_link_options(cloudstorage BEFORE PRIVATE
