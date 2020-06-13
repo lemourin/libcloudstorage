@@ -128,8 +128,8 @@ target_sources(cloudstorage PRIVATE
     Utility/HttpServer.h
     Utility/Item.cpp
     Utility/Item.h
-    ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.h
+    ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.h
     Utility/MicroHttpdServer.cpp
     Utility/MicroHttpdServer.h
     Utility/Promise.h
@@ -170,8 +170,8 @@ set(cloudstorage-resources
 )
 
 add_custom_command(
-    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.cpp ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage.h
-    COMMAND resource-generator ${CMAKE_CURRENT_BINARY_DIR}/Utility/LoginPage ${cloudstorage-resources}
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.cpp ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.h
+    COMMAND resource-generator ${CMAKE_CURRENT_BINARY_DIR}/LoginPage ${cloudstorage-resources}
     DEPENDS ${cloudstorage-resources} resource-generator
 )
 
@@ -228,7 +228,7 @@ if(cryptopp_LIBRARY)
     cloudstorage_target_link_library(cloudstorage cryptopp)
 endif()
 
-target_include_directories(cloudstorage PUBLIC "." ${CMAKE_CURRENT_BINARY_DIR}/Utility)
+target_include_directories(cloudstorage PUBLIC "." ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(cloudstorage-c-api PUBLIC ".")
 
 check_include_files(jni.h HAVE_JNI_H)

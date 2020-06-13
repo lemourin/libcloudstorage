@@ -56,7 +56,7 @@ script:
   -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
   -Itest/googletest/googletest/include
   -Itest/googletest/googlemock/include
-  -Ibuild/src/Utility
+  -Ibuild/src
   -DWITH_FUSE -DWITH_MPV -DWITH_CURL -DWITH_MICROHTTPD -DWITH_THUMBNAILER -DWITH_CRYPTOPP -fPIC
 
 before_deploy:
