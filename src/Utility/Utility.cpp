@@ -105,8 +105,6 @@ JavaVM* javaVM = nullptr;
 #endif
 
 namespace priv {
-std::unique_ptr<std::ostream> stream =
-    util::make_unique<std::ostream>(std::cout.rdbuf());
 std::mutex stream_mutex;
 }  // namespace priv
 
@@ -534,11 +532,6 @@ const char* libcloudstorage_ascii_art() {
   |_|_|_.__/ \___|_|\___/ \__,_|\__,_|___/\__\___/|_|  \__,_|\__, |\___|
                                                               __/ |     
                                                              |___/      )";
-}
-
-void log_stream(std::unique_ptr<std::ostream> stream) {
-  std::lock_guard<std::mutex> lock(priv::stream_mutex);
-  priv::stream = std::move(stream);
 }
 
 std::unordered_map<std::string, std::string> parse_form(
