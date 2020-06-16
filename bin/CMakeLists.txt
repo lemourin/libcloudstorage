@@ -11,8 +11,14 @@ if(Qt5Core_FOUND AND Qt5Gui_FOUND AND Qt5Quick_FOUND AND Qt5QuickControls2_FOUND
     add_subdirectory(cloudbrowser)
 endif()
 
+if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+    set(osxfuse_LIBRARY_NAME osxfuse)
+elseif("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
+    set(osxfuse_LIBRARY_NAME osxfuse_i64)
+endif()
+
 cloudstorage_find_library(fuse INCLUDE_PATH_SUFFIXES fuse3 INCLUDE fuse.h NAMES fuse3)
-cloudstorage_find_library(fuse-legacy INCLUDE_PATH_SUFFIXES fuse INCLUDE fuse.h NAMES fuse)
+cloudstorage_find_library(fuse-legacy INCLUDE_PATH_SUFFIXES osxfuse/fuse fuse INCLUDE fuse.h NAMES fuse ${osxfuse_LIBRARY_NAME})
 cloudstorage_find_library(dokan2 INCLUDE_PATH_SUFFIXES dokan INCLUDE dokan.h NAMES dokan2)
 cloudstorage_find_library(winfsp INCLUDE winfsp/winfsp.h NAMES winfsp)
 if(fuse_LIBRARY OR fuse-legacy_LIBRARY OR dokan2_LIBRARY OR winfsp_LIBRARY)
