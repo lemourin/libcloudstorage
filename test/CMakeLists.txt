@@ -11,6 +11,11 @@ target_sources(cloudstorage-test PRIVATE
     CloudProvider/GoogleDriveTest.cpp
 )
 
+set_target_properties(cloudstorage-test
+    PROPERTIES
+        CXX_STANDARD 17
+)
+
 target_include_directories(cloudstorage-test PRIVATE ".")
 
 target_link_libraries(cloudstorage-test PRIVATE gtest gmock gtest_main cloudstorage)

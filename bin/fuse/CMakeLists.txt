@@ -17,6 +17,11 @@ target_sources(cloudstorage-fuse PRIVATE
     main.cpp
 )
 
+set_target_properties(cloudstorage-fuse
+    PROPERTIES
+        CXX_STANDARD 17
+)
+
 target_link_libraries(cloudstorage-fuse PRIVATE cloudstorage Threads::Threads)
 
 cloudstorage_target_link_library(cloudstorage-fuse jsoncpp)

@@ -51,6 +51,11 @@ target_sources(cloudbrowser PRIVATE
     ../../src/Utility/GenerateThumbnail.cpp
 )
 
+set_target_properties(cloudbrowser
+    PROPERTIES
+        CXX_STANDARD 17
+)
+
 target_include_directories(cloudbrowser PRIVATE "src")
 
 target_link_libraries(cloudbrowser PRIVATE 

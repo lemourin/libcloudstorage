@@ -143,11 +143,13 @@ target_sources(cloudstorage PRIVATE
 set_target_properties(cloudstorage 
     PROPERTIES 
         PUBLIC_HEADER "${cloudstorage_PUBLIC_HEADERS}"
-        CXX_STANDARD 17)
+        CXX_STANDARD 17
+)
 set_target_properties(cloudstorage-c-api
     PROPERTIES
         PUBLIC_HEADER "${cloudstorage-c-api_PUBLIC_HEADERS}"
         POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
+        CXX_STANDARD 17
 )
 
 set(cloudstorage-resources
