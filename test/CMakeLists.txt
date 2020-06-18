@@ -16,7 +16,7 @@ set_target_properties(cloudstorage-test
         CXX_STANDARD 17
 )
 
-target_include_directories(cloudstorage-test PRIVATE ".")
+target_include_directories(cloudstorage-test PRIVATE "." ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 target_link_libraries(cloudstorage-test PRIVATE gtest gmock gtest_main cloudstorage)
 cloudstorage_target_link_library(cloudstorage-test jsoncpp)

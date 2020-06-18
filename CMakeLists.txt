@@ -99,8 +99,9 @@ else()
     include(${CMAKE_CURRENT_BINARY_DIR}/build-tools/ImportExecutables.cmake)
 endif()
 
+add_subdirectory(src)
+
 if(curl_LIBRARY AND microhttpd_LIBRARY)
-    add_subdirectory(src)
     add_subdirectory(bin)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
         add_subdirectory(examples)
