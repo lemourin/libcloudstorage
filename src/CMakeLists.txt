@@ -82,73 +82,84 @@ set(cloudstorage_PUBLIC_HEADERS
     IThreadPool.h
 )
 
-target_sources(cloudstorage PRIVATE
-    CloudProvider/AmazonS3.cpp
+set(cloudstorage_HEADERS
     CloudProvider/AmazonS3.h
-    CloudProvider/AnimeZone.cpp
     CloudProvider/AnimeZone.h
-    CloudProvider/Box.cpp
     CloudProvider/Box.h
-    CloudProvider/CloudProvider.cpp
     CloudProvider/CloudProvider.h
-    CloudProvider/Dropbox.cpp
     CloudProvider/Dropbox.h
-    CloudProvider/FourShared.cpp
     CloudProvider/FourShared.h
-    CloudProvider/GoogleDrive.cpp
     CloudProvider/GoogleDrive.h
-    CloudProvider/GooglePhotos.cpp
     CloudProvider/GooglePhotos.h
-    CloudProvider/HubiC.cpp
     CloudProvider/HubiC.h
-    CloudProvider/LocalDrive.cpp
     CloudProvider/LocalDrive.h
-    CloudProvider/LocalDriveWinRT.cpp
     CloudProvider/LocalDriveWinRT.h
-    CloudProvider/MegaNz.cpp
     CloudProvider/MegaNz.h
-    CloudProvider/OneDrive.cpp
     CloudProvider/OneDrive.h
-    CloudProvider/PCloud.cpp
     CloudProvider/PCloud.h
-    CloudProvider/WebDav.cpp
     CloudProvider/WebDav.h
-    CloudProvider/YandexDisk.cpp
     CloudProvider/YandexDisk.h
-    Request/AuthorizeRequest.cpp
     Request/AuthorizeRequest.h
-    Request/CreateDirectoryRequest.cpp
     Request/CreateDirectoryRequest.h
-    Request/DeleteItemRequest.cpp
     Request/DeleteItemRequest.h
-    Request/DownloadFileRequest.cpp
     Request/DownloadFileRequest.h
-    Request/ExchangeCodeRequest.cpp
     Request/ExchangeCodeRequest.h
-    Request/GetItemDataRequest.cpp
     Request/GetItemDataRequest.h
-    Request/GetItemRequest.cpp
     Request/GetItemRequest.h
-    Request/GetItemUrlRequest.cpp
     Request/GetItemUrlRequest.h
-    Request/HttpCallback.cpp
     Request/HttpCallback.h
-    Request/ListDirectoryPageRequest.cpp
     Request/ListDirectoryPageRequest.h
-    Request/ListDirectoryRequest.cpp
     Request/ListDirectoryRequest.h
-    Request/MoveItemRequest.cpp
     Request/MoveItemRequest.h
-    Request/RecursiveRequest.cpp
     Request/RecursiveRequest.h
-    Request/RenameItemRequest.cpp
     Request/RenameItemRequest.h
-    Request/Request.cpp
     Request/Request.h
-    Request/UploadFileRequest.cpp
     Request/UploadFileRequest.h
     ${cloudstorage_PUBLIC_HEADERS}
 )
+
+set(cloudstorage_SOURCES
+    CloudProvider/AmazonS3.cpp
+    CloudProvider/AnimeZone.cpp
+    CloudProvider/Box.cpp
+    CloudProvider/CloudProvider.cpp
+    CloudProvider/Dropbox.cpp
+    CloudProvider/FourShared.cpp
+    CloudProvider/GoogleDrive.cpp
+    CloudProvider/GooglePhotos.cpp
+    CloudProvider/HubiC.cpp
+    CloudProvider/LocalDrive.cpp
+    CloudProvider/LocalDriveWinRT.cpp
+    CloudProvider/MegaNz.cpp
+    CloudProvider/OneDrive.cpp
+    CloudProvider/PCloud.cpp
+    CloudProvider/WebDav.cpp
+    CloudProvider/YandexDisk.cpp
+    Request/AuthorizeRequest.cpp
+    Request/CreateDirectoryRequest.cpp
+    Request/DeleteItemRequest.cpp
+    Request/DownloadFileRequest.cpp
+    Request/ExchangeCodeRequest.cpp
+    Request/GetItemDataRequest.cpp
+    Request/GetItemRequest.cpp
+    Request/GetItemUrlRequest.cpp
+    Request/HttpCallback.cpp
+    Request/ListDirectoryPageRequest.cpp
+    Request/ListDirectoryRequest.cpp
+    Request/MoveItemRequest.cpp
+    Request/RecursiveRequest.cpp
+    Request/RenameItemRequest.cpp
+    Request/Request.cpp
+    Request/UploadFileRequest.cpp
+)
+
+target_sources(cloudstorage PRIVATE
+    ${cloudstorage_HEADERS}
+    ${cloudstorage_SOURCES}
+)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${cloudstorage_HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${cloudstorage_SOURCES})
 
 set_target_properties(cloudstorage 
     PROPERTIES 
