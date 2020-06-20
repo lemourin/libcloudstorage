@@ -67,6 +67,13 @@ function(cloudstorage_target_link_library TARGET LIBRARY)
     target_include_directories(${TARGET} PRIVATE ${${LIBRARY}_INCLUDE_DIR})
 endfunction()
 
+if(CMAKE_SYSTEM_NAME STREQUAL iOS)
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+endif()
+
 find_package(Threads REQUIRED)
 
 cloudstorage_find_library(jsoncpp INCLUDE_PATH_SUFFIXES jsoncpp INCLUDE json/json.h NAMES jsoncpp)

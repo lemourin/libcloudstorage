@@ -378,4 +378,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     )
 endif()
 
-install(TARGETS cloudbrowser)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    target_link_libraries(cloudbrowser PRIVATE Qt5::QIOSIntegrationPlugin Qt5::GuiPrivate "-e _qt_main_wrapper")
+endif()
+
+set_target_properties(cloudbrowser PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER io.storage.cloudbrowser
+    MACOSX_BUNDLE_BUNDLE_VERSION 1
+    MACOSX_BUNDLE_SHORT_VERSION_STRING 1
+)
+
+install(
+    TARGETS cloudbrowser
+    BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+)

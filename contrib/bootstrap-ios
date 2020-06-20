@@ -1,0 +1,501 @@
+#!/usr/bin/env bash
+
+command -v wget >/dev/null 2>&1 || { echo >&2 "wget is not installed"; exit 1; }
+command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
+command -v perl >/dev/null 2>&1 || { echo >&2 "perl is not installed"; exit 1; }
+command -v libtool >/dev/null 2>&1 || { echo >&2 "libtool not found"; exit 1; }
+command -v aclocal >/dev/null 2>&1 || { echo >&2 "automake is not installed"; exit 1; }
+command -v autom4te >/dev/null 2>&1 || { echo >&2 "autoconf is not installed"; exit 1; }
+command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
+
+CONCURRENCY=4
+GENERATOR="Unix Makefiles"
+
+export INSTALL_PATH=$PWD/ios
+export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
+export CMAKE_PREFIX_PATH=$INSTALL_PATH
+export PATH=$INSTALL_PATH/bin:$PATH
+export CXXFLAGS="-fPIC -Oz -fembed-bitcode"
+export CFLAGS="-fPIC -Oz -fembed-bitcode"
+export LDFLAGS="-fPIC"
+export CC=$(xcrun -find -sdk iphoneos clang)
+
+unpack() {
+  if [[ ! -d $1 ]]; then
+    tar xf $1.$2
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't extract $1.$2"
+      exit 1
+    fi
+    cd $1
+  else
+    cd $1
+  fi
+}
+
+fetch() {
+  EXT=${2##*.}
+  if [[ ! -f $2 ]]; then
+    DEST=$(mktemp /tmp/build-ios.XXXXXX)
+    wget $1 -O $DEST
+    if [[ $? -ne 0 ]]; then
+      echo "Couldn't fetch $1"
+      exit 1
+    else
+      mv $DEST $2
+    fi
+  fi
+  unpack `basename $2 .tar.$EXT` tar.$EXT
+}
+
+fetch_url() {
+  fetch $1 ${1##*/}
+}
+
+fetch_github() {
+  TARBALL=${1##*/}
+  REPO_URL=${1%%/archive/*}
+  REPO_NAME=${REPO_URL##*/}
+  NAME=${TARBALL##v}
+  fetch $1 $REPO_NAME-$NAME
+}
+
+run_cmake() {
+  cmake .. \
+    -G "$GENERATOR" \
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
+    -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+    -DCMAKE_FIND_ROOT_PATH=$INSTALL_PATH \
+    -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1 \
+    -DBUILD_TESTING=0 \
+    $@
+}
+
+run_make() {
+  make -j $CONCURRENCY && make install
+}
+
+fetch_jsoncpp() {
+  fetch_github https://github.com/open-source-parsers/jsoncpp/archive/$1.tar.gz
+}
+
+install_jsoncpp() {
+  mkdir -p build
+  cd build
+  run_cmake -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0
+  run_make
+}
+
+fetch_tinyxml2() {
+  fetch_github https://github.com/leethomason/tinyxml2/archive/$1.tar.gz
+}
+
+install_tinyxml2() {
+  mkdir -p build
+  cd build
+  run_cmake -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
+  run_make
+}
+
+fetch_openssl() {
+  fetch_url https://www.openssl.org/source/openssl-$1.tar.gz
+}
+
+install_openssl() {
+  ./Configure iossimulator-xcrun "-arch x86_64 -fembed-bitcode -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" --prefix=$PWD/tmp/x86_64 --openssldir=$PWD/tmp/x86_64 no-shared &&
+  make -j $CONCURRENCY && make install_sw &&
+  make clean &&
+  ./Configure ios64-xcrun "-arch arm64 -fembed-bitcode -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" --prefix=$PWD/tmp/arm64 --openssldir=$PWD/tmp/arm64 no-shared &&
+  make -j $CONCURRENCY && make install_sw &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib &&
+  cp -r $PWD/tmp/arm64/include/* $INSTALL_PATH/include &&
+  lipo tmp/x86_64/lib/libssl.a tmp/arm64/lib/libssl.a -output $INSTALL_PATH/lib/libssl.a -create &&
+  lipo tmp/x86_64/lib/libcrypto.a tmp/arm64/lib/libcrypto.a -output $INSTALL_PATH/lib/libcrypto.a -create
+}
+
+fetch_cares() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/c-ares/c-ares/archive/cares-$VERSION.tar.gz
+}
+
+install_cares() {
+  ./buildconf
+  ./configure --prefix=$PWD/tmp/x86_64/ --host=x86_64-apple-darwin --enable-static \
+    --disable-shared \
+    CFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" CPPFLAGS="-DHAVE_WRITEV" \
+    LDFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" &&
+  run_make &&
+  make clean &&
+  ./configure --prefix=$PWD/tmp/arm64/ --host=arm-apple-darwin --enable-static \
+    --disable-shared \
+    CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" CPPFLAGS="-DHAVE_WRITEV" \
+    LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" &&
+  run_make &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib/pkgconfig &&
+  cp -r $PWD/tmp/arm64/include/* $INSTALL_PATH/include &&
+  cp $PWD/tmp/arm64/lib/pkgconfig/* $INSTALL_PATH/lib/pkgconfig &&
+  lipo tmp/x86_64/lib/libcares.a tmp/arm64/lib/libcares.a -output $INSTALL_PATH/lib/libcares.a -create
+}
+
+fetch_nghttp2() {
+  fetch_url https://github.com/nghttp2/nghttp2/releases/download/v$1/nghttp2-$1.tar.gz
+}
+
+install_nghttp2() {
+  autoreconf -ivf &&
+  ./configure --prefix=$PWD/tmp/x86_64 --enable-lib-only --enable-static --disable-shared --host=x86_64-apple-darwin \
+    CFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+    CXXLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+    LDFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" &&
+  sed -i.bak "s/#define uid_t int//g" config.h &&
+  sed -i.bak "s/#define pid_t int//g" config.h &&
+  sed -i.bak "s/#define gid_t int//g" config.h &&
+  run_make &&
+  make clean &&
+  ./configure --prefix=$PWD/tmp/arm64 --enable-lib-only --enable-static --disable-shared --host=arm-apple-darwin \
+    CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+    CXXFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+    LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" &&
+  sed -i.bak "s/#define uid_t int//g" config.h &&
+  sed -i.bak "s/#define pid_t int//g" config.h &&
+  sed -i.bak "s/#define gid_t int//g" config.h &&
+  run_make &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib/pkgconfig &&
+  cp -r $PWD/tmp/arm64/include/* $INSTALL_PATH/include &&
+  cp -r $PWD/tmp/arm64/lib/pkgconfig/* $INSTALL_PATH/lib/pkgconfig &&
+  lipo tmp/x86_64/lib/libnghttp2.a tmp/arm64/lib/libnghttp2.a -output $INSTALL_PATH/lib/libnghttp2.a -create
+}
+
+fetch_curl() {
+  fetch_url https://github.com/curl/curl/releases/download/curl-${1//./_}/curl-$1.tar.gz
+}
+
+install_curl() {
+  mkdir -p build && cd build && 
+  run_cmake -DCMAKE_USE_OPENSSL=1 -DUSE_NGHTTP2=1 -DBUILD_CURL_EXE=OFF -DBUILD_CURL_TESTS=OFF -DCURL_STATICLIB=ON -DCURL_ZLIB=OFF || echo 0 &&
+  run_cmake -DCMAKE_USE_OPENSSL=1 -DUSE_NGHTTP2=1 -DBUILD_CURL_EXE=OFF -DBUILD_CURL_TESTS=OFF -DCURL_STATICLIB=ON -DCURL_ZLIB=OFF &&
+  run_make
+}
+
+fetch_microhttpd() {
+  fetch_url https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-$1.tar.gz
+}
+
+install_microhttpd() {
+  ./configure --prefix=$PWD/tmp/x86_64/ --host=x86_64-apple-darwin --enable-static \
+    --disable-shared \
+    CFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+    LDFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" &&
+  run_make &&
+  make clean &&
+  ./configure --prefix=$PWD/tmp/arm64/ --host=arm-apple-darwin --enable-static \
+    --disable-shared \
+    CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+    LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" &&
+  run_make &&
+  cp -r $PWD/tmp/arm64/include/* $INSTALL_PATH/include &&
+  lipo tmp/x86_64/lib/libmicrohttpd.a tmp/arm64/lib/libmicrohttpd.a -output $INSTALL_PATH/lib/libmicrohttpd.a -create
+}
+
+fetch_cryptopp() {
+  VERSION=${1//./_}
+  fetch_github https://github.com/weidai11/cryptopp/archive/CRYPTOPP_$VERSION.tar.gz
+}
+
+install_cryptopp() {
+  make -f GNUmakefile-cross -j $CONCURRENCY static \
+    CXXFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS -DCRYPTOPP_DISABLE_ASM" libcryptopp.a && \
+    make -f GNUmakefile-cross -j $CONCURRENCY install-lib PREFIX=$PWD/tmp/x86_64 &&
+  make clean &&
+  make -f GNUmakefile-cross -j $CONCURRENCY static \
+    CXXFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS -DCRYPTOPP_DISABLE_ASM" libcryptopp.a && \
+    make -f GNUmakefile-cross -j $CONCURRENCY install-lib PREFIX=$PWD/tmp/arm64 &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib &&
+  lipo tmp/x86_64/lib/libcryptopp.a tmp/arm64/lib/libcryptopp.a -output $INSTALL_PATH/lib/libcryptopp.a -create &&
+  cp -r tmp/x86_64/include/* $INSTALL_PATH/include
+}
+
+fetch_megasdk() {
+  fetch_github https://github.com/meganz/sdk/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    sed -i.bak "s/AC_TYPE_OFF_T//g" configure.ac &&
+    sed -i.bak "s/AC_TYPE_SIZE_T//g" configure.ac &&
+    sed -i.bak "s/AC_TYPE_PID_T//g" configure.ac &&
+    touch .patched
+  fi
+}
+
+install_megasdk() {
+  ./autogen.sh &&
+  CXXFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+  OBJCXXFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+  LDFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" ./configure --prefix=$PWD/tmp/x86_64 \
+    --host=x86_64-apple-darwin \
+    --without-freeimage \
+    --disable-examples \
+    --disable-megaapi \
+    --with-cryptopp=$INSTALL_PATH \
+    --without-sqlite \
+    --with-openssl=$INSTALL_PATH \
+    --with-cares=$INSTALL_PATH \
+    --with-curl=$INSTALL_PATH \
+    --enable-static \
+    --disable-shared &&
+  run_make &&
+  make clean &&
+  CXXFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+  OBJCXXFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+  LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" ./configure --prefix=$PWD/tmp/arm64 \
+    --host=arm-apple-darwin \
+    --without-freeimage \
+    --disable-examples \
+    --disable-megaapi \
+    --with-cryptopp=$INSTALL_PATH \
+    --without-sqlite \
+    --with-openssl=$INSTALL_PATH \
+    --with-cares=$INSTALL_PATH \
+    --with-curl=$INSTALL_PATH \
+    --enable-static \
+    --disable-shared &&
+  run_make &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib &&
+  lipo tmp/x86_64/lib/libmega.a tmp/arm64/lib/libmega.a -output $INSTALL_PATH/lib/libmega.a -create &&
+  cp -r tmp/x86_64/include/* $INSTALL_PATH/include
+}
+
+fetch_qt() {
+  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
+}
+
+install_qt() {
+  mkdir -p build
+  cd build
+
+  ../configure \
+    -prefix $INSTALL_PATH -opensource -confirm-license -qt-libpng \
+    -I $INSTALL_PATH/include -L $INSTALL_PATH/lib \
+    -xplatform macx-ios-clang \
+    -static \
+    -release \
+    -no-warnings-are-errors \
+    -gui \
+    -skip qt3d \
+    -skip qtactiveqt \
+    -skip qtcharts \
+    -skip qtconnectivity \
+    -skip qtdatavis3d \
+    -skip qtdoc \
+    -skip qtgamepad \
+    -skip qtlocation \
+    -skip qtlottie \
+    -skip qtmacextras \
+    -skip qtmultimedia \
+    -skip qtnetworkauth \
+    -skip qtpurchasing \
+    -skip qtquick3d \
+    -skip qtquicktimeline \
+    -skip qtremoteobjects \
+    -skip qtscript \
+    -skip qtscxml \
+    -skip qtsensors \
+    -skip qtserialbus \
+    -skip qtserialport \
+    -skip qtspeech \
+    -skip qtvirtualkeyboard \
+    -skip qtwayland \
+    -skip qtwebchannel \
+    -skip qtwebengine \
+    -skip qtwebglplugin \
+    -skip qtwebsockets \
+    -skip qtwinextras \
+    -skip qtx11extras \
+    -no-feature-designer \
+    -nomake examples \
+    -nomake tests &&
+
+  make -j $CONCURRENCY && make install -j $CONCURRENCY
+}
+
+fetch_ecm() {
+  fetch https://github.com/KDE/extra-cmake-modules/archive/v$1.tar.gz extra-cmake-modules-$1.tar.gz
+}
+
+install_ecm() {
+  mkdir -p build && cd build && run_cmake && run_make
+}
+
+fetch_kirigami() {
+  fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch -p0 -i ../../patches/kirigami_qrc_in_fix.patch &&
+      rm kirigami.qrc &&
+      sed -i.bak "s/import QtQuick\.Controls 2\.0/import QtQuick\.Controls 2\.15/g" src/controls/AbstractApplicationWindow.qml
+      touch .patched
+  fi
+}
+
+install_kirigami() {
+  mkdir -p build &&
+  cd build &&
+  run_cmake .. \
+    -DBUILD_SHARED_LIBS=1 \
+    -DECM_DIR=$INSTALL_PATH/share/ECM/cmake \
+    -DQt5Core_DIR=$INSTALL_PATH/lib/cmake/Qt5Core \
+    -DQt5Quick_DIR=$INSTALL_PATH/lib/cmake/Qt5Quick \
+    -DQt5Gui_DIR=$INSTALL_PATH//lib/cmake/Qt5Gui \
+    -DQt5QmlModels_DIR=$INSTALL_PATH//lib/cmake/Qt5QmlModels \
+    -DQt5Qml_DIR=$INSTALL_PATH/lib/cmake/Qt5Qml \
+    -DQt5Network_DIR=$INSTALL_PATH/lib/cmake/Qt5Network \
+    -DQt5Svg_DIR=$INSTALL_PATH/lib/cmake/Qt5Svg \
+    -DQt5Widgets_DIR=$INSTALL_PATH/lib/cmake/Qt5Widgets \
+    -DQt5QuickControls2_DIR=$INSTALL_PATH/lib/cmake/Qt5QuickControls2 \
+    -DQt5LinguistTools_DIR=$INSTALL_PATH/lib/cmake/Qt5LinguistTools \
+    -DQt5_DIR=$INSTALL_PATH/lib/cmake/Qt5 -DDISABLE_DBUS=1 &&
+  make || true &&
+  run_cmake .. \
+    -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml \
+    -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump \
+    -DDISABLE_DBUS=1 \
+    -DBUILD_SHARED_LIBS=0 &&
+  run_make &&
+  cp ../src/kirigamiplugin.h $INSTALL_PATH/include
+}
+
+fetch_ffmpeg() {
+  fetch_url https://www.ffmpeg.org/releases/ffmpeg-$1.tar.gz
+}
+
+install_ffmpeg() {
+  mkdir -p build-x86_64 && cd build-x86_64 &&
+  CFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+  LDFLAGS="-arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path)" ../configure \
+    --prefix=$PWD/../tmp/x86_64 \
+    --cc=$CC \
+    --disable-doc \
+    --disable-everything \
+    --disable-asm \
+    --enable-cross-compile \
+    --enable-decoder="h264,hevc,vp8,vp9,mpeg4,mjpeg,theora,png,svg,bmp,webp,tiff,gif,aac,mp3,flac,ac3,opus,vorbis,wmv*,pcm*,subrip,dvdsub,xsub,webvtt" \
+    --enable-demuxer="mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe,wav,ac3,mp3,flac,ac3,ogg,pcm*" \
+    --enable-protocol=http \
+    --enable-parser=mjpeg \
+    --enable-encoder=png \
+    --enable-filter=thumbnail,buffer,buffer_sink,scale \
+    --disable-avdevice \
+    --disable-programs &&
+  run_make &&
+  cd .. &&
+  mkdir -p build-arm64 && cd build-arm64 &&
+  CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+  LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" ../configure \
+    --prefix=$PWD/../tmp/arm64 \
+    --cc=$CC \
+    --disable-doc \
+    --disable-everything \
+    --disable-asm \
+    --enable-cross-compile \
+    --enable-decoder="h264,hevc,vp8,vp9,mpeg4,mjpeg,theora,png,svg,bmp,webp,tiff,gif,aac,mp3,flac,ac3,opus,vorbis,wmv*,pcm*,subrip,dvdsub,xsub,webvtt" \
+    --enable-demuxer="mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe,wav,ac3,mp3,flac,ac3,ogg,pcm*" \
+    --enable-protocol=http \
+    --enable-parser=mjpeg \
+    --enable-encoder=png \
+    --enable-filter=thumbnail,buffer,buffer_sink,scale \
+    --disable-avdevice \
+    --disable-programs &&
+  run_make &&
+  cd .. &&
+  lipo tmp/x86_64/lib/libavutil.a tmp/arm64/lib/libavutil.a -output $INSTALL_PATH/lib/libavutil.a -create &&
+  lipo tmp/x86_64/lib/libavcodec.a tmp/arm64/lib/libavcodec.a -output $INSTALL_PATH/lib/libavcodec.a -create &&
+  lipo tmp/x86_64/lib/libavfilter.a tmp/arm64/lib/libavfilter.a -output $INSTALL_PATH/lib/libavfilter.a -create &&
+  lipo tmp/x86_64/lib/libavformat.a tmp/arm64/lib/libavformat.a -output $INSTALL_PATH/lib/libavformat.a -create &&
+  lipo tmp/x86_64/lib/libswresample.a tmp/arm64/lib/libswresample.a -output $INSTALL_PATH/lib/libswresample.a -create &&
+  lipo tmp/x86_64/lib/libswscale.a tmp/arm64/lib/libswscale.a -output $INSTALL_PATH/lib/libswscale.a -create &&
+  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib/pkgconfig &&
+  cp -r tmp/x86_64/include/* $INSTALL_PATH/include && cp tmp/x86_64/lib/pkgconfig/* $INSTALL_PATH/lib/pkgconfig
+}
+
+fetch_mpv() {
+  fetch_github https://github.com/mpv-player/mpv/archive/v$1.tar.gz
+}
+
+install_mpv() {
+  ./bootstrap.py
+  CFLAGS="-arch x86_64 -fembed-bitcode -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) $CFLAGS" \
+    ./waf configure --prefix=$PWD/tmp/x86_64/ --disable-cplayer --enable-libmpv-static --disable-libass &&
+    ./waf install &&
+  CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
+  LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" \
+    ./waf configure --prefix=$PWD/tmp/arm64/ --disable-cplayer --enable-libmpv-static --disable-libass &&
+    ./waf install &&
+  lipo tmp/x86_64/lib/libmpv.a tmp/arm64/lib/libmpv.a -output $INSTALL_PATH/lib/libmpv.a -create &&
+  mkdir -p $INSTALL_PATH/include &&
+  cp -r tmp/x86_64/include/* $INSTALL_PATH/include
+}
+
+install_run() {
+  BASE_DIRECTORY=$PWD
+  fetch_$1 $2
+  if [[ ! -f .done ]]; then
+    BUILD_DIRECTORY=$PWD
+    install_$1 $2
+    if [[ $? -eq 0 ]]; then
+      cd $BUILD_DIRECTORY
+      touch .done
+    else
+      echo "Failed to build $1"
+      exit 1
+    fi
+  fi
+  cd $BASE_DIRECTORY
+}
+
+install() {
+  uppercase=`echo $1 | awk '{print toupper($0)}'`
+  name=${uppercase}_INSTALL
+  if [[ $INSTALL_LISTED -eq 1 ]]; then
+    if [[ ${!name} -eq 1 ]]; then
+      install_run $1 $2
+    fi
+  else
+    if [[ "x${!name}" != "x0" ]]; then
+      install_run $1 $2
+    fi
+  fi
+}
+
+INSTALL_LISTED=0
+
+for i in $@; do
+  if [[ "$i" == *without-* ]]; then
+    component=${i##"--without-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    declare "${uppercase_component}_INSTALL"="0"
+  fi
+
+  if [[ "$i" == *with-* ]]; then
+    component=${i##"--with-"}
+    uppercase_component=`echo $component | awk '{print toupper($0)}'`
+    INSTALL_LISTED=1
+    declare "${uppercase_component}_INSTALL"="1"
+  fi
+done
+
+mkdir -p tarballs-ios
+cd tarballs-ios
+
+install "openssl" 1.1.1b
+install "jsoncpp" 1.8.3
+install "tinyxml2" 6.0.0
+install "cares" 1.15.0
+install "nghttp2" 1.28.0
+install "curl" 7.70.0
+install "microhttpd" 0.9.58
+install "cryptopp" 8.1.0
+install "megasdk" 3.4.7
+install "qt" 5.15.0
+install "ecm" 5.66.0
+install "kirigami" 5.66.0
+install "ffmpeg" 4.1.3
+install "mpv" 0.32.0

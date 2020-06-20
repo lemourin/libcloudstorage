@@ -52,6 +52,13 @@
 #include "Utility/Utility.h"
 #include "WinRTUtility.h"
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include <qpa/qplatformwindow.h>
+#endif
+#endif
+
 #ifdef QT_STATICPLUGIN
 
 #include <QtPlugin>
@@ -121,9 +128,11 @@ void register_types() {
 
 #ifdef QT_STATICPLUGIN
 #ifdef WITH_QTWEBVIEW
+#ifndef TARGET_OS_IPHONE
   qobject_cast<QQmlExtensionPlugin*>(
       qt_static_plugin_QWebViewModule().instance())
       ->registerTypes("QtWebView");
+#endif
 #endif
 #ifdef KIRIGAMI_BUILD_TYPE_STATIC
   KirigamiPlugin::getInstance().registerTypes();
