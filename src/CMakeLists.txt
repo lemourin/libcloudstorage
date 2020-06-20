@@ -204,7 +204,9 @@ add_custom_command(
     DEPENDS ${cloudstorage-resources} resource-generator
 )
 
-target_link_libraries(cloudstorage PRIVATE Threads::Threads cloudstorage-c-api cloudstorage-util)
+target_link_libraries(cloudstorage PRIVATE Threads::Threads cloudstorage-c-api)
+target_link_libraries(cloudstorage PUBLIC cloudstorage-util)
+target_link_libraries(cloudstorage-c-api PUBLIC cloudstorage-util)
 
 cloudstorage_target_link_library(cloudstorage jsoncpp)
 cloudstorage_target_link_library(cloudstorage-c-api jsoncpp)
@@ -233,13 +235,13 @@ endif()
 
 find_package(Boost COMPONENTS filesystem)
 if(Boost_FILESYSTEM_FOUND)
-    target_compile_definitions(cloudstorage PRIVATE HAVE_BOOST_FILESYSTEM_HPP)
+    target_compile_definitions(cloudstorage-util PUBLIC HAVE_BOOST_FILESYSTEM_HPP)
     target_link_libraries(cloudstorage PRIVATE Boost::filesystem)
 endif()
 
 cloudstorage_find_library(mega INCLUDE mega.h NAMES mega)
 if(mega_LIBRARY)
-    target_compile_definitions(cloudstorage PRIVATE WITH_MEGA)
+    target_compile_definitions(cloudstorage-util PUBLIC WITH_MEGA)
     cloudstorage_target_link_library(cloudstorage mega)
     if(WIN32)
         if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
@@ -264,7 +266,7 @@ target_include_directories(cloudstorage-util PUBLIC "." ${CMAKE_CURRENT_BINARY_D
 
 check_include_files(jni.h HAVE_JNI_H)
 if(HAVE_JNI_H)
-    target_compile_definitions(cloudstorage PRIVATE HAVE_JNI_H)
+    target_compile_definitions(cloudstorage-util PUBLIC HAVE_JNI_H)
 endif()
 
 target_compile_definitions(cloudstorage PRIVATE
@@ -272,8 +274,6 @@ target_compile_definitions(cloudstorage PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 
-target_compile_definitions(cloudstorage PUBLIC UNICODE)
-target_compile_definitions(cloudstorage-c-api PUBLIC UNICODE)
 target_compile_definitions(cloudstorage-util PUBLIC UNICODE)
 
 if(MSVC)
@@ -302,8 +302,6 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(cloudstorage-c-api PRIVATE CLOUDSTORAGE_LIBRARY)
     target_compile_definitions(cloudstorage-util PRIVATE CLOUDSTORAGE_LIBRARY)
 else()
-    target_compile_definitions(cloudstorage PUBLIC CLOUDSTORAGE_STATIC_LINK)
-    target_compile_definitions(cloudstorage-c-api PUBLIC CLOUDSTORAGE_STATIC_LINK)
     target_compile_definitions(cloudstorage-util PUBLIC CLOUDSTORAGE_STATIC_LINK)
 endif()
 
