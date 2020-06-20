@@ -3,52 +3,202 @@ set(CMAKE_AUTORCC ON)
 
 add_executable(cloudbrowser WIN32)
 
-target_sources(cloudbrowser PRIVATE
-    src/AndroidUtility.cpp
+set(cloudbrowser_HEADERS
     src/AndroidUtility.h
-    src/CloudContext.cpp
     src/CloudContext.h
-    src/CloudItem.cpp
     src/CloudItem.h
-    src/DesktopUtility.cpp
     src/DesktopUtility.h
-    src/Exec.cpp
     src/Exec.h
-    src/File.cpp
     src/File.h
-    src/FileDialog.cpp
     src/FileDialog.h
     src/IPlatformUtility.h
+    src/MpvPlayer.h
+    src/Request/CloudRequest.h
+    src/Request/CopyItem.h
+    src/Request/CreateDirectory.h
+    src/Request/DeleteItem.h
+    src/Request/DownloadItem.h
+    src/Request/GetThumbnail.h
+    src/Request/GetUrl.h
+    src/Request/ListDirectory.h
+    src/Request/MoveItem.h
+    src/Request/RenameItem.h
+    src/Request/UploadItem.h
+    src/WinRTUtility.h
+)
+
+set(cloudbrowser_SOURCES
+    src/AndroidUtility.cpp
+    src/CloudContext.cpp
+    src/CloudItem.cpp
+    src/DesktopUtility.cpp
+    src/Exec.cpp
+    src/File.cpp
+    src/FileDialog.cpp
     src/main.cpp
     src/MpvPlayer.cpp
-    src/MpvPlayer.h
     src/Request/CloudRequest.cpp
-    src/Request/CloudRequest.h
     src/Request/CopyItem.cpp
-    src/Request/CopyItem.h
     src/Request/CreateDirectory.cpp
-    src/Request/CreateDirectory.h
     src/Request/DeleteItem.cpp
-    src/Request/DeleteItem.h
     src/Request/DownloadItem.cpp
-    src/Request/DownloadItem.h
     src/Request/GetThumbnail.cpp
-    src/Request/GetThumbnail.h
     src/Request/GetUrl.cpp
-    src/Request/GetUrl.h
     src/Request/ListDirectory.cpp
-    src/Request/ListDirectory.h
     src/Request/MoveItem.cpp
-    src/Request/MoveItem.h
     src/Request/RenameItem.cpp
-    src/Request/RenameItem.h
     src/Request/UploadItem.cpp
-    src/Request/UploadItem.h
     src/WinRTUtility.cpp
-    src/WinRTUtility.h
-    resources.qrc
+)
+
+set(cloudbrowser_RESOURCES
+    resources/4shared_login.html
+    resources/amazons3_login.html
+    resources/animezone_login.html
+    resources/bootstrap.min.css
+    resources/bootstrap.min.js
+    resources/cloud.png
+    resources/cryptopp.png
+    resources/curl.png
+    resources/default_error.html
+    resources/default_success.html
+    resources/ffmpeg.png
+    resources/gnu.png
+    resources/icons/material/hdpi/applications-graphics.svg
+    resources/icons/material/hdpi/audio-volume-high.svg
+    resources/icons/material/hdpi/audio-volume-low.svg
+    resources/icons/material/hdpi/audio-volume-medium.svg
+    resources/icons/material/hdpi/audio-volume-muted.svg
+    resources/icons/material/hdpi/audio-x-generic.svg
+    resources/icons/material/hdpi/bookmarks.svg
+    resources/icons/material/hdpi/configure.svg
+    resources/icons/material/hdpi/dialog-apply.svg
+    resources/icons/material/hdpi/dialog-cancel.svg
+    resources/icons/material/hdpi/dialog-close.svg
+    resources/icons/material/hdpi/document-decrypt.svg
+    resources/icons/material/hdpi/document-edit.svg
+    resources/icons/material/hdpi/document-open-remote.svg
+    resources/icons/material/hdpi/document-save.svg
+    resources/icons/material/hdpi/edit-add.svg
+    resources/icons/material/hdpi/edit-cut.svg
+    resources/icons/material/hdpi/edit-delete.svg
+    resources/icons/material/hdpi/edit-paste-style.svg
+    resources/icons/material/hdpi/folder-move.svg
+    resources/icons/material/hdpi/folder-new.svg
+    resources/icons/material/hdpi/folder-sync.svg
+    resources/icons/material/hdpi/folder.svg
+    resources/icons/material/hdpi/go-down.svg
+    resources/icons/material/hdpi/go-next-symbolic-rtl.svg
+    resources/icons/material/hdpi/go-next-symbolic.svg
+    resources/icons/material/hdpi/go-next.svg
+    resources/icons/material/hdpi/go-previous-symbolic-rtl.svg
+    resources/icons/material/hdpi/go-previous-symbolic.svg
+    resources/icons/material/hdpi/go-previous.svg
+    resources/icons/material/hdpi/go-up.svg
+    resources/icons/material/hdpi/gtk-file.svg
+    resources/icons/material/hdpi/handle-left.svg
+    resources/icons/material/hdpi/handle-right.svg
+    resources/icons/material/hdpi/help-about.svg
+    resources/icons/material/hdpi/image.svg
+    resources/icons/material/hdpi/list-add.svg
+    resources/icons/material/hdpi/mail-reply-sender.svg
+    resources/icons/material/hdpi/media-album-track.svg
+    resources/icons/material/hdpi/media-playback-pause.svg
+    resources/icons/material/hdpi/media-playback-start.svg
+    resources/icons/material/hdpi/media-playlist-shuffle.svg
+    resources/icons/material/hdpi/media-record-symbolic.svg
+    resources/icons/material/hdpi/media-skip-forward.svg
+    resources/icons/material/hdpi/media-view-subtitles-symbolic.svg
+    resources/icons/material/hdpi/multimedia-player.svg
+    resources/icons/material/hdpi/overflow-menu.svg
+    resources/icons/material/hdpi/package-supported.svg
+    resources/icons/material/hdpi/player-volume.svg
+    resources/icons/material/hdpi/settings-configure.svg
+    resources/icons/material/hdpi/video.svg
+    resources/icons/material/hdpi/view-fullscreen.svg
+    resources/icons/material/hdpi/view-list-details.svg
+    resources/icons/material/hdpi/view-list-icons.svg
+    resources/icons/material/index.theme
+    resources/jquery.min.js
+    resources/jsoncpp.png
+    resources/kde.png
+    resources/localwinrt_login.html
+    resources/local_login.html
+    resources/mega_login.html
+    resources/mpv.png
+    resources/providers/4shared.png
+    resources/providers/amazons3.png
+    resources/providers/animezone.png
+    resources/providers/box.png
+    resources/providers/dropbox.png
+    resources/providers/google.png
+    resources/providers/gphotos.png
+    resources/providers/hubic.png
+    resources/providers/local.png
+    resources/providers/localwinrt.png
+    resources/providers/mega.png
+    resources/providers/onedrive.png
+    resources/providers/pcloud.png
+    resources/providers/webdav.png
+    resources/providers/yandex.png
+    resources/qt.png
+    resources/style.min.css
+    resources/tinyxml2.png
+    resources/url.min.js
+    resources/vlc-blue.png
+    resources/vlc-qt.png
+    resources/vlc.png
+    resources/webdav_login.html
+    qtquickcontrols2.conf
+    config.json
+)
+
+set(cloudbrowser_QML
+    qml/AboutView.qml
+    qml/AndroidFileDialog.qml
+    qml/FileDialog.qml
+    qml/ImagePlayer.qml
+    qml/ItemPage.qml
+    qml/main.qml
+    qml/MediaPlayer.qml
+    qml/MpvPlayer.qml
+    qml/ProviderEntry.qml
+    qml/QtFileDialog.qml
+    qml/QtPlayer.qml
+    qml/RegisterPage.qml
+    qml/RemoveProvider.qml
+    qml/VlcPlayer.qml
+    qml/WebView.qml
+    qml/WinRTFileDialog.qml
+)
+
+target_sources(cloudbrowser PRIVATE
+    ${cloudbrowser_HEADERS}
+    ${cloudbrowser_SOURCES}
+    ${cloudbrowser_RESOURCES}
+    ${cloudbrowser_QML}
+    ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc
     ../../src/Utility/HttpServer.cpp
     ../../src/Utility/GenerateThumbnail.cpp
+)
+
+set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc PROPERTY GENERATED 1)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Header Files" FILES ${cloudbrowser_HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${cloudbrowser_SOURCES})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Resource Files" FILES ${cloudbrowser_RESOURCES} ${cloudbrowser_QML})
+source_group("Generated Files" REGULAR_EXPRESSION "((Qt5.*Import\.cpp)|(mocs_.*\.cpp)|(qrc_.*\.cpp)|(.*\.qrc))$")
+
+foreach(ENTRY ${cloudbrowser_RESOURCES} ${cloudbrowser_QML})
+    string(APPEND QRC_CONTENT "        <file alias=\"${ENTRY}\">${CMAKE_CURRENT_SOURCE_DIR}/${ENTRY}</file>\n")
+endforeach()
+
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc
+    CONTENT
+"<RCC>
+    <qresource prefix=\"/\">
+${QRC_CONTENT}    </qresource>
+</RCC>"
 )
 
 set_target_properties(cloudbrowser
