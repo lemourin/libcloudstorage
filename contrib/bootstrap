@@ -2,10 +2,32 @@
 
 export ARCH=x86_64-linux-gnu
 export INSTALL_PATH=$PWD/$ARCH
-export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+export PKG_CONFIG_PATH=$INSTALL_PATH/lib/pkgconfig
 export CMAKE_PREFIX_PATH=$INSTALL_PATH
 export PATH=$INSTALL_PATH/bin:$PATH
+export CXXFLAGS=-fPIC
+export CFLAGS=-fPIC
 CONCURRENCY=4
+
+command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
+command -v g++ >/dev/null 2>&1 || { echo >&2 "g++ is not installed"; exit 1; }
+command -v libtoolize >/dev/null 2>&1 || { echo >&2 "libtool is not installed"; exit 1; }
+command -v aclocal >/dev/null 2>&1 || { echo >&2 "automake is not installed"; exit 1; }
+command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
+command -v meson >/dev/null 2>&1 || { echo >&2 "meson is not installed"; exit 1; }
+command -v bison >/dev/null 2>&1 || { echo >&2 "bison is not installed"; exit 1; }
+
+pkg-config --cflags alsa >/dev/null 2>&1 || { echo >&2 "libasound2-dev is not installed"; exit 1; }
+pkg-config --cflags freetype2 >/dev/null 2>&1 || { echo >&2 "libfreetype6-dev is not installed"; exit 1; }
+pkg-config --cflags fontconfig >/dev/null 2>&1 || { echo >&2 "libfontconfig1-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-xkb >/dev/null 2>&1 || { echo >&2 "libxcb-xkb-dev is not installed"; exit 1; }
+pkg-config --cflags glib-2.0 gthread-2.0 >/dev/null 2>&1 || { echo >&2 "libglib2.0-dev is not installed"; exit 1; }
+pkg-config --cflags gtk+-3.0 >/dev/null 2>&1 || { echo >&2 "libgtk-3-dev is not installed"; exit 1; }
+pkg-config --cflags gl >/dev/null 2>&1 || { echo >&2 "libgl1-mesa-dev is not installed"; exit 1; }
+pkg-config --cflags xinerama >/dev/null 2>&1 || { echo >&2 "libxcb-xinerama0-dev is not installed"; exit 1; }
+pkg-config --cflags xrender >/dev/null 2>&1 || { echo >&2 "libxcb-render-util0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-icccm >/dev/null 2>&1 || { echo >&2 "libxcb-icccm4-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-shm >/dev/null 2>&1 || { echo >&2 "libxcb-shm0-dev is not installed"; exit 1; }
 
 unpack() {
   if [[ ! -d $1 ]]; then
@@ -51,16 +73,18 @@ run_make() {
   make -j $CONCURRENCY && make install
 }
 
+fetch_zlib() {
+  fetch_url https://zlib.net/zlib-$1.tar.gz
+}
+
+install_zlib() {
+  ./configure --prefix=$INSTALL_PATH --static && run_make
+}
+
 fetch_qt() {
   fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
   if [ ! -f .patched ]; then
-    patch \
-      qtbase/src/plugins/platformthemes/gtk3/qgtk3theme.cpp < \
-      ../../patches/qt-force-gtk-file-dialog.patch
-    if [ $? != 0 ]; then
-      echo "Couldn't patch qt source."
-      exit 1
-    fi
+    sed -i -E "s/return gtk_check_version(3, 15, 5) == 0/return true/g" qtbase/src/plugins/platformthemes/gtk3/qgtk3theme.cpp &&
     touch .patched
   fi
 }
@@ -74,50 +98,20 @@ install_xkbcommon() {
   run_make
 }
 
-configure_qt() {
-  sudo apt install -y \
-    libdbus-1-dev \
-    libnss3-dev \
-    libegl1-mesa-dev \
-    libgl1-mesa-dev \
-    libxcomposite-dev \
-    libxcursor-dev \
-    libxdamage-dev \
-    libxrandr-dev \
-    libxss-dev \
-    libxi-dev \
-    libxtst-dev \
-    libxcb-xkb-dev \
-    libglib2.0-dev \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    libfontconfig1-dev \
-    libgtk-3-dev \
-    bison \
-    flex \
-    gperf \
-    autoconf \
-    libtool
-
+install_qt() {
   mkdir -p build
   cd build
 
   ../configure \
-    -prefix $INSTALL_PATH -opensource -confirm-license -fontconfig -system-freetype \
+    -prefix $INSTALL_PATH -opensource -confirm-license -fontconfig -system-freetype -qt-libpng \
     -I $INSTALL_PATH/include -L $INSTALL_PATH/lib \
-    OPENSSL_LIBS="-lssl -lcrypto" \
-    -shared \
-    -gtk \
-    -qt-xcb \
     -openssl -openssl-linked \
+    OPENSSL_LIBS="-lssl -lcrypto -pthread -ldl" \
+    -static \
+    -gtk \
+    -xcb \
     -nomake examples \
-    -nomake tests
-
-  QMAKE=$PWD/qtbase/bin/qmake
-}
-
-install_qt() {
-  configure_qt
+    -nomake tests &&
 
   make -j $CONCURRENCY \
     module-qtbase \
@@ -126,12 +120,7 @@ install_qt() {
     module-qtquickcontrols2 \
     module-qtsvg \
     module-qtgraphicaleffects \
-    module-qttools
-
-  make \
-    module-qtwebchannel \
-    module-qtwebengine \
-    module-qtwebview
+    module-qttools &&
 
   make -j $CONCURRENCY \
     module-qtbase-install_subtargets \
@@ -141,11 +130,6 @@ install_qt() {
     module-qtsvg-install_subtargets \
     module-qtgraphicaleffects-install_subtargets \
     module-qttools-install_subtargets
-
-  make \
-    module-qtwebchannel-install_subtargets \
-    module-qtwebengine-install_subtargets \
-    module-qtwebview-install_subtargets
 }
 
 fetch_cmake() {
@@ -181,16 +165,28 @@ install_ninja() {
 
 fetch_kirigami() {
   fetch_github https://github.com/lemourin/kirigami/archive/$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch -p0 -i ../../patches/kirigami_qrc_in_fix.patch &&
+      rm kirigami.qrc &&
+      touch .patched
+  fi
 }
 
 install_kirigami() {
-  mkdir -p build
-  cd build
-  Qt5_DIR=$INSTALL_PATH cmake .. \
+  mkdir -p build &&
+  cd build &&
+  cmake .. \
+    -DQt5_DIR=$INSTALL_PATH/lib/cmake/Qt5 -DDISABLE_DBUS=1 &&
+  make || true &&
+  cmake .. \
+    -DQt5_DIR=$INSTALL_PATH \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
     -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml \
-    -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump
-  run_make
+    -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump \
+    -DDISABLE_DBUS=1 \
+    -DBUILD_SHARED_LIBS=0 &&
+  run_make &&
+  cp ../src/kirigamiplugin.h $INSTALL_PATH/include
 }
 
 fetch_jsoncpp() {
@@ -200,7 +196,7 @@ fetch_jsoncpp() {
 install_jsoncpp() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=1
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0
   run_make
 }
 
@@ -211,7 +207,7 @@ fetch_tinyxml2() {
 install_tinyxml2() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
   run_make
 }
 
@@ -220,7 +216,7 @@ fetch_openssl() {
 }
 
 install_openssl() {
-  ./config --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl shared
+  ./config --prefix=$INSTALL_PATH  --openssldir=$INSTALL_PATH/openssl no-shared
   run_make
 }
 
@@ -231,7 +227,7 @@ fetch_cares() {
 
 install_cares() {
   ./buildconf
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared
   run_make
 }
 
@@ -241,7 +237,7 @@ fetch_nghttp2() {
 
 install_nghttp2() {
   ./buildconf
-  ./configure --prefix=$INSTALL_PATH --enable-lib-only
+  ./configure --prefix=$INSTALL_PATH --enable-lib-only --enable-static --disable-shared
   run_make
 }
 
@@ -250,7 +246,10 @@ fetch_curl() {
 }
 
 install_curl() {
-  ./configure --prefix=$INSTALL_PATH --with-nghttp2 --enable-ares
+  LIBS="-ldl -lpthread" ./configure --prefix=$INSTALL_PATH --with-nghttp2 --enable-ares \
+    --enable-static \
+    --disable-shared \
+    --with-ssl=$INSTALL_PATH
   run_make
 }
 
@@ -259,7 +258,7 @@ fetch_microhttpd() {
 }
 
 install_microhttpd() {
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared
   run_make
 }
 
@@ -269,7 +268,7 @@ fetch_cryptopp() {
 }
 
 install_cryptopp() {
-  make -j $CONCURRENCY shared
+  make -j $CONCURRENCY static
   make -j $CONCURRENCY install PREFIX=$INSTALL_PATH
 }
 
@@ -278,7 +277,7 @@ fetch_sqlite() {
 }
 
 install_sqlite() {
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared
   run_make
 }
 
@@ -288,14 +287,16 @@ fetch_megasdk() {
 
 install_megasdk() {
   ./autogen.sh
-  ./configure --prefix=$INSTALL_PATH \
+  LIBS="-L$INSTALL_PATH/lib -lcares -lnghttp2 -lz" ./configure --prefix=$INSTALL_PATH \
     --without-freeimage \
     --disable-examples \
+    --enable-static --disable-shared \
     --with-cryptopp=$INSTALL_PATH \
     --with-sqlite=$INSTALL_PATH \
     --with-openssl=$INSTALL_PATH \
     --with-cares=$INSTALL_PATH \
-    --with-curl=$INSTALL_PATH
+    --with-curl=$INSTALL_PATH \
+    --with-zlib=$INSTALL_PATH &&
   run_make
 }
 
@@ -308,8 +309,8 @@ install_libxml2() {
   cd build
   ../configure \
     --prefix=$INSTALL_PATH \
-    --enable-shared \
-    --disable-static \
+    --enable-static \
+    --disable-shared \
     --without-python
   run_make
 }
@@ -319,68 +320,14 @@ fetch_ffmpeg() {
 }
 
 install_ffmpeg() {
-  if [ ! $(command -v yasm) ]; then
-    sudo apt install -y yasm
-  fi
-
   ./configure \
     --prefix=$INSTALL_PATH \
     --enable-openssl \
-    --enable-shared \
-    --disable-static \
+    --enable-static \
+    --disable-shared \
     --enable-libass \
-    --enable-libxml2
-  run_make
-}
-
-fetch_ogg() {
-  fetch_url http://downloads.xiph.org/releases/ogg/libogg-$1.tar.gz
-}
-
-install_ogg() {
-  ./configure --prefix=$INSTALL_PATH
-  run_make
-}
-
-fetch_opus() {
-  fetch_url https://archive.mozilla.org/pub/opus/opus-$1.tar.gz
-}
-
-install_opus() {
-  ./configure --prefix=$INSTALL_PATH
-  run_make
-}
-
-fetch_vorbis() {
-  fetch_url http://downloads.xiph.org/releases/vorbis/libvorbis-$1.tar.gz
-}
-
-install_vorbis() {
-  ./configure --prefix=$INSTALL_PATH
-  run_make
-}
-
-fetch_ebml() {
-  fetch_github https://github.com/Matroska-Org/libebml/archive/release-$1.tar.gz
-}
-
-install_ebml() {
-  mkdir -p build
-  cd build
-  cmake .. \
-    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=YES
-  run_make
-}
-
-fetch_matroska() {
-  fetch_github https://github.com/Matroska-Org/libmatroska/archive/release-$1.tar.gz
-}
-
-install_matroska() {
-  mkdir -p build
-  cd build
-  cmake .. \
-    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=YES
+    --enable-libxml2 \
+    --extra-libs="-L$INSTALL_PATH/lib -lz -lm -ldl -pthread" &&
   run_make
 }
 
@@ -389,7 +336,7 @@ fetch_fribidi() {
 }
 
 install_fribidi() {
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared
   run_make
 }
 
@@ -398,7 +345,7 @@ fetch_harfbuzz() {
 }
 
 install_harfbuzz() {
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --with-freetype
   run_make
 }
 
@@ -407,42 +354,8 @@ fetch_libass() {
 }
 
 install_libass() {
-  ./configure --prefix=$INSTALL_PATH
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared
   run_make
-}
-
-fetch_vlc() {
-  fetch_url http://get.videolan.org/vlc/$1/vlc-$1.tar.xz
-}
-
-install_vlc() {
-  sudo apt install -y \
-    libxcb-shm0-dev \
-    libxcb-composite0-dev \
-    libxcb-xv0-dev \
-    libxml2-dev \
-    libasound2-dev \
-    libpulse-dev
-
-  mkdir -p build
-  cd build
-
-  ../configure --prefix=$INSTALL_PATH \
-    --disable-lua --disable-a52 --disable-qt --disable-chromecast
-  run_make
-}
-
-fetch_vlcqt() {
-  fetch_github https://github.com/vlc-qt/vlc-qt/archive/$1.tar.gz
-}
-
-install_vlcqt() {
-  mkdir -p build
-  cd build
-  CXXFLAGS="-I$INSTALL_PATH/include/vlc/plugins $CXXFLAGS" cmake .. \
-    -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
-  run_make
-  rm $INSTALL_PATH/qml/VLCQt -rf
 }
 
 fetch_boost() {
@@ -452,7 +365,7 @@ fetch_boost() {
 install_boost() {
   ./bootstrap.sh
   cd libs/filesystem/build
-  ../../../b2 install --prefix=$INSTALL_PATH
+  ../../../b2 install --prefix=$INSTALL_PATH link=static runtime-link=static
 }
 
 fetch_fuse3() {
@@ -460,9 +373,10 @@ fetch_fuse3() {
 }
 
 install_fuse3() {
-  mkdir -p build
-  cd build
-  meson .. --prefix=$INSTALL_PATH --libdir=lib
+  mkdir -p build &&
+  cd build &&
+  meson .. --prefix=$INSTALL_PATH --libdir=lib &&
+  ninja &&
   ninja install || echo 0
 }
 
@@ -472,7 +386,7 @@ fetch_mpv() {
 
 install_mpv() {
   ./bootstrap.py
-  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-shared
+  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-static
   ./waf install
 }
 
@@ -527,13 +441,14 @@ done
 mkdir tarballs -p
 cd tarballs
 
+install "zlib" 1.2.11
 install "cmake" 3.12.1
 install "ecm" 5.54.0
 install "ninja" 1.8.2
-install "openssl" 1.0.2p
+install "openssl" 1.1.1
 install "xkbcommon" 0.5.0
-install "qt" 5.12.1
-install "kirigami" 33e64ff8eedecedf9560c836fd94a851db066515
+install "qt" 5.15.0
+install "kirigami" 5.66.0
 install "jsoncpp" 1.8.3
 install "tinyxml2" 6.0.0
 install "cares" 1.13.0
@@ -546,15 +461,8 @@ install "megasdk" 3.4.4
 install "fribidi" 1.0.5
 install "harfbuzz" 2.3.0
 install "libass" 0.14.0
-install "opus" 1.2.1
-install "ogg" 1.3.3
-install "vorbis" 1.3.6
-install "ebml" 1.3.6
-install "matroska" 1.4.9
 install "libxml2" 2.9.7
 install "ffmpeg" 4.1.3
-install "vlc" 3.0.4
-install "vlcqt" 1.1.1
 install "mpv" 0.29.1
 install "boost" 1.67.0
 install "fuse3" 3.2.1
