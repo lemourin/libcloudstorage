@@ -9,6 +9,7 @@ export CXXFLAGS=-fPIC
 export CFLAGS=-fPIC
 CONCURRENCY=4
 
+command -v wget >/dev/null 2>&1 || { echo >&2 "wget is not installed"; exit 1; }
 command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
 command -v g++ >/dev/null 2>&1 || { echo >&2 "g++ is not installed"; exit 1; }
 command -v libtoolize >/dev/null 2>&1 || { echo >&2 "libtool is not installed"; exit 1; }
@@ -28,6 +29,8 @@ pkg-config --cflags xinerama >/dev/null 2>&1 || { echo >&2 "libxcb-xinerama0-dev
 pkg-config --cflags xrender >/dev/null 2>&1 || { echo >&2 "libxcb-render-util0-dev is not installed"; exit 1; }
 pkg-config --cflags xcb-icccm >/dev/null 2>&1 || { echo >&2 "libxcb-icccm4-dev is not installed"; exit 1; }
 pkg-config --cflags xcb-shm >/dev/null 2>&1 || { echo >&2 "libxcb-shm0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-keysyms >/dev/null 2>&1 || { echo >&2 "libxcb-keysyms1-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-image >/dev/null 2>&1 || { echo >&2 "libxcb-image0-dev is not installed"; exit 1; }
 
 unpack() {
   if [[ ! -d $1 ]]; then
