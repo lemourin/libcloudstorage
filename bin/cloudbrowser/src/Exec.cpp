@@ -52,10 +52,6 @@
 #include "Utility/Utility.h"
 #include "WinRTUtility.h"
 
-#ifdef WITH_VLC_QT
-#include <VLCQtQml/Qml.h>
-#endif
-
 #ifdef QT_STATICPLUGIN
 
 #include <QtPlugin>
@@ -119,9 +115,6 @@ void register_types() {
 #endif
   qmlRegisterUncreatableType<CloudItem>("libcloudstorage", 1, 0, "CloudItem",
                                         "uncreatable type");
-#ifdef WITH_VLC_QT
-  VlcQml::registerTypes();
-#endif
 #ifdef WITH_MPV
   qmlRegisterType<MpvPlayer>("libcloudstorage", 1, 0, "MpvPlayer");
 #endif
@@ -151,18 +144,6 @@ int exec_cloudbrowser(int argc, char** argv) {
     QtWebView::initialize();
 #endif
 
-#ifdef WINRT
-    qputenv("VLC_ARGS", (QStringList() << "--intf=dummy"
-                                       << "--no-media-library"
-                                       << "--no-stats"
-                                       << "--no-osd"
-                                       << "--no-loop"
-                                       << "--no-video-title-show"
-                                       << "--aout=winstore"
-                                       << "--drop-late-frames")
-                            .join(' ')
-                            .toLocal8Bit());
-#endif
     if (!qEnvironmentVariableIsSet("XDG_CURRENT_DESKTOP"))
       qputenv("XDG_CURRENT_DESKTOP", "1");
 
@@ -184,11 +165,6 @@ int exec_cloudbrowser(int argc, char** argv) {
     engine.rootContext()->setContextProperty("qtwebview", QVariant(true));
 #else
     engine.rootContext()->setContextProperty("qtwebview", QVariant(false));
-#endif
-#ifdef WITH_VLC_QT
-    engine.rootContext()->setContextProperty("vlcqt", QVariant(true));
-#else
-    engine.rootContext()->setContextProperty("vlcqt", QVariant(false));
 #endif
 #ifdef WITH_MPV
     engine.rootContext()->setContextProperty("mpv", QVariant(true));

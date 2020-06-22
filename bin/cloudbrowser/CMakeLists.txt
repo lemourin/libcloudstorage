@@ -146,7 +146,6 @@ set(cloudbrowser_RESOURCES
     resources/tinyxml2.png
     resources/url.min.js
     resources/vlc-blue.png
-    resources/vlc-qt.png
     resources/vlc.png
     resources/webdav_login.html
     qtquickcontrols2.conf
@@ -167,7 +166,6 @@ set(cloudbrowser_QML
     qml/QtPlayer.qml
     qml/RegisterPage.qml
     qml/RemoveProvider.qml
-    qml/VlcPlayer.qml
     qml/WebView.qml
     qml/WinRTFileDialog.qml
 )

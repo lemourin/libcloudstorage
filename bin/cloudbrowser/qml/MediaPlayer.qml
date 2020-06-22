@@ -39,7 +39,7 @@ Item {
   }
 
   function preferred_player() {
-    return page.player === "mpv" ? "MpvPlayer.qml" : (page.player === "vlc" ? "VlcPlayer.qml" : "QtPlayer.qml");
+    return page.player === "mpv" ? "MpvPlayer.qml" : "QtPlayer.qml";
   }
 
   function invoke_next() {

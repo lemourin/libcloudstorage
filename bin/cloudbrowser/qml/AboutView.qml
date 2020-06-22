@@ -39,11 +39,6 @@ Kirigami.ScrollablePage {
         icon_source: "qrc:/resources/vlc.png"
       }
       ListElement {
-        name: "vlc-qt"
-        url: "https://github.com/vlc-qt/vlc-qt"
-        icon_source: "qrc:/resources/vlc-qt.png"
-      }
-      ListElement {
         name: "mega sdk"
         url: "https://github.com/meganz/sdk"
         icon_source: "qrc:/resources/providers/mega.png"
