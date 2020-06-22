@@ -208,18 +208,6 @@ set_target_properties(cloudbrowser
 
 target_include_directories(cloudbrowser PRIVATE "src")
 
-target_link_libraries(cloudbrowser PRIVATE 
-    cloudstorage
-    Qt5::Core
-    Qt5::Gui
-    Qt5::Quick
-    Qt5::QuickControls2
-    Qt5::Widgets
-    Qt5::Qml
-    Qt5::Svg
-    Threads::Threads
-)
-
 cloudstorage_target_link_library(cloudbrowser jsoncpp)
 
 if(ffmpeg_FOUND)
@@ -317,5 +305,17 @@ if(NOT BUILD_SHARED_LIBS)
     endif()
 
 endif()
+
+target_link_libraries(cloudbrowser PRIVATE
+    cloudstorage
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Quick
+    Qt5::QuickControls2
+    Qt5::Widgets
+    Qt5::Qml
+    Qt5::Svg
+    Threads::Threads
+)
 
 install(TARGETS cloudbrowser)
