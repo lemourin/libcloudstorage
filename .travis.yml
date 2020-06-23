@@ -66,7 +66,7 @@ script:
 - CXXFLAGS="-Wall -Wextra -O2 -fsanitize=address"
   LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-9 CXX=g++-9
   cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0
-		-DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_TYPE=Release
     -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;$SYSTEM_PATH/libpthread.so;$SYSTEM_PATH/libdl.so"
     -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;$SYSTEM_PATH/libasound.so;$SYSTEM_PATH/libXinerama.so;$SYSTEM_PATH/libXss.so;$SYSTEM_PATH/libXrandr.so"
     -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a"
