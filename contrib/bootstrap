@@ -167,7 +167,7 @@ install_ninja() {
 }
 
 fetch_kirigami() {
-  fetch_github https://github.com/lemourin/kirigami/archive/$1.tar.gz
+  fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
   if [ ! -f .patched ]; then
     patch -p0 -i ../../patches/kirigami_qrc_in_fix.patch &&
       rm kirigami.qrc &&
@@ -179,6 +179,7 @@ install_kirigami() {
   mkdir -p build &&
   cd build &&
   cmake .. \
+    -DBUILD_SHARED_LIBS=1 \
     -DQt5_DIR=$INSTALL_PATH/lib/cmake/Qt5 -DDISABLE_DBUS=1 &&
   make || true &&
   cmake .. \
@@ -446,7 +447,7 @@ cd tarballs
 
 install "zlib" 1.2.11
 install "cmake" 3.12.1
-install "ecm" 5.54.0
+install "ecm" 5.66.0
 install "ninja" 1.8.2
 install "openssl" 1.1.1
 install "xkbcommon" 0.5.0
