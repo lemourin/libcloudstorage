@@ -83,6 +83,9 @@ script:
   -Ibuild/src
   -DWITH_FUSE -DWITH_MPV -DWITH_CURL -DWITH_MICROHTTPD -DWITH_THUMBNAILER -DWITH_CRYPTOPP -fPIC
 
+before_deploy:
+- strip build/bin/cloudbrowser/cloudbrowser
+
 deploy:
   provider: releases
   overwrite: true
