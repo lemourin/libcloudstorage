@@ -45,111 +45,136 @@ addons:
 
 before_install:
   - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
-  - cd contrib
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      set -e
       for i in $(find test src bin examples -type f \( -regex '.*\.\(h\|cpp\|c\)$' ! -regex 'test/googletest/.*$' \)); do
-        clang-format-7 $i | diff - $i > /dev/null;
-        if [[ $? -ne 0 ]]; then
-          echo "File $i not formatted.";
-          FAIL=true;
-        fi;
-      done;
-      [ "$FAIL" != "true" ];
-      wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-linux-gnu.tar.gz;
-      tar xf x86_64-linux-gnu.tar.gz;
-      ./change-prefix.sh;
-      wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh;
-      chmod +x cmake-3.17.3-Linux-x86_64.sh;
-      ./cmake-3.17.3-Linux-x86_64.sh --skip-license --prefix=$PWD/x86_64-linux-gnu;
-      export PATH="$PWD/x86_64-linux-gnu/bin:$PATH";
-      cd ..;
-    fi;
+        clang-format-7 $i | diff - $i > /dev/null
+      done
+      cd contrib
+      wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-linux-gnu.tar.gz
+      tar xf x86_64-linux-gnu.tar.gz
+      ./change-prefix.sh
+      wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
+      chmod +x cmake-3.17.3-Linux-x86_64.sh
+      ./cmake-3.17.3-Linux-x86_64.sh --skip-license --prefix=$PWD/x86_64-linux-gnu
+      export PATH="$PWD/x86_64-linux-gnu/bin:$PATH"
+      cd ..
+    fi
+  - |
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-darwin-macos.tar.gz;
-      tar xf x86_64-darwin-macos.tar.gz;
-      sed -i s/x86_64-linux-gnu/x86_64-darwin-macos/g change_prefix.sh;
-      ./change-prefix.sh;
-      cd ..;
-    fi;
+      cd contrib &&
+      wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-darwin-macos.tar.gz &&
+      tar xf x86_64-darwin-macos.tar.gz &&
+      sed -i.bak "s/x86_64-linux-gnu/x86_64-darwin-macos/g" change-prefix.sh &&
+      ./change-prefix.sh &&
+      cd ..
+    fi
 
 script:
   - mkdir build
   - cd build
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-      export PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig;
-      CONTRIB_PATH=$PWD/../contrib/x86_64-linux-gnu/lib;
-      SYSTEM_PATH=/usr/lib/x86_64-linux-gnu;
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      set -e
+      export PKG_CONFIG_PATH=$PWD/../contrib/x86_64-linux-gnu/lib/pkgconfig
+      CONTRIB_PATH=$PWD/../contrib/x86_64-linux-gnu/lib
+      SYSTEM_PATH=/usr/lib/x86_64-linux-gnu
       CXXFLAGS="-Wall -Wextra -O2 -fsanitize=address"
-      LDFLAGS="-static-libasan -fsanitize=address" CC=gcc-9 CXX=g++-9
-      cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0
-        -DCMAKE_BUILD_TYPE=Release
-        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;$SYSTEM_PATH/libpthread.so;$SYSTEM_PATH/libdl.so"
-        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;$SYSTEM_PATH/libasound.so;$SYSTEM_PATH/libXinerama.so;$SYSTEM_PATH/libXss.so;$SYSTEM_PATH/libXrandr.so"
-        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a"
-        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$SYSTEM_PATH/libfreetype.so;$CONTRIB_PATH/libfribidi.a;$SYSTEM_PATH/libfontconfig.so;$CONTRIB_PATH/libz.a;"
-        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a"
-        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a"
-        -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc";
-      make -j 4;
-      make test CXXFLAGS=-Wno-sign-compare -j 4;
-      cd ..;
-      clang-tidy-7 $(find src bin test examples -name "*.cpp") --
-        -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3)
-        -Itest/googletest/googletest/include
-        -Itest/googletest/googlemock/include
-        -Ibuild/src
-        -DWITH_FUSE -DWITH_MPV -DWITH_CURL -DWITH_MICROHTTPD -DWITH_THUMBNAILER -DWITH_CRYPTOPP -fPIC;
-    fi;
+      LDFLAGS="-static-libasan -fsanitize=address"
+      CC=gcc-9
+      CXX=g++-9
+      cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0 \
+        -DCMAKE_BUILD_TYPE=Release \
+        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;$SYSTEM_PATH/libpthread.so;$SYSTEM_PATH/libdl.so" \
+        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;$SYSTEM_PATH/libasound.so;$SYSTEM_PATH/libXinerama.so;$SYSTEM_PATH/libXss.so;$SYSTEM_PATH/libXrandr.so" \
+        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a" \
+        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$SYSTEM_PATH/libfreetype.so;$CONTRIB_PATH/libfribidi.a;$SYSTEM_PATH/libfontconfig.so;$CONTRIB_PATH/libz.a;" \
+        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a" \
+        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a" \
+        -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
+      make -j 4
+      make test CXXFLAGS=-Wno-sign-compare -j 4
+      strip bin/cloudbrowser/cloudbrowser
+      mv bin/cloudbrowser/cloudbrowser bin/cloudbrowser/cloudbrowser-linux
+      cd ..
+      clang-tidy-7 $(find src bin test examples -name "*.cpp") -- \
+        -Isrc -Ibin/cloudbrowser/src -Itest $(pkg-config --cflags jsoncpp Qt5Quick fuse3) \
+        -Itest/googletest/googletest/include \
+        -Itest/googletest/googlemock/include \
+        -Ibuild/src \
+        -DWITH_FUSE -DWITH_MPV -DWITH_CURL -DWITH_MICROHTTPD -DWITH_THUMBNAILER -DWITH_CRYPTOPP -fPIC
+    fi
+  - |
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-      export PKG_CONFIG_LIBDIR=$PWD/../contrib/x86_64-darwin-macos/lib/pkgconfig;
-      CONTRIB_PATH=$PWD/../contrib/x86_64-darwin-macos/lib;
-      cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0
-        -DCMAKE_BUILD_TYPE=Release
-        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;"
-        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a;"
-        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a;/usr/lib/libiconv.dylib"
-        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;"
-        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$CONTRIB_PATH/libfreetype.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libz.a;"
-        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;"
-        -DCMAKE_EXE_LINKER_FLAGS="
-          -framework Foundation
-          -framework SystemConfiguration
-          -framework AudioToolbox
-          -framework VideoToolbox
-          -framework CoreMedia
-          -framework CoreAudio
-          -framework AVFoundation
-          -framework CoreVideo
-          -framework CoreGraphics
-          -framework CoreText
-          -framework CoreImage
-          -framework OpenGL
-          -framework AppKit";
-      make -j 4;
-      make -j 4 test;
-      cd ..;
-    fi;
-
-before_deploy:
-  - strip build/bin/cloudbrowser/cloudbrowser
-  - mv build/bin/cloudbrowser/cloudbrowser build/bin/cloudbrowser/cloudbrowser-$TRAVIS_OS_NAME
+      export PKG_CONFIG_LIBDIR=$PWD/../contrib/x86_64-darwin-macos/lib/pkgconfig &&
+      CONTRIB_PATH=$PWD/../contrib/x86_64-darwin-macos/lib &&
+      cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0 \
+        -DCMAKE_BUILD_TYPE=Release \
+        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;" \
+        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a;" \
+        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a;/usr/lib/libiconv.dylib" \
+        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;" \
+        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$CONTRIB_PATH/libfreetype.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libz.a;" \
+        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;" \
+        -DCMAKE_EXE_LINKER_FLAGS=" \
+          -framework Foundation \
+          -framework SystemConfiguration \
+          -framework AudioToolbox \
+          -framework VideoToolbox \
+          -framework CoreMedia \
+          -framework CoreAudio \
+          -framework AVFoundation \
+          -framework CoreVideo \
+          -framework CoreGraphics \
+          -framework CoreText \
+          -framework CoreImage \
+          -framework OpenGL \
+          -framework AppKit \
+        " &&
+      make -j 4 &&
+      make -j 4 test &&
+      strip bin/cloudbrowser/cloudbrowser &&
+      cd bin/cloudbrowser &&
+      mkdir -p cloudbrowser.app/Contents/MacOS &&
+      mv cloudbrowser cloudbrowser.app/Contents/MacOS &&
+      cat > cloudbrowser.app/Contents/Info.plist << EOF
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+      <dict>
+        <key>CFBundleExecutable</key>
+        <string>cloudbrowser</string>
+        <key>CFBundleIdentifier</key>
+        <string>org.videolan.cloudbrowser</string>
+        <key>CFBundleName</key>
+        <string>CloudBrowser</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+      </dict>
+    </plist>
+    EOF
+      [ $? -eq 0 ] &&
+      hdiutil create -fs HFS+ -srcfolder cloudbrowser.app/ -volname CloudBrowser cloudbrowser.dmg &&
+      cd ../../../
+    fi
 
 deploy:
-- provider: releases
-  overwrite: true
-  api_key:
-    secure: FKvjbAn/91TRlQMOYO3Bsfx3IYe+BEAkjS/EGfEiR7WKh0Xz2c6HzDucKuNq0MuPPh8ddQO+szVWwSJXMG2brXQtKuRPdPARGLOiR3R8+F2UAnQ6o3AVoXcpZCVYgqZzg4gz8I7+LhL+48UKhNykU4DT3ahtL9kAmMmBbI4sl84WEwSxw7QHMKD8y/fVskyBYOzg1uT1sbmiupy0oErJyi+s8faYLcVPmremWZeJL5pra76+xjO9siriIscOKPONknKu7w2s7AeVHdW4VEmkc4iLVUpz0xsUWaoIaX16smkVtz3pE34UBigO1JyJPqYO+c2CNDqXOJwN+xx1GIqL65vColrZB9IkRdfa0chmIy6c05ZvDpyZtNwOBqImBx6kod34URpz+kwwKK+9a56HcDrXYUZ+Knmcm/4t6LSH51QksjLLxqnI2wqDvmohUkyo3cZfPw8bBB0c7NRwVDNStQLxKnsXfZ8H58uYd3XhERGn2/D13JX0VvRb8lUMwSWsLADng1oLfe8ITiD46NzdUwOCgcS3NYlM51l8q6D00QMlzCqDGJeFI/lFR2a4o5xhXYkx3Dn5cAj6D1i+O0WLSDLOP7ILIuNKP5E5msTvvpuslaUMM/oEwLl0WnVkRpSKSxLBAi5bQL3xQo64PO9oCvnC/37sa/0NCdfiI99nXfE=
-  file: "build/bin/cloudbrowser/cloudbrowser-linux"
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $TRAVIS_OS_NAME = linux
-- provider: releases
-  overwrite: true
-  api_key:
-    secure: FKvjbAn/91TRlQMOYO3Bsfx3IYe+BEAkjS/EGfEiR7WKh0Xz2c6HzDucKuNq0MuPPh8ddQO+szVWwSJXMG2brXQtKuRPdPARGLOiR3R8+F2UAnQ6o3AVoXcpZCVYgqZzg4gz8I7+LhL+48UKhNykU4DT3ahtL9kAmMmBbI4sl84WEwSxw7QHMKD8y/fVskyBYOzg1uT1sbmiupy0oErJyi+s8faYLcVPmremWZeJL5pra76+xjO9siriIscOKPONknKu7w2s7AeVHdW4VEmkc4iLVUpz0xsUWaoIaX16smkVtz3pE34UBigO1JyJPqYO+c2CNDqXOJwN+xx1GIqL65vColrZB9IkRdfa0chmIy6c05ZvDpyZtNwOBqImBx6kod34URpz+kwwKK+9a56HcDrXYUZ+Knmcm/4t6LSH51QksjLLxqnI2wqDvmohUkyo3cZfPw8bBB0c7NRwVDNStQLxKnsXfZ8H58uYd3XhERGn2/D13JX0VvRb8lUMwSWsLADng1oLfe8ITiD46NzdUwOCgcS3NYlM51l8q6D00QMlzCqDGJeFI/lFR2a4o5xhXYkx3Dn5cAj6D1i+O0WLSDLOP7ILIuNKP5E5msTvvpuslaUMM/oEwLl0WnVkRpSKSxLBAi5bQL3xQo64PO9oCvnC/37sa/0NCdfiI99nXfE=
-  file: "build/bin/cloudbrowser/cloudbrowser-osx"
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $TRAVIS_OS_NAME = osx
+  - provider: releases
+    overwrite: true
+    api_key:
+      secure: FKvjbAn/91TRlQMOYO3Bsfx3IYe+BEAkjS/EGfEiR7WKh0Xz2c6HzDucKuNq0MuPPh8ddQO+szVWwSJXMG2brXQtKuRPdPARGLOiR3R8+F2UAnQ6o3AVoXcpZCVYgqZzg4gz8I7+LhL+48UKhNykU4DT3ahtL9kAmMmBbI4sl84WEwSxw7QHMKD8y/fVskyBYOzg1uT1sbmiupy0oErJyi+s8faYLcVPmremWZeJL5pra76+xjO9siriIscOKPONknKu7w2s7AeVHdW4VEmkc4iLVUpz0xsUWaoIaX16smkVtz3pE34UBigO1JyJPqYO+c2CNDqXOJwN+xx1GIqL65vColrZB9IkRdfa0chmIy6c05ZvDpyZtNwOBqImBx6kod34URpz+kwwKK+9a56HcDrXYUZ+Knmcm/4t6LSH51QksjLLxqnI2wqDvmohUkyo3cZfPw8bBB0c7NRwVDNStQLxKnsXfZ8H58uYd3XhERGn2/D13JX0VvRb8lUMwSWsLADng1oLfe8ITiD46NzdUwOCgcS3NYlM51l8q6D00QMlzCqDGJeFI/lFR2a4o5xhXYkx3Dn5cAj6D1i+O0WLSDLOP7ILIuNKP5E5msTvvpuslaUMM/oEwLl0WnVkRpSKSxLBAi5bQL3xQo64PO9oCvnC/37sa/0NCdfiI99nXfE=
+    file: "build/bin/cloudbrowser/cloudbrowser-linux"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $TRAVIS_OS_NAME = linux
+  - provider: releases
+    overwrite: true
+    api_key:
+      secure: FKvjbAn/91TRlQMOYO3Bsfx3IYe+BEAkjS/EGfEiR7WKh0Xz2c6HzDucKuNq0MuPPh8ddQO+szVWwSJXMG2brXQtKuRPdPARGLOiR3R8+F2UAnQ6o3AVoXcpZCVYgqZzg4gz8I7+LhL+48UKhNykU4DT3ahtL9kAmMmBbI4sl84WEwSxw7QHMKD8y/fVskyBYOzg1uT1sbmiupy0oErJyi+s8faYLcVPmremWZeJL5pra76+xjO9siriIscOKPONknKu7w2s7AeVHdW4VEmkc4iLVUpz0xsUWaoIaX16smkVtz3pE34UBigO1JyJPqYO+c2CNDqXOJwN+xx1GIqL65vColrZB9IkRdfa0chmIy6c05ZvDpyZtNwOBqImBx6kod34URpz+kwwKK+9a56HcDrXYUZ+Knmcm/4t6LSH51QksjLLxqnI2wqDvmohUkyo3cZfPw8bBB0c7NRwVDNStQLxKnsXfZ8H58uYd3XhERGn2/D13JX0VvRb8lUMwSWsLADng1oLfe8ITiD46NzdUwOCgcS3NYlM51l8q6D00QMlzCqDGJeFI/lFR2a4o5xhXYkx3Dn5cAj6D1i+O0WLSDLOP7ILIuNKP5E5msTvvpuslaUMM/oEwLl0WnVkRpSKSxLBAi5bQL3xQo64PO9oCvnC/37sa/0NCdfiI99nXfE=
+    file: "build/bin/cloudbrowser/cloudbrowser.dmg"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $TRAVIS_OS_NAME = osx
