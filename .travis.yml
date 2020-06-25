@@ -106,7 +106,6 @@ script:
       cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0
         -DCMAKE_BUILD_TYPE=Release
         -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;"
-        -Dmpv_LIBRARY=NOTFOUND
         -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a;"
         -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a;/usr/lib/libiconv.dylib"
         -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;"
