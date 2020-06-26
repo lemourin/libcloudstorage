@@ -229,10 +229,10 @@ Pointer<AVFormatContext> create_format_context(
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   auto context = avformat_alloc_context();
   auto start_time = std::chrono::system_clock::now();
+  auto io_context =
+      create_io_context(provider, std::move(item), size, start_time, interrupt);
   auto data =
-      new CallbackData{interrupt, start_time,
-                       create_io_context(provider, std::move(item), size,
-                                         start_time, std::move(interrupt))};
+      new CallbackData{std::move(interrupt), start_time, std::move(io_context)};
   context->interrupt_callback.opaque = data;
   context->interrupt_callback.callback = [](void* t) -> int {
     auto d = reinterpret_cast<CallbackData*>(t);
