@@ -137,6 +137,9 @@ script:
       strip bin/cloudbrowser/cloudbrowser &&
       cd bin/cloudbrowser &&
       mkdir -p cloudbrowser.app/Contents/MacOS &&
+      mkdir -p cloudbrowser.app/Contents/Resources &&
+      brew install makeicns &&
+      makeicns -in ../../../bin/cloudbrowser/resources/cloud.png -out cloudbrowser.app/Contents/Resources/cloud.icns &&
       mv cloudbrowser cloudbrowser.app/Contents/MacOS &&
       cat > cloudbrowser.app/Contents/Info.plist << EOF
     <?xml version="1.0" encoding="UTF-8"?>
@@ -151,6 +154,8 @@ script:
         <string>CloudBrowser</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
+        <key>CFBundleIconFile</key>
+        <string>cloud</string>
       </dict>
     </plist>
     EOF
