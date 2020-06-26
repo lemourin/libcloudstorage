@@ -110,6 +110,7 @@ script:
       export PKG_CONFIG_LIBDIR=$PWD/../contrib/x86_64-darwin-macos/lib/pkgconfig &&
       CONTRIB_PATH=$PWD/../contrib/x86_64-darwin-macos/lib &&
       cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0 \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
         -DCMAKE_BUILD_TYPE=Release \
         -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;" \
         -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a;" \

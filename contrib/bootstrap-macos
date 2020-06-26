@@ -5,8 +5,9 @@ export INSTALL_PATH=$PWD/$ARCH
 export PKG_CONFIG_LIBDIR=$INSTALL_PATH/lib/pkgconfig
 export CMAKE_PREFIX_PATH=$INSTALL_PATH
 export PATH=$INSTALL_PATH/bin:$PATH
-export CXXFLAGS=-fPIC
-export CFLAGS=-fPIC
+export MIN_MACOS_VERSION=10.13
+export CXXFLAGS="-fPIC -mmacosx-version-min=$MIN_MACOS_VERSION"
+export CFLAGS="-fPIC -mmacosx-version-min=$MIN_MACOS_VERSION"
 CONCURRENCY=4
 
 command -v wget >/dev/null 2>&1 || { echo >&2 "wget is not installed"; exit 1; }
@@ -135,7 +136,7 @@ fetch_ecm() {
 }
 
 install_ecm() {
-  cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+  cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_OSX_DEPLOYMENT_TARGET=$MIN_MACOS_VERSION
   run_make
 }
 
@@ -163,10 +164,12 @@ install_kirigami() {
   cd build &&
   cmake .. \
     -DBUILD_SHARED_LIBS=1 \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=$MIN_MACOS_VERSION \
     -DQt5_DIR=$INSTALL_PATH/lib/cmake/Qt5 -DDISABLE_DBUS=1 &&
   make || true &&
   cmake .. \
     -DQt5_DIR=$INSTALL_PATH \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=$MIN_MACOS_VERSION \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
     -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml \
     -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump \
@@ -183,7 +186,7 @@ fetch_jsoncpp() {
 install_jsoncpp() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DCMAKE_OSX_DEPLOYMENT_TARGET=$MIN_MACOS_VERSION
   run_make
 }
 
@@ -194,7 +197,7 @@ fetch_tinyxml2() {
 install_tinyxml2() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1 -DCMAKE_OSX_DEPLOYMENT_TARGET=$MIN_MACOS_VERSION
   run_make
 }
 
