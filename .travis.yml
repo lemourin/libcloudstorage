@@ -136,12 +136,12 @@ script:
       make -j 4 test &&
       strip bin/cloudbrowser/cloudbrowser &&
       cd bin/cloudbrowser &&
-      mkdir -p cloudbrowser.app/Contents/MacOS &&
-      mkdir -p cloudbrowser.app/Contents/Resources &&
+      mkdir -p "Cloud Browser.app/Contents/MacOS" &&
+      mkdir -p "Cloud Browser.app/Contents/Resources" &&
       brew install makeicns &&
-      makeicns -in ../../../bin/cloudbrowser/resources/cloud.png -out cloudbrowser.app/Contents/Resources/cloud.icns &&
-      mv cloudbrowser cloudbrowser.app/Contents/MacOS &&
-      cat > cloudbrowser.app/Contents/Info.plist << EOF
+      makeicns -in ../../../bin/cloudbrowser/resources/cloud.png -out "Cloud Browser.app/Contents/Resources/cloud.icns" &&
+      mv cloudbrowser "Cloud Browser.app/Contents/MacOS" &&
+      cat > "Cloud Browser.app/Contents/Info.plist" << EOF
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">
@@ -151,7 +151,7 @@ script:
         <key>CFBundleIdentifier</key>
         <string>org.videolan.cloudbrowser</string>
         <key>CFBundleName</key>
-        <string>CloudBrowser</string>
+        <string>Cloud Browser</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
         <key>CFBundleIconFile</key>
@@ -160,7 +160,10 @@ script:
     </plist>
     EOF
       [ $? -eq 0 ] &&
-      hdiutil create -fs HFS+ -srcfolder cloudbrowser.app/ -volname CloudBrowser cloudbrowser.dmg &&
+      brew install graphicsmagick imagemagick &&
+      npm install create-dmg -g &&
+      create-dmg "Cloud Browser.app" || true &&
+      mv "Cloud Browser Undefined.dmg" cloudbrowser.dmg &&
       cd ../../../
     fi
 
