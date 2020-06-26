@@ -27,12 +27,13 @@ int main(int argc, char** argv) {
     return 1;
   }
   std::string generated_filename = argv[1];
-  std::ofstream header_file(generated_filename + ".h");
-  std::ofstream implementation_file(generated_filename + ".cpp");
+  std::ofstream header_file(generated_filename + ".h", std::fstream::binary);
+  std::ofstream implementation_file(generated_filename + ".cpp",
+                                    std::fstream::binary);
 
   for (int i = 2; i < argc; i++) {
     std::string resource_path = argv[i];
-    std::ifstream resource_file(resource_path);
+    std::ifstream resource_file(resource_path, std::fstream::binary);
     if (!resource_file) {
       std::cerr << "Couldn't read " << resource_path << "\n";
       return 1;
