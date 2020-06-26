@@ -27,6 +27,25 @@ target_sources(cloudstorage-c-api PRIVATE
 
 add_library(cloudstorage-util OBJECT)
 
+set(cloudstorage-resources
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/4shared_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/amazons3_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/animezone_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/local_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/localwinrt_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/mega_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/webdav_login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_error.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_success.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/bootstrap.min.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/bootstrap.min.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/url.min.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/style.min.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/jquery.min.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/cloud.png
+    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/vlc-blue.png
+)
+
 set(cloudstorage-util_PUBLIC_HEADERS
     Utility/Promise.h
 )
@@ -64,7 +83,10 @@ target_sources(cloudstorage-util PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/LoginPage.h
     ${cloudstorage-util_PUBLIC_HEADERS}
+    ${cloudstorage-resources}
 )
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../bin PREFIX "Resource Files" FILES ${cloudstorage-resources})
 
 add_library(cloudstorage)
 
@@ -156,6 +178,7 @@ set(cloudstorage_SOURCES
 target_sources(cloudstorage PRIVATE
     ${cloudstorage_HEADERS}
     ${cloudstorage_SOURCES}
+    ${cloudstorage-resources}
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${cloudstorage_HEADERS})
@@ -177,25 +200,6 @@ set_target_properties(cloudstorage-util
         PUBLIC_HEADER "${cloudstorage-util_PUBLIC_HEADERS}"
         POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
         CXX_STANDARD 17
-)
-
-set(cloudstorage-resources
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/4shared_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/amazons3_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/animezone_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/local_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/localwinrt_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/mega_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/webdav_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_error.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_success.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/bootstrap.min.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/bootstrap.min.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/url.min.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/style.min.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/jquery.min.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/cloud.png
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/vlc-blue.png
 )
 
 add_custom_command(
