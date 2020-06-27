@@ -114,6 +114,7 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
   if (!QFile::exists(default_font_path)) {
     QFile("assets:/subfont.ttf").copy(default_font_path);
   }
+  mpv_set_option_string(mpv_.get(), "config", "yes");
   mpv_set_option_string(mpv_.get(), "config-dir",
                         app_data.toStdString().c_str());
 #endif

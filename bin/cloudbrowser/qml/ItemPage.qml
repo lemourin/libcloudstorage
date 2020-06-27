@@ -126,12 +126,12 @@ Kirigami.ScrollablePage {
           target: platform
           onNotify: {
             if (action === "PLAY")
-              playing = true;
+              player.playing = true;
             else if (action === "PAUSE")
-              playing = false;
+              player.playing = false;
             else if (action === "NEXT") {
-              autoplay = true;
-              next();
+              player.autoplay = true;
+              player.next();
             }
           }
         }
@@ -477,7 +477,6 @@ Kirigami.ScrollablePage {
             id: item_thumbnail
             anchors.fill: parent
             asynchronous: true
-            mipmap: true
             fillMode: Image.PreserveAspectCrop
             anchors.margins: 5
             visible: thumbnail.done && thumbnail.source && !item_icon.visible

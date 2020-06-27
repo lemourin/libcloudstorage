@@ -14,7 +14,6 @@ Row {
     Image {
       anchors.centerIn: parent
       fillMode: Image.PreserveAspectFit
-      mipmap: true
       smooth: true
       height: parent.height
       source: "qrc:/resources/providers/" + provider + ".png"

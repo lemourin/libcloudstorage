@@ -82,7 +82,6 @@ Kirigami.ScrollablePage {
             height: parent.height
             Image {
               anchors.fill: parent
-              mipmap: true
               source: icon_source
               fillMode: Image.PreserveAspectFit
             }

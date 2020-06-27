@@ -5,6 +5,11 @@ if [ -z "$ANDROID_NDK_ROOT" ]; then
   exit 1
 fi
 
+if [ -z "$ANDROID_SDK_ROOT" ]; then
+  echo "ANDROID_SDK_ROOT not set"
+  exit 1
+fi
+
 if [ $# -lt 1 ]; then
   echo "Usage: $0 [ armv7a | aarch64 | x86 | x86_64 ]"
   exit 1
@@ -14,28 +19,28 @@ BUILD=$1
 
 if [ $BUILD == "armv7a" ]; then
   ARCH=armv7a-linux-androideabi
-  MIN_API_LEVEL=16
   CMAKE_ANDROID_ABI=armeabi-v7a
 elif [ $BUILD == "aarch64" ]; then
   ARCH=aarch64-linux-android
-  MIN_API_LEVEL=21
   CMAKE_ANDROID_ABI=arm64-v8a
 elif [ $BUILD == "x86" ]; then
   ARCH=i686-linux-android
-  MIN_API_LEVEL=16
   CMAKE_ANDROID_ABI=x86
 elif [ $BUILD == "x86_64" ]; then
   ARCH=x86_64-linux-android
-  MIN_API_LEVEL=21
   CMAKE_ANDROID_ABI=x86_64
 else
   echo "Unsupported arch $BUILD"
   exit 1
 fi
 
+MIN_API_LEVEL=21
+
+command -v javac >/dev/null 2>&1 || { echo >&2 "javac is not installed"; exit 1; }
+command -v cmake >/dev/null 2>&1 || { echo >&2 "cmake is not installed"; exit 1; }
 command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
 command -v perl >/dev/null 2>&1 || { echo >&2 "perl is not installed"; exit 1; }
-command -v libtool >/dev/null 2>&1 || { echo >&2 "libtool not found"; exit 1; }
+command -v libtoolize >/dev/null 2>&1 || { echo >&2 "libtool not found"; exit 1; }
 command -v aclocal >/dev/null 2>&1 || { echo >&2 "automake is not installed"; exit 1; }
 command -v autom4te >/dev/null 2>&1 || { echo >&2 "autoconf is not installed"; exit 1; }
 command -v pkg-config >/dev/null 2>&1 || { echo >&2 "pkg-config is not installed"; exit 1; }
@@ -111,6 +116,7 @@ run_cmake() {
     -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
     -G "$GENERATOR" \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
+    -DBUILD_SHARED_LIBS=0 \
     -DANDROID_ABI="$CMAKE_ANDROID_ABI" \
     -DANDROID_PLATFORM=$MIN_API_LEVEL $@
 }
@@ -126,7 +132,7 @@ fetch_jsoncpp() {
 install_jsoncpp() {
   mkdir -p build
   cd build
-  run_cmake -DBUILD_SHARED_LIBS=0 -DJSONCPP_WITH_TESTS=0
+  run_cmake -DJSONCPP_WITH_TESTS=0
   run_make
 }
 
@@ -137,7 +143,7 @@ fetch_tinyxml2() {
 install_tinyxml2() {
   mkdir -p build
   cd build
-  run_cmake -DBUILD_SHARED_LIBS=0 -DBUILD_STATIC_LIBS=1
+  run_cmake -DBUILD_STATIC_LIBS=1
   run_make
 }
 
@@ -259,8 +265,9 @@ install_ffmpeg() {
     --disable-everything \
     --disable-asm \
     --enable-cross-compile \
-    --enable-decoder=h264,hevc,vp8,vp9,mpeg4,mjpeg,theora,png,svg,bmp,webp,tiff,gif \
-    --enable-demuxer=mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe \
+    --enable-decoder="h264,hevc,vp8,vp9,mpeg4,mjpeg,theora,png,svg,bmp,webp,tiff,gif,aac,mp3,flac,ac3,opus,vorbis,wmv*,pcm*,subrip,dvdsub,xsub,webvtt" \
+    --enable-demuxer="mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe,wav,ac3,mp3,flac,ac3,ogg,pcm*" \
+    --enable-protocol=http \
     --enable-parser=mjpeg \
     --enable-encoder=png \
     --enable-filter=thumbnail,buffer,buffer_sink,scale \
@@ -295,6 +302,165 @@ EOF
     target-os=android \
     toolset=clang-$BUILD && \
   rm user-config.jam
+}
+
+fetch_ecm() {
+  fetch https://github.com/KDE/extra-cmake-modules/archive/v$1.tar.gz extra-cmake-modules-$1.tar.gz
+}
+
+install_ecm() {
+  mkdir -p build && cd build && run_cmake && run_make
+}
+
+fetch_qt() {
+  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
+  if [ ! -f .patched ]; then
+    sed -i 's/pluginBaseName, \[\-\], _/pluginBaseName, \[\-.\], _/g' qtbase/mkspecs/features/resources_functions.prf &&
+    sed -i 's/JNI_OnLoad/JNI_QtCore_OnLoad/g' qtbase/src/corelib/kernel/qjnionload.cpp &&
+    sed -i 's/Q_CORE_EXPORT/JNIEXPORT/g' qtbase/src/corelib/kernel/qjnionload.cpp &&
+    sed -i 's/JNI_OnLoad/JNI_QtAndroidExtras_OnLoad/g' qtandroidextras/src/androidextras/android/qjnionload.cpp &&
+    sed -i 's|/\*reserved\*/|reserved|g' qtbase/src/plugins/platforms/android/androidjnimain.cpp &&
+    sed -i 's/m_javaVM = vm;/m_javaVM = vm;\n    JNI_QtCore_OnLoad\(vm, reserved\);\n    JNI_QtAndroidExtras_OnLoad\(vm, reserved\);/g' \
+      qtbase/src/plugins/platforms/android/androidjnimain.cpp &&
+    sed -i 's/QT_END_NAMESPACE/QT_END_NAMESPACE\nJNIEXPORT jint JNICALL JNI_QtCore_OnLoad\(JavaVM\*, void\*\);\nJNIEXPORT jint JNICALL JNI_QtAndroidExtras_OnLoad\(JavaVM\*, void\*\);/g' \
+      qtbase/src/plugins/platforms/android/androidjnimain.cpp &&
+    touch .patched
+  fi
+}
+
+install_qt() {
+  mkdir -p build
+  cd build
+
+  ../configure \
+    -prefix $INSTALL_PATH -opensource -confirm-license -qt-libpng \
+    -I $INSTALL_PATH/include -L $INSTALL_PATH/lib \
+    -xplatform android-clang \
+    -static \
+    -android-ndk $ANDROID_NDK_ROOT \
+    -android-ndk-platform android-$MIN_API_LEVEL \
+    -android-sdk $ANDROID_SDK_ROOT \
+    -android-abis $CMAKE_ANDROID_ABI,arm64-v8a \
+    -no-warnings-are-errors \
+    -gui \
+    -skip qt3d \
+    -skip qtactiveqt \
+    -skip qtcharts \
+    -skip qtconnectivity \
+    -skip qtdatavis3d \
+    -skip qtdoc \
+    -skip qtgamepad \
+    -skip qtlocation \
+    -skip qtlottie \
+    -skip qtmacextras \
+    -skip qtmultimedia \
+    -skip qtnetworkauth \
+    -skip qtpurchasing \
+    -skip qtquick3d \
+    -skip qtquicktimeline \
+    -skip qtremoteobjects \
+    -skip qtscript \
+    -skip qtscxml \
+    -skip qtsensors \
+    -skip qtserialbus \
+    -skip qtserialport \
+    -skip qtspeech \
+    -skip qtvirtualkeyboard \
+    -skip qtwayland \
+    -skip qtwebchannel \
+    -skip qtwebengine \
+    -skip qtwebglplugin \
+    -skip qtwebsockets \
+    -skip qtwinextras \
+    -skip qtx11extras \
+    -no-feature-designer \
+    -nomake examples \
+    -nomake tests &&
+
+  make -j $CONCURRENCY && make install -j $CONCURRENCY &&
+
+  sed -i "s/QAndroidIntegrationPlugin/QAndroidPlatformIntegrationPlugin/g" $INSTALL_PATH/lib/cmake/Qt5Gui/Qt5Gui_QAndroidIntegrationPlugin_Import.cpp
+}
+
+fetch_kirigami() {
+  fetch_github https://github.com/KDE/kirigami/archive/v$1.tar.gz
+  if [ ! -f .patched ]; then
+    patch -p0 -i ../../patches/kirigami_qrc_in_fix.patch &&
+      rm kirigami.qrc &&
+      touch .patched
+  fi
+}
+
+install_kirigami() {
+  mkdir -p build &&
+  cd build &&
+  run_cmake .. \
+    -DBUILD_SHARED_LIBS=1 \
+    -DECM_DIR=$INSTALL_PATH/share/ECM/cmake \
+    -DQt5Core_DIR=$INSTALL_PATH/lib/cmake/Qt5Core \
+    -DQt5Quick_DIR=$INSTALL_PATH/lib/cmake/Qt5Quick \
+    -DQt5Gui_DIR=$INSTALL_PATH//lib/cmake/Qt5Gui \
+    -DQt5QmlModels_DIR=$INSTALL_PATH//lib/cmake/Qt5QmlModels \
+    -DQt5Qml_DIR=$INSTALL_PATH/lib/cmake/Qt5Qml \
+    -DQt5Network_DIR=$INSTALL_PATH/lib/cmake/Qt5Network \
+    -DQt5Svg_DIR=$INSTALL_PATH/lib/cmake/Qt5Svg \
+    -DQt5Widgets_DIR=$INSTALL_PATH/lib/cmake/Qt5Widgets \
+    -DQt5QuickControls2_DIR=$INSTALL_PATH/lib/cmake/Qt5QuickControls2 \
+    -DQt5LinguistTools_DIR=$INSTALL_PATH/lib/cmake/Qt5LinguistTools \
+    -DQt5_DIR=$INSTALL_PATH/lib/cmake/Qt5 -DDISABLE_DBUS=1 &&
+  make || true &&
+  run_cmake .. \
+    -DKDE_INSTALL_QMLDIR=$INSTALL_PATH/qml \
+    -DQMLPLUGINDUMP_PROGRAM=$INSTALL_PATH/bin/qmlplugindump \
+    -DDISABLE_DBUS=1 \
+    -DBUILD_SHARED_LIBS=0 &&
+  run_make &&
+  cp ../src/kirigamiplugin.h $INSTALL_PATH/include
+}
+
+fetch_fribidi() {
+  fetch_url https://github.com/fribidi/fribidi/releases/download/v$1/fribidi-$1.tar.bz2
+}
+
+install_fribidi() {
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --host=$ARCH$MIN_API_LEVEL 
+  run_make
+}
+
+fetch_freetype() {
+  fetch_url https://download.savannah.gnu.org/releases/freetype/freetype-$1.tar.gz
+}
+
+install_freetype() {
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --without-bzip2 --without-png --host=$ARCH$MIN_API_LEVEL && run_make
+}
+
+fetch_harfbuzz() {
+  fetch_url https://github.com/harfbuzz/harfbuzz/releases/download/$1/harfbuzz-$1.tar.bz2
+}
+
+install_harfbuzz() {
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --with-freetype --host=$ARCH$MIN_API_LEVEL 
+  run_make
+}
+
+fetch_libass() {
+  fetch_url https://github.com/libass/libass/releases/download/$1/libass-$1.tar.gz
+}
+
+install_libass() {
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --disable-asm --host=$ARCH$MIN_API_LEVEL --disable-require-system-font-provider
+  run_make
+}
+
+fetch_mpv() {
+  fetch_github https://github.com/mpv-player/mpv/archive/v$1.tar.gz
+}
+
+install_mpv() {
+  ./bootstrap.py
+  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-static --disable-iconv
+  ./waf install
 }
 
 install_run() {
@@ -348,6 +514,10 @@ done
 mkdir tarballs-$ARCH$MIN_API_LEVEL -p
 cd tarballs-$ARCH$MIN_API_LEVEL
 
+install "fribidi" 1.0.5
+install "freetype" 2.10.2
+install "harfbuzz" 2.3.0
+install "libass" 0.14.0
 install "openssl" 1.1.1b
 install "jsoncpp" 1.8.3
 install "tinyxml2" 6.0.0
@@ -360,3 +530,7 @@ install "sqlite" 3240000
 install "megasdk" 3.4.7
 install "ffmpeg" 4.1.3
 install "boost" 1.69.0
+install "ecm" 5.66.0
+install "qt" 5.15.0
+install "kirigami" 5.66.0
+install "mpv" 0.32.0

@@ -1,7 +1,11 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-add_executable(cloudbrowser WIN32)
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    add_library(cloudbrowser SHARED)
+else()
+    add_executable(cloudbrowser WIN32)
+endif()
 
 set(cloudbrowser_HEADERS
     src/AndroidUtility.h
@@ -315,5 +319,63 @@ target_link_libraries(cloudbrowser PRIVATE
     Qt5::Svg
     Threads::Threads
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    target_link_libraries(cloudbrowser PRIVATE  Qt5::QAndroidIntegrationPlugin Qt5::AndroidExtras)
+    get_filename_component(QT_ROOT "${Qt5Core_DIR}/../../.." ABSOLUTE)
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/gradle.properties
+                  CONTENT "
+                    androidCompileSdkVersion=29
+                    androidBuildToolsVersion=29.0.2
+                    qt5AndroidDir=${QT_ROOT}/src/android/java
+                    org.gradle.jvmargs=-Xmx4608M
+                  ")
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/res/values/libs.xml
+                  CONTENT "<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <array name=\"qt_sources\">
+        <item>https://download.qt.io/ministro/android/qt5/qt-5.14</item>
+    </array>
+    <array name=\"bundled_libs\">
+        <item>${ANDROID_ABI};cloudbrowser_${ANDROID_ABI}</item>
+    </array>
+    <array name=\"qt_libs\"/>
+    <array name=\"load_local_libs\"/>
+</resources>")
+    set(cloudbrowser-android-resources
+        android/AndroidManifest.xml
+        android/assets/subfont.ttf
+        android/build.gradle
+        android/AndroidManifest.xml
+        android/assets/subfont.ttf
+        android/build.gradle
+        android/project.properties
+        android/res-common/values/style.xml
+        android/res-debug/drawable/icon.png
+        android/res-release/drawable/icon.png
+        android/src/org/videolan/cloudbrowser/AuthView.java
+        android/src/org/videolan/cloudbrowser/CloudBrowser.java
+        android/src/org/videolan/cloudbrowser/FileInput.java
+        android/src/org/videolan/cloudbrowser/FileOutput.java
+        android/src/org/videolan/cloudbrowser/NotificationHelper.java
+        android/src/org/videolan/cloudbrowser/NotificationService.java
+        android/src/org/videolan/cloudbrowser/Utility.java)
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/android PREFIX "Android Files" FILES ${cloudbrowser-android-resources})
+    add_custom_target(cloudbrowser-apk
+        ALL
+        DEPENDS
+            cloudbrowser
+            ${cloudbrowser-android-resources}
+            ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/gradle.properties
+            ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/res/values/libs.xml
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/android ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/libs/${ANDROID_ABI}
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cloudbrowser> ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/libs/${ANDROID_ABI}
+        COMMAND ${CMAKE_COMMAND} -E copy ${QT_ROOT}/jar/QtAndroid.jar ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/libs/
+        COMMAND ${CMAKE_COMMAND} -E copy ${QT_ROOT}/jar/QtAndroidBearer.jar ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/libs/
+        COMMAND ${CMAKE_COMMAND} -E copy ${QT_ROOT}/jar/QtAndroidExtras.jar ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk/libs/
+        COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/cloudbrowser-apk ${QT_ROOT}/src/3rdparty/gradle/gradlew assemble
+    )
+endif()
 
 install(TARGETS cloudbrowser)
