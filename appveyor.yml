@@ -3,12 +3,24 @@ image: Visual Studio 2019
 install:
   - git submodule update --init --recursive
   - cd contrib
-  - appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.9/win32-x64-vs2019.7z
-  - 7z x win32-x64-vs2019.7z
+  - if "%BUILD%" == "win32" (
+      appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.9/win32-x64-vs2019.7z &&
+      7z x win32-x64-vs2019.7z
+    ) else (
+      appveyor DownloadFile https://github.com/lemourin/libcloudstorage/releases/download/1.9/winrt-x64-vs2019.7z &&
+      7z x winrt-x64-vs2019.7z
+    )
   - cd ..
 
 platform: x64
-configuration: Release
+configuration:
+  - Release
+  - Debug
+
+environment:
+  matrix:
+    - BUILD: win32
+    - BUILD: winrt
 
 build:
   project: build\cloudstorage.sln
@@ -16,11 +28,19 @@ build:
 before_build:
   - mkdir build
   - cd build
-  - set PREFIX_PATH_DEBUG=%cd%\..\contrib\win32\x64\Debug
-  - set PREFIX_PATH_RELEASE=%cd%\..\contrib\win32\x64\Release
-  - cmake .. -DPREFIX_PATH_DEBUG="%PREFIX_PATH_DEBUG%" -DPREFIX_PATH_RELEASE="%PREFIX_PATH_RELEASE%"
-      -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
-      -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
+  - set PREFIX_PATH_DEBUG=%cd%\..\contrib\%BUILD%\x64\Debug
+  - set PREFIX_PATH_RELEASE=%cd%\..\contrib\%BUILD%\x64\Release
+  - if "%BUILD%" == "win32" (
+      cmake .. -DPREFIX_PATH_DEBUG="%PREFIX_PATH_DEBUG%" -DPREFIX_PATH_RELEASE="%PREFIX_PATH_RELEASE%"
+        -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
+        -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
+    ) else (
+      cmake .. -DPREFIX_PATH_DEBUG="%PREFIX_PATH_DEBUG%" -DPREFIX_PATH_RELEASE="%PREFIX_PATH_RELEASE%"
+        -DCMAKE_SYSTEM_NAME=WindowsStore
+        -DCMAKE_SYSTEM_VERSION=10.0
+        -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib"
+        -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib"
+    )
   - cd ..
 
 test_script:
@@ -37,3 +57,5 @@ deploy:
     secure: kSr0k5pxggXRrdpJ+zcVKsQtMLSBOKVA0609omsG+DL9U4/35vuC5ntlA0yqFSfm
   on:
     appveyor_repo_tag: true
+    configuration: Release
+    BUILD: "win32"
