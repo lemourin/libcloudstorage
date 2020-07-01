@@ -295,6 +295,7 @@ install_megasdk() {
     --without-freeimage \
     --disable-examples \
     --enable-static --disable-shared \
+    --disable-curl-checks \
     --with-cryptopp=$INSTALL_PATH \
     --with-sqlite=$INSTALL_PATH \
     --with-openssl=$INSTALL_PATH \
