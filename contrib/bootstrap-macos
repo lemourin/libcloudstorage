@@ -379,7 +379,7 @@ fetch_mpv() {
 
 install_mpv() {
   ./bootstrap.py
-  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-static --disable-swift
+  ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-static --disable-swift --disable-jpeg
   ./waf install
 }
 
