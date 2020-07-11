@@ -384,6 +384,7 @@ struct App : public MegaApp {
         if (callback_queue_[i]) {
           callback_lock.unlock();
           callback_queue_[i]();
+          callback_queue_[i] = nullptr;
           callback_lock.lock();
         }
       empty = callback_queue_.empty();

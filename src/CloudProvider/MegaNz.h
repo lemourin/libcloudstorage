@@ -94,7 +94,8 @@ class MegaNz : public CloudProvider {
   std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
       IItem::Pointer item, IDownloadFileCallback*, Range);
 
-  void login(const Request<EitherError<void>>::Pointer& r, const std::string& session,
+  void login(const Request<EitherError<void>>::Pointer& r,
+             const std::string& session,
              const AuthorizeRequest::AuthorizeCompleted&);
 
   std::string passwordHash(const std::string& password) const;
