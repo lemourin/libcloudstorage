@@ -415,7 +415,7 @@ struct App : public MegaApp {
 
   void enqueue(std::function<void()> f) {
     std::unique_lock<std::mutex> lock(callback_mutex_);
-    callback_queue_.push_back(f);
+    callback_queue_.emplace_back(std::move(f));
   }
 
   std::unique_lock<std::mutex> lock() {
@@ -443,7 +443,7 @@ struct CloudHttp : public HttpIO {
     HttpCallback(App* app, std::function<void(const char*, uint32_t)> read)
         : app_(app), stream_(read), progress_() {}
 
-    ~HttpCallback() override {}
+    ~HttpCallback() override = default;
 
     bool isSuccess(int code,
                    const IHttpRequest::HeaderParameters&) const override {
@@ -500,7 +500,7 @@ struct CloudHttp : public HttpIO {
           {
             std::unique_lock<std::mutex> remove_lock(removed_mark->mutex_);
             if (!removed_mark->abort_)
-              read_update_.push_back(std::make_pair(r, std::string(d, cnt)));
+              read_update_.emplace_back(r, std::string(d, cnt));
           }
           auto lock = app_->lock();
           app_->exec(lock);
@@ -532,7 +532,7 @@ struct CloudHttp : public HttpIO {
             {
               std::unique_lock<std::mutex> remove_lock(
                   callback->removed_->mutex_);
-              if (!callback->removed_->abort_) queue_.push_back({r, e});
+              if (!callback->removed_->abort_) queue_.emplace_back(r, e);
             }
             app_->exec(lock);
           },
@@ -778,7 +778,7 @@ template <class T>
 void mega_login(MegaNz* p, typename Request<EitherError<T>>::Pointer r,
                 const std::string& mail, const std::string& password,
                 const std::string& twofactor,
-                GenericCallback<EitherError<std::string>> complete) {
+                const GenericCallback<EitherError<std::string>>& complete) {
   auto login_result = [=](EitherError<error> e) {
     if (e.left()) return complete(e.left());
     if (*e.right() != 0)
@@ -1264,9 +1264,9 @@ MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
   };
 }
 
-void MegaNz::login(Request<EitherError<void>>::Pointer r,
+void MegaNz::login(const Request<EitherError<void>>::Pointer& r,
                    const std::string& token,
-                   AuthorizeRequest::AuthorizeCompleted cb) {
+                   const AuthorizeRequest::AuthorizeCompleted& cb) {
   auto lock = mega_->lock();
   auto data = credentialsFromString(token);
   auto session = util::from_base64(data["session"].asString());
@@ -1306,8 +1306,8 @@ IItem::Pointer MegaNz::toItem(Node* node) {
 
 template <class T>
 std::shared_ptr<IRequest<EitherError<T>>> MegaNz::make_request(
-    Type type, std::function<void(Listener<T>*, int)> init,
-    GenericCallback<EitherError<T>> c) {
+    Type type, const std::function<void(Listener<T>*, int)>& init,
+    const GenericCallback<EitherError<T>>& c) {
   auto r = std::make_shared<Listener<T>>(c);
   auto tag = mega_->register_callback(type, r);
   init(r.get(), tag);
@@ -1315,9 +1315,9 @@ std::shared_ptr<IRequest<EitherError<T>>> MegaNz::make_request(
 }
 
 template <class T>
-void MegaNz::ensureAuthorized(typename Request<T>::Pointer r,
+void MegaNz::ensureAuthorized(const typename Request<T>::Pointer& r,
                               std::function<void()> on_success) {
-  auto f = [=](EitherError<void> e) {
+  auto f = [r, on_success = std::move(on_success)](const EitherError<void>& e) {
     if (e.left())
       r->done(e.left());
     else

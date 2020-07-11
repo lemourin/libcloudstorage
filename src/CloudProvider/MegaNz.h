@@ -94,8 +94,8 @@ class MegaNz : public CloudProvider {
   std::function<void(Request<EitherError<void>>::Pointer)> downloadResolver(
       IItem::Pointer item, IDownloadFileCallback*, Range);
 
-  void login(Request<EitherError<void>>::Pointer r, const std::string& session,
-             AuthorizeRequest::AuthorizeCompleted);
+  void login(const Request<EitherError<void>>::Pointer& r, const std::string& session,
+             const AuthorizeRequest::AuthorizeCompleted&);
 
   std::string passwordHash(const std::string& password) const;
 
@@ -105,11 +105,8 @@ class MegaNz : public CloudProvider {
   mega::Node* node(const std::string& id) const;
 
   template <class T>
-  void ensureAuthorized(typename Request<T>::Pointer,
+  void ensureAuthorized(const typename Request<T>::Pointer&,
                         std::function<void()> on_success);
-
-  void addRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
-  void removeRequestListener(std::shared_ptr<IRequest<EitherError<void>>>);
 
   class Auth : public cloudstorage::Auth {
    public:
@@ -127,8 +124,8 @@ class MegaNz : public CloudProvider {
 
   template <class T>
   std::shared_ptr<IRequest<EitherError<T>>> make_request(
-      Type, std::function<void(Listener<T>*, int)> init,
-      GenericCallback<EitherError<T>> callback);
+      Type, const std::function<void(Listener<T>*, int)>& init,
+      const GenericCallback<EitherError<T>>& callback);
 
  private:
   std::unique_ptr<CloudMegaClient> mega_;
