@@ -180,8 +180,6 @@ target_sources(cloudbrowser PRIVATE
     ${cloudbrowser_RESOURCES}
     ${cloudbrowser_QML}
     ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc
-    ../../src/Utility/HttpServer.cpp
-    ../../src/Utility/GenerateThumbnail.cpp
 )
 
 set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/resources.qrc PROPERTY GENERATED 1)
