@@ -31,6 +31,16 @@ pkg-config --cflags xcb-icccm >/dev/null 2>&1 || { echo >&2 "libxcb-icccm4-dev i
 pkg-config --cflags xcb-shm >/dev/null 2>&1 || { echo >&2 "libxcb-shm0-dev is not installed"; exit 1; }
 pkg-config --cflags xcb-keysyms >/dev/null 2>&1 || { echo >&2 "libxcb-keysyms1-dev is not installed"; exit 1; }
 pkg-config --cflags xcb-image >/dev/null 2>&1 || { echo >&2 "libxcb-image0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-randr > /dev/null 2>&1 || { echo >&2 "libxcb-randr0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-renderutil > /dev/null 2>&1 || { echo >&2 "libxcb-render-util0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-shape > /dev/null 2>&1 || { echo >&2 "libxcb-shape0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-sync > /dev/null 2>&1 || { echo >&2 "libxcb-sync-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-xfixes > /dev/null 2>&1 || { echo >&2 "libxcb-xfixes0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-xinerama > /dev/null 2>&1 || { echo >&2 "libxcb-xinerama0-dev is not installed"; exit 1; }
+pkg-config --cflags xcb-glx > /dev/null 2>&1 || { echo >&2 "libxcb-glx0-dev is not installed"; exit 1; }
+pkg-config --cflags x11-xcb > /dev/null 2>&1 || { echo >&2 "libx11-xcb-dev is not installed"; exit 1; }
+
+export PKG_CONFIG_LIBDIR=$PKG_CONFIG_PATH
 
 unpack() {
   if [[ ! -d $1 ]]; then
@@ -97,11 +107,15 @@ fetch_xkbcommon() {
 }
 
 install_xkbcommon() {
-  ./configure --prefix=$INSTALL_PATH --disable-shared --enable-static LDFLAGS=-fPIC CFLAGS=-fPIC
-  run_make
+  unset PKG_CONFIG_LIBDIR &&
+  ./configure --prefix=$INSTALL_PATH --disable-shared --enable-static LDFLAGS=-fPIC CFLAGS=-fPIC &&
+  run_make &&
+  export PKG_CONFIG_LIBDIR=$PKG_CONFIG_PATH
 }
 
 install_qt() {
+  unset PKG_CONFIG_LIBDIR
+
   mkdir -p build
   cd build
 
@@ -132,7 +146,9 @@ install_qt() {
     module-qtquickcontrols2-install_subtargets \
     module-qtsvg-install_subtargets \
     module-qtgraphicaleffects-install_subtargets \
-    module-qttools-install_subtargets
+    module-qttools-install_subtargets &&
+
+  export PKG_CONFIG_LIBDIR=$PKG_CONFIG_PATH
 }
 
 fetch_cmake() {
@@ -350,8 +366,10 @@ fetch_harfbuzz() {
 }
 
 install_harfbuzz() {
-  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --with-freetype
-  run_make
+  unset PKG_CONFIG_LIBDIR &&
+  ./configure --prefix=$INSTALL_PATH --enable-static --disable-shared --with-freetype &&
+  run_make &&
+  PKG_CONFIG_LIBDIR=$PKG_CONFIG_PATH
 }
 
 fetch_libass() {
@@ -454,7 +472,7 @@ install "openssl" 1.1.1
 install "xkbcommon" 0.5.0
 install "qt" 5.15.0
 install "kirigami" 5.66.0
-install "jsoncpp" 1.8.3
+install "jsoncpp" 1.9.3
 install "tinyxml2" 6.0.0
 install "cares" 1.13.0
 install "nghttp2" 1.28.0
