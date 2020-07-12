@@ -94,8 +94,6 @@ install_qt() {
   ../configure \
     -prefix $INSTALL_PATH -opensource -confirm-license -qt-libpng \
     -I $INSTALL_PATH/include -L $INSTALL_PATH/lib \
-    -openssl -openssl-linked \
-    OPENSSL_LIBS="-lssl -lcrypto -pthread -ldl" \
     -static \
     -release \
     -nomake examples \
