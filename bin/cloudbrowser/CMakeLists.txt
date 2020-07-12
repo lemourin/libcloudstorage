@@ -267,7 +267,11 @@ if(NOT BUILD_SHARED_LIBS)
     target_include_directories(cloudbrowser PRIVATE ${KIRIGAMI_PLUGIN_SOURCE_PATH})
 
     macro(cloudstorage_find_plugin plugin path_suffix plugin_name)
-        cloudstorage_find_library(${plugin} LIBRARY_PATH_SUFFIXES ${path_suffix} NAMES ${plugin_name} DEBUG_NAMES ${plugin_name}d)
+        string(REPLACE "/" "_" android_library_name "${path_suffix}/${plugin_name}")
+        cloudstorage_find_library(${plugin}
+            LIBRARY_PATH_SUFFIXES ../${path_suffix} ${path_suffix}
+            NAMES ${plugin_name} ${android_library_name}_${CMAKE_ANDROID_ARCH_ABI}
+            DEBUG_NAMES ${plugin_name}d ${android_library_name}d_${CMAKE_ANDROID_ARCH_ABI})
     endmacro()
 
     cloudstorage_find_plugin(qtquick2_plugin qml/QtQuick.2 qtquick2plugin)
@@ -283,7 +287,7 @@ if(NOT BUILD_SHARED_LIBS)
     cloudstorage_find_plugin(qtlabsplatform_plugin qml/Qt/labs/platform qtlabsplatformplugin)
     cloudstorage_find_plugin(qtsvg_plugin plugins/imageformats qsvg)
     cloudstorage_find_plugin(qtsvgicon_plugin plugins/iconengines qsvgicon)
-    cloudstorage_find_library(kirigami_plugin LIBRARY_PATH_SUFFIXES lib/qml/org/kde/kirigami.2 qml/org/kde/kirigami.2 NAMES kirigamiplugin)
+    cloudstorage_find_library(kirigami_plugin LIBRARY_PATH_SUFFIXES qml/org/kde/kirigami.2 ../qml/org/kde/kirigami.2 NAMES kirigamiplugin)
 
     cloudstorage_target_link_library(cloudbrowser qtquick2_plugin)
     cloudstorage_target_link_library(cloudbrowser qtquickcontrols2_plugin)
