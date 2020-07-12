@@ -22,7 +22,6 @@ Kirigami.ApplicationWindow {
   id: root
   width: Math.min(800, screen.desktopAvailableWidth)
   height: Math.min(600, screen.desktopAvailableHeight)
-  flags: Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
 
   onFullscreen_playerChanged: {
     if (fullscreen_player) {
