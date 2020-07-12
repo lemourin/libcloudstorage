@@ -52,14 +52,18 @@ before_install:
   - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - |
     if [ "$BUILD" = "linux" ]; then
-      set -e
       for i in $(find test src bin examples -type f \( -regex '.*\.\(h\|cpp\|c\)$' ! -regex 'test/googletest/.*$' \)); do
         clang-format-7 $i | diff - $i > /dev/null
+        if [ $? -ne 0 ]; then
+          echo "$i not formatted"
+          exit 1
+        fi
       done
+      set -e
       cd contrib
       wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-linux-gnu.tar.gz
       tar xf x86_64-linux-gnu.tar.gz
-      ./change-prefix.sh
+      ./change-prefix.sh /home/lemourin/Projects/libcloudstorage/contrib/x86_64-linux-gnu $PWD/x86_64-linux-gnu
       wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh
       chmod +x cmake-3.17.3-Linux-x86_64.sh
       ./cmake-3.17.3-Linux-x86_64.sh --skip-license --prefix=$PWD/x86_64-linux-gnu
@@ -72,7 +76,7 @@ before_install:
       wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/x86_64-darwin-macos.tar.gz &&
       tar xf x86_64-darwin-macos.tar.gz &&
       sed -i.bak "s/x86_64-linux-gnu/x86_64-darwin-macos/g" change-prefix.sh &&
-      ./change-prefix.sh &&
+      ./change-prefix.sh /Users/lemourin/Projects/libcloudstorage/contrib/x86_64-darwin-macos $PWD/x86_64-darwin-macos &&
       cd ..
     fi
   - |
@@ -94,6 +98,8 @@ before_install:
       cd contrib &&
       wget https://github.com/lemourin/libcloudstorage/releases/download/1.9/i686-linux-android$ANDROID_MIN_API_LEVEL.tar.gz &&
       tar xf i686-linux-android$ANDROID_MIN_API_LEVEL.tar.gz &&
+      sed -i "s/x86_64-linux-gnu/i686-linux-android$ANDROID_MIN_API_LEVEL/g" change-prefix.sh &&
+      ./change-prefix.sh /home/lemourin/Projects/libcloudstorage/contrib/i686-linux-android$ANDROID_MIN_API_LEVEL $PWD/i686-linux-android$ANDROID_MIN_API_LEVEL &&
       wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.sh &&
       chmod +x cmake-3.17.3-Linux-x86_64.sh &&
       ./cmake-3.17.3-Linux-x86_64.sh --skip-license --prefix=$PWD/i686-linux-android$ANDROID_MIN_API_LEVEL &&
@@ -116,12 +122,6 @@ script:
       CXX=g++-9
       cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0 \
         -DCMAKE_BUILD_TYPE=Release \
-        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;$SYSTEM_PATH/libpthread.so;$SYSTEM_PATH/libdl.so" \
-        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;$SYSTEM_PATH/libasound.so;$SYSTEM_PATH/libXinerama.so;$SYSTEM_PATH/libXss.so;$SYSTEM_PATH/libXrandr.so" \
-        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a" \
-        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$SYSTEM_PATH/libfreetype.so;$CONTRIB_PATH/libfribidi.a;$SYSTEM_PATH/libfontconfig.so;$CONTRIB_PATH/libz.a;" \
-        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a" \
-        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a" \
         -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
       make -j 4
       make test CXXFLAGS=-Wno-sign-compare -j 4
@@ -141,28 +141,7 @@ script:
       CONTRIB_PATH=$PWD/../contrib/x86_64-darwin-macos/lib &&
       cmake .. -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/../ -DBUILD_SHARED_LIBS=0 \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
-        -DCMAKE_BUILD_TYPE=Release \
-        -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libcares.a;$CONTRIB_PATH/libz.a;" \
-        -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a;" \
-        -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$CONTRIB_PATH/libz.a;/usr/lib/libiconv.dylib" \
-        -Davformat_LIBRARY="$CONTRIB_PATH/libavformat.a;$CONTRIB_PATH/libxml2.a;$CONTRIB_PATH/libz.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;" \
-        -Davfilter_LIBRARY="$CONTRIB_PATH/libavfilter.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$CONTRIB_PATH/libfreetype.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libz.a;" \
-        -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libfribidi.a;$CONTRIB_PATH/libavdevice.a;" \
-        -DCMAKE_EXE_LINKER_FLAGS=" \
-          -framework Foundation \
-          -framework SystemConfiguration \
-          -framework AudioToolbox \
-          -framework VideoToolbox \
-          -framework CoreMedia \
-          -framework CoreAudio \
-          -framework AVFoundation \
-          -framework CoreVideo \
-          -framework CoreGraphics \
-          -framework CoreText \
-          -framework CoreImage \
-          -framework OpenGL \
-          -framework AppKit \
-        " &&
+        -DCMAKE_BUILD_TYPE=Release &&
       make -j 4 &&
       make -j 4 test &&
       strip bin/cloudbrowser/cloudbrowser &&
@@ -201,6 +180,7 @@ script:
     if [ "$BUILD" = "android" ]; then
       CONTRIB_PATH=$PWD/../contrib/i686-linux-android$ANDROID_MIN_API_LEVEL/lib
       SYSTEM_PATH=$ANDROID_NDK_ROOT/platforms/android-$ANDROID_MIN_API_LEVEL/arch-$ANDROID_ABI/usr/lib
+      export PKG_CONFIG_LIBDIR=$CONTRIB_PATH/pkgconfig
       cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/.. \
@@ -229,10 +209,6 @@ script:
           -Dqtsvg_plugin_LIBRARY=$CONTRIB_PATH/../plugins/imageformats/libplugins_imageformats_qsvg_$ANDROID_ABI.a \
           -Dqtsvgicon_plugin_LIBRARY=$CONTRIB_PATH/../plugins/iconengines/libplugins_iconengines_qsvgicon_$ANDROID_ABI.a \
           -Dqtwindow_plugin_LIBRARY=$CONTRIB_PATH/../qml/QtQuick/Window.2/libqml_QtQuick_Window.2_windowplugin_$ANDROID_ABI.a \
-          -Dcurl_LIBRARY="$CONTRIB_PATH/libcurl.a;$CONTRIB_PATH/libssl.a;$CONTRIB_PATH/libcrypto.a;$CONTRIB_PATH/libnghttp2.a;$CONTRIB_PATH/libcares.a;$SYSTEM_PATH/libz.a" \
-          -Dmega_LIBRARY="$CONTRIB_PATH/libmega.a;$CONTRIB_PATH/libcryptopp.a" \
-          -Dmpv_LIBRARY="$CONTRIB_PATH/libmpv.a;$CONTRIB_PATH/libass.a;$CONTRIB_PATH/libharfbuzz.a;$CONTRIB_PATH/libfribidi.a;$SYSTEM_PATH/libOpenSLES.so" \
-          -Davcodec_LIBRARY="$CONTRIB_PATH/libavcodec.a;$SYSTEM_PATH/libz.a" \
           -DBUILD_SHARED_LIBS=0 \
           -DBUILD_TESTING=0 \
           -DCMAKE_CXX_FLAGS="-fPIC" \
