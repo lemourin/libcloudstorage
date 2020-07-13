@@ -12,6 +12,9 @@ jobs:
     - os: linux
       dist: xenial
       env: BUILD=android
+    - os: osx
+      osx_image: xcode11.5
+      env: BUILD=ios
 env:
   global:
     - secure: RNbJ4k1F1YVL9sgG5w77eK55S+pLIV9TTKGPTmcR+BKjFM5DX7FgLH9xsV60n3rXfwoMUizFO5/AoFrHr7h/F+HpPa5rR+3b61LAHTJ9wCB/nbmbmgqIhlzVcAjWy0kwiLZh1zCS4g/yr3q8uCbgRWhQBCGEciAeuS4PYjK8T8GazOS1ic4CeDDRbOUPFkjoLQzGj5tM7DkaAqORFau0gtKfnpK4Qfc4HMZy28kSq0d8BQSl9V6t0Yj6jtHcIxO9TJqdvHOKALDqWltisnzShHcOPvgn2aV1b3qKz/dl5tQaWDGQPcdkXiK5e67DOVoswEJ5fDKGC+ptIUJYU+e+7cnx51O2qdDAwGxCsozN+8DY/LMVspraMvDvC9kBTNM6hHXRcbv8GiISKigq+yjfSQ7WqNoWYEO18mgN/UcJT3HUI4j2EDj8ZTt73/6s6f/DrT4SU7grQVp0MNR6GD8e8prpY49vjZRaz1sTH/xIdKHNpVLnuUHz8+SEevFxCkA9+dywFu6TbamNZpRfg650VhQjiSSOKOwN5GmR1m92SQ8abkzFfedtlufdcwNOPdmA0/xmXizmZTbXXyRkDKfIccKVxiI2miSO4JTS0nUzufdHvH0Sx2/Jz3DBJVbWZU2Wpoq74AX+x0mJiWsldnbvKeNOJArsHB45+PbmgMNP/2k=
@@ -106,6 +109,15 @@ before_install:
       export PATH="$PWD/i686-linux-android$ANDROID_MIN_API_LEVEL/bin:$PATH" &&
       cd ..
     fi
+  - |
+    if [ "$BUILD" = "ios" ]; then
+      cd contrib &&
+      wget -nc https://github.com/lemourin/libcloudstorage/releases/download/1.9/ios.tar.gz &&
+      tar xf ios.tar.gz &&
+      sed -i.bak "s/x86_64-linux-gnu/ios/g" change-prefix.sh &&
+      ./change-prefix.sh /Users/lemourin/Projects/libcloudstorage/contrib/ios $PWD/ios &&
+      cd ..
+    fi
 
 script:
   - mkdir build
@@ -173,7 +185,6 @@ script:
   - |
     if [ "$BUILD" = "android" ]; then
       CONTRIB_PATH=$PWD/../contrib/i686-linux-android$ANDROID_MIN_API_LEVEL/lib
-      SYSTEM_PATH=$ANDROID_NDK_ROOT/platforms/android-$ANDROID_MIN_API_LEVEL/arch-$ANDROID_ABI/usr/lib
       export PKG_CONFIG_LIBDIR=$CONTRIB_PATH/pkgconfig
       cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
@@ -197,6 +208,39 @@ script:
           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=$ANDROID_ABI \
           -DANDROID_NATIVE_API_LEVEL=$ANDROID_MIN_API_LEVEL &&
+      make -j 4
+    fi
+  - |
+    if [ "$BUILD" = "ios" ]; then
+      CONTRIB_PATH=$PWD/../contrib/ios/lib
+      export PKG_CONFIG_LIBDIR=$CONTRIB_PATH/pkgconfig
+      cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_FIND_ROOT_PATH=$CONTRIB_PATH/.. \
+          -DCMAKE_MACOSX_BUNDLE=ON \
+          -DBUILD_TESTING=OFF \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_CXX_FLAGS="-fembed-bitcode" \
+          -DCMAKE_C_FLAGS="-fembed-bitcode" \
+          -DQt5WebView_FOUND=FALSE \
+          -DQt5Core_DIR=$CONTRIB_PATH/cmake/Qt5Core \
+          -DQt5Quick_DIR=$CONTRIB_PATH/cmake/Qt5Quick \
+          -DQt5Gui_DIR=$CONTRIB_PATH/cmake/Qt5Gui \
+          -DQt5QmlModels_DIR=$CONTRIB_PATH/cmake/Qt5QmlModels \
+          -DQt5Qml_DIR=$CONTRIB_PATH/cmake/Qt5Qml \
+          -DQt5Network_DIR=$CONTRIB_PATH/cmake/Qt5Network \
+          -DQt5Widgets_DIR=$CONTRIB_PATH/cmake/Qt5Widgets \
+          -DQt5Svg_DIR=$CONTRIB_PATH/cmake/Qt5Svg \
+          -DQt5QuickControls2_DIR=$CONTRIB_PATH/cmake/Qt5QuickControls2 \
+          -DQt5QmlWorkerScript_DIR=$CONTRIB_PATH/cmake/Qt5QmlWorkerScript \
+          -DQt5FontDatabaseSupport_DIR=$CONTRIB_PATH/cmake/Qt5FontDatabaseSupport \
+          -DQt5GraphicsSupport_DIR=$CONTRIB_PATH/cmake/Qt5GraphicsSupport \
+          -DQt5ClipboardSupport_DIR=$CONTRIB_PATH/cmake/Qt5ClipboardSupport \
+          -DQt5EventDispatcherSupport_DIR=$CONTRIB_PATH/cmake/Qt5EventDispatcherSupport \
+          -DQt5PacketProtocol_DIR=$CONTRIB_PATH/cmake/Qt5PacketProtocol &&
       make -j 4
     fi
 
