@@ -176,7 +176,8 @@ install_curl() {
   mkdir -p build && cd build && 
   run_cmake -DCMAKE_USE_OPENSSL=1 -DUSE_NGHTTP2=1 -DBUILD_CURL_EXE=OFF -DBUILD_CURL_TESTS=OFF -DCURL_STATICLIB=ON -DCURL_ZLIB=OFF || echo 0 &&
   run_cmake -DCMAKE_USE_OPENSSL=1 -DUSE_NGHTTP2=1 -DBUILD_CURL_EXE=OFF -DBUILD_CURL_TESTS=OFF -DCURL_STATICLIB=ON -DCURL_ZLIB=OFF &&
-  run_make
+  run_make &&
+  sed -i.bak "s/-lOpenSSL::SSL -lOpenSSL::Crypto/-lssl -lcrypto/g" $INSTALL_PATH/lib/pkgconfig/libcurl.pc
 }
 
 fetch_microhttpd() {
@@ -390,7 +391,7 @@ install_ffmpeg() {
   mkdir -p build-arm64 && cd build-arm64 &&
   CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
   LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" ../configure \
-    --prefix=$PWD/../tmp/arm64 \
+    --prefix=$INSTALL_PATH \
     --cc=$CC \
     --disable-doc \
     --disable-everything \
@@ -406,14 +407,12 @@ install_ffmpeg() {
     --disable-programs &&
   run_make &&
   cd .. &&
-  lipo tmp/x86_64/lib/libavutil.a tmp/arm64/lib/libavutil.a -output $INSTALL_PATH/lib/libavutil.a -create &&
-  lipo tmp/x86_64/lib/libavcodec.a tmp/arm64/lib/libavcodec.a -output $INSTALL_PATH/lib/libavcodec.a -create &&
-  lipo tmp/x86_64/lib/libavfilter.a tmp/arm64/lib/libavfilter.a -output $INSTALL_PATH/lib/libavfilter.a -create &&
-  lipo tmp/x86_64/lib/libavformat.a tmp/arm64/lib/libavformat.a -output $INSTALL_PATH/lib/libavformat.a -create &&
-  lipo tmp/x86_64/lib/libswresample.a tmp/arm64/lib/libswresample.a -output $INSTALL_PATH/lib/libswresample.a -create &&
-  lipo tmp/x86_64/lib/libswscale.a tmp/arm64/lib/libswscale.a -output $INSTALL_PATH/lib/libswscale.a -create &&
-  mkdir -p $INSTALL_PATH/include && mkdir -p $INSTALL_PATH/lib/pkgconfig &&
-  cp -r tmp/x86_64/include/* $INSTALL_PATH/include && cp tmp/x86_64/lib/pkgconfig/* $INSTALL_PATH/lib/pkgconfig
+  lipo tmp/x86_64/lib/libavutil.a $INSTALL_PATH/lib/libavutil.a -output $INSTALL_PATH/lib/libavutil.a -create &&
+  lipo tmp/x86_64/lib/libavcodec.a $INSTALL_PATH/lib/libavcodec.a -output $INSTALL_PATH/lib/libavcodec.a -create &&
+  lipo tmp/x86_64/lib/libavfilter.a $INSTALL_PATH/lib/libavfilter.a -output $INSTALL_PATH/lib/libavfilter.a -create &&
+  lipo tmp/x86_64/lib/libavformat.a $INSTALL_PATH/lib/libavformat.a -output $INSTALL_PATH/lib/libavformat.a -create &&
+  lipo tmp/x86_64/lib/libswresample.a $INSTALL_PATH/lib/libswresample.a -output $INSTALL_PATH/lib/libswresample.a -create &&
+  lipo tmp/x86_64/lib/libswscale.a $INSTALL_PATH/lib/libswscale.a -output $INSTALL_PATH/lib/libswscale.a -create
 }
 
 fetch_mpv() {
@@ -427,11 +426,9 @@ install_mpv() {
     ./waf install &&
   CFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) $CFLAGS" \
   LDFLAGS="-arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path)" \
-    ./waf configure --prefix=$PWD/tmp/arm64/ --disable-cplayer --enable-libmpv-static --disable-libass &&
+    ./waf configure --prefix=$INSTALL_PATH --disable-cplayer --enable-libmpv-static --disable-libass &&
     ./waf install &&
-  lipo tmp/x86_64/lib/libmpv.a tmp/arm64/lib/libmpv.a -output $INSTALL_PATH/lib/libmpv.a -create &&
-  mkdir -p $INSTALL_PATH/include &&
-  cp -r tmp/x86_64/include/* $INSTALL_PATH/include
+  lipo tmp/x86_64/lib/libmpv.a $INSTALL_PATH/lib/libmpv.a -output $INSTALL_PATH/lib/libmpv.a -create
 }
 
 install_run() {
