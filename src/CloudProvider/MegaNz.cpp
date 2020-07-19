@@ -382,9 +382,9 @@ struct App : public MegaApp {
       std::unique_lock<std::mutex> callback_lock(callback_mutex_);
       for (size_t i = 0; i < callback_queue_.size(); i++)
         if (callback_queue_[i]) {
+          auto cb = util::exchange(callback_queue_[i], nullptr);
           callback_lock.unlock();
-          callback_queue_[i]();
-          callback_queue_[i] = nullptr;
+          cb();
           callback_lock.lock();
         }
       empty = callback_queue_.empty();
