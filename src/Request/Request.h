@@ -118,9 +118,10 @@ class Request : public IRequest<ReturnValue>,
       call(LastArgument<Args...>()(args...),
            Error{IHttpRequest::Aborted, util::Error::ABORTED});
     } else {
-      std::lock_guard<std::recursive_mutex> lock(subrequest_mutex_);
-      subrequests_.push_back((static_cast<Type*>(provider().get())->*method)(
-          std::forward<Args>(args)...));
+      auto r = (static_cast<Type*>(provider().get())->*method)(
+          std::forward<Args>(args)...);
+      std::lock_guard<std::mutex> lock(subrequest_mutex_);
+      subrequests_.emplace_back(std::move(r));
     }
   }
 
@@ -182,7 +183,7 @@ class Request : public IRequest<ReturnValue>,
   std::shared_ptr<CloudProvider> provider_;
   mutable std::mutex status_mutex_;
   Status status_;
-  std::recursive_mutex subrequest_mutex_;
+  std::mutex subrequest_mutex_;
   std::vector<std::shared_ptr<IGenericRequest>> subrequests_;
 };
 

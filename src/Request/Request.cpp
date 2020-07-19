@@ -117,7 +117,7 @@ void Request<T>::finish() {
   std::shared_future<T> future = future_;
   if (future.valid()) future.wait();
   {
-    std::unique_lock<std::recursive_mutex> lock(subrequest_mutex_);
+    std::unique_lock<std::mutex> lock(subrequest_mutex_);
     for (size_t i = 0; i < subrequests_.size(); i++) {
       auto r = subrequests_[i];
       lock.unlock();
@@ -165,7 +165,7 @@ void Request<T>::cancel() {
     }
   }
   {
-    std::unique_lock<std::recursive_mutex> lock(subrequest_mutex_);
+    std::unique_lock<std::mutex> lock(subrequest_mutex_);
     for (size_t i = 0; i < subrequests_.size(); i++) {
       auto r = subrequests_[i];
       lock.unlock();
@@ -179,7 +179,7 @@ void Request<T>::cancel() {
 template <class T>
 void Request<T>::pause() {
   std::unique_lock<std::mutex> lock1(status_mutex_);
-  std::unique_lock<std::recursive_mutex> lock2(subrequest_mutex_);
+  std::unique_lock<std::mutex> lock2(subrequest_mutex_);
   if (status_ != Cancelled) status_ = Paused;
   for (size_t i = 0; i < subrequests_.size(); i++) {
     subrequests_[i]->pause();
@@ -189,7 +189,7 @@ void Request<T>::pause() {
 template <class T>
 void Request<T>::resume() {
   std::unique_lock<std::mutex> lock1(status_mutex_);
-  std::unique_lock<std::recursive_mutex> lock2(subrequest_mutex_);
+  std::unique_lock<std::mutex> lock2(subrequest_mutex_);
   if (status_ != Cancelled) {
     status_ = None;
     for (size_t i = 0; i < subrequests_.size(); i++) {
@@ -381,7 +381,7 @@ void Request<T>::subrequest(std::shared_ptr<IGenericRequest> request) {
   if (is_cancelled())
     request->cancel();
   else {
-    std::lock_guard<std::recursive_mutex> lock(subrequest_mutex_);
+    std::lock_guard<std::mutex> lock(subrequest_mutex_);
     subrequests_.push_back(request);
   }
 }
