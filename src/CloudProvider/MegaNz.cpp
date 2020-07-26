@@ -397,7 +397,11 @@ struct App : public MegaApp {
     if (!empty) {
       exec(lock);
     } else {
+      bool has_client = client;
       lock.unlock();
+      if (!has_client) {
+        exec_done_.set_value();
+      }
     }
   }
 
@@ -433,6 +437,7 @@ struct App : public MegaApp {
   std::vector<std::function<void()>> callback_queue_;
   bool exec_pending_ = false;
   AccountDetails account_details_ = {};
+  std::promise<void> exec_done_;
 };
 
 struct CloudHttp : public HttpIO {
@@ -729,7 +734,14 @@ class CloudMegaClient {
     auto lock = this->lock();
     app_.client = nullptr;
     client_ = nullptr;
-    app_.exec(lock);
+    if (!app_.exec_pending_) {
+      app_.exec(lock);
+      lock.lock();
+    } else {
+      lock.unlock();
+      app_.exec_done_.get_future().get();
+      lock.lock();
+    }
     http_->http_ = nullptr;
     if (http_->pending_requests_ > 0) {
       lock.unlock();
