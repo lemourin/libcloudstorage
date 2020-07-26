@@ -132,9 +132,10 @@ class DownloadThumbnailCallback : public IDownloadFileCallback {
       return;
     }
 #endif
-    if (e.left())
+    if (e.left()) {
       emit notifier_->finishedVariant(e.left());
-    else {
+      notifier_->deleteLater();
+    } else {
       auto notifier = notifier_;
       auto path =
           GetThumbnailRequest::thumbnail_path(item_->filename().c_str());
