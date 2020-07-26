@@ -382,9 +382,11 @@ struct App : public MegaApp {
       std::unique_lock<std::mutex> callback_lock(callback_mutex_);
       for (size_t i = 0; i < callback_queue_.size(); i++)
         if (callback_queue_[i]) {
-          auto cb = util::exchange(callback_queue_[i], nullptr);
-          callback_lock.unlock();
-          cb();
+          {
+            auto cb = util::exchange(callback_queue_[i], nullptr);
+            callback_lock.unlock();
+            cb();
+          }
           callback_lock.lock();
         }
       empty = callback_queue_.empty();
@@ -498,12 +500,12 @@ struct CloudHttp : public HttpIO {
               return;
             }
           }
+          auto lock = app_->lock();
           {
             std::unique_lock<std::mutex> remove_lock(removed_mark->mutex_);
             if (!removed_mark->abort_)
               read_update_.emplace_back(r, std::string(d, cnt));
           }
-          auto lock = app_->lock();
           app_->exec(lock);
         });
     callback->abort_ = abort_mark;
