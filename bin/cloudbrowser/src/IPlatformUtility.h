@@ -29,6 +29,15 @@
 
 #include "Exec.h"
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#define IOS
+#endif
+
+#endif
+
 class QWindow;
 
 class IPlatformUtility : public QObject {

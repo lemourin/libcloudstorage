@@ -12,6 +12,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
         ios/launchscreen.storyboard
         resources/cloud.png
     )
+    set(IOS_HEADERS
+        src/IOSUtility.h
+    )
+    set(IOS_SOURCES
+        src/IOSUtility.mm
+    )
 endif()
 
 set(cloudbrowser_HEADERS
@@ -36,6 +42,7 @@ set(cloudbrowser_HEADERS
     src/Request/RenameItem.h
     src/Request/UploadItem.h
     src/WinRTUtility.h
+    ${IOS_HEADERS}
 )
 
 set(cloudbrowser_SOURCES
@@ -60,6 +67,7 @@ set(cloudbrowser_SOURCES
     src/Request/RenameItem.cpp
     src/Request/UploadItem.cpp
     src/WinRTUtility.cpp
+    ${IOS_SOURCES}
 )
 
 set(cloudbrowser_RESOURCES
