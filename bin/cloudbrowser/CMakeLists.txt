@@ -7,6 +7,13 @@ else()
     add_executable(cloudbrowser WIN32)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(IOS_RESOURCES
+        ios/launchscreen.storyboard
+        resources/cloud.png
+    )
+endif()
+
 set(cloudbrowser_HEADERS
     src/AndroidUtility.h
     src/CloudContext.h
@@ -154,6 +161,7 @@ set(cloudbrowser_RESOURCES
     resources/webdav_login.html
     qtquickcontrols2.conf
     config.json
+    ${IOS_RESOURCES}
 )
 
 set(cloudbrowser_QML
@@ -394,12 +402,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 
 set_target_properties(cloudbrowser PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER io.storage.cloudbrowser
-    MACOSX_BUNDLE_BUNDLE_VERSION 1
-    MACOSX_BUNDLE_SHORT_VERSION_STRING 1
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/ios/Info.plist
+    RESOURCE "${IOS_RESOURCES}"
 )
 
 install(
     TARGETS cloudbrowser
     BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    RESOURCE DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cloudbrowser/resources
 )
