@@ -57,7 +57,7 @@ static void *get_proc_address_mpv(void *, const char *name) {
 
 class MpvRenderer : public QQuickFramebufferObject::Renderer {
  public:
-  MpvRenderer(std::shared_ptr<mpv_handle> mpv) : mpv_(std::move(mpv)) {
+  MpvRenderer(mpv_handle *mpv) : mpv_(mpv) {
     mpv_opengl_init_params gl_init_params{get_proc_address_mpv, nullptr,
                                           nullptr};
     mpv_render_param params[]{
@@ -65,13 +65,15 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
          const_cast<char *>(MPV_RENDER_API_TYPE_OPENGL)},
         {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params},
         {MPV_RENDER_PARAM_INVALID, nullptr}};
-    if (mpv_render_context_create(&mpv_gl_, mpv_.get(), params) < 0)
+    if (mpv_render_context_create(&mpv_gl_, mpv_, params) < 0)
       throw std::runtime_error("failed to initialize mpv GL context");
   }
 
-  ~MpvRenderer() override { mpv_render_context_free(mpv_gl_); }
+  ~MpvRenderer() override { destroy(); }
 
   void render() override {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!mpv_gl_) return;
     mpv_opengl_fbo mpfbo;
     mpfbo.fbo = framebufferObject()->handle();
     mpfbo.w = framebufferObject()->width();
@@ -89,15 +91,25 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
     return new QOpenGLFramebufferObject(size);
   }
 
+  void destroy() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (mpv_gl_) {
+      mpv_render_context_free(mpv_gl_);
+      mpv_gl_ = nullptr;
+    }
+  }
+
  private:
   QRectF rect_;
-  std::shared_ptr<mpv_handle> mpv_;
+  mpv_handle *mpv_;
   mpv_render_context *mpv_gl_;
+  std::mutex mutex_;
 };
 
 MpvPlayer::MpvPlayer(QQuickItem *parent)
     : QQuickFramebufferObject(parent),
-      mpv_(std::shared_ptr<mpv_handle>(mpv_create(), mpv_terminate_destroy)) {
+      mpv_(std::unique_ptr<mpv_handle, void (*)(mpv_handle *)>(
+          mpv_create(), mpv_terminate_destroy)) {
   if (!mpv_) throw std::runtime_error("could not create mpv context");
 
   mpv_set_option_string(mpv_.get(), "video-timing-offset", "0");
@@ -136,6 +148,12 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
           Qt::QueuedConnection);
 
   mpv_set_wakeup_callback(mpv_.get(), on_mpv_events, this);
+}
+
+MpvPlayer::~MpvPlayer() {
+  if (renderer_) {
+    renderer_->destroy();
+  }
 }
 
 QString MpvPlayer::uri() const { return uri_; }
@@ -210,7 +228,7 @@ void MpvPlayer::set_audio_track(int track) {
 
 QQuickFramebufferObject::Renderer *MpvPlayer::createRenderer() const {
   emit const_cast<MpvPlayer *>(this)->onInitialized();
-  return new MpvRenderer(mpv_);
+  return const_cast<MpvPlayer *>(this)->renderer_ = new MpvRenderer(mpv_.get());
 }
 
 void MpvPlayer::eventOccurred() {

@@ -31,6 +31,8 @@
 struct mpv_handle;
 struct mpv_render_context;
 
+class MpvRenderer;
+
 class MpvPlayer : public QQuickFramebufferObject {
  public:
   Q_PROPERTY(QString uri READ uri WRITE setUri NOTIFY uriChanged)
@@ -47,6 +49,7 @@ class MpvPlayer : public QQuickFramebufferObject {
                  subtitleTracksChanged)
 
   MpvPlayer(QQuickItem *parent = nullptr);
+  ~MpvPlayer() override;
 
   QString uri() const;
   void setUri(QString uri);
@@ -99,7 +102,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   void eventOccurred();
   void executeLoadFile();
 
-  std::shared_ptr<mpv_handle> mpv_;
+  std::unique_ptr<mpv_handle, void (*)(mpv_handle *)> mpv_;
   QString uri_;
   qreal position_ = 0;
   qreal cache_position_ = 0;
@@ -114,6 +117,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   std::vector<int64_t> audio_tracks_id_;
   QStringList subtitle_tracks_;
   std::vector<int64_t> subtitle_tracks_id_;
+  MpvRenderer *renderer_ = nullptr;
 };
 
 #endif  // WITH_MPV
