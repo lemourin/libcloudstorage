@@ -27,6 +27,7 @@
 
 #include <QQuickFramebufferObject>
 #include <memory>
+#include <mutex>
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -118,6 +119,7 @@ class MpvPlayer : public QQuickFramebufferObject {
   QStringList subtitle_tracks_;
   std::vector<int64_t> subtitle_tracks_id_;
   MpvRenderer *renderer_ = nullptr;
+  mutable std::mutex mutex_;
 };
 
 #endif  // WITH_MPV

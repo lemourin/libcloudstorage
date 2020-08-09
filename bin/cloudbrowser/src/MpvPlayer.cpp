@@ -57,7 +57,8 @@ static void *get_proc_address_mpv(void *, const char *name) {
 
 class MpvRenderer : public QQuickFramebufferObject::Renderer {
  public:
-  MpvRenderer(mpv_handle *mpv) : mpv_(mpv) {
+  MpvRenderer(MpvPlayer *mpv_player, mpv_handle *mpv)
+      : mpv_player_(mpv_player), mpv_(mpv) {
     mpv_opengl_init_params gl_init_params{get_proc_address_mpv, nullptr,
                                           nullptr};
     mpv_render_param params[]{
@@ -69,7 +70,13 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
       throw std::runtime_error("failed to initialize mpv GL context");
   }
 
-  ~MpvRenderer() override { destroy(); }
+  ~MpvRenderer() override {
+    {
+      std::unique_lock<std::mutex> lock(mpv_player_->mutex_);
+      mpv_player_->renderer_ = nullptr;
+    }
+    destroy();
+  }
 
   void render() override {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -100,7 +107,7 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
   }
 
  private:
-  QRectF rect_;
+  MpvPlayer *mpv_player_;
   mpv_handle *mpv_;
   mpv_render_context *mpv_gl_;
   std::mutex mutex_;
@@ -151,9 +158,12 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
 }
 
 MpvPlayer::~MpvPlayer() {
+  std::unique_lock<std::mutex> lock(mutex_);
   if (renderer_) {
     renderer_->destroy();
+    renderer_ = nullptr;
   }
+  mpv_ = nullptr;
 }
 
 QString MpvPlayer::uri() const { return uri_; }
@@ -227,8 +237,11 @@ void MpvPlayer::set_audio_track(int track) {
 }
 
 QQuickFramebufferObject::Renderer *MpvPlayer::createRenderer() const {
-  emit const_cast<MpvPlayer *>(this)->onInitialized();
-  return const_cast<MpvPlayer *>(this)->renderer_ = new MpvRenderer(mpv_.get());
+  auto *mpv_player = const_cast<MpvPlayer *>(this);
+  emit mpv_player->onInitialized();
+  std::unique_lock<std::mutex> lock(mutex_);
+  return const_cast<MpvPlayer *>(this)->renderer_ =
+             new MpvRenderer(mpv_player, mpv_.get());
 }
 
 void MpvPlayer::eventOccurred() {
