@@ -378,11 +378,13 @@ bool Request<T>::is_paused() const {
 
 template <class T>
 void Request<T>::subrequest(std::shared_ptr<IGenericRequest> request) {
-  if (is_cancelled())
+  std::unique_lock<std::mutex> lock1(status_mutex_);
+  if (status_ == Cancelled) {
+    lock1.unlock();
     request->cancel();
-  else {
-    std::lock_guard<std::mutex> lock(subrequest_mutex_);
-    subrequests_.push_back(request);
+  } else {
+    std::lock_guard<std::mutex> lock2(subrequest_mutex_);
+    subrequests_.emplace_back(std::move(request));
   }
 }
 
