@@ -71,7 +71,7 @@ TEST(RequestTest, DoesReauthorization) {
   EXPECT_CALL(*provider->auth(), refreshTokenRequest).WillOnce(Return([] {
     auto mock_request = std::make_shared<HttpRequestMock>();
     EXPECT_CALL(*mock_request, send)
-        .WillOnce(InvokeArgument<0>(IHttpRequest::Response{.http_code_ = 200}));
+        .WillOnce(InvokeArgument<0>(IHttpRequest::Response{200}));
     return mock_request;
   }()));
   EXPECT_CALL(*provider->auth(), refreshTokenResponse)
@@ -87,7 +87,7 @@ TEST(RequestTest, DoesReauthorization) {
                   auto mock_request = std::make_shared<HttpRequestMock>();
                   EXPECT_CALL(*mock_request, send)
                       .WillOnce(InvokeArgument<0>(IHttpRequest::Response{
-                          .http_code_ = request_count == 0 ? 401 : 242}));
+                          request_count == 0 ? 401 : 242}));
                   request_count++;
                   return mock_request;
                 },
