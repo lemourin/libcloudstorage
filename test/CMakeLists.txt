@@ -9,6 +9,11 @@ add_executable(cloudstorage-test)
 target_sources(cloudstorage-test PRIVATE
     CloudProvider/CloudProviderTest.cpp
     CloudProvider/GoogleDriveTest.cpp
+    Utility/RequestTest.cpp
+    Utility/AuthMock.h
+    Utility/HttpMock.h
+    Utility/HttpServerMock.h
+    Utility/CloudProviderMock.h
 )
 
 set_target_properties(cloudstorage-test
