@@ -2,7 +2,20 @@
 #define CLOUDSTORAGE_CLOUDPROVIDERMOCK_H
 
 #include "CloudProvider/CloudProvider.h"
+#include "Utility/HttpMock.h"
+#include "Utility/HttpServerMock.h"
 #include "gmock/gmock.h"
+
+class AuthCallbackMock : public cloudstorage::ICloudProvider::IAuthCallback {
+ public:
+  MOCK_METHOD(Status, userConsentRequired,
+              (const cloudstorage::ICloudProvider&), (override));
+
+  MOCK_METHOD(void, done,
+              (const cloudstorage::ICloudProvider&,
+               cloudstorage::EitherError<void>),
+              (override));
+};
 
 class CloudProviderMock : public cloudstorage::CloudProvider {
  public:
@@ -84,6 +97,57 @@ class CloudProviderMock : public cloudstorage::CloudProvider {
   MOCK_METHOD(GetItemUrlRequest::Pointer, getFileDaemonUrlAsync,
               (cloudstorage::IItem::Pointer, cloudstorage::GetItemUrlCallback),
               (override));
+
+  HttpMock* http() const {
+    return static_cast<HttpMock*>(
+        static_cast<const cloudstorage::CloudProvider*>(this)->http());
+  }
+
+  HttpServerFactoryMock* http_server() const {
+    return static_cast<HttpServerFactoryMock*>(
+        static_cast<const cloudstorage::CloudProvider*>(this)->http_server());
+  }
+
+  AuthCallbackMock* auth_callback() const {
+    return static_cast<AuthCallbackMock*>(
+        static_cast<const cloudstorage::CloudProvider*>(this)->auth_callback());
+  }
+
+  AuthMock* auth() const {
+    return static_cast<AuthMock*>(
+        static_cast<const cloudstorage::CloudProvider*>(this)->auth());
+  }
+
+  static std::shared_ptr<CloudProviderMock> create() {
+    auto auth_mock = std::make_unique<AuthMock>();
+    EXPECT_CALL(*auth_mock, login_page)
+        .WillRepeatedly(testing::Return("test-login-page"));
+    EXPECT_CALL(*auth_mock, success_page)
+        .WillRepeatedly(testing::Return("test-success-page"));
+    EXPECT_CALL(*auth_mock, error_page)
+        .WillRepeatedly(testing::Return("test-error-page"));
+    EXPECT_CALL(*auth_mock, state)
+        .WillRepeatedly(testing::Return("test-state"));
+    EXPECT_CALL(*auth_mock, fromTokenString)
+        .WillOnce(
+            testing::Return(testing::ByMove(std::make_unique<IAuth::Token>())));
+
+    auto auth_callback = std::make_unique<AuthCallbackMock>();
+    EXPECT_CALL(*auth_callback, userConsentRequired)
+        .WillRepeatedly(testing::Return(IAuthCallback::Status::None));
+
+    auto mock = std::make_shared<CloudProviderMock>(std::move(auth_mock));
+
+    EXPECT_CALL(*mock, name).WillRepeatedly(testing::Return("test-provider"));
+
+    InitData data;
+    data.http_engine_ = std::make_unique<HttpMock>();
+    data.http_server_ = std::make_unique<HttpServerFactoryMock>();
+    data.callback_ = std::move(auth_callback);
+    mock->initialize(std::move(data));
+
+    return mock;
+  }
 };
 
 #endif  // CLOUDSTORAGE_CLOUDPROVIDERMOCK_H
