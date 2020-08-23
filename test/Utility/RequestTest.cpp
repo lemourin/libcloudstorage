@@ -183,4 +183,39 @@ TEST(RequestTest, DoesOneReauthorizationForParallelRequests) {
   EXPECT_THAT(second_wrapper->result().right(), Pointee(Eq("test2")));
 }
 
+TEST(RequestTest, CancelPropagates) {
+  using ReturnValue = EitherError<std::string>;
+
+  MockFunction<void(std::shared_ptr<Request<ReturnValue>>)> resolver;
+  MockFunction<void(ReturnValue)> callback;
+  auto provider = CloudProviderMock::create();
+  auto request = std::make_shared<Request<ReturnValue>>(
+      provider, callback.AsStdFunction(), resolver.AsStdFunction());
+
+  std::shared_ptr<Request<ReturnValue>> subrequest;
+  EXPECT_CALL(resolver, Call(request))
+      .WillOnce(Invoke(
+          [=, &subrequest](const std::shared_ptr<Request<ReturnValue>>& r) {
+            request->make_subrequest<CloudProviderMock>(
+                &CloudProviderMock::request<ReturnValue>,
+                [provider, &subrequest](
+                    const std::function<void(const ReturnValue&)>& callback) {
+                  subrequest = std::make_shared<Request<ReturnValue>>(
+                      provider, callback,
+                      [](const std::shared_ptr<Request<ReturnValue>>& r) {
+                        r->done(std::string("test"));
+                      });
+                  return subrequest->run();
+                },
+                [=](const ReturnValue& e) { request->done(e.right()); });
+          }));
+
+  EXPECT_CALL(callback, Call).WillOnce(Return());
+
+  request->run()->cancel();
+
+  EXPECT_TRUE(request->is_cancelled());
+  EXPECT_TRUE(subrequest->is_cancelled());
+}
+
 }  // namespace cloudstorage

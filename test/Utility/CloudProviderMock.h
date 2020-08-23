@@ -118,6 +118,16 @@ class CloudProviderMock : public cloudstorage::CloudProvider {
         static_cast<const cloudstorage::CloudProvider*>(this)->auth());
   }
 
+  template <typename RequestType,
+            typename Callback = std::function<void(const RequestType&)>>
+  std::unique_ptr<cloudstorage::IGenericRequest> request(
+      std::function<
+          std::unique_ptr<cloudstorage::IGenericRequest>(const Callback&)>
+          factory,
+      Callback callback) const {
+    return factory(callback);
+  }
+
   static std::shared_ptr<CloudProviderMock> create() {
     auto auth_mock = std::make_unique<AuthMock>();
     EXPECT_CALL(*auth_mock, login_page)
