@@ -89,7 +89,7 @@ class CloudFactory : public ICloudFactory {
 
  private:
   std::shared_ptr<ICallback> callback_;
-  CloudEventLoop event_loop_;
+  std::unique_ptr<CloudEventLoop> event_loop_;
   std::string base_url_;
   std::shared_ptr<IHttp> http_;
   std::shared_ptr<ServerWrapperFactory> http_server_factory_;

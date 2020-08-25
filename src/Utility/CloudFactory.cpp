@@ -215,7 +215,8 @@ struct FactoryCallbackWrapper : public ICloudFactory::ICallback {
 
 CloudFactory::CloudFactory(CloudFactory::InitData&& d)
     : callback_(std::make_shared<FactoryCallbackWrapper>(this, d.callback_)),
-      event_loop_(d.thread_pool_factory_.get(), callback_),
+      event_loop_(util::make_unique<CloudEventLoop>(
+          d.thread_pool_factory_.get(), callback_)),
       base_url_(d.base_url_),
       http_(std::move(d.http_)),
       http_server_factory_(util::make_unique<ServerWrapperFactory>(
@@ -224,7 +225,7 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
       thread_pool_(d.thread_pool_factory_->create(1)),
       thread_pool_factory_(std::move(d.thread_pool_factory_)),
       cloud_storage_(ICloudStorage::create()),
-      loop_(event_loop_.impl()) {
+      loop_(event_loop_->impl()) {
   for (const auto& d : cloud_storage_->providers()) {
     http_server_handles_.emplace_back(
         http_server_factory_->create(util::make_unique<HttpCallback>(this), d,
@@ -247,6 +248,7 @@ CloudFactory::~CloudFactory() {
   http_server_handles_.clear();
   loop_->clear();
   loop_ = nullptr;
+  event_loop_ = nullptr;
   cloud_access_.clear();
 }
 
@@ -478,7 +480,7 @@ bool CloudFactory::loadConfig(std::istream& stream) {
   return loadConfig(std::move(stream));
 }
 
-void CloudFactory::processEvents() { event_loop_.processEvents(); }
+void CloudFactory::processEvents() { event_loop_->processEvents(); }
 
 int CloudFactory::exec() {
   std::unique_lock<std::mutex> lock(mutex_);
@@ -492,7 +494,7 @@ int CloudFactory::exec() {
     if (events_ready_) {
       events_ready_--;
       lock.unlock();
-      event_loop_.processEvents();
+      event_loop_->processEvents();
       lock.lock();
     }
   }
