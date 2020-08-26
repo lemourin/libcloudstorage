@@ -27,6 +27,7 @@
 #include <QtWebView>
 #endif
 
+#include <QApplication>
 #include <QDebug>
 #include <QDir>
 #include <QIcon>
@@ -145,9 +146,9 @@ int exec_cloudbrowser(int argc, char** argv) {
     Q_INIT_RESOURCE(resources);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
 
 #ifdef WITH_QTWEBVIEW
     QtWebView::initialize();
