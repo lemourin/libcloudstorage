@@ -71,11 +71,12 @@ class MpvRenderer : public QQuickFramebufferObject::Renderer {
   }
 
   ~MpvRenderer() override {
-    {
-      std::unique_lock<std::mutex> lock(mpv_player_->mutex_);
+    std::unique_lock<std::mutex> lock1(mutex_);
+    if (mpv_gl_) {
+      mpv_render_context_free(mpv_gl_);
+      std::unique_lock<std::mutex> lock2(mpv_player_->mutex_);
       mpv_player_->renderer_ = nullptr;
     }
-    destroy();
   }
 
   void render() override {
