@@ -853,8 +853,15 @@ MegaNz::~MegaNz() {}
 Node* MegaNz::node(const std::string& id) const {
   if (id == rootDirectory()->id())
     return mega_->client()->nodebyhandle(mega_->client()->rootnodes[0]);
-  else
-    return mega_->client()->nodebyhandle(std::stoull(id));
+  else {
+    try {
+      return mega_->client()->nodebyhandle(std::stoull(id));
+    } catch (const std::invalid_argument&) {
+      return nullptr;
+    } catch (const std::out_of_range&) {
+      return nullptr;
+    }
+  }
 }
 
 void MegaNz::initialize(InitData&& data) {

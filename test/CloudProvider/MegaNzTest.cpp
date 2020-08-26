@@ -2,7 +2,6 @@
 
 #include "gtest/gtest.h"
 
-#include <json/json.h>
 #include <future>
 
 #include "ICloudAccess.h"
@@ -149,6 +148,55 @@ TEST(MegaNzTest, GetsGeneralData) {
   EXPECT_EQ(result.right()->username_, "lemourin@gmail.com");
   EXPECT_EQ(result.right()->space_total_, 53687091200);
   EXPECT_EQ(result.right()->space_used_, 3210730732);
+}
+
+TEST(MegaNzTest, GetsItemData) {
+  auto mock = CloudFactoryMock::create();
+  auto provider = mock.factory()->create("mega", {TOKEN});
+
+  EXPECT_CALL(*mock.http(), create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  std::promise<EitherError<IItem>> semaphore;
+  auto request =
+      provider->getItemData("238628601250033")
+          .then([&](const IItem::Pointer& d) { semaphore.set_value(d); })
+          .error<IException>([&](const auto& e) {
+            semaphore.set_value(Error{e.code(), e.what()});
+          });
+
+  EitherError<IItem> result = semaphore.get_future().get();
+
+  ASSERT_NE(result.right(), nullptr);
+
+  EXPECT_EQ(result.right()->id(), "238628601250033");
+  EXPECT_EQ(result.right()->filename(), "docker_clean.sh");
+  EXPECT_EQ(result.right()->size(), 198);
+  EXPECT_EQ(result.right()->timestamp(),
+            std::chrono::system_clock::from_time_t(1560095432));
+  EXPECT_EQ(result.right()->type(), IItem::FileType::Unknown);
+}
+
+TEST(MegaNzTest, HandlesGetItemDataFailure) {
+  auto mock = CloudFactoryMock::create();
+  auto provider = mock.factory()->create("mega", {TOKEN});
+
+  EXPECT_CALL(*mock.http(), create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  std::promise<EitherError<IItem>> semaphore;
+  auto request =
+      provider->getItemData("1")
+          .then([&](const IItem::Pointer& d) { semaphore.set_value(d); })
+          .error<IException>([&](const auto& e) {
+            semaphore.set_value(Error{e.code(), e.what()});
+          });
+
+  EitherError<IItem> result = semaphore.get_future().get();
+
+  ASSERT_NE(result.left(), nullptr);
+
+  EXPECT_EQ(result.left()->code_, IHttpRequest::NotFound);
 }
 
 }  // namespace cloudstorage
