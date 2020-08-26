@@ -2,9 +2,17 @@
 #define CLOUDSTORAGE_CLOUDPROVIDERMOCK_H
 
 #include "CloudProvider/CloudProvider.h"
+#include "ICloudAccess.h"
+#include "Utility/AuthMock.h"
 #include "Utility/HttpMock.h"
 #include "Utility/HttpServerMock.h"
 #include "gmock/gmock.h"
+
+class DownloadCallbackMock : public cloudstorage::ICloudDownloadCallback {
+ public:
+  MOCK_METHOD(void, receivedData, (const char*, uint32_t), (override));
+  MOCK_METHOD(void, progress, (uint64_t, uint64_t), (override));
+};
 
 class AuthCallbackMock : public cloudstorage::ICloudProvider::IAuthCallback {
  public:
