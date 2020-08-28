@@ -144,6 +144,11 @@ class CLOUDSTORAGE_API ICloudProvider {
     IThreadPool::Pointer thread_pool_;
 
     /**
+     * Provides thread pool used for thumbnail generation.
+     */
+    IThreadPool::Pointer thumbnailer_thread_pool;
+
+    /**
      * Various hints which can be retrieved by some previous run with
      * ICloudProvider::hints; providing them may speed up the authorization
      * process; may contain the following:

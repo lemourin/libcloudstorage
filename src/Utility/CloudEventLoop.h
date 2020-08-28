@@ -62,6 +62,7 @@ class LoopImpl {
 
 #ifdef WITH_THUMBNAILER
   void invokeOnThreadPool(std::function<void()>&&);
+  std::shared_ptr<IThreadPool> thumbnailer_thread_pool() const;
 #endif
 
   void clear();
@@ -75,7 +76,7 @@ class LoopImpl {
   std::list<std::function<void()>> events_;
 #ifdef WITH_THUMBNAILER
   std::mutex thumbnailer_mutex_;
-  IThreadPool::Pointer thumbnailer_thread_pool_;
+  std::shared_ptr<IThreadPool> thumbnailer_thread_pool_;
 #endif
   IThreadPool::Pointer cancellation_thread_pool_;
   std::shared_ptr<std::atomic_bool> interrupt_;

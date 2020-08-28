@@ -193,6 +193,9 @@ cloud_provider_init_data *cloud_provider_init_data_create(
   if (d->thread_pool)
     init_data->thread_pool_ = std::unique_ptr<IThreadPool>(
         reinterpret_cast<IThreadPool *>(d->thread_pool));
+  if (d->thumbnailer_thread_pool)
+    init_data->thumbnailer_thread_pool = std::unique_ptr<IThreadPool>(
+        reinterpret_cast<IThreadPool *>(d->thumbnailer_thread_pool));
   if (d->hints)
     init_data->hints_ = *reinterpret_cast<ICloudProvider::Hints *>(d->hints);
   return reinterpret_cast<cloud_provider_init_data *>(init_data);

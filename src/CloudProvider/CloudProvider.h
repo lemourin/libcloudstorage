@@ -58,6 +58,7 @@ class CloudProvider : public ICloudProvider,
   IHttp* http() const;
   IHttpServerFactory* http_server() const;
   IThreadPool* thread_pool() const;
+  IThreadPool* thumbnailer_thread_pool() const;
   IAuthCallback* auth_callback() const;
   std::string file_url() const;
 
@@ -320,6 +321,7 @@ class CloudProvider : public ICloudProvider,
   IHttp::Pointer http_;
   IHttpServerFactory::Pointer http_server_;
   IThreadPool::Pointer thread_pool_;
+  IThreadPool::Pointer thumbnailer_thread_pool_;
   AuthorizeRequest::Pointer current_authorization_;
   std::unordered_map<IGenericRequest*,
                      std::vector<AuthorizeRequest::AuthorizeCompleted>>

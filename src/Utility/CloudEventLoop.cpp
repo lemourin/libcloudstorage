@@ -115,6 +115,10 @@ void LoopImpl::invokeOnThreadPool(std::function<void()> &&f) {
     f();
   }
 }
+
+std::shared_ptr<IThreadPool> LoopImpl::thumbnailer_thread_pool() const {
+  return thumbnailer_thread_pool_;
+}
 #endif
 
 void LoopImpl::process_events() {

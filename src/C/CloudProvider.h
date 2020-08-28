@@ -63,6 +63,7 @@ struct cloud_provider_init_data_args {
   struct cloud_http* http;
   struct cloud_http_server_factory* http_server;
   struct cloud_thread_pool* thread_pool;
+  struct cloud_thread_pool* thumbnailer_thread_pool;
   struct cloud_hints* hints;
 };
 

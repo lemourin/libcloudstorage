@@ -1067,7 +1067,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 #ifdef WITH_THUMBNAILER
               if (item->type() == IItem::FileType::Video ||
                   item->type() == IItem::FileType::Image) {
-                return thread_pool()->schedule([=] {
+                return thumbnailer_thread_pool()->schedule([=] {
                   auto thumb = generate_thumbnail(
                       [=](char* data, uint32_t maxlength, uint64_t offset) {
                         return cb->putData(data, maxlength, offset);
@@ -1335,7 +1335,7 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
             if (e.left()) {
 #ifdef WITH_THUMBNAILER
               if (e.left()->code_ == API_ENOENT) {
-                return thread_pool()->schedule([=] {
+                return thumbnailer_thread_pool()->schedule([=] {
                   auto thumb = generate_thumbnail(
                       r->provider().get(), item, item->size(),
                       [=](auto) { return r->is_cancelled(); },

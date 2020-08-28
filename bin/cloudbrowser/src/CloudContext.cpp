@@ -530,6 +530,8 @@ ICloudProvider::Pointer CloudContext::provider(
   data.http_server_ =
       util::make_unique<HttpServerFactoryWrapper>(http_server_factory_);
   data.thread_pool_ = util::make_unique<ThreadPoolWrapper>(thread_pool_);
+  data.thumbnailer_thread_pool =
+      util::make_unique<ThreadPoolWrapper>(thumbnailer_thread_pool_);
   data.callback_ = util::make_unique<AuthCallback>();
   provider_index_++;
   return ICloudStorage::create()->provider(name, std::move(data));

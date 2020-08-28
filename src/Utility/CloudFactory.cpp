@@ -289,6 +289,10 @@ std::unique_ptr<CloudAccess> CloudFactory::createImpl(
   init_data.thread_pool_ =
       thread_pool_ ? util::make_unique<ThreadPoolWrapper>(thread_pool_)
                    : nullptr;
+#ifdef WITH_THUMBNAILER
+  init_data.thumbnailer_thread_pool =
+      util::make_unique<ThreadPoolWrapper>(loop_->thumbnailer_thread_pool());
+#endif
   init_data.callback_ =
       util::make_unique<AuthCallback>(const_cast<CloudFactory*>(this));
   auto auth_callback = static_cast<AuthCallback*>(init_data.callback_.get());

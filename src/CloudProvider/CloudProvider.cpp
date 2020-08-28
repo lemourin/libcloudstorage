@@ -139,6 +139,7 @@ void CloudProvider::initialize(InitData&& data) {
   http_ = std::move(data.http_engine_);
   http_server_ = std::move(data.http_server_);
   thread_pool_ = std::move(data.thread_pool_);
+  thumbnailer_thread_pool_ = std::move(data.thumbnailer_thread_pool);
 
   auto t = auth()->fromTokenString(data.token_);
   setWithHint(data.hints_, "access_token",
@@ -286,6 +287,11 @@ IHttpServerFactory* CloudProvider::http_server() const {
 }
 
 IThreadPool* CloudProvider::thread_pool() const { return thread_pool_.get(); }
+
+IThreadPool* CloudProvider::thumbnailer_thread_pool() const {
+  return thumbnailer_thread_pool_ ? thumbnailer_thread_pool_.get()
+                                  : thread_pool_.get();
+}
 
 bool CloudProvider::isSuccess(int code,
                               const IHttpRequest::HeaderParameters&) const {
