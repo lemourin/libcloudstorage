@@ -269,7 +269,7 @@ install_ffmpeg() {
     --enable-demuxer="mov,avi,matroska,gif,mjpeg,image2,image_png_pipe,image_jpeg_pipe,image_bmp_pipe,image_tiff_pipe,image_webp_pipe,image_svg_pipe,wav,ac3,mp3,flac,ac3,ogg,pcm*" \
     --enable-protocol=http \
     --enable-parser=mjpeg \
-    --enable-encoder=png \
+    --enable-encoder=png,mjpeg \
     --enable-filter=thumbnail,buffer,buffer_sink,scale \
     --disable-avdevice \
     --disable-programs
