@@ -105,7 +105,8 @@ enum class Type {
   MKDIR,
   GENERAL_DATA,
   LOGIN,
-  PRELOGIN
+  PRELOGIN,
+  GET_FILE_ATTRIBUTE
 };
 
 std::string error_description(error e) {
@@ -371,6 +372,20 @@ struct App : public MegaApp {
   void rename_result(handle h, error e) override { call(e, h); }
 
   void setattr_result(handle, error e) override { call(e, e); }
+
+  void fa_complete(handle, fatype, const char* data, uint32_t size) override {
+    call(API_OK, std::string(data, size));
+  }
+
+  int fa_failed(handle, fatype, int retry_count, error e) override {
+    bool cancel = retry_count < 7;
+    if (cancel) {
+      call(e, e);
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 
   void exec(std::unique_lock<std::mutex>& lock) {
     if (exec_pending_) return;
@@ -1248,6 +1263,41 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
   };
   return std::make_shared<Request<EitherError<GeneralData>>>(shared_from_this(),
                                                              callback, resolver)
+      ->run();
+}
+
+ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
+    IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
+  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+    ensureAuthorized<EitherError<void>>(r, [=] {
+      auto lock = mega_->lock();
+      auto node = this->node(item->id());
+      if (!node) {
+        return r->done(
+            Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
+      }
+      r->make_subrequest<MegaNz>(
+          &MegaNz::make_request<std::string>, Type::GET_FILE_ATTRIBUTE,
+          [&](Listener<std::string>* r, int) {
+            auto status =
+                mega_->client()->getfa(node->nodehandle, &node->fileattrstring,
+                                       &node->nodekey, GfxProc::THUMBNAIL);
+            if (status != API_OK) {
+              lock.unlock();
+              return r->done(Error{status, error_description(status)});
+            }
+            mega_->exec(lock);
+          },
+          [=](EitherError<std::string> e) {
+            if (e.left()) return r->done(e.left());
+            callback->receivedData(e.right()->c_str(), e.right()->size());
+            r->done(nullptr);
+          });
+    });
+  };
+  return std::make_shared<Request<EitherError<void>>>(
+             shared_from_this(),
+             [=](const EitherError<void>& e) { callback->done(e); }, resolver)
       ->run();
 }
 
