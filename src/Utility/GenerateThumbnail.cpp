@@ -44,8 +44,6 @@ extern "C" {
 
 namespace cloudstorage {
 
-const int THUMBNAIL_SIZE = 256;
-
 namespace {
 
 std::mutex mutex;
@@ -197,6 +195,63 @@ Pointer<AVIOContext> create_io_context(
       });
 }
 
+Pointer<AVIOContext> create_io_context(
+    std::function<uint32_t(char* data, uint32_t maxlength, uint64_t offset)>
+        read_callback,
+    uint64_t size, std::chrono::system_clock::time_point start_time,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+  const int BUFFER_SIZE = 1024 * 1024;
+  auto buffer = static_cast<uint8_t*>(av_malloc(BUFFER_SIZE));
+  struct Data {
+    std::function<uint32_t(char* data, uint32_t maxlength, uint64_t offset)>
+        read_callback_;
+    int64_t offset_;
+    uint64_t size_;
+    std::chrono::system_clock::time_point start_time_;
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt_;
+  }* data = new Data{std::move(read_callback), 0, size, start_time,
+                     std::move(interrupt)};
+  return make<AVIOContext>(
+      avio_alloc_context(buffer, BUFFER_SIZE, 0, data,
+                         [](void* d, uint8_t* buffer, int size) -> int {
+                           auto data = reinterpret_cast<Data*>(d);
+                           auto read_size = data->read_callback_(
+                               reinterpret_cast<char*>(buffer), size,
+                               data->offset_);
+                           if (read_size == 0) {
+                             return AVERROR_EOF;
+                           }
+                           if (data->interrupt_(data->start_time_)) {
+                             return -1;
+                           }
+                           data->offset_ += read_size;
+                           return read_size;
+                         },
+                         nullptr,
+                         [](void* d, int64_t offset, int whence) -> int64_t {
+                           auto data = reinterpret_cast<Data*>(d);
+                           whence &= ~AVSEEK_FORCE;
+                           if (whence == AVSEEK_SIZE) {
+                             return data->size_;
+                           }
+                           if (whence == SEEK_SET) {
+                             data->offset_ = offset;
+                           } else if (whence == SEEK_CUR) {
+                             data->offset_ += offset;
+                           } else if (whence == SEEK_END) {
+                             data->offset_ = data->size_ + offset;
+                           } else {
+                             return -1;
+                           }
+                           return data->offset_;
+                         }),
+      [data](AVIOContext* ctx) {
+        delete data;
+        av_free(ctx->buffer);
+        avio_context_free(&ctx);
+      });
+}
+
 Pointer<AVFormatContext> create_format_context(
     const std::string& url,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
@@ -225,12 +280,10 @@ Pointer<AVFormatContext> create_format_context(
 }
 
 Pointer<AVFormatContext> create_format_context(
-    ICloudProvider* provider, IItem::Pointer item, uint64_t size,
+    Pointer<AVIOContext> io_context,
+    std::chrono::system_clock::time_point start_time,
     std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
   auto context = avformat_alloc_context();
-  auto start_time = std::chrono::system_clock::now();
-  auto io_context =
-      create_io_context(provider, std::move(item), size, start_time, interrupt);
   auto data =
       new CallbackData{std::move(interrupt), start_time, std::move(io_context)};
   context->interrupt_callback.opaque = data;
@@ -301,44 +354,17 @@ Pointer<AVFrame> decode_frame(AVFormatContext* context,
   return result_frame;
 }
 
-std::string encode_frame(AVFrame* frame) {
-  auto png_codec = avcodec_find_encoder(AV_CODEC_ID_PNG);
-  if (!png_codec) throw std::logic_error("png codec not found");
-  auto png_context = make<AVCodecContext>(avcodec_alloc_context3(png_codec),
-                                          avcodec_free_context);
-  png_context->time_base = {1, 24};
-  png_context->pix_fmt = AVPixelFormat(frame->format);
-  png_context->width = frame->width;
-  png_context->height = frame->height;
-  check(avcodec_open2(png_context.get(), png_codec, nullptr), "avcodec_open2");
-  auto packet = create_packet();
-  bool frame_sent = false, flush_sent = false;
-  std::string result;
-  while (true) {
-    if (!frame_sent) {
-      check(avcodec_send_frame(png_context.get(), frame), "avcodec_send_frame");
-      frame_sent = true;
-    } else if (!flush_sent) {
-      check(avcodec_send_frame(png_context.get(), nullptr),
-            "avcodec_send_frame");
-      flush_sent = true;
-    }
-    auto err = avcodec_receive_packet(png_context.get(), packet.get());
-    if (err != 0) {
-      if (err == AVERROR_EOF)
-        break;
-      else
-        check(err, "avcodec_receive_packet");
-    } else {
-      result +=
-          std::string(reinterpret_cast<char*>(packet->data), packet->size);
-    }
+ImageSize thumbnail_size(const ImageSize& i, int target) {
+  if (i.width_ == 0 || i.height_ == 0) return {target, target};
+  if (i.width_ > i.height_) {
+    return {target, i.height_ * target / i.width_};
+  } else {
+    return {i.width_ * target / i.height_, target};
   }
-  return result;
 }
 
-Pointer<AVFrame> create_rgb_frame(AVFrame* frame, ImageSize size) {
-  auto format = AV_PIX_FMT_RGBA;
+Pointer<AVFrame> convert_frame(AVFrame* frame, ImageSize size,
+                               AVPixelFormat format) {
   auto sws_context = make<SwsContext>(
       sws_getContext(frame->width, frame->height, AVPixelFormat(frame->format),
                      size.width_, size.height_, format, SWS_BICUBIC, nullptr,
@@ -359,6 +385,52 @@ Pointer<AVFrame> create_rgb_frame(AVFrame* frame, ImageSize size) {
     av_freep(&f->data);
     av_frame_free(&f);
   });
+}
+
+std::string encode_frame(AVFrame* input_frame, ThumbnailOptions options) {
+  auto size =
+      thumbnail_size({input_frame->width, input_frame->height}, options.size);
+  auto codec = avcodec_find_encoder(
+      options.codec == ThumbnailOptions::Codec::JPEG ? AV_CODEC_ID_MJPEG
+                                                     : AV_CODEC_ID_PNG);
+  if (!codec) throw std::logic_error("codec not found");
+  int loss_ptr;
+  auto frame =
+      convert_frame(input_frame, size,
+                    avcodec_find_best_pix_fmt_of_list(
+                        codec->pix_fmts, AVPixelFormat(input_frame->format),
+                        false, &loss_ptr));
+  auto context =
+      make<AVCodecContext>(avcodec_alloc_context3(codec), avcodec_free_context);
+  context->time_base = {1, 24};
+  context->pix_fmt = AVPixelFormat(frame->format);
+  context->width = frame->width;
+  context->height = frame->height;
+  check(avcodec_open2(context.get(), codec, nullptr), "avcodec_open2");
+  auto packet = create_packet();
+  bool frame_sent = false, flush_sent = false;
+  std::string result;
+  while (true) {
+    if (!frame_sent) {
+      check(avcodec_send_frame(context.get(), frame.get()),
+            "avcodec_send_frame");
+      frame_sent = true;
+    } else if (!flush_sent) {
+      check(avcodec_send_frame(context.get(), nullptr), "avcodec_send_frame");
+      flush_sent = true;
+    }
+    auto err = avcodec_receive_packet(context.get(), packet.get());
+    if (err != 0) {
+      if (err == AVERROR_EOF)
+        break;
+      else
+        check(err, "avcodec_receive_packet");
+    } else {
+      result +=
+          std::string(reinterpret_cast<char*>(packet->data), packet->size);
+    }
+  }
+  return result;
 }
 
 Pointer<AVFilterContext> create_source_filter(AVFormatContext* format_context,
@@ -430,70 +502,74 @@ Pointer<AVFilterContext> create_scale_filter(AVFilterGraph* graph,
   return filter;
 }
 
-ImageSize thumbnail_size(const ImageSize& i, int target) {
-  if (i.width_ == 0 || i.height_ == 0) return {target, target};
-  if (i.width_ > i.height_) {
-    return {target, i.height_ * target / i.width_};
-  } else {
-    return {i.width_ * target / i.height_, target};
+Pointer<AVFrame> get_thumbnail_frame(
+    Pointer<AVIOContext> io_context,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions options) {
+  auto start_time = std::chrono::system_clock::now();
+  auto context =
+      create_format_context(std::move(io_context), start_time, interrupt);
+  auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
+                                    nullptr, 0);
+  check(stream, "av_find_best_stream");
+  if (context->duration > 0) {
+    check(av_seek_frame(context.get(), -1, context->duration / 10, 0),
+          "av_seek_frame");
   }
+  auto codec_context = create_codec_context(context.get(), stream);
+  auto size = thumbnail_size({codec_context->width, codec_context->height},
+                             options.size);
+  auto filter_graph =
+      make<AVFilterGraph>(avfilter_graph_alloc(), avfilter_graph_free);
+  auto source_filter = create_source_filter(
+      context.get(), stream, codec_context.get(), filter_graph.get());
+  auto sink_filter = create_sink_filter(filter_graph.get());
+  auto thumbnail_filter = create_thumbnail_filter(filter_graph.get());
+  auto scale_filter = create_scale_filter(filter_graph.get(), size);
+  check(avfilter_link(source_filter.get(), 0, scale_filter.get(), 0),
+        "avfilter_link");
+  check(avfilter_link(scale_filter.get(), 0, thumbnail_filter.get(), 0),
+        "avfilter_link");
+  check(avfilter_link(thumbnail_filter.get(), 0, sink_filter.get(), 0),
+        "avfilter_link");
+  check(avfilter_graph_config(filter_graph.get(), nullptr),
+        "avfilter_graph_config");
+  Pointer<AVFrame> frame;
+  while (auto current =
+             decode_frame(context.get(), codec_context.get(), stream)) {
+    frame = std::move(current);
+    check(av_buffersrc_write_frame(source_filter.get(), frame.get()),
+          "av_buffersrc_write_frame");
+    auto received_frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
+    auto err = av_buffersink_get_frame(sink_filter.get(), received_frame.get());
+    if (err == 0) {
+      frame = std::move(received_frame);
+      break;
+    } else if (err != AVERROR(EAGAIN)) {
+      check(err, "av_buffersink_get_frame");
+    }
+  }
+  if (!frame) {
+    throw std::logic_error("couldn't get any frame");
+  }
+  return frame;
 }
 
 }  // namespace
 
 EitherError<std::string> generate_thumbnail(
     ICloudProvider* provider, IItem::Pointer item, uint64_t size,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions options) {
   try {
     initialize();
-    auto context = create_format_context(provider, std::move(item), size,
-                                         std::move(interrupt));
-    auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
-                                      nullptr, 0);
-    check(stream, "av_find_best_stream");
-    if (context->duration > 0) {
-      check(av_seek_frame(context.get(), -1, context->duration / 10, 0),
-            "av_seek_frame");
-    }
-    auto codec_context = create_codec_context(context.get(), stream);
-    auto size = thumbnail_size({codec_context->width, codec_context->height},
-                               THUMBNAIL_SIZE);
-    auto filter_graph =
-        make<AVFilterGraph>(avfilter_graph_alloc(), avfilter_graph_free);
-    auto source_filter = create_source_filter(
-        context.get(), stream, codec_context.get(), filter_graph.get());
-    auto sink_filter = create_sink_filter(filter_graph.get());
-    auto thumbnail_filter = create_thumbnail_filter(filter_graph.get());
-    auto scale_filter = create_scale_filter(filter_graph.get(), size);
-    check(avfilter_link(source_filter.get(), 0, scale_filter.get(), 0),
-          "avfilter_link");
-    check(avfilter_link(scale_filter.get(), 0, thumbnail_filter.get(), 0),
-          "avfilter_link");
-    check(avfilter_link(thumbnail_filter.get(), 0, sink_filter.get(), 0),
-          "avfilter_link");
-    check(avfilter_graph_config(filter_graph.get(), nullptr),
-          "avfilter_graph_config");
-    Pointer<AVFrame> frame;
-    while (auto current =
-               decode_frame(context.get(), codec_context.get(), stream)) {
-      frame = std::move(current);
-      check(av_buffersrc_write_frame(source_filter.get(), frame.get()),
-            "av_buffersrc_write_frame");
-      auto received_frame = make<AVFrame>(av_frame_alloc(), av_frame_free);
-      auto err =
-          av_buffersink_get_frame(sink_filter.get(), received_frame.get());
-      if (err == 0) {
-        frame = std::move(received_frame);
-        break;
-      } else if (err != AVERROR(EAGAIN)) {
-        check(err, "av_buffersink_get_frame");
-      }
-    }
-    if (!frame) {
-      throw std::logic_error("couldn't get any frame");
-    }
-    auto rgb_frame = create_rgb_frame(frame.get(), size);
-    return encode_frame(rgb_frame.get());
+    return encode_frame(
+        get_thumbnail_frame(
+            create_io_context(provider, std::move(item), size,
+                              std::chrono::system_clock::now(), interrupt),
+            interrupt, options)
+            .get(),
+        options);
   } catch (const std::exception& e) {
     return Error{IHttpRequest::Failure, e.what()};
   }
@@ -501,7 +577,8 @@ EitherError<std::string> generate_thumbnail(
 
 EitherError<std::string> generate_thumbnail(
     const std::string& url, int64_t timestamp,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions options) {
   try {
     initialize();
     std::string effective_url = url;
@@ -520,13 +597,10 @@ EitherError<std::string> generate_thumbnail(
                              timestamp * AV_TIME_BASE / 1000, INT64_MAX, 0),
           "avformat_seek_file");
     auto codec_context = create_codec_context(context.get(), stream);
-    auto size = thumbnail_size({codec_context->width, codec_context->height},
-                               THUMBNAIL_SIZE);
     Pointer<AVFrame> current =
         decode_frame(context.get(), codec_context.get(), stream);
     if (!current) throw std::logic_error("couldn't get frame");
-    auto rgb_frame = create_rgb_frame(current.get(), size);
-    return encode_frame(rgb_frame.get());
+    return encode_frame(current.get(), options);
   } catch (const std::exception& e) {
     return Error{IHttpRequest::Failure, e.what()};
   }
@@ -535,11 +609,15 @@ EitherError<std::string> generate_thumbnail(
 EitherError<std::string> generate_thumbnail(
     ICloudProvider* provider, IItem::Pointer item, int64_t timestamp,
     uint64_t size,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt) {
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions options) {
   try {
     initialize();
-    auto context = create_format_context(provider, std::move(item), size,
-                                         std::move(interrupt));
+    auto start_time = std::chrono::system_clock::now();
+    auto context =
+        create_format_context(create_io_context(provider, std::move(item), size,
+                                                start_time, interrupt),
+                              start_time, interrupt);
     auto stream = av_find_best_stream(context.get(), AVMEDIA_TYPE_VIDEO, -1, -1,
                                       nullptr, 0);
     check(stream, "av_find_best_stream");
@@ -547,13 +625,30 @@ EitherError<std::string> generate_thumbnail(
                              timestamp * AV_TIME_BASE / 1000, INT64_MAX, 0),
           "avformat_seek_file");
     auto codec_context = create_codec_context(context.get(), stream);
-    auto size = thumbnail_size({codec_context->width, codec_context->height},
-                               THUMBNAIL_SIZE);
     Pointer<AVFrame> current =
         decode_frame(context.get(), codec_context.get(), stream);
     if (!current) throw std::logic_error("couldn't get frame");
-    auto rgb_frame = create_rgb_frame(current.get(), size);
-    return encode_frame(rgb_frame.get());
+    return encode_frame(current.get(), options);
+  } catch (const std::exception& e) {
+    return Error{IHttpRequest::Failure, e.what()};
+  }
+}
+
+EitherError<std::string> generate_thumbnail(
+    std::function<uint32_t(char* data, uint32_t maxlength, uint64_t offset)>
+        read_callback,
+    uint64_t size,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions options) {
+  try {
+    initialize();
+    return encode_frame(
+        get_thumbnail_frame(
+            create_io_context(std::move(read_callback), size,
+                              std::chrono::system_clock::now(), interrupt),
+            interrupt, options)
+            .get(),
+        options);
   } catch (const std::exception& e) {
     return Error{IHttpRequest::Failure, e.what()};
   }

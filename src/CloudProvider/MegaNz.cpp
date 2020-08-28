@@ -29,6 +29,7 @@
 #include "Request/DownloadFileRequest.h"
 #include "Request/Request.h"
 #include "Utility/FileServer.h"
+#include "Utility/GenerateThumbnail.h"
 #include "Utility/Item.h"
 #include "Utility/Utility.h"
 
@@ -106,7 +107,8 @@ enum class Type {
   GENERAL_DATA,
   LOGIN,
   PRELOGIN,
-  GET_FILE_ATTRIBUTE
+  GET_FILE_ATTRIBUTE,
+  SET_FILE_ATTRIBUTE
 };
 
 std::string error_description(error e) {
@@ -385,6 +387,12 @@ struct App : public MegaApp {
     } else {
       return 0;
     }
+  }
+
+  void putfa_result(handle, fatype, error e) override { call(e, e); }
+
+  void putfa_result(handle, fatype, const char*) override {
+    call(API_OK, API_OK);
   }
 
   void exec(std::unique_lock<std::mutex>& lock) {
@@ -1056,6 +1064,37 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
             } else {
               auto item = toItem(mega_->client()->nodebyhandle(*e.right()));
               lock.unlock();
+#ifdef WITH_THUMBNAILER
+              if (item->type() == IItem::FileType::Video ||
+                  item->type() == IItem::FileType::Image) {
+                return thread_pool()->schedule([=] {
+                  auto thumb = generate_thumbnail(
+                      [=](char* data, uint32_t maxlength, uint64_t offset) {
+                        return cb->putData(data, maxlength, offset);
+                      },
+                      cb->size(), [=](auto) { return r->is_cancelled(); },
+                      {120, ThumbnailOptions::Codec::JPEG});
+                  if (thumb.left()) {
+                    return r->done(item);
+                  }
+                  auto lock = mega_->lock();
+                  auto node = this->node(item->id());
+                  if (node == nullptr) {
+                    return r->done(item);
+                  }
+                  r->make_subrequest<MegaNz>(
+                      &MegaNz::make_request<error>, Type::SET_FILE_ATTRIBUTE,
+                      [&](Listener<error>*, int) {
+                        mega_->client()->putfa(node->nodehandle,
+                                               GfxProc::THUMBNAIL,
+                                               node->nodecipher(),
+                                               new std::string(*thumb.right()));
+                        mega_->exec(lock);
+                      },
+                      [=](const EitherError<error>&) { r->done(item); });
+                });
+              }
+#endif
               r->done(item);
             }
           });
@@ -1268,7 +1307,11 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+  auto resolver = [=](const Request<EitherError<void>>::Pointer& r) {
+    if (item->type() != IItem::FileType::Image &&
+        item->type() != IItem::FileType::Video) {
+      return r->done(Error{IHttpRequest::NotFound, util::Error::UNIMPLEMENTED});
+    }
     ensureAuthorized<EitherError<void>>(r, [=] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
@@ -1288,8 +1331,46 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
             }
             mega_->exec(lock);
           },
-          [=](EitherError<std::string> e) {
-            if (e.left()) return r->done(e.left());
+          [=](const EitherError<std::string>& e) {
+            if (e.left()) {
+#ifdef WITH_THUMBNAILER
+              if (e.left()->code_ == API_ENOENT) {
+                return thread_pool()->schedule([=] {
+                  auto thumb = generate_thumbnail(
+                      r->provider().get(), item, item->size(),
+                      [=](auto) { return r->is_cancelled(); },
+                      {120, ThumbnailOptions::Codec::JPEG});
+                  if (thumb.left()) {
+                    return r->done(thumb.left());
+                  }
+                  callback->receivedData(thumb.right()->c_str(),
+                                         thumb.right()->size());
+                  auto lock = mega_->lock();
+                  auto node = this->node(item->id());
+                  if (node == nullptr) {
+                    return r->done(Error{IHttpRequest::NotFound,
+                                         util::Error::NODE_NOT_FOUND});
+                  }
+                  r->make_subrequest<MegaNz>(
+                      &MegaNz::make_request<error>, Type::SET_FILE_ATTRIBUTE,
+                      [&](Listener<error>*, int) {
+                        mega_->client()->putfa(node->nodehandle,
+                                               GfxProc::THUMBNAIL,
+                                               node->nodecipher(),
+                                               new std::string(*thumb.right()));
+                        mega_->exec(lock);
+                      },
+                      [=](const EitherError<error>& e) {
+                        if (e.left())
+                          r->done(e.left());
+                        else
+                          r->done(nullptr);
+                      });
+                });
+              }
+#endif
+              return r->done(e.left());
+            }
             callback->receivedData(e.right()->c_str(), e.right()->size());
             r->done(nullptr);
           });

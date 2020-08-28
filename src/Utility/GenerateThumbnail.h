@@ -30,18 +30,35 @@
 
 namespace cloudstorage {
 
+const int THUMBNAIL_SIZE = 256;
+
+struct ThumbnailOptions {
+  int size;
+  enum class Codec { PNG, JPEG } codec;
+};
+
 EitherError<std::string> generate_thumbnail(
     ICloudProvider* provider, IItem::Pointer item, uint64_t size,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt);
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions = {THUMBNAIL_SIZE, ThumbnailOptions::Codec::PNG});
 
 EitherError<std::string> generate_thumbnail(
     const std::string& url, int64_t timestamp,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt);
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions = {THUMBNAIL_SIZE, ThumbnailOptions::Codec::PNG});
 
 EitherError<std::string> generate_thumbnail(
     ICloudProvider* provider, IItem::Pointer item, int64_t timestamp,
     uint64_t size,
-    std::function<bool(std::chrono::system_clock::time_point)> interrupt);
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions = {THUMBNAIL_SIZE, ThumbnailOptions::Codec::PNG});
+
+EitherError<std::string> generate_thumbnail(
+    std::function<uint32_t(char* data, uint32_t maxlength, uint64_t offset)>
+        read_callback,
+    uint64_t size,
+    std::function<bool(std::chrono::system_clock::time_point)> interrupt,
+    ThumbnailOptions = {THUMBNAIL_SIZE, ThumbnailOptions::Codec::PNG});
 
 }  // namespace cloudstorage
 
