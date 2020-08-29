@@ -50,7 +50,6 @@ Kirigami.ScrollablePage {
     Kirigami.Page {
       property CloudItem item
       property var item_page
-      property bool handle_state
 
       id: player_page
       title: item.filename
@@ -73,19 +72,21 @@ Kirigami.ScrollablePage {
 
       function playerVisibilityChanged(visibility) {
         if (visibility) {
-          handle_state = root.globalDrawer.handleVisible;
+          root.visible_player_count++;
           root.globalDrawer.handleVisible = false;
-          root.visible_player = true;
           platform.enableKeepScreenOn();
         } else {
-          platform.disableKeepScreenOn();
-          player.fullscreen = false;
-          root.visible_player = false;
-          root.globalDrawer.handleVisible = handle_state;
+          root.visible_player_count--;
+          if (root.visible_player_count == 0) {
+            platform.disableKeepScreenOn();
+            player.fullscreen = false;
+            root.globalDrawer.handleVisible = true;
+          }
         }
       }
 
       onIsCurrentPageChanged: playerVisibilityChanged(isCurrentPage)
+      Component.onDestruction: if (isCurrentPage) playerVisibilityChanged(false)
 
       GetUrlRequest {
         id: url_request
@@ -173,7 +174,6 @@ Kirigami.ScrollablePage {
             platform.hidePlayerNotification();
             platform.saveVolume(root.last_volume);
             root.fullscreen_player = false;
-            root.visible_player = false;
           }
         }
       }

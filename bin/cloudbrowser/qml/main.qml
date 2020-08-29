@@ -8,7 +8,6 @@ Kirigami.ApplicationWindow {
   property bool include_ads: cloud.includeAds
   property bool ad_loaded: false
   property bool ad_visible: include_ads
-  property bool visible_player: false
   property bool fullscreen_player: false
   property bool drawer_state: false
   property bool detailed_options: !platform.mobile() || root.height > root.width
@@ -16,6 +15,7 @@ Kirigami.ApplicationWindow {
   property real volume: platform.volume()
   property real last_volume: platform.volume()
   property int player_count: 0
+  property int visible_player_count: 0
   property int footer_height: ad_loaded && ad_visible ? 50 : 0
   property CloudItem selected_item
 
