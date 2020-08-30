@@ -12,12 +12,13 @@
 
 namespace cloudstorage {
 
+using ::testing::AllArgs;
 using ::testing::DoAll;
 using ::testing::ElementsAre;
 using ::testing::Invoke;
 using ::testing::Pointee;
 using ::testing::Property;
-using ::testing::StrEq;
+using ::testing::Truly;
 using ::testing::WithArg;
 using ::testing::WithArgs;
 
@@ -235,16 +236,22 @@ TEST(MegaNzTest, DownloadsItem) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
+  const std::string expected_content =
+      "#!/bin/bash\n"
+      "docker kill $(docker ps -q)\n"
+      "docker images -a --filter=dangling=true -q \n"
+      "docker rm $(docker ps --filter=status=exited --filter=status=created "
+      "-q) -f\n"
+      "docker rmi $(docker images -a -q) -f\n\n";
+
   auto download_callback = std::make_shared<DownloadCallbackMock>();
-  EXPECT_CALL(
-      *download_callback,
-      receivedData(
-          StrEq("#!/bin/bash\ndocker kill $(docker ps -q)\ndocker images -a "
-                "--filter=dangling=true -q \ndocker rm $(docker ps "
-                "--filter=status=exited --filter=status=created -q) -f\ndocker "
-                "rmi $(docker images -a -q) -f\n\n*J\xF9\x81\xBB\xD8_K\x3\t"),
-          198))
-      .Times(1);
+  EXPECT_CALL(*download_callback, receivedData)
+      .With(AllArgs(Truly([&](const std::tuple<const char*, uint32_t>& tuple) {
+        const char* data = std::get<0>(tuple);
+        uint32_t size = std::get<1>(tuple);
+        return size == expected_content.size() &&
+               std::string(data, size) == expected_content;
+      })));
 
   std::promise<EitherError<void>> semaphore;
   provider->getItemData("238628601250033")
