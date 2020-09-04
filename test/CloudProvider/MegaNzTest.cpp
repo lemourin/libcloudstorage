@@ -13,8 +13,10 @@
 namespace cloudstorage {
 
 using ::testing::AllArgs;
+using ::testing::AllOf;
 using ::testing::DoAll;
 using ::testing::ElementsAre;
+using ::testing::Field;
 using ::testing::Invoke;
 using ::testing::Pointee;
 using ::testing::Property;
@@ -129,16 +131,9 @@ TEST(MegaNzTest, ListsDirectory) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  EitherError<IItem::List> result;
-  provider->listDirectory(provider->root())
-      .then([&](const IItem::List& d) { result = d; })
-      .error<IException>([&](const auto& e) {
-        result = Error{e.code(), e.what()};
-      });
-
-  EXPECT_THAT(
-      result.right(),
-      Pointee(ElementsAre(
+  ExpectImmediatePromise(
+      provider->listDirectory(provider->root()),
+      ElementsAre(
           Pointee(Property(&IItem::filename, "Pictures")),
           Pointee(Property(&IItem::filename, "Videos")),
           Pointee(Property(&IItem::filename, "Camera Uploads")),
@@ -150,7 +145,7 @@ TEST(MegaNzTest, ListsDirectory) {
                            "Bit Rush _ Login Screen - League of Legends.mp4")),
           Pointee(Property(&IItem::filename,
                            "STEINS;GATE 0 Ending Full LAST GAME by Zwei.mp4")),
-          Pointee(Property(&IItem::filename, "docker_clean.sh")))));
+          Pointee(Property(&IItem::filename, "docker_clean.sh"))));
 }
 
 TEST(MegaNzTest, GetsGeneralData) {
@@ -160,18 +155,11 @@ TEST(MegaNzTest, GetsGeneralData) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  EitherError<GeneralData> result;
-  provider->generalData()
-      .then([&](const GeneralData& d) { result = d; })
-      .error<IException>([&](const auto& e) {
-        result = Error{e.code(), e.what()};
-      });
-
-  ASSERT_NE(result.right(), nullptr);
-
-  EXPECT_EQ(result.right()->username_, "lemourin@gmail.com");
-  EXPECT_EQ(result.right()->space_total_, 53687091200);
-  EXPECT_EQ(result.right()->space_used_, 3210730732);
+  ExpectImmediatePromise(
+      provider->generalData(),
+      AllOf(Field(&GeneralData::username_, "lemourin@gmail.com"),
+            Field(&GeneralData::space_total_, 53687091200),
+            Field(&GeneralData::space_used_, 3210730732)));
 }
 
 TEST(MegaNzTest, GetsItemData) {
@@ -188,14 +176,15 @@ TEST(MegaNzTest, GetsItemData) {
         result = Error{e.code(), e.what()};
       });
 
-  ASSERT_NE(result.right(), nullptr);
-
-  EXPECT_EQ(result.right()->id(), "238628601250033");
-  EXPECT_EQ(result.right()->filename(), "docker_clean.sh");
-  EXPECT_EQ(result.right()->size(), 198);
-  EXPECT_EQ(result.right()->timestamp(),
-            std::chrono::system_clock::from_time_t(1560095432));
-  EXPECT_EQ(result.right()->type(), IItem::FileType::Unknown);
+  ExpectImmediatePromise(
+      provider->getItemData("238628601250033"),
+      Pointee(
+          AllOf(Property(&IItem::id, "238628601250033"),
+                Property(&IItem::filename, "docker_clean.sh"),
+                Property(&IItem::size, 198),
+                Property(&IItem::timestamp,
+                         std::chrono::system_clock::from_time_t(1560095432)),
+                Property(&IItem::type, IItem::FileType::Unknown))));
 }
 
 TEST(MegaNzTest, HandlesGetItemDataFailure) {
@@ -205,16 +194,8 @@ TEST(MegaNzTest, HandlesGetItemDataFailure) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  EitherError<IItem> result;
-  provider->getItemData("1")
-      .then([&](const IItem::Pointer& d) { result = d; })
-      .error<IException>([&](const auto& e) {
-        result = Error{e.code(), e.what()};
-      });
-
-  ASSERT_NE(result.left(), nullptr);
-
-  EXPECT_EQ(result.left()->code_, IHttpRequest::NotFound);
+  ExpectFailedPromise(provider->getItemData("1"),
+                      Field(&Error::code_, IHttpRequest::NotFound));
 }
 
 TEST(MegaNzTest, DownloadsItem) {
@@ -241,17 +222,11 @@ TEST(MegaNzTest, DownloadsItem) {
                std::string(data, size) == expected_content;
       })));
 
-  EitherError<void> result;
-  provider->getItemData("238628601250033")
-      .then([&](const IItem::Pointer& d) {
-        return provider->downloadFile(d, FullRange, download_callback);
-      })
-      .then([&] { result = nullptr; })
-      .error<IException>([&](const auto& e) {
-        result = Error{e.code(), e.what()};
-      });
-
-  EXPECT_EQ(result.left(), nullptr);
+  ExpectImmediatePromise(provider->getItemData("238628601250033")
+                             .then([&](const IItem::Pointer& d) {
+                               return provider->downloadFile(d, FullRange,
+                                                             download_callback);
+                             }));
 }
 
 }  // namespace cloudstorage

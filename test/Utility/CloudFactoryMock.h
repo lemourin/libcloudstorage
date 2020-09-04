@@ -7,6 +7,16 @@
 #include "HttpServerMock.h"
 #include "ICloudFactory.h"
 
+namespace cloudstorage {
+inline void PrintTo(const std::shared_ptr<Error>& error, std::ostream* os) {
+  if (error) {
+    *os << "Error(" << error->code_ << ", " << error->description_ << ")";
+  } else {
+    *os << "Error(nullptr)";
+  }
+}
+}  // namespace cloudstorage
+
 class CloudFactoryCallbackMock : public cloudstorage::ICloudFactory::ICallback {
  public:
   MOCK_METHOD(void, onCloudAuthenticationCodeExchangeFailed,
@@ -72,5 +82,52 @@ class CloudFactoryMock {
   CloudFactoryCallbackMock* callback_;
   std::unique_ptr<cloudstorage::ICloudFactory> factory_;
 };
+
+template <typename Result, typename ResultMatcher>
+void ExpectImmediatePromise(Promise<Result>&& promise,
+                            const ResultMatcher& matcher) {
+  EitherError<Result> result;
+  promise.then([&](const Result& actual) { result = actual; })
+      .template error<cloudstorage::IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
+  EXPECT_EQ(result.left(), nullptr);
+  EXPECT_THAT(result.right(), testing::Pointee(matcher));
+}
+
+inline void ExpectImmediatePromise(Promise<>&& promise) {
+  EitherError<void> result;
+  bool promise_invoked = false;
+  promise.then([&] { promise_invoked = true; })
+      .template error<cloudstorage::IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
+  EXPECT_TRUE(promise_invoked);
+  EXPECT_EQ(result.left(), nullptr);
+}
+
+template <typename Result, typename ErrorMatcher>
+void ExpectFailedPromise(Promise<Result>&& promise,
+                         const ErrorMatcher& matcher) {
+  EitherError<Result> result;
+  promise.then([&](const Result& actual) { result = actual; })
+      .template error<cloudstorage::IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
+  EXPECT_EQ(result.right(), nullptr);
+  EXPECT_THAT(result.left(), testing::Pointee(matcher));
+}
+
+template <typename ErrorMatcher>
+void ExpectFailedPromise(Promise<>&& promise, const ErrorMatcher& matcher) {
+  EitherError<void> result;
+  bool promise_invoked = false;
+  promise.then([&] { promise_invoked = true; })
+      .template error<cloudstorage::IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
+  EXPECT_FALSE(promise_invoked);
+  EXPECT_THAT(result.left(), testing::Pointee(matcher));
+}
 
 #endif  // CLOUDSTORAGE_CLOUDFACTORYMOCK_H
