@@ -109,4 +109,19 @@ inline std::shared_ptr<HttpRequestMock> Response(
   return Response(http_code, {}, response, input_matcher);
 }
 
+inline auto IgnoringWhitespace(const std::string& string) {
+  return testing::Truly([=](const std::string& input) {
+    auto strip_whitespace = [=](const std::string& str) {
+      std::string result;
+      for (char c : str) {
+        if (!std::isspace(c)) {
+          result += c;
+        }
+      }
+      return result;
+    };
+    return strip_whitespace(string) == strip_whitespace(input);
+  });
+}
+
 #endif  // HTTP_MOCK_H

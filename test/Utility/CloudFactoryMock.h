@@ -15,6 +15,14 @@ inline void PrintTo(const std::shared_ptr<Error>& error, std::ostream* os) {
     *os << "Error(nullptr)";
   }
 }
+inline void PrintTo(const IItem::Pointer& item, std::ostream* os) {
+  if (item) {
+    *os << "Item(id = " << item->id() << ", filename = " << item->filename()
+        << ")";
+  } else {
+    *os << "Item(nullptr)";
+  }
+}
 }  // namespace cloudstorage
 
 class CloudFactoryCallbackMock : public cloudstorage::ICloudFactory::ICallback {
