@@ -26,9 +26,7 @@
 #include "IHttp.h"
 #include "gmock/gmock.h"
 
-using namespace cloudstorage;
-
-class HttpRequestMock : public IHttpRequest {
+class HttpRequestMock : public cloudstorage::IHttpRequest {
  public:
   MOCK_METHOD2(setParameter,
                void(const std::string& parameter, const std::string& value));
@@ -53,11 +51,62 @@ class HttpRequestMock : public IHttpRequest {
                                 ICallback::Pointer callback));
 };
 
-class HttpMock : public IHttp {
+class HttpMock : public cloudstorage::IHttp {
  public:
-  MOCK_CONST_METHOD3(create, IHttpRequest::Pointer(const std::string& url,
-                                                   const std::string& method,
-                                                   bool follow_redirect));
+  MOCK_CONST_METHOD3(
+      create, cloudstorage::IHttpRequest::Pointer(const std::string& url,
+                                                  const std::string& method,
+                                                  bool follow_redirect));
 };
+
+template <typename InputMatcher>
+inline std::shared_ptr<HttpRequestMock> Response(
+    int http_code, cloudstorage::IHttpRequest::HeaderParameters headers,
+    const char* response, const InputMatcher& input_matcher) {
+  auto http_response = std::make_shared<HttpRequestMock>();
+
+  EXPECT_CALL(*http_response, send)
+      .WillOnce(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
+          [=](const cloudstorage::IHttpRequest::CompleteCallback& on_completed,
+              const std::shared_ptr<std::istream>& input_stream,
+              const std::shared_ptr<std::ostream>& output_stream,
+              const std::shared_ptr<std::ostream>& error_stream) {
+            std::stringstream str_stream;
+            str_stream << input_stream->rdbuf();
+
+            EXPECT_THAT(str_stream.str(), input_matcher);
+
+            if (cloudstorage::IHttpRequest::isSuccess(http_code))
+              *output_stream << response;
+            else
+              *error_stream << response;
+            on_completed(cloudstorage::IHttpRequest::Response{
+                http_code, headers, output_stream, error_stream});
+          })));
+
+  return http_response;
+}
+
+template <typename InputMatcher>
+inline std::shared_ptr<HttpRequestMock> Response(
+    const char* response, const InputMatcher& input_matcher) {
+  return Response(200, {}, response, input_matcher);
+}
+
+inline std::shared_ptr<HttpRequestMock> Response(int http_code,
+                                                 const char* response) {
+  return Response(http_code, {}, response,
+                  testing::Truly([](const std::string&) { return true; }));
+}
+
+inline std::shared_ptr<HttpRequestMock> Response(const char* response) {
+  return Response(200, response);
+}
+
+template <typename InputMatcher>
+inline std::shared_ptr<HttpRequestMock> Response(
+    int http_code, const char* response, const InputMatcher& input_matcher) {
+  return Response(http_code, {}, response, input_matcher);
+}
 
 #endif  // HTTP_MOCK_H
