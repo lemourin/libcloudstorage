@@ -129,15 +129,12 @@ TEST(MegaNzTest, ListsDirectory) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  std::promise<EitherError<IItem::List>> semaphore;
-  auto request =
-      provider->listDirectory(provider->root())
-          .then([&](const IItem::List& d) { semaphore.set_value(d); })
-          .error<IException>([&](const auto& e) {
-            semaphore.set_value(Error{e.code(), e.what()});
-          });
-
-  EitherError<IItem::List> result = semaphore.get_future().get();
+  EitherError<IItem::List> result;
+  provider->listDirectory(provider->root())
+      .then([&](const IItem::List& d) { result = d; })
+      .error<IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
 
   EXPECT_THAT(
       result.right(),
@@ -163,15 +160,12 @@ TEST(MegaNzTest, GetsGeneralData) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  std::promise<EitherError<GeneralData>> semaphore;
-  auto request =
-      provider->generalData()
-          .then([&](const GeneralData& d) { semaphore.set_value(d); })
-          .error<IException>([&](const auto& e) {
-            semaphore.set_value(Error{e.code(), e.what()});
-          });
-
-  EitherError<GeneralData> result = semaphore.get_future().get();
+  EitherError<GeneralData> result;
+  provider->generalData()
+      .then([&](const GeneralData& d) { result = d; })
+      .error<IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
 
   ASSERT_NE(result.right(), nullptr);
 
@@ -187,15 +181,12 @@ TEST(MegaNzTest, GetsItemData) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  std::promise<EitherError<IItem>> semaphore;
-  auto request =
-      provider->getItemData("238628601250033")
-          .then([&](const IItem::Pointer& d) { semaphore.set_value(d); })
-          .error<IException>([&](const auto& e) {
-            semaphore.set_value(Error{e.code(), e.what()});
-          });
-
-  EitherError<IItem> result = semaphore.get_future().get();
+  EitherError<IItem> result;
+  provider->getItemData("238628601250033")
+      .then([&](const IItem::Pointer& d) { result = d; })
+      .error<IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
 
   ASSERT_NE(result.right(), nullptr);
 
@@ -214,15 +205,12 @@ TEST(MegaNzTest, HandlesGetItemDataFailure) {
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
-  std::promise<EitherError<IItem>> semaphore;
-  auto request =
-      provider->getItemData("1")
-          .then([&](const IItem::Pointer& d) { semaphore.set_value(d); })
-          .error<IException>([&](const auto& e) {
-            semaphore.set_value(Error{e.code(), e.what()});
-          });
-
-  EitherError<IItem> result = semaphore.get_future().get();
+  EitherError<IItem> result;
+  provider->getItemData("1")
+      .then([&](const IItem::Pointer& d) { result = d; })
+      .error<IException>([&](const auto& e) {
+        result = Error{e.code(), e.what()};
+      });
 
   ASSERT_NE(result.left(), nullptr);
 
@@ -253,17 +241,15 @@ TEST(MegaNzTest, DownloadsItem) {
                std::string(data, size) == expected_content;
       })));
 
-  std::promise<EitherError<void>> semaphore;
+  EitherError<void> result;
   provider->getItemData("238628601250033")
       .then([&](const IItem::Pointer& d) {
         return provider->downloadFile(d, FullRange, download_callback);
       })
-      .then([&] { semaphore.set_value(nullptr); })
+      .then([&] { result = nullptr; })
       .error<IException>([&](const auto& e) {
-        semaphore.set_value(Error{e.code(), e.what()});
+        result = Error{e.code(), e.what()};
       });
-
-  EitherError<void> result = semaphore.get_future().get();
 
   EXPECT_EQ(result.left(), nullptr);
 }
