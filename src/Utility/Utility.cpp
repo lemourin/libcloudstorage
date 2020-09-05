@@ -331,7 +331,8 @@ std::string Url::escape(const std::string& value) {
   escaped << std::hex;
 
   for (auto c : value) {
-    if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+    if ((c >= 0 && c <= 255 && std::isalnum(c)) || c == '-' || c == '_' ||
+        c == '.' || c == '~') {
       escaped << c;
       continue;
     }
