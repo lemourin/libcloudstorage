@@ -34,13 +34,13 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
     : Request(std::move(p), callback, [=](Request::Pointer request) {
         this->request(
             [=](util::Output stream) {
-              return p->renameItemRequest(*item, name, *stream);
+              return provider()->renameItemRequest(*item, name, *stream);
             },
             [=](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
-                request->done(
-                    p->renameItemResponse(*item, name, e.right()->output()));
+                request->done(provider()->renameItemResponse(
+                    *item, name, e.right()->output()));
               } catch (const std::exception& e) {
                 request->done(Error{IHttpRequest::Failure, e.what()});
               }

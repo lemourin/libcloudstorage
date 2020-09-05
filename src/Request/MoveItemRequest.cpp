@@ -37,13 +37,14 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
               Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});
         this->request(
             [=](util::Output stream) {
-              return p->moveItemRequest(*source, *destination, *stream);
+              return provider()->moveItemRequest(*source, *destination,
+                                                 *stream);
             },
             [=](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
-                request->done(p->moveItemResponse(*source, *destination,
-                                                  e.right()->output()));
+                request->done(provider()->moveItemResponse(
+                    *source, *destination, e.right()->output()));
               } catch (const std::exception& e) {
                 request->done(Error{IHttpRequest::Failure, e.what()});
               }
