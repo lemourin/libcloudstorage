@@ -202,6 +202,7 @@ void CloudProvider::destroy() {
   http_ = nullptr;
   http_server_ = nullptr;
   thread_pool_ = nullptr;
+  thumbnailer_thread_pool_ = nullptr;
 }
 
 std::string ICloudProvider::serializeSession(const std::string& token,
