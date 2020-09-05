@@ -21,6 +21,7 @@ using ::testing::Field;
 using ::testing::Invoke;
 using ::testing::Pointee;
 using ::testing::Property;
+using ::testing::Return;
 using ::testing::Truly;
 using ::testing::WithArg;
 using ::testing::WithArgs;
@@ -43,6 +44,10 @@ const std::string LOGIN_NEW_ACCOUNT_RESPONSE(
 const std::string FILES_RESPONSE(
     reinterpret_cast<const char*>(mega_files_response_json),
     mega_files_response_json_len);
+
+const std::string FILES_NEW_ACCOUNT_RESPONSE(
+    reinterpret_cast<const char*>(mega_files_new_account_response_json),
+    mega_files_new_account_response_json_len);
 
 const uint8_t ENCODED_FILE[] = {
     0xcb, 0x4,  0x10, 0x6,  0x3,  0xb9, 0x47, 0x7,  0x14, 0xff, 0xeb, 0x5d,
@@ -98,6 +103,8 @@ std::shared_ptr<HttpRequestMock> MockedMegaResponse(const std::string& url) {
             }
           } else if (json[0]["a"] == "f") {
             output = FILES_RESPONSE;
+          } else if (json[0]["a"] == "ug") {
+            output = FILES_NEW_ACCOUNT_RESPONSE;
           } else if (json[0]["a"] == "log") {
             output = "[0]";
           } else if (json[0]["a"] == "uq") {
@@ -132,6 +139,19 @@ std::shared_ptr<HttpRequestMock> MockedMegaResponse(const std::string& url) {
             R"(http://gfs270n375.userstorage.mega.co.nz/dl/90o5foCMRiTmrgIIHWIZDRKtrSy4EeJRCBJDstc85sOrmmzzE3u2mhYZVRr5R-RI82nJVevpiHvzCkefzqqx5xPifr_G85xdPJZKag1VboElBjI7ugqt_w/0-197)") {
           output = std::string(reinterpret_cast<const char*>(ENCODED_FILE),
                                sizeof(ENCODED_FILE));
+        } else if (
+            url ==
+            R"(https://g.api.mega.co.nz/wsc?sn=K-j5hNctEx4&sid=qEAlRTWK6OeUNISh9-8TMHFLcXV5WUZsTnBJ2mUzSOByQGcfi3pBg__Dgw)") {
+          output =
+              R"({"w":"https://g.api.mega.co.nz/wsc/33t92YvF7Jrr25m7l3Db-A","sn":"_wXAf3CMorA"})";
+        } else if (
+            url ==
+            R"(https://g.api.mega.co.nz/wsc?c=50&sid=qEAlRTWK6OeUNISh9-8TMHFLcXV5WUZsTnBJ2mUzSOByQGcfi3pBg__Dgw)") {
+          output = R"({"c":[],"lsn":"wsGJuWexHuY","fsn":"wsGJuWexHuY"})";
+        } else if (
+            url ==
+            R"(https://g.api.mega.co.nz/wsc/33t92YvF7Jrr25m7l3Db-A?sn=_wXAf3CMorA&sid=qEAlRTWK6OeUNISh9-8TMHFLcXV5WUZsTnBJ2mUzSOByQGcfi3pBg__Dgw)") {
+          return;
         }
 
         ASSERT_FALSE(output.empty());
@@ -297,6 +317,66 @@ TEST(MegaNzTest, ExchangesCodeForNewAccounts) {
                json["session"] ==
                    R"(AWUIQpu+LohLsXlApTUYWNKoQCVFNYro55Q0hKH37xMwcUtxdXlZRmxOcEnaZTNI4HJAZx+LekGD/8OD)";
       })));
+}
+
+TEST(MegaNzTest, HandlesBlockingAuthMode) {
+  class AuthCallback : public ICloudProvider::IAuthCallback {
+    Status userConsentRequired(const ICloudProvider&) override {
+      return Status::WaitForAuthorizationCode;
+    }
+    void done(const ICloudProvider&, EitherError<void>) override {}
+  };
+
+  ICloudProvider::InitData data;
+  data.http_engine_ = util::make_unique<HttpMock>();
+  data.http_server_ = util::make_unique<HttpServerFactoryMock>();
+  data.callback_ = util::make_unique<AuthCallback>();
+  const auto& http = static_cast<const HttpMock&>(*data.http_engine_);
+  const auto& http_server =
+      static_cast<const HttpServerFactoryMock&>(*data.http_server_);
+  auto provider = ICloudStorage::create()->provider("mega", std::move(data));
+
+  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  "username": "orj97581@bcaoo.com",
+  "password": "qwerty1234"
+})"));
+
+  EXPECT_CALL(http, create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  IHttpServer::ICallback::Pointer http_server_callback;
+  EXPECT_CALL(http_server, create)
+      .WillRepeatedly(
+          WithArg<0>(Invoke([&](IHttpServer::ICallback::Pointer cb) {
+            http_server_callback = std::move(cb);
+            auto http_server_mock = std::make_unique<HttpServerMock>();
+            ON_CALL(*http_server_mock, callback)
+                .WillByDefault(Return(http_server_callback));
+            return http_server_mock;
+          })));
+
+  auto http_server_request = std::make_unique<HttpServerMock::RequestMock>();
+  EXPECT_CALL(*http_server_request, get("state"))
+      .WillOnce(Return("DEFAULT_STATE"));
+  EXPECT_CALL(*http_server_request, get("code"))
+      .WillOnce(Return(authorization_code.data()));
+  EXPECT_CALL(*http_server_request, get("accepted")).WillOnce(Return("true"));
+  EXPECT_CALL(*http_server_request, get("error")).WillOnce(Return(nullptr));
+
+  EitherError<GeneralData> result;
+  auto request =
+      provider->getGeneralDataAsync([&](EitherError<GeneralData> general_data) {
+        result = std::move(general_data);
+      });
+
+  http_server_callback->handle(*http_server_request);
+
+  EXPECT_EQ(result.left(), nullptr);
+  EXPECT_THAT(
+      result.right(),
+      Pointee(AllOf(Field(&GeneralData::space_used_, 3210730732),
+                    Field(&GeneralData::space_total_, 53687091200),
+                    Field(&GeneralData::username_, "orj97581@bcaoo.com"))));
 }
 
 }  // namespace cloudstorage
