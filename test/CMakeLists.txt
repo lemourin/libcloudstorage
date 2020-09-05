@@ -9,6 +9,8 @@ add_executable(cloudstorage-test)
 set(cloudstorage-testdata
     ${CMAKE_CURRENT_SOURCE_DIR}/data/mega_files_response.json
     ${CMAKE_CURRENT_SOURCE_DIR}/data/mega_login_response.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/mega_login_secondary_response.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/mega_login_new_account_response.json
     ${CMAKE_CURRENT_SOURCE_DIR}/data/mega_token.txt
 )
 

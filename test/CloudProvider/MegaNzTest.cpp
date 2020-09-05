@@ -8,6 +8,7 @@
 #include "TestData.h"
 #include "Utility/CloudFactoryMock.h"
 #include "Utility/CloudProviderMock.h"
+#include "Utility/Item.h"
 #include "Utility/Utility.h"
 
 namespace cloudstorage {
@@ -30,6 +31,14 @@ const std::string TOKEN(reinterpret_cast<const char*>(mega_token_txt),
 const std::string LOGIN_RESPONSE(
     reinterpret_cast<const char*>(mega_login_response_json),
     mega_login_response_json_len);
+
+const std::string LOGIN_SECONDARY_RESPONSE(
+    reinterpret_cast<const char*>(mega_login_secondary_response_json),
+    mega_login_secondary_response_json_len);
+
+const std::string LOGIN_NEW_ACCOUNT_RESPONSE(
+    reinterpret_cast<const char*>(mega_login_new_account_response_json),
+    mega_login_new_account_response_json_len);
 
 const std::string FILES_RESPONSE(
     reinterpret_cast<const char*>(mega_files_response_json),
@@ -80,7 +89,13 @@ std::shared_ptr<HttpRequestMock> MockedMegaResponse(const std::string& url) {
         if (url.find("https://g.api.mega.co.nz/cs") != std::string::npos) {
           auto json = util::json::from_string(sstream.str());
           if (json[0]["a"] == "us") {
-            output = LOGIN_RESPONSE;
+            if (json[0]["user"] == "w462828@mvrht.net") {
+              output = LOGIN_SECONDARY_RESPONSE;
+            } else if (json[0]["user"] == "orj97581@bcaoo.com") {
+              output = LOGIN_NEW_ACCOUNT_RESPONSE;
+            } else {
+              output = LOGIN_RESPONSE;
+            }
           } else if (json[0]["a"] == "f") {
             output = FILES_RESPONSE;
           } else if (json[0]["a"] == "log") {
@@ -91,6 +106,13 @@ std::shared_ptr<HttpRequestMock> MockedMegaResponse(const std::string& url) {
           } else if (json[0]["a"] == "g") {
             output =
                 R"([{"s":198,"at":"ftV2ak5v9cUqd9did04dD1Qt1DpoSuBPJ1T-0sl3DSlBvPlN5YOVc225bUUHq3FkeD34Sn5maTCD8sA35SgCow","msd":1,"tl":0,"g":"http://gfs270n375.userstorage.mega.co.nz/dl/90o5foCMRiTmrgIIHWIZDRKtrSy4EeJRCBJDstc85sOrmmzzE3u2mhYZVRr5R-RI82nJVevpiHvzCkefzqqx5xPifr_G85xdPJZKag1VboElBjI7ugqt_w","pfa":1}])";
+          } else if (json[0]["a"] == "us0") {
+            if (json[0]["user"] == "orj97581@bcaoo.com") {
+              output =
+                  R"([{"s":"Dsgwep3iwcV9-Q96qwBCfP8m2NiwArstDyJoQ6Rh_fE","v":2}])";
+            } else {
+              output = R"([{"v":1}])";
+            }
           }
         } else if (
             url ==
@@ -148,6 +170,19 @@ TEST(MegaNzTest, ListsDirectory) {
           Pointee(Property(&IItem::filename, "docker_clean.sh"))));
 }
 
+TEST(MegaNzTest, HandlesInvalidItemForListDirectory) {
+  auto mock = CloudFactoryMock::create();
+  auto provider = mock.factory()->create("mega", {TOKEN});
+
+  EXPECT_CALL(*mock.http(), create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  ExpectFailedPromise(provider->listDirectory(std::make_shared<Item>(
+                          "invalid", "invalid", IItem::UnknownSize,
+                          IItem::UnknownTimeStamp, IItem::FileType::Directory)),
+                      Field(&Error::code_, IHttpRequest::NotFound));
+}
+
 TEST(MegaNzTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("mega", {TOKEN});
@@ -168,13 +203,6 @@ TEST(MegaNzTest, GetsItemData) {
 
   EXPECT_CALL(*mock.http(), create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
-
-  EitherError<IItem> result;
-  provider->getItemData("238628601250033")
-      .then([&](const IItem::Pointer& d) { result = d; })
-      .error<IException>([&](const auto& e) {
-        result = Error{e.code(), e.what()};
-      });
 
   ExpectImmediatePromise(
       provider->getItemData("238628601250033"),
@@ -227,6 +255,48 @@ TEST(MegaNzTest, DownloadsItem) {
                                return provider->downloadFile(d, FullRange,
                                                              download_callback);
                              }));
+}
+
+TEST(MegaNzTest, ExchangesCode) {
+  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  "username": "w462828@mvrht.net",
+  "password": "ひらがな"
+})"));
+  auto mock = CloudFactoryMock::create();
+
+  EXPECT_CALL(*mock.http(), create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  ExpectImmediatePromise(
+      mock.factory()->exchangeAuthorizationCode("mega", {}, authorization_code),
+      Field(&Token::token_, Truly([](const std::string& code) {
+        auto json = util::json::from_string(
+            util::Url::unescape(util::from_base64(code)));
+        return json["username"] == "w462828@mvrht.net" &&
+               json["session"] ==
+                   R"(ASIrIFIbhurZv69xje8cyCLb5uSUYtQyIsxGbproy+E4dkNEY042NEFZQkEpqVPQesTtUQiwaqaCkOT2)";
+      })));
+}
+
+TEST(MegaNzTest, ExchangesCodeForNewAccounts) {
+  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  "username": "orj97581@bcaoo.com",
+  "password": "qwerty1234"
+})"));
+  auto mock = CloudFactoryMock::create();
+
+  EXPECT_CALL(*mock.http(), create)
+      .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
+
+  ExpectImmediatePromise(
+      mock.factory()->exchangeAuthorizationCode("mega", {}, authorization_code),
+      Field(&Token::token_, Truly([](const std::string& code) {
+        auto json = util::json::from_string(
+            util::Url::unescape(util::from_base64(code)));
+        return json["username"] == "orj97581@bcaoo.com" &&
+               json["session"] ==
+                   R"(AWUIQpu+LohLsXlApTUYWNKoQCVFNYro55Q0hKH37xMwcUtxdXlZRmxOcEnaZTNI4HJAZx+LekGD/8OD)";
+      })));
 }
 
 }  // namespace cloudstorage
