@@ -330,6 +330,8 @@ TEST(MegaNzTest, HandlesBlockingAuthMode) {
   ICloudProvider::InitData data;
   data.http_engine_ = util::make_unique<HttpMock>();
   data.http_server_ = util::make_unique<HttpServerFactoryMock>();
+  data.thread_pool_ = util::make_unique<ThreadPoolMock>();
+  data.thumbnailer_thread_pool = util::make_unique<ThreadPoolMock>();
   data.callback_ = util::make_unique<AuthCallback>();
   const auto& http = static_cast<const HttpMock&>(*data.http_engine_);
   const auto& http_server =
