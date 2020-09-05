@@ -13,6 +13,7 @@
 
 namespace cloudstorage {
 
+using ::testing::_;
 using ::testing::AllArgs;
 using ::testing::AllOf;
 using ::testing::DoAll;
@@ -333,9 +334,8 @@ TEST(MegaNzTest, HandlesBlockingAuthMode) {
   data.thread_pool_ = util::make_unique<ThreadPoolMock>();
   data.thumbnailer_thread_pool = util::make_unique<ThreadPoolMock>();
   data.callback_ = util::make_unique<AuthCallback>();
-  const auto& http = static_cast<const HttpMock&>(*data.http_engine_);
-  const auto& http_server =
-      static_cast<const HttpServerFactoryMock&>(*data.http_server_);
+  auto& http = static_cast<HttpMock&>(*data.http_engine_);
+  auto& http_server = static_cast<HttpServerFactoryMock&>(*data.http_server_);
   auto provider = ICloudStorage::create()->provider("mega", std::move(data));
 
   auto authorization_code = util::to_base64(util::Url::escape(R"({
@@ -347,15 +347,14 @@ TEST(MegaNzTest, HandlesBlockingAuthMode) {
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));
 
   IHttpServer::ICallback::Pointer http_server_callback;
-  EXPECT_CALL(http_server, create)
-      .WillRepeatedly(
-          WithArg<0>(Invoke([&](IHttpServer::ICallback::Pointer cb) {
-            http_server_callback = std::move(cb);
-            auto http_server_mock = std::make_unique<HttpServerMock>();
-            ON_CALL(*http_server_mock, callback)
-                .WillByDefault(Return(http_server_callback));
-            return http_server_mock;
-          })));
+  EXPECT_CALL(http_server, create(_, _, IHttpServer::Type::Authorization))
+      .WillOnce(WithArg<0>(Invoke([&](IHttpServer::ICallback::Pointer cb) {
+        http_server_callback = std::move(cb);
+        auto http_server_mock = std::make_unique<HttpServerMock>();
+        ON_CALL(*http_server_mock, callback)
+            .WillByDefault(Return(http_server_callback));
+        return http_server_mock;
+      })));
 
   auto http_server_request = std::make_unique<HttpServerMock::RequestMock>();
   EXPECT_CALL(*http_server_request, get("state"))
