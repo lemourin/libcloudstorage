@@ -133,6 +133,43 @@ TEST(WebDavTest, GetsItem) {
                          std::chrono::system_clock::from_time_t(1468503516)))));
 }
 
+TEST(WebDavTest, HandlesItemWithMalformedTimestamp) {
+  auto mock = CloudFactoryMock::create();
+  auto provider = mock.factory()->create("webdav", {});
+
+  auto mock_response = Response(
+      R"(
+<?xml version='1.0' encoding='UTF-8'?>
+<d:multistatus xmlns:d="DAV:">
+    <d:response>
+      <d:href>/Applications/</d:href>
+      <d:propstat>
+          <d:status>HTTP/1.1 200 OK</d:status>
+          <d:prop>
+              <d:creationdate>2016-07-14T13:38:36Z</d:creationdate>
+              <d:displayname>Applications</d:displayname>
+              <d:getlastmodified>malformed</d:getlastmodified>
+              <d:resourcetype>
+                  <d:collection/>
+              </d:resourcetype>
+          </d:prop>
+      </d:propstat>
+    </d:response>
+</d:multistatus>
+)");
+
+  EXPECT_CALL(*mock_response, setHeaderParameter("Depth", "0"));
+  EXPECT_CALL(*mock_response, setHeaderParameter("Authorization", _));
+  EXPECT_CALL(*mock.http(), create).WillOnce(Return(mock_response));
+
+  ExpectImmediatePromise(
+      provider->getItemData("/Application/"),
+      Pointee(AllOf(Property(&IItem::id, "/Applications/"),
+                    Property(&IItem::filename, "Applications"),
+                    Property(&IItem::type, IItem::FileType::Directory),
+                    Property(&IItem::timestamp, IItem::UnknownTimeStamp))));
+}
+
 TEST(WebDavTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});

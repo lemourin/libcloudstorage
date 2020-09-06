@@ -10,22 +10,37 @@
 #include "ThreadPoolMock.h"
 
 namespace cloudstorage {
-inline void PrintTo(const std::shared_ptr<Error>& error, std::ostream* os) {
-  if (error) {
-    *os << "Error(" << error->code_ << ", " << error->description_ << ")";
-  } else {
-    *os << "Error(nullptr)";
-  }
+inline void PrintTo(const Error& error, std::ostream* os) {
+  *os << "Error(" << error.code_ << ", " << error.description_ << ")";
 }
-inline void PrintTo(const IItem::Pointer& item, std::ostream* os) {
-  if (item) {
-    *os << "Item(id = " << item->id() << ", filename = " << item->filename()
-        << ")";
-  } else {
-    *os << "Item(nullptr)";
-  }
+inline void PrintTo(const IItem& item, std::ostream* os) {
+  *os << "Item(id = " << item.id() << ", filename = " << item.filename() << ")";
+}
+inline void PrintTo(IItem::FileType type, std::ostream* os) {
+  const auto str = [=] {
+    switch (type) {
+      case IItem::FileType::Image:
+        return "Image";
+      case IItem::FileType::Audio:
+        return "Audio";
+      case IItem::FileType::Video:
+        return "Video";
+      case IItem::FileType::Directory:
+        return "Directory";
+      case IItem::FileType::Unknown:
+        return "Unknown";
+    }
+  }();
+  *os << "FileType(" << str << ")";
 }
 }  // namespace cloudstorage
+
+namespace std::chrono {
+inline void PrintTo(std::chrono::system_clock::time_point timestamp,
+                    std::ostream* os) {
+  *os << "TimeStamp(" << std::chrono::system_clock::to_time_t(timestamp) << ")";
+}
+}  // namespace std::chrono
 
 class CloudFactoryCallbackMock : public cloudstorage::ICloudFactory::ICallback {
  public:
