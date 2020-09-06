@@ -268,7 +268,10 @@ TEST(WebDavTest, ParsesToken) {
 
 TEST(WebDavTest, HandlesAuthFailure) {
   auto mock = CloudFactoryMock::create();
-  auto provider = mock.factory()->create("webdav", {});
+  auto provider =
+      mock.factory()->create("webdav", {util::to_base64(util::Url::escape(R"({
+  "username": []
+})"))});
 
   EXPECT_CALL(*mock.http(), create).WillOnce(Return(Response(401, "")));
 
