@@ -147,8 +147,8 @@ class CloudProviderMock : public cloudstorage::CloudProvider {
     EXPECT_CALL(*auth_mock, state)
         .WillRepeatedly(testing::Return("test-state"));
     EXPECT_CALL(*auth_mock, fromTokenString)
-        .WillOnce(
-            testing::Return(testing::ByMove(std::make_unique<IAuth::Token>())));
+        .WillOnce(testing::Return(
+            testing::ByMove(std::make_unique<cloudstorage::IAuth::Token>())));
 
     auto auth_callback = std::make_unique<AuthCallbackMock>();
     EXPECT_CALL(*auth_callback, userConsentRequired)

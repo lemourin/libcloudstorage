@@ -26,11 +26,9 @@
 #include "IHttpServer.h"
 #include "gmock/gmock.h"
 
-using namespace cloudstorage;
-
-class HttpServerMock : public IHttpServer {
+class HttpServerMock : public cloudstorage::IHttpServer {
  public:
-  class RequestMock : public IHttpServer::IRequest {  // NOLINT
+  class RequestMock : public cloudstorage::IHttpServer::IRequest {  // NOLINT
    public:
     MOCK_CONST_METHOD1(get, const char*(const std::string& name));     // NOLINT
     MOCK_CONST_METHOD1(header, const char*(const std::string& name));  // NOLINT
@@ -49,11 +47,12 @@ class HttpServerMock : public IHttpServer {
   MOCK_CONST_METHOD0(callback, ICallback::Pointer());
 };
 
-class HttpServerFactoryMock : public IHttpServerFactory {
+class HttpServerFactoryMock : public cloudstorage::IHttpServerFactory {
  public:
-  MOCK_METHOD3(create, IHttpServer::Pointer(IHttpServer::ICallback::Pointer,
-                                            const std::string& session_id,
-                                            IHttpServer::Type));
+  MOCK_METHOD3(create, cloudstorage::IHttpServer::Pointer(
+                           cloudstorage::IHttpServer::ICallback::Pointer,
+                           const std::string& session_id,
+                           cloudstorage::IHttpServer::Type));
 };
 
 #endif  // HTTPSERVERMOCK_H

@@ -60,13 +60,13 @@ class HttpMock : public cloudstorage::IHttp {
 };
 
 template <typename InputMatcher>
-inline std::shared_ptr<HttpRequestMock> Response(
+inline std::shared_ptr<HttpRequestMock> MockResponse(
     int http_code, cloudstorage::IHttpRequest::HeaderParameters headers,
     const char* response, const InputMatcher& input_matcher) {
   auto http_response = std::make_shared<HttpRequestMock>();
 
   EXPECT_CALL(*http_response, send)
-      .WillOnce(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
+      .WillRepeatedly(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
           [=](const cloudstorage::IHttpRequest::CompleteCallback& on_completed,
               const std::shared_ptr<std::istream>& input_stream,
               const std::shared_ptr<std::ostream>& output_stream,
@@ -88,25 +88,25 @@ inline std::shared_ptr<HttpRequestMock> Response(
 }
 
 template <typename InputMatcher>
-inline std::shared_ptr<HttpRequestMock> Response(
+inline std::shared_ptr<HttpRequestMock> MockResponse(
     const char* response, const InputMatcher& input_matcher) {
-  return Response(200, {}, response, input_matcher);
+  return MockResponse(200, {}, response, input_matcher);
 }
 
-inline std::shared_ptr<HttpRequestMock> Response(int http_code,
-                                                 const char* response) {
-  return Response(http_code, {}, response,
-                  testing::Truly([](const std::string&) { return true; }));
+inline std::shared_ptr<HttpRequestMock> MockResponse(int http_code,
+                                                     const char* response) {
+  return MockResponse(http_code, {}, response,
+                      testing::Truly([](const std::string&) { return true; }));
 }
 
-inline std::shared_ptr<HttpRequestMock> Response(const char* response) {
-  return Response(200, response);
+inline std::shared_ptr<HttpRequestMock> MockResponse(const char* response) {
+  return MockResponse(200, response);
 }
 
 template <typename InputMatcher>
-inline std::shared_ptr<HttpRequestMock> Response(
+inline std::shared_ptr<HttpRequestMock> MockResponse(
     int http_code, const char* response, const InputMatcher& input_matcher) {
-  return Response(http_code, {}, response, input_matcher);
+  return MockResponse(http_code, {}, response, input_matcher);
 }
 
 inline auto IgnoringWhitespace(const std::string& string) {

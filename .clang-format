@@ -123,6 +123,10 @@ RawStringFormats:
       - ParseTextProtoOrDie
     CanonicalDelimiter: ''
     BasedOnStyle:    google
+  - Language: TextProto
+    Delimiters:
+      - js
+    BasedOnStyle:    google
 ReflowComments:  true
 SortIncludes:    true
 SortUsingDeclarations: true

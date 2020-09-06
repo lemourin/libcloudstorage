@@ -21,7 +21,7 @@ TEST(WebDavTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response(R"(
+  auto mock_response = MockResponse(R"(
 <?xml version='1.0' encoding='UTF-8'?>
 <d:multistatus xmlns:d="DAV:">
     <d:response/>
@@ -60,7 +60,7 @@ TEST(WebDavTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response(
+  auto mock_response = MockResponse(
       R"(
 <?xml version="1.0" encoding="UTF-8"?>
 <d:multistatus xmlns:d="DAV:">
@@ -98,7 +98,7 @@ TEST(WebDavTest, GetsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response(
+  auto mock_response = MockResponse(
       R"(
 <?xml version='1.0' encoding='UTF-8'?>
 <d:multistatus xmlns:d="DAV:">
@@ -137,7 +137,7 @@ TEST(WebDavTest, HandlesItemWithMalformedTimestamp) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response(
+  auto mock_response = MockResponse(
       R"(
 <?xml version='1.0' encoding='UTF-8'?>
 <d:multistatus xmlns:d="DAV:">
@@ -174,7 +174,7 @@ TEST(WebDavTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("");
+  auto mock_response = MockResponse("");
 
   EXPECT_CALL(*mock.http(), create("/parent/child/", "MKCOL", true))
       .WillOnce(Return(mock_response));
@@ -194,7 +194,7 @@ TEST(WebDavTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("");
+  auto mock_response = MockResponse("");
 
   EXPECT_CALL(*mock.http(), create("/parent/child/", "DELETE", true))
       .WillOnce(Return(mock_response));
@@ -208,7 +208,7 @@ TEST(WebDavTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("");
+  auto mock_response = MockResponse("");
   EXPECT_CALL(*mock_response,
               setHeaderParameter("Destination", "/parent/new_name"));
   EXPECT_CALL(*mock_response, setHeaderParameter("Authorization", _));
@@ -230,7 +230,7 @@ TEST(WebDavTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("");
+  auto mock_response = MockResponse("");
   EXPECT_CALL(*mock_response, setHeaderParameter("Destination", "/child"));
   EXPECT_CALL(*mock_response, setHeaderParameter("Authorization", _));
 
@@ -250,7 +250,7 @@ TEST(WebDavTest, UploadsFile) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("", "file");
+  auto mock_response = MockResponse("", "file");
 
   EXPECT_CALL(*mock.http(), create("/destination/filename", "PUT", true))
       .WillOnce(Return(mock_response));
@@ -270,7 +270,7 @@ TEST(WebDavTest, DownloadsFile) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("webdav", {});
 
-  auto mock_response = Response("file");
+  auto mock_response = MockResponse("file");
 
   EXPECT_CALL(*mock.http(), create("/url", "GET", true))
       .WillOnce(Return(mock_response));
@@ -307,7 +307,7 @@ TEST(WebDavTest, HandlesAuthFailure) {
   "username": []
 })")});
 
-  EXPECT_CALL(*mock.http(), create).WillOnce(Return(Response(401, "")));
+  EXPECT_CALL(*mock.http(), create).WillOnce(Return(MockResponse(401, "")));
 
   ExpectFailedPromise(provider->generalData(), Field(&Error::code_, 401));
 }
