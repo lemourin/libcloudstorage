@@ -411,11 +411,6 @@ IHttpRequest::Pointer YandexDisk::Auth::exchangeAuthorizationCodeRequest(
   return request;
 }
 
-IHttpRequest::Pointer YandexDisk::Auth::refreshTokenRequest(
-    std::ostream&) const {
-  return nullptr;
-}
-
 IAuth::Token::Pointer YandexDisk::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   auto response = util::json::from_stream(stream);
@@ -424,11 +419,6 @@ IAuth::Token::Pointer YandexDisk::Auth::exchangeAuthorizationCodeResponse(
   token->token_ = response["access_token"].asString();
   token->refresh_token_ = token->token_;
   return token;
-}
-
-IAuth::Token::Pointer YandexDisk::Auth::refreshTokenResponse(
-    std::istream&) const {
-  return nullptr;
 }
 
 }  // namespace cloudstorage

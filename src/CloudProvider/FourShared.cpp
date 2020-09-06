@@ -661,28 +661,4 @@ void FourShared::Auth::initialize(IHttp *http, IHttpServerFactory *factory) {
   }
 }
 
-std::string FourShared::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer FourShared::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer FourShared::Auth::refreshTokenRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer FourShared::Auth::exchangeAuthorizationCodeResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer FourShared::Auth::refreshTokenResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage

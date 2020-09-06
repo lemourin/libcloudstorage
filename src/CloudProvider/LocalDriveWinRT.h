@@ -66,21 +66,6 @@ class LocalDriveWinRT : public CloudProvider {
   UploadFileRequest::Pointer uploadFileAsync(
       IItem::Pointer, const std::string&,
       IUploadFileCallback::Pointer) override;
-
- private:
-  class Auth : public cloudstorage::Auth {
-   public:
-    std::string authorizeLibraryUrl() const override;
-
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
 };
 
 }  // namespace cloudstorage

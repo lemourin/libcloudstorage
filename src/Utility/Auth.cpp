@@ -177,4 +177,27 @@ IAuth::Token::Pointer Auth::fromTokenString(
   return token;
 }
 
+std::string Auth::authorizeLibraryUrl() const {
+  return redirect_uri() + "/login?state=" + state();
+}
+
+IHttpRequest::Pointer Auth::exchangeAuthorizationCodeRequest(
+    std::ostream& input_data) const {
+  return nullptr;
+}
+
+IHttpRequest::Pointer Auth::refreshTokenRequest(
+    std::ostream& input_data) const {
+  return nullptr;
+}
+
+IAuth::Token::Pointer Auth::exchangeAuthorizationCodeResponse(
+    std::istream&) const {
+  return nullptr;
+}
+
+IAuth::Token::Pointer Auth::refreshTokenResponse(std::istream&) const {
+  return nullptr;
+}
+
 }  // namespace cloudstorage

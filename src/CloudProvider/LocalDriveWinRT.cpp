@@ -446,30 +446,6 @@ ICloudProvider::UploadFileRequest::Pointer LocalDriveWinRT::uploadFileAsync(
   return request->run();
 }
 
-std::string LocalDriveWinRT::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer LocalDriveWinRT::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer LocalDriveWinRT::Auth::refreshTokenRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer LocalDriveWinRT::Auth::exchangeAuthorizationCodeResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer LocalDriveWinRT::Auth::refreshTokenResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage
 
 #endif

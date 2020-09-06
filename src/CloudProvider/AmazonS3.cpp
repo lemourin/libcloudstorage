@@ -654,27 +654,4 @@ void AmazonS3::getEndpoint(
       });
 }
 
-std::string AmazonS3::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer AmazonS3::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream&) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer AmazonS3::Auth::refreshTokenRequest(std::ostream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer AmazonS3::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer AmazonS3::Auth::refreshTokenResponse(
-    std::istream&) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage

@@ -322,26 +322,4 @@ bool WebDav::unpackCredentials(const std::string& code) {
   }
 }
 
-std::string WebDav::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer WebDav::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream&) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer WebDav::Auth::refreshTokenRequest(std::ostream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer WebDav::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer WebDav::Auth::refreshTokenResponse(std::istream&) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage

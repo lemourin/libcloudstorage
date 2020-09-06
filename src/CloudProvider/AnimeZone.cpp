@@ -795,28 +795,4 @@ IItem::List AnimeZone::episodeDirectoryContent(
   return result;
 }
 
-std::string AnimeZone::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer AnimeZone::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer AnimeZone::Auth::refreshTokenRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer AnimeZone::Auth::exchangeAuthorizationCodeResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer AnimeZone::Auth::refreshTokenResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage

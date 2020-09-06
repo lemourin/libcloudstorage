@@ -110,21 +110,6 @@ class MegaNz : public CloudProvider {
   template <class T>
   void ensureAuthorized(const typename Request<T>::Pointer&,
                         std::function<void()> on_success);
-
-  class Auth : public cloudstorage::Auth {
-   public:
-    std::string authorizeLibraryUrl() const override;
-
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
-
   template <class T>
   std::shared_ptr<IRequest<EitherError<T>>> make_request(
       Type, const std::function<void(Listener<T>*, int)>& init,

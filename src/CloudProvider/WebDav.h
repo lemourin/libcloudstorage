@@ -96,20 +96,6 @@ class WebDav : public CloudProvider {
                    const IHttpRequest::HeaderParameters&) const override;
   void authorizeRequest(IHttpRequest&) const override;
 
-  class Auth : public cloudstorage::Auth {
-   public:
-    std::string authorizeLibraryUrl() const override;
-
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
-
  private:
   bool unpackCredentials(const std::string& code) override;
 

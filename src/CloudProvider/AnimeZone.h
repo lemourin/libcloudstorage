@@ -75,19 +75,6 @@ class AnimeZone : public CloudProvider {
                                       const std::string& anime_name,
                                       const std::string& episode_no,
                                       const std::string& content) const;
-
-  class Auth : public cloudstorage::Auth {
-   public:
-    std::string authorizeLibraryUrl() const override;
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
 };
 
 }  // namespace cloudstorage

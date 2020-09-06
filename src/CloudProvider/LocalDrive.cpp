@@ -351,26 +351,6 @@ std::string LocalDrive::Auth::authorizeLibraryUrl() const {
          "&hint=" + util::Url::escape(util::home_directory());
 }
 
-IHttpRequest::Pointer LocalDrive::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer LocalDrive::Auth::refreshTokenRequest(
-    std::ostream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer LocalDrive::Auth::exchangeAuthorizationCodeResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer LocalDrive::Auth::refreshTokenResponse(
-    std::istream &) const {
-  return nullptr;
-}
-
 template <class T>
 void LocalDrive::ensureInitialized(typename Request<T>::Pointer r,
                                    std::function<void()> on_success) {

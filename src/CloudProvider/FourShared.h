@@ -88,16 +88,6 @@ class FourShared : public CloudProvider {
   class Auth : public cloudstorage::Auth {
    public:
     void initialize(IHttp*, IHttpServerFactory*) override;
-    std::string authorizeLibraryUrl() const override;
-
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
   };
 
   std::string root_id_;

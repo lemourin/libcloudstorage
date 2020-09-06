@@ -1482,28 +1482,6 @@ void MegaNz::ensureAuthorized(const typename Request<T>::Pointer& r,
     f(nullptr);
 }
 
-std::string MegaNz::Auth::authorizeLibraryUrl() const {
-  return redirect_uri() + "/login?state=" + state();
-}
-
-IHttpRequest::Pointer MegaNz::Auth::exchangeAuthorizationCodeRequest(
-    std::ostream&) const {
-  return nullptr;
-}
-
-IHttpRequest::Pointer MegaNz::Auth::refreshTokenRequest(std::ostream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer MegaNz::Auth::exchangeAuthorizationCodeResponse(
-    std::istream&) const {
-  return nullptr;
-}
-
-IAuth::Token::Pointer MegaNz::Auth::refreshTokenResponse(std::istream&) const {
-  return nullptr;
-}
-
 }  // namespace cloudstorage
 
 #endif  // WITH_MEGA

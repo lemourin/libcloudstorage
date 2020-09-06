@@ -95,20 +95,6 @@ class AmazonS3 : public CloudProvider {
   std::string bucket() const;
   std::string s3_endpoint() const;
 
-  class Auth : public cloudstorage::Auth {
-   public:
-    std::string authorizeLibraryUrl() const override;
-
-    IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
-        std::ostream& input_data) const override;
-    IHttpRequest::Pointer refreshTokenRequest(
-        std::ostream& input_data) const override;
-
-    Token::Pointer exchangeAuthorizationCodeResponse(
-        std::istream&) const override;
-    Token::Pointer refreshTokenResponse(std::istream&) const override;
-  };
-
  private:
   bool unpackCredentials(const std::string&) override;
   std::string getUrl(const Item&) const;

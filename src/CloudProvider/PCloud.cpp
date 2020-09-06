@@ -253,20 +253,12 @@ IHttpRequest::Pointer PCloud::Auth::exchangeAuthorizationCodeRequest(
       "&client_secret=" + client_secret() + "&code=" + authorization_code());
 }
 
-IHttpRequest::Pointer PCloud::Auth::refreshTokenRequest(std::ostream&) const {
-  return nullptr;
-}
-
 IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
   auto json = util::json::from_stream(stream);
   if (!json.isMember("access_token")) throw std::logic_error("no access token");
   return util::make_unique<Token>(Token{json["access_token"].asString(),
                                         json["access_token"].asString(), -1});
-}
-
-IAuth::Token::Pointer PCloud::Auth::refreshTokenResponse(std::istream&) const {
-  return nullptr;
 }
 
 }  // namespace cloudstorage

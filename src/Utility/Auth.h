@@ -99,6 +99,17 @@ class Auth : public IAuth {
 
   std::string redirect_uri_path() const;
 
+  std::string authorizeLibraryUrl() const override;
+
+  IHttpRequest::Pointer exchangeAuthorizationCodeRequest(
+      std::ostream& input_data) const override;
+  IHttpRequest::Pointer refreshTokenRequest(
+      std::ostream& input_data) const override;
+
+  Token::Pointer exchangeAuthorizationCodeResponse(
+      std::istream&) const override;
+  Token::Pointer refreshTokenResponse(std::istream&) const override;
+
  private:
   std::string authorization_code_;
   std::string client_id_;
