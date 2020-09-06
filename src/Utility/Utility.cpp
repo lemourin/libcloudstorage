@@ -330,9 +330,9 @@ std::string Url::escape(const std::string& value) {
   escaped << std::setfill('0');
   escaped << std::hex;
 
-  for (auto c : value) {
-    if ((c >= 0 && c <= 255 && std::isalnum(c)) || c == '-' || c == '_' ||
-        c == '.' || c == '~') {
+  for (char c : value) {
+    if ((c >= 0 && std::isalnum(c)) || c == '-' || c == '_' || c == '.' ||
+        c == '~') {
       escaped << c;
       continue;
     }
