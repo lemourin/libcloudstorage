@@ -421,15 +421,14 @@ std::string CloudProvider::getFilename(const std::string& path) {
 
 Json::Value CloudProvider::credentialsFromString(const std::string& str) {
   try {
-    return util::json::from_stream(
-        std::stringstream(util::Url::unescape(util::from_base64(str))));
+    return util::json::from_stream(std::stringstream(util::decode_token(str)));
   } catch (const Json::Exception&) {
     return {};
   }
 }
 
 std::string CloudProvider::credentialsToString(const Json::Value& json) {
-  return util::to_base64(util::Url::escape(util::json::to_string(json)));
+  return util::encode_token(util::json::to_string(json));
 }
 
 ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(

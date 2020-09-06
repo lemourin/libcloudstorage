@@ -252,15 +252,13 @@ TEST(WebDavTest, DownloadsFile) {
 
 TEST(WebDavTest, ParsesToken) {
   auto mock = CloudFactoryMock::create();
-  auto provider =
-      mock.factory()->create("webdav", {util::to_base64(util::Url::escape(R"({
+  auto provider = mock.factory()->create("webdav", {util::encode_token(R"({
   "username": "username",
   "password": "password",
   "endpoint": "endpoint"
-})"))});
+})")});
 
-  auto json = util::json::from_string(
-      util::Url::unescape(util::from_base64(provider->token())));
+  auto json = util::json::from_string(util::decode_token(provider->token()));
   EXPECT_EQ(json["username"], "username");
   EXPECT_EQ(json["password"], "password");
   EXPECT_EQ(json["endpoint"], "endpoint");
@@ -268,10 +266,9 @@ TEST(WebDavTest, ParsesToken) {
 
 TEST(WebDavTest, HandlesAuthFailure) {
   auto mock = CloudFactoryMock::create();
-  auto provider =
-      mock.factory()->create("webdav", {util::to_base64(util::Url::escape(R"({
+  auto provider = mock.factory()->create("webdav", {util::encode_token(R"({
   "username": []
-})"))});
+})")});
 
   EXPECT_CALL(*mock.http(), create).WillOnce(Return(Response(401, "")));
 

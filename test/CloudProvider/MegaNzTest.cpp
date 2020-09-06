@@ -279,10 +279,10 @@ TEST(MegaNzTest, DownloadsItem) {
 }
 
 TEST(MegaNzTest, ExchangesCode) {
-  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  auto authorization_code = util::encode_token(R"({
   "username": "w462828@mvrht.net",
   "password": "ひらがな"
-})"));
+})");
   auto mock = CloudFactoryMock::create();
 
   EXPECT_CALL(*mock.http(), create)
@@ -291,8 +291,7 @@ TEST(MegaNzTest, ExchangesCode) {
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("mega", {}, authorization_code),
       Field(&Token::token_, Truly([](const std::string& code) {
-        auto json = util::json::from_string(
-            util::Url::unescape(util::from_base64(code)));
+        auto json = util::json::from_string(util::decode_token(code));
         return json["username"] == "w462828@mvrht.net" &&
                json["session"] ==
                    R"(ASIrIFIbhurZv69xje8cyCLb5uSUYtQyIsxGbproy+E4dkNEY042NEFZQkEpqVPQesTtUQiwaqaCkOT2)";
@@ -300,10 +299,10 @@ TEST(MegaNzTest, ExchangesCode) {
 }
 
 TEST(MegaNzTest, ExchangesCodeForNewAccounts) {
-  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  auto authorization_code = util::encode_token(R"({
   "username": "orj97581@bcaoo.com",
   "password": "qwerty1234"
-})"));
+})");
   auto mock = CloudFactoryMock::create();
 
   EXPECT_CALL(*mock.http(), create)
@@ -312,8 +311,7 @@ TEST(MegaNzTest, ExchangesCodeForNewAccounts) {
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("mega", {}, authorization_code),
       Field(&Token::token_, Truly([](const std::string& code) {
-        auto json = util::json::from_string(
-            util::Url::unescape(util::from_base64(code)));
+        auto json = util::json::from_string(util::decode_token(code));
         return json["username"] == "orj97581@bcaoo.com" &&
                json["session"] ==
                    R"(AWUIQpu+LohLsXlApTUYWNKoQCVFNYro55Q0hKH37xMwcUtxdXlZRmxOcEnaZTNI4HJAZx+LekGD/8OD)";
@@ -338,10 +336,10 @@ TEST(MegaNzTest, HandlesBlockingAuthMode) {
   auto& http_server = static_cast<HttpServerFactoryMock&>(*data.http_server_);
   auto provider = ICloudStorage::create()->provider("mega", std::move(data));
 
-  auto authorization_code = util::to_base64(util::Url::escape(R"({
+  auto authorization_code = util::encode_token(R"({
   "username": "orj97581@bcaoo.com",
   "password": "qwerty1234"
-})"));
+})");
 
   EXPECT_CALL(http, create)
       .WillRepeatedly(WithArg<0>(Invoke(MockedMegaResponse)));

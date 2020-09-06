@@ -282,6 +282,14 @@ std::string from_base64(const std::string& in) {
   return out;
 }
 
+std::string encode_token(const std::string& token) {
+  return util::to_base64(util::Url::escape(token));
+}
+
+std::string decode_token(const std::string& token) {
+  return util::Url::unescape(util::from_base64(token));
+}
+
 Url::Url(const std::string& url) {
   const std::string prot_end = "://";
 
