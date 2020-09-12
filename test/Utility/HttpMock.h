@@ -93,8 +93,8 @@ inline std::shared_ptr<HttpRequestMock> MockResponse(
   return MockResponse(200, {}, response, input_matcher);
 }
 
-inline std::shared_ptr<HttpRequestMock> MockResponse(int http_code,
-                                                     const char* response) {
+inline std::shared_ptr<HttpRequestMock> MockResponse(
+    int http_code, const char* response = "") {
   return MockResponse(http_code, {}, response,
                       testing::Truly([](const std::string&) { return true; }));
 }

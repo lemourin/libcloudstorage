@@ -107,6 +107,7 @@ struct Uploader : public ICloudUploadCallback {
     return static_cast<uint32_t>(stream_->gcount());
   }
   uint64_t size() override {
+    stream_->clear();
     stream_->seekg(0, std::ios::end);
     auto position = stream_->tellg();
     stream_->seekg(0);
