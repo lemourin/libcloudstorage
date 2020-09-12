@@ -124,6 +124,7 @@ Kirigami.ApplicationWindow {
   }
 
   globalDrawer: Kirigami.GlobalDrawer {
+    clip: true
     Component {
       id: settings
       Kirigami.Action {
