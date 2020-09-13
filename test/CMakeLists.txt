@@ -21,6 +21,7 @@ target_sources(cloudstorage-test PRIVATE
     CloudProvider/CloudProviderTest.cpp
     CloudProvider/GoogleDriveTest.cpp
     CloudProvider/OneDriveTest.cpp
+    CloudProvider/DropboxTest.cpp
     CloudProvider/MegaNzTest.cpp
     CloudProvider/WebDavTest.cpp
     Utility/RequestTest.cpp
