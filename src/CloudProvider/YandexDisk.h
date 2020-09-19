@@ -64,8 +64,6 @@ class YandexDisk : public CloudProvider {
   IHttpRequest::Pointer listDirectoryRequest(
       const IItem&, const std::string& page_token,
       std::ostream& input_stream) const override;
-  IHttpRequest::Pointer moveItemRequest(const IItem&, const IItem&,
-                                        std::ostream&) const override;
 
   IItem::List listDirectoryResponse(
       const IItem&, std::istream&, std::string& next_page_token) const override;
@@ -73,8 +71,6 @@ class YandexDisk : public CloudProvider {
   std::string getItemUrlResponse(const IItem&,
                                  const IHttpRequest::HeaderParameters&,
                                  std::istream& response) const override;
-  IItem::Pointer moveItemResponse(const IItem&, const IItem&,
-                                  std::istream&) const override;
   IItem::Pointer createDirectoryResponse(const IItem& parent,
                                          const std::string& name,
                                          std::istream& response) const override;

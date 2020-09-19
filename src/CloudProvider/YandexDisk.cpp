@@ -333,26 +333,6 @@ IHttpRequest::Pointer YandexDisk::listDirectoryRequest(
   return request;
 }
 
-IHttpRequest::Pointer YandexDisk::moveItemRequest(const IItem& source,
-                                                  const IItem& destination,
-                                                  std::ostream&) const {
-  auto request = http()->create(endpoint() + "/v1/disk/resources/move", "POST");
-  request->setParameter("from", source.id());
-  request->setParameter(
-      "path", destination.id() + (destination.id().back() == '/' ? "" : "/") +
-                  source.filename());
-  return request;
-}
-
-IItem::Pointer YandexDisk::moveItemResponse(const IItem& source,
-                                            const IItem& dest,
-                                            std::istream&) const {
-  return util::make_unique<Item>(
-      source.filename(),
-      dest.id() + (dest.id().back() == '/' ? "" : "/") + source.filename(),
-      source.size(), source.timestamp(), source.type());
-}
-
 IItem::List YandexDisk::listDirectoryResponse(
     const IItem&, std::istream& stream, std::string& next_page_token) const {
   auto response = util::json::from_stream(stream);

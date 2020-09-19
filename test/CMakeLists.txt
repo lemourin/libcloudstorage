@@ -25,6 +25,7 @@ target_sources(cloudstorage-test PRIVATE
     CloudProvider/BoxTest.cpp
     CloudProvider/MegaNzTest.cpp
     CloudProvider/WebDavTest.cpp
+    CloudProvider/YandexDiskTest.cpp
     Utility/RequestTest.cpp
     Utility/AuthMock.h
     Utility/HttpMock.h
