@@ -248,9 +248,11 @@ std::string PCloud::Auth::authorizeLibraryUrl() const {
 
 IHttpRequest::Pointer PCloud::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
-  return http()->create(
-      "https://api.pcloud.com/oauth2_token?client_id=" + client_id() +
-      "&client_secret=" + client_secret() + "&code=" + authorization_code());
+  auto request = http()->create("https://api.pcloud.com/oauth2_token");
+  request->setParameter("client_id", client_id());
+  request->setParameter("client_secret", client_secret());
+  request->setParameter("code", authorization_code());
+  return request;
 }
 
 IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
