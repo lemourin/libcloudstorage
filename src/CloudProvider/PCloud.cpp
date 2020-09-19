@@ -230,11 +230,11 @@ void PCloud::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
   cloudstorage::Auth::initialize(http, factory);
   if (client_id().empty()) {
     if (permission() == Permission::ReadWrite) {
-      set_client_id("EDEqpUpRnFF");
-      set_client_secret("PQLFPbyObs5IzeUdXF7VcfkuAPs7");
+      set_client_id("rjR7bUpwgdz");
+      set_client_secret("zNtirCfoYfmX5aFzoavWikKWyMlV");
     } else {
-      set_client_id("voX062WaS7m");
-      set_client_secret("kpTzRFiWEBRVFrRy79ufPQQGMqTX");
+      set_client_id("4K6QgFuDAwV");
+      set_client_secret("mMiLCs6Ys9yr46U7Vz3zbH8wX1jy");
     }
   }
 }
