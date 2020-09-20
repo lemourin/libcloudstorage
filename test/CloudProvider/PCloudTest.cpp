@@ -16,8 +16,7 @@ TEST(PCloudTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("pcloud", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/userinfo", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/userinfo", "GET", true))
       .WillOnce(Return(MockResponse(R"js({
                                            "email": "admin@admin.ru",
                                            "quota": 10,
@@ -47,8 +46,7 @@ TEST(PCloudTest, GetsItemDataForDirectory) {
   EXPECT_CALL(*response, setParameter("folderid", "file_id"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/listfolder", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/listfolder", "GET", true))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(
@@ -78,8 +76,7 @@ TEST(PCloudTest, GetsItemDataForItem) {
   EXPECT_CALL(*response, setParameter("fileid", "file_id"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/checksumfile", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/checksumfile", "GET", true))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(
@@ -106,8 +103,7 @@ TEST(PCloudTest, ListsDirectory) {
   EXPECT_CALL(*response, setParameter("folderid", "folder_id"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/listfolder", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/listfolder", "GET", true))
       .WillOnce(Return(response));
 
   auto directory = std::make_shared<Item>(
@@ -124,8 +120,7 @@ TEST(PCloudTest, DeletesItem) {
   auto response = MockResponse(200);
   EXPECT_CALL(*response, setParameter("fileid", "file_id"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/deletefile", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/deletefile", "GET", true))
       .WillOnce(Return(response));
 
   auto item = std::make_shared<Item>(
@@ -142,9 +137,7 @@ TEST(PCloudTest, DeletesFolder) {
   auto response = MockResponse(200);
   EXPECT_CALL(*response, setParameter("folderid", "folder_id"));
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.pcloud.com/deletefolderrecursive", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/deletefolderrecursive", "GET", true))
       .WillOnce(Return(response));
 
   auto item = std::make_shared<Item>(
@@ -163,8 +156,7 @@ TEST(PCloudTest, CreatesDirectory) {
   EXPECT_CALL(*response, setParameter("folderid", "folder_id"));
   EXPECT_CALL(*response, setParameter("name", "directory"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/createfolder", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/createfolder", "GET", true))
       .WillOnce(Return(response));
 
   auto parent = std::make_shared<Item>(
@@ -185,8 +177,7 @@ TEST(PCloudTest, MovesItem) {
   EXPECT_CALL(*response, setParameter("fileid", "source_id"));
   EXPECT_CALL(*response, setParameter("tofolderid", "destination_id"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/renamefile", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/renamefile", "GET", true))
       .WillOnce(Return(response));
 
   auto source = std::make_shared<Item>(
@@ -212,8 +203,7 @@ TEST(PCloudTest, MovesFolder) {
   EXPECT_CALL(*response, setParameter("folderid", "source_id"));
   EXPECT_CALL(*response, setParameter("tofolderid", "destination_id"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/renamefolder", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/renamefolder", "GET", true))
       .WillOnce(Return(response));
 
   auto source = std::make_shared<Item>(
@@ -238,8 +228,7 @@ TEST(PCloudTest, RenamesItem) {
   EXPECT_CALL(*response, setParameter("fileid", "source_id"));
   EXPECT_CALL(*response, setParameter("toname", "new_name"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/renamefile", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/renamefile", "GET", true))
       .WillOnce(Return(response));
 
   auto source = std::make_shared<Item>(
@@ -261,8 +250,7 @@ TEST(PCloudTest, RenamesFolder) {
   EXPECT_CALL(*response, setParameter("folderid", "source_id"));
   EXPECT_CALL(*response, setParameter("toname", "new_name"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/renamefolder", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/renamefolder", "GET", true))
       .WillOnce(Return(response));
 
   auto source = std::make_shared<Item>(
@@ -283,8 +271,7 @@ TEST(PCloudTest, DownloadsItem) {
       MockResponse(R"js({ "hosts": [ "file-url" ], "path": "/path" })js");
   EXPECT_CALL(*response, setParameter("fileid", "id")).WillRepeatedly(Return());
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/getfilelink", "GET", true))
+  EXPECT_CALL(*mock.http(), create("/getfilelink", "GET", true))
       .WillRepeatedly(Return(response));
   EXPECT_CALL(*mock.http(), create("https://file-url/path", "GET", true))
       .WillRepeatedly(Return(MockResponse("content")));
@@ -313,8 +300,7 @@ TEST(PCloudTest, UploadsItem) {
   EXPECT_CALL(*response, setParameter("filename", "name"));
   EXPECT_CALL(*response, setParameter("timeformat", "timestamp"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/uploadfile", "POST", true))
+  EXPECT_CALL(*mock.http(), create("/uploadfile", "POST", true))
       .WillOnce(Return(response));
 
   auto parent = std::make_shared<Item>(
@@ -326,33 +312,6 @@ TEST(PCloudTest, UploadsItem) {
   ExpectImmediatePromise(
       provider->uploadFile(parent, "name", provider->streamUploader(stream)),
       Pointee(Property(&IItem::filename, "name")));
-}
-
-TEST(PCloudTest, RefreshesToken) {
-  auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData data;
-  data.hints_["client_id"] = "client_id";
-  data.hints_["client_secret"] = "client_secret";
-  data.hints_["redirect_uri"] = "http://redirect-uri/";
-  data.token_ = "refresh_token";
-  auto provider = mock.factory()->create("box", data);
-
-  auto successful_response = MockResponse(R"js({})js");
-  EXPECT_CALL(*successful_response,
-              setHeaderParameter("Authorization", "Bearer token"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/users/me", "GET", true))
-      .WillOnce(Return(MockResponse(401, "")))
-      .WillOnce(Return(successful_response));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/oauth2/token", "POST", true))
-      .WillOnce(Return(MockResponse(
-          R"js({ "access_token": "token" })js",
-          R"(grant_type=refresh_token&refresh_token=refresh_token&client_id=client_id&client_secret=client_secret&redirect_uri=http://redirect-uri/)")));
-
-  ExpectImmediatePromise(provider->generalData(), _);
 }
 
 TEST(PCloudTest, ExchangesAuthorizationCode) {
@@ -372,14 +331,22 @@ TEST(PCloudTest, ExchangesAuthorizationCode) {
   EXPECT_CALL(*response, setParameter("client_secret", "client_secret"));
   EXPECT_CALL(*response, setParameter("code", "code"));
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/oauth2_token", "GET", true))
+  EXPECT_CALL(*mock.http(), create("hostname/oauth2_token", "GET", true))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(
-      mock.factory()->exchangeAuthorizationCode("pcloud", data, "code"),
-      AllOf(Field(&Token::token_, "access_token"),
-            Field(&Token::access_token_, "access_token")));
+      mock.factory()->exchangeAuthorizationCode(
+          "pcloud", data, R"({"code": "code", "hostname": "hostname"})"),
+      AllOf(Field(&Token::token_,
+                  IgnoringWhitespace(R"js({
+                                            "hostname": "hostname",
+                                            "token": "access_token"
+                                          })js")),
+            Field(&Token::access_token_,
+                  IgnoringWhitespace(R"js({
+                                            "hostname": "hostname",
+                                            "token": "access_token"
+                                          })js"))));
 }
 
 TEST(PCloudTest, GetsAuthorizeLibraryUrl) {
@@ -404,13 +371,28 @@ TEST(PCloudTest, RootUsesFileId) {
 
 TEST(PCloudTest, HandlesFailure) {
   auto mock = CloudFactoryMock::create();
-  auto provider = mock.factory()->create("pcloud", {});
+  ICloudFactory::ProviderInitData data;
+  data.token_ = R"js({ "token": "access_token", "hostname": "hostname" })js";
+  auto provider = mock.factory()->create("pcloud", data);
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.pcloud.com/userinfo", "GET", true))
-      .WillOnce(Return(
-          MockResponse(200, IHttpRequest::HeaderParameters{{"x-error", "1000"}},
-                       "unauthorized", _)));
+  EXPECT_CALL(*mock.http(), create("hostname/userinfo", "GET", true))
+      .WillOnce(Return(MockResponse(
+          200, IHttpRequest::HeaderParameters{{"x-error", "1000"}}, "{}", _)));
+
+  ExpectFailedPromise(provider->generalData(), _);
+}
+
+TEST(PCloudTest, UsesToken) {
+  auto mock = CloudFactoryMock::create();
+  ICloudFactory::ProviderInitData data;
+  data.token_ = R"js({ "token": "access_token", "hostname": "hostname" })js";
+  auto provider = mock.factory()->create("pcloud", data);
+
+  auto response = MockResponse(200);
+  EXPECT_CALL(*response,
+              setHeaderParameter("Authorization", "Bearer access_token"));
+  EXPECT_CALL(*mock.http(), create("hostname/userinfo", "GET", true))
+      .WillOnce(Return(response));
 
   ExpectFailedPromise(provider->generalData(), _);
 }

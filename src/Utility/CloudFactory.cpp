@@ -143,9 +143,9 @@ struct HttpCallback : public IHttpServer::ICallback {
                                           "Not found");
       return util::response_from_string(request, IHttpRequest::Ok, {}, result);
     }
-    const char* code = request.get("code");
-    if (code) {
-      factory_->invoke([factory = factory_, state, code = std::string(code)] {
+    auto code = util::get_authorization_code(request);
+    if (code.has_value()) {
+      factory_->invoke([factory = factory_, state, code = code.value()] {
         factory->onCloudAuthenticationCodeReceived(state, code);
       });
       return util::response_from_string(request, IHttpRequest::Ok, {},

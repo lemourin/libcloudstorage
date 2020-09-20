@@ -42,7 +42,25 @@ IItem::Pointer PCloud::rootDirectory() const {
 
 std::string PCloud::name() const { return "pcloud"; }
 
-std::string PCloud::endpoint() const { return "https://api.pcloud.com"; }
+std::string PCloud::endpoint() const {
+  auto lock = auth_lock();
+  return endpoint_;
+}
+
+void PCloud::initialize(InitData&& data) {
+  {
+    auto lock = auth_lock();
+    if (!data.token_.empty()) {
+      try {
+        auto json = util::json::from_string(data.token_);
+        access_token_ = json["token"].asString();
+        endpoint_ = json["hostname"].asString();
+      } catch (const Json::Exception&) {
+      }
+    }
+  }
+  CloudProvider::initialize(std::move(data));
+}
 
 bool PCloud::isSuccess(int code,
                        const IHttpRequest::HeaderParameters& h) const {
@@ -50,13 +68,16 @@ bool PCloud::isSuccess(int code,
 }
 
 bool PCloud::reauthorize(int, const IHttpRequest::HeaderParameters& h) const {
+  auto lock = this->auth_lock();
+  if (endpoint_.empty()) return true;
   auto it = h.find("x-error");
   return (it != h.end() && (it->second == "1000" || it->second == "2000" ||
                             it->second == "2094"));
 }
 
 void PCloud::authorizeRequest(IHttpRequest& r) const {
-  r.setHeaderParameter("Authorization", "Bearer " + token());
+  auto lock = this->auth_lock();
+  r.setHeaderParameter("Authorization", "Bearer " + access_token_);
 }
 
 IHttpRequest::Pointer PCloud::getItemUrlRequest(const IItem& item,
@@ -248,19 +269,25 @@ std::string PCloud::Auth::authorizeLibraryUrl() const {
 
 IHttpRequest::Pointer PCloud::Auth::exchangeAuthorizationCodeRequest(
     std::ostream&) const {
-  auto request = http()->create("https://api.pcloud.com/oauth2_token");
+  auto json = util::json::from_string(authorization_code());
+  auto request = http()->create(json["hostname"].asString() + "/oauth2_token");
   request->setParameter("client_id", client_id());
   request->setParameter("client_secret", client_secret());
-  request->setParameter("code", authorization_code());
+  request->setParameter("code", json["code"].asString());
   return request;
 }
 
 IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
     std::istream& stream) const {
+  auto code_json = util::json::from_string(authorization_code());
   auto json = util::json::from_stream(stream);
   if (!json.isMember("access_token")) throw std::logic_error("no access token");
-  return util::make_unique<Token>(Token{json["access_token"].asString(),
-                                        json["access_token"].asString(), -1});
+  Json::Value result_json;
+  result_json["token"] = json["access_token"].asString();
+  result_json["hostname"] = code_json["hostname"];
+  return util::make_unique<Token>(Token{util::json::to_string(result_json),
+                                        util::json::to_string(result_json),
+                                        -1});
 }
 
 bool PCloud::Auth::requiresCodeExchange() const { return true; }

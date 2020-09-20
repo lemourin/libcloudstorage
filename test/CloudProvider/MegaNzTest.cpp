@@ -355,6 +355,7 @@ TEST(MegaNzTest, HandlesBlockingAuthMode) {
       })));
 
   auto http_server_request = std::make_unique<HttpServerMock::RequestMock>();
+  EXPECT_CALL(*http_server_request, get(_)).WillRepeatedly(Return(nullptr));
   EXPECT_CALL(*http_server_request, get("state"))
       .WillOnce(Return("DEFAULT_STATE"));
   EXPECT_CALL(*http_server_request, get("code"))

@@ -43,15 +43,15 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
                                       data_.error_page_);
 
   const char* accepted = request.get("accepted");
-  const char* code = request.get(data_.code_parameter_name_);
+  auto code = util::get_authorization_code(request, data_.code_parameter_name_);
   const char* error = request.get(data_.error_parameter_name_);
   if (accepted) {
     std::unique_lock<std::mutex> lock(lock_);
     auto callback = util::exchange(data_.callback_, nullptr);
     lock.unlock();
     if (callback) {
-      if (std::string(accepted) == "true" && code) {
-        callback(std::string(code));
+      if (std::string(accepted) == "true" && code.has_value()) {
+        callback(code.value());
       } else {
         if (error)
           callback(Error{IHttpRequest::Bad, error});
@@ -61,7 +61,7 @@ IHttpServer::IResponse::Pointer Auth::HttpServerCallback::handle(
     }
   }
 
-  if (code)
+  if (code.has_value())
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       data_.success_page_);
 

@@ -532,6 +532,25 @@ void set_thread_name(const std::string& name) {
 #endif
 }
 
+optional<std::string> get_authorization_code(
+    const IHttpServer::IRequest& request,
+    const std::string& code_parameter_name) {
+  auto code = request.get(code_parameter_name);
+  if (code) {
+    auto hostname = request.get("hostname");
+    if (hostname) {
+      Json::Value json;
+      json[code_parameter_name] = code;
+      json["hostname"] = hostname;
+      return json::to_string(json);
+    } else {
+      return code;
+    }
+  } else {
+    return nullopt;
+  }
+}
+
 const char* libcloudstorage_ascii_art() {
   return R"(   _ _ _          _                 _     _                             
   | (_| |        | |               | |   | |                            

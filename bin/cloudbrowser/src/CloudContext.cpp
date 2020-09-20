@@ -573,11 +573,11 @@ IHttpServer::IResponse::Pointer CloudContext::HttpServerCallback::handle(
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       file.readAll().toStdString());
   }
-  auto code = request.get("code");
-  if (code) {
+  auto code = util::get_authorization_code(request);
+  if (code.has_value()) {
     QFile file(":/resources/default_success.html");
     file.open(QFile::ReadOnly);
-    ctx_->receivedCode(state, code);
+    ctx_->receivedCode(state, code.value());
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       file.readAll().constData());
   } else if (QString(request.url().c_str()).endsWith("/login")) {

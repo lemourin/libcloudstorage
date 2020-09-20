@@ -87,6 +87,7 @@ ACTION(AuthorizedSend) {
 ACTION(CreateServer) {  // NOLINT
   auto server = util::make_unique<HttpServerMock>();
   auto request = util::make_unique<HttpServerMock::RequestMock>();
+  EXPECT_CALL(*request, get(_)).WillRepeatedly(Return(nullptr));
   EXPECT_CALL(*request, get("state")).WillRepeatedly(Return("DEFAULT_STATE"));
   EXPECT_CALL(*request, get("code")).WillRepeatedly(Return("CODE"));
   EXPECT_CALL(*request, get("error")).WillRepeatedly(Return(nullptr));

@@ -39,6 +39,7 @@ class PCloud : public CloudProvider {
   bool isSuccess(int code,
                  const IHttpRequest::HeaderParameters&) const override;
   void authorizeRequest(IHttpRequest& r) const override;
+  void initialize(InitData&& data) override;
 
   DownloadFileRequest::Pointer downloadFileAsync(
       IItem::Pointer i, IDownloadFileCallback::Pointer cb,
@@ -91,6 +92,10 @@ class PCloud : public CloudProvider {
 
     bool requiresCodeExchange() const override;
   };
+
+ private:
+  std::string endpoint_;
+  std::string access_token_;
 };
 
 }  // namespace cloudstorage

@@ -79,10 +79,10 @@ void ThreadPoolWrapper::schedule(
 
 IHttpServer::IResponse::Pointer HttpServerCallback::handle(
     const IHttpServer::IRequest &request) {
-  auto code = request.get("code");
+  auto code = util::get_authorization_code(request);
   auto state = request.get("state");
-  if (code && state) {
-    promise_.set_value({code, state});
+  if (code.has_value() && state) {
+    promise_.set_value({code.value(), state});
     return util::response_from_string(request, IHttpRequest::Ok, {},
                                       "token received");
   } else if (request.url() == "/login" && state) {

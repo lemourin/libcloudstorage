@@ -86,6 +86,28 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
+struct CLOUDSTORAGE_API nullopt_t {};
+
+inline CLOUDSTORAGE_API constexpr nullopt_t nullopt = {};
+
+template <typename T>
+class CLOUDSTORAGE_API optional {
+ public:
+  optional(nullopt_t) {}
+
+  template <typename Arg>
+  optional(Arg&& value)
+      : storage_(util::make_unique<T>(std::forward<Arg>(value))) {}
+
+  bool has_value() const { return bool(storage_); }
+  const T& value() const { return *storage_; }
+
+  operator bool() const { return has_value(); }
+
+ private:
+  std::unique_ptr<T> storage_;
+};
+
 template <class T, class U = T>
 T exchange(T& obj, U&& new_value) {
   T old_value = std::move(obj);
@@ -149,6 +171,9 @@ CLOUDSTORAGE_API std::string from_base64(const std::string&);
 CLOUDSTORAGE_API std::string encode_token(const std::string&);
 CLOUDSTORAGE_API std::string decode_token(const std::string&);
 CLOUDSTORAGE_API void set_thread_name(const std::string&);
+CLOUDSTORAGE_API optional<std::string> get_authorization_code(
+    const IHttpServer::IRequest&,
+    const std::string& code_parameter_name = "code");
 
 #ifdef HAVE_JNI_H
 void set_java_vm(JavaVM*);
