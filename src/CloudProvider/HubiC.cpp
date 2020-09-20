@@ -415,4 +415,6 @@ IAuth::Token::Pointer HubiC::Auth::refreshTokenResponse(
   return token;
 }
 
+bool HubiC::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

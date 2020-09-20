@@ -374,7 +374,6 @@ TEST(PCloudTest, ExchangesAuthorizationCode) {
 
   EXPECT_CALL(*mock.http(),
               create("https://api.pcloud.com/oauth2_token", "GET", true))
-      .WillOnce(Return(MockResponse(200)))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(

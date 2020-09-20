@@ -33,7 +33,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
     : Request(
           std::move(p), callback, [=](Request<EitherError<Token>>::Pointer r) {
             std::stringstream stream;
-            if (!provider()->auth()->exchangeAuthorizationCodeRequest(stream))
+            if (!provider()->auth()->requiresCodeExchange())
               return r->done(Token{authorization_code, ""});
             r->send(
                 [=](util::Output input) {

@@ -359,7 +359,6 @@ TEST(DropboxTest, ExchangesAuthorizationCode) {
 
   EXPECT_CALL(*mock.http(),
               create("https://api.dropboxapi.com/oauth2/token", "POST", true))
-      .WillOnce(Return(MockResponse(200)))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(

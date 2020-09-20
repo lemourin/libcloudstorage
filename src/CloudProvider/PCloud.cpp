@@ -263,4 +263,6 @@ IAuth::Token::Pointer PCloud::Auth::exchangeAuthorizationCodeResponse(
                                         json["access_token"].asString(), -1});
 }
 
+bool PCloud::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

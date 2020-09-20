@@ -381,4 +381,6 @@ IAuth::Token::Pointer Dropbox::Auth::exchangeAuthorizationCodeResponse(
   return token;
 }
 
+bool Dropbox::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

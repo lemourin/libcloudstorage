@@ -110,6 +110,8 @@ class Auth : public IAuth {
       std::istream&) const override;
   Token::Pointer refreshTokenResponse(std::istream&) const override;
 
+  bool requiresCodeExchange() const override;
+
  private:
   std::string authorization_code_;
   std::string client_id_;

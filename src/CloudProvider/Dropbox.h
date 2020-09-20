@@ -95,6 +95,8 @@ class Dropbox : public CloudProvider {
         std::ostream& input_data) const override;
     Token::Pointer exchangeAuthorizationCodeResponse(
         std::istream&) const override;
+
+    bool requiresCodeExchange() const override;
   };
 };
 

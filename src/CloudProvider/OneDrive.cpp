@@ -372,4 +372,6 @@ IAuth::Token::Pointer OneDrive::Auth::refreshTokenResponse(
   return token;
 }
 
+bool OneDrive::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

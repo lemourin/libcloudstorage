@@ -276,4 +276,6 @@ IAuth::Token::Pointer Box::Auth::refreshTokenResponse(
                                         -1});
 }
 
+bool Box::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

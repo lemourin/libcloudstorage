@@ -200,4 +200,6 @@ IAuth::Token::Pointer Auth::refreshTokenResponse(std::istream&) const {
   return nullptr;
 }
 
+bool Auth::requiresCodeExchange() const { return false; }
+
 }  // namespace cloudstorage

@@ -403,7 +403,6 @@ TEST(YandexDiskTest, ExchangesAuthorizationCode) {
 
   EXPECT_CALL(*mock.http(),
               create("https://oauth.yandex.com/token", "POST", true))
-      .WillOnce(Return(MockResponse(200)))
       .WillOnce(Return(response));
 
   ExpectImmediatePromise(

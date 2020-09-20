@@ -485,4 +485,6 @@ IAuth::Token::Pointer GoogleDrive::Auth::refreshTokenResponse(
   return token;
 }
 
+bool GoogleDrive::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage

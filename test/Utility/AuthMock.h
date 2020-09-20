@@ -67,6 +67,8 @@ class AuthMock : public cloudstorage::IAuth {
 
   MOCK_METHOD(Token::Pointer, refreshTokenResponse, (std::istream&),
               (const, override));
+
+  MOCK_METHOD(bool, requiresCodeExchange, (), (const, override));
 };
 
 #endif  // CLOUDSTORAGE_AUTHMOCK_H

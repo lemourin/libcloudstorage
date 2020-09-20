@@ -141,6 +141,8 @@ class IAuth {
    * @return refreshed token
    */
   virtual Token::Pointer refreshTokenResponse(std::istream& response) const = 0;
+
+  virtual bool requiresCodeExchange() const = 0;
 };
 
 }  // namespace cloudstorage

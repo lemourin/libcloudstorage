@@ -98,6 +98,8 @@ class GoogleDrive : public CloudProvider {
     Token::Pointer exchangeAuthorizationCodeResponse(
         std::istream&) const override;
     Token::Pointer refreshTokenResponse(std::istream&) const override;
+
+    bool requiresCodeExchange() const override;
   };
 };
 

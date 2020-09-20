@@ -401,4 +401,6 @@ IAuth::Token::Pointer YandexDisk::Auth::exchangeAuthorizationCodeResponse(
   return token;
 }
 
+bool YandexDisk::Auth::requiresCodeExchange() const { return true; }
+
 }  // namespace cloudstorage
