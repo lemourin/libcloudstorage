@@ -49,6 +49,9 @@ class HttpRequestMock : public cloudstorage::IHttpRequest {
                                 std::shared_ptr<std::ostream> response,
                                 std::shared_ptr<std::ostream> error_stream,
                                 ICallback::Pointer callback));
+
+  std::string url_ = "http://example.com";
+  std::string method_ = "GET";
 };
 
 class HttpMock : public cloudstorage::IHttp {
@@ -64,6 +67,10 @@ inline std::shared_ptr<HttpRequestMock> MockResponse(
     int http_code, cloudstorage::IHttpRequest::HeaderParameters headers,
     const char* response, const InputMatcher& input_matcher) {
   auto http_response = std::make_shared<HttpRequestMock>();
+  EXPECT_CALL(*http_response, url)
+      .WillRepeatedly(testing::ReturnRef(http_response->url_));
+  EXPECT_CALL(*http_response, method)
+      .WillRepeatedly(testing::ReturnRef(http_response->method_));
 
   EXPECT_CALL(*http_response, send)
       .WillRepeatedly(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
