@@ -35,24 +35,28 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                 if (item->type() == IItem::FileType::Directory)
                   return r->done(Error{IHttpRequest::ServiceUnavailable,
                                        util::Error::URL_UNAVAILABLE});
-                std::stringstream dummy;
-                if (!provider()->getItemUrlRequest(*item, dummy)) {
-                  auto url = static_cast<Item*>(item.get())->url();
-                  if (url.empty())
-                    return r->done(Error{IHttpRequest::ServiceUnavailable,
-                                         util::Error::URL_UNAVAILABLE});
-                  else
-                    return r->done(url);
-                }
+                auto is_implemented = std::make_shared<bool>();
                 r->request(
                     [=](util::Output input) {
-                      return provider()->getItemUrlRequest(*item, *input);
+                      auto request =
+                          provider()->getItemUrlRequest(*item, *input);
+                      *is_implemented = bool(request);
+                      return request;
                     },
                     [=](EitherError<Response> e) {
                       try {
-                        if (e.left())
-                          r->done(e.left());
-                        else {
+                        if (e.left()) {
+                          if (!*is_implemented) {
+                            auto url = static_cast<Item*>(item.get())->url();
+                            if (!url.empty())
+                              r->done(url);
+                            else
+                              r->done(Error{IHttpRequest::ServiceUnavailable,
+                                            util::Error::URL_UNAVAILABLE});
+                          } else {
+                            r->done(e.left());
+                          }
+                        } else {
                           auto url = provider()->getItemUrlResponse(
                               *item, e.right()->headers(), e.right()->output());
                           static_cast<Item*>(item.get())->set_url(url);

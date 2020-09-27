@@ -17,27 +17,19 @@ TEST(DropboxTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto current_account_response =
-      MockResponse(R"js({ "email": "admin@admin.ru" })js");
-  EXPECT_CALL(*current_account_response,
-              setHeaderParameter("Content-Type", ""));
-  EXPECT_CALL(*current_account_response,
-              setHeaderParameter("Authorization", _));
+  ExpectHttp(mock.http(),
+             "https://api.dropboxapi.com/2/users/get_current_account")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "")
+      .WithHeaderParameter("Authorization", _)
+      .WillRespondWith(R"js({ "email": "admin@admin.ru" })js");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/users/get_current_account",
-                     "POST", true))
-      .WillOnce(Return(current_account_response));
-
-  auto space_usage_response =
-      MockResponse(R"js({ "allocation": { "allocated": 15 }, "used": 5 })js");
-  EXPECT_CALL(*space_usage_response, setHeaderParameter("Content-Type", ""));
-  EXPECT_CALL(*space_usage_response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/users/get_space_usage",
-                     "POST", true))
-      .WillOnce(Return(space_usage_response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/users/get_space_usage")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "")
+      .WithHeaderParameter("Authorization", _)
+      .WillRespondWith(
+          R"js({ "allocation": { "allocated": 15 }, "used": 5 })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -49,22 +41,19 @@ TEST(DropboxTest, GetsItemData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response = MockResponse(
-      R"js({
-             "path_display": "/path",
-             "name": "path",
-             "size": 1234,
-             "client_modified": "2012-04-12T04:06:12.4213Z",
-             ".tag": "folder"
-           })js", IgnoringWhitespace(R"js({ "path": "/path" })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.dropboxapi.com/2/files/get_metadata", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/get_metadata")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "path": "/path" })js"))
+      .WillRespondWith(
+          R"js({
+                 "path_display": "/path",
+                 "name": "path",
+                 "size": 1234,
+                 "client_modified": "2012-04-12T04:06:12.4213Z",
+                 ".tag": "folder"
+               })js");
 
   ExpectImmediatePromise(
       provider->getItemData("/path"),
@@ -80,27 +69,22 @@ TEST(DropboxTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto first_page_response = MockResponse(
-      R"js({
-             "entries":
-             [ {}], "has_more": true, "cursor": "next_token"
-           })js", IgnoringWhitespace(R"js({ "path": "/path" })js"));
-  EXPECT_CALL(*first_page_response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*first_page_response, setHeaderParameter("Authorization", _));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/list_folder")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "path": "/path" })js"))
+      .WillRespondWith(R"({
+                            "entries": [{}],
+                            "has_more": true,
+                            "cursor": "next_token"
+                          })");
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.dropboxapi.com/2/files/list_folder", "POST", true))
-      .WillOnce(Return(first_page_response));
-
-  auto second_page_repsonse = MockResponse(
-      R"js({})js", IgnoringWhitespace(R"js({ "cursor": "next_token" })js"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/files/list_folder/continue",
-                     "POST", true))
-      .WillOnce(Return(second_page_repsonse));
+  ExpectHttp(mock.http(),
+             "https://api.dropboxapi.com/2/files/list_folder/continue")
+      .WithMethod("POST")
+      .WithBody(IgnoringWhitespace(R"js({ "cursor": "next_token" })js"))
+      .WillRespondWith("{}");
 
   auto directory = std::make_shared<Item>(
       "filename", "/path", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -113,17 +97,13 @@ TEST(DropboxTest, DownloadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response = MockResponse("content");
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setHeaderParameter("Content-Type", ""));
-  EXPECT_CALL(*response, setHeaderParameter(
-                             "Dropbox-API-arg",
-                             IgnoringWhitespace(R"js({ "path": "/path" })js")));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://content.dropboxapi.com/2/files/download", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://content.dropboxapi.com/2/files/download")
+      .WithMethod("POST")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type", "")
+      .WithHeaderParameter("Dropbox-API-arg",
+                           IgnoringWhitespace(R"js({ "path": "/path" })js"))
+      .WillRespondWith("content");
 
   auto item =
       std::make_shared<Item>("filename", "/path", IItem::UnknownSize,
@@ -138,15 +118,12 @@ TEST(DropboxTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response = MockResponse(
-      R"js({})js", IgnoringWhitespace(R"js({ "path": "/path" })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/files/delete", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/delete")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "path": "/path" })js"))
+      .WillRespondWith("{}");
 
   auto item =
       std::make_shared<Item>("filename", "/path", IItem::UnknownSize,
@@ -159,16 +136,12 @@ TEST(DropboxTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response =
-      MockResponse(R"js({ "metadata": { "name": "directory" } })js",
-                   IgnoringWhitespace(R"js({ "path": "/path/directory" })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/files/create_folder_v2",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/create_folder_v2")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "path": "/path/directory" })js"))
+      .WillRespondWith(R"js({ "metadata": { "name": "directory" } })js");
 
   auto parent = std::make_shared<Item>("parent", "/path", IItem::UnknownSize,
                                        IItem::UnknownTimeStamp,
@@ -184,16 +157,13 @@ TEST(DropboxTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response = MockResponse(
-      R"js({ "metadata": { "name": "filename" } })js",
-      IgnoringWhitespace(
-          R"js({ "from_path": "/some/source", "to_path": "/path/source" })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(), create("https://api.dropboxapi.com/2/files/move_v2",
-                                   "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/move_v2")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(
+          R"js({ "from_path": "/some/source", "to_path": "/path/source" })js"))
+      .WillRespondWith(R"js({ "metadata": { "name": "filename" } })js");
 
   auto source =
       std::make_shared<Item>("source", "/some/source", IItem::UnknownSize,
@@ -213,18 +183,15 @@ TEST(DropboxTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response =
-      MockResponse(R"js({ "metadata": { "name": "new_name" } })js",
-                   IgnoringWhitespace(R"js({
-                                             "from_path": "/some/source",
-                                             "to_path": "/some/new_name"
-                                           })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(), create("https://api.dropboxapi.com/2/files/move_v2",
-                                   "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/2/files/move_v2")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({
+                                          "from_path": "/some/source",
+                                          "to_path": "/some/new_name"
+                                        })js"))
+      .WillRespondWith(R"js({ "metadata": { "name": "new_name" } })js");
 
   auto source =
       std::make_shared<Item>("source", "/some/source", IItem::UnknownSize,
@@ -240,39 +207,31 @@ TEST(DropboxTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto start_session_response =
-      MockResponse(R"js({ "session_id": "ssid" })js", "content");
-  EXPECT_CALL(*start_session_response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*start_session_response,
-              setHeaderParameter("Content-Type", "application/octet-stream"));
-  EXPECT_CALL(*start_session_response,
-              setHeaderParameter("Dropbox-API-Arg", "null"));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://content.dropboxapi.com/2/files/upload_session/start",
-             "POST", true))
-      .WillOnce(Return(start_session_response));
+  ExpectHttp(mock.http(),
+             "https://content.dropboxapi.com/2/files/upload_session/start")
+      .WithMethod("POST")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type", "application/octet-stream")
+      .WithHeaderParameter("Dropbox-API-Arg", "null")
+      .WithBody("content")
+      .WillRespondWith(R"js({ "session_id": "ssid" })js");
 
-  auto finish_session_response = MockResponse(R"js({ "name": "new_name" })js");
-  EXPECT_CALL(*finish_session_response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*finish_session_response,
-              setHeaderParameter("Content-Type", "application/octet-stream"));
-  EXPECT_CALL(*finish_session_response,
-              setHeaderParameter(
-                  "Dropbox-API-Arg",
-                  IgnoringWhitespace(
-                      R"js({
-                             "commit": {
-                               "mode": "overwrite",
-                               "path": "/some/path/new_name"
-                             },
-                             "cursor": { "offset": 7, "session_id": "ssid" }
-                           })js")));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://content.dropboxapi.com/2/files/upload_session/finish",
-             "POST", true))
-      .WillOnce(Return(finish_session_response));
+  ExpectHttp(mock.http(),
+             "https://content.dropboxapi.com/2/files/upload_session/finish")
+      .WithMethod("POST")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type", "application/octet-stream")
+      .WithHeaderParameter(
+          "Dropbox-API-Arg",
+          IgnoringWhitespace(
+              R"js({
+                     "commit": {
+                       "mode": "overwrite",
+                       "path": "/some/path/new_name"
+                     },
+                     "cursor": { "offset": 7, "session_id": "ssid" }
+                   })js"))
+      .WillRespondWith(R"js({ "name": "new_name" })js");
 
   auto parent = std::make_shared<Item>(
       "directory", "/some/path", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -289,18 +248,15 @@ TEST(DropboxTest, GetsThumbnail) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response = MockResponse("thumbnail");
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setHeaderParameter("Content-Type", ""));
-  EXPECT_CALL(*response,
-              setHeaderParameter(
-                  "Dropbox-API-arg",
-                  IgnoringWhitespace(R"js({ "path": "/some/source" })js")));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://content.dropboxapi.com/2/files/get_thumbnail",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(),
+             "https://content.dropboxapi.com/2/files/get_thumbnail")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter(
+          "Dropbox-API-arg",
+          IgnoringWhitespace(R"js({ "path": "/some/source" })js"))
+      .WillRespondWith("thumbnail");
 
   auto source =
       std::make_shared<Item>("source.jpg", "/some/source", IItem::UnknownSize,
@@ -317,20 +273,17 @@ TEST(DropboxTest, GetsItemUrl) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("dropbox", {});
 
-  auto response =
-      MockResponse(R"js({ "link": "item-link" })js",
-                   IgnoringWhitespace(R"js({ "path": "/some_path" })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _))
-      .WillRepeatedly(Return());
-  EXPECT_CALL(*response, setHeaderParameter("Content-Type", "application/json"))
-      .WillRepeatedly(Return());
+  ExpectHttp(mock.http(),
+             "https://api.dropboxapi.com/2/files/get_temporary_link")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "path": "/some_path" })js"))
+      .WillRespondWith(R"js({ "link": "item-link" })js");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/2/files/get_temporary_link",
-                     "POST", true))
-      .WillRepeatedly(Return(response));
-  EXPECT_CALL(*mock.http(), create("item-link", "HEAD", true))
-      .WillOnce(Return(MockResponse(200)));
+  ExpectHttp(mock.http(), "item-link")
+      .WithMethod("HEAD")
+      .WillRespondWithCode(200);
 
   auto item =
       std::make_shared<Item>("item", "/some_path", IItem::UnknownSize,
@@ -346,20 +299,18 @@ TEST(DropboxTest, ExchangesAuthorizationCode) {
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
 
-  auto response = MockResponse(R"js({
-                                      "refresh_token": "token",
-                                      "access_token": "access_token",
-                                      "expires_in": 0
-                                    })js");
-  EXPECT_CALL(*response, setParameter("grant_type", "authorization_code"));
-  EXPECT_CALL(*response, setParameter("client_id", "client_id"));
-  EXPECT_CALL(*response, setParameter("client_secret", "client_secret"));
-  EXPECT_CALL(*response, setParameter("redirect_uri", "http://redirect-uri/"));
-  EXPECT_CALL(*response, setParameter("code", "code"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.dropboxapi.com/oauth2/token", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.dropboxapi.com/oauth2/token")
+      .WithMethod("POST")
+      .WithParameter("grant_type", "authorization_code")
+      .WithParameter("client_id", "client_id")
+      .WithParameter("client_secret", "client_secret")
+      .WithParameter("redirect_uri", "http://redirect-uri/")
+      .WithParameter("code", "code")
+      .WillRespondWith(R"js({
+                              "refresh_token": "token",
+                              "access_token": "access_token",
+                              "expires_in": 0
+                            })js");
 
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("dropbox", data, "code"),
