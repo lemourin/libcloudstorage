@@ -263,7 +263,7 @@ class HttpRequestMatcher : public LimitedHttpRequestMatcher {
 
   HttpMock& http_mock_;
   StringMatcher url_matcher_;
-  StringMatcher method_matcher_ = testing::_;
+  StringMatcher method_matcher_ = "GET";
   testing::Matcher<bool> redirect_matcher_ = true;
   std::vector<std::pair<StringMatcher, StringMatcher>> parameter_matcher_;
   std::vector<std::pair<StringMatcher, StringMatcher>>

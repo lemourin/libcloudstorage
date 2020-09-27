@@ -165,15 +165,11 @@ TEST(GoogleDriveTest, GetsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response = MockResponse(R"js({ "name": "filename" })js");
-  EXPECT_CALL(*response, setParameter("fields",
-                                      "id,name,thumbnailLink,trashed,mimeType,"
-                                      "iconLink,parents,size,modifiedTime"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/item", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/item")
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,mimeType,"
+                     "iconLink,parents,size,modifiedTime")
+      .WillRespondWith(R"js({ "name": "filename" })js");
 
   ExpectImmediatePromise(provider->getItemData("item"),
                          Pointee(Property(&IItem::filename, "filename")));
@@ -183,15 +179,11 @@ TEST(GoogleDriveTest, PatchesIconLink) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response = MockResponse(R"js({ "iconLink": "icon?size=16" })js");
-  EXPECT_CALL(*response, setParameter("fields",
-                                      "id,name,thumbnailLink,trashed,mimeType,"
-                                      "iconLink,parents,size,modifiedTime"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/item", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/item")
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,mimeType,"
+                     "iconLink,parents,size,modifiedTime")
+      .WillRespondWith(R"js({ "iconLink": "icon?size=16" })js");
 
   ExpectImmediatePromise(
       provider->getItemData("item"), Pointee(Truly([](const IItem& item) {
@@ -204,14 +196,12 @@ TEST(GoogleDriveTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/about", "GET", true))
-      .WillOnce(Return(
-          MockResponse(R"js({
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/about")
+      .WillRespondWith(R"js({
                               "name": "filename",
                               "user": { "emailAddress": "admin@admin.ru" },
                               "storageQuota": { "usage": "10", "limit": "100" }
-                            })js")));
+                            })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -226,12 +216,12 @@ TEST(GoogleDriveTest, GetsItemUrl) {
   const auto expected_url =
       "https://www.googleapis.com/drive/v3/files/item?alt=media&access_token=";
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/item", "GET", true))
-      .WillRepeatedly(Return(MockResponse("")));
-  EXPECT_CALL(*mock.http(), create(expected_url, "HEAD", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/item")
+      .WillRespondWithCode(200);
+
+  ExpectHttp(mock.http(), expected_url)
+      .WithMethod("HEAD")
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(
       provider->getFileUrl(util::make_unique<Item>(
@@ -249,12 +239,12 @@ TEST(GoogleDriveTest, GetsItemUrlForGoogleTypeFile) {
       "export?access_token=&mimeType=application/"
       "vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/item", "GET", true))
-      .WillRepeatedly(Return(MockResponse("")));
-  EXPECT_CALL(*mock.http(), create(expected_url, "HEAD", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/item")
+      .WillRespondWithCode(200);
+
+  ExpectHttp(mock.http(), expected_url)
+      .WithMethod("HEAD")
+      .WillRespondWithCode(200);
 
   auto item =
       std::make_shared<Item>("item", "item", IItem::UnknownSize,
@@ -268,25 +258,20 @@ TEST(GoogleDriveTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "directory" })js",
-                   IgnoringWhitespace(
-                       R"js({
-                              "mimeType": "application/vnd.google-apps.folder",
-                              "name": "directory",
-                              "parents": [ "id" ]
-                            })js"));
-  EXPECT_CALL(*response,
-              setParameter("fields",
-                           "id,name,thumbnailLink,trashed,"
-                           "mimeType,iconLink,parents,size,modifiedTime"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/files", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,"
+                     "mimeType,iconLink,parents,size,modifiedTime")
+      .WithBody(IgnoringWhitespace(
+          R"js({
+                 "mimeType": "application/vnd.google-apps.folder",
+                 "name": "directory",
+                 "parents": [ "id" ]
+               })js"))
+      .WillRespondWith(R"js({ "name": "directory" })js");
 
   auto item = std::make_shared<Item>("item", "id", IItem::UnknownSize,
                                      IItem::UnknownTimeStamp,
@@ -301,21 +286,16 @@ TEST(GoogleDriveTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response = MockResponse(R"js({ "name": "src" })js");
-  EXPECT_CALL(*response,
-              setParameter("fields",
-                           "id,name,thumbnailLink,trashed,"
-                           "mimeType,iconLink,parents,size,modifiedTime"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setParameter("addParents", "dstid"));
-  EXPECT_CALL(*response, setParameter("removeParents", "srcparent"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/srcid", "PATCH", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/srcid")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,"
+                     "mimeType,iconLink,parents,size,modifiedTime")
+      .WithParameter("addParents", "dstid")
+      .WithParameter("removeParents", "srcparent")
+      .WillRespondWith(R"js({ "name": "src" })js");
 
   auto source = std::make_shared<Item>("src", "srcid", IItem::UnknownSize,
                                        IItem::UnknownTimeStamp,
@@ -333,21 +313,15 @@ TEST(GoogleDriveTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "new_name" })js",
-                   IgnoringWhitespace(R"js({ "name": "new_name" })js"));
-  EXPECT_CALL(*response,
-              setParameter("fields",
-                           "id,name,thumbnailLink,trashed,"
-                           "mimeType,iconLink,parents,size,modifiedTime"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/id", "PATCH", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/id")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,"
+                     "mimeType,iconLink,parents,size,modifiedTime")
+      .WithBody(IgnoringWhitespace(R"js({ "name": "new_name" })js"))
+      .WillRespondWith(R"js({ "name": "new_name" })js");
 
   auto item = std::make_shared<Item>("item", "id", IItem::UnknownSize,
                                      IItem::UnknownTimeStamp,
@@ -362,10 +336,9 @@ TEST(GoogleDriveTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/id", "DELETE", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(provider->deleteItem(std::make_shared<Item>(
       "item", "id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -378,13 +351,9 @@ TEST(GoogleDriveTest, DownloadsItem) {
 
   const std::string expected_content = "content";
 
-  auto response = MockResponse(expected_content.c_str());
-  EXPECT_CALL(*response, setParameter("alt", "media"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/drive/v3/files/id", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/id")
+      .WithParameter("alt", "media")
+      .WillRespondWith(expected_content.c_str());
 
   auto download_callback = std::make_shared<DownloadCallbackMock>();
   EXPECT_CALL(*download_callback, receivedData)
@@ -423,18 +392,12 @@ TEST(GoogleDriveTest, DownloadsExportedItem) {
 
   const std::string expected_content = "content";
 
-  auto response = MockResponse(expected_content.c_str());
-  EXPECT_CALL(
-      *response,
-      setParameter(
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files/id/export")
+      .WithParameter(
           "mimeType",
           "application/"
-          "vnd.openxmlformats-officedocument.wordprocessingml.document"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/files/id/export",
-                     "GET", true))
-      .WillOnce(Return(response));
+          "vnd.openxmlformats-officedocument.wordprocessingml.document")
+      .WillRespondWith(expected_content.c_str());
 
   auto download_callback = std::make_shared<DownloadCallbackMock>();
   EXPECT_CALL(*download_callback, receivedData)
@@ -458,32 +421,24 @@ TEST(GoogleDriveTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response = MockResponse(
-      R"js({ "name": "filename.txt" })js",
-      "--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: application/json; "
-      "charset=UTF-8\r\n\r\n{\"name\":\"filename.txt\",\"parents\":["
-      "\"id\"]}\r\n--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: "
-      "\r\n\r\ncontent\r\n--fWoDm9QNn3v3Bq3bScUX--\r\n");
+  ExpectHttp(mock.http(), "https://www.googleapis.com/upload/drive/v3/files")
+      .WithMethod("POST")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type",
+                           "multipart/related; boundary=fWoDm9QNn3v3Bq3bScUX")
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,"
+                     "mimeType,iconLink,parents,size,modifiedTime")
+      .WithParameter("uploadType", "multipart")
+      .WithBody(
+          "--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: application/json; "
+          "charset=UTF-8\r\n\r\n{\"name\":\"filename.txt\",\"parents\":["
+          "\"id\"]}\r\n--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: "
+          "\r\n\r\ncontent\r\n--fWoDm9QNn3v3Bq3bScUX--\r\n")
+      .WillRespondWith(R"js({ "name": "filename.txt" })js");
 
-  EXPECT_CALL(
-      *response,
-      setHeaderParameter("Content-Type",
-                         "multipart/related; boundary=fWoDm9QNn3v3Bq3bScUX"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setParameter("uploadType", "multipart"));
-  EXPECT_CALL(*response,
-              setParameter("fields",
-                           "id,name,thumbnailLink,trashed,"
-                           "mimeType,iconLink,parents,size,modifiedTime"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://www.googleapis.com/upload/drive/v3/files", "POST", true))
-      .WillOnce(Return(response));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/files", "GET", true))
-      .WillOnce(Return(MockResponse("{}")));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files")
+      .WillRespondWith("{}");
 
   auto item = std::make_shared<Item>("item", "id", IItem::UnknownSize,
                                      IItem::UnknownTimeStamp,
@@ -501,35 +456,29 @@ TEST(GoogleDriveTest, PatchesAlreadyPresentFile) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto response = MockResponse(
-      R"js({ "name": "filename.txt" })js",
-      "--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: application/json; "
-      "charset=UTF-8\r\n\r\nnull\r\n--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: "
-      "\r\n\r\ncontent\r\n--fWoDm9QNn3v3Bq3bScUX--\r\n");
+  ExpectHttp(mock.http(),
+             "https://www.googleapis.com/upload/drive/v3/files/fileid")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type",
+                           "multipart/related; boundary=fWoDm9QNn3v3Bq3bScUX")
+      .WithHeaderParameter("Authorization", _)
+      .WithParameter("uploadType", "multipart")
+      .WithParameter("fields",
+                     "id,name,thumbnailLink,trashed,"
+                     "mimeType,iconLink,parents,size,modifiedTime")
+      .WithBody(
+          "--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type: application/json; "
+          "charset=UTF-8\r\n\r\nnull\r\n--fWoDm9QNn3v3Bq3bScUX\r\nContent-Type:"
+          " \r\n\r\ncontent\r\n--fWoDm9QNn3v3Bq3bScUX--\r\n")
+      .WillRespondWith(R"js({ "name": "filename.txt" })js");
 
-  EXPECT_CALL(
-      *response,
-      setHeaderParameter("Content-Type",
-                         "multipart/related; boundary=fWoDm9QNn3v3Bq3bScUX"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setParameter("uploadType", "multipart"));
-  EXPECT_CALL(*response,
-              setParameter("fields",
-                           "id,name,thumbnailLink,trashed,"
-                           "mimeType,iconLink,parents,size,modifiedTime"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/upload/drive/v3/files/fileid",
-                     "PATCH", true))
-      .WillOnce(Return(response));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/files", "GET", true))
-      .WillOnce(Return(
-          MockResponse(R"js({
-                              "files":
-                              [ { "name": "filename.txt", "id": "fileid" }]
-                            })js")));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/files")
+      .WillRespondWith(R"({
+                            "files": [{
+                              "name": "filename.txt",
+                              "id": "fileid"
+                            }]
+                          })");
 
   auto item = std::make_shared<Item>("item", "id", IItem::UnknownSize,
                                      IItem::UnknownTimeStamp,
@@ -560,23 +509,19 @@ TEST(GoogleDriveTest, RefreshesToken) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("google", {});
 
-  auto successful_response = MockResponse(
-      R"js({
-             "name": "filename",
-             "user": { "emailAddress": "admin@admin.ru" },
-             "storageQuota": { "usage": "10", "limit": "100" }
-           })js");
-  EXPECT_CALL(*successful_response,
-              setHeaderParameter("Authorization", "Bearer token"));
+  ExpectHttp(mock.http(), "https://www.googleapis.com/drive/v3/about")
+      .WillRespondWithCode(401)
+      .AndThen()
+      .WithHeaderParameter("Authorization", "Bearer token")
+      .WillRespondWith(R"js({
+                              "name": "filename",
+                              "user": { "emailAddress": "admin@admin.ru" },
+                              "storageQuota": { "usage": "10", "limit": "100" }
+                            })js");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://www.googleapis.com/drive/v3/about", "GET", true))
-      .WillOnce(Return(MockResponse(401, "")))
-      .WillOnce(Return(successful_response));
-
-  EXPECT_CALL(*mock.http(), create("https://accounts.google.com/o/oauth2/token",
-                                   "POST", true))
-      .WillOnce(Return(MockResponse(R"js({ "access_token": "token" })js")));
+  ExpectHttp(mock.http(), "https://accounts.google.com/o/oauth2/token")
+      .WithMethod("POST")
+      .WillRespondWith(R"js({ "access_token": "token" })js");
 
   ExpectImmediatePromise(provider->generalData(), _);
 }
