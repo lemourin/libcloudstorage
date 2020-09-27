@@ -16,12 +16,10 @@ TEST(YandexDiskTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  EXPECT_CALL(*mock.http(), create("https://login.yandex.ru/info", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "login": "admin@admin.ru" })js")));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk", "GET", true))
-      .WillOnce(Return(
-          MockResponse(R"js({ "total_space": 10, "used_space": 5 })js")));
+  ExpectHttp(mock.http(), "https://login.yandex.ru/info")
+      .WillRespondWith(R"js({ "login": "admin@admin.ru" })js");
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk")
+      .WillRespondWith(R"js({ "total_space": 10, "used_space": 5 })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -33,19 +31,15 @@ TEST(YandexDiskTest, GetsItemDataForItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(R"js({
-                                      "name": "filename",
-                                      "path": "id",
-                                      "size": 1234,
-                                      "mime_type": "image/jpeg",
-                                      "modified": "2012-04-12T04:06:12.4213Z"
-                                    })js");
-  EXPECT_CALL(*response, setParameter("path", "id"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithParameter("path", "id")
+      .WillRespondWith(R"js({
+                              "name": "filename",
+                              "path": "id",
+                              "size": 1234,
+                              "mime_type": "image/jpeg",
+                              "modified": "2012-04-12T04:06:12.4213Z"
+                            })js");
 
   ExpectImmediatePromise(
       provider->getItemData("id"),
@@ -61,19 +55,15 @@ TEST(YandexDiskTest, GetsItemDataForDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(R"js({
-                                      "name": "filename",
-                                      "path": "id",
-                                      "size": 1234,
-                                      "type": "dir",
-                                      "modified": "2012-04-12T04:06:12.4213Z"
-                                    })js");
-  EXPECT_CALL(*response, setParameter("path", "id"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithParameter("path", "id")
+      .WillRespondWith(R"js({
+                              "name": "filename",
+                              "path": "id",
+                              "size": 1234,
+                              "type": "dir",
+                              "modified": "2012-04-12T04:06:12.4213Z"
+                            })js");
 
   ExpectImmediatePromise(
       provider->getItemData("id"),
@@ -89,33 +79,27 @@ TEST(YandexDiskTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto first_page_response = MockResponse(
-      R"({
-           "_embedded": {
-             "items": [{}],
-             "offset": 0,
-             "limit": 1,
-             "total": 5
-           }
-         })");
-  EXPECT_CALL(*first_page_response, setParameter("path", "id"));
-
-  auto second_page_response = MockResponse(R"({
-           "_embedded": {
-             "items": [{}, {}, {}, {}],
-             "offset": 1,
-             "limit": 4,
-             "total": 5
-           }
-         })");
-  EXPECT_CALL(*second_page_response, setParameter("path", "id"));
-  EXPECT_CALL(*second_page_response, setParameter("offset", "1"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "GET", true))
-      .WillOnce(Return(first_page_response))
-      .WillOnce(Return(second_page_response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithParameter("path", "id")
+      .WillRespondWith(R"({
+                            "_embedded": {
+                              "items": [{}],
+                              "offset": 0,
+                              "limit": 1,
+                              "total": 5
+                            }
+                          })")
+      .AndThen()
+      .WithParameter("path", "id")
+      .WithParameter("offset", "1")
+      .WillRespondWith(R"({
+                            "_embedded": {
+                              "items": [{}, {}, {}, {}],
+                              "offset": 1,
+                              "limit": 4,
+                              "total": 5
+                            }
+                          })");
 
   auto directory = std::make_shared<Item>("filename", "id", IItem::UnknownSize,
                                           IItem::UnknownTimeStamp,
@@ -128,13 +112,11 @@ TEST(YandexDiskTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(200);
-  EXPECT_CALL(*response, setParameter("path", "file_id"));
-  EXPECT_CALL(*response, setParameter("permamently", "true"));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "DELETE", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithMethod("DELETE")
+      .WithParameter("path", "file_id")
+      .WithParameter("permamently", "true")
+      .WillRespondWithCode(200);
 
   auto item =
       std::make_shared<Item>("filename", "file_id", IItem::UnknownSize,
@@ -147,18 +129,17 @@ TEST(YandexDiskTest, DeletesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(202, R"js({ "href": "status-url" })js");
-  EXPECT_CALL(*response, setParameter("path", "directory_id"));
-  EXPECT_CALL(*response, setParameter("permamently", "true"));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "DELETE", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithMethod("DELETE")
+      .WithParameter("path", "directory_id")
+      .WithParameter("permamently", "true")
+      .WillRespondWith(HttpResponse().WithStatus(202).WithContent(
+          R"js({ "href": "status-url" })js"));
 
-  EXPECT_CALL(*mock.http(), create("status-url", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "success" })js")));
+  ExpectHttp(mock.http(), "status-url")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "success" })js");
 
   auto item = std::make_shared<Item>(
       "filename", "directory_id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -171,18 +152,17 @@ TEST(YandexDiskTest, HandlesDeleteFailure) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(202, R"js({ "href": "status-url" })js");
-  EXPECT_CALL(*response, setParameter("path", "directory_id"));
-  EXPECT_CALL(*response, setParameter("permamently", "true"));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources", "DELETE", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources")
+      .WithMethod("DELETE")
+      .WithParameter("path", "directory_id")
+      .WithParameter("permamently", "true")
+      .WillRespondWith(HttpResponse().WithStatus(202).WithContent(
+          R"js({ "href": "status-url" })js"));
 
-  EXPECT_CALL(*mock.http(), create("status-url", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "failed" })js")));
+  ExpectHttp(mock.http(), "status-url")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "failed" })js");
 
   auto item = std::make_shared<Item>(
       "filename", "directory_id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -196,12 +176,10 @@ TEST(YandexDiskTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(200);
-  EXPECT_CALL(*response, setParameter("path", "folder_id/directory_name"));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://cloud-api.yandex.net/v1/disk/resources/", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources/")
+      .WithMethod("PUT")
+      .WithParameter("path", "folder_id/directory_name")
+      .WillRespondWithCode(200);
 
   auto parent = std::make_shared<Item>(
       "parent", "folder_id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -219,17 +197,11 @@ TEST(YandexDiskTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(R"({
-    "name": "filename",
-    "path": "id"
-  })");
-  EXPECT_CALL(*response, setParameter("from", "source_id"));
-  EXPECT_CALL(*response,
-              setParameter("path", "destination_id/source_filename"));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/move",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources/move")
+      .WithMethod("POST")
+      .WithParameter("from", "source_id")
+      .WithParameter("path", "destination_id/source_filename")
+      .WillRespondWith(R"js({ "name": "filename", "path": "id" })js");
 
   auto source =
       std::make_shared<Item>("source_filename", "source_id", IItem::UnknownSize,
@@ -250,19 +222,17 @@ TEST(YandexDiskTest, MovesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(202, R"js({ "href": "status-url" })js");
-  EXPECT_CALL(*response, setParameter("from", "source_id"));
-  EXPECT_CALL(*response,
-              setParameter("path", "destination_id/source_filename"));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/move",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources/move")
+      .WithMethod("POST")
+      .WithParameter("from", "source_id")
+      .WithParameter("path", "destination_id/source_filename")
+      .WillRespondWith(HttpResponse().WithStatus(202).WithContent(
+          R"js({ "href": "status-url" })js"));
 
-  EXPECT_CALL(*mock.http(), create("status-url", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "success" })js")));
+  ExpectHttp(mock.http(), "status-url")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "success" })js");
 
   auto source = std::make_shared<Item>(
       "source_filename", "source_id", IItem::UnknownSize,
@@ -283,16 +253,11 @@ TEST(YandexDiskTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(R"({
-    "name": "filename",
-    "path": "id"
-  })");
-  EXPECT_CALL(*response, setParameter("from", "source_id"));
-  EXPECT_CALL(*response, setParameter("path", "source_id/new_name"));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/move",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources/move")
+      .WithMethod("POST")
+      .WithParameter("from", "source_id")
+      .WithParameter("path", "source_id/new_name")
+      .WillRespondWith(R"js({ "name": "filename", "path": "id" })js");
 
   auto item =
       std::make_shared<Item>("source_filename", "source_id", IItem::UnknownSize,
@@ -309,18 +274,17 @@ TEST(YandexDiskTest, RenamesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(202, R"js({ "href": "status-url" })js");
-  EXPECT_CALL(*response, setParameter("from", "source_id"));
-  EXPECT_CALL(*response, setParameter("path", "source_id/new_name"));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/move",
-                     "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://cloud-api.yandex.net/v1/disk/resources/move")
+      .WithMethod("POST")
+      .WithParameter("from", "source_id")
+      .WithParameter("path", "source_id/new_name")
+      .WillRespondWith(HttpResponse().WithStatus(202).WithContent(
+          R"js({ "href": "status-url" })js"));
 
-  EXPECT_CALL(*mock.http(), create("status-url", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "in-progress" })js")))
-      .WillOnce(Return(MockResponse(R"js({ "status": "success" })js")));
+  ExpectHttp(mock.http(), "status-url")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "in-progress" })js")
+      .WillRespondWith(R"js({ "status": "success" })js");
 
   auto item =
       std::make_shared<Item>("source_filename", "source_id", IItem::UnknownSize,
@@ -337,15 +301,12 @@ TEST(YandexDiskTest, DownloadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto response = MockResponse(R"js({ "href": "file-url" })js");
-  EXPECT_CALL(*response, setParameter("path", "id")).WillRepeatedly(Return());
+  ExpectHttp(mock.http(),
+             "https://cloud-api.yandex.net/v1/disk/resources/download")
+      .WithParameter("path", "id")
+      .WillRespondWith(R"js({ "href": "file-url" })js");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/download",
-                     "GET", true))
-      .WillRepeatedly(Return(response));
-  EXPECT_CALL(*mock.http(), create("file-url", "GET", true))
-      .WillRepeatedly(Return(MockResponse("content")));
+  ExpectHttp(mock.http(), "file-url").WillRespondWith("content");
 
   auto item =
       std::make_shared<Item>("filename", "id", IItem::UnknownSize,
@@ -362,16 +323,15 @@ TEST(YandexDiskTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("yandex", {});
 
-  auto upload_url_request = MockResponse(R"js({ "href": "upload-url" })js");
-  EXPECT_CALL(*upload_url_request, setParameter("path", "id/name"));
-  EXPECT_CALL(*mock.http(),
-              create("https://cloud-api.yandex.net/v1/disk/resources/upload",
-                     "GET", true))
-      .WillOnce(Return(upload_url_request));
+  ExpectHttp(mock.http(),
+             "https://cloud-api.yandex.net/v1/disk/resources/upload")
+      .WithParameter("path", "id/name")
+      .WillRespondWith(R"js({ "href": "upload-url" })js");
 
-  auto upload_request = MockResponse("", "content");
-  EXPECT_CALL(*mock.http(), create("upload-url", "PUT", true))
-      .WillOnce(Return(upload_request));
+  ExpectHttp(mock.http(), "upload-url")
+      .WithMethod("PUT")
+      .WithBody("content")
+      .WillRespondWithCode(200);
 
   auto parent = std::make_shared<Item>("filename", "id", IItem::UnknownSize,
                                        IItem::UnknownTimeStamp,
@@ -393,17 +353,15 @@ TEST(YandexDiskTest, ExchangesAuthorizationCode) {
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
 
-  auto response = MockResponse(
-      R"js({
-             "refresh_token": "token",
-             "access_token": "access_token",
-             "expires_in": 0
-           })js",
-      R"(grant_type=authorization_code&client_id=client_id&client_secret=client_secret&code=code)");
-
-  EXPECT_CALL(*mock.http(),
-              create("https://oauth.yandex.com/token", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://oauth.yandex.com/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(grant_type=authorization_code&client_id=client_id&client_secret=client_secret&code=code)")
+      .WillRespondWith(R"js({
+                              "refresh_token": "token",
+                              "access_token": "access_token",
+                              "expires_in": 0
+                            })js");
 
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("yandex", data, "code"),

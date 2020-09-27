@@ -74,7 +74,8 @@ inline std::shared_ptr<HttpRequestMock> MockResponse(
 
   EXPECT_CALL(*http_response, send)
       .WillRepeatedly(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
-          [=](const cloudstorage::IHttpRequest::CompleteCallback& on_completed,
+          [=, response = std::string(response)](
+              const cloudstorage::IHttpRequest::CompleteCallback& on_completed,
               const std::shared_ptr<std::istream>& input_stream,
               const std::shared_ptr<std::ostream>& output_stream,
               const std::shared_ptr<std::ostream>& error_stream) {
