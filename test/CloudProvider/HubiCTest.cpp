@@ -15,12 +15,11 @@ TEST(HubiCTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/1.0/account", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "email": "admin@admin.ru" })js")));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/1.0/account/usage", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({ "quota": 10, "used": 5 })js")));
+  ExpectHttp(mock.http(), "https://api.hubic.com/1.0/account")
+      .WillRespondWith(R"js({ "email": "admin@admin.ru" })js");
+
+  ExpectHttp(mock.http(), "https://api.hubic.com/1.0/account/usage")
+      .WillRespondWith(R"js({ "quota": 10, "used": 5 })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -32,19 +31,17 @@ TEST(HubiCTest, GetsItemData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  auto response = MockResponse(R"([{
-                                     "name": "path/filename",
-                                     "bytes": 1234,
-                                     "content_type": "image/jpeg",
-                                     "last_modified": "2012-04-12T04:06:12.4213"
-                                  }])");
-  EXPECT_CALL(*response, setParameter("format", "json"));
-  EXPECT_CALL(*response, setParameter("prefix", "id"));
-  EXPECT_CALL(*response, setParameter("delimiter", "/"));
-  EXPECT_CALL(*response, setParameter("limit", "1"));
-
-  EXPECT_CALL(*mock.http(), create("/default", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/default")
+      .WithParameter("format", "json")
+      .WithParameter("prefix", "id")
+      .WithParameter("delimiter", "/")
+      .WithParameter("limit", "1")
+      .WillRespondWith(R"([{
+                             "name": "path/filename",
+                             "bytes": 1234,
+                             "content_type": "image/jpeg",
+                             "last_modified": "2012-04-12T04:06:12.4213"
+                           }])");
 
   ExpectImmediatePromise(
       provider->getItemData("id"),
@@ -59,20 +56,16 @@ TEST(HubiCTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  auto response_first =
-      MockResponse(R"([{"subdir": true}, {"name": "marker"}])");
-  EXPECT_CALL(*response_first, setParameter("format", "json"));
-  EXPECT_CALL(*response_first, setParameter("marker", ""));
-  EXPECT_CALL(*response_first, setParameter("path", "id"));
-
-  auto response_second = MockResponse(R"([])");
-  EXPECT_CALL(*response_second, setParameter("format", "json"));
-  EXPECT_CALL(*response_second, setParameter("marker", "marker"));
-  EXPECT_CALL(*response_second, setParameter("path", "id"));
-
-  EXPECT_CALL(*mock.http(), create("/default/", "GET", true))
-      .WillOnce(Return(response_first))
-      .WillOnce(Return(response_second));
+  ExpectHttp(mock.http(), "/default/")
+      .WithParameter("format", "json")
+      .WithParameter("marker", "")
+      .WithParameter("path", "id")
+      .WillRespondWith(R"([{"subdir": true}, {"name": "marker"}])")
+      .AndThen()
+      .WithParameter("format", "json")
+      .WithParameter("marker", "marker")
+      .WithParameter("path", "id")
+      .WillRespondWith("[]");
 
   ExpectImmediatePromise(
       provider->listDirectory(std::make_unique<Item>(
@@ -85,8 +78,9 @@ TEST(HubiCTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  EXPECT_CALL(*mock.http(), create("/default/id", "DELETE", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "/default/id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(provider->deleteItem(std::make_unique<Item>(
       "directory", "id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -97,14 +91,12 @@ TEST(HubiCTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  auto response = MockResponse(200);
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/directory"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setHeaderParameter("X-Auth-Token", _));
-
-  EXPECT_CALL(*mock.http(), create("/default/id%2Fnew_directory", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/default/id%2Fnew_directory")
+      .WithMethod("PUT")
+      .WithHeaderParameter("Content-Type", "application/directory")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("X-Auth-Token", _)
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(
       provider->createDirectory(
@@ -120,8 +112,7 @@ TEST(HubiCTest, DownloadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  EXPECT_CALL(*mock.http(), create("/default/id", "GET", true))
-      .WillOnce(Return(MockResponse("content")));
+  ExpectHttp(mock.http(), "/default/id").WillRespondWith("content");
 
   auto stream = std::make_shared<std::stringstream>();
   ExpectImmediatePromise(provider->downloadFile(
@@ -136,22 +127,18 @@ TEST(HubiCTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  auto response = MockResponse("");
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setHeaderParameter("X-Auth-Token", _));
-  EXPECT_CALL(
-      *response,
-      setHeaderParameter(
+  ExpectHttp(mock.http(), "/default/%2Froot%2Fsource_id")
+      .WithMethod("COPY")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("X-Auth-Token", _)
+      .WithHeaderParameter(
           "Destination",
-          "/default/%2Froot%2Fsome_directory%2Fdestination%2Fsource_id"));
+          "/default/%2Froot%2Fsome_directory%2Fdestination%2Fsource_id")
+      .WillRespondWithCode(200);
 
-  EXPECT_CALL(*mock.http(),
-              create("/default/%2Froot%2Fsource_id", "COPY", true))
-      .WillOnce(Return(response));
-
-  EXPECT_CALL(*mock.http(),
-              create("/default/%2Froot%2Fsource_id", "DELETE", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "/default/%2Froot%2Fsource_id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   auto source =
       std::make_shared<Item>("source_id", "/root/source_id", IItem::UnknownSize,
@@ -171,19 +158,16 @@ TEST(HubiCTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  auto response = MockResponse("");
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response, setHeaderParameter("X-Auth-Token", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Destination", "/default/%2Froot%2Fnew_name"));
+  ExpectHttp(mock.http(), "/default/%2Froot%2Fsource_id")
+      .WithMethod("COPY")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("X-Auth-Token", _)
+      .WithHeaderParameter("Destination", "/default/%2Froot%2Fnew_name")
+      .WillRespondWithCode(200);
 
-  EXPECT_CALL(*mock.http(),
-              create("/default/%2Froot%2Fsource_id", "COPY", true))
-      .WillOnce(Return(response));
-
-  EXPECT_CALL(*mock.http(),
-              create("/default/%2Froot%2Fsource_id", "DELETE", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "/default/%2Froot%2Fsource_id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   auto item =
       std::make_shared<Item>("source_id", "/root/source_id", IItem::UnknownSize,
@@ -199,9 +183,10 @@ TEST(HubiCTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("hubic", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("/default/parent_id%2Ffilename", "PUT", true))
-      .WillOnce(Return(MockResponse("", "content")));
+  ExpectHttp(mock.http(), "/default/parent_id%2Ffilename")
+      .WithMethod("PUT")
+      .WithBody("content")
+      .WillRespondWithCode(200);
 
   auto parent = std::make_shared<Item>(
       "directory", "parent_id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -223,36 +208,31 @@ TEST(HubiCTest, Authorizes) {
 
   auto provider = mock.factory()->create("hubic", data);
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/1.0/account", "GET", true))
-      .WillOnce(Return(MockResponse(401)))
-      .WillOnce(Return(MockResponse("{}")));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/1.0/account/usage", "GET", true))
-      .WillOnce(Return(MockResponse("{}")));
+  ExpectHttp(mock.http(), "https://api.hubic.com/1.0/account")
+      .WillRespondWithCode(401)
+      .WillRespondWith("{}");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/oauth/token", "POST", true))
-      .WillOnce(Return(MockResponse(
-          R"js({ "access_token": "access_token" })js",
-          R"(grant_type=refresh_token&refresh_token=&client_id=client_id&client_secret=client_secret)")));
+  ExpectHttp(mock.http(), "https://api.hubic.com/1.0/account/usage")
+      .WillRespondWith("{}");
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.hubic.com/1.0/account/credentials", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({
-                                           "endpoint": "openstack-endpoint",
-                                           "token": "openstack-token"
-                                         })js")));
+  ExpectHttp(mock.http(), "https://api.hubic.com/oauth/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(grant_type=refresh_token&refresh_token=&client_id=client_id&client_secret=client_secret)")
+      .WillRespondWith(R"js({ "access_token": "access_token" })js");
 
-  auto response = MockResponse("");
-  EXPECT_CALL(*response, setHeaderParameter("X-Container-Meta-Temp-URL-Key",
-                                            "openstack-token"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Authorization", "Bearer access_token"));
-  EXPECT_CALL(*response, setHeaderParameter("X-Auth-Token", "openstack-token"));
-  EXPECT_CALL(*mock.http(), create("openstack-endpoint/default", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.hubic.com/1.0/account/credentials")
+      .WillRespondWith(R"js({
+                              "endpoint": "openstack-endpoint",
+                              "token": "openstack-token"
+                            })js");
+
+  ExpectHttp(mock.http(), "openstack-endpoint/default")
+      .WithMethod("POST")
+      .WithHeaderParameter("X-Container-Meta-Temp-URL-Key", "openstack-token")
+      .WithHeaderParameter("X-Auth-Token", "openstack-token")
+      .WithHeaderParameter("Authorization", "Bearer access_token")
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(provider->generalData(), _);
 }
@@ -264,15 +244,15 @@ TEST(HubiCTest, ExchangesAuthorizationCode) {
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.hubic.com/oauth/token", "POST", true))
-      .WillOnce(Return(MockResponse(
-          R"js({
-                 "refresh_token": "token",
-                 "access_token": "access_token",
-                 "expires_in": 0
-               })js",
-          R"(grant_type=authorization_code&redirect_uri=http%3A%2F%2Fredirect-uri%2F&code=code&client_id=client_id&client_secret=client_secret)")));
+  ExpectHttp(mock.http(), "https://api.hubic.com/oauth/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(grant_type=authorization_code&redirect_uri=http%3A%2F%2Fredirect-uri%2F&code=code&client_id=client_id&client_secret=client_secret)")
+      .WillRespondWith(R"js({
+                              "refresh_token": "token",
+                              "access_token": "access_token",
+                              "expires_in": 0
+                            })js");
 
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("hubic", data, "code"),
