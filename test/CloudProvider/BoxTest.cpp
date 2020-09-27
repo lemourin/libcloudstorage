@@ -16,13 +16,13 @@ TEST(BoxTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/users/me", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({
-                                           "login": "admin@admin.ru",
-                                           "space_amount": 10,
-                                           "space_used": 5
-                                         })js")));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/users/me")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({
+                              "login": "admin@admin.ru",
+                              "space_amount": 10,
+                              "space_used": 5
+                            })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -34,17 +34,15 @@ TEST(BoxTest, GetsItemDataForDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(R"js({
-                                      "name": "filename",
-                                      "id": "file_id",
-                                      "size": 1234,
-                                      "type": "folder",
-                                      "modified_at": "2012-04-12T04:06:12.4213Z"
-                                    })js");
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/folders/file_id", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders/file_id")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({
+                              "name": "filename",
+                              "id": "file_id",
+                              "size": 1234,
+                              "type": "folder",
+                              "modified_at": "2012-04-12T04:06:12.4213Z"
+                            })js");
 
   ExpectImmediatePromise(
       provider->getItemData(util::FileId(true, "file_id")),
@@ -61,16 +59,14 @@ TEST(BoxTest, GetsItemDataForItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(R"js({
-                                      "name": "filename",
-                                      "id": "file_id",
-                                      "size": 1234,
-                                      "modified_at": "2012-04-12T04:06:12.4213Z"
-                                    })js");
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/file_id", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/file_id")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({
+                              "name": "filename",
+                              "id": "file_id",
+                              "size": 1234,
+                              "modified_at": "2012-04-12T04:06:12.4213Z"
+                            })js");
 
   ExpectImmediatePromise(
       provider->getItemData(util::FileId(false, "file_id")),
@@ -87,29 +83,24 @@ TEST(BoxTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto first_page_response = MockResponse(
-      R"js({
-             "entries":
-             [ {}], "offset": 0, "limit": 1, "total_count": 5
-           })js");
-  EXPECT_CALL(*first_page_response,
-              setParameter("fields", "name,id,size,modified_at"));
-
-  auto second_page_response = MockResponse(R"({
-                          "entries": [{}, {}, {}, {}],
-                          "offset": 1,
-                          "limit": 4,
-                          "total_count": 5
-                        })");
-  EXPECT_CALL(*second_page_response,
-              setParameter("fields", "name,id,size,modified_at"));
-  EXPECT_CALL(*second_page_response, setParameter("offset", "1"));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.box.com/2.0/folders/folder_id/items/", "GET", true))
-      .WillOnce(Return(first_page_response))
-      .WillOnce(Return(second_page_response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders/folder_id/items/")
+      .WithMethod("GET")
+      .WithParameter("fields", "name,id,size,modified_at")
+      .WillRespondWith(R"({
+                            "entries": [{}],
+                            "offset": 0,
+                            "limit": 1,
+                            "total_count": 5
+                          })")
+      .AndThen()
+      .WithParameter("fields", "name,id,size,modified_at")
+      .WithParameter("offset", "1")
+      .WillRespondWith(R"({
+                            "entries": [{}, {}, {}, {}],
+                            "offset": 1,
+                            "limit": 4,
+                            "total_count": 5
+                          })");
 
   auto directory = std::make_shared<Item>(
       "filename", util::FileId(true, "folder_id"), IItem::UnknownSize,
@@ -122,9 +113,9 @@ TEST(BoxTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/file_id", "DELETE", true))
-      .WillOnce(Return(MockResponse(200)));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/file_id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   auto item = std::make_shared<Item>(
       "filename", util::FileId(false, "file_id"), IItem::UnknownSize,
@@ -137,12 +128,10 @@ TEST(BoxTest, DeletesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(200);
-  EXPECT_CALL(*response, setParameter("recursive", "true"));
-
-  EXPECT_CALL(*mock.http(), create("https://api.box.com/2.0/folders/folder_id",
-                                   "DELETE", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders/folder_id")
+      .WithMethod("DELETE")
+      .WithParameter("recursive", "true")
+      .WillRespondWithCode(200);
 
   auto item = std::make_shared<Item>(
       "folder", util::FileId(true, "folder_id"), IItem::UnknownSize,
@@ -155,18 +144,15 @@ TEST(BoxTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "directory", "type": "folder" })js",
-                   IgnoringWhitespace(R"js({
-                                             "name": "directory",
-                                             "parent": { "id": "folder_id" }
-                                           })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/folders", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders")
+      .WithMethod("POST")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithBody(IgnoringWhitespace(R"js({
+                                          "name": "directory",
+                                          "parent": { "id": "folder_id" }
+                                        })js"))
+      .WillRespondWith(R"js({ "name": "directory", "type": "folder" })js");
 
   auto parent = std::make_shared<Item>(
       "parent", util::FileId(true, "folder_id"), IItem::UnknownSize,
@@ -182,15 +168,13 @@ TEST(BoxTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(
-      R"js({ "name": "filename" })js",
-      IgnoringWhitespace(R"js({ "parent": { "id": "destination_id" } })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/source_id", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/source_id")
+      .WithMethod("PUT")
+      .WithHeaderParameter("Authorization", _)
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithBody(
+          IgnoringWhitespace(R"js({ "parent": { "id": "destination_id" } })js"))
+      .WillRespondWith(R"js({ "name": "filename" })js");
 
   auto source = std::make_shared<Item>(
       "source", util::FileId(false, "source_id"), IItem::UnknownSize,
@@ -210,15 +194,13 @@ TEST(BoxTest, MovesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(
-      R"js({ "name": "filename", "type": "folder" })js",
-      IgnoringWhitespace(R"js({ "parent": { "id": "destination_id" } })js"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/folders/source_id", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders/source_id")
+      .WithMethod("PUT")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(
+          IgnoringWhitespace(R"js({ "parent": { "id": "destination_id" } })js"))
+      .WillRespondWith(R"js({ "name": "filename", "type": "folder" })js");
 
   auto source = std::make_shared<Item>(
       "source", util::FileId(true, "source_id"), IItem::UnknownSize,
@@ -238,13 +220,10 @@ TEST(BoxTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "new_name" })js",
-                   IgnoringWhitespace(R"js({ "name": "new_name" })js"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/source_id", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/source_id")
+      .WithMethod("PUT")
+      .WithBody(IgnoringWhitespace(R"js({ "name": "new_name" })js"))
+      .WillRespondWith(R"js({ "name": "new_name" })js");
 
   auto item = std::make_shared<Item>(
       "source", util::FileId(false, "source_id"), IItem::UnknownSize,
@@ -258,13 +237,10 @@ TEST(BoxTest, RenamesFolder) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "new_name" })js",
-                   IgnoringWhitespace(R"js({ "name": "new_name" })js"));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/folders/source_id", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/folders/source_id")
+      .WithMethod("PUT")
+      .WithBody(IgnoringWhitespace(R"js({ "name": "new_name" })js"))
+      .WillRespondWith(R"js({ "name": "new_name" })js");
 
   auto item = std::make_shared<Item>(
       "source", util::FileId(true, "source_id"), IItem::UnknownSize,
@@ -278,10 +254,9 @@ TEST(BoxTest, GetsThumbnail) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://api.box.com/2.0/files/id/thumbnail.png", "GET", true))
-      .WillOnce(Return(MockResponse("thumbnail")));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/id/thumbnail.png")
+      .WithMethod("GET")
+      .WillRespondWith("thumbnail");
 
   auto source = std::make_shared<Item>(
       "source.jpg", util::FileId(false, "id"), IItem::UnknownSize,
@@ -298,12 +273,14 @@ TEST(BoxTest, GetsItemUrl) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(200, {{"location", "item-link"}}, "", "");
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/id/content", "GET", false))
-      .WillRepeatedly(Return(response));
-  EXPECT_CALL(*mock.http(), create("item-link", "HEAD", true))
-      .WillOnce(Return(MockResponse(200)));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/id/content")
+      .WithMethod("GET")
+      .WithFollowNoRedirect()
+      .WillRespondWith(HttpResponse().WithHeaders({{"location", "item-link"}}));
+
+  ExpectHttp(mock.http(), "item-link")
+      .WithMethod("HEAD")
+      .WillRespondWithCode(200);
 
   auto item = std::make_shared<Item>(
       "item", util::FileId(false, "id"), IItem::UnknownSize,
@@ -316,9 +293,9 @@ TEST(BoxTest, DownloadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/files/id/content", "GET", true))
-      .WillOnce(Return(MockResponse("content")));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/files/id/content")
+      .WithMethod("GET")
+      .WillRespondWith("content");
 
   auto item = std::make_shared<Item>(
       "filename", util::FileId(false, "id"), IItem::UnknownSize,
@@ -335,26 +312,20 @@ TEST(BoxTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("box", {});
 
-  auto response = MockResponse(
-      R"js({
-             "entries":
-             [ { "name": "name" }]
-           })js",
-      "--Thnlg1ecwyUJHyhYYGrQ\r\nContent-Disposition: form-data; "
-      "name=\"attributes\"\\r\\n\\r\\n{\"name\":\"name\",\"parent\":{\"id\":"
-      "\"id\"}}\r\n--Thnlg1ecwyUJHyhYYGrQ\r\nContent-Disposition: form-data; "
-      "name=\"file\"; filename=\"\"name\"\"\\r\\nContent-Type: "
-      "application/octet-stream\r\n\r\ncontent\r\n--Thnlg1ecwyUJHyhYYGrQ--");
-  EXPECT_CALL(
-      *response,
-      setHeaderParameter("Content-Type",
-                         "multipart/form-data; boundary=Thnlg1ecwyUJHyhYYGrQ"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://upload.box.com/api/2.0/files/content", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://upload.box.com/api/2.0/files/content")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type",
+                           "multipart/form-data; boundary=Thnlg1ecwyUJHyhYYGrQ")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(
+          "--Thnlg1ecwyUJHyhYYGrQ\r\nContent-Disposition: form-data; "
+          "name=\"attributes\"\\r\\n\\r\\n{\"name\":\"name\",\"parent\":{"
+          "\"id\":"
+          "\"id\"}}\r\n--Thnlg1ecwyUJHyhYYGrQ\r\nContent-Disposition: "
+          "form-data; "
+          "name=\"file\"; filename=\"\"name\"\"\\r\\nContent-Type: "
+          "application/octet-stream\r\n\r\ncontent\r\n--Thnlg1ecwyUJHyhYYGrQ--")
+      .WillRespondWith(R"({ "entries": [{ "name": "name" }] })");
 
   auto parent = std::make_shared<Item>(
       "filename", util::FileId(true, "id"), IItem::UnknownSize,
@@ -376,20 +347,18 @@ TEST(BoxTest, RefreshesToken) {
   data.token_ = "refresh_token";
   auto provider = mock.factory()->create("box", data);
 
-  auto successful_response = MockResponse(R"js({})js");
-  EXPECT_CALL(*successful_response,
-              setHeaderParameter("Authorization", "Bearer token"));
+  ExpectHttp(mock.http(), "https://api.box.com/2.0/users/me")
+      .WithMethod("GET")
+      .WillRespondWithCode(401)
+      .AndThen()
+      .WithHeaderParameter("Authorization", "Bearer token")
+      .WillRespondWith("{}");
 
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/2.0/users/me", "GET", true))
-      .WillOnce(Return(MockResponse(401, "")))
-      .WillOnce(Return(successful_response));
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/oauth2/token", "POST", true))
-      .WillOnce(Return(MockResponse(
-          R"js({ "access_token": "token" })js",
-          R"(grant_type=refresh_token&refresh_token=refresh_token&client_id=client_id&client_secret=client_secret&redirect_uri=http://redirect-uri/)")));
+  ExpectHttp(mock.http(), "https://api.box.com/oauth2/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(grant_type=refresh_token&refresh_token=refresh_token&client_id=client_id&client_secret=client_secret&redirect_uri=http://redirect-uri/)")
+      .WillRespondWith(R"js({ "access_token": "token" })js");
 
   ExpectImmediatePromise(provider->generalData(), _);
 }
@@ -401,17 +370,15 @@ TEST(BoxTest, ExchangesAuthorizationCode) {
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
 
-  auto response = MockResponse(
-      R"js({
-             "refresh_token": "token",
-             "access_token": "access_token",
-             "expires_in": 0
-           })js",
-      R"(grant_type=authorization_code&code=code&client_id=client_id&client_secret=client_secret)");
-
-  EXPECT_CALL(*mock.http(),
-              create("https://api.box.com/oauth2/token", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "https://api.box.com/oauth2/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(grant_type=authorization_code&code=code&client_id=client_id&client_secret=client_secret)")
+      .WillRespondWith(R"js({
+                              "refresh_token": "token",
+                              "access_token": "access_token",
+                              "expires_in": 0
+                            })js");
 
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("box", data, "code"),

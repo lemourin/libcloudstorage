@@ -131,17 +131,65 @@ inline auto IgnoringWhitespace(const std::string& string) {
   });
 }
 
-class HttpResponseMatcher {
+class LimitedHttpRequestMatcher;
+
+class HttpResponse {
  public:
-  virtual HttpResponseMatcher& WillRespondWith(const char* string) = 0;
-  virtual HttpResponseMatcher& WillRespondWithCode(int code) = 0;
+  HttpResponse& WithHeaders(
+      cloudstorage::IHttpRequest::HeaderParameters headers) {
+    headers_ = std::move(headers);
+    return *this;
+  }
+
+  HttpResponse& WithStatus(int status) {
+    status_ = status;
+    return *this;
+  }
+
+  HttpResponse& WithContent(std::string content) {
+    content_ = std::move(content);
+    return *this;
+  }
+
+  int status_ = 200;
+  cloudstorage::IHttpRequest::HeaderParameters headers_;
+  std::string content_;
 };
 
-class HttpRequestMatcher : public HttpResponseMatcher {
+class HttpResponseMatcher {
+ public:
+  virtual ~HttpResponseMatcher() = default;
+
+  virtual HttpResponseMatcher& WillRespondWith(const char* string) = 0;
+  virtual HttpResponseMatcher& WillRespondWith(HttpResponse) = 0;
+  virtual HttpResponseMatcher& WillRespondWithCode(int code) = 0;
+  virtual LimitedHttpRequestMatcher& AndThen() = 0;
+};
+
+class LimitedHttpRequestMatcher : public HttpResponseMatcher {
+ public:
+  using StringMatcher = testing::Matcher<const std::string&>;
+
+  virtual LimitedHttpRequestMatcher& WithBody(StringMatcher) = 0;
+  virtual LimitedHttpRequestMatcher& WithParameter(StringMatcher,
+                                                   StringMatcher) = 0;
+  virtual LimitedHttpRequestMatcher& WithHeaderParameter(StringMatcher,
+                                                         StringMatcher) = 0;
+};
+
+class HttpRequestMatcher : public LimitedHttpRequestMatcher {
  public:
   HttpRequestMatcher(HttpMock& http_mock,
                      testing::Matcher<const std::string&> url_matcher)
       : http_mock_(http_mock), url_matcher_(std::move(url_matcher)) {}
+
+  ~HttpRequestMatcher() override {
+    auto& expectation = EXPECT_CALL(
+        http_mock_, create(url_matcher_, method_matcher_, redirect_matcher_));
+    for (const auto& r : recorded_requests_) {
+      expectation.WillOnce(testing::Return(r));
+    }
+  }
 
   template <typename MethodMatcherT>
   HttpRequestMatcher& WithMethod(MethodMatcherT method_matcher) {
@@ -149,36 +197,54 @@ class HttpRequestMatcher : public HttpResponseMatcher {
     return *this;
   }
 
-  template <typename BodyMatcherT>
-  HttpRequestMatcher& WithBody(BodyMatcherT body_matcher) {
+  HttpRequestMatcher& WithFollowNoRedirect() {
+    redirect_matcher_ = false;
+    return *this;
+  }
+
+  LimitedHttpRequestMatcher& WithBody(StringMatcher body_matcher) override {
     body_matcher_ = std::move(body_matcher);
     return *this;
   }
 
-  template <typename GetParameterMatcherT, typename GetParameterValueMatcherT>
-  HttpRequestMatcher& WithParameter(GetParameterMatcherT parameter_matcher,
-                                    GetParameterValueMatcherT value_matcher) {
+  LimitedHttpRequestMatcher& WithParameter(
+      StringMatcher parameter_matcher, StringMatcher value_matcher) override {
     parameter_matcher_.emplace_back(std::move(parameter_matcher),
                                     std::move(value_matcher));
     return *this;
   }
-  template <typename HeaderParameterMatcherT,
-            typename HeaderParameterValueMatcherT>
-  HttpRequestMatcher& WithHeaderParameter(
-      HeaderParameterMatcherT parameter_matcher,
-      HeaderParameterValueMatcherT value_matcher) {
+
+  LimitedHttpRequestMatcher& WithHeaderParameter(
+      StringMatcher parameter_matcher, StringMatcher value_matcher) override {
     header_parameter_matcher_.emplace_back(std::move(parameter_matcher),
                                            std::move(value_matcher));
     return *this;
   }
 
-  HttpResponseMatcher& WillRespondWith(const char* string) override {
-    SetUpExpectations(MockResponse(string, body_matcher_));
+  LimitedHttpRequestMatcher& WillRespondWith(const char* string) override {
+    recorded_requests_.emplace_back(MockResponse(string, body_matcher_));
+    SetUpExpectations(recorded_requests_.back());
     return *this;
   }
 
-  HttpRequestMatcher& WillRespondWithCode(int code) override {
-    SetUpExpectations(MockResponse(code));
+  LimitedHttpRequestMatcher& WillRespondWithCode(int code) override {
+    recorded_requests_.emplace_back(MockResponse(code));
+    SetUpExpectations(recorded_requests_.back());
+    return *this;
+  }
+
+  LimitedHttpRequestMatcher& WillRespondWith(HttpResponse response) override {
+    recorded_requests_.emplace_back(
+        MockResponse(response.status_, response.headers_,
+                     response.content_.c_str(), body_matcher_));
+    SetUpExpectations(recorded_requests_.back());
+    return *this;
+  }
+
+  LimitedHttpRequestMatcher& AndThen() override {
+    parameter_matcher_.clear();
+    header_parameter_matcher_.clear();
+    body_matcher_ = testing::_;
     return *this;
   }
 
@@ -193,22 +259,17 @@ class HttpRequestMatcher : public HttpResponseMatcher {
                   setHeaderParameter(header_parameter_matcher.first,
                                      header_parameter_matcher.second));
     }
-    EXPECT_CALL(http_mock_,
-                create(url_matcher_, method_matcher_, redirect_matcher_))
-        .WillOnce(testing::Return(request));
   }
 
   HttpMock& http_mock_;
-  testing::Matcher<const std::string&> url_matcher_;
-  testing::Matcher<const std::string&> method_matcher_ = testing::_;
-  testing::Matcher<bool> redirect_matcher_ = testing::_;
-  std::vector<std::pair<testing::Matcher<const std::string&>,
-                        testing::Matcher<const std::string&>>>
-      parameter_matcher_;
-  std::vector<std::pair<testing::Matcher<const std::string&>,
-                        testing::Matcher<const std::string&>>>
+  StringMatcher url_matcher_;
+  StringMatcher method_matcher_ = testing::_;
+  testing::Matcher<bool> redirect_matcher_ = true;
+  std::vector<std::pair<StringMatcher, StringMatcher>> parameter_matcher_;
+  std::vector<std::pair<StringMatcher, StringMatcher>>
       header_parameter_matcher_;
-  testing::Matcher<std::string> body_matcher_ = testing::_;
+  StringMatcher body_matcher_ = testing::_;
+  std::vector<std::shared_ptr<HttpRequestMock>> recorded_requests_;
 };
 
 template <typename UrlMatcherT>
