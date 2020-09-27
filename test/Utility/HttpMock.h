@@ -131,4 +131,90 @@ inline auto IgnoringWhitespace(const std::string& string) {
   });
 }
 
+class HttpResponseMatcher {
+ public:
+  virtual HttpResponseMatcher& WillRespondWith(const char* string) = 0;
+  virtual HttpResponseMatcher& WillRespondWithCode(int code) = 0;
+};
+
+class HttpRequestMatcher : public HttpResponseMatcher {
+ public:
+  HttpRequestMatcher(HttpMock& http_mock,
+                     testing::Matcher<const std::string&> url_matcher)
+      : http_mock_(http_mock), url_matcher_(std::move(url_matcher)) {}
+
+  template <typename MethodMatcherT>
+  HttpRequestMatcher& WithMethod(MethodMatcherT method_matcher) {
+    method_matcher_ = std::move(method_matcher);
+    return *this;
+  }
+
+  template <typename BodyMatcherT>
+  HttpRequestMatcher& WithBody(BodyMatcherT body_matcher) {
+    body_matcher_ = std::move(body_matcher);
+    return *this;
+  }
+
+  template <typename GetParameterMatcherT, typename GetParameterValueMatcherT>
+  HttpRequestMatcher& WithParameter(GetParameterMatcherT parameter_matcher,
+                                    GetParameterValueMatcherT value_matcher) {
+    parameter_matcher_.emplace_back(std::move(parameter_matcher),
+                                    std::move(value_matcher));
+    return *this;
+  }
+  template <typename HeaderParameterMatcherT,
+            typename HeaderParameterValueMatcherT>
+  HttpRequestMatcher& WithHeaderParameter(
+      HeaderParameterMatcherT parameter_matcher,
+      HeaderParameterValueMatcherT value_matcher) {
+    header_parameter_matcher_.emplace_back(std::move(parameter_matcher),
+                                           std::move(value_matcher));
+    return *this;
+  }
+
+  HttpResponseMatcher& WillRespondWith(const char* string) override {
+    SetUpExpectations(MockResponse(string, body_matcher_));
+    return *this;
+  }
+
+  HttpRequestMatcher& WillRespondWithCode(int code) override {
+    SetUpExpectations(MockResponse(code));
+    return *this;
+  }
+
+ private:
+  void SetUpExpectations(const std::shared_ptr<HttpRequestMock>& request) {
+    for (const auto& parameter_matcher : parameter_matcher_) {
+      EXPECT_CALL(*request, setParameter(parameter_matcher.first,
+                                         parameter_matcher.second));
+    }
+    for (const auto& header_parameter_matcher : header_parameter_matcher_) {
+      EXPECT_CALL(*request,
+                  setHeaderParameter(header_parameter_matcher.first,
+                                     header_parameter_matcher.second));
+    }
+    EXPECT_CALL(http_mock_,
+                create(url_matcher_, method_matcher_, redirect_matcher_))
+        .WillOnce(testing::Return(request));
+  }
+
+  HttpMock& http_mock_;
+  testing::Matcher<const std::string&> url_matcher_;
+  testing::Matcher<const std::string&> method_matcher_ = testing::_;
+  testing::Matcher<bool> redirect_matcher_ = testing::_;
+  std::vector<std::pair<testing::Matcher<const std::string&>,
+                        testing::Matcher<const std::string&>>>
+      parameter_matcher_;
+  std::vector<std::pair<testing::Matcher<const std::string&>,
+                        testing::Matcher<const std::string&>>>
+      header_parameter_matcher_;
+  testing::Matcher<std::string> body_matcher_ = testing::_;
+};
+
+template <typename UrlMatcherT>
+inline HttpRequestMatcher ExpectHttp(HttpMock* http_mock,
+                                     const UrlMatcherT& url_matcher) {
+  return HttpRequestMatcher(*http_mock, url_matcher);
+}
+
 #endif  // HTTP_MOCK_H
