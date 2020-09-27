@@ -15,12 +15,13 @@ TEST(OneDriveTest, GetsGeneralData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  EXPECT_CALL(*mock.http(), create("/me/drive", "GET", true))
-      .WillOnce(Return(
-          MockResponse(R"js({ "quota": { "total": 10, "used": 5 } })js")));
-  EXPECT_CALL(*mock.http(), create("/me", "GET", true))
-      .WillOnce(Return(
-          MockResponse(R"js({ "userPrincipalName": "admin@admin.ru" })js")));
+  ExpectHttp(mock.http(), "/me/drive")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({ "quota": { "total": 10, "used": 5 } })js");
+
+  ExpectHttp(mock.http(), "/me")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({ "userPrincipalName": "admin@admin.ru" })js");
 
   ExpectImmediatePromise(provider->generalData(),
                          AllOf(Field(&GeneralData::username_, "admin@admin.ru"),
@@ -32,22 +33,19 @@ TEST(OneDriveTest, GetsItemData) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response =
-      MockResponse(R"js({
-                          "name": "filename",
-                          "id": "id",
-                          "size": 1234,
-                          "lastModifiedDateTime": "2012-04-12T04:06:12.4213Z"
-                        })js");
-  EXPECT_CALL(
-      *response,
-      setParameter("select",
-                   "name,folder,audio,image,photo,video,id,size,"
-                   "lastModifiedDateTime,thumbnails,@content.downloadUrl"));
-  EXPECT_CALL(*response, setParameter("expand", "thumbnails"));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/id", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/id")
+      .WithMethod("GET")
+      .WithParameter("select",
+                     "name,folder,audio,image,photo,video,id,size,"
+                     "lastModifiedDateTime,thumbnails,@content.downloadUrl")
+      .WithParameter("expand", "thumbnails")
+      .WillRespondWith(
+          R"js({
+                 "name": "filename",
+                 "id": "id",
+                 "size": 1234,
+                 "lastModifiedDateTime": "2012-04-12T04:06:12.4213Z"
+               })js");
 
   ExpectImmediatePromise(
       provider->getItemData("id"),
@@ -62,19 +60,13 @@ TEST(OneDriveTest, ListsDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response = MockResponse(R"js({
-                                      "value":
-                                      [ {}]
-                                    })js");
-  EXPECT_CALL(
-      *response,
-      setParameter("select",
-                   "name,folder,audio,image,photo,video,id,size,"
-                   "lastModifiedDateTime,thumbnails,@content.downloadUrl"));
-  EXPECT_CALL(*response, setParameter("expand", "thumbnails"));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/id/children", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/id/children")
+      .WithMethod("GET")
+      .WithParameter("select",
+                     "name,folder,audio,image,photo,video,id,size,"
+                     "lastModifiedDateTime,thumbnails,@content.downloadUrl")
+      .WithParameter("expand", "thumbnails")
+      .WillRespondWith(R"({ "value": [{}] })");
 
   ExpectImmediatePromise(
       provider->listDirectory(std::make_unique<Item>(
@@ -87,10 +79,10 @@ TEST(OneDriveTest, ListsDirectoryPage) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response =
-      MockResponse(R"js({ "value": [], "@odata.nextLink": "/next_token" })js");
-  EXPECT_CALL(*mock.http(), create("/page_token", "GET", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/page_token")
+      .WithMethod("GET")
+      .WillRespondWith(
+          R"js({ "value": [], "@odata.nextLink": "/next_token" })js");
 
   ExpectImmediatePromise(
       provider->listDirectoryPage(
@@ -105,8 +97,9 @@ TEST(OneDriveTest, DeletesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  EXPECT_CALL(*mock.http(), create("/drive/items/id", "DELETE", true))
-      .WillOnce(Return(MockResponse("")));
+  ExpectHttp(mock.http(), "/drive/items/id")
+      .WithMethod("DELETE")
+      .WillRespondWithCode(200);
 
   ExpectImmediatePromise(provider->deleteItem(std::make_unique<Item>(
       "directory", "id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -117,15 +110,13 @@ TEST(OneDriveTest, CreatesDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response = MockResponse(
-      R"js({ "name": "new_directory" })js",
-      IgnoringWhitespace(R"js({ "folder": {}, "name": "new_directory" })js"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/id/children", "POST", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/id/children")
+      .WithMethod("POST")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(
+          R"js({ "folder": {}, "name": "new_directory" })js"))
+      .WillRespondWith(R"js({ "name": "new_directory" })js");
 
   ExpectImmediatePromise(
       provider->createDirectory(
@@ -140,8 +131,9 @@ TEST(OneDriveTest, DownloadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  EXPECT_CALL(*mock.http(), create("/drive/items/id/content", "GET", true))
-      .WillOnce(Return(MockResponse("content")));
+  ExpectHttp(mock.http(), "/drive/items/id/content")
+      .WithMethod("GET")
+      .WillRespondWith("content");
 
   auto stream = std::make_shared<std::stringstream>();
   ExpectImmediatePromise(provider->downloadFile(
@@ -156,16 +148,13 @@ TEST(OneDriveTest, MovesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response = MockResponse(
-      R"js({ "id": "source_id" })js",
-      IgnoringWhitespace(
-          R"js({ "parentReference": { "id": "destination_id" } })js"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/source_id", "PATCH", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/source_id")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(
+          R"js({ "parentReference": { "id": "destination_id" } })js"))
+      .WillRespondWith(R"js({ "id": "source_id" })js");
 
   auto source =
       std::make_shared<Item>("source", "source_id", IItem::UnknownSize,
@@ -182,16 +171,13 @@ TEST(OneDriveTest, MovesItemToRootDirectory) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response = MockResponse(
-      R"js({ "id": "source_id" })js",
-      IgnoringWhitespace(
-          R"js({ "parentReference": { "path": "/drive/root" } })js"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/source_id", "PATCH", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/source_id")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(
+          R"js({ "parentReference": { "path": "/drive/root" } })js"))
+      .WillRespondWith(R"js({ "id": "source_id" })js");
 
   auto source =
       std::make_shared<Item>("source", "source_id", IItem::UnknownSize,
@@ -205,15 +191,12 @@ TEST(OneDriveTest, RenamesItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  auto response =
-      MockResponse(R"js({ "name": "new_name" })js",
-                   IgnoringWhitespace(R"js({ "name": "new_name" })js"));
-  EXPECT_CALL(*response,
-              setHeaderParameter("Content-Type", "application/json"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(), create("/drive/items/source_id", "PATCH", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "/drive/items/source_id")
+      .WithMethod("PATCH")
+      .WithHeaderParameter("Content-Type", "application/json")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody(IgnoringWhitespace(R"js({ "name": "new_name" })js"))
+      .WillRespondWith(R"js({ "name": "new_name" })js");
 
   auto item =
       std::make_shared<Item>("source", "source_id", IItem::UnknownSize,
@@ -227,18 +210,17 @@ TEST(OneDriveTest, UploadsItem) {
   auto mock = CloudFactoryMock::create();
   auto provider = mock.factory()->create("onedrive", {});
 
-  EXPECT_CALL(*mock.http(),
-              create("/me/drive/items/parent_id:/filename:/createUploadSession",
-                     "POST", true))
-      .WillOnce(
-          Return(MockResponse(R"js({ "uploadUrl": "http://upload-url/" })js")));
+  ExpectHttp(mock.http(),
+             "/me/drive/items/parent_id:/filename:/createUploadSession")
+      .WithMethod("POST")
+      .WillRespondWith(R"js({ "uploadUrl": "http://upload-url/" })js");
 
-  auto response = MockResponse(R"js({ "name": "filename" })js", "content");
-  EXPECT_CALL(*response, setHeaderParameter("Content-Range", "bytes 0-6/7"));
-  EXPECT_CALL(*response, setHeaderParameter("Authorization", _));
-
-  EXPECT_CALL(*mock.http(), create("http://upload-url/", "PUT", true))
-      .WillOnce(Return(response));
+  ExpectHttp(mock.http(), "http://upload-url/")
+      .WithMethod("PUT")
+      .WithHeaderParameter("Content-Range", "bytes 0-6/7")
+      .WithHeaderParameter("Authorization", _)
+      .WithBody("content")
+      .WillRespondWith(R"js({ "name": "filename" })js");
 
   auto parent = std::make_shared<Item>(
       "directory", "parent_id", IItem::UnknownSize, IItem::UnknownTimeStamp,
@@ -258,27 +240,29 @@ TEST(OneDriveTest, AuthorizationTest) {
   data.hints_["client_id"] = "client_id";
   data.hints_["client_secret"] = "client_secret";
 
-  auto provider = mock.factory()->create("onedrive", std::move(data));
+  auto provider = mock.factory()->create("onedrive", data);
 
-  EXPECT_CALL(*mock.http(), create("/me/drive", "GET", true))
-      .WillOnce(Return(MockResponse(401)));
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://login.microsoftonline.com/common/oauth2/v2.0/token",
-             "POST", true))
-      .WillOnce(Return(MockResponse(
-          200, R"js({ "access_token": "token" })js",
-          R"(client_id=client_id&client_secret=client_secret&refresh_token=&grant_type=refresh_token)")));
-  EXPECT_CALL(*mock.http(),
-              create("https://graph.microsoft.com/v1.0/me", "GET", true))
-      .WillOnce(
-          Return(MockResponse(R"js({ "mySite": "http://example.com/" })js")));
-  EXPECT_CALL(*mock.http(),
-              create("http://example.com/_api/v2.0/me/drive", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({})js")));
-  EXPECT_CALL(*mock.http(),
-              create("http://example.com/_api/v2.0/me", "GET", true))
-      .WillOnce(Return(MockResponse(R"js({})js")));
+  ExpectHttp(mock.http(), "/me/drive")
+      .WithMethod("GET")
+      .WillRespondWithCode(401);
+
+  ExpectHttp(mock.http(),
+             "https://login.microsoftonline.com/common/oauth2/v2.0/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(client_id=client_id&client_secret=client_secret&refresh_token=&grant_type=refresh_token)")
+      .WillRespondWith(R"js({ "access_token": "token" })js");
+
+  ExpectHttp(mock.http(), "https://graph.microsoft.com/v1.0/me")
+      .WithMethod("GET")
+      .WillRespondWith(R"js({ "mySite": "http://example.com/" })js");
+
+  ExpectHttp(mock.http(), "http://example.com/_api/v2.0/me/drive")
+      .WithMethod("GET")
+      .WillRespondWith("{}");
+  ExpectHttp(mock.http(), "http://example.com/_api/v2.0/me")
+      .WithMethod("GET")
+      .WillRespondWith("{}");
 
   ExpectImmediatePromise(provider->generalData(), _);
 
@@ -292,17 +276,17 @@ TEST(OneDriveTest, ExchangesAuthorizationCode) {
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
 
-  EXPECT_CALL(
-      *mock.http(),
-      create("https://login.microsoftonline.com/common/oauth2/v2.0/token",
-             "POST", true))
-      .WillRepeatedly(Return(MockResponse(
+  ExpectHttp(mock.http(),
+             "https://login.microsoftonline.com/common/oauth2/v2.0/token")
+      .WithMethod("POST")
+      .WithBody(
+          R"(client_id=client_id&client_secret=client_secret&redirect_uri=http%3A%2F%2Fredirect-uri%2F&code=code&grant_type=authorization_code)")
+      .WillRespondWith(
           R"js({
                  "refresh_token": "token",
                  "access_token": "access_token",
                  "expires_in": 0
-               })js",
-          R"(client_id=client_id&client_secret=client_secret&redirect_uri=http%3A%2F%2Fredirect-uri%2F&code=code&grant_type=authorization_code)")));
+               })js");
 
   ExpectImmediatePromise(
       mock.factory()->exchangeAuthorizationCode("onedrive", data, "code"),
