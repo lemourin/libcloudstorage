@@ -34,15 +34,17 @@ class HttpRequestMock : public cloudstorage::IHttpRequest {
   MOCK_METHOD2(setHeaderParameter,
                void(const std::string& parameter, const std::string& value));
 
-  MOCK_CONST_METHOD0(parameters, const GetParameters&());
+  const GetParameters& parameters() const override { return get_parameters_; }
 
-  MOCK_CONST_METHOD0(headerParameters, const HeaderParameters&());
+  const HeaderParameters& headerParameters() const override {
+    return header_parameters_;
+  }
 
-  MOCK_CONST_METHOD0(url, const std::string&());
+  const std::string& url() const override { return url_; }
 
-  MOCK_CONST_METHOD0(method, const std::string&());
+  const std::string& method() const override { return method_; }
 
-  MOCK_CONST_METHOD0(follow_redirect, bool());
+  bool follow_redirect() const override { return follow_redirect_; }
 
   MOCK_CONST_METHOD5(send, void(CompleteCallback on_completed,
                                 std::shared_ptr<std::istream> data,
@@ -50,8 +52,14 @@ class HttpRequestMock : public cloudstorage::IHttpRequest {
                                 std::shared_ptr<std::ostream> error_stream,
                                 ICallback::Pointer callback));
 
-  std::string url_ = "http://example.com";
-  std::string method_ = "GET";
+ private:
+  friend class HttpRequestMatcher;
+
+  std::string url_;
+  std::string method_;
+  bool follow_redirect_ = true;
+  GetParameters get_parameters_;
+  HeaderParameters header_parameters_;
 };
 
 class HttpMock : public cloudstorage::IHttp {
@@ -67,10 +75,6 @@ inline std::shared_ptr<HttpRequestMock> MockResponse(
     int http_code, cloudstorage::IHttpRequest::HeaderParameters headers,
     const char* response, const InputMatcher& input_matcher) {
   auto http_response = std::make_shared<HttpRequestMock>();
-  EXPECT_CALL(*http_response, url)
-      .WillRepeatedly(testing::ReturnRef(http_response->url_));
-  EXPECT_CALL(*http_response, method)
-      .WillRepeatedly(testing::ReturnRef(http_response->method_));
 
   EXPECT_CALL(*http_response, send)
       .WillRepeatedly(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
@@ -188,7 +192,15 @@ class HttpRequestMatcher : public LimitedHttpRequestMatcher {
     auto& expectation = EXPECT_CALL(
         http_mock_, create(url_matcher_, method_matcher_, redirect_matcher_));
     for (const auto& r : recorded_requests_) {
-      expectation.WillOnce(testing::Return(r));
+      expectation.WillOnce(testing::DoAll(
+          testing::WithArgs<0, 1, 2>(testing::Invoke(
+              [r = r.get()](const std::string& url, const std::string& method,
+                            bool follow_redirect) {
+                r->url_ = url;
+                r->method_ = method;
+                r->follow_redirect_ = follow_redirect;
+              })),
+          testing::Return(r)));
     }
   }
 
@@ -253,12 +265,20 @@ class HttpRequestMatcher : public LimitedHttpRequestMatcher {
   void SetUpExpectations(const std::shared_ptr<HttpRequestMock>& request) {
     for (const auto& parameter_matcher : parameter_matcher_) {
       EXPECT_CALL(*request, setParameter(parameter_matcher.first,
-                                         parameter_matcher.second));
+                                         parameter_matcher.second))
+          .WillOnce(testing::WithArgs<0, 1>(testing::Invoke(
+              [r = request.get()](std::string value, std::string param) {
+                r->get_parameters_.emplace(std::move(value), std::move(param));
+              })));
     }
     for (const auto& header_parameter_matcher : header_parameter_matcher_) {
-      EXPECT_CALL(*request,
-                  setHeaderParameter(header_parameter_matcher.first,
-                                     header_parameter_matcher.second));
+      EXPECT_CALL(*request, setHeaderParameter(header_parameter_matcher.first,
+                                               header_parameter_matcher.second))
+          .WillOnce(testing::WithArgs<0, 1>(testing::Invoke(
+              [r = request.get()](std::string value, std::string param) {
+                r->header_parameters_.emplace(std::move(value),
+                                              std::move(param));
+              })));
     }
   }
 
