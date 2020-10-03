@@ -20,6 +20,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/data PREFIX "Test Files" FILES ${c
 target_sources(cloudstorage-test PRIVATE
     CloudProvider/CloudProviderTest.cpp
     CloudProvider/GoogleDriveTest.cpp
+    CloudProvider/GooglePhotosTest.cpp
     CloudProvider/OneDriveTest.cpp
     CloudProvider/DropboxTest.cpp
     CloudProvider/BoxTest.cpp
