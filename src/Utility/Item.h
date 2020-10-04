@@ -37,6 +37,7 @@ class CLOUDSTORAGE_API Item : public IItem {
   using Pointer = std::shared_ptr<Item>;
 
   Item(std::string filename, std::string id, size_t size, TimeStamp, FileType);
+  Item(std::string id);
 
   std::string filename() const override;
   void set_filename(std::string);

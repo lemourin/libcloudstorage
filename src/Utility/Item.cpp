@@ -70,6 +70,10 @@ Item::Item(std::string filename, std::string id, size_t size,
     type_ = fromExtension(Item::extension());
 }
 
+Item::Item(std::string id)
+    : Item(id, id, IItem::UnknownSize, IItem::UnknownTimeStamp,
+           IItem::FileType::Unknown) {}
+
 std::string Item::filename() const { return filename_; }
 
 void Item::set_filename(std::string filename) {
