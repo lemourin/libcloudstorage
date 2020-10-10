@@ -30,6 +30,7 @@ target_sources(cloudstorage-test PRIVATE
     CloudProvider/PCloudTest.cpp
     CloudProvider/HubiCTest.cpp
     CloudProvider/AmazonS3Test.cpp
+    CloudProvider/FourSharedTest.cpp
     Utility/RequestTest.cpp
     Utility/AuthMock.h
     Utility/HttpMock.h
