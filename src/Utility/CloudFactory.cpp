@@ -160,8 +160,6 @@ struct HttpCallback : public IHttpServer::ICallback {
         result = MAKE_STRING(__4shared_login_html);
       else if (state == "amazons3")
         result = MAKE_STRING(amazons3_login_html);
-      else if (state == "animezone")
-        result = MAKE_STRING(animezone_login_html);
       else if (state == "local")
         result = MAKE_STRING(local_login_html);
       else if (state == "localwinrt")
@@ -396,7 +394,6 @@ std::string CloudFactory::pretty(const std::string& provider) const {
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"},
       {"localwinrt", "Local Drive"},
-      {"animezone", "Anime Zone"},
       {"4shared", "4shared"}};
   auto it = name_map.find(provider);
   if (it != name_map.end())

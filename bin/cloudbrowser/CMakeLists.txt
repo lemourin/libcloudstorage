@@ -73,7 +73,6 @@ set(cloudbrowser_SOURCES
 set(cloudbrowser_RESOURCES
     resources/4shared_login.html
     resources/amazons3_login.html
-    resources/animezone_login.html
     resources/bootstrap.min.css
     resources/bootstrap.min.js
     resources/cloud.png
@@ -147,7 +146,6 @@ set(cloudbrowser_RESOURCES
     resources/mpv.png
     resources/providers/4shared.png
     resources/providers/amazons3.png
-    resources/providers/animezone.png
     resources/providers/box.png
     resources/providers/dropbox.png
     resources/providers/google.png

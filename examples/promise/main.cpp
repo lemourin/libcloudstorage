@@ -16,21 +16,6 @@ class FactoryCallback : public ICloudFactory::ICallback {
         std::cout << "got general data here " << d.username_ << " "
                   << d.space_used_ << " " << d.space_total_ << "\n";
       });
-    } else if (d->name() == "animezone") {
-      const auto path =
-          "/Anime/D/Death Note/1: Odrodzenie./Death Note 1 [PL] "
-          "[Openload.co].mp4";
-      d->getItem(path)
-          .then([d](const IItem::Pointer& item) {
-            std::ofstream file("animezone.png", std::ios::binary);
-            return d->generateThumbnail(
-                item, ICloudAccess::streamDownloader(
-                          std::make_shared<std::ofstream>(std::move(file))));
-          })
-          .then([] { std::cout << "animezone thumb downloaded\n"; })
-          .error<IException>([](const IException& e) {
-            std::cout << "animezone " << e.what();
-          });
     } else if (d->name() == "mega") {
       d->getItem("/Bit Rush _ Login Screen - League of Legends.mp4")
           .then([d](IItem::Pointer item) {

@@ -30,7 +30,6 @@ add_library(cloudstorage-util OBJECT)
 set(cloudstorage-resources
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/4shared_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/amazons3_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/animezone_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/local_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/localwinrt_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/mega_login.html
@@ -106,7 +105,6 @@ set(cloudstorage_PUBLIC_HEADERS
 
 set(cloudstorage_HEADERS
     CloudProvider/AmazonS3.h
-    CloudProvider/AnimeZone.h
     CloudProvider/Box.h
     CloudProvider/CloudProvider.h
     CloudProvider/Dropbox.h
@@ -142,7 +140,6 @@ set(cloudstorage_HEADERS
 
 set(cloudstorage_SOURCES
     CloudProvider/AmazonS3.cpp
-    CloudProvider/AnimeZone.cpp
     CloudProvider/Box.cpp
     CloudProvider/CloudProvider.cpp
     CloudProvider/Dropbox.cpp

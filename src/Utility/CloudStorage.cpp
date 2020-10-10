@@ -24,7 +24,6 @@
 #include "CloudStorage.h"
 
 #include "CloudProvider/AmazonS3.h"
-#include "CloudProvider/AnimeZone.h"
 #include "CloudProvider/Box.h"
 #include "CloudProvider/Dropbox.h"
 #include "CloudProvider/FourShared.h"
@@ -197,7 +196,6 @@ CloudStorage::CloudStorage() {
   add<PCloud>();
   add<HubiC>();
   add<GooglePhotos>();
-  add<AnimeZone>();
   add<FourShared>();
 #ifdef WINRT
   add<LocalDriveWinRT>();

@@ -315,7 +315,6 @@ QString CloudContext::pretty(const QString& provider) const {
       {"gphotos", "Google Photos"},
       {"local", "Local Drive"},
       {"localwinrt", "Local Drive"},
-      {"animezone", "Anime Zone"},
       {"4shared", "4shared"}};
   auto it = name_map.find(provider.toStdString());
   if (it != name_map.end())
