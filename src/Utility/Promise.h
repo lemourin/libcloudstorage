@@ -6,6 +6,10 @@
 #include <mutex>
 #include <type_traits>
 
+#ifdef __cpp_lib_coroutine
+#include <coroutine>
+#endif
+
 namespace util {
 
 namespace v2 {
@@ -109,6 +113,57 @@ template <class... Ts>
 class Promise {
  public:
   Promise() : data_(std::make_shared<CommonData>()) {}
+
+#ifdef __cpp_lib_coroutine
+  class promise_type_impl {
+   public:
+    Promise& get_return_object() { return promise_; }
+
+    std::suspend_never initial_suspend() noexcept { return {}; }
+    std::suspend_never final_suspend() noexcept { return {}; }
+
+    void unhandled_exception() { std::terminate(); }
+
+   protected:
+    Promise promise_;
+  };
+
+  class promise_type_non_void : public promise_type_impl {
+   public:
+    template <typename... ValuesT>
+    void return_value(ValuesT&&... values) {
+      this->promise_.fulfill(std::forward<ValuesT>(values)...);
+    }
+  };
+
+  class promise_type_void : public promise_type_impl {
+   public:
+    void return_void() { this->promise_.fulfill(); }
+  };
+
+  using promise_type =
+      std::conditional_t<(sizeof...(Ts) > 0), promise_type_non_void,
+                         promise_type_void>;
+
+  bool await_ready() {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    return data_->ready_ || data_->error_ready_;
+  }
+
+  auto await_resume() {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    if (data_->exception_) {
+      std::rethrow_exception(data_->exception_);
+    } else {
+      return std::get<Ts...>(data_->value_);
+    }
+  }
+
+  void await_suspend(std::coroutine_handle<void> handle) {
+    std::unique_lock<std::mutex> lock(data_->mutex_);
+    data_->handle_ = handle;
+  }
+#endif
 
   template <typename Callable>
   using ReturnType = std::invoke_result_t<Callable, Ts...>;
@@ -316,7 +371,8 @@ class Promise {
     return promise;
   }
 
-  void fulfill(Ts&&... value) const {
+  template <typename... Ds>
+  void fulfill(Ds&&... value) const {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     data_->ready_ = true;
     if (data_->on_fulfill_) {
@@ -328,6 +384,12 @@ class Promise {
       callback(std::forward<Ts>(value)...);
     } else {
       data_->value_ = std::make_tuple(std::move(value)...);
+#ifdef __cpp_lib_coroutine
+      if (data_->handle_) {
+        lock.unlock();
+        data_->handle_.resume();
+      }
+#endif
     }
   }
 
@@ -351,6 +413,12 @@ class Promise {
       callback(std::move(e));
     } else {
       data_->exception_ = std::move(e);
+#ifdef __cpp_lib_coroutine
+      if (data_->handle_) {
+        lock.unlock();
+        data_->handle_.resume();
+      }
+#endif
     }
   }
 
@@ -396,9 +464,12 @@ class Promise {
     std::function<void()> on_cancel_;
     std::tuple<Ts...> value_;
     std::exception_ptr exception_;
+#ifdef __cpp_lib_coroutine
+    std::coroutine_handle<void> handle_;
+#endif
   };
   std::shared_ptr<CommonData> data_;
-};
+};  // namespace detail
 
 template <class Element>
 struct AppendElement {
