@@ -310,7 +310,7 @@ IItem::List GoogleDrive::listDirectoryResponse(
   auto response = util::json::from_stream(stream);
   IItem::List result;
   for (const auto& v : response["files"]) result.push_back(toItem(v));
-  if (item.id() == rootDirectory()->id())
+  if (item.id() == rootDirectory()->id() && !response.isMember("nextPageToken"))
     result.push_back(util::make_unique<Item>(
         SHARED_FILENAME, SHARED_ID, IItem::UnknownSize, IItem::UnknownTimeStamp,
         IItem::FileType::Directory));
