@@ -64,3 +64,7 @@ gtest_discover_tests(cloudstorage-test)
 if(TOKEN_FILE)
     target_compile_definitions(cloudstorage-test PRIVATE TOKEN_FILE=${TOKEN_FILE})
 endif()
+
+if(MSVC)
+    target_compile_options(cloudstorage-test PRIVATE /wd4996)
+endif()

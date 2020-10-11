@@ -31,7 +31,7 @@ inline void PrintTo(IItem::FileType type, std::ostream* os) {
         return "Video";
       case IItem::FileType::Directory:
         return "Directory";
-      case IItem::FileType::Unknown:
+      default:
         return "Unknown";
     }
   }();
