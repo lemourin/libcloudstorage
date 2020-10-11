@@ -111,7 +111,7 @@ class Promise {
   Promise() : data_(std::make_shared<CommonData>()) {}
 
   template <typename Callable>
-  using ReturnType = typename std::result_of<Callable(Ts...)>::type;
+  using ReturnType = std::invoke_result_t<Callable, Ts...>;
 
   template <class First, class Promise>
   struct Prepend;
