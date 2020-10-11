@@ -51,7 +51,7 @@ add_custom_command(
 
 set_target_properties(cloudstorage-test
     PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 20
 )
 
 target_include_directories(cloudstorage-test PRIVATE "." ${CMAKE_CURRENT_SOURCE_DIR}/../src ${CMAKE_CURRENT_BINARY_DIR})

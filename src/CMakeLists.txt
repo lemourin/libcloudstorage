@@ -184,19 +184,19 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${clou
 set_target_properties(cloudstorage 
     PROPERTIES 
         PUBLIC_HEADER "${cloudstorage_PUBLIC_HEADERS}"
-        CXX_STANDARD 17
+        CXX_STANDARD 20
 )
 set_target_properties(cloudstorage-c-api
     PROPERTIES
         PUBLIC_HEADER "${cloudstorage-c-api_PUBLIC_HEADERS}"
         POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
-        CXX_STANDARD 17
+        CXX_STANDARD 20
 )
 set_target_properties(cloudstorage-util
     PROPERTIES
         PUBLIC_HEADER "${cloudstorage-util_PUBLIC_HEADERS}"
         POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
-        CXX_STANDARD 17
+        CXX_STANDARD 20
 )
 
 add_custom_command(
