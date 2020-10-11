@@ -1343,8 +1343,9 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
                   if (thumb.left()) {
                     return r->done(thumb.left());
                   }
-                  callback->receivedData(thumb.right()->c_str(),
-                                         thumb.right()->size());
+                  callback->receivedData(
+                      thumb.right()->c_str(),
+                      static_cast<uint32_t>(thumb.right()->size()));
                   auto lock = mega_->lock();
                   auto node = this->node(item->id());
                   if (node == nullptr) {
@@ -1371,7 +1372,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
 #endif
               return r->done(e.left());
             }
-            callback->receivedData(e.right()->c_str(), e.right()->size());
+            callback->receivedData(e.right()->c_str(),
+                                   static_cast<uint32_t>(e.right()->size()));
             r->done(nullptr);
           });
     });
