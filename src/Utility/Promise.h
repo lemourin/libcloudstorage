@@ -6,6 +6,12 @@
 #include <mutex>
 #include <type_traits>
 
+#ifdef __has_include
+#if __has_include(<version>)
+#include <version>
+#endif
+#endif
+
 #ifdef __cpp_lib_coroutine
 #include <coroutine>
 #endif
