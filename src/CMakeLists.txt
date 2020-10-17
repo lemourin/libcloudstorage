@@ -312,6 +312,18 @@ else()
     target_compile_definitions(cloudstorage-util PUBLIC CLOUDSTORAGE_STATIC_LINK)
 endif()
 
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag("-fcoroutines" COROUTINES_SUPPORTED)
+if (${COROUTINES_SUPPORTED})
+    target_compile_options(cloudstorage-util PUBLIC -fcoroutines)
+else()
+    check_cxx_compiler_flag("-fcoroutines-ts" COROUTINES_TS_SUPPORTED)
+    if (${COROUTINES_TS_SUPPORTED})
+        target_compile_options(cloudstorage-util PUBLIC -fcoroutines-ts)
+    endif()
+endif()
+
 install(TARGETS cloudstorage PUBLIC_HEADER DESTINATION include/cloudstorage)
 install(TARGETS cloudstorage-c-api PUBLIC_HEADER DESTINATION include/cloudstorage/C)
 install(TARGETS cloudstorage-util PUBLIC_HEADER DESTINATION include/cloudstorage/Utility)

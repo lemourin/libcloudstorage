@@ -14,9 +14,31 @@
 
 #ifdef __cpp_lib_coroutine
 #include <coroutine>
+#define HAVE_COROUTINES
+#define HAVE_COROUTINE_SUPPORT
+#endif
+
+#ifdef __has_include
+#if __has_include(<experimental/coroutine>)
+#include <experimental/coroutine>
+#define HAVE_EXPERIMENTAL_COROUTINES
+#define HAVE_COROUTINE_SUPPORT
+#endif
 #endif
 
 namespace util {
+
+#ifdef HAVE_COROUTINES
+template <typename T>
+using coroutine_handle = std::coroutine_handle<T>;
+using suspend_never = std::suspend_never;
+#endif
+
+#ifdef HAVE_EXPERIMENTAL_COROUTINES
+template <typename T>
+using coroutine_handle = std::experimental::coroutine_handle<T>;
+using suspend_never = std::experimental::suspend_never;
+#endif
 
 namespace v2 {
 namespace detail {
@@ -120,13 +142,13 @@ class Promise {
  public:
   Promise() : data_(std::make_shared<CommonData>()) {}
 
-#ifdef __cpp_lib_coroutine
+#ifdef HAVE_COROUTINE_SUPPORT
   class promise_type_impl {
    public:
     Promise& get_return_object() { return promise_; }
 
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_never final_suspend() noexcept { return {}; }
+    suspend_never initial_suspend() noexcept { return {}; }
+    suspend_never final_suspend() noexcept { return {}; }
 
     void unhandled_exception() { std::terminate(); }
 
@@ -165,7 +187,7 @@ class Promise {
     }
   }
 
-  void await_suspend(std::coroutine_handle<void> handle) {
+  void await_suspend(coroutine_handle<void> handle) {
     std::unique_lock<std::mutex> lock(data_->mutex_);
     data_->handle_ = handle;
   }
@@ -390,7 +412,7 @@ class Promise {
       callback(std::forward<Ts>(value)...);
     } else {
       data_->value_ = std::make_tuple(std::move(value)...);
-#ifdef __cpp_lib_coroutine
+#ifdef HAVE_COROUTINE_SUPPORT
       if (data_->handle_) {
         lock.unlock();
         data_->handle_.resume();
@@ -419,7 +441,7 @@ class Promise {
       callback(std::move(e));
     } else {
       data_->exception_ = std::move(e);
-#ifdef __cpp_lib_coroutine
+#ifdef HAVE_COROUTINE_SUPPORT
       if (data_->handle_) {
         lock.unlock();
         data_->handle_.resume();
@@ -470,8 +492,8 @@ class Promise {
     std::function<void()> on_cancel_;
     std::tuple<Ts...> value_;
     std::exception_ptr exception_;
-#ifdef __cpp_lib_coroutine
-    std::coroutine_handle<void> handle_;
+#ifdef HAVE_COROUTINE_SUPPORT
+    coroutine_handle<void> handle_;
 #endif
   };
   std::shared_ptr<CommonData> data_;

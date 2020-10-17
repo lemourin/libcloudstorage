@@ -4,7 +4,7 @@
 
 #include "ICloudFactory.h"
 
-#ifdef __cpp_lib_coroutine
+#ifdef HAVE_COROUTINE_SUPPORT
 
 using namespace cloudstorage;
 
