@@ -193,8 +193,13 @@ class Promise {
   }
 #endif
 
+#if (__cplusplus >= 201703L)
   template <typename Callable>
   using ReturnType = std::invoke_result_t<Callable, Ts...>;
+#else
+  template <typename Callable>
+  using ReturnType = std::result_of_t<Callable(Ts...)>;
+#endif
 
   template <class First, class Promise>
   struct Prepend;

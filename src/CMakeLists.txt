@@ -284,9 +284,11 @@ target_compile_definitions(cloudstorage PRIVATE
 target_compile_definitions(cloudstorage-util PUBLIC UNICODE)
 
 if(MSVC)
-    target_compile_options(cloudstorage PRIVATE /wd4996 /wd4251 /wd4275 /Zc:__cplusplus /EHsc)
-    target_compile_options(cloudstorage-c-api PRIVATE /wd4996 /wd4251 /wd4275 /Zc:__cplusplus /EHsc)
-    target_compile_options(cloudstorage-util PRIVATE /wd4996 /wd4251 /wd4275 /Zc:__cplusplus /EHsc)
+    target_compile_options(cloudstorage PRIVATE /wd4996 /wd4251 /wd4275)
+    target_compile_options(cloudstorage-c-api PRIVATE /wd4996 /wd4251 /wd4275)
+    target_compile_options(cloudstorage-util PRIVATE /wd4996 /wd4251 /wd4275)
+    target_compile_options(cloudstorage-c-api PUBLIC /Zc:__cplusplus /EHsc)
+    target_compile_options(cloudstorage-util PUBLIC /Zc:__cplusplus /EHsc)
 endif()
 
 if(WIN32)
