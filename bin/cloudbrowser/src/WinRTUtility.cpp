@@ -3,7 +3,6 @@
 #ifdef WINRT
 
 #include <private/qeventdispatcher_winrt_p.h>
-#include <qfunctions_winrt.h>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QGuiApplication>
@@ -22,45 +21,12 @@ using namespace Windows::System::Display;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 
-#ifdef WITH_ADS
-using namespace Microsoft::Advertising::WinRT::UI;
-#endif
-
-#ifdef WITH_ADS
-WinRTUtility::AdEventHandler::AdEventHandler(WinRTUtility* winrt)
-    : winrt_(winrt) {}
-
-void WinRTUtility::AdEventHandler::onAdError(Object ^, AdErrorEventArgs ^) {
-  emit winrt_->notify("HIDE_AD");
-}
-
-void WinRTUtility::AdEventHandler::onAdRefreshed(Object ^, RoutedEventArgs ^) {
-  emit winrt_->notify("SHOW_AD");
-}
-#endif
-
-WinRTUtility::WinRTUtility() : ad_control_attached_() {
+WinRTUtility::WinRTUtility() {
   QEventDispatcherWinRT::runOnXamlThread([this]() {
-#ifdef WITH_ADS
-    ad_event_handler_ = ref new AdEventHandler(this);
-    ad_control_ = ref new AdControl();
-    ad_control_->ApplicationId = L"9nbkjrh757k7";
-    ad_control_->AdUnitId = L"1100015829";
-    ad_control_->Width = 320;
-    ad_control_->Height = 50;
-    ad_control_->VerticalAlignment = VerticalAlignment::Bottom;
-    ad_control_->AdRefreshed += ref new EventHandler<RoutedEventArgs ^>(
-        ad_event_handler_, &AdEventHandler::onAdRefreshed);
-    ad_control_->ErrorOccurred += ref new EventHandler<AdErrorEventArgs ^>(
-        ad_event_handler_, &AdEventHandler::onAdError);
-#endif
     display_request_ = ref new DisplayRequest;
-
     return true;
   });
 }
-
-WinRTUtility::~WinRTUtility() {}
 
 void WinRTUtility::initialize(QWindow* window) const {
   window->setFlag(Qt::MaximizeUsingFullscreenGeometryHint);
@@ -99,31 +65,9 @@ void WinRTUtility::disableKeepScreenOn() {
   });
 }
 
-void WinRTUtility::showAd() {
-#ifdef WITH_ADS
-  QEventDispatcherWinRT::runOnXamlThread([this]() {
-    if (!ad_control_attached_ && qGuiApp->focusWindow()) {
-      ad_control_attached_ = true;
-      ComPtr<IInspectable> root_inspect =
-          reinterpret_cast<IInspectable*>(qGuiApp->focusWindow()->winId());
-      SwapChainPanel ^ root =
-          reinterpret_cast<SwapChainPanel ^>(root_inspect.Get());
-      root->Children->Append(ad_control_);
-    }
-    ad_control_->Visibility = Visibility::Visible;
-    return true;
-  });
-#endif
-}
+void WinRTUtility::showAd() {}
 
-void WinRTUtility::hideAd() {
-#ifdef WITH_ADS
-  QEventDispatcherWinRT::runOnXamlThread([this]() {
-    ad_control_->Visibility = Visibility::Collapsed;
-    return true;
-  });
-#endif
-}
+void WinRTUtility::hideAd() {}
 
 IPlatformUtility::Pointer IPlatformUtility::create() {
   return cloudstorage::util::make_unique<WinRTUtility>();

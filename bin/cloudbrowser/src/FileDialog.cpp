@@ -66,7 +66,6 @@ void FileDialog::ActivityReceiver::done(int request_code, int result_code,
 #include <collection.h>
 #include <ppltasks.h>
 #include <private/qeventdispatcher_winrt_p.h>
-#include <qfunctions_winrt.h>
 #include <QDebug>
 #include <QUrl>
 
