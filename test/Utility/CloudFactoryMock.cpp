@@ -64,24 +64,25 @@ CloudFactoryMock CloudFactoryMock::create() {
   auto thread_pool_factory_mock_ptr = thread_pool_factory_mock.get();
   auto callback_mock_ptr = callback_mock.get();
 
-  CloudFactoryMock result(
-      http_mock_ptr, http_server_factory_mock_ptr, thread_pool_factory_mock_ptr,
-      callback_mock_ptr,
+  ON_CALL(*thread_pool_factory_mock, create).WillByDefault([] {
+    auto thread_pool = std::make_unique<ThreadPoolMock>();
+    ON_CALL(*thread_pool, schedule).WillByDefault(InvokeArgument<0>());
+    return thread_pool;
+  });
+
+  auto cloud_factory =
       cloudstorage::ICloudFactory::create(cloudstorage::ICloudFactory::InitData{
           "http://cloudstorage-test/", std::move(http_mock),
           std::move(http_server_factory_mock), nullptr,
-          std::move(thread_pool_factory_mock), std::move(callback_mock)}));
+          std::move(thread_pool_factory_mock), std::move(callback_mock)});
 
-  EXPECT_CALL(*result.callback_, onEventsAdded)
+  EXPECT_CALL(*callback_mock_ptr, onEventsAdded)
       .WillRepeatedly(Invoke(
-          [factory = result.factory_.get()] { factory->processEvents(); }));
+          [factory = cloud_factory.get()] { factory->processEvents(); }));
 
-  auto default_thread_pool = std::make_unique<ThreadPoolMock>();
-  ON_CALL(*default_thread_pool, schedule).WillByDefault(InvokeArgument<0>());
-  ON_CALL(*result.thread_pool_factory(), create)
-      .WillByDefault(Return(ByMove(std::move(default_thread_pool))));
-
-  return result;
+  return CloudFactoryMock(http_mock_ptr, http_server_factory_mock_ptr,
+                          thread_pool_factory_mock_ptr, callback_mock_ptr,
+                          std::move(cloud_factory));
 }
 
 HttpMock* CloudFactoryMock::http() const { return http_; }
