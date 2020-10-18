@@ -26,6 +26,8 @@
 #include "IHttp.h"
 #include "gmock/gmock.h"
 
+class LimitedHttpRequestMatcher;
+
 class HttpRequestMock : public cloudstorage::IHttpRequest {
  public:
   MOCK_METHOD2(setParameter,
@@ -70,73 +72,16 @@ class HttpMock : public cloudstorage::IHttp {
                                                   bool follow_redirect));
 };
 
-template <typename InputMatcher, typename HttpRequestMatcher>
-inline std::shared_ptr<HttpRequestMock> MockResponse(
-    int http_code, cloudstorage::IHttpRequest::HeaderParameters headers,
-    const char* response, const InputMatcher& input_matcher,
-    const HttpRequestMatcher& request_matcher) {
-  auto http_response = std::make_shared<HttpRequestMock>();
-
-  EXPECT_CALL(*http_response, send)
-      .WillRepeatedly(testing::WithArgs<0, 1, 2, 3>(testing::Invoke(
-          [=, http_response = http_response.get(),
-           response = std::string(response)](
-              const cloudstorage::IHttpRequest::CompleteCallback& on_completed,
-              const std::shared_ptr<std::istream>& input_stream,
-              const std::shared_ptr<std::ostream>& output_stream,
-              const std::shared_ptr<std::ostream>& error_stream) {
-            std::stringstream str_stream;
-            str_stream << input_stream->rdbuf();
-
-            EXPECT_THAT(*http_response, request_matcher);
-            EXPECT_THAT(str_stream.str(), input_matcher);
-
-            if (cloudstorage::IHttpRequest::isSuccess(http_code) &&
-                http_code != 301)
-              *output_stream << response;
-            else
-              *error_stream << response;
-            on_completed(cloudstorage::IHttpRequest::Response{
-                http_code, headers, output_stream, error_stream});
-          })));
-
-  return http_response;
-}
-
-inline auto IgnoringWhitespace(const std::string& string) {
-  return testing::Truly([=](const std::string& input) {
-    auto strip_whitespace = [=](const std::string& str) {
-      std::string result;
-      for (char c : str) {
-        if (!std::isspace(c)) {
-          result += c;
-        }
-      }
-      return result;
-    };
-    return strip_whitespace(string) == strip_whitespace(input);
-  });
-}
-
-class LimitedHttpRequestMatcher;
-
 class HttpResponse {
  public:
   HttpResponse& WithHeaders(
-      cloudstorage::IHttpRequest::HeaderParameters headers) {
-    headers_ = std::move(headers);
-    return *this;
-  }
+      cloudstorage::IHttpRequest::HeaderParameters headers);
 
-  HttpResponse& WithStatus(int status) {
-    status_ = status;
-    return *this;
-  }
+  HttpResponse& WithStatus(int status);
+  HttpResponse& WithContent(std::string content);
 
-  HttpResponse& WithContent(std::string content) {
-    content_ = std::move(content);
-    return *this;
-  }
+ private:
+  friend class HttpRequestMatcher;
 
   int status_ = 200;
   cloudstorage::IHttpRequest::HeaderParameters headers_;
@@ -169,126 +114,34 @@ class LimitedHttpRequestMatcher : public HttpResponseMatcher {
 class HttpRequestMatcher : public LimitedHttpRequestMatcher {
  public:
   HttpRequestMatcher(HttpMock& http_mock,
-                     testing::Matcher<const std::string&> url_matcher)
-      : http_mock_(http_mock), url_matcher_(std::move(url_matcher)) {}
+                     testing::Matcher<const std::string&> url_matcher);
+  ~HttpRequestMatcher() override;
 
-  ~HttpRequestMatcher() override {
-    auto& expectation = EXPECT_CALL(
-        http_mock_, create(url_matcher_, method_matcher_, redirect_matcher_));
-    for (const auto& r : recorded_requests_) {
-      expectation.WillOnce(testing::DoAll(
-          testing::WithArgs<0, 1, 2>(testing::Invoke(
-              [r = r.get()](const std::string& url, const std::string& method,
-                            bool follow_redirect) {
-                r->url_ = url;
-                r->method_ = method;
-                r->follow_redirect_ = follow_redirect;
-              })),
-          testing::Return(r)));
-    }
-  }
+  HttpRequestMatcher& WithMethod(StringMatcher method_matcher);
 
-  template <typename MethodMatcherT>
-  HttpRequestMatcher& WithMethod(MethodMatcherT method_matcher) {
-    method_matcher_ = std::move(method_matcher);
-    return *this;
-  }
+  HttpRequestMatcher& WithFollowNoRedirect();
 
-  HttpRequestMatcher& WithFollowNoRedirect() {
-    redirect_matcher_ = false;
-    return *this;
-  }
-
-  LimitedHttpRequestMatcher& WithBody(StringMatcher body_matcher) override {
-    body_matcher_ = std::move(body_matcher);
-    return *this;
-  }
+  LimitedHttpRequestMatcher& WithBody(StringMatcher body_matcher) override;
 
   LimitedHttpRequestMatcher& WithParameter(
-      StringMatcher parameter_matcher, StringMatcher value_matcher) override {
-    parameter_matcher_.emplace_back(std::move(parameter_matcher),
-                                    std::move(value_matcher));
-    return *this;
-  }
+      StringMatcher parameter_matcher, StringMatcher value_matcher) override;
 
   LimitedHttpRequestMatcher& WithRequestMatching(
-      testing::Matcher<const HttpRequestMock&> matcher) override {
-    http_request_mock_matcher_ = std::move(matcher);
-    return *this;
-  }
+      testing::Matcher<const HttpRequestMock&> matcher) override;
 
   LimitedHttpRequestMatcher& WithHeaderParameter(
-      StringMatcher parameter_matcher, StringMatcher value_matcher) override {
-    header_parameter_matcher_.emplace_back(std::move(parameter_matcher),
-                                           std::move(value_matcher));
-    return *this;
-  }
+      StringMatcher parameter_matcher, StringMatcher value_matcher) override;
 
-  LimitedHttpRequestMatcher& WillRespondWith(const char* string) override {
-    recorded_requests_.emplace_back(MockResponse(200, {}, string, body_matcher_,
-                                                 http_request_mock_matcher_));
-    SetUpExpectations(recorded_requests_.back());
-    return *this;
-  }
+  LimitedHttpRequestMatcher& WillRespondWith(const char* string) override;
 
-  LimitedHttpRequestMatcher& WillRespondWithCode(int code) override {
-    recorded_requests_.emplace_back(
-        MockResponse(code, {}, "", body_matcher_, http_request_mock_matcher_));
-    SetUpExpectations(recorded_requests_.back());
-    return *this;
-  }
+  LimitedHttpRequestMatcher& WillRespondWithCode(int code) override;
 
-  LimitedHttpRequestMatcher& WillRespondWith(HttpResponse response) override {
-    recorded_requests_.emplace_back(MockResponse(
-        response.status_, response.headers_, response.content_.c_str(),
-        body_matcher_, http_request_mock_matcher_));
-    SetUpExpectations(recorded_requests_.back());
-    return *this;
-  }
+  LimitedHttpRequestMatcher& WillRespondWith(HttpResponse response) override;
 
-  LimitedHttpRequestMatcher& AndThen() override {
-    parameter_matcher_.clear();
-    header_parameter_matcher_.clear();
-    body_matcher_ = testing::_;
-    http_request_mock_matcher_ = testing::_;
-    return *this;
-  }
+  LimitedHttpRequestMatcher& AndThen() override;
 
  private:
-  void SetUpExpectations(const std::shared_ptr<HttpRequestMock>& request) {
-    if (parameter_matcher_.empty()) {
-      EXPECT_CALL(*request, setParameter(testing::_, testing::_))
-          .WillRepeatedly(testing::WithArgs<0, 1>(testing::Invoke(
-              [r = request.get()](std::string value, std::string param) {
-                r->get_parameters_.emplace(std::move(value), std::move(param));
-              })));
-    }
-    if (header_parameter_matcher_.empty()) {
-      EXPECT_CALL(*request, setHeaderParameter(testing::_, testing::_))
-          .WillRepeatedly(testing::WithArgs<0, 1>(testing::Invoke(
-              [r = request.get()](std::string value, std::string param) {
-                r->header_parameters_.emplace(std::move(value),
-                                              std::move(param));
-              })));
-    }
-    for (const auto& parameter_matcher : parameter_matcher_) {
-      EXPECT_CALL(*request, setParameter(parameter_matcher.first,
-                                         parameter_matcher.second))
-          .WillOnce(testing::WithArgs<0, 1>(testing::Invoke(
-              [r = request.get()](std::string value, std::string param) {
-                r->get_parameters_.emplace(std::move(value), std::move(param));
-              })));
-    }
-    for (const auto& header_parameter_matcher : header_parameter_matcher_) {
-      EXPECT_CALL(*request, setHeaderParameter(header_parameter_matcher.first,
-                                               header_parameter_matcher.second))
-          .WillOnce(testing::WithArgs<0, 1>(testing::Invoke(
-              [r = request.get()](std::string value, std::string param) {
-                r->header_parameters_.emplace(std::move(value),
-                                              std::move(param));
-              })));
-    }
-  }
+  void SetUpExpectations(const std::shared_ptr<HttpRequestMock>& request);
 
   HttpMock& http_mock_;
   StringMatcher url_matcher_;
@@ -303,9 +156,12 @@ class HttpRequestMatcher : public LimitedHttpRequestMatcher {
   std::vector<std::shared_ptr<HttpRequestMock>> recorded_requests_;
 };
 
+testing::Matcher<const std::string&> IgnoringWhitespace(
+    const std::string& string);
+
 template <typename UrlMatcherT>
-inline HttpRequestMatcher ExpectHttp(HttpMock* http_mock,
-                                     const UrlMatcherT& url_matcher) {
+HttpRequestMatcher ExpectHttp(HttpMock* http_mock,
+                              const UrlMatcherT& url_matcher) {
   return HttpRequestMatcher(*http_mock, url_matcher);
 }
 
