@@ -196,9 +196,9 @@ void CloudContext::loadCachedDirectories() {
           qDebug() << e.what();
         }
       }
-      list_directory_cache_[{json["type"].toString().toStdString(),
-                             json["label"].toString().toStdString(),
-                             json["id"].toString().toStdString()}] = items;
+      list_directory_cache_[{directory["type"].toString().toStdString(),
+                             directory["label"].toString().toStdString(),
+                             directory["id"].toString().toStdString()}] = items;
     }
   }
 }
