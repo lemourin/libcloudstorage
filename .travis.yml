@@ -22,10 +22,11 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-xenial-10
+      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-10 main'
+        keyurl: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - g++-9
-      - clang-10
+      - clang++-10
       - clang-format-10
       - libasound2-dev
       - libfreetype6-dev
