@@ -37,6 +37,7 @@ target_sources(cloudstorage-test PRIVATE
     Utility/HttpMock.cpp
     Utility/HttpServerMock.h
     Utility/CloudProviderMock.h
+    Utility/CloudProviderMock.cpp
     Utility/CloudFactoryMock.h
     Utility/CloudFactoryMock.cpp
     Utility/ThreadPoolMock.h
