@@ -32,7 +32,8 @@ RecursiveRequest<T>::RecursiveRequest(std::shared_ptr<CloudProvider> p,
                                       CompleteCallback callback,
                                       Visitor visitor)
     : Request<T>(p, callback, [=](typename Request<T>::Pointer r) {
-        visit(r, item, [=](const T& e) { r->done(e); }, visitor);
+        visit(
+            r, item, [=](const T& e) { r->done(e); }, visitor);
       }) {}
 
 template <class T>
@@ -45,12 +46,13 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
     r->make_subrequest(&CloudProvider::listDirectorySimpleAsync, item,
                        [=](EitherError<IItem::List> lst) {
                          if (lst.left()) return callback(lst.left());
-                         visit(r, lst.right(),
-                               [=](const T& e) {
-                                 if (e.left()) return callback(e);
-                                 visitor(r, item, callback);
-                               },
-                               visitor);
+                         visit(
+                             r, lst.right(),
+                             [=](const T& e) {
+                               if (e.left()) return callback(e);
+                               visitor(r, item, callback);
+                             },
+                             visitor);
                        });
 }
 
@@ -61,12 +63,13 @@ void RecursiveRequest<T>::visit(typename Request<T>::Pointer r,
   if (lst->empty()) return callback(T());
   auto i = lst->back();
   lst->pop_back();
-  visit(r, i,
-        [=](const T& e) {
-          if (e.left()) return callback(e.left());
-          visit(r, lst, callback, visitor);
-        },
-        visitor);
+  visit(
+      r, i,
+      [=](const T& e) {
+        if (e.left()) return callback(e.left());
+        visit(r, lst, callback, visitor);
+      },
+      visitor);
 }
 
 template class RecursiveRequest<EitherError<void>>;

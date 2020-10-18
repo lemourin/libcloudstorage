@@ -146,12 +146,13 @@ MpvPlayer::MpvPlayer(QQuickItem *parent)
 
   mpv_set_option_string(mpv_.get(), "hwdec", "auto");
 
-  connect(this, &MpvPlayer::onInitialized, this,
-          [=] {
-            initialized_ = true;
-            if (invoke_load_) executeLoadFile();
-          },
-          Qt::QueuedConnection);
+  connect(
+      this, &MpvPlayer::onInitialized, this,
+      [=] {
+        initialized_ = true;
+        if (invoke_load_) executeLoadFile();
+      },
+      Qt::QueuedConnection);
   connect(this, &MpvPlayer::onEventOccurred, this, &MpvPlayer::eventOccurred,
           Qt::QueuedConnection);
 

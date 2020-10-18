@@ -215,39 +215,39 @@ Pointer<AVIOContext> create_io_context(
   }* data = new Data{std::move(read_callback), 0, size, start_time,
                      std::move(interrupt)};
   return make<AVIOContext>(
-      avio_alloc_context(buffer, BUFFER_SIZE, 0, data,
-                         [](void* d, uint8_t* buffer, int size) -> int {
-                           auto data = reinterpret_cast<Data*>(d);
-                           auto read_size = data->read_callback_(
-                               reinterpret_cast<char*>(buffer), size,
-                               data->offset_);
-                           if (read_size == 0) {
-                             return AVERROR_EOF;
-                           }
-                           if (data->interrupt_(data->start_time_)) {
-                             return -1;
-                           }
-                           data->offset_ += read_size;
-                           return read_size;
-                         },
-                         nullptr,
-                         [](void* d, int64_t offset, int whence) -> int64_t {
-                           auto data = reinterpret_cast<Data*>(d);
-                           whence &= ~AVSEEK_FORCE;
-                           if (whence == AVSEEK_SIZE) {
-                             return data->size_;
-                           }
-                           if (whence == SEEK_SET) {
-                             data->offset_ = offset;
-                           } else if (whence == SEEK_CUR) {
-                             data->offset_ += offset;
-                           } else if (whence == SEEK_END) {
-                             data->offset_ = data->size_ + offset;
-                           } else {
-                             return -1;
-                           }
-                           return data->offset_;
-                         }),
+      avio_alloc_context(
+          buffer, BUFFER_SIZE, 0, data,
+          [](void* d, uint8_t* buffer, int size) -> int {
+            auto data = reinterpret_cast<Data*>(d);
+            auto read_size = data->read_callback_(
+                reinterpret_cast<char*>(buffer), size, data->offset_);
+            if (read_size == 0) {
+              return AVERROR_EOF;
+            }
+            if (data->interrupt_(data->start_time_)) {
+              return -1;
+            }
+            data->offset_ += read_size;
+            return read_size;
+          },
+          nullptr,
+          [](void* d, int64_t offset, int whence) -> int64_t {
+            auto data = reinterpret_cast<Data*>(d);
+            whence &= ~AVSEEK_FORCE;
+            if (whence == AVSEEK_SIZE) {
+              return data->size_;
+            }
+            if (whence == SEEK_SET) {
+              data->offset_ = offset;
+            } else if (whence == SEEK_CUR) {
+              data->offset_ += offset;
+            } else if (whence == SEEK_END) {
+              data->offset_ = data->size_ + offset;
+            } else {
+              return -1;
+            }
+            return data->offset_;
+          }),
       [data](AVIOContext* ctx) {
         delete data;
         av_free(ctx->buffer);

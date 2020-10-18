@@ -243,13 +243,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       else
         item_received(cached_item);
     };
-    auto result =
-        std::make_shared<StreamRequest>(provider,
-                                        [=, this](EitherError<void> e) {
-                                          if (e.left()) status_ = Failed;
-                                          buffer_->resume();
-                                        },
-                                        resolver);
+    auto result = std::make_shared<StreamRequest>(
+        provider,
+        [=, this](EitherError<void> e) {
+          if (e.left()) status_ = Failed;
+          buffer_->resume();
+        },
+        resolver);
     provider->addStreamRequest(result);
     return result->run();
   }

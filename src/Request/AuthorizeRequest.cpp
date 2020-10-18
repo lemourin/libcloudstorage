@@ -31,11 +31,12 @@ namespace cloudstorage {
 
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
                                    const AuthorizationFlow& callback)
-    : Request(std::move(p),
-              [this](EitherError<void> e) {
-                provider()->auth_callback()->done(*provider(), e);
-              },
-              std::bind(&AuthorizeRequest::resolve, this, _1, callback)),
+    : Request(
+          std::move(p),
+          [this](EitherError<void> e) {
+            provider()->auth_callback()->done(*provider(), e);
+          },
+          std::bind(&AuthorizeRequest::resolve, this, _1, callback)),
       state_(provider()->auth()->state()),
       server_cancelled_() {
   if (!provider()->auth_callback()) {

@@ -1117,17 +1117,18 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
         lock.unlock();
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
       } else {
-        r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::DELETE,
-                                   [&](Listener<error>*, int) {
-                                     mega_->client()->unlink(node, false);
-                                     mega_->exec(lock);
-                                   },
-                                   [=](EitherError<error> e) {
-                                     if (e.left())
-                                       r->done(e.left());
-                                     else
-                                       r->done(nullptr);
-                                   });
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<error>, Type::DELETE,
+            [&](Listener<error>*, int) {
+              mega_->client()->unlink(node, false);
+              mega_->exec(lock);
+            },
+            [=](EitherError<error> e) {
+              if (e.left())
+                r->done(e.left());
+              else
+                r->done(nullptr);
+            });
       }
     });
   };
@@ -1229,19 +1230,20 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (node) {
-        r->make_subrequest<MegaNz>(&MegaNz::make_request<handle>, Type::RENAME,
-                                   [&](Listener<handle>*, int) {
-                                     node->attrs.map['n'] = name;
-                                     mega_->client()->setattr(node);
-                                     mega_->exec(lock);
-                                   },
-                                   [=, this](EitherError<handle> e) {
-                                     if (e.left()) return r->done(e.left());
-                                     auto lock = mega_->lock();
-                                     auto item = toItem(node);
-                                     lock.unlock();
-                                     r->done(item);
-                                   });
+        r->make_subrequest<MegaNz>(
+            &MegaNz::make_request<handle>, Type::RENAME,
+            [&](Listener<handle>*, int) {
+              node->attrs.map['n'] = name;
+              mega_->client()->setattr(node);
+              mega_->exec(lock);
+            },
+            [=, this](EitherError<handle> e) {
+              if (e.left()) return r->done(e.left());
+              auto lock = mega_->lock();
+              auto item = toItem(node);
+              lock.unlock();
+              r->done(item);
+            });
       } else {
         lock.unlock();
         r->done(Error{IHttpRequest::NotFound, util::Error::NODE_NOT_FOUND});
@@ -1426,19 +1428,19 @@ void MegaNz::login(const Request<EitherError<void>>::Pointer& r,
   auto lock = mega_->lock();
   auto data = credentialsFromString(token);
   auto session = util::from_base64(data["session"].asString());
-  r->make_subrequest<MegaNz>(&MegaNz::make_request<error>, Type::LOGIN,
-                             [&](Listener<error>*, int) {
-                               mega_->client()->login(
-                                   (uint8_t*)session.c_str(),
-                                   static_cast<int>(session.size()));
-                               mega_->exec(lock);
-                             },
-                             [=](EitherError<error> e) {
-                               if (e.left())
-                                 cb(e.left());
-                               else
-                                 cb(nullptr);
-                             });
+  r->make_subrequest<MegaNz>(
+      &MegaNz::make_request<error>, Type::LOGIN,
+      [&](Listener<error>*, int) {
+        mega_->client()->login((uint8_t*)session.c_str(),
+                               static_cast<int>(session.size()));
+        mega_->exec(lock);
+      },
+      [=](EitherError<error> e) {
+        if (e.left())
+          cb(e.left());
+        else
+          cb(nullptr);
+      });
 }
 
 std::string MegaNz::passwordHash(const std::string& password) const {

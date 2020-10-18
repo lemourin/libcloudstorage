@@ -64,10 +64,10 @@ fs::path from_string(const std::string &string) {
   return fs::path(string, std::codecvt_utf8<wchar_t>());
 }
 
-void list_directory(const LocalDrive &p, IItem::Pointer item,
-                    std::function<void(EitherError<IItem::List>)> done,
-                    std::function<void(IItem::Pointer)> received_item =
-                        [](IItem::Pointer) {}) {
+void list_directory(
+    const LocalDrive &p, IItem::Pointer item,
+    std::function<void(EitherError<IItem::List>)> done,
+    std::function<void(IItem::Pointer)> received_item = [](IItem::Pointer) {}) {
   IItem::List result;
   error_code ec;
   auto directory = fs::directory_iterator(p.path(item), ec);

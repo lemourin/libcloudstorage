@@ -35,9 +35,10 @@ DownloadFileRequest::DownloadFileRequest(std::shared_ptr<CloudProvider> p,
                                          const ICallback::Pointer& cb,
                                          Range range,
                                          const RequestFactory& request_factory)
-    : Request(std::move(p), [=](EitherError<void> e) { cb->done(e); },
-              std::bind(&DownloadFileRequest::resolve, this, _1, file, cb.get(),
-                        range, request_factory)),
+    : Request(
+          std::move(p), [=](EitherError<void> e) { cb->done(e); },
+          std::bind(&DownloadFileRequest::resolve, this, _1, file, cb.get(),
+                    range, request_factory)),
       stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileRequest::~DownloadFileRequest() { cancel(); }
@@ -91,9 +92,10 @@ std::streamsize DownloadStreamWrapper::xsputn(const char_type* data,
 DownloadFileFromUrlRequest::DownloadFileFromUrlRequest(
     std::shared_ptr<CloudProvider> p, IItem::Pointer file,
     const ICallback::Pointer& cb, Range range)
-    : Request(std::move(p), [=](EitherError<void> e) { cb->done(e); },
-              std::bind(&DownloadFileFromUrlRequest::resolve, this, _1, file,
-                        cb.get(), range)),
+    : Request(
+          std::move(p), [=](EitherError<void> e) { cb->done(e); },
+          std::bind(&DownloadFileFromUrlRequest::resolve, this, _1, file,
+                    cb.get(), range)),
       stream_wrapper_(std::bind(&ICallback::receivedData, cb.get(), _1, _2)) {}
 
 DownloadFileFromUrlRequest::~DownloadFileFromUrlRequest() { cancel(); }

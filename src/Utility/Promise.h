@@ -548,8 +548,7 @@ struct AppendElement<Promise<PromisedType...>> {
                                                         args)...);
        callable();
        return std::make_tuple();
-     })
-        .error_ptr([p](std::exception_ptr&& e) { p.reject(std::move(e)); });
+     }).error_ptr([p](std::exception_ptr&& e) { p.reject(std::move(e)); });
   }
 };
 

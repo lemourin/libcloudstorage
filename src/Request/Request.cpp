@@ -268,17 +268,17 @@ bool Request<T>::reauthorize(int code,
 template <class T>
 void Request<T>::request(const RequestFactory& factory,
                          const RequestCompleted& complete) {
-  this->send(factory, complete,
-             [] { return std::make_shared<std::stringstream>(); },
-             std::make_shared<std::stringstream>(), nullptr, nullptr, true);
+  this->send(
+      factory, complete, [] { return std::make_shared<std::stringstream>(); },
+      std::make_shared<std::stringstream>(), nullptr, nullptr, true);
 }
 
 template <class T>
 void Request<T>::send(const RequestFactory& factory,
                       const RequestCompleted& complete) {
-  this->send(factory, complete,
-             [] { return std::make_shared<std::stringstream>(); },
-             std::make_shared<std::stringstream>(), nullptr, nullptr, false);
+  this->send(
+      factory, complete, [] { return std::make_shared<std::stringstream>(); },
+      std::make_shared<std::stringstream>(), nullptr, nullptr, false);
 }
 
 template <class T>
@@ -303,43 +303,44 @@ void Request<T>::send(const RequestFactory& factory,
   auto error_stream = std::make_shared<std::stringstream>();
   auto r = factory(input);
   if (authorized) authorize(r);
-  send(r.get(),
-       [=, this](IHttpRequest::Response response) {
-         if (provider()->isSuccess(response.http_code_, response.headers_))
-           return complete(Response(response));
-         if (authorized &&
-             this->reauthorize(response.http_code_, response.headers_)) {
-           this->reauthorize([=, this](EitherError<void> e) {
-             if (e.left()) {
-               if (e.left()->code_ != IHttpRequest::Aborted &&
-                   e.left()->code_ > 0)
-                 return complete(
-                     Error{IHttpRequest::Unauthorized, e.left()->description_});
-               else
-                 return complete(
-                     Error{response.http_code_, error_stream->str()});
-             }
-             auto input = input_factory();
-             auto error_stream = std::make_shared<std::stringstream>();
-             auto r = factory(input);
-             if (authorized) authorize(r);
-             this->send(
-                 r.get(),
-                 [=, this](IHttpRequest::Response response) {
-                   (void)request;
-                   if (provider()->isSuccess(response.http_code_,
-                                             response.headers_))
-                     complete(Response(response));
-                   else
-                     complete(Error{response.http_code_, error_stream->str()});
-                 },
-                 input, output, error_stream, download, upload);
-           });
-         } else {
-           complete(Error{response.http_code_, error_stream->str()});
-         }
-       },
-       input, output, error_stream, download, upload);
+  send(
+      r.get(),
+      [=, this](IHttpRequest::Response response) {
+        if (provider()->isSuccess(response.http_code_, response.headers_))
+          return complete(Response(response));
+        if (authorized &&
+            this->reauthorize(response.http_code_, response.headers_)) {
+          this->reauthorize([=, this](EitherError<void> e) {
+            if (e.left()) {
+              if (e.left()->code_ != IHttpRequest::Aborted &&
+                  e.left()->code_ > 0)
+                return complete(
+                    Error{IHttpRequest::Unauthorized, e.left()->description_});
+              else
+                return complete(
+                    Error{response.http_code_, error_stream->str()});
+            }
+            auto input = input_factory();
+            auto error_stream = std::make_shared<std::stringstream>();
+            auto r = factory(input);
+            if (authorized) authorize(r);
+            this->send(
+                r.get(),
+                [=, this](IHttpRequest::Response response) {
+                  (void)request;
+                  if (provider()->isSuccess(response.http_code_,
+                                            response.headers_))
+                    complete(Response(response));
+                  else
+                    complete(Error{response.http_code_, error_stream->str()});
+                },
+                input, output, error_stream, download, upload);
+          });
+        } else {
+          complete(Error{response.http_code_, error_stream->str()});
+        }
+      },
+      input, output, error_stream, download, upload);
 }
 
 template <class T>
