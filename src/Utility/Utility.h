@@ -57,19 +57,24 @@
 #include <emscripten.h>
 #endif
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-volatile"
-#elif defined(__GNUC__)
+#ifdef __GNUC__
+
 #pragma GCC diagnostic push
+
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#else
+#pragma GCC diagnostic ignored "-Wpragmas"
+#endif
+
 #pragma GCC diagnostic ignored "-Wvolatile"
+#pragma GCC diagnostic ignored "-Wdeprecated-volatile"
+
 #endif
 
 #include <json/json.h>
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
