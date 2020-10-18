@@ -1,30 +1,5 @@
 include(CheckIncludeFiles)
 
-add_library(cloudstorage-c-api OBJECT)
-
-set(cloudstorage-c-api_PUBLIC_HEADERS
-    C/CloudProvider.h
-    C/CloudStorage.h
-    C/Crypto.h
-    C/Http.h
-    C/HttpServer.h
-    C/Item.h
-    C/Request.h
-    C/ThreadPool.h
-)
-
-target_sources(cloudstorage-c-api PRIVATE
-    C/CloudProvider.cpp
-    C/CloudStorage.cpp
-    C/Crypto.cpp
-    C/Http.cpp
-    C/HttpServer.cpp
-    C/Item.cpp
-    C/Request.cpp
-    C/ThreadPool.cpp
-    ${cloudstorage-c-api_PUBLIC_HEADERS}
-)
-
 add_library(cloudstorage-util OBJECT)
 
 set(cloudstorage-resources
@@ -186,12 +161,6 @@ set_target_properties(cloudstorage
         PUBLIC_HEADER "${cloudstorage_PUBLIC_HEADERS}"
         CXX_STANDARD 20
 )
-set_target_properties(cloudstorage-c-api
-    PROPERTIES
-        PUBLIC_HEADER "${cloudstorage-c-api_PUBLIC_HEADERS}"
-        POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS}
-        CXX_STANDARD 20
-)
 set_target_properties(cloudstorage-util
     PROPERTIES
         PUBLIC_HEADER "${cloudstorage-util_PUBLIC_HEADERS}"
@@ -205,12 +174,10 @@ add_custom_command(
     DEPENDS ${cloudstorage-resources} resource-generator
 )
 
-target_link_libraries(cloudstorage PRIVATE Threads::Threads cloudstorage-c-api)
+target_link_libraries(cloudstorage PRIVATE Threads::Threads)
 target_link_libraries(cloudstorage PUBLIC cloudstorage-util)
-target_link_libraries(cloudstorage-c-api PUBLIC cloudstorage-util)
 
 cloudstorage_target_link_library(cloudstorage jsoncpp)
-cloudstorage_target_link_library(cloudstorage-c-api jsoncpp)
 cloudstorage_target_link_library(cloudstorage-util jsoncpp)
 
 cloudstorage_find_library(tinyxml2 INCLUDE tinyxml2.h NAMES tinyxml2 DEBUG_NAMES tinyxml2d)
@@ -268,7 +235,6 @@ if(mega_LIBRARY)
 endif()
 
 target_include_directories(cloudstorage PUBLIC ".")
-target_include_directories(cloudstorage-c-api PUBLIC ".")
 target_include_directories(cloudstorage-util PUBLIC "." ${CMAKE_CURRENT_BINARY_DIR})
 
 check_include_files(jni.h HAVE_JNI_H)
@@ -285,9 +251,7 @@ target_compile_definitions(cloudstorage-util PUBLIC UNICODE)
 
 if(MSVC)
     target_compile_options(cloudstorage PRIVATE /wd4996 /wd4251 /wd4275)
-    target_compile_options(cloudstorage-c-api PRIVATE /wd4996 /wd4251 /wd4275)
     target_compile_options(cloudstorage-util PRIVATE /wd4996 /wd4251 /wd4275)
-    target_compile_options(cloudstorage-c-api PUBLIC /Zc:__cplusplus /EHsc)
     target_compile_options(cloudstorage-util PUBLIC /Zc:__cplusplus /EHsc)
 endif()
 
@@ -308,7 +272,6 @@ endif()
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(cloudstorage PRIVATE CLOUDSTORAGE_LIBRARY)
-    target_compile_definitions(cloudstorage-c-api PRIVATE CLOUDSTORAGE_LIBRARY)
     target_compile_definitions(cloudstorage-util PRIVATE CLOUDSTORAGE_LIBRARY)
 else()
     target_compile_definitions(cloudstorage-util PUBLIC CLOUDSTORAGE_STATIC_LINK)
@@ -345,5 +308,4 @@ if(MSVC)
 endif()
 
 install(TARGETS cloudstorage PUBLIC_HEADER DESTINATION include/cloudstorage)
-install(TARGETS cloudstorage-c-api PUBLIC_HEADER DESTINATION include/cloudstorage/C)
 install(TARGETS cloudstorage-util PUBLIC_HEADER DESTINATION include/cloudstorage/Utility)

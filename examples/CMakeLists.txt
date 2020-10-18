@@ -1,4 +1,3 @@
-add_subdirectory(cinterface)
 add_subdirectory(commandlinebrowser)
 add_subdirectory(promise)
 add_subdirectory(coroutine)
