@@ -25,7 +25,6 @@
 
 #include "CurlHttp.h"
 
-#include <json/json.h>
 #include <array>
 #include <cstring>
 #include <sstream>
@@ -145,7 +144,7 @@ void CurlHttp::Worker::work() {
   auto handle = curl_multi_init();
   while (!done_ || !pending_.empty()) {
     std::unique_lock<std::mutex> lock(lock_);
-    nonempty_.wait(lock, [=]() {
+    nonempty_.wait(lock, [this] {
       return done_ || !requests_.empty() || !pending_.empty();
     });
     auto requests = util::exchange(requests_, {});

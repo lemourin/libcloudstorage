@@ -32,6 +32,8 @@
 #include <sstream>
 
 extern "C" {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 #include <libavcodec/avcodec.h>
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
@@ -40,6 +42,7 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#pragma GCC diagnostic pop
 }
 
 namespace cloudstorage {

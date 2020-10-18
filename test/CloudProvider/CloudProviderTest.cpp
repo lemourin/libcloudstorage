@@ -23,7 +23,6 @@
 
 #include "gtest/gtest.h"
 
-#include <json/json.h>
 #include <fstream>
 #include <future>
 #include "CloudProvider/LocalDrive.h"

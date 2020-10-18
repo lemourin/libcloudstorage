@@ -31,12 +31,12 @@ RenameItemRequest::RenameItemRequest(std::shared_ptr<CloudProvider> p,
                                      const IItem::Pointer& item,
                                      const std::string& name,
                                      const RenameItemCallback& callback)
-    : Request(std::move(p), callback, [=](Request::Pointer request) {
+    : Request(std::move(p), callback, [=, this](Request::Pointer request) {
         this->request(
-            [=](util::Output stream) {
+            [=, this](util::Output stream) {
               return provider()->renameItemRequest(*item, name, *stream);
             },
-            [=](EitherError<Response> e) {
+            [=, this](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
                 request->done(provider()->renameItemResponse(

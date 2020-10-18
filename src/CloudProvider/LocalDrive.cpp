@@ -122,7 +122,7 @@ LocalDrive::listDirectoryPageAsync(IItem::Pointer item, const std::string &,
                                    ListDirectoryPageCallback callback) {
   return request<EitherError<PageData>>(
       [=](EitherError<PageData> e) { callback(e); },
-      [=](Request<EitherError<PageData>>::Pointer r) {
+      [=, this](Request<EitherError<PageData>>::Pointer r) {
         list_directory(*this, item, [=](EitherError<IItem::List> e) {
           if (e.left())
             r->done(e.left());
@@ -136,7 +136,7 @@ LocalDrive::GetItemUrlRequest::Pointer LocalDrive::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
   return request<EitherError<std::string>>(
       [=](EitherError<std::string> e) { callback(e); },
-      [=](Request<EitherError<std::string>>::Pointer r) {
+      [=, this](Request<EitherError<std::string>>::Pointer r) {
 #ifdef _WIN32
         auto p = path(item);
         for (auto &c : p)
@@ -153,7 +153,7 @@ LocalDrive::DownloadFileRequest::Pointer LocalDrive::downloadFileAsync(
     Range drange) {
   return request<EitherError<void>>(
       [=](EitherError<void> e) { callback->done(e); },
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=, this](Request<EitherError<void>>::Pointer r) {
         fs::ifstream stream(from_string(path(item)), std::ios::binary);
         std::vector<char> buffer(BUFFER_SIZE);
         stream.seekg(0, std::ios::end);
@@ -189,7 +189,7 @@ LocalDrive::UploadFileRequest::Pointer LocalDrive::uploadFileAsync(
     IUploadFileCallback::Pointer callback) {
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback->done(e); },
-      [=](Request<EitherError<IItem>>::Pointer r) {
+      [=, this](Request<EitherError<IItem>>::Pointer r) {
         auto path = from_string(this->path(parent)) / name;
         size_t bytes_read = 0, size = callback->size();
         std::vector<char> buffer(BUFFER_SIZE);
@@ -216,7 +216,7 @@ LocalDrive::DeleteItemRequest::Pointer LocalDrive::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   return request<EitherError<void>>(
       [=](EitherError<void> e) { callback(e); },
-      [=](Request<EitherError<void>>::Pointer r) {
+      [=, this](Request<EitherError<void>>::Pointer r) {
         error_code error;
         fs::remove_all(path(item), error);
         if (error)
@@ -231,7 +231,7 @@ LocalDrive::CreateDirectoryRequest::Pointer LocalDrive::createDirectoryAsync(
     CreateDirectoryCallback callback) {
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback(e); },
-      [=](Request<EitherError<IItem>>::Pointer r) {
+      [=, this](Request<EitherError<IItem>>::Pointer r) {
         error_code error;
         auto path = fs::path(this->path(parent)) / name;
         fs::create_directory(path, error);
@@ -249,7 +249,7 @@ LocalDrive::MoveItemRequest::Pointer LocalDrive::moveItemAsync(
     MoveItemCallback callback) {
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback(e); },
-      [=](Request<EitherError<IItem>>::Pointer r) {
+      [=, this](Request<EitherError<IItem>>::Pointer r) {
         fs::path path(this->path(source));
         fs::path new_path(fs::path(this->path(destination)) / path.filename());
         error_code error;
@@ -267,7 +267,7 @@ LocalDrive::RenameItemRequest::Pointer LocalDrive::renameItemAsync(
     IItem::Pointer item, const std::string &name, RenameItemCallback callback) {
   return request<EitherError<IItem>>(
       [=](EitherError<IItem> e) { callback(e); },
-      [=](Request<EitherError<IItem>>::Pointer r) {
+      [=, this](Request<EitherError<IItem>>::Pointer r) {
         fs::path path(this->path(item));
         fs::path new_path(path.parent_path() / name);
         error_code error;
@@ -308,7 +308,7 @@ LocalDrive::GeneralDataRequest::Pointer LocalDrive::getGeneralDataAsync(
     GeneralDataCallback callback) {
   return request<EitherError<GeneralData>>(
       [=](EitherError<GeneralData> e) { callback(e); },
-      [=](Request<EitherError<GeneralData>>::Pointer r) {
+      [=, this](Request<EitherError<GeneralData>>::Pointer r) {
         fs::path path(this->path());
         error_code error;
         auto space = fs::space(path, error);
@@ -354,7 +354,7 @@ std::string LocalDrive::Auth::authorizeLibraryUrl() const {
 template <class T>
 void LocalDrive::ensureInitialized(typename Request<T>::Pointer r,
                                    std::function<void()> on_success) {
-  auto f = [=](EitherError<void> e) {
+  auto f = [=, this](EitherError<void> e) {
     if (e.left())
       r->done(e.left());
     else
@@ -372,7 +372,7 @@ typename Request<ReturnValue>::Wrapper::Pointer LocalDrive::request(
     typename Request<ReturnValue>::Resolver resolver) {
   return std::make_shared<Request<ReturnValue>>(
              shared_from_this(), callback,
-             [=](typename Request<ReturnValue>::Pointer r) {
+             [=, this](typename Request<ReturnValue>::Pointer r) {
                ensureInitialized<ReturnValue>(r, [=]() { resolver(r); });
              })
       ->run();

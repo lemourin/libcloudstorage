@@ -31,12 +31,12 @@ namespace cloudstorage {
 GetItemDataRequest::GetItemDataRequest(std::shared_ptr<CloudProvider> p,
                                        const std::string& id,
                                        const Callback& callback)
-    : Request(std::move(p), callback, [=](Request::Pointer request) {
+    : Request(std::move(p), callback, [=, this](Request::Pointer request) {
         this->request(
-            [=](util::Output input) {
+            [=, this](util::Output input) {
               return provider()->getItemDataRequest(id, *input);
             },
-            [=](EitherError<Response> r) {
+            [=, this](EitherError<Response> r) {
               if (r.left()) return request->done(r.left());
               try {
                 request->done(

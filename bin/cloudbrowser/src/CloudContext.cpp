@@ -1,12 +1,14 @@
 #include "CloudContext.h"
 
+#include <QCborArray>
+#include <QCborStreamReader>
+#include <QCborStreamWriter>
+#include <QCborValue>
 #include <QCursor>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QGuiApplication>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QQmlEngine>
 #include <QSaveFile>
@@ -183,11 +185,11 @@ void CloudContext::loadCachedDirectories() {
   QFile file(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
              "/cloudstorage_cache.json");
   if (file.open(QFile::ReadOnly)) {
-    QJsonObject json = QJsonDocument::fromBinaryData(file.readAll()).object();
+    QCborStreamReader reader(&file);
+    QCborValue json = QCborValue::fromCbor(reader);
     for (auto directory : json["directory"].toArray()) {
-      auto json = directory.toObject();
       IItem::List items;
-      for (auto item : json["list"].toArray()) {
+      for (auto item : directory["list"].toArray()) {
         try {
           items.push_back(IItem::fromString(item.toString().toStdString()));
         } catch (const std::exception& e) {
@@ -202,10 +204,10 @@ void CloudContext::loadCachedDirectories() {
 }
 
 void CloudContext::saveCachedDirectories() {
-  QJsonArray cache;
+  QCborArray cache;
   for (auto&& d : list_directory_cache_) {
-    QJsonObject object;
-    QJsonArray array;
+    QCborValue object;
+    QCborArray array;
     for (auto&& dd : d.second) {
       array.append(dd->toString().c_str());
     }
@@ -215,12 +217,13 @@ void CloudContext::saveCachedDirectories() {
     object["list"] = array;
     cache.append(object);
   }
-  QJsonObject json;
+  QCborValue json;
   json["directory"] = cache;
   QFile file(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) +
              "/cloudstorage_cache.json");
-  if (file.open(QFile::WriteOnly))
-    file.write(QJsonDocument(json).toBinaryData());
+  if (file.open(QFile::WriteOnly)) {
+    file.write(json.toCbor());
+  }
 }
 
 void CloudContext::saveProviders() {

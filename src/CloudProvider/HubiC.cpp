@@ -116,17 +116,17 @@ IItem::Pointer HubiC::uploadFileResponse(const IItem &item,
 }
 
 AuthorizeRequest::Pointer HubiC::authorizeAsync() {
-  auto auth = [=](AuthorizeRequest::Pointer r,
-                  AuthorizeRequest::AuthorizeCompleted complete) {
-    r->oauth2Authorization([=](EitherError<void> auth_status) {
+  auto auth = [=, this](AuthorizeRequest::Pointer r,
+                        AuthorizeRequest::AuthorizeCompleted complete) {
+    r->oauth2Authorization([=, this](EitherError<void> auth_status) {
       if (auth_status.left()) return complete(auth_status.left());
       r->send(
-          [=](util::Output) {
+          [=, this](util::Output) {
             auto r = http()->create(endpoint() + "/account/credentials", "GET");
             authorizeRequest(*r);
             return r;
           },
-          [=](EitherError<Response> e) {
+          [=, this](EitherError<Response> e) {
             if (e.left()) return complete(e.left());
             try {
               auto response = util::json::from_stream(e.right()->output());
@@ -135,7 +135,7 @@ AuthorizeRequest::Pointer HubiC::authorizeAsync() {
               openstack_token_ = response["token"].asString();
               lock.unlock();
               r->send(
-                  [=](util::Output) {
+                  [=, this](util::Output) {
                     auto r = http()->create(openstack_endpoint() + "/default",
                                             "POST");
                     authorizeRequest(*r);
@@ -161,14 +161,14 @@ ICloudProvider::MoveItemRequest::Pointer HubiC::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   using Request = RecursiveRequest<EitherError<IItem>>;
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback callback) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback callback) {
     auto l = getPath("/" + source->id()).length();
     std::string new_id = destination->id() +
                          (destination->id().empty() ? "" : "/") +
                          item->id().substr(l == 0 ? 0 : l);
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto r = http()->create(openstack_endpoint() + "/default/" +
                                       util::Url::escape(item->id()),
                                   "COPY");
@@ -176,10 +176,10 @@ ICloudProvider::MoveItemRequest::Pointer HubiC::moveItemAsync(
                                 "/default/" + util::Url::escape(new_id));
           return r;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return callback(e.left());
           r->request(
-              [=](util::Output) {
+              [=, this](util::Output) {
                 return http()->create(openstack_endpoint() + "/default/" +
                                           util::Url::escape(item->id()),
                                       "DELETE");
@@ -202,11 +202,11 @@ ICloudProvider::MoveItemRequest::Pointer HubiC::renameItemAsync(
     IItem::Pointer root, const std::string &name, RenameItemCallback callback) {
   using Request = RecursiveRequest<EitherError<IItem>>;
   auto new_prefix = (getPath("/" + root->id()) + "/" + name).substr(1);
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback callback) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback callback) {
     std::string new_id = new_prefix + item->id().substr(root->id().length());
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto r = http()->create(openstack_endpoint() + "/default/" +
                                       util::Url::escape(item->id()),
                                   "COPY");
@@ -214,10 +214,10 @@ ICloudProvider::MoveItemRequest::Pointer HubiC::renameItemAsync(
                                 "/default/" + util::Url::escape(new_id));
           return r;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return callback(e.left());
           r->request(
-              [=](util::Output) {
+              [=, this](util::Output) {
                 return http()->create(openstack_endpoint() + "/default/" +
                                           util::Url::escape(item->id()),
                                       "DELETE");
@@ -238,10 +238,10 @@ ICloudProvider::MoveItemRequest::Pointer HubiC::renameItemAsync(
 ICloudProvider::DeleteItemRequest::Pointer HubiC::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   using Request = RecursiveRequest<EitherError<void>>;
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback callback) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback callback) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           return http()->create(openstack_endpoint() + "/default/" +
                                     util::Url::escape(item->id()),
                                 "DELETE");
@@ -259,13 +259,15 @@ ICloudProvider::DeleteItemRequest::Pointer HubiC::deleteItemAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer HubiC::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
     r->request(
-        [=](util::Output) { return http()->create(endpoint() + "/account"); },
-        [=](EitherError<Response> e) {
+        [this](util::Output) {
+          return http()->create(endpoint() + "/account");
+        },
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           r->request(
-              [=](util::Output) {
+              [this](util::Output) {
                 return http()->create(endpoint() + "/account/usage");
               },
               [=](EitherError<Response> d) {

@@ -124,14 +124,14 @@ ICloudProvider::Hints AmazonS3::hints() const {
 }
 
 AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
-  auto reauth = [=](AuthorizeRequest::Pointer r,
-                    AuthorizeRequest::Callback complete) {
+  auto reauth = [this](AuthorizeRequest::Pointer r,
+                       AuthorizeRequest::Callback complete) {
     if (auth_callback()->userConsentRequired(*this) !=
         ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
       return complete(
           Error{IHttpRequest::Unauthorized, util::Error::INVALID_CREDENTIALS});
     }
-    auto code = [=](EitherError<std::string> code) {
+    auto code = [=, this](EitherError<std::string> code) {
       (void)r;
       if (code.left())
         complete(code.left());
@@ -145,16 +145,16 @@ AuthorizeRequest::Pointer AmazonS3::authorizeAsync() {
     };
     r->set_server(this->auth()->requestAuthorizationCode(code));
   };
-  auto auth = [=](AuthorizeRequest::Pointer r,
-                  AuthorizeRequest::Callback complete) {
-    this->getRegion(r, [=](EitherError<void> e) {
+  auto auth = [=, this](AuthorizeRequest::Pointer r,
+                        AuthorizeRequest::Callback complete) {
+    this->getRegion(r, [=, this](EitherError<void> e) {
       if (e.left()) {
         if (e.left()->code_ == IHttpRequest::Unauthorized)
-          reauth(r, [=](EitherError<void> e) {
+          reauth(r, [=, this](EitherError<void> e) {
             if (e.left())
               complete(e);
             else {
-              this->getRegion(r, [=](EitherError<void> e) {
+              this->getRegion(r, [=, this](EitherError<void> e) {
                 if (e.left())
                   complete(e);
                 else
@@ -175,22 +175,22 @@ ICloudProvider::MoveItemRequest::Pointer AmazonS3::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
   using Request = RecursiveRequest<EitherError<IItem>>;
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback callback) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback callback) {
     auto l = getPath("/" + source->id()).length();
     std::string new_path = destination->id() + item->id().substr(l);
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request = http()->create(endpoint() + "/" + new_path, "PUT");
           if (item->type() != IItem::FileType::Directory)
             request->setHeaderParameter(
                 "x-amz-copy-source", bucket() + "/" + escapePath(item->id()));
           return request;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return callback(e.left());
           r->request(
-              [=](util::Output) {
+              [=, this](util::Output) {
                 return http()->create(endpoint() + "/" + escapePath(item->id()),
                                       "DELETE");
               },
@@ -212,24 +212,24 @@ ICloudProvider::RenameItemRequest::Pointer AmazonS3::renameItemAsync(
     IItem::Pointer root, const std::string& name, RenameItemCallback callback) {
   using Request = RecursiveRequest<EitherError<IItem>>;
   auto new_prefix = (getPath("/" + root->id()) + "/" + name).substr(1);
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback callback) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback callback) {
     auto new_path = new_prefix + "/" + item->id().substr(root->id().length());
     if (!new_path.empty() && new_path.back() == '/' &&
         item->type() != IItem::FileType::Directory)
       new_path.pop_back();
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request = http()->create(endpoint() + "/" + new_path, "PUT");
           if (item->type() != IItem::FileType::Directory)
             request->setHeaderParameter(
                 "x-amz-copy-source", bucket() + "/" + escapePath(item->id()));
           return request;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return callback(e.left());
           r->request(
-              [=](util::Output) {
+              [=, this](util::Output) {
                 return http()->create(endpoint() + "/" + escapePath(item->id()),
                                       "DELETE");
               },
@@ -264,10 +264,10 @@ IItem::Pointer AmazonS3::createDirectoryResponse(const IItem& parent,
 ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
   using Request = RecursiveRequest<EitherError<void>>;
-  auto visitor = [=](Request::Pointer r, IItem::Pointer item,
-                     Request::CompleteCallback complete) {
+  auto visitor = [=, this](Request::Pointer r, IItem::Pointer item,
+                           Request::CompleteCallback complete) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           return http()->create(endpoint() + "/" + escapePath(item->id()),
                                 "DELETE");
         },
@@ -284,7 +284,7 @@ ICloudProvider::DeleteItemRequest::Pointer AmazonS3::deleteItemAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer AmazonS3::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
     auto endpoint = this->s3_endpoint();
     auto bucket = this->bucket();
     GeneralData data;
@@ -303,18 +303,18 @@ ICloudProvider::GetItemDataRequest::Pointer AmazonS3::getItemDataAsync(
     const std::string& id, GetItemCallback callback) {
   return std::make_shared<Request<EitherError<IItem>>>(
              shared_from_this(), callback,
-             [=](Request<EitherError<IItem>>::Pointer r) {
+             [=, this](Request<EitherError<IItem>>::Pointer r) {
                if (id == rootDirectory()->id()) return r->done(rootDirectory());
                if (id.empty())
                  return r->done(EitherError<IItem>(rootDirectory()));
-               auto factory = [=](util::Output) {
+               auto factory = [=, this](util::Output) {
                  auto request = http()->create(endpoint() + "/", "GET");
                  request->setParameter("list-type", "2");
                  request->setParameter("prefix", id);
                  request->setParameter("delimiter", "/");
                  return request;
                };
-               r->request(factory, [=](EitherError<Response> e) {
+               r->request(factory, [=, this](EitherError<Response> e) {
                  if (e.left()) return r->done(e.left());
                  std::stringstream sstream;
                  sstream << e.right()->output().rdbuf();
@@ -576,13 +576,13 @@ std::string AmazonS3::getUrl(const Item& item) const {
 void AmazonS3::getRegion(const AuthorizeRequest::Pointer& r,
                          const AuthorizeRequest::AuthorizeCompleted& complete) {
   r->send(
-      [=](util::Output) {
+      [=, this](util::Output) {
         auto r = http()->create(endpoint() + "/", "GET");
         r->setParameter("location", "");
         authorizeRequest(*r);
         return r;
       },
-      [=](EitherError<Response> e) {
+      [=, this](EitherError<Response> e) {
         if (e.left()) {
           if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
             tinyxml2::XMLDocument document;
@@ -623,12 +623,12 @@ void AmazonS3::getEndpoint(
     const AuthorizeRequest::Pointer& r,
     const AuthorizeRequest::AuthorizeCompleted& complete) {
   r->send(
-      [=](util::Output) {
+      [=, this](util::Output) {
         auto r = http()->create(endpoint() + "/", "GET");
         authorizeRequest(*r);
         return r;
       },
-      [=](EitherError<Response> e) {
+      [=, this](EitherError<Response> e) {
         if (e.left()) {
           if (e.left()->code_ == IHttpRequest::PermamentRedirect) {
             tinyxml2::XMLDocument document;

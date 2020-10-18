@@ -3,6 +3,7 @@
 #include "Request/ListDirectory.h"
 
 #include <QDateTime>
+#include <QLocale>
 
 #undef CreateDirectory
 
@@ -27,7 +28,7 @@ QString CloudItem::timestamp() const {
     auto timestamp = std::chrono::system_clock::to_time_t(item_->timestamp());
     QDateTime date;
     date.setTime_t(timestamp);
-    return date.toString(Qt::SystemLocaleShortDate);
+    return QLocale().dateTimeFormat(QLocale::ShortFormat);
   }
 }
 

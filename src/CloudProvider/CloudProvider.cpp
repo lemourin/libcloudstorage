@@ -453,14 +453,14 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
     IDownloadFileCallback::Pointer callback_;
     std::function<void(EitherError<void>)> continuation_;
   };
-  auto first_try = [=](Request<EitherError<void>>::Pointer r) {
+  auto first_try = [=, this](Request<EitherError<void>>::Pointer r) {
     return std::make_shared<DownloadCallback>(
-        callback, [=](EitherError<void> e) {
+        callback, [=, this](EitherError<void> e) {
           if (!e.left()) return r->done(nullptr);
           if (e.left()->code_ == IHttpRequest::Aborted) return r->done(e);
           r->make_subrequest(
               &CloudProvider::getItemDataAsync, item->id(),
-              [=](EitherError<IItem> e) {
+              [=, this](EitherError<IItem> e) {
                 if (e.left()) return r->done(e.left());
                 Item* previous_item = static_cast<Item*>(item.get());
                 Item* current_item = static_cast<Item*>(e.right().get());
@@ -475,7 +475,7 @@ ICloudProvider::DownloadFileRequest::Pointer CloudProvider::getThumbnailAsync(
               });
         });
   };
-  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<void>>::Pointer r) {
     r->make_subrequest(
         &CloudProvider::makeDownloadFileRequest, item, FullRange,
         std::bind(&CloudProvider::getThumbnailRequest, this, _1, _2),
@@ -587,22 +587,22 @@ ICloudProvider::GeneralDataRequest::Pointer CloudProvider::getGeneralDataAsync(
 
 ICloudProvider::GetItemUrlRequest::Pointer CloudProvider::getFileDaemonUrlAsync(
     IItem::Pointer item, GetItemUrlCallback cb) {
-  auto resolver = [=](Request<EitherError<std::string>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<std::string>>::Pointer r) {
     if (item->size() != IItem::UnknownSize)
       r->done(defaultFileDaemonUrl(*item, item->size()));
     else {
       r->make_subrequest(
           &CloudProvider::getItemUrlAsync, item,
-          [=](EitherError<std::string> item_url) {
+          [=, this](EitherError<std::string> item_url) {
             if (item_url.left()) return r->done(item_url);
             auto url = util::Url(*item_url.right());
             if (url.protocol() != "http" && url.protocol() != "https")
               return r->done(item_url);
             r->request(
-                [=](util::Output) {
+                [=, this](util::Output) {
                   return http()->create(*item_url.right(), "HEAD");
                 },
-                [=](EitherError<Response> e) {
+                [=, this](EitherError<Response> e) {
                   if (e.left()) return r->done(e.left());
                   auto it = e.right()->headers().find("content-length");
                   if (it != e.right()->headers().end()) {

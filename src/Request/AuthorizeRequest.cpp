@@ -32,7 +32,7 @@ namespace cloudstorage {
 AuthorizeRequest::AuthorizeRequest(std::shared_ptr<CloudProvider> p,
                                    const AuthorizationFlow& callback)
     : Request(std::move(p),
-              [=](EitherError<void> e) {
+              [this](EitherError<void> e) {
                 provider()->auth_callback()->done(*provider(), e);
               },
               std::bind(&AuthorizeRequest::resolve, this, _1, callback)),
@@ -48,7 +48,7 @@ AuthorizeRequest::~AuthorizeRequest() { AuthorizeRequest::cancel(); }
 
 void AuthorizeRequest::resolve(const Request::Pointer& request,
                                const AuthorizationFlow& callback) {
-  auto on_complete = [=](EitherError<void> result) {
+  auto on_complete = [=, this](EitherError<void> result) {
     std::unique_lock<std::mutex> lock(provider()->current_authorization_mutex_);
     while (!provider()->auth_callbacks_.empty()) {
       {
@@ -137,7 +137,7 @@ void AuthorizeRequest::oauth2Authorization(const AuthorizeCompleted& complete) {
   auto auth = provider()->auth();
   auto auth_callback = provider()->auth_callback();
   send([=](util::Output input) { return auth->refreshTokenRequest(*input); },
-       [=](EitherError<Response> e) {
+       [=, this](EitherError<Response> e) {
          if (auto r = e.right()) {
            try {
              auto lock = provider()->auth_lock();
@@ -153,7 +153,7 @@ void AuthorizeRequest::oauth2Authorization(const AuthorizeCompleted& complete) {
                         ICloudProvider::IAuthCallback::Status::None) {
            return complete(e.left());
          }
-         auto code = [=](EitherError<std::string> authorization_code) {
+         auto code = [=, this](EitherError<std::string> authorization_code) {
            if (authorization_code.left())
              return complete(authorization_code.left());
            auth->set_authorization_code(*authorization_code.right());
@@ -161,7 +161,7 @@ void AuthorizeRequest::oauth2Authorization(const AuthorizeCompleted& complete) {
                [=](util::Output input) {
                  return auth->exchangeAuthorizationCodeRequest(*input);
                },
-               [=](EitherError<Response> e) {
+               [=, this](EitherError<Response> e) {
                  if (e.left()) return complete(e.left());
                  try {
                    auto lock = provider()->auth_lock();
@@ -182,7 +182,8 @@ void AuthorizeRequest::oauth2Authorization(const AuthorizeCompleted& complete) {
 
 SimpleAuthorization::SimpleAuthorization(
     const std::shared_ptr<CloudProvider>& p)
-    : AuthorizeRequest(p, [=](AuthorizeRequest::Pointer r,
+    : AuthorizeRequest(p, [=, this](
+                              AuthorizeRequest::Pointer r,
                               AuthorizeRequest::AuthorizeCompleted complete) {
         if (p->auth_callback()->userConsentRequired(*p) !=
             ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {

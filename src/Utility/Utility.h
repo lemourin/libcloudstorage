@@ -57,7 +57,13 @@
 #include <emscripten.h>
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-volatile"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvolatile"
 #include <json/json.h>
+#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
 namespace cloudstorage {
 

@@ -25,11 +25,11 @@
 #include "CloudEventLoop.h"
 #include "ICloudStorage.h"
 
-#include <json/json.h>
 #include <atomic>
 #include <condition_variable>
 
 #include "ICloudFactory.h"
+#include "Utility.h"
 
 class ServerWrapperFactory;
 

@@ -112,16 +112,16 @@ ICloudProvider::DownloadFileRequest::Pointer YandexDisk::downloadFileAsync(
 
 ICloudProvider::RenameItemRequest::Pointer YandexDisk::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback cb) {
-  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+  auto resolve = [=, this](Request<EitherError<IItem>>::Pointer r) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources/move", "POST");
           request->setParameter("from", item->id());
           request->setParameter("path", getPath(item->id()) + "/" + name);
           return request;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           try {
             auto json = util::json::from_stream(e.right()->output());
@@ -145,9 +145,9 @@ ICloudProvider::RenameItemRequest::Pointer YandexDisk::renameItemAsync(
 
 ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination, MoveItemCallback cb) {
-  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+  auto resolve = [=, this](Request<EitherError<IItem>>::Pointer r) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources/move", "POST");
           request->setParameter("from", source->id());
@@ -157,7 +157,7 @@ ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
                           source->filename());
           return request;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           try {
             auto json = util::json::from_stream(e.right()->output());
@@ -184,9 +184,9 @@ ICloudProvider::MoveItemRequest::Pointer YandexDisk::moveItemAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer YandexDisk::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback cb) {
-  auto resolve = [=](Request<EitherError<void>>::Pointer r) {
+  auto resolve = [=, this](Request<EitherError<void>>::Pointer r) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources", "DELETE");
           request->setParameter("path", item->id());
@@ -220,10 +220,10 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
   auto path = directory->id();
   if (path.back() != '/') path += "/";
   path += filename;
-  auto upload_url = [=](Request<EitherError<IItem>>::Pointer r,
-                        std::function<void(EitherError<std::string>)> f) {
+  auto upload_url = [=, this](Request<EitherError<IItem>>::Pointer r,
+                              std::function<void(EitherError<std::string>)> f) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request =
               http()->create(endpoint() + "/v1/disk/resources/upload", "GET");
           request->setParameter("path", path);
@@ -238,13 +238,14 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
           }
         });
   };
-  auto upload = [=](Request<EitherError<IItem>>::Pointer r, std::string url,
-                    std::function<void(EitherError<IItem>)> f) {
+  auto upload = [=, this](Request<EitherError<IItem>>::Pointer r,
+                          std::string url,
+                          std::function<void(EitherError<IItem>)> f) {
     auto wrapper = std::make_shared<UploadStreamWrapper>(
         std::bind(&IUploadFileCallback::putData, callback.get(), _1, _2, _3),
         callback->size());
     r->send(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request = http()->create(url, "PUT");
           wrapper->reset();
           return request;
@@ -276,15 +277,15 @@ ICloudProvider::UploadFileRequest::Pointer YandexDisk::uploadFileAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer YandexDisk::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
     r->request(
-        [=](util::Output) {
+        [this](util::Output) {
           return http()->create("https://login.yandex.ru/info");
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           r->request(
-              [=](util::Output) {
+              [this](util::Output) {
                 return http()->create(endpoint() + "/v1/disk");
               },
               [=](EitherError<Response> d) {

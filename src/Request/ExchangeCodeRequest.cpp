@@ -31,13 +31,14 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                                          const std::string& authorization_code,
                                          const ExchangeCodeCallback& callback)
     : Request(
-          std::move(p), callback, [=](Request<EitherError<Token>>::Pointer r) {
+          std::move(p), callback,
+          [=, this](Request<EitherError<Token>>::Pointer r) {
             std::stringstream stream;
             if (!provider()->auth()->requiresCodeExchange())
               return r->done(Token{authorization_code, ""});
             try {
               r->send(
-                  [=](util::Output input) {
+                  [=, this](util::Output input) {
                     auto lock = provider()->auth_lock();
                     auto previous_code =
                         provider()->auth()->authorization_code();
@@ -49,7 +50,7 @@ ExchangeCodeRequest::ExchangeCodeRequest(std::shared_ptr<CloudProvider> p,
                     provider()->auth()->set_authorization_code(previous_code);
                     return request;
                   },
-                  [=](EitherError<Response> e) {
+                  [=, this](EitherError<Response> e) {
                     if (e.left()) return r->done(e.left());
                     try {
                       auto lock = provider()->auth_lock();

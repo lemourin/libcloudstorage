@@ -23,10 +23,7 @@
 
 #include "Auth.h"
 
-#include <json/json.h>
-#include <algorithm>
 #include <cstring>
-#include <fstream>
 #include <sstream>
 
 #include "Utility.h"

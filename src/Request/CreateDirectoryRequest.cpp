@@ -30,17 +30,17 @@ namespace cloudstorage {
 CreateDirectoryRequest::CreateDirectoryRequest(
     std::shared_ptr<CloudProvider> p, const IItem::Pointer& parent,
     const std::string& name, const CreateDirectoryCallback& callback)
-    : Request(std::move(p), callback, [=](Request::Pointer request) {
+    : Request(std::move(p), callback, [=, this](Request::Pointer request) {
         if (parent->type() != IItem::FileType::Directory) {
           Error e{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY};
           callback(e);
           return done(e);
         }
         this->request(
-            [=](util::Output stream) {
+            [=, this](util::Output stream) {
               return provider()->createDirectoryRequest(*parent, name, *stream);
             },
-            [=](EitherError<Response> e) {
+            [=, this](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
                 request->done(provider()->createDirectoryResponse(

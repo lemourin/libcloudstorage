@@ -489,7 +489,7 @@ int CloudFactory::exec() {
   interrupt = false;
   std::signal(SIGINT, [](int) { interrupt = true; });
   while (!quit_ && !interrupt) {
-    empty_condition_.wait_for(lock, std::chrono::milliseconds(100), [=] {
+    empty_condition_.wait_for(lock, std::chrono::milliseconds(100), [this] {
       return quit_ || events_ready_ || interrupt;
     });
     if (events_ready_) {

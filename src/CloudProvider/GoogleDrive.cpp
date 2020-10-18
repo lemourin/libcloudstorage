@@ -194,8 +194,8 @@ ICloudProvider::DownloadFileRequest::Pointer GoogleDrive::downloadFileAsync(
 ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
     IItem::Pointer directory, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
-  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
-    auto resolve_directory = [=](EitherError<IItem::List> e) {
+  auto resolve = [=, this](Request<EitherError<IItem>>::Pointer r) {
+    auto resolve_directory = [=, this](EitherError<IItem::List> e) {
       if (e.left()) return r->done(e.left());
       IItem::Pointer item = nullptr;
       int cnt = 0;
@@ -211,7 +211,7 @@ ICloudProvider::UploadFileRequest::Pointer GoogleDrive::uploadFileAsync(
         return cloudstorage::UploadFileRequest::resolve(
             r, stream_wrapper, directory, filename, cb);
       r->send(
-          [=](util::Output) {
+          [=, this](util::Output) {
             stream_wrapper->reset();
             return upload(*directory,
                           endpoint() + "/upload/drive/v3/files/" + item->id(),

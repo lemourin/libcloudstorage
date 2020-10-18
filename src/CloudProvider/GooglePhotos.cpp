@@ -213,9 +213,9 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::getThumbnailAsync(
     IDownloadFileCallback::Pointer wrapped_;
     std::function<void(EitherError<void>)> done_;
   };
-  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<void>>::Pointer r) {
     r->request(
-        [=](util::Output stream) {
+        [=, this](util::Output stream) {
           return getItemDataRequest(item->id(), *stream);
         },
         [=](EitherError<Response> d) {
@@ -244,7 +244,7 @@ ICloudProvider::ListDirectoryPageRequest::Pointer
 GooglePhotos::listDirectoryPageAsync(IItem::Pointer item,
                                      const std::string &page_token,
                                      ListDirectoryPageCallback complete) {
-  auto resolver = [=](Request<EitherError<PageData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<PageData>>::Pointer r) {
     if (item->id() == rootDirectory()->id()) {
       PageData data;
       data.items_.push_back(util::make_unique<Item>(
@@ -260,10 +260,10 @@ GooglePhotos::listDirectoryPageAsync(IItem::Pointer item,
     }
     try {
       r->request(
-          [=](util::Output input) {
+          [=, this](util::Output input) {
             return listDirectoryRequest(*item, page_token, *input);
           },
-          [=](EitherError<Response> e) {
+          [=, this](EitherError<Response> e) {
             if (e.left()) return r->done(e.left());
             PageData result;
             result.items_ = listDirectoryResponse(*item, e.right()->output(),
@@ -282,10 +282,10 @@ GooglePhotos::listDirectoryPageAsync(IItem::Pointer item,
 ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
     IItem::Pointer directory, const std::string &filename,
     IUploadFileCallback::Pointer cb) {
-  auto create_batch = [=](Request<EitherError<IItem>>::Pointer r,
-                          const std::string &id) {
+  auto create_batch = [=, this](Request<EitherError<IItem>>::Pointer r,
+                                const std::string &id) {
     r->request(
-        [=](util::Output stream) {
+        [=, this](util::Output stream) {
           auto request =
               http()->create(endpoint() + "/mediaItems:batchCreate", "POST");
           request->setHeaderParameter("Content-Type", "application/json");
@@ -301,7 +301,7 @@ ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
           *stream << util::json::to_string(argument);
           return request;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           try {
             auto json = util::json::from_stream(
@@ -316,13 +316,13 @@ ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
           }
         });
   };
-  auto upload = [=](Request<EitherError<IItem>>::Pointer r,
-                    const std::string &url) {
+  auto upload = [=, this](Request<EitherError<IItem>>::Pointer r,
+                          const std::string &url) {
     auto wrapper = std::make_shared<UploadStreamWrapper>(
         std::bind(&IUploadFileCallback::putData, cb.get(), _1, _2, _3),
         cb->size());
     r->send(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto request = http()->create(url, "POST");
           request->setHeaderParameter("X-Goog-Upload-Command",
                                       "upload, finalize");
@@ -340,7 +340,7 @@ ICloudProvider::UploadFileRequest::Pointer GooglePhotos::uploadFileAsync(
         std::make_shared<std::stringstream>(), nullptr,
         std::bind(&IUploadFileCallback::progress, cb.get(), _1, _2), true);
   };
-  auto resolve = [=](Request<EitherError<IItem>>::Pointer r) {
+  auto resolve = [=, this](Request<EitherError<IItem>>::Pointer r) {
     if (directory->id() == ALBUMS_ID ||
         directory->id() == rootDirectory()->id()) {
       return r->done(Error{IHttpRequest::ServiceUnavailable,
@@ -387,7 +387,9 @@ ICloudProvider::DownloadFileRequest::Pointer GooglePhotos::downloadFromUrl(
     IDownloadFileCallback::Pointer callback) {
   return std::make_shared<cloudstorage::DownloadFileRequest>(
              shared_from_this(), item, callback, FullRange,
-             [=](const IItem &, std::ostream &) { return http()->create(url); })
+             [=, this](const IItem &, std::ostream &) {
+               return http()->create(url);
+             })
       ->run();
 }
 
@@ -396,9 +398,9 @@ IRequest<EitherError<std::string>>::Pointer GooglePhotos::getUploadUrl(
     std::function<void(EitherError<std::string>)> cb) {
   return std::make_shared<Request<EitherError<std::string>>>(
              shared_from_this(), std::move(cb),
-             [=](Request<EitherError<std::string>>::Pointer r) {
+             [=, this](Request<EitherError<std::string>>::Pointer r) {
                r->request(
-                   [=](util::Output) {
+                   [=, this](util::Output) {
                      auto extension =
                          filename.substr(filename.find_last_of('.') + 1);
                      auto request =

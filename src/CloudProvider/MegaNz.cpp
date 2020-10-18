@@ -520,8 +520,8 @@ struct CloudHttp : public HttpIO {
     auto abort_mark = std::make_shared<HttpCallback::AbortState>();
     auto removed_mark = std::make_shared<HttpCallback::AbortState>();
     auto request = http_->create(r->posturl, "POST");
-    auto callback =
-        std::make_shared<HttpCallback>(app_, [=](const char* d, uint32_t cnt) {
+    auto callback = std::make_shared<HttpCallback>(
+        app_, [=, this](const char* d, uint32_t cnt) {
           {
             std::unique_lock<std::mutex> lock(abort_mark->mutex_);
             if (abort_mark->abort_) {
@@ -548,9 +548,9 @@ struct CloudHttp : public HttpIO {
     r->status = REQ_INFLIGHT;
     r->httpiohandle = new std::shared_ptr<HttpCallback>(callback);
     pending_requests_++;
-    app_->enqueue([=] {
+    app_->enqueue([=, this] {
       request->send(
-          [=](EitherError<IHttpRequest::Response> e) {
+          [=, this](EitherError<IHttpRequest::Response> e) {
             std::unique_lock<std::mutex> abort_lock(abort_mark->mutex_);
             if (abort_mark->abort_) return;
             abort_mark->abort_ = true;
@@ -910,7 +910,7 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
     const std::string& code, ExchangeCodeCallback callback) {
   return std::make_shared<Request<EitherError<Token>>>(
              shared_from_this(), callback,
-             [=](Request<EitherError<Token>>::Pointer r) {
+             [=, this](Request<EitherError<Token>>::Pointer r) {
                auto data = credentialsFromString(code);
                auto email = data["username"].asString();
                auto password = data["password"].asString();
@@ -934,9 +934,10 @@ ICloudProvider::ExchangeCodeRequest::Pointer MegaNz::exchangeCodeAsync(
 
 AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest::Pointer r,
-                              AuthorizeRequest::AuthorizeCompleted complete) {
-        auto fetch = [=]() {
+      shared_from_this(),
+      [=, this](AuthorizeRequest::Pointer r,
+                AuthorizeRequest::AuthorizeCompleted complete) {
+        auto fetch = [=, this]() {
           auto lock = mega_->lock();
           r->make_subrequest<MegaNz>(
               &MegaNz::make_request<error>, Type::FETCH_NODES,
@@ -944,7 +945,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
                 mega_->client()->fetchnodes();
                 mega_->exec(lock);
               },
-              [=](EitherError<error> e) {
+              [=, this](EitherError<error> e) {
                 if (e.left()) return complete(e.left());
                 if (*e.right() != 0)
                   complete(Error{*e.right(), error_description(*e.right())});
@@ -954,11 +955,11 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
                 }
               });
         };
-        login(r, token(), [=](EitherError<void> e) {
+        login(r, token(), [=, this](EitherError<void> e) {
           if (!e.left()) return fetch();
           if (auth_callback()->userConsentRequired(*this) ==
               ICloudProvider::IAuthCallback::Status::WaitForAuthorizationCode) {
-            auto code = [=](EitherError<std::string> e) {
+            auto code = [=, this](EitherError<std::string> e) {
               if (e.left()) return complete(e.left());
               auto data = credentialsFromString(*e.right());
               auto email = data["username"].asString();
@@ -966,7 +967,7 @@ AuthorizeRequest::Pointer MegaNz::authorizeAsync() {
               auto twofactor = data["twofactor"].asString();
               mega_login<void>(
                   this, r, email, password, twofactor,
-                  [=](EitherError<std::string> e) {
+                  [=, this](EitherError<std::string> e) {
                     if (e.left())
                       complete(e.left());
                     else {
@@ -996,8 +997,8 @@ ICloudProvider::GetItemDataRequest::Pointer MegaNz::getItemDataAsync(
     const std::string& id, GetItemDataCallback callback) {
   return std::make_shared<Request<EitherError<IItem>>>(
              shared_from_this(), callback,
-             [=](Request<EitherError<IItem>>::Pointer r) {
-               ensureAuthorized<EitherError<IItem>>(r, [=] {
+             [=, this](Request<EitherError<IItem>>::Pointer r) {
+               ensureAuthorized<EitherError<IItem>>(r, [=, this] {
                  auto lock = mega_->lock();
                  auto node = this->node(id);
                  if (!node) {
@@ -1026,8 +1027,8 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
     IItem::Pointer item, const std::string& filename,
     IUploadFileCallback::Pointer cb) {
   auto callback = cb.get();
-  auto resolver = [=](Request<EitherError<IItem>>::Pointer r) {
-    ensureAuthorized<EitherError<IItem>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<IItem>>::Pointer r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
@@ -1050,7 +1051,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
             mega_->client()->startxfer(PUT, upload);
             mega_->exec(lock);
           },
-          [=](EitherError<handle> e) {
+          [=, this](EitherError<handle> e) {
             auto lock = mega_->lock();
             mega_->remove_file(callback);
             if (e.left()) {
@@ -1067,7 +1068,7 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 #ifdef WITH_THUMBNAILER
               if (item->type() == IItem::FileType::Video ||
                   item->type() == IItem::FileType::Image) {
-                return thumbnailer_thread_pool()->schedule([=] {
+                return thumbnailer_thread_pool()->schedule([=, this] {
                   auto thumb = generate_thumbnail(
                       [=](char* data, uint32_t maxlength, uint64_t offset) {
                         return cb->putData(data, maxlength, offset);
@@ -1108,8 +1109,8 @@ ICloudProvider::UploadFileRequest::Pointer MegaNz::uploadFileAsync(
 
 ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
     IItem::Pointer item, DeleteItemCallback callback) {
-  auto resolver = [=](Request<EitherError<void>>::Pointer r) {
-    ensureAuthorized<EitherError<void>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<void>>::Pointer r) {
+    ensureAuthorized<EitherError<void>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
@@ -1138,8 +1139,8 @@ ICloudProvider::DeleteItemRequest::Pointer MegaNz::deleteItemAsync(
 ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
     IItem::Pointer parent, const std::string& name,
     CreateDirectoryCallback callback) {
-  auto resolver = [=](Request<EitherError<IItem>>::Pointer r) {
-    ensureAuthorized<EitherError<IItem>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<IItem>>::Pointer r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=, this] {
       auto lock = mega_->lock();
       auto parent_node = this->node(parent->id());
       if (!parent_node) {
@@ -1173,7 +1174,7 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
             mega_->client()->putnodes(parent_node->nodehandle, &folder, 1);
             mega_->exec(lock);
           },
-          [=](EitherError<handle> e) {
+          [=, this](EitherError<handle> e) {
             if (e.left()) return r->done(e.left());
             auto lock = mega_->lock();
             auto node = mega_->client()->nodebyhandle(*e.right());
@@ -1191,8 +1192,8 @@ ICloudProvider::CreateDirectoryRequest::Pointer MegaNz::createDirectoryAsync(
 ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
     IItem::Pointer source, IItem::Pointer destination,
     MoveItemCallback callback) {
-  auto resolver = [=](Request<EitherError<IItem>>::Pointer r) {
-    ensureAuthorized<EitherError<IItem>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<IItem>>::Pointer r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=, this] {
       auto lock = mega_->lock();
       auto source_node = this->node(source->id());
       auto destination_node = this->node(destination->id());
@@ -1203,7 +1204,7 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
               mega_->client()->rename(source_node, destination_node);
               mega_->exec(lock);
             },
-            [=](EitherError<handle> e) {
+            [=, this](EitherError<handle> e) {
               if (e.left()) return r->done(e.left());
               auto lock = mega_->lock();
               auto node = this->mega_->client()->nodebyhandle(*e.right());
@@ -1223,8 +1224,8 @@ ICloudProvider::MoveItemRequest::Pointer MegaNz::moveItemAsync(
 
 ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
     IItem::Pointer item, const std::string& name, RenameItemCallback callback) {
-  auto resolver = [=](Request<EitherError<IItem>>::Pointer r) {
-    ensureAuthorized<EitherError<IItem>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<IItem>>::Pointer r) {
+    ensureAuthorized<EitherError<IItem>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (node) {
@@ -1234,7 +1235,7 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
                                      mega_->client()->setattr(node);
                                      mega_->exec(lock);
                                    },
-                                   [=](EitherError<handle> e) {
+                                   [=, this](EitherError<handle> e) {
                                      if (e.left()) return r->done(e.left());
                                      auto lock = mega_->lock();
                                      auto item = toItem(node);
@@ -1255,8 +1256,8 @@ ICloudProvider::RenameItemRequest::Pointer MegaNz::renameItemAsync(
 ICloudProvider::ListDirectoryPageRequest::Pointer
 MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
                                ListDirectoryPageCallback complete) {
-  auto resolver = [=](Request<EitherError<PageData>>::Pointer r) {
-    ensureAuthorized<EitherError<PageData>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<PageData>>::Pointer r) {
+    ensureAuthorized<EitherError<PageData>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
@@ -1280,8 +1281,8 @@ MegaNz::listDirectoryPageAsync(IItem::Pointer item, const std::string&,
 
 ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
-    ensureAuthorized<EitherError<GeneralData>>(r, [=] {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
+    ensureAuthorized<EitherError<GeneralData>>(r, [=, this] {
       auto lock = mega_->lock();
       r->make_subrequest<MegaNz>(
           &MegaNz::make_request<GeneralData>, Type::GENERAL_DATA,
@@ -1291,7 +1292,7 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
                                                false);
             mega_->exec(lock);
           },
-          [=](EitherError<GeneralData> e) {
+          [=, this](EitherError<GeneralData> e) {
             if (e.left()) return r->done(e.left());
             auto result = *e.right();
             result.username_ =
@@ -1307,12 +1308,12 @@ ICloudProvider::GeneralDataRequest::Pointer MegaNz::getGeneralDataAsync(
 
 ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
     IItem::Pointer item, IDownloadFileCallback::Pointer callback) {
-  auto resolver = [=](const Request<EitherError<void>>::Pointer& r) {
+  auto resolver = [=, this](const Request<EitherError<void>>::Pointer& r) {
     if (item->type() != IItem::FileType::Image &&
         item->type() != IItem::FileType::Video) {
       return r->done(Error{IHttpRequest::NotFound, util::Error::UNIMPLEMENTED});
     }
-    ensureAuthorized<EitherError<void>>(r, [=] {
+    ensureAuthorized<EitherError<void>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {
@@ -1331,11 +1332,11 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
             }
             mega_->exec(lock);
           },
-          [=](const EitherError<std::string>& e) {
+          [=, this](const EitherError<std::string>& e) {
             if (e.left()) {
 #ifdef WITH_THUMBNAILER
               if (e.left()->code_ == API_ENOENT) {
-                return thumbnailer_thread_pool()->schedule([=] {
+                return thumbnailer_thread_pool()->schedule([=, this] {
                   auto thumb = generate_thumbnail(
                       r->provider().get(), item, item->size(),
                       [=](auto) { return r->is_cancelled(); },
@@ -1387,8 +1388,8 @@ ICloudProvider::DownloadFileRequest::Pointer MegaNz::getThumbnailAsync(
 std::function<void(Request<EitherError<void>>::Pointer)>
 MegaNz::downloadResolver(IItem::Pointer item, IDownloadFileCallback* callback,
                          Range range) {
-  return [=](Request<EitherError<void>>::Pointer r) {
-    ensureAuthorized<EitherError<void>>(r, [=] {
+  return [=, this](Request<EitherError<void>>::Pointer r) {
+    ensureAuthorized<EitherError<void>>(r, [=, this] {
       auto lock = mega_->lock();
       auto node = this->node(item->id());
       if (!node) {

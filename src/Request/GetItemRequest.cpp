@@ -30,7 +30,7 @@ namespace cloudstorage {
 GetItemRequest::GetItemRequest(std::shared_ptr<CloudProvider> p,
                                const std::string& path,
                                const Callback& callback)
-    : Request(std::move(p), callback, [=](Request::Pointer) {
+    : Request(std::move(p), callback, [=, this](Request::Pointer) {
         if (path.empty() || path.front() != '/')
           return done(
               Error{IHttpRequest::Forbidden, util::Error::INVALID_PATH});
@@ -62,7 +62,7 @@ void GetItemRequest::work(const IItem::Pointer& item, const std::string& p,
                          : std::string(path.begin() + it, path.end());
   auto request = this->shared_from_this();
   make_subrequest(&CloudProvider::listDirectorySimpleAsync, item,
-                  [=](EitherError<IItem::List> e) {
+                  [=, this](EitherError<IItem::List> e) {
                     if (e.left())
                       request->done(e.left());
                     else

@@ -31,16 +31,16 @@ MoveItemRequest::MoveItemRequest(std::shared_ptr<CloudProvider> p,
                                  const IItem::Pointer& source,
                                  const IItem::Pointer& destination,
                                  const MoveItemCallback& callback)
-    : Request(std::move(p), callback, [=](Request::Pointer request) {
+    : Request(std::move(p), callback, [=, this](Request::Pointer request) {
         if (destination->type() != IItem::FileType::Directory)
           return request->done(
               Error{IHttpRequest::Forbidden, util::Error::NOT_A_DIRECTORY});
         this->request(
-            [=](util::Output stream) {
+            [=, this](util::Output stream) {
               return provider()->moveItemRequest(*source, *destination,
                                                  *stream);
             },
-            [=](EitherError<Response> e) {
+            [=, this](EitherError<Response> e) {
               if (e.left()) return request->done(e.left());
               try {
                 request->done(provider()->moveItemResponse(

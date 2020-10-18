@@ -209,9 +209,9 @@ class HttpData : public IHttpServer::IResponse::ICallback {
   std::shared_ptr<ICloudProvider::DownloadFileRequest> request(
       std::shared_ptr<CloudProvider> provider, const std::string& file,
       Range range, const std::shared_ptr<Cache>& cache) {
-    auto resolver = [=](Request<EitherError<void>>::Pointer r) {
+    auto resolver = [=, this](Request<EitherError<void>>::Pointer r) {
       buffer_->request_ = std::static_pointer_cast<StreamRequest>(r);
-      auto item_received = [=](EitherError<IItem> e) {
+      auto item_received = [=, this](EitherError<IItem> e) {
         if (e.left()) {
           status_ = Failed;
           util::log("[HTTP SERVER] couldn't get item", e.left()->code_,
@@ -243,13 +243,13 @@ class HttpData : public IHttpServer::IResponse::ICallback {
       else
         item_received(cached_item);
     };
-    auto result = std::make_shared<StreamRequest>(provider,
-                                                  [=](EitherError<void> e) {
-                                                    if (e.left())
-                                                      status_ = Failed;
-                                                    buffer_->resume();
-                                                  },
-                                                  resolver);
+    auto result =
+        std::make_shared<StreamRequest>(provider,
+                                        [=, this](EitherError<void> e) {
+                                          if (e.left()) status_ = Failed;
+                                          buffer_->resume();
+                                        },
+                                        resolver);
     provider->addStreamRequest(result);
     return result->run();
   }

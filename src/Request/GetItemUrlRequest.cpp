@@ -31,19 +31,19 @@ GetItemUrlRequest::GetItemUrlRequest(std::shared_ptr<CloudProvider> p,
                                      const IItem::Pointer& item,
                                      const GetItemUrlCallback& callback)
     : Request(std::move(p), callback,
-              [=](Request<EitherError<std::string>>::Pointer r) {
+              [=, this](Request<EitherError<std::string>>::Pointer r) {
                 if (item->type() == IItem::FileType::Directory)
                   return r->done(Error{IHttpRequest::ServiceUnavailable,
                                        util::Error::URL_UNAVAILABLE});
                 auto is_implemented = std::make_shared<bool>();
                 r->request(
-                    [=](util::Output input) {
+                    [=, this](util::Output input) {
                       auto request =
                           provider()->getItemUrlRequest(*item, *input);
                       *is_implemented = bool(request);
                       return request;
                     },
-                    [=](EitherError<Response> e) {
+                    [=, this](EitherError<Response> e) {
                       try {
                         if (e.left()) {
                           if (!*is_implemented) {

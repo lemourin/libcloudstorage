@@ -83,7 +83,7 @@ std::string OneDrive::endpoint() const {
 }
 
 void OneDrive::initialize(ICloudProvider::InitData&& d) {
-  setWithHint(d.hints_, "endpoint", [=](std::string v) {
+  setWithHint(d.hints_, "endpoint", [this](std::string v) {
     auto lock = auth_lock();
     endpoint_ = v;
   });
@@ -104,18 +104,19 @@ bool OneDrive::reauthorize(int code,
 
 AuthorizeRequest::Pointer OneDrive::authorizeAsync() {
   return util::make_unique<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest::Pointer r,
-                              AuthorizeRequest::AuthorizeCompleted complete) {
-        r->oauth2Authorization([=](EitherError<void> e) {
+      shared_from_this(),
+      [this](AuthorizeRequest::Pointer r,
+             AuthorizeRequest::AuthorizeCompleted complete) {
+        r->oauth2Authorization([=, this](EitherError<void> e) {
           if (e.left()) return complete(e.left());
           r->query(
-              [=](util::Output) {
+              [this](util::Output) {
                 auto request =
                     http()->create("https://graph.microsoft.com/v1.0/me");
                 authorizeRequest(*request);
                 return request;
               },
-              [=](Response e) {
+              [=, this](Response e) {
                 if (!IHttpRequest::isSuccess(e.http_code())) {
                   return complete(Error{e.http_code(), e.error_output().str()});
                 }
@@ -143,9 +144,9 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
   auto callback = cb.get();
   return std::make_shared<Request<EitherError<IItem>>>(
              shared_from_this(), [=](EitherError<IItem> e) { cb->done(e); },
-             [=](Request<EitherError<IItem>>::Pointer r) {
+             [=, this](Request<EitherError<IItem>>::Pointer r) {
                r->request(
-                   [=](util::Output) {
+                   [=, this](util::Output) {
                      return http()->create(endpoint() + "/me/drive/items/" +
                                                parent->id() + ":/" +
                                                util::Url::escape(filename) +
@@ -169,13 +170,17 @@ ICloudProvider::UploadFileRequest::Pointer OneDrive::uploadFileAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer OneDrive::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
     r->request(
-        [=](util::Output) { return http()->create(endpoint() + "/me/drive"); },
-        [=](EitherError<Response> e) {
+        [this](util::Output) {
+          return http()->create(endpoint() + "/me/drive");
+        },
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           r->request(
-              [=](util::Output) { return http()->create(endpoint() + "/me"); },
+              [this](util::Output) {
+                return http()->create(endpoint() + "/me");
+              },
               [=](EitherError<Response> d) {
                 if (d.left()) return r->done(d.left());
                 try {

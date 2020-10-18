@@ -52,7 +52,7 @@ void ListDirectoryRequest::work(const IItem::Pointer& directory,
   auto request = this->shared_from_this();
   request->make_subrequest(
       &CloudProvider::listDirectoryPageAsync, directory, std::move(page_token),
-      [=](EitherError<PageData> e) {
+      [=, this](EitherError<PageData> e) {
         if (e.left()) return request->done(e.left());
         for (auto& t : e.right()->items_) {
           callback->receivedItem(t);

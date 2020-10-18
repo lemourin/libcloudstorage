@@ -341,36 +341,38 @@ std::string FourShared::token() const {
 
 AuthorizeRequest::Pointer FourShared::authorizeAsync() {
   return std::make_shared<AuthorizeRequest>(
-      shared_from_this(), [=](AuthorizeRequest::Pointer r,
-                              AuthorizeRequest::AuthorizeCompleted complete) {
-        do_authorize(r, username(), password(),
-                     [=](EitherError<std::pair<std::string, std::string>> e) {
-                       if (e.left()) return complete(e.left());
-                       {
-                         auto lock = auth_lock();
-                         oauth_token_ = e.right()->first;
-                         oauth_token_secret_ = e.right()->second;
-                       }
-                       auto take_root_id = [=](const EitherError<Response> &e) {
-                         if (e.left()) return complete(e.left());
-                         try {
-                           auto json = util::json::from_string(
-                               e.right()->output().str());
-                           {
-                             auto lock = auth_lock();
-                             root_id_ = json["rootFolderId"].asString();
-                           }
-                           complete(nullptr);
-                         } catch (const Json::Exception &e) {
-                           complete(Error{IHttpRequest::Failure, e.what()});
-                         }
-                       };
-                       r->request(
-                           [=](util::Output) {
-                             return http()->create(endpoint() + "/user");
-                           },
-                           [=](EitherError<Response> e) { take_root_id(e); });
-                     });
+      shared_from_this(),
+      [=, this](AuthorizeRequest::Pointer r,
+                AuthorizeRequest::AuthorizeCompleted complete) {
+        do_authorize(
+            r, username(), password(),
+            [=, this](EitherError<std::pair<std::string, std::string>> e) {
+              if (e.left()) return complete(e.left());
+              {
+                auto lock = auth_lock();
+                oauth_token_ = e.right()->first;
+                oauth_token_secret_ = e.right()->second;
+              }
+              auto take_root_id = [=, this](const EitherError<Response> &e) {
+                if (e.left()) return complete(e.left());
+                try {
+                  auto json =
+                      util::json::from_string(e.right()->output().str());
+                  {
+                    auto lock = auth_lock();
+                    root_id_ = json["rootFolderId"].asString();
+                  }
+                  complete(nullptr);
+                } catch (const Json::Exception &e) {
+                  complete(Error{IHttpRequest::Failure, e.what()});
+                }
+              };
+              r->request(
+                  [=, this](util::Output) {
+                    return http()->create(endpoint() + "/user");
+                  },
+                  [=](EitherError<Response> e) { take_root_id(e); });
+            });
       });
 }
 
@@ -557,10 +559,11 @@ ICloudProvider::ExchangeCodeRequest::Pointer FourShared::exchangeCodeAsync(
 ICloudProvider::GetItemUrlRequest::Pointer FourShared::getItemUrlAsync(
     IItem::Pointer item, GetItemUrlCallback callback) {
   using CurrentRequest = Request<EitherError<std::string>>;
-  auto get_item_url = [=](CurrentRequest::Pointer r,
+  auto get_item_url = [=, this](
+                          CurrentRequest::Pointer r,
                           std::function<void(EitherError<std::string>)> cb) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           return http()->create(endpoint() + "/files/" +
                                 util::FileId(item->id()).id_);
         },
@@ -578,10 +581,12 @@ ICloudProvider::GetItemUrlRequest::Pointer FourShared::getItemUrlAsync(
         });
   };
   auto resolve_redirect =
-      [=](CurrentRequest::Pointer r, const std::string &url,
-          std::function<void(EitherError<std::string>)> cb) {
+      [=, this](CurrentRequest::Pointer r, const std::string &url,
+                std::function<void(EitherError<std::string>)> cb) {
         r->send(
-            [=](util::Output) { return http()->create(url, "HEAD", false); },
+            [=, this](util::Output) {
+              return http()->create(url, "HEAD", false);
+            },
             [=](EitherError<Response> e) {
               if (e.left()) return cb(e.left());
               auto d = e.right()->headers().find("location");
@@ -592,20 +597,22 @@ ICloudProvider::GetItemUrlRequest::Pointer FourShared::getItemUrlAsync(
                 cb(d->second);
             });
       };
-  auto find_cookie = [=](CurrentRequest::Pointer r, const std::string &url,
+  auto find_cookie = [=, this](
+                         CurrentRequest::Pointer r, const std::string &url,
                          std::function<void(EitherError<std::string>)> cb) {
-    r->send([=](util::Output) { return http()->create(url, "HEAD", false); },
-            [=](EitherError<Response> e) {
-              if (e.left()) return cb(e.left());
-              auto cookies = e.right()->headers().equal_range("set-cookie");
-              for (auto it = cookies.first; it != cookies.second; it++) {
-                auto dict = util::parse_cookie(it->second);
-                auto entry = dict.find("cd1v");
-                if (entry != dict.end()) return cb(entry->second);
-              }
-              cb(Error{IHttpRequest::Failure,
-                       util::Error::UNKNOWN_RESPONSE_RECEIVED});
-            });
+    r->send(
+        [=, this](util::Output) { return http()->create(url, "HEAD", false); },
+        [=](EitherError<Response> e) {
+          if (e.left()) return cb(e.left());
+          auto cookies = e.right()->headers().equal_range("set-cookie");
+          for (auto it = cookies.first; it != cookies.second; it++) {
+            auto dict = util::parse_cookie(it->second);
+            auto entry = dict.find("cd1v");
+            if (entry != dict.end()) return cb(entry->second);
+          }
+          cb(Error{IHttpRequest::Failure,
+                   util::Error::UNKNOWN_RESPONSE_RECEIVED});
+        });
   };
   auto find_link = [=](const std::string &page) {
     auto search = R"(id="baseDownloadLink" value=")";
@@ -613,13 +620,13 @@ ICloudProvider::GetItemUrlRequest::Pointer FourShared::getItemUrlAsync(
     auto end = page.find('"', begin);
     return std::string(page.begin() + begin, page.begin() + end);
   };
-  auto get_url = [=](CurrentRequest::Pointer r, const std::string &url,
-                     const std::string &cookie,
-                     std::function<void(EitherError<std::string>)> cb) {
+  auto get_url = [=, this](CurrentRequest::Pointer r, const std::string &url,
+                           const std::string &cookie,
+                           std::function<void(EitherError<std::string>)> cb) {
     auto d = util::Url(url).path();
     auto clipped = d.substr(d.find('/', 1));
     r->send(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto r = http()->create("https://www.4shared.com/get/" + clipped,
                                   "GET", false);
           r->setHeaderParameter("cookie", "cd1v=" + cookie + ";");

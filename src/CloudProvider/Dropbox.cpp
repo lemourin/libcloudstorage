@@ -123,18 +123,18 @@ ICloudProvider::UploadFileRequest::Pointer Dropbox::uploadFileAsync(
 
 ICloudProvider::GeneralDataRequest::Pointer Dropbox::getGeneralDataAsync(
     GeneralDataCallback callback) {
-  auto resolver = [=](Request<EitherError<GeneralData>>::Pointer r) {
+  auto resolver = [=, this](Request<EitherError<GeneralData>>::Pointer r) {
     r->request(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto r = http()->create(endpoint() + "/2/users/get_current_account",
                                   "POST");
           r->setHeaderParameter("Content-Type", "");
           return r;
         },
-        [=](EitherError<Response> e) {
+        [=, this](EitherError<Response> e) {
           if (e.left()) return r->done(e.left());
           r->request(
-              [=](util::Output) {
+              [=, this](util::Output) {
                 auto r = http()->create(endpoint() + "/2/users/get_space_usage",
                                         "POST");
                 r->setHeaderParameter("Content-Type", "");

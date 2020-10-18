@@ -101,10 +101,10 @@ DownloadFileFromUrlRequest::~DownloadFileFromUrlRequest() { cancel(); }
 void DownloadFileFromUrlRequest::resolve(const Pointer& r,
                                          const IItem::Pointer& file,
                                          ICallback* callback, Range range) {
-  auto download = [=](std::string url,
-                      std::function<void(EitherError<void>)> cb) {
+  auto download = [=, this](std::string url,
+                            std::function<void(EitherError<void>)> cb) {
     r->send(
-        [=](util::Output) {
+        [=, this](util::Output) {
           auto r = provider()->http()->create(url, "GET");
           if (range != FullRange)
             r->setHeaderParameter("Range", util::range_to_string(range));

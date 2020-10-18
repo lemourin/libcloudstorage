@@ -223,7 +223,7 @@ std::unique_ptr<HttpCallback> Request<T>::http_callback(
     const ProgressFunction& progress_download,
     const ProgressFunction& progress_upload) {
   return util::make_unique<HttpCallback>(
-      [=] {
+      [this] {
         std::unique_lock<std::mutex> lock(status_mutex_);
         return status_;
       },
@@ -304,12 +304,12 @@ void Request<T>::send(const RequestFactory& factory,
   auto r = factory(input);
   if (authorized) authorize(r);
   send(r.get(),
-       [=](IHttpRequest::Response response) {
+       [=, this](IHttpRequest::Response response) {
          if (provider()->isSuccess(response.http_code_, response.headers_))
            return complete(Response(response));
          if (authorized &&
              this->reauthorize(response.http_code_, response.headers_)) {
-           this->reauthorize([=](EitherError<void> e) {
+           this->reauthorize([=, this](EitherError<void> e) {
              if (e.left()) {
                if (e.left()->code_ != IHttpRequest::Aborted &&
                    e.left()->code_ > 0)
@@ -325,7 +325,7 @@ void Request<T>::send(const RequestFactory& factory,
              if (authorized) authorize(r);
              this->send(
                  r.get(),
-                 [=](IHttpRequest::Response response) {
+                 [=, this](IHttpRequest::Response response) {
                    (void)request;
                    if (provider()->isSuccess(response.http_code_,
                                              response.headers_))
