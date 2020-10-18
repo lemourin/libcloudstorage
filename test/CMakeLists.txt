@@ -37,6 +37,7 @@ target_sources(cloudstorage-test PRIVATE
     Utility/HttpServerMock.h
     Utility/CloudProviderMock.h
     Utility/CloudFactoryMock.h
+    Utility/CloudFactoryMock.cpp
     Utility/ThreadPoolMock.h
     ${CMAKE_CURRENT_BINARY_DIR}/TestData.cpp 
     ${CMAKE_CURRENT_BINARY_DIR}/TestData.h
