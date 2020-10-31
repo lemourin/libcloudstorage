@@ -871,7 +871,17 @@ install_qt() {
   cat > build.bat << EOF
 @echo off
 call "$VCVARSALL" $BUILD
-call "$QT_DIR\\configure.bat" -opensource -confirm-license -skip qtmultimedia -skip qt3d -nomake tests -nomake examples -debug-and-release -static -xplatform winrt-$BUILD-$QT_GENERATOR -prefix $NATIVE_PATH && ^
+call "$QT_DIR\\configure.bat" ^
+  -opensource ^
+  -confirm-license ^
+  -skip qtmultimedia ^
+  -skip qt3d ^
+  -nomake tests ^
+  -nomake examples ^
+  -debug-and-release ^
+  -static ^
+  -xplatform winrt-$BUILD-$QT_GENERATOR ^
+  -prefix $NATIVE_PATH && ^
 nmake && ^
 nmake install
 EOF

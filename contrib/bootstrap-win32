@@ -782,7 +782,18 @@ fetch_qt() {
 install_qt() {
   QT_DIR=$PWD
   mkdir -p /c/tmp/qt-win32-build && cd /c/tmp/qt-win32-build &&
-  $QT_DIR/configure.bat -platform win32-clang-msvc -opensource -confirm-license -skip qtmultimedia -skip qt3d -skip qtwebview -nomake tests -nomake examples -debug-and-release -static -prefix $INSTALL_PATH &&
+  $QT_DIR/configure.bat \
+    -platform win32-clang-msvc \
+    -opensource \
+    -confirm-license \
+    -skip qtmultimedia \
+    -skip qt3d \
+    -skip qtwebview \
+    -nomake tests \
+    -nomake examples \
+    -debug-and-release \
+    -static \
+    -prefix $INSTALL_PATH &&
   nmake && nmake install
 }
 
