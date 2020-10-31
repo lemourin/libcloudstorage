@@ -58,6 +58,7 @@ command -v nasm >/dev/null 2>&1 || { echo >&2 "nasm is not installed"; exit 1; }
 command -v make >/dev/null 2>&1 || { echo >&2 "make is not installed"; exit 1; }
 command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
 command -v /usr/bin/python >/dev/null 2>&1 || { echo >&2 "msys2 python is not installed"; exit 1; }
+command -v clang >/dev/null 2>&1 || { echo >&2 "native clang is not installed"; exit 1; }
 
 mv /usr/bin/python /usr/bin/python-hidden
 python --version >/dev/null 2>&1
@@ -81,6 +82,11 @@ fi
 
 if [ "$(which patch)" != "/usr/bin/patch" ]; then
   echo "Wrong patch executable detected. Remove Strawberry Perl from PATH."
+  exit 1
+fi
+
+if [ "$(which clang)" == "/usr/bin/clang" ]; then
+  echo "Native clang is needed."
   exit 1
 fi
 
