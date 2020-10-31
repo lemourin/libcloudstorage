@@ -494,7 +494,14 @@ install_fribidi() {
     MESON_BUILD_TYPE="debug"
   fi
   mkdir build -p && cd build &&
-  meson ..  --prefix=$INSTALL_PATH --backend=$MESON_GENERATOR --buildtype=$MESON_BUILD_TYPE --default-library=static &&
+  cat > cross_file.txt << EOF
+[target_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+EOF
+  meson ..  --prefix=$INSTALL_PATH --backend=$MESON_GENERATOR --buildtype=$MESON_BUILD_TYPE --default-library=static --cross-file=cross_file.txt &&
   echo "#define FRIBIDI_STATIC" >> lib/fribidi-config.h
   MSBuild.exe fribidi.sln -p:Configuration=$MESON_BUILD_TYPE -p:Platform=$CMAKE_ARCH -p:PlatformToolset=$CMAKE_TOOLSET &&
     mkdir -p $INSTALL_PATH/include/fribidi &&
