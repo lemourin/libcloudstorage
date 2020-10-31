@@ -60,10 +60,10 @@ command -v gcc >/dev/null 2>&1 || { echo >&2 "gcc is not installed"; exit 1; }
 command -v /usr/bin/python >/dev/null 2>&1 || { echo >&2 "msys2 python is not installed"; exit 1; }
 
 mv /usr/bin/python /usr/bin/python-hidden
-command -v python >/dev/null 2>&1
+python --version >/dev/null 2>&1
 NATIVE_PYTHON_FOUND=$?
 mv /usr/bin/python-hidden /usr/bin/python
-if [ ! $NATIVE_PYTHON_FOUND ]; then
+if [ $NATIVE_PYTHON_FOUND -ne 0 ]; then
   echo >&2 "native python is not installed";
   exit 1;
 fi
