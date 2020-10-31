@@ -794,7 +794,24 @@ install_qt() {
     -debug-and-release \
     -static \
     -prefix $INSTALL_PATH &&
-  nmake && nmake install
+
+  nmake \
+    module-qtbase \
+    module-qtdeclarative \
+    module-qtquickcontrols \
+    module-qtquickcontrols2 \
+    module-qtsvg \
+    module-qtgraphicaleffects \
+    module-qttools &&
+
+  nmake \
+    module-qtbase-install_subtargets \
+    module-qtdeclarative-install_subtargets \
+    module-qtquickcontrols-install_subtargets \
+    module-qtquickcontrols2-install_subtargets \
+    module-qtsvg-install_subtargets \
+    module-qtgraphicaleffects-install_subtargets \
+    module-qttools-install_subtargets
 }
 
 fetch_ecm() {

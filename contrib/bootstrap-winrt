@@ -882,8 +882,22 @@ call "$QT_DIR\\configure.bat" ^
   -static ^
   -xplatform winrt-$BUILD-$QT_GENERATOR ^
   -prefix $NATIVE_PATH && ^
-nmake && ^
-nmake install
+nmake ^
+  module-qtbase ^
+  module-qtdeclarative ^
+  module-qtquickcontrols ^
+  module-qtquickcontrols2 ^
+  module-qtsvg ^
+  module-qtgraphicaleffects ^
+  module-qttools && ^
+nmake ^
+  module-qtbase-install_subtargets ^
+  module-qtdeclarative-install_subtargets ^
+  module-qtquickcontrols-install_subtargets ^
+  module-qtquickcontrols2-install_subtargets ^
+  module-qtsvg-install_subtargets ^
+  module-qtgraphicaleffects-install_subtargets ^
+  module-qttools-install_subtargets
 EOF
   (cmd //c build.bat) && sed -i "s/QWinrtWebViewPlugin/QWinRtWebViewPlugin/g" $INSTALL_PATH/lib/cmake/Qt5WebView/Qt5WebView_QWinrtWebViewPlugin_Import.cpp
 }
