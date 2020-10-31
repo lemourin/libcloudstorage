@@ -135,7 +135,11 @@ fetch() {
       mv $DEST $2
     fi
   fi
-  unpack $(basename $2 .tar.$EXT) tar.$EXT
+  if [ $EXT == "zip" ]; then
+    unpack $(basename $2 .zip) zip
+  else
+    unpack $(basename $2 .tar.$EXT) tar.$EXT
+  fi
 }
 
 fetch_url() {
@@ -849,7 +853,7 @@ EOF
 }
 
 fetch_qt() {
-  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz &&
+  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.zip &&
   if [ ! -f .patched ]; then
     sed -i -E "s/QMAKE_CC\s*=\s*cl/QMAKE_CC=clang-cl/g" qtbase/mkspecs/common/winrt_winphone/qmake.conf &&
     sed -i -E 's/~QWinRTCursor\(\) override = default;/~QWinRTCursor\(\) override;/g' qtbase/src/plugins/platforms/winrt/qwinrtcursor.h &&
@@ -946,6 +950,6 @@ install "mpv_uwp_wasapi_helper"
 install "mpv" 0.32.0
 install "ecm" 5.70.0
 if [ $BUILD_TYPE == "Release" ]; then
-  install "qt" 5.15.0
+  install "qt" 5.15.1
 fi
 install "kirigami" 5.66.0

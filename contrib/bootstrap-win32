@@ -134,7 +134,11 @@ fetch() {
       mv $DEST $2
     fi
   fi
-  unpack $(basename $2 .tar.$EXT) tar.$EXT
+  if [ $EXT == "zip" ]; then
+    unpack $(basename $2 .zip) zip
+  else
+    unpack $(basename $2 .tar.$EXT) tar.$EXT
+  fi
 }
 
 run_cmake() {
@@ -772,7 +776,7 @@ install_mpv() {
 }
 
 fetch_qt() {
-  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.tar.xz
+  fetch_url https://download.qt.io/archive/qt/${1%.*}/$1/single/qt-everywhere-src-$1.zip
 }
 
 install_qt() {
@@ -949,7 +953,7 @@ install "harfbuzz" 1.9.0
 install "ass" 0.14.0
 install "mpv" 0.32.0
 if [ $BUILD_TYPE == "Release" ]; then
-  install "qt" 5.15.0
+  install "qt" 5.15.1
 fi
 install "ecm" 5.70.0
 install "kirigami" 5.66.0
