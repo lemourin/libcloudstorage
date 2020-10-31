@@ -62,9 +62,15 @@ command -v /usr/bin/python >/dev/null 2>&1 || { echo >&2 "msys2 python is not in
 mv /usr/bin/python /usr/bin/python-hidden
 python --version >/dev/null 2>&1
 NATIVE_PYTHON_FOUND=$?
+python $(dirname $(which python))/Scripts/meson.exe --version >/dev/null 2>&1
+NATIVE_MESON_FOUND=$?
 mv /usr/bin/python-hidden /usr/bin/python
 if [ $NATIVE_PYTHON_FOUND -ne 0 ]; then
-  echo >&2 "native python is not installed";
+  echo "native python is not installed";
+  exit 1;
+fi
+if [ $NATIVE_MESON_FOUND -ne 0 ]; then
+  echo "native meson is not installed";
   exit 1;
 fi
 
