@@ -38,8 +38,8 @@ before_build:
       cmake .. -DPREFIX_PATH_DEBUG="%PREFIX_PATH_DEBUG%" -DPREFIX_PATH_RELEASE="%PREFIX_PATH_RELEASE%"
         -DCMAKE_SYSTEM_NAME=WindowsStore
         -DCMAKE_SYSTEM_VERSION=10.0
-        -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib"
-        -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib"
+        -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-incremental:no -libpath:%PREFIX_PATH_RELEASE%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstatic.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
+        -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-debug -incremental -libpath:%PREFIX_PATH_DEBUG%\lib libssl.lib libcrypto.lib winhttp.lib nghttp2.lib opengl32.lib avrt.lib secur32.lib libxml2_a.lib zlibstaticd.lib wasapiuwp2.lib ass.lib harfbuzz.lib libfribidi.lib dwrite.lib"
     )
   - cd ..
 
