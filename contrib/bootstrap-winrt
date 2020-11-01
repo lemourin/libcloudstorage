@@ -896,6 +896,7 @@ nmake ^
   module-qtquickcontrols2 ^
   module-qtsvg ^
   module-qtgraphicaleffects ^
+  module-qtwebview ^
   module-qttools && ^
 nmake ^
   module-qtbase-install_subtargets ^
@@ -904,6 +905,7 @@ nmake ^
   module-qtquickcontrols2-install_subtargets ^
   module-qtsvg-install_subtargets ^
   module-qtgraphicaleffects-install_subtargets ^
+  module-qtwebview-install_subtargets ^
   module-qttools-install_subtargets
 EOF
   (cmd //c build.bat) && sed -i "s/QWinrtWebViewPlugin/QWinRtWebViewPlugin/g" $INSTALL_PATH/lib/cmake/Qt5WebView/Qt5WebView_QWinrtWebViewPlugin_Import.cpp
