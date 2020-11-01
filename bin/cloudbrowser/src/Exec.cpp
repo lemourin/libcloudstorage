@@ -128,13 +128,6 @@ void register_types() {
 #endif
 
 #ifdef QT_STATICPLUGIN
-#ifdef WITH_QTWEBVIEW
-#ifndef TARGET_OS_IPHONE
-  qobject_cast<QQmlExtensionPlugin*>(
-      qt_static_plugin_QWebViewModule().instance())
-      ->registerTypes("QtWebView");
-#endif
-#endif
 #ifdef KIRIGAMI_BUILD_TYPE_STATIC
   KirigamiPlugin::getInstance().registerTypes();
 #endif
