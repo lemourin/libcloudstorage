@@ -262,7 +262,7 @@ if(ANDROID)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" AND MSVC)
-    target_compile_options(cloudstorage PRIVATE /await)
+    target_compile_options(cloudstorage-util PUBLIC /await)
     target_link_options(cloudstorage BEFORE PRIVATE
         $<IF:$<CONFIG:Debug>,/nodefaultlib:vccorlibd /nodefaultlib:msvcrtd vccorlibd.lib msvcrtd.lib,/nodefaultlib:vccorlib /nodefaultlib:msvcrt vccorlib.lib msvcrt.lib>
     )
@@ -292,10 +292,7 @@ if(MSVC)
     set(CMAKE_REQUIRED_FLAGS "/std:c++latest")
     check_cxx_source_compiles(
         "
-        #include <version>
-        #ifndef __cpp_lib_coroutine
-            #error \"coroutines not supported\"
-        #endif
+        #include <coroutine>
         int main() {}
         "
         HAVE_COROUTINES

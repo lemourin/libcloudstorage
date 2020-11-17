@@ -6,20 +6,19 @@
 #include <mutex>
 #include <type_traits>
 
-#ifdef __has_include
-#if __has_include(<version>)
-#include <version>
+#if defined(_WIN32) && !defined(WINRT)
+#include <windows.h>
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#define WINRT
 #endif
 #endif
 
-#ifdef __cpp_lib_coroutine
+#ifdef __has_include
+#if __has_include(<coroutine>) && !defined(WINRT)
 #include <coroutine>
 #define HAVE_COROUTINES
 #define HAVE_COROUTINE_SUPPORT
-#endif
-
-#ifdef __has_include
-#if __has_include(<experimental/coroutine>)
+#elif __has_include(<experimental/coroutine>)
 #include <experimental/coroutine>
 #define HAVE_EXPERIMENTAL_COROUTINES
 #define HAVE_COROUTINE_SUPPORT

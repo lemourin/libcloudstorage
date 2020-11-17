@@ -5,5 +5,5 @@ target_link_libraries(promise PRIVATE cloudstorage)
 
 set_target_properties(promise
     PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 20
 )
