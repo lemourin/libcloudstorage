@@ -70,11 +70,25 @@ CloudFactoryMock CloudFactoryMock::create() {
     return thread_pool;
   });
 
+  auto dummy_factory = cloudstorage::ICloudFactory::create(
+      std::make_unique<CloudFactoryCallbackMock>());
+  std::unordered_map<std::string, cloudstorage::ICloudFactory::ProviderInitData>
+      init_data;
+  for (const std::string& p : dummy_factory->availableProviders()) {
+    cloudstorage::ICloudFactory::ProviderInitData d;
+    d.hints_["client_id"] = "client_id";
+    d.hints_["client_secret"] = "client_secret";
+    d.hints_["redirect_uri"] = "http://redirect-uri/";
+    d.hints_["state"] = "state";
+    init_data[p] = std::move(d);
+  }
+
   auto cloud_factory =
       cloudstorage::ICloudFactory::create(cloudstorage::ICloudFactory::InitData{
           "http://cloudstorage-test/", std::move(http_mock),
           std::move(http_server_factory_mock), nullptr,
-          std::move(thread_pool_factory_mock), std::move(callback_mock)});
+          std::move(thread_pool_factory_mock), std::move(callback_mock),
+          std::move(init_data)});
 
   EXPECT_CALL(*callback_mock_ptr, onEventsAdded)
       .WillRepeatedly(Invoke(

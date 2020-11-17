@@ -55,8 +55,7 @@ class CloudFactory : public ICloudFactory {
   void onCloudCreated(const std::shared_ptr<CloudAccess>& cloud);
   void onCloudRemoved(const std::shared_ptr<CloudAccess>& cloud);
 
-  std::string authorizationUrl(const std::string& provider,
-                               const ProviderInitData& data) const override;
+  std::string authorizationUrl(const std::string& provider) const override;
   std::string pretty(const std::string& provider) const override;
   std::vector<std::string> availableProviders() const override;
   bool httpServerAvailable() const override;
@@ -88,6 +87,8 @@ class CloudFactory : public ICloudFactory {
   void onEventsAdded();
 
  private:
+  ProviderInitData getInitData(const std::string& provider) const;
+
   std::shared_ptr<ICallback> callback_;
   std::unique_ptr<CloudEventLoop> event_loop_;
   std::string base_url_;
@@ -96,6 +97,7 @@ class CloudFactory : public ICloudFactory {
   std::shared_ptr<ICrypto> crypto_;
   std::shared_ptr<IThreadPool> thread_pool_;
   std::unique_ptr<IThreadPoolFactory> thread_pool_factory_;
+  std::unordered_map<std::string, ProviderInitData> init_data_;
   ICloudStorage::Pointer cloud_storage_;
   std::vector<IHttpServer::Pointer> http_server_handles_;
   std::unordered_set<std::shared_ptr<CloudAccess>> cloud_access_;

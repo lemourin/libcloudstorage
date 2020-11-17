@@ -327,14 +327,8 @@ TEST(DropboxTest, RootHasEmptyId) {
 
 TEST(DropboxTest, GetsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData data;
-  data.hints_["client_id"] = "client_id";
-  data.hints_["client_secret"] = "client_secret";
-  data.hints_["redirect_uri"] = "http://redirect-uri/";
-  data.hints_["state"] = "state";
-
   EXPECT_EQ(
-      mock.factory()->authorizationUrl("dropbox", data),
+      mock.factory()->authorizationUrl("dropbox"),
       R"(https://www.dropbox.com/oauth2/authorize?response_type=code&client_id=client_id&redirect_uri=http://redirect-uri/&state=state)");
 }
 

@@ -59,6 +59,13 @@ class CLOUDSTORAGE_API ICloudFactory {
     virtual void onEventsAdded() {}
   };
 
+  struct ProviderInitData {
+    std::string token_;
+    ICloudProvider::Permission permission_ =
+        ICloudProvider::Permission::ReadWrite;
+    ICloudProvider::Hints hints_;
+  };
+
   struct InitData {
     std::string base_url_;
     IHttp::Pointer http_;
@@ -66,13 +73,7 @@ class CLOUDSTORAGE_API ICloudFactory {
     ICrypto::Pointer crypto_;
     IThreadPoolFactory::Pointer thread_pool_factory_;
     ICallback::Pointer callback_;
-  };
-
-  struct ProviderInitData {
-    std::string token_;
-    ICloudProvider::Permission permission_ =
-        ICloudProvider::Permission::ReadWrite;
-    ICloudProvider::Hints hints_;
+    std::unordered_map<std::string, ProviderInitData> provider_init_data_;
   };
 
   virtual ~ICloudFactory() = default;
@@ -81,10 +82,7 @@ class CLOUDSTORAGE_API ICloudFactory {
                                                const ProviderInitData&) = 0;
   virtual void remove(const ICloudAccess&) = 0;
 
-  virtual std::string authorizationUrl(
-      const std::string& provider,
-      const ProviderInitData& = ProviderInitData{
-          "", ICloudProvider::Permission::ReadWrite, {}}) const = 0;
+  virtual std::string authorizationUrl(const std::string& provider) const = 0;
   virtual std::string pretty(const std::string& provider) const = 0;
   virtual bool httpServerAvailable() const = 0;
 
@@ -110,7 +108,9 @@ class CLOUDSTORAGE_API ICloudFactory {
                                                    const std::string& code) = 0;
 
   static void initialize(void* javaVM);
-  static std::unique_ptr<ICloudFactory> create(const ICallback::Pointer&);
+  static std::unique_ptr<ICloudFactory> create(
+      ICallback::Pointer,
+      std::unordered_map<std::string, ProviderInitData> init_data = {});
   static std::unique_ptr<ICloudFactory> create(InitData&&);
 };
 

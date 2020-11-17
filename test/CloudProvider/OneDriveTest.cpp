@@ -296,14 +296,8 @@ TEST(OneDriveTest, ExchangesAuthorizationCode) {
 
 TEST(OneDriveTest, GetsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData data;
-  data.hints_["client_id"] = "client_id";
-  data.hints_["client_secret"] = "client_secret";
-  data.hints_["redirect_uri"] = "http://redirect-uri/";
-  data.hints_["state"] = "state";
-
   EXPECT_EQ(
-      mock.factory()->authorizationUrl("onedrive", data),
+      mock.factory()->authorizationUrl("onedrive"),
       R"(https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=client_id&scope=offline_access%20user.read%20files.readwrite&response_type=code&redirect_uri=http%3A%2F%2Fredirect-uri%2F&state=state)");
 }
 

@@ -339,17 +339,10 @@ TEST(GooglePhotosTest, UploadsItem) {
 
 TEST(GooglePhotosTest, ReturnsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData init_data;
-  init_data.hints_["state"] = "state";
-  init_data.hints_["client_id"] = "client-id";
-  init_data.hints_["client_secret"] = "client-secret";
   EXPECT_THAT(
-      mock.factory()->authorizationUrl("gphotos", init_data),
-      StrEq("https://accounts.google.com/o/oauth2/"
-            "auth?client_id=client-id&redirect_uri=http://cloudstorage-test/"
-            "gphotos&scope=https://www.googleapis.com/auth/"
-            "photoslibrary+openid%20email&response_type=code&access_type="
-            "offline&prompt=consent&state=state"));
+      mock.factory()->authorizationUrl("gphotos"),
+      StrEq(
+          R"(https://accounts.google.com/o/oauth2/auth?client_id=client_id&redirect_uri=http://redirect-uri/&scope=https://www.googleapis.com/auth/photoslibrary+openid%20email&response_type=code&access_type=offline&prompt=consent&state=state)"));
 }
 
 }  // namespace cloudstorage

@@ -262,14 +262,8 @@ TEST(HubiCTest, ExchangesAuthorizationCode) {
 
 TEST(HubiCTest, GetsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData data;
-  data.hints_["client_id"] = "client_id";
-  data.hints_["client_secret"] = "client_secret";
-  data.hints_["redirect_uri"] = "http://redirect-uri/";
-  data.hints_["state"] = "state";
-
   EXPECT_EQ(
-      mock.factory()->authorizationUrl("hubic", data),
+      mock.factory()->authorizationUrl("hubic"),
       R"(https://api.hubic.com/oauth/auth?client_id=client_id&response_type=code&redirect_uri=http://redirect-uri/&state=state&scope=credentials.r%2Caccount.r%2Cusage.r)");
 }
 

@@ -371,14 +371,8 @@ TEST(YandexDiskTest, ExchangesAuthorizationCode) {
 
 TEST(YandexDiskTest, GetsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData data;
-  data.hints_["client_id"] = "client_id";
-  data.hints_["client_secret"] = "client_secret";
-  data.hints_["redirect_uri"] = "http://redirect-uri/";
-  data.hints_["state"] = "state";
-
   EXPECT_EQ(
-      mock.factory()->authorizationUrl("yandex", data),
+      mock.factory()->authorizationUrl("yandex"),
       R"(https://oauth.yandex.com/authorize?response_type=code&client_id=client_id&state=state&redirect_uri=http://redirect-uri/)");
 }
 

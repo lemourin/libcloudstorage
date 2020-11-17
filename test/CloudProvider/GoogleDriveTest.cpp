@@ -493,15 +493,10 @@ TEST(GoogleDriveTest, PatchesAlreadyPresentFile) {
 
 TEST(GoogleDriveTest, ReturnsAuthorizeLibraryUrl) {
   auto mock = CloudFactoryMock::create();
-  ICloudFactory::ProviderInitData init_data;
-  init_data.hints_["state"] = "state";
-  EXPECT_THAT(mock.factory()->authorizationUrl("google", init_data),
-              StrEq("https://accounts.google.com/o/oauth2/"
-                    "auth?response_type=code&client_id=646432077068-"
-                    "hmvk44qgo6d0a64a5h9ieue34p3j2dcv.apps.googleusercontent."
-                    "com&redirect_uri=http://cloudstorage-test/"
-                    "google&scope=https://www.googleapis.com/auth/"
-                    "drive&access_type=offline&prompt=consent&state=state"));
+  EXPECT_THAT(
+      mock.factory()->authorizationUrl("google"),
+      StrEq(
+          R"(https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=client_id&redirect_uri=http://redirect-uri/&scope=https://www.googleapis.com/auth/drive&access_type=offline&prompt=consent&state=state)"));
 }
 
 TEST(GoogleDriveTest, RefreshesToken) {
