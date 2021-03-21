@@ -154,8 +154,18 @@ script:
       cd bin/cloudbrowser &&
       mkdir -p "Cloud Browser.app/Contents/MacOS" &&
       mkdir -p "Cloud Browser.app/Contents/Resources" &&
-      brew install makeicns &&
-      makeicns -in ../../../bin/cloudbrowser/resources/cloud.png -out "Cloud Browser.app/Contents/Resources/cloud.icns" &&
+      mkdir cloud.iconset &&
+      sips -z 16 16 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_16x16.png &&
+      sips -z 32 32 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_16x16@2x.png &&
+      sips -z 32 32 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_32x32.png &&
+      sips -z 64 64 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_32x32@2x.png &&
+      sips -z 128 128 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_128x128.png &&
+      sips -z 256 256 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_128x128@2x.png &&
+      sips -z 256 256 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_256x256.png &&
+      sips -z 512 512 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_256x256@2x.png &&
+      sips -z 512 512 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_512x512.png &&
+      sips -z 1024 1024 ../../../bin/cloudbrowser/resources/cloud.png --out cloud.iconset/icon_512x512@2x.png &&
+      iconutil -c icns cloud.iconset -o "Cloud Browser.app/Contents/Resources/cloud.icns" &&
       mv cloudbrowser "Cloud Browser.app/Contents/MacOS" &&
       cat > "Cloud Browser.app/Contents/Info.plist" << EOF
     <?xml version="1.0" encoding="UTF-8"?>
