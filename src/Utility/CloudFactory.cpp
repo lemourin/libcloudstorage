@@ -168,6 +168,8 @@ struct HttpCallback : public IHttpServer::ICallback {
         result = MAKE_STRING(mega_login_html);
       else if (state == "webdav")
         result = MAKE_STRING(webdav_login_html);
+      else if (state == "dropbox")
+        result = MAKE_STRING(dropbox_login_html);
       else
         return util::response_from_string(request, IHttpRequest::NotFound, {},
                                           "Not found");

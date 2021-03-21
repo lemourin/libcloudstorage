@@ -343,12 +343,20 @@ void Dropbox::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
 }
 
 std::string Dropbox::Auth::authorizeLibraryUrl() const {
+#ifndef WINRT
   std::string url = "https://www.dropbox.com/oauth2/authorize?";
   url += "response_type=code&";
   url += "client_id=" + client_id() + "&";
   url += "redirect_uri=" + redirect_uri() + "&";
   url += "state=" + state();
   return url;
+#else
+  std::string url = "cloudstorage://www.dropbox.com/oauth2/authorize?";
+  url += "response_type=code&";
+  url += "client_id=" + client_id();
+  return cloudstorage::Auth::authorizeLibraryUrl() +
+         "&authorize_url=" + util::Url::escape(url);
+#endif
 }
 
 IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
@@ -367,7 +375,9 @@ IHttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
   request->setParameter("grant_type", "authorization_code");
   request->setParameter("client_id", client_id());
   request->setParameter("client_secret", client_secret());
+#ifndef WINRT
   request->setParameter("redirect_uri", redirect_uri());
+#endif
   request->setParameter("code", authorization_code());
   return request;
 }

@@ -1,0 +1,58 @@
+<!-- Based on Diogo Silva's (dbtdsilva@gmail.com) work. -->
+
+<html>
+
+<head>
+  <meta name="Author" content="VideoLAN" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VLC Local Authentication Server</title>
+  <script src='/static/jquery.min.js' type='text/javascript'></script>
+  <script async="async" src="/static/bootstrap.min.js" type="text/javascript"></script>
+  <script src='/static/url.min.js'></script>
+  <link rel="stylesheet" type="text/css" href="/static/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="/static/style.min.css" />
+</head>
+
+<body class="new-design">
+  <div id='bodyInner' class='blue' style='padding:0'>
+    <nav id="nav" class="navbar navbar-default navbar-static-top">
+      <div class="container">
+        <div class="navbar-header"><a class="navbar-brand" href="//www.videolan.org/"><img src='/static/vlc-blue.png' alt='VideoLAN association' /></a>
+          <a class="navbar-brand" style="padding: 15px 15px">Libcloudstorage Local Server</a><button type="button" class="navbar-toggle collapsed"
+            data-toggle="collapse" data-target="#main-navbar" aria-expanded="false"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button></div>
+      </div>
+    </nav>
+    <div class="container center-block">
+      <script>
+        function submitData() {
+          var code = $('#inputToken').val();
+          window.location.href = location.pathname.split("/").slice(0, -1).join("/") + "?code=" + code + "&state=" + url('?').state;
+          return false;
+        };
+        function openLink() {
+          window.location.href = url('?').authorize_url;
+          return false;
+        }
+      </script>
+      <h2 class="text-center">Dropbox Login</h2>
+      <h5>Libcloudstorage requires access to your Dropbox account in order to display the content of your cloud storage. Please
+        go to Dropbox page using the "To Dropbox" button, authenticate and then copy and paste the access token here. This
+        page is running locally and is hosted by your machine.</h5>
+      <form class="form-horizontal" onsubmit="return submitData()">
+        <div class="form-group"><label for="dropboxButton" class="col-sm-2 control-label"></label>
+          <div class="col-sm-10"><button id="dropboxButton" class="btn btn-default" onclick="return openLink()">To Dropbox</button></div>
+        </div>
+        <div class="form-group"><label for="inputToken" class="col-sm-2 control-label">Token</label>
+          <div class="col-sm-10"><input class="form-control" id="inputToken" placeholder="Token"></div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-10"><button type="submit" id="submit" class="btn btn-default">Sign in</button></div>
+        </div>
+      </form>
+      </div>
+    </div>
+</body>
+
+</html>
