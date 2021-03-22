@@ -80,6 +80,7 @@ CloudFactoryMock CloudFactoryMock::create() {
     d.hints_["client_secret"] = "client_secret";
     d.hints_["redirect_uri"] = "http://redirect-uri/";
     d.hints_["state"] = "state";
+    d.hints_["code_verifier"] = "";
     init_data[p] = std::move(d);
   }
 

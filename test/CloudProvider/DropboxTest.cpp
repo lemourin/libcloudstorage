@@ -298,6 +298,7 @@ TEST(DropboxTest, ExchangesAuthorizationCode) {
   data.hints_["client_id"] = "client_id";
   data.hints_["client_secret"] = "client_secret";
   data.hints_["redirect_uri"] = "http://redirect-uri/";
+  data.hints_["code_verifier"] = "";
 
   ExpectHttp(mock.http(), "https://api.dropboxapi.com/oauth2/token")
       .WithMethod("POST")
