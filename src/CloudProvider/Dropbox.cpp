@@ -94,6 +94,15 @@ void upload(const Request<EitherError<IItem>>::Pointer& r,
 
 Dropbox::Dropbox() : CloudProvider(util::make_unique<Auth>()) {}
 
+void Dropbox::initialize(InitData&& data) {
+  CloudProvider::initialize(std::move(data));
+  auto lock = auth_lock();
+  setWithHint(data.hints_, "code_verifier",
+              [&](const std::string& code_verifier) {
+                static_cast<Auth*>(auth())->set_code_verifier(code_verifier);
+              });
+}
+
 std::string Dropbox::name() const { return "dropbox"; }
 
 std::string Dropbox::endpoint() const { return DROPBOXAPI_ENDPOINT; }
@@ -343,20 +352,16 @@ void Dropbox::Auth::initialize(IHttp* http, IHttpServerFactory* factory) {
 }
 
 std::string Dropbox::Auth::authorizeLibraryUrl() const {
-#ifndef WINRT
   std::string url = "https://www.dropbox.com/oauth2/authorize?";
   url += "response_type=code&";
   url += "client_id=" + client_id() + "&";
   url += "redirect_uri=" + redirect_uri() + "&";
   url += "state=" + state();
+  if (!code_verifier().empty()) {
+    url += "&code_challenge_method=plain&";
+    url += "code_challenge=" + code_verifier_;
+  }
   return url;
-#else
-  std::string url = "cloudstorage://www.dropbox.com/oauth2/authorize?";
-  url += "response_type=code&";
-  url += "client_id=" + client_id();
-  return cloudstorage::Auth::authorizeLibraryUrl() +
-         "&authorize_url=" + util::Url::escape(url);
-#endif
 }
 
 IAuth::Token::Pointer Dropbox::Auth::fromTokenString(
@@ -375,9 +380,10 @@ IHttpRequest::Pointer Dropbox::Auth::exchangeAuthorizationCodeRequest(
   request->setParameter("grant_type", "authorization_code");
   request->setParameter("client_id", client_id());
   request->setParameter("client_secret", client_secret());
-#ifndef WINRT
+  if (!code_verifier_.empty()) {
+    request->setParameter("code_verifier", code_verifier_);
+  }
   request->setParameter("redirect_uri", redirect_uri());
-#endif
   request->setParameter("code", authorization_code());
   return request;
 }

@@ -25,6 +25,7 @@
 #define DROPBOX_H
 
 #include <json/forwards.h>
+#include <random>
 
 #include "CloudProvider.h"
 
@@ -34,6 +35,7 @@ class Dropbox : public CloudProvider {
  public:
   Dropbox();
 
+  void initialize(InitData&& data) override;
   std::string name() const override;
   std::string endpoint() const override;
   IItem::Pointer rootDirectory() const override;
@@ -97,6 +99,15 @@ class Dropbox : public CloudProvider {
         std::istream&) const override;
 
     bool requiresCodeExchange() const override;
+
+    void set_code_verifier(std::string code_verifier) {
+      code_verifier_ = std::move(code_verifier);
+    }
+
+    const std::string& code_verifier() const { return code_verifier_; }
+
+   private:
+    std::string code_verifier_;
   };
 };
 

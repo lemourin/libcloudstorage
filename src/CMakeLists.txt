@@ -9,7 +9,6 @@ set(cloudstorage-resources
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/localwinrt_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/mega_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/webdav_login.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/dropbox_login.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_error.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/default_success.html
     ${CMAKE_CURRENT_SOURCE_DIR}/../bin/cloudbrowser/resources/bootstrap.min.css

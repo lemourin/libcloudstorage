@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <csignal>
 #include <cstring>
+#include <random>
 
 namespace cloudstorage {
 
@@ -168,8 +169,6 @@ struct HttpCallback : public IHttpServer::ICallback {
         result = MAKE_STRING(mega_login_html);
       else if (state == "webdav")
         result = MAKE_STRING(webdav_login_html);
-      else if (state == "dropbox")
-        result = MAKE_STRING(dropbox_login_html);
       else
         return util::response_from_string(request, IHttpRequest::NotFound, {},
                                           "Not found");
@@ -227,6 +226,11 @@ CloudFactory::CloudFactory(CloudFactory::InitData&& d)
       init_data_(std::move(d.provider_init_data_)),
       cloud_storage_(ICloudStorage::create()),
       loop_(event_loop_->impl()) {
+  std::random_device device;
+  std::uniform_int_distribution<int> dist('a', 'z');
+  for (int i = 0; i < 128; i++) {
+    code_verifier_ += dist(device);
+  }
   for (const auto& d : cloud_storage_->providers()) {
     http_server_handles_.emplace_back(
         http_server_factory_->create(util::make_unique<HttpCallback>(this), d,
@@ -315,6 +319,7 @@ std::unique_ptr<CloudAccess> CloudFactory::createImpl(
       init_data.hints_["client_secret"] =
           config_["keys"][provider_name]["client_secret"].asString();
   }
+  init_data.hints_["code_verifier"] = code_verifier_;
   auto provider = cloud_storage_->provider(provider_name, std::move(init_data));
   if (!provider) return nullptr;
   auto result = util::make_unique<CloudAccess>(loop_, std::move(provider));

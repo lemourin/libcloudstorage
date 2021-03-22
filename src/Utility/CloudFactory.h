@@ -107,6 +107,7 @@ class CloudFactory : public ICloudFactory {
   std::condition_variable empty_condition_;
   int events_ready_ = false;
   bool quit_ = false;
+  std::string code_verifier_;
 };
 
 }  // namespace cloudstorage
