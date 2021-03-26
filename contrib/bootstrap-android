@@ -518,8 +518,8 @@ install "fribidi" 1.0.5
 install "freetype" 2.10.2
 install "harfbuzz" 2.3.0
 install "libass" 0.14.0
-install "openssl" 1.1.1b
-install "jsoncpp" 1.8.3
+install "openssl" 1.1.1k
+install "jsoncpp" 1.9.3
 install "tinyxml2" 6.0.0
 install "cares" 1.15.0
 install "nghttp2" 1.28.0
