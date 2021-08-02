@@ -382,7 +382,7 @@ install_libass() {
 }
 
 fetch_boost() {
-  fetch_url https://dl.bintray.com/boostorg/release/$1/source/boost_${1//./_}.tar.gz
+  fetch_url https://boostorg.jfrog.io/artifactory/main/release/$1/source/boost_${1//./_}.tar.gz
 }
 
 install_boost() {
