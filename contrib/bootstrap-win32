@@ -200,10 +200,7 @@ Libs: -L\${libdir} -l$ZLIB_LIBRARY
 Cflags: -I\${includedir}
 EOF
   msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h &&
-    if [ $BUILD_TYPE == "Debug" ]; then
-      cp zlibstatic.dir/$BUILD_TYPE/zlibstatic.pdb $INSTALL_PATH/lib
-    fi
+    sed -i -r "s/^#(\s)*include <unistd\.h>.*$//g" $INSTALL_PATH/include/zconf.h
 }
 
 fetch_libxml2() {
@@ -234,10 +231,7 @@ EOF
 
 install_jsoncpp() {
   run_cmake -DJSONCPP_WITH_TESTS=0 -DCMAKE_CXX_FLAGS="-sdl-"
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    if [ $BUILD_TYPE == "Debug" ]; then
-      cp src/lib_json/jsoncpp_lib_static.dir/$BUILD_TYPE/jsoncpp_lib_static.pdb $INSTALL_PATH/lib
-    fi
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
 }
 
 fetch_tinyxml2() {
@@ -246,10 +240,7 @@ fetch_tinyxml2() {
 
 install_tinyxml2() {
   run_cmake -DBUILD_STATIC_LIBS=1 -DCMAKE_CXX_FLAGS="-sdl-"
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    if [ $BUILD_TYPE == "Debug" ]; then
-      cp tinyxml2_static.dir/$BUILD_TYPE/tinyxml2_static.pdb $INSTALL_PATH/lib
-    fi
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
 }
 
 fetch_openssl() {
@@ -282,10 +273,7 @@ fetch_nghttp2() {
 install_nghttp2() {
   sed -i 's/SHARED/STATIC/g' lib/CMakeLists.txt
   run_cmake -DENABLE_LIB_ONLY=1
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    if [ $BUILD_TYPE == "Debug" ]; then
-      cp lib/nghttp2.dir/$BUILD_TYPE/nghttp2.pdb $INSTALL_PATH/lib
-    fi
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
 }
 
 fetch_curl() {
@@ -314,10 +302,7 @@ install_curl() {
     -DCARES_LIBRARY=$INSTALL_PATH/lib/libcares.lib \
     -DCMAKE_USE_OPENSSL=1 \
     -DUSE_WIN32_LDAP=0
-  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE &&
-    if [ $BUILD_TYPE == "Debug" ]; then
-      cp lib/libcurl.dir/$BUILD_TYPE/libcurl.pdb $INSTALL_PATH/lib
-    fi
+  msbuild.exe INSTALL.vcxproj -p:Configuration=$BUILD_TYPE
 }
 
 fetch_microhttpd() {
@@ -360,8 +345,7 @@ install_cryptopp() {
   msbuild.exe cryptlib.vcxproj -p:Configuration=$BUILD_TYPE &&
     mkdir -p $INSTALL_PATH/include/cryptopp &&
     cp *.h $INSTALL_PATH/include/cryptopp &&
-    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib &&
-    cp $BUILD/cryptlib/$BUILD_TYPE/cryptlib.pdb $INSTALL_PATH/lib
+    cp $BUILD/Output/$BUILD_TYPE/* $INSTALL_PATH/lib
 }
 
 fetch_sqlite() {
@@ -391,8 +375,7 @@ fetch_megasdk() {
 install_megasdk() {
   UseEnv=true LIB="$LIB;$INSTALL_PATH/lib" INCLUDE="$INCLUDE;$(cygpath -w $INSTALL_PATH)\\include" \
     msbuild.exe examples/win32/libmega.vcxproj -p:Configuration=$BUILD_TYPE &&
-    cp -r include/mega* $INSTALL_PATH/include &&
-    cp examples/win32/mega.pdb examples/win32/$BUILD/$BUILD_TYPE/mega.lib $INSTALL_PATH/lib
+    cp -r include/mega* $INSTALL_PATH/include
 }
 
 fetch_ffmpeg() {
